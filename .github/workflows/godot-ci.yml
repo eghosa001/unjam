@@ -49,3 +49,9 @@ jobs:
             echo "Godot runtime errors detected."
             exit 1
           fi
+      - name: Android debug export smoke test
+        shell: bash
+        run: |
+          mkdir -p build/android
+          godot --headless --path . --export-debug Android build/android/unjam-debug.apk
+          test -s build/android/unjam-debug.apk
