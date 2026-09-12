@@ -14,7 +14,7 @@ static func find_solution(level: Dictionary, source_pieces: Array = [], max_stat
 	var rescue_raw: Array = level.get("rescue", [])
 	if width <= 0 or height <= 0 or rescue_raw.size() != 2:
 		return []
-	var rescue := Vector2i(int(rescue_raw[0]), int(rescue_raw[1]))
+	var rescue: Vector2i = Vector2i(int(rescue_raw[0]), int(rescue_raw[1]))
 	var initial: Array = []
 	var raw_pieces: Array = source_pieces if not source_pieces.is_empty() else level.get("pieces", [])
 	for raw in raw_pieces:
@@ -24,7 +24,6 @@ static func find_solution(level: Dictionary, source_pieces: Array = [], max_stat
 			initial.append(p)
 	if _rescue_has_exit(initial, rescue, width, height):
 		return []
-
 	var queue_states: Array = [initial]
 	var queue_paths: Array = [[]]
 	var head: int = 0
@@ -44,7 +43,7 @@ static func find_solution(level: Dictionary, source_pieces: Array = [], max_stat
 				for step in next_path:
 					result.append(int(step))
 				return result
-			var key := _state_key(next)
+			var key: String = _state_key(next)
 			if not visited.has(key):
 				visited[key] = true
 				queue_states.append(next)
@@ -56,13 +55,13 @@ static func has_solution(level: Dictionary, max_states: int = 4000) -> bool:
 	if rescue_raw.size() != 2:
 		return false
 	var pieces: Array = level.get("pieces", [])
-	var rescue := Vector2i(int(rescue_raw[0]), int(rescue_raw[1]))
+	var rescue: Vector2i = Vector2i(int(rescue_raw[0]), int(rescue_raw[1]))
 	if _rescue_has_exit(pieces, rescue, int(level.get("width", 0)), int(level.get("height", 0))):
 		return true
 	return not find_solution(level, [], max_states).is_empty()
 
 static func first_solution_move(level: Dictionary, source_pieces: Array, max_states: int = 4000) -> int:
-	var solution := find_solution(level, source_pieces, max_states)
+	var solution: Array[int] = find_solution(level, source_pieces, max_states)
 	return -1 if solution.is_empty() else int(solution[0])
 
 static func _apply_move(source: Array, index: int, rescue: Vector2i, width: int, height: int) -> Array:
@@ -105,16 +104,12 @@ static func _escape_once(pieces: Array, index: int, rescue: Vector2i, width: int
 		return
 	var piece: Dictionary = pieces[index]
 	pieces[index]["active"] = false
-	var type := String(piece.get("type", "normal"))
+	var type: String = String(piece.get("type", "normal"))
 	match type:
-		"rotate":
-			_rotate_neighbors(pieces, _piece_pos(piece))
-		"key":
-			_open_gates(pieces, String(piece.get("key_id", "default")))
-		"bomb":
-			_explode(pieces, _piece_pos(piece))
-		"linked":
-			_activate_link(pieces, String(piece.get("link_id", "")), index, rescue, width, height)
+		"rotate": _rotate_neighbors(pieces, _piece_pos(piece))
+		"key": _open_gates(pieces, String(piece.get("key_id", "default")))
+		"bomb": _explode(pieces, _piece_pos(piece))
+		"linked": _activate_link(pieces, String(piece.get("link_id", "")), index, rescue, width, height)
 
 static func _path_clear(pieces: Array, index: int, rescue: Vector2i, width: int, height: int) -> bool:
 	if index < 0 or index >= pieces.size():
@@ -122,15 +117,13 @@ static func _path_clear(pieces: Array, index: int, rescue: Vector2i, width: int,
 	var piece: Dictionary = pieces[index]
 	if not bool(piece.get("active", true)):
 		return false
-	var type := String(piece.get("type", "normal"))
+	var type: String = String(piece.get("type", "normal"))
 	if type in ["gate", "blocker"]:
 		return false
 	var direction: Vector2i = DIRS.get(String(piece.get("direction", "right")), Vector2i.RIGHT)
-	var pos := _piece_pos(piece) + direction
+	var pos: Vector2i = _piece_pos(piece) + direction
 	while _inside(pos, width, height):
-		if pos == rescue:
-			return false
-		if _piece_at(pieces, pos) >= 0:
+		if pos == rescue or _piece_at(pieces, pos) >= 0:
 			return false
 		pos += direction
 	return true
@@ -138,9 +131,10 @@ static func _path_clear(pieces: Array, index: int, rescue: Vector2i, width: int,
 static func _rescue_has_exit(pieces: Array, rescue: Vector2i, width: int, height: int) -> bool:
 	if width <= 0 or height <= 0:
 		return false
-	for direction in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
-		var pos := rescue + direction
-		var blocked := false
+	var directions: Array[Vector2i] = [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]
+	for direction: Vector2i in directions:
+		var pos: Vector2i = rescue + direction
+		var blocked: bool = false
 		while _inside(pos, width, height):
 			if _piece_at(pieces, pos) >= 0:
 				blocked = true
@@ -151,11 +145,12 @@ static func _rescue_has_exit(pieces: Array, rescue: Vector2i, width: int, height
 	return false
 
 static func _rotate_neighbors(pieces: Array, center: Vector2i) -> void:
-	for direction in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
-		var idx := _piece_at(pieces, center + direction)
+	var directions: Array[Vector2i] = [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]
+	for direction: Vector2i in directions:
+		var idx: int = _piece_at(pieces, center + direction)
 		if idx < 0:
 			continue
-		var type := String(pieces[idx].get("type", "normal"))
+		var type: String = String(pieces[idx].get("type", "normal"))
 		if type not in ["blocker", "gate"]:
 			pieces[idx]["direction"] = _rotate_direction(String(pieces[idx].get("direction", "right")))
 
@@ -167,7 +162,7 @@ static func _open_gates(pieces: Array, key_id: String) -> void:
 static func _explode(pieces: Array, center: Vector2i) -> void:
 	for y in range(center.y - 1, center.y + 2):
 		for x in range(center.x - 1, center.x + 2):
-			var idx := _piece_at(pieces, Vector2i(x, y))
+			var idx: int = _piece_at(pieces, Vector2i(x, y))
 			if idx >= 0 and String(pieces[idx].get("type", "")) != "gate":
 				pieces[idx]["active"] = false
 
