@@ -2,6 +2,7 @@ extends "res://scripts/ui/main.gd"
 
 var continue_button: Button
 var current_surface := "home"
+var active_game: Control
 
 func _ready() -> void:
 	super._ready()
@@ -10,23 +11,27 @@ func _ready() -> void:
 
 func build_home() -> void:
 	current_surface = "home"
+	_remove_active_game()
 	super.build_home()
 
 func build_level_select() -> void:
 	current_surface = "levels"
+	_remove_active_game()
 	super.build_level_select()
 
 func build_collection() -> void:
 	current_surface = "collection"
+	_remove_active_game()
 	super.build_collection()
 
 func build_settings() -> void:
 	current_surface = "settings"
+	_remove_active_game()
 	super.build_settings()
 
 func start_level(level_number: int) -> void:
 	current_surface = "game"
-	super.start_level(level_number)
+	_spawn_game(level_number, false, {})
 
 func start_daily() -> void:
 	if DailyChallenge.is_completed_today():
@@ -34,20 +39,72 @@ func start_daily() -> void:
 		super.start_daily()
 		return
 	current_surface = "game"
-	super.start_daily()
+	_spawn_game(1, true, DailyChallenge.build_today())
+
+func _spawn_game(level_number: int, daily: bool, custom_data: Dictionary) -> void:
+	_remove_active_game()
+	if content and is_instance_valid(content):
+		content.hide()
+	if continue_button and is_instance_valid(continue_button):
+		continue_button.hide()
+	var packed := load("res://scenes/Game.tscn") as PackedScene
+	if packed == null:
+		push_error("Game scene could not be loaded.")
+		current_surface = "levels"
+		if content and is_instance_valid(content):
+			content.show()
+		return
+	var game_scene := packed.instantiate() as Control
+	if game_scene == null:
+		push_error("Game scene could not be instantiated.")
+		current_surface = "levels"
+		if content and is_instance_valid(content):
+			content.show()
+		return
+	game_scene.name = "ActiveGame"
+	game_scene.level_number = level_number
+	game_scene.daily_mode = daily
+	if not custom_data.is_empty():
+		game_scene.custom_level_data = custom_data.duplicate(true)
+	game_scene.finished.connect(_on_game_finished)
+	game_scene.quit_requested.connect(_on_game_quit)
+	add_child(game_scene)
+	game_scene.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	game_scene.offset_left = 0.0
+	game_scene.offset_top = 0.0
+	game_scene.offset_right = 0.0
+	game_scene.offset_bottom = 0.0
+	game_scene.z_index = 100
+	game_scene.show()
+	move_child(game_scene, get_child_count() - 1)
+	active_game = game_scene
+	AnalyticsManager.track("game_scene_opened", {"level": level_number, "daily": daily})
+
+func _remove_active_game() -> void:
+	if active_game and is_instance_valid(active_game):
+		active_game.queue_free()
+	active_game = null
+	var stale := get_node_or_null("ActiveGame")
+	if stale and is_instance_valid(stale):
+		stale.queue_free()
 
 func _on_game_finished(completed_level: int) -> void:
-	super._on_game_finished(completed_level)
+	active_game = null
 	if completed_level < 0:
 		current_surface = "home"
-	elif LevelManager.has_level(completed_level + 1):
+		build_home()
+		return
+	if LevelManager.has_level(completed_level + 1):
 		current_surface = "game"
+		call_deferred("start_level", completed_level + 1)
 	else:
 		current_surface = "home"
+		build_home()
 
 func _on_game_quit() -> void:
+	active_game = null
 	current_surface = "levels"
-	super._on_game_quit()
+	build_level_select()
 
 func _create_continue_button() -> void:
 	continue_button = make_button("CONTINUE RESCUE", Vector2(480, 88), true)
@@ -94,16 +151,10 @@ func _resume_checkpoint() -> void:
 	if checkpoint.is_empty():
 		return
 	current_surface = "game"
-	if content:
-		content.visible = false
-	var game_scene = load("res://scenes/Game.tscn").instantiate()
-	game_scene.level_number = int(checkpoint.get("level", 1))
-	game_scene.daily_mode = bool(checkpoint.get("daily", false))
-	if game_scene.daily_mode:
+	var custom_data: Dictionary = {}
+	if bool(checkpoint.get("daily", false)):
 		var custom = checkpoint.get("level_data", {})
 		if custom is Dictionary:
-			game_scene.custom_level_data = custom.duplicate(true)
-	game_scene.finished.connect(_on_game_finished)
-	game_scene.quit_requested.connect(_on_game_quit)
-	add_child(game_scene)
-	AnalyticsManager.track("resume_selected", {"level": game_scene.level_number, "daily": game_scene.daily_mode})
+			custom_data = custom.duplicate(true)
+	_spawn_game(int(checkpoint.get("level", 1)), bool(checkpoint.get("daily", false)), custom_data)
+	AnalyticsManager.track("resume_selected", {"level": int(checkpoint.get("level", 1)), "daily": bool(checkpoint.get("daily", false))})
