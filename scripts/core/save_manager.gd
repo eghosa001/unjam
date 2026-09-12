@@ -26,7 +26,9 @@ const DEFAULT_DATA := {
 	"best_perfect_streak": 0,
 	"milestone_chests": [],
 	"world_badges": [],
-	"prestige_points": 0
+	"prestige_points": 0,
+	"achievements": [],
+	"achievement_points": 0
 }
 
 var data: Dictionary = DEFAULT_DATA.duplicate(true)
@@ -67,7 +69,8 @@ func complete_level(level_number: int, stars: int, rescue_id: String, coin_rewar
 		"world_badge": false,
 		"world": 0,
 		"bonus_coins": 0,
-		"prestige": 0
+		"prestige": 0,
+		"achievements": []
 	}
 	var key := str(level_number)
 	var previous_stars := int(data.stars.get(key, 0))
@@ -113,10 +116,25 @@ func complete_level(level_number: int, stars: int, rescue_id: String, coin_rewar
 			data.coins = int(data.coins) + 250
 			rewards.bonus_coins = int(rewards.bonus_coins) + 250
 
+	_check_achievement("first_rescue", int(data.total_levels_completed) >= 1, "FIRST RESCUE", 10, rewards)
+	_check_achievement("perfect_10", int(data.perfect_clears) >= 10, "PRECISION TEN", 20, rewards)
+	_check_achievement("perfect_streak_10", int(data.best_perfect_streak) >= 10, "FLAWLESS RUN", 30, rewards)
+	_check_achievement("levels_100", int(data.total_levels_completed) >= 100, "CENTURY RESCUER", 40, rewards)
+	_check_achievement("world_10", data.world_badges.size() >= 10, "MASTER OF TEN WORLDS", 50, rewards)
+	_check_achievement("levels_1000", int(data.total_levels_completed) >= 1000, "UNJAM LEGEND", 100, rewards)
+
 	save()
-	if bool(rewards.perfect) or bool(rewards.milestone) or bool(rewards.world_badge) or int(rewards.prestige) > 0:
+	if bool(rewards.perfect) or bool(rewards.milestone) or bool(rewards.world_badge) or int(rewards.prestige) > 0 or not rewards.achievements.is_empty():
 		premium_reward.emit(rewards)
 	return rewards
+
+func _check_achievement(id: String, condition: bool, title: String, points: int, rewards: Dictionary) -> void:
+	if not condition or id in data.achievements:
+		return
+	data.achievements.append(id)
+	data.achievement_points = int(data.achievement_points) + points
+	data.prestige_points = int(data.prestige_points) + max(1, int(points / 10))
+	rewards.achievements.append({"id": id, "title": title, "points": points})
 
 func get_stars(level_number: int) -> int:
 	return int(data.stars.get(str(level_number), 0))
