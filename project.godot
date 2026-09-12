@@ -22,3 +22,5 @@ environment/defaults/default_clear_color=Color(0.035, 0.055, 0.09, 1)
 [autoload]
 SaveManager="*res://scripts/core/save_manager.gd"
 LevelManager="*res://scripts/core/level_manager.gd"
+AdManager="*res://scripts/systems/ad_manager.gd"
+AnalyticsManager="*res://scripts/systems/analytics_manager.gd"
