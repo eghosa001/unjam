@@ -3,7 +3,7 @@ extends "res://scripts/core/save_manager.gd"
 const ROBUST_SAVE_PATH := "user://unjam_save.json"
 const BACKUP_PATH := "user://unjam_save.backup.json"
 const TEMP_PATH := "user://unjam_save.tmp.json"
-const SAVE_VERSION := 3
+const SAVE_VERSION := 4
 
 func _ready() -> void:
 	load_save()
@@ -40,22 +40,47 @@ func _sanitize() -> void:
 	data.coins = clampi(int(data.get("coins", 0)), 0, 2000000000)
 	data.prestige_points = max(0, int(data.get("prestige_points", 0)))
 	data.achievement_points = max(0, int(data.get("achievement_points", 0)))
-	data.total_levels_completed = clampi(int(data.get("total_levels_completed", 0)), 0, 10000)
-	data.perfect_clears = clampi(int(data.get("perfect_clears", 0)), 0, 10000)
 	for key in ["sound", "vibration", "music", "remove_ads"]:
 		data[key] = bool(data.get(key, DEFAULT_DATA.get(key, false)))
-	for key in ["stars"]:
-		if not data.get(key, {}) is Dictionary:
-			data[key] = {}
+	if not data.get("stars", {}) is Dictionary:
+		data.stars = {}
 	for key in ["rescued", "decorations", "daily_completed", "milestone_chests", "world_badges", "achievements"]:
 		if not data.get(key, []) is Array:
 			data[key] = []
 	var clean_stars: Dictionary = {}
+	var completed_count := 0
+	var perfect_count := 0
+	var highest_from_stars := 1
+	var completed_milestones: Array = []
+	var completed_worlds: Array = []
 	for key in data.stars:
 		var level_number := int(String(key))
-		if level_number >= 1 and level_number <= 10000:
-			clean_stars[str(level_number)] = clampi(int(data.stars[key]), 0, 3)
+		if level_number < 1 or level_number > 10000:
+			continue
+		var value := clampi(int(data.stars[key]), 0, 3)
+		if value <= 0:
+			continue
+		clean_stars[str(level_number)] = value
+		completed_count += 1
+		if value == 3:
+			perfect_count += 1
+		highest_from_stars = max(highest_from_stars, min(10001, level_number + 1))
+		if level_number % 10 == 0:
+			completed_milestones.append(str(level_number))
+		if level_number % 100 == 0:
+			completed_worlds.append(str(int(level_number / 100)))
 	data.stars = clean_stars
+	data.total_levels_completed = completed_count
+	data.perfect_clears = perfect_count
+	data.highest_level = max(int(data.highest_level), highest_from_stars)
+	for milestone in completed_milestones:
+		if milestone not in data.milestone_chests:
+			data.milestone_chests.append(milestone)
+	for world in completed_worlds:
+		if world not in data.world_badges:
+			data.world_badges.append(world)
+	data.perfect_streak = clampi(int(data.get("perfect_streak", 0)), 0, 10000)
+	data.best_perfect_streak = max(int(data.perfect_streak), int(data.get("best_perfect_streak", 0)))
 
 func save() -> void:
 	data["save_version"] = SAVE_VERSION
