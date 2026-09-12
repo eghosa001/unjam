@@ -1,7 +1,9 @@
 extends Node
 
 const LEVEL_DIR := "res://data/levels/"
-const CAMPAIGN_LEVELS := 60
+const CAMPAIGN_LEVELS := 10000
+const LEVELS_PER_WORLD := 100
+const WORLD_COUNT := 100
 var current_level := 1
 
 func load_level(level_number: int) -> Dictionary:
@@ -24,13 +26,19 @@ func get_level_count() -> int:
 	return CAMPAIGN_LEVELS
 
 func world_for_level(level_number: int) -> int:
-	return int((level_number - 1) / 10) + 1
+	return int((level_number - 1) / LEVELS_PER_WORLD) + 1
+
+func first_level_in_world(world: int) -> int:
+	return (clamp(world, 1, WORLD_COUNT) - 1) * LEVELS_PER_WORLD + 1
+
+func last_level_in_world(world: int) -> int:
+	return min(first_level_in_world(world) + LEVELS_PER_WORLD - 1, CAMPAIGN_LEVELS)
+
+func highest_unlocked_world() -> int:
+	return clamp(world_for_level(int(SaveManager.data.get("highest_level", 1))), 1, WORLD_COUNT)
 
 func world_name(world: int) -> String:
-	match world:
-		1: return "Garden Escape"
-		2: return "Locks & Keys"
-		3: return "Chain Reaction"
-		4: return "Blast Lab"
-		5: return "Linked Zone"
-		_: return "Chaos Rescue"
+	var themes := ["Garden Escape", "Locks & Keys", "Chain Reaction", "Blast Lab", "Linked Zone", "Chaos Rescue", "Portal Works", "Crystal Circuit", "Neon Factory", "Rescue Nexus"]
+	var theme := String(themes[(world - 1) % themes.size()])
+	var chapter := int((world - 1) / themes.size()) + 1
+	return "%s %d" % [theme, chapter] if chapter > 1 else theme
