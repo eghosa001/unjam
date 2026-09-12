@@ -1,92 +1,121 @@
 # Unjam: Rescue Rush
 
-A mobile-first directional rescue puzzle built in Godot. The core hook is simple: clear directional pieces to open a path for the trapped character, while special pieces transform the board through chain reactions.
+A mobile-first chain-reaction rescue puzzle built in Godot. Tap directional pieces to clear a path for a trapped character; keys, gates, bombs, rotators and linked pieces can transform the board and create satisfying chain reactions.
 
-## Current playable scope
+## Launch scope now implemented
 
-- Android-oriented portrait layout
-- Main menu and level selection
-- Persistent progress, stars, rescued characters and coins
-- Data-driven JSON levels
-- Directional path/block checks
-- Rescue path detection
-- Undo and hint systems
-- Star scoring based on par moves
-- Result screen and next-level flow
-- Rescue Garden collection screen
-- Normal, rotate, key, gate, bomb, linked and blocker pieces
-- Chain counter for multi-object effects
-- 10 handcrafted starter levels
-- Headless level-data validator
-- Isolated ad and analytics service interfaces for later SDK integration
+- Android-oriented portrait layout and compatibility renderer
+- Premium procedural UI presentation with six world themes
+- 60-level campaign split into six worlds
+- 10 handcrafted onboarding levels plus deterministic campaign generation
+- Daily challenge with deterministic daily seed, 100-coin reward and streak tracking
+- Persistent progress, stars, rescued characters, coins and settings
+- Rescue Garden with collectible characters and purchasable decorations
+- Directional path/block checks and rescue-path win detection
+- Undo, hints, restart and star scoring
+- Normal, rotate, key, gate, bomb, linked and blocker mechanics
+- Chain reaction feedback, board shake, reveal/rescue tweens
+- Procedural sound effects and Android haptic feedback without external audio dependencies
+- Rewarded-ad and interstitial placement boundaries isolated in `AdManager`
+- Analytics event boundary isolated in `AnalyticsManager`
+- Internal visual level editor
+- Handcrafted-level validator and full 60-level campaign validator
+- GitHub Actions import/validation/boot smoke tests
+- Android export preset targeting ARM64
 
-## Controls
+## Gameplay
 
 Tap a directional piece. If every tile in its direction is clear, it escapes the board. Clearing a route from the rescue character to any board edge completes the level.
 
 Special pieces:
 
-- **Rotate**: rotates adjacent movable pieces clockwise when it escapes.
-- **Key**: opens gates with the same `key_id`.
-- **Gate**: blocks movement until its matching key is released.
-- **Bomb**: removes nearby non-gate pieces.
-- **Linked**: activates another linked piece with the same `link_id`; if the partner cannot escape, it rotates instead.
-- **Blocker**: permanent obstacle unless removed by a bomb.
+- **Rotate** — rotates adjacent movable pieces clockwise.
+- **Key** — opens gates with the same `key_id`.
+- **Gate** — blocks movement until the matching key is released.
+- **Bomb** — removes nearby non-gate pieces.
+- **Linked** — activates another linked piece with the same `link_id`; blocked partners rotate instead.
+- **Blocker** — permanent obstacle unless removed by a bomb.
+
+## Campaign worlds
+
+1. **Garden Escape** — core directional rules
+2. **Locks & Keys** — keys and gates
+3. **Chain Reaction** — rotators and changing board states
+4. **Blast Lab** — bombs and destructible blockers
+5. **Linked Zone** — paired pieces and multi-object reactions
+6. **Chaos Rescue** — mixed-mechanic mastery
 
 ## Run
 
-Open the repository in Godot 4.x and run `project.godot`.
+Use Godot 4.5.x. Open `project.godot` and run the project.
 
-The project uses the compatibility renderer to remain friendly to lower-end Android hardware.
+The project uses the compatibility renderer for lower-end Android support.
 
-## Validate level data
-
-From a machine with Godot on PATH:
+## Validation
 
 ```bash
+godot --headless --path . --editor --quit
 godot --headless --path . --script res://tests/validate_levels.gd
+godot --headless --path . --script res://tests/validate_campaign.gd
+godot --headless --path . --quit-after 5
 ```
 
-The validator checks board size, rescue placement, duplicate positions, valid piece types, valid directions and out-of-bounds objects.
+GitHub Actions runs the same checks on pushes and pull requests.
 
-## Add a level
+## Level editor
 
-Create `data/levels/level_XX.json`:
+Open `scenes/LevelEditor.tscn` directly in Godot and run the scene. The editor can:
 
-```json
-{
-  "width": 5,
-  "height": 5,
-  "par_moves": 3,
-  "rescue_id": "chick",
-  "rescue": [2, 2],
-  "pieces": [
-    {"x": 2, "y": 0, "type": "normal", "direction": "up"},
-    {"x": 0, "y": 2, "type": "rotate", "direction": "left"}
-  ]
-}
-```
+- place/remove pieces on a 5×5 grid
+- select piece type and direction
+- move the rescue target
+- clear the board
+- export the level as JSON into `data/levels/`
 
-## Architecture
+Hand-authored JSON levels override generated campaign levels with the same number, so polished levels can gradually replace generated ones without changing game code.
 
-- `scripts/core/` — save and level loading
-- `scripts/game/` — puzzle rules, board state, undo, hints, rescue and results
-- `scripts/ui/` — menu, level selection and Rescue Garden
-- `scripts/systems/` — ads/analytics adapters
-- `data/levels/` — level definitions
-- `tests/` — data validation
+## Android
 
-## Next production passes
+`export_presets.cfg` contains an ARM64 Android preset with package id `com.eghosa.unjam`.
 
-The current repository is the playable MVP foundation. The next high-value passes are:
+Before a Play Store release you still need to configure your own Android SDK/JDK environment, upload/signing keystore and store credentials. Never commit keystore passwords or service credentials.
 
-1. Replace Unicode/procedural presentation with finished 2D/2.5D art, character sprites and themed world backgrounds.
-2. Add escape tweens, particles, haptics, stronger chain-reaction presentation and rescue celebration animation.
-3. Add sound/music assets and route them through an AudioManager.
-4. Build an in-game level editor and expand from 10 to 50–80 tuned launch levels.
-5. Add worlds and mechanic onboarding instead of exposing every mechanic immediately.
-6. Connect `AdManager` to the selected Android ad SDK and use rewarded hints/undo plus conservative interstitials.
-7. Connect `AnalyticsManager` to Firebase/GameAnalytics and tune levels using restart/quit/fail data.
-8. Add daily challenge and lightweight Rescue Garden decorations only after retention is proven.
+## Monetization integration
 
-The design rule is: **depth from interactions, not from adding hundreds of systems.**
+Gameplay never talks directly to an ad SDK. Replace the development fallback inside `scripts/systems/ad_manager.gd` with your selected provider implementation.
+
+Current placements are deliberately conservative:
+
+- rewarded double-reward on the result screen
+- interstitial pacing after multiple completed levels
+- no mid-puzzle interruption
+
+`remove_ads` is already represented in save data for a future purchase adapter.
+
+## Analytics integration
+
+`scripts/systems/analytics_manager.gd` currently logs events locally. Replace the `track()` implementation with Firebase Analytics, GameAnalytics or another provider. Gameplay already reports starts and completions, while the architecture supports restart/hint/undo instrumentation.
+
+## Project structure
+
+- `scripts/core/` — saves, level loading and campaign generation
+- `scripts/game/` — puzzle rules and game presentation
+- `scripts/ui/` — home, worlds, settings and Rescue Garden
+- `scripts/systems/` — ads, analytics, daily challenge and feedback
+- `tools/` — internal level editor
+- `data/levels/` — handcrafted JSON level overrides
+- `tests/` — validators
+- `.github/workflows/` — CI quality gate
+
+## External release blockers
+
+The codebase is feature-complete for the planned first commercial version. The remaining release-specific work requires owner-controlled external resources rather than more game architecture:
+
+1. choose and configure the real ad SDK/application IDs
+2. optionally connect production analytics
+3. create the Play Console listing, privacy policy and store graphics
+4. provide the Android signing/upload key
+5. replace or extend procedural visuals with commissioned/custom artwork if desired
+6. playtest and tune individual level difficulty using real-player data
+
+The project deliberately keeps those external dependencies isolated so the game remains fully playable during development.
