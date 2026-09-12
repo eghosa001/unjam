@@ -3,6 +3,9 @@ extends Control
 var content: Control
 var selected_world := 1
 
+const WORLD_BASE := ["081426", "0b1830", "141533", "25142b", "0d241f", "1b1230"]
+const WORLD_ACCENT := ["2dd4b6", "5da9ff", "8b7cf6", "ff6b7a", "55d68b", "c074ff"]
+
 func _ready() -> void:
 	selected_world = LevelManager.highest_unlocked_world()
 	build_home()
@@ -35,33 +38,42 @@ func make_button(text_value: String, size := Vector2(420, 92), accent := false) 
 	b.custom_minimum_size = size
 	b.add_theme_font_size_override("font_size", 28)
 	var color := Color("243b63") if not accent else Color("21c7a8")
-	b.add_theme_stylebox_override("normal", style_box(color, 24))
-	b.add_theme_stylebox_override("hover", style_box(color.lightened(0.08), 24))
-	b.add_theme_stylebox_override("pressed", style_box(color.darkened(0.10), 24))
+	b.add_theme_stylebox_override("normal", style_box(Color(color, 0.92), 24, Color(1,1,1,0.08), 1))
+	b.add_theme_stylebox_override("hover", style_box(color.lightened(0.08), 24, Color(1,1,1,0.18), 2))
+	b.add_theme_stylebox_override("pressed", style_box(color.darkened(0.10), 24, Color.WHITE, 2))
 	b.add_theme_stylebox_override("disabled", style_box(Color("252d3e"), 24))
 	b.add_theme_color_override("font_disabled_color", Color("697387"))
 	return b
 
+func world_palette(world: int) -> Array[Color]:
+	var idx := posmod(world - 1, WORLD_BASE.size())
+	return [Color(WORLD_BASE[idx]), Color(WORLD_ACCENT[idx])]
+
 func add_background() -> void:
-	var bg := ColorRect.new()
-	bg.color = Color("081426")
-	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	content.add_child(bg)
-	var glow := ColorRect.new()
-	glow.color = Color(0.08, 0.42, 0.48, 0.18)
-	glow.position = Vector2(0, 180)
-	glow.size = Vector2(1080, 620)
-	content.add_child(glow)
+	var palette := world_palette(max(1, selected_world))
+	var backdrop := PremiumBackdrop.new()
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.configure(palette[0], palette[1], selected_world - 1)
+	content.add_child(backdrop)
+	PremiumVisuals.set_accent(palette[1])
+	PremiumVisuals.ambient_sparkles(12)
+
+func add_glass_card(parent: Node, minimum_size: Vector2 = Vector2.ZERO) -> PanelContainer:
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = minimum_size
+	panel.add_theme_stylebox_override("panel", style_box(Color(0.035,0.06,0.11,0.88), 30, Color(1,1,1,0.10), 2))
+	parent.add_child(panel)
+	return panel
 
 func build_home() -> void:
 	clear_content()
 	add_background()
 	var box := VBoxContainer.new()
 	box.set_anchors_preset(Control.PRESET_CENTER)
-	box.position = Vector2(-300, -600)
-	box.custom_minimum_size = Vector2(600, 1200)
+	box.position = Vector2(-330, -650)
+	box.custom_minimum_size = Vector2(660, 1300)
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
-	box.add_theme_constant_override("separation", 24)
+	box.add_theme_constant_override("separation", 22)
 	content.add_child(box)
 
 	var badge := Label.new()
@@ -74,43 +86,62 @@ func build_home() -> void:
 	var title := Label.new()
 	title.text = "UNJAM"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 82)
+	title.add_theme_font_size_override("font_size", 86)
+	title.add_theme_color_override("font_color", Color("f3fbff"))
 	box.add_child(title)
 
 	var subtitle := Label.new()
 	subtitle.text = "RESCUE RUSH"
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	subtitle.add_theme_font_size_override("font_size", 32)
+	subtitle.add_theme_font_size_override("font_size", 30)
 	subtitle.modulate = Color("a8b8cf")
 	box.add_child(subtitle)
 
-	var stats_panel := PanelContainer.new()
-	stats_panel.custom_minimum_size = Vector2(560, 118)
-	stats_panel.add_theme_stylebox_override("panel", style_box(Color(0.06,0.10,0.18,0.92), 28, Color(1,1,1,0.08), 2))
-	box.add_child(stats_panel)
+	var stats_panel := add_glass_card(box, Vector2(620, 132))
 	var stats := Label.new()
-	stats.text = "%d / %d LEVELS   •   %d ★   •   %d COINS" % [min(int(SaveManager.data.highest_level) - 1, LevelManager.get_level_count()), LevelManager.get_level_count(), SaveManager.total_stars(), int(SaveManager.data.coins)]
+	stats.text = "%d / %d LEVELS\n%d ★   •   %d COINS   •   %d PRESTIGE" % [min(int(SaveManager.data.highest_level) - 1, LevelManager.get_level_count()), LevelManager.get_level_count(), SaveManager.total_stars(), int(SaveManager.data.coins), int(SaveManager.data.prestige_points)]
 	stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	stats.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	stats.add_theme_font_size_override("font_size", 21)
+	stats.add_theme_font_size_override("font_size", 20)
 	stats_panel.add_child(stats)
 
-	var play := make_button("PLAY CAMPAIGN", Vector2(520, 96), true)
+	var progress_strip := HBoxContainer.new()
+	progress_strip.alignment = BoxContainer.ALIGNMENT_CENTER
+	progress_strip.add_theme_constant_override("separation", 12)
+	box.add_child(progress_strip)
+	for text_value in ["PERFECT %d" % int(SaveManager.data.perfect_clears), "STREAK %d" % int(SaveManager.data.perfect_streak), "ACH %d" % int(SaveManager.data.achievement_points)]:
+		var chip := PanelContainer.new()
+		chip.custom_minimum_size = Vector2(190, 58)
+		chip.add_theme_stylebox_override("panel", style_box(Color(0.08,0.13,0.22,0.86), 20, Color("2dd4b6"), 1))
+		var chip_label := Label.new()
+		chip_label.text = text_value
+		chip_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		chip_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		chip_label.add_theme_font_size_override("font_size", 16)
+		chip.add_child(chip_label)
+		progress_strip.add_child(chip)
+
+	var play := make_button("PLAY CAMPAIGN", Vector2(560, 100), true)
 	play.pressed.connect(func(): selected_world = LevelManager.highest_unlocked_world(); build_level_select())
 	box.add_child(play)
 
 	var daily_text := "DAILY RESCUE  •  " + DailyChallenge.reward_text()
-	var daily := make_button(daily_text, Vector2(520, 86))
+	var daily := make_button(daily_text, Vector2(560, 88))
 	daily.pressed.connect(start_daily)
 	box.add_child(daily)
 
-	var collection := make_button("RESCUE GARDEN", Vector2(520, 82))
+	var secondary := HBoxContainer.new()
+	secondary.alignment = BoxContainer.ALIGNMENT_CENTER
+	secondary.add_theme_constant_override("separation", 16)
+	box.add_child(secondary)
+	var collection := make_button("RESCUE GARDEN", Vector2(272, 82))
 	collection.pressed.connect(build_collection)
-	box.add_child(collection)
-
-	var settings := make_button("SETTINGS", Vector2(520, 76))
+	collection.add_theme_font_size_override("font_size", 21)
+	secondary.add_child(collection)
+	var settings := make_button("SETTINGS", Vector2(272, 82))
 	settings.pressed.connect(build_settings)
-	box.add_child(settings)
+	settings.add_theme_font_size_override("font_size", 21)
+	secondary.add_child(settings)
 
 	var streak := Label.new()
 	streak.text = "Daily streak: %d   •   Best: %d" % [int(SaveManager.data.daily_streak), int(SaveManager.data.daily_best_streak)]
@@ -118,6 +149,25 @@ func build_home() -> void:
 	streak.add_theme_font_size_override("font_size", 19)
 	streak.modulate = Color("95a4bb")
 	box.add_child(streak)
+	PremiumVisuals.entrance(box, 0.04)
+
+func difficulty_short(label: String) -> String:
+	match label:
+		"easy": return "EASY"
+		"medium": return "MED"
+		"hard": return "HARD"
+		"milestone": return "MILE"
+		"boss": return "BOSS"
+		_: return label.to_upper()
+
+func difficulty_color(label: String) -> Color:
+	match label:
+		"easy": return Color("57d69a")
+		"medium": return Color("66a8ff")
+		"hard": return Color("ff9d57")
+		"milestone": return Color("ffd166")
+		"boss": return Color("ff5d7a")
+		_: return Color("95a4bb")
 
 func build_level_select() -> void:
 	selected_world = clamp(selected_world, 1, LevelManager.WORLD_COUNT)
@@ -125,62 +175,65 @@ func build_level_select() -> void:
 	add_background()
 	var margin := MarginContainer.new()
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	margin.add_theme_constant_override("margin_left", 55)
-	margin.add_theme_constant_override("margin_right", 55)
-	margin.add_theme_constant_override("margin_top", 55)
-	margin.add_theme_constant_override("margin_bottom", 55)
+	margin.add_theme_constant_override("margin_left", 48)
+	margin.add_theme_constant_override("margin_right", 48)
+	margin.add_theme_constant_override("margin_top", 50)
+	margin.add_theme_constant_override("margin_bottom", 50)
 	content.add_child(margin)
 	var root := VBoxContainer.new()
-	root.add_theme_constant_override("separation", 16)
+	root.add_theme_constant_override("separation", 15)
 	margin.add_child(root)
 
 	var header := HBoxContainer.new()
-	var back := make_button("←", Vector2(94, 68))
+	var back := make_button("←", Vector2(90, 66))
 	back.pressed.connect(build_home)
 	header.add_child(back)
 	var label := Label.new()
 	label.text = "WORLD %d / %d" % [selected_world, LevelManager.WORLD_COUNT]
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 32)
+	label.add_theme_font_size_override("font_size", 31)
 	header.add_child(label)
-	var stars := Label.new()
-	stars.text = "%d ★" % SaveManager.total_stars()
-	stars.custom_minimum_size = Vector2(120, 68)
-	stars.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	stars.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	header.add_child(stars)
+	var prestige := Label.new()
+	prestige.text = "%d P" % int(SaveManager.data.prestige_points)
+	prestige.custom_minimum_size = Vector2(120, 66)
+	prestige.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	prestige.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	header.add_child(prestige)
 	root.add_child(header)
 
+	var hero := add_glass_card(root, Vector2(0, 110))
+	var hero_box := VBoxContainer.new()
+	hero_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	hero.add_child(hero_box)
 	var world_title := Label.new()
 	world_title.text = LevelManager.world_name(selected_world).to_upper()
 	world_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	world_title.add_theme_font_size_override("font_size", 24)
-	world_title.add_theme_color_override("font_color", Color("67e8cf"))
-	root.add_child(world_title)
+	world_title.add_theme_font_size_override("font_size", 26)
+	world_title.add_theme_color_override("font_color", world_palette(selected_world)[1])
+	hero_box.add_child(world_title)
+	var range_label := Label.new()
+	range_label.text = "LEVELS %d–%d   •   %d ★" % [LevelManager.first_level_in_world(selected_world), LevelManager.last_level_in_world(selected_world), SaveManager.total_stars()]
+	range_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	range_label.add_theme_font_size_override("font_size", 17)
+	range_label.modulate = Color("95a4bb")
+	hero_box.add_child(range_label)
 
 	var nav := HBoxContainer.new()
 	nav.alignment = BoxContainer.ALIGNMENT_CENTER
-	nav.add_theme_constant_override("separation", 16)
-	var previous := make_button("◀ PREV WORLD", Vector2(250, 66))
+	nav.add_theme_constant_override("separation", 14)
+	var previous := make_button("◀ PREV", Vector2(220, 62))
 	previous.disabled = selected_world <= 1
 	previous.pressed.connect(_change_world.bind(-1))
 	nav.add_child(previous)
-	var jump := make_button("CURRENT", Vector2(210, 66), true)
+	var jump := make_button("CURRENT", Vector2(200, 62), true)
 	jump.pressed.connect(_jump_to_current_world)
 	nav.add_child(jump)
-	var next := make_button("NEXT WORLD ▶", Vector2(250, 66))
+	var next := make_button("NEXT ▶", Vector2(220, 62))
 	next.disabled = selected_world >= LevelManager.WORLD_COUNT or selected_world >= LevelManager.highest_unlocked_world() + 1
 	next.pressed.connect(_change_world.bind(1))
 	nav.add_child(next)
 	root.add_child(nav)
-
-	var range_label := Label.new()
-	range_label.text = "LEVELS %d–%d" % [LevelManager.first_level_in_world(selected_world), LevelManager.last_level_in_world(selected_world)]
-	range_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	range_label.add_theme_font_size_override("font_size", 18)
-	range_label.modulate = Color("95a4bb")
-	root.add_child(range_label)
 
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -196,10 +249,13 @@ func build_level_select() -> void:
 	for level_number in range(first, last + 1):
 		var unlocked := SaveManager.is_level_unlocked(level_number)
 		var level_stars := SaveManager.get_stars(level_number)
-		var text := "%d\n%s" % [level_number, "★".repeat(level_stars)]
-		var button := make_button(text, Vector2(170, 104), level_number == int(SaveManager.data.highest_level))
+		var level_data := LevelManager.load_level(level_number)
+		var d_label := String(level_data.get("difficulty_label", "medium"))
+		var text := "%d\n%s   %s" % [level_number, "★".repeat(level_stars), difficulty_short(d_label)]
+		var button := make_button(text, Vector2(170, 108), level_number == int(SaveManager.data.highest_level))
 		button.disabled = not unlocked
-		button.add_theme_font_size_override("font_size", 20)
+		button.add_theme_font_size_override("font_size", 17)
+		button.add_theme_color_override("font_color", difficulty_color(d_label) if unlocked else Color("697387"))
 		button.pressed.connect(start_level.bind(level_number))
 		grid.add_child(button)
 
@@ -280,10 +336,7 @@ func build_collection() -> void:
 	header.add_child(coins)
 	root.add_child(header)
 
-	var garden := PanelContainer.new()
-	garden.custom_minimum_size = Vector2(0, 520)
-	garden.add_theme_stylebox_override("panel", style_box(Color("163f38"), 34, Color("3ecf9a"), 2))
-	root.add_child(garden)
+	var garden := add_glass_card(root, Vector2(0, 520))
 	var garden_box := VBoxContainer.new()
 	garden_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	garden.add_child(garden_box)
@@ -300,6 +353,12 @@ func build_collection() -> void:
 	decor.add_theme_font_size_override("font_size", 34)
 	garden_box.add_child(decor)
 
+	var prestige := Label.new()
+	prestige.text = "PRESTIGE %d   •   ACHIEVEMENT POINTS %d   •   WORLD BADGES %d" % [int(SaveManager.data.prestige_points), int(SaveManager.data.achievement_points), SaveManager.data.world_badges.size()]
+	prestige.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	prestige.add_theme_font_size_override("font_size", 18)
+	root.add_child(prestige)
+
 	var shop_title := Label.new()
 	shop_title.text = "GARDEN DECORATIONS"
 	shop_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -309,42 +368,34 @@ func build_collection() -> void:
 	shop.alignment = BoxContainer.ALIGNMENT_CENTER
 	shop.add_theme_constant_override("separation", 14)
 	root.add_child(shop)
-	for item in [["tree", "🌳 TREE", 100], ["bench", "🪑 BENCH", 150], ["fountain", "⛲ FOUNTAIN", 250]]:
+	for item in [["tree", "TREE", 100], ["bench", "BENCH", 150], ["fountain", "FOUNTAIN", 250]]:
 		var id := String(item[0])
 		var owned: bool = id in SaveManager.data.decorations
-		var button := make_button((String(item[1]) + (" ✓" if owned else "\n%d" % int(item[2]))), Vector2(280, 105), owned)
+		var button := make_button((String(item[1]) + ("  OWNED" if owned else "\n%d COINS" % int(item[2]))), Vector2(280, 105), owned)
 		button.disabled = owned
 		button.pressed.connect(_buy_decoration.bind(id, int(item[2])))
 		shop.add_child(button)
 
 func rescue_garden_text() -> String:
 	if SaveManager.data.rescued.is_empty():
-		return "🌱\nYour first friend is waiting to be rescued."
-	var icons := []
+		return "Your first friend is waiting to be rescued."
+	var names := []
 	for id in SaveManager.data.rescued:
-		match String(id):
-			"puppy": icons.append("🐶")
-			"kitten": icons.append("🐱")
-			"robot": icons.append("🤖")
-			"slime": icons.append("🟢")
-			"panda": icons.append("🐼")
-			"fox": icons.append("🦊")
-			"alien": icons.append("👽")
-			_: icons.append("🐥")
-	return "  ".join(icons)
+		names.append(String(id).capitalize())
+	return "RESCUED FRIENDS\n" + "  •  ".join(names)
 
 func decoration_text() -> String:
-	var icons := []
+	if SaveManager.data.decorations.is_empty():
+		return "Build a home worthy of your rescued crew."
+	var names := []
 	for id in SaveManager.data.decorations:
-		match String(id):
-			"tree": icons.append("🌳")
-			"bench": icons.append("🪑")
-			"fountain": icons.append("⛲")
-	return "  ".join(icons) if not icons.is_empty() else ""
+		names.append(String(id).capitalize())
+	return "GARDEN: " + "  •  ".join(names)
 
 func _buy_decoration(id: String, cost: int) -> void:
 	if SaveManager.unlock_decoration(id, cost):
 		FeedbackManager.effect()
+		PremiumVisuals.burst(Vector2(540, 1100), Color("2dd4b6"), 20)
 		build_collection()
 
 func build_settings() -> void:
@@ -368,7 +419,7 @@ func build_settings() -> void:
 		button.pressed.connect(_toggle_setting.bind(key))
 		box.add_child(button)
 	var info := Label.new()
-	info.text = "Progress is saved automatically on this device.\nHints used: %d   •   Undos used: %d" % [int(SaveManager.data.hints_used), int(SaveManager.data.undos_used)]
+	info.text = "Progress saves automatically.\nHints %d   •   Undos %d   •   Perfect clears %d\nPrestige %d   •   Achievement points %d" % [int(SaveManager.data.hints_used), int(SaveManager.data.undos_used), int(SaveManager.data.perfect_clears), int(SaveManager.data.prestige_points), int(SaveManager.data.achievement_points)]
 	info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	info.add_theme_font_size_override("font_size", 20)
