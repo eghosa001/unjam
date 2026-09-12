@@ -77,7 +77,7 @@ static func _apply_move(source: Array, index: int, rescue: Vector2i, width: int,
 static func _resolve_cascades(pieces: Array, previous_legal: Dictionary, rescue: Vector2i, width: int, height: int) -> void:
 	var baseline: Dictionary = previous_legal.duplicate()
 	var guard: int = 0
-	var max_steps: int = max(8, pieces.size() * 2)
+	var max_steps: int = maxi(8, pieces.size() * 2)
 	while guard < max_steps:
 		guard += 1
 		var newly_opened: Array[int] = []
