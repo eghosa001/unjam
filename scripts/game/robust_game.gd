@@ -1,6 +1,11 @@
 extends "res://scripts/game/game.gd"
 
 var hints_used_this_level := 0
+var checkpoint_restored := false
+
+func _ready() -> void:
+	super._ready()
+	_restore_checkpoint()
 
 func try_move(index: int) -> void:
 	if board_locked:
@@ -25,6 +30,7 @@ func try_move(index: int) -> void:
 	await resolve_rescue()
 	if not rescued:
 		render_board()
+		_save_checkpoint()
 	board_locked = false
 
 func _legal_map() -> Dictionary:
@@ -36,7 +42,7 @@ func _legal_map() -> Dictionary:
 func _resolve_cascades(previous_legal: Dictionary) -> void:
 	var baseline: Dictionary = previous_legal.duplicate()
 	var guard: int = 0
-	var max_steps: int = max(8, pieces.size() * 2)
+	var max_steps: int = maxi(8, pieces.size() * 2)
 	while guard < max_steps:
 		guard += 1
 		var newly_opened: Array[int] = []
@@ -69,6 +75,7 @@ func complete_level() -> void:
 	if moves > par_moves + 3:
 		stars = 1
 	completion_rewards = {}
+	_clear_checkpoint(false)
 	if daily_mode:
 		SaveManager.complete_daily(String(level_data.get("daily_key", DailyChallenge.date_key())), 100)
 	else:
@@ -101,6 +108,7 @@ func show_hint() -> void:
 		var column := int(p.get("x", 0)) + 1
 		var type := String(p.get("type", "normal")).capitalize()
 		hint_label.text = "Solution hint: move the %s at row %d, column %d." % [type, row, column]
+		_save_checkpoint()
 		return
 	if rescue_has_exit():
 		hint_label.text = "The rescue route is open — make any valid finishing move."
@@ -121,9 +129,11 @@ func undo_move() -> void:
 		return
 	super.undo_move()
 	AnalyticsManager.undo_used(level_number)
+	_save_checkpoint()
 
 func restart_level() -> void:
 	AnalyticsManager.level_restarted(level_number)
+	_clear_checkpoint(true)
 	var replacement := load("res://scenes/Game.tscn").instantiate()
 	replacement.level_number = level_number
 	replacement.custom_level_data = custom_level_data.duplicate(true)
@@ -132,3 +142,51 @@ func restart_level() -> void:
 	replacement.quit_requested.connect(func(): quit_requested.emit())
 	get_parent().add_child(replacement)
 	queue_free()
+
+func _save_checkpoint() -> void:
+	if rescued or level_data.is_empty():
+		return
+	SaveManager.data["active_run"] = {
+		"level": level_number,
+		"daily": daily_mode,
+		"daily_key": String(level_data.get("daily_key", "")),
+		"level_data": level_data.duplicate(true) if daily_mode else {},
+		"pieces": pieces.duplicate(true),
+		"moves": moves,
+		"chain": chain_count,
+		"hints": hints_used_this_level,
+		"saved_at": int(Time.get_unix_time_from_system())
+	}
+	SaveManager.save()
+
+func _restore_checkpoint() -> void:
+	var raw = SaveManager.data.get("active_run", {})
+	if not raw is Dictionary or raw.is_empty():
+		return
+	var checkpoint: Dictionary = raw
+	if int(checkpoint.get("level", -999)) != level_number or bool(checkpoint.get("daily", false)) != daily_mode:
+		return
+	if daily_mode and String(checkpoint.get("daily_key", "")) != String(level_data.get("daily_key", "")):
+		return
+	var restored_pieces = checkpoint.get("pieces", [])
+	if not restored_pieces is Array or restored_pieces.size() != pieces.size():
+		return
+	var clean: Array[Dictionary] = []
+	for raw_piece in restored_pieces:
+		if not raw_piece is Dictionary:
+			return
+		clean.append(raw_piece.duplicate(true))
+	pieces = clean
+	moves = maxi(0, int(checkpoint.get("moves", 0)))
+	chain_count = maxi(0, int(checkpoint.get("chain", 0)))
+	hints_used_this_level = maxi(0, int(checkpoint.get("hints", 0)))
+	history.clear()
+	checkpoint_restored = true
+	render_board()
+	hint_label.text = "Rescue restored from your last checkpoint."
+	AnalyticsManager.track("level_resume", {"level": level_number, "daily": daily_mode, "moves": moves})
+
+func _clear_checkpoint(save_now: bool = true) -> void:
+	SaveManager.data["active_run"] = {}
+	if save_now:
+		SaveManager.save()
