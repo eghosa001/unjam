@@ -1,5 +1,7 @@
 extends Node
 
+signal premium_reward(reward: Dictionary)
+
 const SAVE_PATH := "user://unjam_save.json"
 const DEFAULT_DATA := {
 	"highest_level": 1,
@@ -58,7 +60,15 @@ func save() -> void:
 		file.store_string(JSON.stringify(data))
 
 func complete_level(level_number: int, stars: int, rescue_id: String, coin_reward: int = 25) -> Dictionary:
-	var rewards := {"perfect": false, "milestone": false, "world_badge": false, "bonus_coins": 0, "prestige": 0}
+	var rewards := {
+		"perfect": false,
+		"perfect_streak": 0,
+		"milestone": false,
+		"world_badge": false,
+		"world": 0,
+		"bonus_coins": 0,
+		"prestige": 0
+	}
 	var key := str(level_number)
 	var previous_stars := int(data.stars.get(key, 0))
 	data.stars[key] = max(previous_stars, stars)
@@ -74,6 +84,7 @@ func complete_level(level_number: int, stars: int, rescue_id: String, coin_rewar
 		data.perfect_clears = int(data.perfect_clears) + 1
 		data.perfect_streak = int(data.perfect_streak) + 1
 		data.best_perfect_streak = max(int(data.best_perfect_streak), int(data.perfect_streak))
+		rewards.perfect_streak = int(data.perfect_streak)
 		if int(data.perfect_streak) % 5 == 0:
 			rewards.bonus_coins = 50
 			rewards.prestige = 1
@@ -96,12 +107,15 @@ func complete_level(level_number: int, stars: int, rescue_id: String, coin_rewar
 		if not badge_key in data.world_badges:
 			data.world_badges.append(badge_key)
 			rewards.world_badge = true
+			rewards.world = world
 			rewards.prestige = int(rewards.prestige) + 5
 			data.prestige_points = int(data.prestige_points) + 5
 			data.coins = int(data.coins) + 250
 			rewards.bonus_coins = int(rewards.bonus_coins) + 250
 
 	save()
+	if bool(rewards.perfect) or bool(rewards.milestone) or bool(rewards.world_badge) or int(rewards.prestige) > 0:
+		premium_reward.emit(rewards)
 	return rewards
 
 func get_stars(level_number: int) -> int:
