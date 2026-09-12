@@ -1,8 +1,10 @@
 extends Control
 
 var content: Control
+var selected_world := 1
 
 func _ready() -> void:
+	selected_world = LevelManager.highest_unlocked_world()
 	build_home()
 
 func clear_content() -> void:
@@ -94,7 +96,7 @@ func build_home() -> void:
 	stats_panel.add_child(stats)
 
 	var play := make_button("PLAY CAMPAIGN", Vector2(520, 96), true)
-	play.pressed.connect(build_level_select)
+	play.pressed.connect(func(): selected_world = LevelManager.highest_unlocked_world(); build_level_select())
 	box.add_child(play)
 
 	var daily_text := "DAILY RESCUE  •  " + DailyChallenge.reward_text()
@@ -118,27 +120,29 @@ func build_home() -> void:
 	box.add_child(streak)
 
 func build_level_select() -> void:
+	selected_world = clamp(selected_world, 1, LevelManager.WORLD_COUNT)
 	clear_content()
 	add_background()
 	var margin := MarginContainer.new()
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	margin.add_theme_constant_override("margin_left", 55)
 	margin.add_theme_constant_override("margin_right", 55)
-	margin.add_theme_constant_override("margin_top", 65)
-	margin.add_theme_constant_override("margin_bottom", 65)
+	margin.add_theme_constant_override("margin_top", 55)
+	margin.add_theme_constant_override("margin_bottom", 55)
 	content.add_child(margin)
 	var root := VBoxContainer.new()
-	root.add_theme_constant_override("separation", 20)
+	root.add_theme_constant_override("separation", 16)
 	margin.add_child(root)
+
 	var header := HBoxContainer.new()
 	var back := make_button("←", Vector2(94, 68))
 	back.pressed.connect(build_home)
 	header.add_child(back)
 	var label := Label.new()
-	label.text = "RESCUE CAMPAIGN"
+	label.text = "WORLD %d / %d" % [selected_world, LevelManager.WORLD_COUNT]
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 34)
+	label.add_theme_font_size_override("font_size", 32)
 	header.add_child(label)
 	var stars := Label.new()
 	stars.text = "%d ★" % SaveManager.total_stars()
@@ -148,40 +152,64 @@ func build_level_select() -> void:
 	header.add_child(stars)
 	root.add_child(header)
 
+	var world_title := Label.new()
+	world_title.text = LevelManager.world_name(selected_world).to_upper()
+	world_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	world_title.add_theme_font_size_override("font_size", 24)
+	world_title.add_theme_color_override("font_color", Color("67e8cf"))
+	root.add_child(world_title)
+
+	var nav := HBoxContainer.new()
+	nav.alignment = BoxContainer.ALIGNMENT_CENTER
+	nav.add_theme_constant_override("separation", 16)
+	var previous := make_button("◀ PREV WORLD", Vector2(250, 66))
+	previous.disabled = selected_world <= 1
+	previous.pressed.connect(_change_world.bind(-1))
+	nav.add_child(previous)
+	var jump := make_button("CURRENT", Vector2(210, 66), true)
+	jump.pressed.connect(_jump_to_current_world)
+	nav.add_child(jump)
+	var next := make_button("NEXT WORLD ▶", Vector2(250, 66))
+	next.disabled = selected_world >= LevelManager.WORLD_COUNT or selected_world >= LevelManager.highest_unlocked_world() + 1
+	next.pressed.connect(_change_world.bind(1))
+	nav.add_child(next)
+	root.add_child(nav)
+
+	var range_label := Label.new()
+	range_label.text = "LEVELS %d–%d" % [LevelManager.first_level_in_world(selected_world), LevelManager.last_level_in_world(selected_world)]
+	range_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	range_label.add_theme_font_size_override("font_size", 18)
+	range_label.modulate = Color("95a4bb")
+	root.add_child(range_label)
+
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(scroll)
-	var worlds := VBoxContainer.new()
-	worlds.add_theme_constant_override("separation", 30)
-	scroll.add_child(worlds)
+	var grid := GridContainer.new()
+	grid.columns = 5
+	grid.add_theme_constant_override("h_separation", 12)
+	grid.add_theme_constant_override("v_separation", 12)
+	scroll.add_child(grid)
 
-	for world in range(1, 7):
-		var world_panel := PanelContainer.new()
-		world_panel.add_theme_stylebox_override("panel", style_box(Color(0.04,0.075,0.14,0.92), 30, Color(1,1,1,0.07), 2))
-		worlds.add_child(world_panel)
-		var world_box := VBoxContainer.new()
-		world_box.add_theme_constant_override("separation", 16)
-		world_panel.add_child(world_box)
-		var world_title := Label.new()
-		world_title.text = "WORLD %d  •  %s" % [world, LevelManager.world_name(world).to_upper()]
-		world_title.add_theme_font_size_override("font_size", 25)
-		world_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		world_box.add_child(world_title)
-		var grid := GridContainer.new()
-		grid.columns = 5
-		grid.add_theme_constant_override("h_separation", 12)
-		grid.add_theme_constant_override("v_separation", 12)
-		world_box.add_child(grid)
-		for n in range(10):
-			var level_number := (world - 1) * 10 + n + 1
-			var unlocked := SaveManager.is_level_unlocked(level_number)
-			var level_stars := SaveManager.get_stars(level_number)
-			var text := "%02d\n%s" % [level_number, "★".repeat(level_stars)]
-			var button := make_button(text, Vector2(160, 112), level_number == int(SaveManager.data.highest_level))
-			button.disabled = not unlocked
-			button.add_theme_font_size_override("font_size", 22)
-			button.pressed.connect(start_level.bind(level_number))
-			grid.add_child(button)
+	var first := LevelManager.first_level_in_world(selected_world)
+	var last := LevelManager.last_level_in_world(selected_world)
+	for level_number in range(first, last + 1):
+		var unlocked := SaveManager.is_level_unlocked(level_number)
+		var level_stars := SaveManager.get_stars(level_number)
+		var text := "%d\n%s" % [level_number, "★".repeat(level_stars)]
+		var button := make_button(text, Vector2(170, 104), level_number == int(SaveManager.data.highest_level))
+		button.disabled = not unlocked
+		button.add_theme_font_size_override("font_size", 20)
+		button.pressed.connect(start_level.bind(level_number))
+		grid.add_child(button)
+
+func _change_world(delta: int) -> void:
+	selected_world = clamp(selected_world + delta, 1, LevelManager.WORLD_COUNT)
+	build_level_select()
+
+func _jump_to_current_world() -> void:
+	selected_world = LevelManager.highest_unlocked_world()
+	build_level_select()
 
 func start_level(level_number: int) -> void:
 	if content:
@@ -218,7 +246,8 @@ func _on_game_finished(completed_level: int) -> void:
 		content.visible = true
 
 func _on_game_quit() -> void:
-	build_home()
+	selected_world = LevelManager.highest_unlocked_world()
+	build_level_select()
 	content.visible = true
 
 func build_collection() -> void:
