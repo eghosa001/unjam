@@ -94,6 +94,7 @@ func refresh() -> void:
 	build_streak(body)
 	build_weekly(body)
 	build_season(body)
+	build_achievements(body)
 	build_event_shop(body)
 	build_collection(body)
 
@@ -160,7 +161,7 @@ func build_missions(parent: VBoxContainer) -> void:
 func build_streak(parent: VBoxContainer) -> void:
 	var current := int(SaveManager.data.win_streak)
 	var best := int(SaveManager.data.best_win_streak)
-	var box := section(parent, "WIN-STREAK RUSH", "Consecutive rescues increase status rewards. A failed/restarted challenge can reset event streaks later when lives are enabled.")
+	var box := section(parent, "WIN-STREAK RUSH", "Consecutive campaign rescues unlock escalating bonus chests.")
 	var label := Label.new()
 	label.text = "CURRENT  %d   •   BEST  %d   •   CHESTS AT 3 / 5 / 10 / 15 / 25" % [current, best]
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -170,7 +171,7 @@ func build_streak(parent: VBoxContainer) -> void:
 func build_weekly(parent: VBoxContainer) -> void:
 	var rank := RetentionManager.weekly_rank()
 	var points := int(SaveManager.data.weekly_points)
-	var box := section(parent, "WEEKLY RESCUE LEAGUE", "Offline seeded rivals now; ready to swap to a real backend leaderboard later.")
+	var box := section(parent, "WEEKLY RESCUE LEAGUE", "Seeded offline rivals keep the ladder active now; the scoring layer is ready for a backend leaderboard later.")
 	var headline := Label.new()
 	headline.text = "YOUR RANK  #%d   •   %d POINTS" % [rank, points]
 	headline.add_theme_font_size_override("font_size", 22)
@@ -191,7 +192,7 @@ func build_weekly(parent: VBoxContainer) -> void:
 
 func build_season(parent: VBoxContainer) -> void:
 	var points := int(SaveManager.data.season_points)
-	var box := section(parent, "SEASON JOURNEY", "A two-month free progression track. No premium pass required for the core rewards.")
+	var box := section(parent, "SEASON JOURNEY", "A two-month free progression track with coins and event currency.")
 	var headline := Label.new()
 	headline.text = "SEASON SCORE  %d" % points
 	headline.add_theme_font_size_override("font_size", 22)
@@ -202,8 +203,19 @@ func build_season(parent: VBoxContainer) -> void:
 		claim.pressed.connect(func(idx = i): RetentionManager.claim_season_tier(idx))
 		box.add_child(claim)
 
+func build_achievements(parent: VBoxContainer) -> void:
+	var box := section(parent, "ACHIEVEMENT VAULT", "Major accomplishments unlock claimable coin rewards in addition to prestige and achievement points.")
+	for id in RetentionManager.ACHIEVEMENT_REWARDS:
+		var reward: Dictionary = RetentionManager.ACHIEVEMENT_REWARDS[id]
+		var unlocked := id in SaveManager.data.achievements
+		var claimed := id in SaveManager.data.achievement_reward_claimed
+		var b := make_button("%s  •  %d COINS%s" % [String(reward.title), int(reward.coins), "  CLAIMED" if claimed else ("  LOCKED" if not unlocked else "")], unlocked and not claimed)
+		b.disabled = not unlocked or claimed
+		b.pressed.connect(func(key = String(id)): RetentionManager.claim_achievement_reward(key))
+		box.add_child(b)
+
 func build_event_shop(parent: VBoxContainer) -> void:
-	var box := section(parent, "LIMITED EVENT SHOP", "Earn ◆ from missions and normal campaign play. Event cosmetics do not block progression.")
+	var box := section(parent, "LIMITED EVENT SHOP", "Earn ◆ from missions and normal campaign play. Event cosmetics never block progression.")
 	for item in RetentionManager.event_shop():
 		var owned := String(item.id) in SaveManager.data.event_shop_owned
 		var b := make_button("%s  •  %d ◆%s" % [String(item.title), int(item.cost), "  OWNED" if owned else ""])
