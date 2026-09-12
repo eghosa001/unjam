@@ -69,6 +69,40 @@ static func _apply_move(source: Array, index: int, rescue: Vector2i, width: int,
 	var pieces: Array = source.duplicate(true)
 	if index < 0 or index >= pieces.size():
 		return pieces
+	var legal_before: Dictionary = _legal_map(pieces, rescue, width, height)
+	_escape_once(pieces, index, rescue, width, height)
+	_resolve_cascades(pieces, legal_before, rescue, width, height)
+	return pieces
+
+static func _resolve_cascades(pieces: Array, previous_legal: Dictionary, rescue: Vector2i, width: int, height: int) -> void:
+	var baseline: Dictionary = previous_legal.duplicate()
+	var guard: int = 0
+	var max_steps: int = max(8, pieces.size() * 2)
+	while guard < max_steps:
+		guard += 1
+		var newly_opened: Array[int] = []
+		for i in range(pieces.size()):
+			if not bool(pieces[i].get("active", true)):
+				continue
+			if _path_clear(pieces, i, rescue, width, height) and not bool(baseline.get(i, false)):
+				newly_opened.append(i)
+		if newly_opened.is_empty():
+			return
+		var before_batch: Dictionary = _legal_map(pieces, rescue, width, height)
+		for index in newly_opened:
+			if index >= 0 and index < pieces.size() and bool(pieces[index].get("active", true)) and _path_clear(pieces, index, rescue, width, height):
+				_escape_once(pieces, index, rescue, width, height)
+		baseline = before_batch
+
+static func _legal_map(pieces: Array, rescue: Vector2i, width: int, height: int) -> Dictionary:
+	var result: Dictionary = {}
+	for i in range(pieces.size()):
+		result[i] = _path_clear(pieces, i, rescue, width, height)
+	return result
+
+static func _escape_once(pieces: Array, index: int, rescue: Vector2i, width: int, height: int) -> void:
+	if index < 0 or index >= pieces.size() or not bool(pieces[index].get("active", true)):
+		return
 	var piece: Dictionary = pieces[index]
 	pieces[index]["active"] = false
 	var type := String(piece.get("type", "normal"))
@@ -81,7 +115,6 @@ static func _apply_move(source: Array, index: int, rescue: Vector2i, width: int,
 			_explode(pieces, _piece_pos(piece))
 		"linked":
 			_activate_link(pieces, String(piece.get("link_id", "")), index, rescue, width, height)
-	return pieces
 
 static func _path_clear(pieces: Array, index: int, rescue: Vector2i, width: int, height: int) -> bool:
 	if index < 0 or index >= pieces.size():
