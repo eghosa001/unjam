@@ -35,6 +35,8 @@ jobs:
         run: godot --headless --path . --script res://tests/validate_levels.gd
       - name: Validate campaign
         run: godot --headless --path . --script res://tests/validate_campaign.gd
+      - name: Validate retention systems
+        run: godot --headless --path . --script res://tests/validate_retention.gd
       - name: Parse and boot smoke test
         shell: bash
         run: |
