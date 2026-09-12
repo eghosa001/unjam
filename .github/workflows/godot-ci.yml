@@ -15,6 +15,7 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - name: Setup Godot
@@ -33,16 +34,18 @@ jobs:
           fi
       - name: Validate handcrafted levels
         run: godot --headless --path . --script res://tests/validate_levels.gd
-      - name: Validate campaign
+      - name: Validate campaign structure pacing and solvability
         run: godot --headless --path . --script res://tests/validate_campaign.gd
       - name: Validate retention systems
         run: godot --headless --path . --script res://tests/validate_retention.gd
+      - name: Validate production robustness
+        run: godot --headless --path . --script res://tests/validate_robustness.gd
       - name: Parse and boot smoke test
         shell: bash
         run: |
           set -o pipefail
           godot --headless --path . --quit-after 5 2>&1 | tee boot.log
-          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed" boot.log; then
-            echo "Godot runtime script errors detected."
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" boot.log; then
+            echo "Godot runtime errors detected."
             exit 1
           fi
