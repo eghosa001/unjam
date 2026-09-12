@@ -29,6 +29,10 @@ func start_level(level_number: int) -> void:
 	super.start_level(level_number)
 
 func start_daily() -> void:
+	if DailyChallenge.is_completed_today():
+		current_surface = "home"
+		super.start_daily()
+		return
 	current_surface = "game"
 	super.start_daily()
 
@@ -36,8 +40,10 @@ func _on_game_finished(completed_level: int) -> void:
 	super._on_game_finished(completed_level)
 	if completed_level < 0:
 		current_surface = "home"
-	else:
+	elif LevelManager.has_level(completed_level + 1):
 		current_surface = "game"
+	else:
+		current_surface = "home"
 
 func _on_game_quit() -> void:
 	current_surface = "levels"
@@ -94,7 +100,9 @@ func _resume_checkpoint() -> void:
 	game_scene.level_number = int(checkpoint.get("level", 1))
 	game_scene.daily_mode = bool(checkpoint.get("daily", false))
 	if game_scene.daily_mode:
-		game_scene.custom_level_data = Dictionary(checkpoint.get("level_data", {})).duplicate(true)
+		var custom = checkpoint.get("level_data", {})
+		if custom is Dictionary:
+			game_scene.custom_level_data = custom.duplicate(true)
 	game_scene.finished.connect(_on_game_finished)
 	game_scene.quit_requested.connect(_on_game_quit)
 	add_child(game_scene)
