@@ -4,6 +4,8 @@ signal finished(level_number: int)
 signal quit_requested
 
 var level_number := 1
+var custom_level_data: Dictionary = {}
+var daily_mode := false
 var level_data: Dictionary = {}
 var width := 5
 var height := 5
@@ -15,12 +17,14 @@ var rescued := false
 var pieces: Array[Dictionary] = []
 var history: Array[Dictionary] = []
 var chain_count := 0
+var board_locked := false
 
 var board_grid: GridContainer
 var moves_label: Label
 var chain_label: Label
 var rescue_label: Label
 var hint_label: Label
+var board_panel: PanelContainer
 
 const DIRECTIONS := {
 	"up": Vector2i.UP,
@@ -29,9 +33,10 @@ const DIRECTIONS := {
 	"right": Vector2i.RIGHT
 }
 const ARROWS := {"up":"↑", "down":"↓", "left":"←", "right":"→"}
+const WORLD_COLORS := ["182848", "163a5f", "273469", "522546", "214d3f", "4b2e63"]
 
 func _ready() -> void:
-	level_data = LevelManager.load_level(level_number)
+	level_data = custom_level_data.duplicate(true) if not custom_level_data.is_empty() else LevelManager.load_level(level_number)
 	if level_data.is_empty():
 		quit_requested.emit()
 		queue_free()
@@ -47,37 +52,73 @@ func _ready() -> void:
 		var p: Dictionary = raw_piece.duplicate(true)
 		p["active"] = bool(p.get("active", true))
 		pieces.append(p)
+	AnalyticsManager.level_started(level_number)
 	build_ui()
 	render_board()
 
+func world_color() -> Color:
+	var world := int(level_data.get("world", LevelManager.world_for_level(max(level_number, 1))))
+	return Color(WORLD_COLORS[clamp(world - 1, 0, WORLD_COLORS.size() - 1)])
+
+func style_box(color: Color, radius := 24, border_color := Color.TRANSPARENT, border_width := 0) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = color
+	style.corner_radius_top_left = radius
+	style.corner_radius_top_right = radius
+	style.corner_radius_bottom_left = radius
+	style.corner_radius_bottom_right = radius
+	if border_width > 0:
+		style.border_width_left = border_width
+		style.border_width_right = border_width
+		style.border_width_top = border_width
+		style.border_width_bottom = border_width
+		style.border_color = border_color
+	return style
+
+func style_button(button: Button, accent := false) -> void:
+	var base := Color("263b62") if not accent else Color("21c7a8")
+	button.add_theme_stylebox_override("normal", style_box(base, 22))
+	button.add_theme_stylebox_override("hover", style_box(base.lightened(0.08), 22))
+	button.add_theme_stylebox_override("pressed", style_box(base.darkened(0.10), 22))
+	button.add_theme_stylebox_override("disabled", style_box(Color("273044"), 22))
+	button.add_theme_color_override("font_color", Color.WHITE)
+	button.add_theme_color_override("font_disabled_color", Color("7f899b"))
+
 func build_ui() -> void:
 	var bg := ColorRect.new()
-	bg.color = Color("0a1327")
+	bg.color = world_color().darkened(0.52)
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
+	var glow := ColorRect.new()
+	glow.color = Color(world_color(), 0.30)
+	glow.position = Vector2(0, 250)
+	glow.size = Vector2(1080, 560)
+	add_child(glow)
+
 	var outer := MarginContainer.new()
 	outer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	outer.add_theme_constant_override("margin_left", 50)
-	outer.add_theme_constant_override("margin_right", 50)
-	outer.add_theme_constant_override("margin_top", 70)
-	outer.add_theme_constant_override("margin_bottom", 70)
+	outer.add_theme_constant_override("margin_left", 42)
+	outer.add_theme_constant_override("margin_right", 42)
+	outer.add_theme_constant_override("margin_top", 58)
+	outer.add_theme_constant_override("margin_bottom", 58)
 	add_child(outer)
 
 	var root := VBoxContainer.new()
-	root.add_theme_constant_override("separation", 24)
+	root.add_theme_constant_override("separation", 22)
 	outer.add_child(root)
 
 	var top := HBoxContainer.new()
 	var quit := Button.new()
 	quit.text = "←"
-	quit.custom_minimum_size = Vector2(90, 70)
+	quit.custom_minimum_size = Vector2(88, 70)
 	quit.add_theme_font_size_override("font_size", 32)
+	style_button(quit)
 	quit.pressed.connect(_quit)
 	top.add_child(quit)
 
 	var title := Label.new()
-	title.text = "LEVEL %02d" % level_number
+	title.text = "DAILY RESCUE" if daily_mode else "LEVEL %02d" % level_number
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 34)
@@ -85,86 +126,139 @@ func build_ui() -> void:
 
 	var restart := Button.new()
 	restart.text = "↻"
-	restart.custom_minimum_size = Vector2(90, 70)
+	restart.custom_minimum_size = Vector2(88, 70)
 	restart.add_theme_font_size_override("font_size", 32)
+	style_button(restart)
 	restart.pressed.connect(restart_level)
 	top.add_child(restart)
 	root.add_child(top)
 
+	var subtitle := Label.new()
+	var world := int(level_data.get("world", 1))
+	subtitle.text = "TODAY'S CHALLENGE" if daily_mode else LevelManager.world_name(world).to_upper()
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.add_theme_font_size_override("font_size", 20)
+	subtitle.modulate = Color("aebbd0")
+	root.add_child(subtitle)
+
+	var status_panel := PanelContainer.new()
+	status_panel.add_theme_stylebox_override("panel", style_box(Color(0.04, 0.08, 0.15, 0.82), 24, Color(1,1,1,0.08), 2))
+	root.add_child(status_panel)
 	var status := HBoxContainer.new()
+	status.add_theme_constant_override("separation", 16)
+	status_panel.add_child(status)
 	moves_label = Label.new()
 	moves_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	moves_label.add_theme_font_size_override("font_size", 24)
+	moves_label.add_theme_font_size_override("font_size", 23)
 	status.add_child(moves_label)
 	rescue_label = Label.new()
 	rescue_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	rescue_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	rescue_label.add_theme_font_size_override("font_size", 24)
+	rescue_label.add_theme_font_size_override("font_size", 23)
 	status.add_child(rescue_label)
 	chain_label = Label.new()
 	chain_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	chain_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	chain_label.add_theme_font_size_override("font_size", 24)
+	chain_label.add_theme_font_size_override("font_size", 23)
+	chain_label.add_theme_color_override("font_color", Color("ffd166"))
 	status.add_child(chain_label)
-	root.add_child(status)
 
 	var board_holder := CenterContainer.new()
 	board_holder.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(board_holder)
+	board_panel = PanelContainer.new()
+	board_panel.add_theme_stylebox_override("panel", style_box(Color(0.03, 0.055, 0.11, 0.94), 34, Color(1,1,1,0.10), 2))
+	board_holder.add_child(board_panel)
+	var board_margin := MarginContainer.new()
+	board_margin.add_theme_constant_override("margin_left", 24)
+	board_margin.add_theme_constant_override("margin_right", 24)
+	board_margin.add_theme_constant_override("margin_top", 24)
+	board_margin.add_theme_constant_override("margin_bottom", 24)
+	board_panel.add_child(board_margin)
 	board_grid = GridContainer.new()
 	board_grid.columns = width
 	board_grid.add_theme_constant_override("h_separation", 10)
 	board_grid.add_theme_constant_override("v_separation", 10)
-	board_holder.add_child(board_grid)
+	board_margin.add_child(board_grid)
 
 	var actions := HBoxContainer.new()
 	actions.alignment = BoxContainer.ALIGNMENT_CENTER
-	actions.add_theme_constant_override("separation", 24)
+	actions.add_theme_constant_override("separation", 20)
 	var undo := Button.new()
-	undo.text = "UNDO"
-	undo.custom_minimum_size = Vector2(260, 82)
-	undo.add_theme_font_size_override("font_size", 24)
+	undo.text = "↶  UNDO"
+	undo.custom_minimum_size = Vector2(250, 82)
+	undo.add_theme_font_size_override("font_size", 23)
+	style_button(undo)
 	undo.pressed.connect(undo_move)
 	actions.add_child(undo)
 	var hint := Button.new()
-	hint.text = "HINT"
-	hint.custom_minimum_size = Vector2(260, 82)
-	hint.add_theme_font_size_override("font_size", 24)
+	hint.text = "✦  HINT"
+	hint.custom_minimum_size = Vector2(250, 82)
+	hint.add_theme_font_size_override("font_size", 23)
+	style_button(hint, true)
 	hint.pressed.connect(show_hint)
 	actions.add_child(hint)
 	root.add_child(actions)
 
 	hint_label = Label.new()
 	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint_label.add_theme_font_size_override("font_size", 21)
+	hint_label.add_theme_font_size_override("font_size", 20)
+	hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint_label.custom_minimum_size = Vector2(0, 54)
 	root.add_child(hint_label)
 
 func render_board() -> void:
 	for child in board_grid.get_children():
 		child.queue_free()
 	moves_label.text = "MOVES  %d / %d" % [moves, par_moves]
-	rescue_label.text = ("SAFE! " if rescued else "RESCUE ") + rescue_id.capitalize()
-	chain_label.text = "CHAIN x%d" % chain_count if chain_count > 1 else ""
+	rescue_label.text = rescue_icon() + "  " + ("SAFE" if rescued else rescue_id.to_upper())
+	chain_label.text = "CHAIN ×%d" % chain_count if chain_count > 1 else ""
+	var cell_size := 142 if width <= 5 else 116
 
 	for y in range(height):
 		for x in range(width):
 			var pos := Vector2i(x, y)
 			var button := Button.new()
-			button.custom_minimum_size = Vector2(150, 150)
-			button.add_theme_font_size_override("font_size", 46)
+			button.custom_minimum_size = Vector2(cell_size, cell_size)
+			button.add_theme_font_size_override("font_size", 38 if width <= 5 else 30)
 			var piece_index := get_piece_index_at(pos)
 			if not rescued and pos == rescue_pos:
 				button.text = rescue_icon()
 				button.disabled = true
+				button.add_theme_stylebox_override("disabled", style_box(Color("f4c95d"), 28, Color("fff1b3"), 3))
 			elif piece_index >= 0:
 				var piece := pieces[piece_index]
 				button.text = piece_text(piece)
 				button.tooltip_text = String(piece.get("type", "normal")).capitalize()
+				style_piece_button(button, piece)
 				button.pressed.connect(try_move.bind(piece_index))
 			else:
-				button.text = "·"
+				button.text = ""
 				button.disabled = true
+				button.add_theme_stylebox_override("disabled", style_box(Color(1,1,1,0.035), 24))
 			board_grid.add_child(button)
+			button.modulate.a = 0.0
+			button.scale = Vector2(0.92, 0.92)
+			button.pivot_offset = button.custom_minimum_size / 2.0
+			var tween := create_tween()
+			tween.set_parallel(true)
+			tween.tween_property(button, "modulate:a", 1.0, 0.11).set_delay(float(x + y) * 0.006)
+			tween.tween_property(button, "scale", Vector2.ONE, 0.13).set_delay(float(x + y) * 0.006)
+
+func style_piece_button(button: Button, piece: Dictionary) -> void:
+	var type := String(piece.get("type", "normal"))
+	var color := Color("2f5f91")
+	match type:
+		"rotate": color = Color("7656c9")
+		"key": color = Color("d89b36")
+		"gate": color = Color("754668")
+		"bomb": color = Color("c4534c")
+		"linked": color = Color("2b9e91")
+		"blocker": color = Color("343b4a")
+	button.add_theme_stylebox_override("normal", style_box(color, 26, color.lightened(0.22), 2))
+	button.add_theme_stylebox_override("hover", style_box(color.lightened(0.10), 26, Color.WHITE, 2))
+	button.add_theme_stylebox_override("pressed", style_box(color.darkened(0.12), 26, Color.WHITE, 3))
+	button.add_theme_stylebox_override("disabled", style_box(color.darkened(0.30), 26))
 
 func rescue_icon() -> String:
 	match rescue_id:
@@ -183,7 +277,7 @@ func piece_text(piece: Dictionary) -> String:
 	var arrow := String(ARROWS.get(direction, "→"))
 	match type:
 		"rotate": return "⟳" + arrow
-		"key": return "🔑" + arrow
+		"key": return "◆" + arrow
 		"gate": return "▣"
 		"bomb": return "✹" + arrow
 		"linked": return "◇" + arrow
@@ -228,17 +322,35 @@ func snapshot() -> Dictionary:
 	return {"pieces": pieces.duplicate(true), "moves": moves, "rescued": rescued, "chain": chain_count}
 
 func try_move(index: int) -> void:
+	if board_locked:
+		return
 	hint_label.text = ""
 	if not is_path_clear(index):
 		chain_count = 0
 		hint_label.text = "Blocked — clear its path first."
+		FeedbackManager.blocked()
+		shake_board()
 		return
+	board_locked = true
 	history.append(snapshot())
 	moves += 1
 	chain_count = 1
+	FeedbackManager.escape(chain_count)
 	escape_piece(index, true)
+	await get_tree().create_timer(0.08).timeout
 	resolve_rescue()
-	render_board()
+	if not rescued:
+		render_board()
+	board_locked = false
+
+func shake_board() -> void:
+	if board_panel == null:
+		return
+	var start := board_panel.position
+	var tween := create_tween()
+	tween.tween_property(board_panel, "position", start + Vector2(12, 0), 0.035)
+	tween.tween_property(board_panel, "position", start - Vector2(10, 0), 0.035)
+	tween.tween_property(board_panel, "position", start, 0.04)
 
 func escape_piece(index: int, trigger_effect: bool) -> void:
 	if index < 0 or index >= pieces.size() or not bool(pieces[index].get("active", true)):
@@ -252,6 +364,8 @@ func escape_piece(index: int, trigger_effect: bool) -> void:
 		"key": open_gates(String(piece.get("key_id", "default")))
 		"bomb": explode_at(piece_position(piece))
 		"linked": activate_link(String(piece.get("link_id", "")), index)
+	if chain_count > 1:
+		FeedbackManager.effect()
 
 func rotate_neighbors(center: Vector2i) -> void:
 	for dir in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
@@ -260,6 +374,7 @@ func rotate_neighbors(center: Vector2i) -> void:
 			var type := String(pieces[idx].get("type", "normal"))
 			if type not in ["blocker", "gate"]:
 				pieces[idx]["direction"] = rotate_direction(String(pieces[idx].get("direction", "right")))
+				chain_count += 1
 
 func rotate_direction(direction: String) -> String:
 	match direction:
@@ -294,6 +409,7 @@ func activate_link(link_id: String, source_index: int) -> void:
 				chain_count += 1
 			else:
 				pieces[i]["direction"] = rotate_direction(String(pieces[i].get("direction", "right")))
+				chain_count += 1
 
 func rescue_has_exit() -> bool:
 	if rescued:
@@ -314,6 +430,8 @@ func resolve_rescue() -> void:
 	if rescue_has_exit():
 		rescued = true
 		chain_count += 1
+		FeedbackManager.rescue()
+		await get_tree().create_timer(0.12).timeout
 		complete_level()
 
 func complete_level() -> void:
@@ -322,70 +440,113 @@ func complete_level() -> void:
 		stars = 2
 	if moves > par_moves + 3:
 		stars = 1
-	SaveManager.complete_level(level_number, stars, rescue_id, 25 * stars)
+	if daily_mode:
+		SaveManager.complete_daily(String(level_data.get("daily_key", DailyChallenge.date_key())), 100)
+	else:
+		SaveManager.complete_level(level_number, stars, rescue_id, 25 * stars)
+	AdManager.note_level_completed()
+	AnalyticsManager.level_completed(level_number, moves, stars)
 	show_result(stars)
 
 func show_result(stars: int) -> void:
 	var overlay := ColorRect.new()
-	overlay.color = Color(0.02, 0.04, 0.08, 0.94)
+	overlay.color = Color(0.015, 0.025, 0.055, 0.95)
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.modulate.a = 0.0
 	add_child(overlay)
+	var fade := create_tween()
+	fade.tween_property(overlay, "modulate:a", 1.0, 0.18)
+	var panel := PanelContainer.new()
+	panel.set_anchors_preset(Control.PRESET_CENTER)
+	panel.position = Vector2(-330, -400)
+	panel.custom_minimum_size = Vector2(660, 800)
+	panel.add_theme_stylebox_override("panel", style_box(Color("14233d"), 36, Color("2dd4b6"), 3))
+	overlay.add_child(panel)
 	var box := VBoxContainer.new()
-	box.set_anchors_preset(Control.PRESET_CENTER)
-	box.position = Vector2(-300, -360)
-	box.custom_minimum_size = Vector2(600, 720)
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
-	box.add_theme_constant_override("separation", 26)
-	overlay.add_child(box)
+	box.add_theme_constant_override("separation", 24)
+	panel.add_child(box)
 	var icon := Label.new()
 	icon.text = rescue_icon()
 	icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	icon.add_theme_font_size_override("font_size", 96)
+	icon.add_theme_font_size_override("font_size", 104)
 	box.add_child(icon)
+	icon.scale = Vector2(0.2, 0.2)
+	icon.pivot_offset = Vector2(70, 70)
+	var pop := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	pop.tween_property(icon, "scale", Vector2.ONE, 0.42)
 	var title := Label.new()
-	title.text = "RESCUED!"
+	title.text = "DAILY COMPLETE!" if daily_mode else "RESCUED!"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 52)
+	title.add_theme_font_size_override("font_size", 50)
 	box.add_child(title)
 	var star_label := Label.new()
 	star_label.text = "★".repeat(stars) + "☆".repeat(3 - stars)
 	star_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	star_label.add_theme_font_size_override("font_size", 58)
+	star_label.add_theme_color_override("font_color", Color("ffd166"))
 	box.add_child(star_label)
+	var reward := 100 if daily_mode else 25 * stars
 	var stats := Label.new()
-	stats.text = "%d moves  •  +%d coins" % [moves, 25 * stars]
+	stats.text = "%d moves   •   +%d coins" % [moves, reward]
 	stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	stats.add_theme_font_size_override("font_size", 24)
+	stats.add_theme_font_size_override("font_size", 23)
 	box.add_child(stats)
+
+	var double_reward := Button.new()
+	double_reward.text = "▶  DOUBLE REWARD"
+	double_reward.custom_minimum_size = Vector2(450, 82)
+	double_reward.add_theme_font_size_override("font_size", 24)
+	style_button(double_reward, true)
+	double_reward.pressed.connect(func():
+		double_reward.disabled = true
+		AdManager.show_rewarded("double_reward", func(): SaveManager.add_coins(reward))
+		double_reward.text = "REWARD DOUBLED"
+	)
+	box.add_child(double_reward)
+
 	var next := Button.new()
-	next.text = "NEXT RESCUE"
-	next.custom_minimum_size = Vector2(430, 90)
-	next.add_theme_font_size_override("font_size", 28)
-	next.pressed.connect(func(): finished.emit(level_number); queue_free())
+	next.text = "BACK HOME" if daily_mode else ("NEXT RESCUE" if LevelManager.has_level(level_number + 1) else "CAMPAIGN COMPLETE")
+	next.custom_minimum_size = Vector2(450, 88)
+	next.add_theme_font_size_override("font_size", 25)
+	style_button(next)
+	next.pressed.connect(func():
+		if AdManager.should_show_interstitial(): AdManager.show_interstitial()
+		finished.emit(-1 if daily_mode else level_number)
+		queue_free()
+	)
 	box.add_child(next)
 
 func undo_move() -> void:
-	if history.is_empty() or rescued:
+	if history.is_empty() or rescued or board_locked:
 		return
 	var state: Dictionary = history.pop_back()
 	pieces = state["pieces"].duplicate(true)
 	moves = int(state["moves"])
 	rescued = bool(state["rescued"])
 	chain_count = int(state["chain"])
+	SaveManager.record_undo()
+	FeedbackManager.tap()
 	hint_label.text = "Move undone."
 	render_board()
 
 func show_hint() -> void:
+	if board_locked:
+		return
+	SaveManager.record_hint()
+	FeedbackManager.tap()
 	for i in range(pieces.size()):
 		if is_path_clear(i):
 			var p := pieces[i]
-			hint_label.text = "Try the %s piece at row %d, column %d." % [String(p.get("type", "normal")), int(p.get("y", 0)) + 1, int(p.get("x", 0)) + 1]
+			hint_label.text = "Try the %s at row %d, column %d." % [String(p.get("type", "normal")).capitalize(), int(p.get("y", 0)) + 1, int(p.get("x", 0)) + 1]
 			return
-	hint_label.text = "No direct escape is available. Restart or undo and try another order."
+	hint_label.text = "No direct escape is available. Undo or restart and change the order."
 
 func restart_level() -> void:
 	var replacement := load("res://scenes/Game.tscn").instantiate()
 	replacement.level_number = level_number
+	replacement.custom_level_data = custom_level_data.duplicate(true)
+	replacement.daily_mode = daily_mode
 	replacement.finished.connect(func(n): finished.emit(n))
 	replacement.quit_requested.connect(func(): quit_requested.emit())
 	get_parent().add_child(replacement)
