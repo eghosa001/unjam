@@ -83,3 +83,10 @@ jobs:
           godot --headless --verbose --path . --export-debug Android build/android/unjam-debug.apk
           test -s build/android/unjam-debug.apk
           file build/android/unjam-debug.apk
+      - name: Upload Android debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: unjam-debug-apk
+          path: build/android/unjam-debug.apk
+          if-no-files-found: error
+          retention-days: 7
