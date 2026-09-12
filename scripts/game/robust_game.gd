@@ -2,6 +2,66 @@ extends "res://scripts/game/game.gd"
 
 var hints_used_this_level := 0
 
+func try_move(index: int) -> void:
+	if board_locked:
+		return
+	hint_label.text = ""
+	if not is_path_clear(index):
+		chain_count = 0
+		hint_label.text = "Blocked — clear its path first."
+		FeedbackManager.blocked()
+		shake_board()
+		AnalyticsManager.track("blocked_move", {"level": level_number, "piece": index})
+		return
+	board_locked = true
+	var legal_before: Dictionary = _legal_map()
+	history.append(snapshot())
+	moves += 1
+	chain_count = 1
+	FeedbackManager.escape(chain_count)
+	escape_piece(index, true)
+	await get_tree().create_timer(0.07).timeout
+	await _resolve_cascades(legal_before)
+	await resolve_rescue()
+	if not rescued:
+		render_board()
+	board_locked = false
+
+func _legal_map() -> Dictionary:
+	var result: Dictionary = {}
+	for i in range(pieces.size()):
+		result[i] = is_path_clear(i)
+	return result
+
+func _resolve_cascades(previous_legal: Dictionary) -> void:
+	var baseline: Dictionary = previous_legal.duplicate()
+	var guard: int = 0
+	var max_steps: int = max(8, pieces.size() * 2)
+	while guard < max_steps:
+		guard += 1
+		var newly_opened: Array[int] = []
+		for i in range(pieces.size()):
+			if not bool(pieces[i].get("active", true)):
+				continue
+			if is_path_clear(i) and not bool(baseline.get(i, false)):
+				newly_opened.append(i)
+		if newly_opened.is_empty():
+			break
+		var before_batch: Dictionary = _legal_map()
+		for index in newly_opened:
+			if index < 0 or index >= pieces.size():
+				continue
+			if not bool(pieces[index].get("active", true)) or not is_path_clear(index):
+				continue
+			chain_count += 1
+			FeedbackManager.escape(chain_count)
+			escape_piece(index, true)
+			PremiumVisuals.burst(Vector2(540, 860), world_accent(), mini(18, 5 + chain_count))
+			await get_tree().create_timer(0.045).timeout
+		baseline = before_batch
+	if chain_count >= 3:
+		AnalyticsManager.track("cascade", {"level": level_number, "chain": chain_count})
+
 func complete_level() -> void:
 	var stars := 3
 	if moves > par_moves:
