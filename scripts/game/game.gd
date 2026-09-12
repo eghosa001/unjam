@@ -225,12 +225,7 @@ func is_inside(pos: Vector2i) -> bool:
 	return pos.x >= 0 and pos.y >= 0 and pos.x < width and pos.y < height
 
 func snapshot() -> Dictionary:
-	return {
-		"pieces": pieces.duplicate(true),
-		"moves": moves,
-		"rescued": rescued,
-		"chain": chain_count
-	}
+	return {"pieces": pieces.duplicate(true), "moves": moves, "rescued": rescued, "chain": chain_count}
 
 func try_move(index: int) -> void:
 	hint_label.text = ""
@@ -372,11 +367,11 @@ func show_result(stars: int) -> void:
 func undo_move() -> void:
 	if history.is_empty() or rescued:
 		return
-	var state := history.pop_back()
-	pieces = state.pieces.duplicate(true)
-	moves = int(state.moves)
-	rescued = bool(state.rescued)
-	chain_count = int(state.chain)
+	var state: Dictionary = history.pop_back()
+	pieces = state["pieces"].duplicate(true)
+	moves = int(state["moves"])
+	rescued = bool(state["rescued"])
+	chain_count = int(state["chain"])
 	hint_label.text = "Move undone."
 	render_board()
 
@@ -384,7 +379,7 @@ func show_hint() -> void:
 	for i in range(pieces.size()):
 		if is_path_clear(i):
 			var p := pieces[i]
-		hint_label.text = "Try the %s piece at row %d, column %d." % [String(p.get("type", "normal")), int(p.get("y", 0)) + 1, int(p.get("x", 0)) + 1]
+			hint_label.text = "Try the %s piece at row %d, column %d." % [String(p.get("type", "normal")), int(p.get("y", 0)) + 1, int(p.get("x", 0)) + 1]
 			return
 	hint_label.text = "No direct escape is available. Restart or undo and try another order."
 
