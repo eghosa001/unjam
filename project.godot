@@ -1,0 +1,27 @@
+; Engine configuration file.
+; Unjam: Rescue Rush
+config_version=5
+
+[application]
+config/name="Unjam: Rescue Rush"
+run/main_scene="res://scenes/Main.tscn"
+
+[display]
+window/size/viewport_width=1080
+window/size/viewport_height=1920
+window/size/window_width_override=540
+window/size/window_height_override=960
+window/stretch/mode="canvas_items"
+window/handheld/orientation=1
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.035, 0.055, 0.09, 1)
+
+[input]
+ui_accept={"deadzone":0.5,"events":[Object(InputEventKey,"physical_keycode":32),Object(InputEventKey,"physical_keycode":4194309)]}
+
+[autoload]
+SaveManager="*res://scripts/core/save_manager.gd"
+LevelManager="*res://scripts/core/level_manager.gd"
