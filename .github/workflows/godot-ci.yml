@@ -45,6 +45,8 @@ jobs:
         run: godot --headless --path . --script res://tests/validate_retention.gd
       - name: Validate production robustness
         run: godot --headless --path . --script res://tests/validate_robustness.gd
+      - name: Validate Level 1 launch and board render
+        run: godot --headless --path . --script res://tests/validate_level_launch.gd
       - name: Parse and boot smoke test
         shell: bash
         run: |
