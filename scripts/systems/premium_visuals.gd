@@ -58,7 +58,7 @@ func clear_ambient() -> void:
 		if child.has_meta("ambient"):
 			child.queue_free()
 
-func burst(global_pos: Vector2, color: Color = accent, count: int = 18) -> void:
+func burst(global_pos: Vector2, color: Color = Color("2dd4b6"), count: int = 18) -> void:
 	var rng := RandomNumberGenerator.new()
 	for i in range(count):
 		var p := ColorRect.new()
@@ -75,7 +75,7 @@ func burst(global_pos: Vector2, color: Color = accent, count: int = 18) -> void:
 		tween.tween_property(p, "modulate:a", 0.0, 0.55)
 		tween.chain().tween_callback(p.queue_free)
 
-func screen_flash(color: Color = accent, strength: float = 0.18) -> void:
+func screen_flash(color: Color = Color("2dd4b6"), strength: float = 0.18) -> void:
 	var flash := ColorRect.new()
 	flash.color = Color(color, strength)
 	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -120,6 +120,13 @@ func premium_button(button: BaseButton) -> void:
 	)
 
 func _on_premium_reward(reward: Dictionary) -> void:
+	var achievements: Array = reward.get("achievements", [])
+	if not achievements.is_empty():
+		var first: Dictionary = achievements[0]
+		show_reward_banner("ACHIEVEMENT UNLOCKED", "%s  •  +%d AP" % [String(first.get("title", "ACHIEVEMENT")), int(first.get("points", 0))], Color("f472b6"))
+		burst(Vector2(540, 760), Color("f472b6"), 30)
+		screen_flash(Color("f472b6"), 0.16)
+		return
 	if bool(reward.get("world_badge", false)):
 		show_reward_banner("WORLD MASTERED", "Badge unlocked  •  +250 coins  •  +5 prestige", Color("ffd166"))
 		burst(Vector2(540, 760), Color("ffd166"), 34)
