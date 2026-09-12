@@ -12,7 +12,14 @@ const SEASON_REWARDS := [50, 75, 100, 150, 200, 250, 350, 500]
 const LOGIN_REWARDS := [40, 55, 70, 90, 120, 160, 250]
 const EVENT_DURATION_DAYS := 14
 
-var _last_mission_progress := {}
+const ACHIEVEMENT_REWARDS := {
+	"first_rescue": {"title":"FIRST RESCUE", "coins":75},
+	"perfect_10": {"title":"PRECISION TEN", "coins":125},
+	"perfect_streak_10": {"title":"FLAWLESS RUN", "coins":175},
+	"levels_100": {"title":"CENTURY RESCUER", "coins":250},
+	"world_10": {"title":"MASTER OF TEN WORLDS", "coins":400},
+	"levels_1000": {"title":"UNJAM LEGEND", "coins":750}
+}
 
 func _ready() -> void:
 	ensure_state()
@@ -20,29 +27,14 @@ func _ready() -> void:
 
 func ensure_state() -> void:
 	var defaults := {
-		"last_login_date": "",
-		"login_cycle_day": 0,
-		"login_claim_date": "",
-		"comeback_claimed_date": "",
-		"daily_mission_date": "",
-		"daily_mission_progress": {},
-		"daily_mission_claimed": [],
-		"daily_all_claimed": false,
-		"win_streak": 0,
-		"best_win_streak": 0,
-		"weekly_key": "",
-		"weekly_points": 0,
-		"weekly_claimed_tiers": [],
-		"weekly_best_rank": 0,
-		"season_key": "",
-		"season_points": 0,
-		"season_claimed_tiers": [],
-		"event_currency": 0,
-		"event_shop_owned": [],
-		"rescue_variants": [],
-		"profile_title": "Rookie Rescuer",
-		"missions_completed": 0,
-		"event_levels_completed": 0
+		"last_login_date":"", "login_cycle_day":0, "login_claim_date":"", "comeback_claimed_date":"",
+		"daily_mission_date":"", "daily_mission_progress":{}, "daily_mission_claimed":[], "daily_all_claimed":false,
+		"win_streak":0, "best_win_streak":0,
+		"weekly_key":"", "weekly_points":0, "weekly_claimed_tiers":[], "weekly_best_rank":0,
+		"season_key":"", "season_points":0, "season_claimed_tiers":[],
+		"event_key":"", "event_currency":0, "event_shop_owned":[], "event_levels_completed":0,
+		"rescue_variants":[], "profile_title":"Rookie Rescuer", "missions_completed":0,
+		"achievement_reward_claimed":[]
 	}
 	for key in defaults:
 		if not SaveManager.data.has(key):
@@ -55,17 +47,14 @@ func today_key() -> String:
 	return "%04d-%02d-%02d" % [d.year, d.month, d.day]
 
 func week_key() -> String:
-	var unix := int(Time.get_unix_time_from_system())
-	var week := int(unix / 604800)
-	return "W%d" % week
+	return "W%d" % int(int(Time.get_unix_time_from_system()) / 604800)
 
 func season_key() -> String:
 	var d := Time.get_date_dict_from_system()
 	return "%04d-S%02d" % [d.year, int((d.month - 1) / 2) + 1]
 
 func event_key() -> String:
-	var unix := int(Time.get_unix_time_from_system())
-	return "E%d" % int(unix / (EVENT_DURATION_DAYS * 86400))
+	return "E%d" % int(int(Time.get_unix_time_from_system()) / (EVENT_DURATION_DAYS * 86400))
 
 func _roll_periods() -> void:
 	if String(SaveManager.data.daily_mission_date) != today_key():
@@ -81,8 +70,11 @@ func _roll_periods() -> void:
 		SaveManager.data.season_key = season_key()
 		SaveManager.data.season_points = 0
 		SaveManager.data.season_claimed_tiers = []
+	if String(SaveManager.data.event_key) != event_key():
+		SaveManager.data.event_key = event_key()
 		SaveManager.data.event_currency = 0
 		SaveManager.data.event_shop_owned = []
+		SaveManager.data.event_levels_completed = 0
 
 func process_login() -> Dictionary:
 	ensure_state()
@@ -91,9 +83,11 @@ func process_login() -> Dictionary:
 	var payload := {}
 	if previous != today:
 		var gap := _day_gap(previous, today)
-		if gap == 1:
+		if previous.is_empty():
+			SaveManager.data.login_cycle_day = 1
+		elif gap == 1:
 			SaveManager.data.login_cycle_day = (int(SaveManager.data.login_cycle_day) % 7) + 1
-		elif gap > 1:
+		else:
 			SaveManager.data.login_cycle_day = 1
 		SaveManager.data.last_login_date = today
 		if gap >= 3 and String(SaveManager.data.comeback_claimed_date) != today:
@@ -110,8 +104,7 @@ func can_claim_login_reward() -> bool:
 
 func claim_login_reward() -> Dictionary:
 	ensure_state()
-	if not can_claim_login_reward():
-		return {}
+	if not can_claim_login_reward(): return {}
 	var day := clamp(int(SaveManager.data.login_cycle_day), 1, 7)
 	var coins := LOGIN_REWARDS[day - 1]
 	SaveManager.add_coins(coins)
@@ -124,15 +117,13 @@ func claim_login_reward() -> Dictionary:
 
 func daily_missions() -> Array[Dictionary]:
 	ensure_state()
-	var seed_value := today_key().hash()
 	var templates: Array[Dictionary] = [
-		{"id":"clear_levels", "title":"RESCUE RUN", "description":"Complete 5 levels", "target":5},
+		{"id":"clear_levels", "title":"RESCUE RUN", "description":"Complete 5 campaign levels", "target":5},
 		{"id":"perfects", "title":"PRECISION", "description":"Earn 3 stars on 3 levels", "target":3},
-		{"id":"chains", "title":"CHAIN MASTER", "description":"Trigger 5 chain actions", "target":5},
-		{"id":"no_hint", "title":"SHARP MIND", "description":"Complete 3 levels without a hint", "target":3},
-		{"id":"hard_levels", "title":"BRAVE RESCUER", "description":"Complete 2 Hard/Boss levels", "target":2},
-		{"id":"coins", "title":"TREASURE HUNT", "description":"Earn 200 coins from levels", "target":200}
+		{"id":"hard_levels", "title":"BRAVE RESCUER", "description":"Complete 2 Hard or Boss levels", "target":2},
+		{"id":"coins", "title":"TREASURE HUNT", "description":"Earn 200 coins from level rewards", "target":200}
 	]
+	var seed_value := today_key().hash()
 	var result: Array[Dictionary] = []
 	for i in range(3):
 		var idx := abs(seed_value + i * 17) % templates.size()
@@ -143,8 +134,7 @@ func daily_missions() -> Array[Dictionary]:
 
 func _contains_mission(list: Array[Dictionary], id: String) -> bool:
 	for mission in list:
-		if String(mission.id) == id:
-			return true
+		if String(mission.id) == id: return true
 	return false
 
 func mission_progress(id: String) -> int:
@@ -168,16 +158,13 @@ func claim_mission(id: String) -> Dictionary:
 	return {}
 
 func can_claim_daily_all() -> bool:
-	if bool(SaveManager.data.daily_all_claimed):
-		return false
+	if bool(SaveManager.data.daily_all_claimed): return false
 	for mission in daily_missions():
-		if not mission_claimed(String(mission.id)):
-			return false
+		if not mission_claimed(String(mission.id)): return false
 	return true
 
 func claim_daily_all() -> Dictionary:
-	if not can_claim_daily_all():
-		return {}
+	if not can_claim_daily_all(): return {}
 	SaveManager.data.daily_all_claimed = true
 	SaveManager.add_coins(DAILY_ALL_BONUS)
 	SaveManager.data.event_currency = int(SaveManager.data.event_currency) + 25
@@ -187,48 +174,36 @@ func claim_daily_all() -> Dictionary:
 	retention_updated.emit()
 	return payload
 
-func record_level_complete(level_number: int, stars: int, moves: int, par_moves: int, chain_count: int, rescue_id: String, hints_used_this_level: int = 0) -> Dictionary:
+func record_level_complete(level_number: int, stars: int, _moves: int, _par_moves: int, chain_count: int, rescue_id: String, _hints_used_this_level: int = -1) -> Dictionary:
 	ensure_state()
-	var before_coins := 25 * stars
+	var base_coins := 25 * stars
 	_increment_mission("clear_levels", 1)
-	_increment_mission("chains", max(0, chain_count - 1))
-	_increment_mission("coins", before_coins)
-	if stars == 3:
-		_increment_mission("perfects", 1)
-	if hints_used_this_level == 0:
-		_increment_mission("no_hint", 1)
+	_increment_mission("coins", base_coins)
+	if stars == 3: _increment_mission("perfects", 1)
 	var level := LevelManager.load_level(level_number)
 	var difficulty := String(level.get("difficulty", level.get("difficulty_label", "medium"))).to_lower()
-	if difficulty in ["hard", "boss"]:
-		_increment_mission("hard_levels", 1)
+	if difficulty in ["hard", "boss"]: _increment_mission("hard_levels", 1)
 
 	SaveManager.data.win_streak = int(SaveManager.data.win_streak) + 1
 	SaveManager.data.best_win_streak = max(int(SaveManager.data.best_win_streak), int(SaveManager.data.win_streak))
-	var weekly_gain := 10 + stars * 5 + min(chain_count, 8) * 2
+	var weekly_gain := 10 + stars * 5 + min(max(chain_count, 0), 8) * 2
 	SaveManager.data.weekly_points = int(SaveManager.data.weekly_points) + weekly_gain
 	SaveManager.data.season_points = int(SaveManager.data.season_points) + weekly_gain
 	SaveManager.data.event_currency = int(SaveManager.data.event_currency) + 2 + stars
 	SaveManager.data.event_levels_completed = int(SaveManager.data.event_levels_completed) + 1
+	var rank := weekly_rank()
+	if int(SaveManager.data.weekly_best_rank) == 0 or rank < int(SaveManager.data.weekly_best_rank):
+		SaveManager.data.weekly_best_rank = rank
 
 	var streak_reward := 0
-	if int(SaveManager.data.win_streak) in [3, 5, 10, 15, 25]:
+	if int(SaveManager.data.win_streak) in [3,5,10,15,25]:
 		streak_reward = int(SaveManager.data.win_streak) * 10
 		SaveManager.add_coins(streak_reward)
-
 	var variant := _maybe_unlock_variant(level_number, rescue_id, stars)
 	_update_profile_title()
 	SaveManager.save()
-	var payload := {
-		"type":"level_retention",
-		"weekly_points":weekly_gain,
-		"season_points":weekly_gain,
-		"event_currency":2 + stars,
-		"win_streak":int(SaveManager.data.win_streak),
-		"streak_coins":streak_reward,
-		"variant":variant
-	}
-	if streak_reward > 0 or not variant.is_empty():
-		retention_reward.emit(payload)
+	var payload := {"type":"level_retention", "weekly_points":weekly_gain, "season_points":weekly_gain, "event_currency":2+stars, "win_streak":int(SaveManager.data.win_streak), "streak_coins":streak_reward, "variant":variant}
+	if streak_reward > 0 or not variant.is_empty(): retention_reward.emit(payload)
 	retention_updated.emit()
 	return payload
 
@@ -243,49 +218,55 @@ func _increment_mission(id: String, amount: int) -> void:
 	SaveManager.data.daily_mission_progress = progress
 
 func weekly_rank() -> int:
-	var points := int(SaveManager.data.weekly_points)
-	var rivals := weekly_rivals()
 	var rank := 1
-	for rival in rivals:
-		if int(rival.points) > points:
-			rank += 1
+	for rival in weekly_rivals():
+		if int(rival.points) > int(SaveManager.data.weekly_points): rank += 1
 	return rank
 
 func weekly_rivals() -> Array[Dictionary]:
 	var seed_value := week_key().hash()
-	var names := ["Nova", "Kai", "Mira", "Jett", "Ayo", "Lina", "Rex", "Zuri", "Tobi"]
+	var names := ["Nova","Kai","Mira","Jett","Ayo","Lina","Rex","Zuri","Tobi"]
 	var rivals: Array[Dictionary] = []
 	for i in range(9):
-		var points := 120 + abs(seed_value + i * 733) % 1150
-		rivals.append({"name":names[i], "points":points})
+		rivals.append({"name":names[i], "points":120 + abs(seed_value + i * 733) % 1150})
 	rivals.sort_custom(func(a, b): return int(a.points) > int(b.points))
 	return rivals
 
 func claim_weekly_tier(index: int) -> Dictionary:
-	if index < 0 or index >= WEEKLY_TARGETS.size():
-		return {}
+	if index < 0 or index >= WEEKLY_TARGETS.size(): return {}
 	var key := str(index)
-	if key in SaveManager.data.weekly_claimed_tiers or int(SaveManager.data.weekly_points) < WEEKLY_TARGETS[index]:
-		return {}
+	if key in SaveManager.data.weekly_claimed_tiers or int(SaveManager.data.weekly_points) < WEEKLY_TARGETS[index]: return {}
 	SaveManager.data.weekly_claimed_tiers.append(key)
 	SaveManager.add_coins(WEEKLY_REWARDS[index])
 	SaveManager.save()
-	var payload := {"type":"weekly_tier", "coins":WEEKLY_REWARDS[index], "title":"WEEKLY MILESTONE %d" % (index + 1)}
+	var payload := {"type":"weekly_tier", "coins":WEEKLY_REWARDS[index], "title":"WEEKLY MILESTONE %d" % (index+1)}
 	retention_reward.emit(payload)
 	retention_updated.emit()
 	return payload
 
 func claim_season_tier(index: int) -> Dictionary:
-	if index < 0 or index >= SEASON_TARGETS.size():
-		return {}
+	if index < 0 or index >= SEASON_TARGETS.size(): return {}
 	var key := str(index)
-	if key in SaveManager.data.season_claimed_tiers or int(SaveManager.data.season_points) < SEASON_TARGETS[index]:
-		return {}
+	if key in SaveManager.data.season_claimed_tiers or int(SaveManager.data.season_points) < SEASON_TARGETS[index]: return {}
 	SaveManager.data.season_claimed_tiers.append(key)
 	SaveManager.add_coins(SEASON_REWARDS[index])
 	SaveManager.data.event_currency = int(SaveManager.data.event_currency) + 20 + index * 5
 	SaveManager.save()
-	var payload := {"type":"season_tier", "coins":SEASON_REWARDS[index], "event_currency":20 + index * 5, "title":"SEASON REWARD %d" % (index + 1)}
+	var payload := {"type":"season_tier", "coins":SEASON_REWARDS[index], "event_currency":20+index*5, "title":"SEASON REWARD %d" % (index+1)}
+	retention_reward.emit(payload)
+	retention_updated.emit()
+	return payload
+
+func achievement_reward_available(id: String) -> bool:
+	return id in SaveManager.data.achievements and id not in SaveManager.data.achievement_reward_claimed and ACHIEVEMENT_REWARDS.has(id)
+
+func claim_achievement_reward(id: String) -> Dictionary:
+	if not achievement_reward_available(id): return {}
+	var reward: Dictionary = ACHIEVEMENT_REWARDS[id]
+	SaveManager.data.achievement_reward_claimed.append(id)
+	SaveManager.add_coins(int(reward.coins))
+	SaveManager.save()
+	var payload := {"type":"achievement_claim", "title":String(reward.title), "coins":int(reward.coins)}
 	retention_reward.emit(payload)
 	retention_updated.emit()
 	return payload
@@ -301,8 +282,7 @@ func event_shop() -> Array[Dictionary]:
 func buy_event_item(id: String) -> bool:
 	for item in event_shop():
 		if String(item.id) == id:
-			if id in SaveManager.data.event_shop_owned or int(SaveManager.data.event_currency) < int(item.cost):
-				return false
+			if id in SaveManager.data.event_shop_owned or int(SaveManager.data.event_currency) < int(item.cost): return false
 			SaveManager.data.event_currency = int(SaveManager.data.event_currency) - int(item.cost)
 			SaveManager.data.event_shop_owned.append(id)
 			SaveManager.save()
@@ -312,58 +292,36 @@ func buy_event_item(id: String) -> bool:
 	return false
 
 func _maybe_unlock_variant(level_number: int, rescue_id: String, stars: int) -> String:
-	if stars < 3 or level_number % 25 != 0:
-		return ""
+	if rescue_id.is_empty() or stars < 3 or level_number % 25 != 0: return ""
 	var rarity := "silver"
-	if level_number % 100 == 0:
-		rarity = "royal"
-	elif level_number % 50 == 0:
-		rarity = "gold"
+	if level_number % 100 == 0: rarity = "royal"
+	elif level_number % 50 == 0: rarity = "gold"
 	var key := "%s_%s" % [rescue_id, rarity]
-	if key in SaveManager.data.rescue_variants:
-		return ""
+	if key in SaveManager.data.rescue_variants: return ""
 	SaveManager.data.rescue_variants.append(key)
 	return key
 
 func _update_profile_title() -> void:
 	var prestige := int(SaveManager.data.prestige_points)
 	var completed := int(SaveManager.data.total_levels_completed)
-	if completed >= 5000 or prestige >= 250:
-		SaveManager.data.profile_title = "Mythic Unjammer"
-	elif completed >= 1000 or prestige >= 100:
-		SaveManager.data.profile_title = "Legendary Rescuer"
-	elif completed >= 500 or prestige >= 50:
-		SaveManager.data.profile_title = "Elite Pathfinder"
-	elif completed >= 100 or prestige >= 20:
-		SaveManager.data.profile_title = "Master Rescuer"
-	elif completed >= 25:
-		SaveManager.data.profile_title = "Skilled Rescuer"
-	else:
-		SaveManager.data.profile_title = "Rookie Rescuer"
+	if completed >= 5000 or prestige >= 250: SaveManager.data.profile_title = "Mythic Unjammer"
+	elif completed >= 1000 or prestige >= 100: SaveManager.data.profile_title = "Legendary Rescuer"
+	elif completed >= 500 or prestige >= 50: SaveManager.data.profile_title = "Elite Pathfinder"
+	elif completed >= 100 or prestige >= 20: SaveManager.data.profile_title = "Master Rescuer"
+	elif completed >= 25: SaveManager.data.profile_title = "Skilled Rescuer"
+	else: SaveManager.data.profile_title = "Rookie Rescuer"
 
 func profile_snapshot() -> Dictionary:
-	return {
-		"title":String(SaveManager.data.profile_title),
-		"prestige":int(SaveManager.data.prestige_points),
-		"achievement_points":int(SaveManager.data.achievement_points),
-		"levels":int(SaveManager.data.total_levels_completed),
-		"perfects":int(SaveManager.data.perfect_clears),
-		"best_streak":int(SaveManager.data.best_win_streak),
-		"variants":SaveManager.data.rescue_variants.size(),
-		"badges":SaveManager.data.world_badges.size()
-	}
+	return {"title":String(SaveManager.data.profile_title), "prestige":int(SaveManager.data.prestige_points), "achievement_points":int(SaveManager.data.achievement_points), "levels":int(SaveManager.data.total_levels_completed), "perfects":int(SaveManager.data.perfect_clears), "best_streak":int(SaveManager.data.best_win_streak), "variants":SaveManager.data.rescue_variants.size(), "badges":SaveManager.data.world_badges.size()}
 
 func _day_gap(from_key: String, to_key: String) -> int:
-	if from_key.is_empty():
-		return 0
+	if from_key.is_empty(): return 0
 	var a := _date_unix(from_key)
 	var b := _date_unix(to_key)
-	if a <= 0 or b <= 0:
-		return 0
+	if a <= 0 or b <= 0: return 0
 	return max(0, int((b - a) / 86400))
 
 func _date_unix(key: String) -> int:
 	var parts := key.split("-")
-	if parts.size() != 3:
-		return 0
+	if parts.size() != 3: return 0
 	return int(Time.get_unix_time_from_datetime_dict({"year":int(parts[0]), "month":int(parts[1]), "day":int(parts[2]), "hour":0, "minute":0, "second":0}))
