@@ -104,19 +104,24 @@ func build_level_select() -> void:
 		grid.add_child(button)
 
 func start_level(level_number: int) -> void:
+	if content:
+		content.visible = false
 	var game_scene := load("res://scenes/Game.tscn").instantiate()
 	game_scene.level_number = level_number
 	game_scene.finished.connect(_on_game_finished)
-	game_scene.quit_requested.connect(build_level_select)
+	game_scene.quit_requested.connect(_on_game_quit)
 	add_child(game_scene)
-	hide()
 
-func _on_game_finished(level_number: int) -> void:
-	show()
-	if LevelManager.has_level(level_number + 1):
-		start_level(level_number + 1)
+func _on_game_finished(completed_level: int) -> void:
+	if LevelManager.has_level(completed_level + 1):
+		start_level(completed_level + 1)
 	else:
 		build_home()
+		content.visible = true
+
+func _on_game_quit() -> void:
+	build_level_select()
+	content.visible = true
 
 func build_collection() -> void:
 	clear_content()
