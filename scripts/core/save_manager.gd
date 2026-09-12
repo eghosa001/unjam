@@ -124,6 +124,10 @@ func complete_level(level_number: int, stars: int, rescue_id: String, coin_rewar
 	_check_achievement("levels_1000", int(data.total_levels_completed) >= 1000, "UNJAM LEGEND", 100, rewards)
 
 	save()
+	if Engine.has_singleton("RetentionManager"):
+		pass
+	elif get_node_or_null("/root/RetentionManager") != null:
+		RetentionManager.record_level_complete(level_number, stars, 0, 0, 0, rescue_id, -1)
 	if bool(rewards.perfect) or bool(rewards.milestone) or bool(rewards.world_badge) or int(rewards.prestige) > 0 or not rewards.achievements.is_empty():
 		premium_reward.emit(rewards)
 	return rewards
@@ -201,3 +205,5 @@ func complete_daily(date_key: String, reward: int = 100) -> bool:
 func reset_progress() -> void:
 	data = DEFAULT_DATA.duplicate(true)
 	save()
+	if get_node_or_null("/root/RetentionManager") != null:
+		RetentionManager.ensure_state()
