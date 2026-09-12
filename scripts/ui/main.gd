@@ -186,7 +186,7 @@ func build_level_select() -> void:
 func start_level(level_number: int) -> void:
 	if content:
 		content.visible = false
-	var game_scene := load("res://scenes/Game.tscn").instantiate()
+	var game_scene = load("res://scenes/Game.tscn").instantiate()
 	game_scene.level_number = level_number
 	game_scene.finished.connect(_on_game_finished)
 	game_scene.quit_requested.connect(_on_game_quit)
@@ -198,7 +198,7 @@ func start_daily() -> void:
 		return
 	if content:
 		content.visible = false
-	var game_scene := load("res://scenes/Game.tscn").instantiate()
+	var game_scene = load("res://scenes/Game.tscn").instantiate()
 	game_scene.level_number = 1
 	game_scene.daily_mode = true
 	game_scene.custom_level_data = DailyChallenge.build_today()
@@ -282,7 +282,7 @@ func build_collection() -> void:
 	root.add_child(shop)
 	for item in [["tree", "🌳 TREE", 100], ["bench", "🪑 BENCH", 150], ["fountain", "⛲ FOUNTAIN", 250]]:
 		var id := String(item[0])
-		var owned := id in SaveManager.data.decorations
+		var owned: bool = id in SaveManager.data.decorations
 		var button := make_button((String(item[1]) + (" ✓" if owned else "\n%d" % int(item[2]))), Vector2(280, 105), owned)
 		button.disabled = owned
 		button.pressed.connect(_buy_decoration.bind(id, int(item[2])))
