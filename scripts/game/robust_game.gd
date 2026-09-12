@@ -224,13 +224,22 @@ func undo_move() -> void:
 func restart_level() -> void:
 	AnalyticsManager.level_restarted(level_number)
 	_clear_checkpoint(true)
-	var replacement := load("res://scenes/Game.tscn").instantiate()
+	var packed := load("res://scenes/Game.tscn") as PackedScene
+	if packed == null:
+		push_error("Game scene could not be loaded for restart.")
+		return
+	var replacement := packed.instantiate() as Control
+	if replacement == null:
+		push_error("Game scene could not be instantiated for restart.")
+		return
 	replacement.level_number = level_number
 	replacement.custom_level_data = custom_level_data.duplicate(true)
 	replacement.daily_mode = daily_mode
 	replacement.finished.connect(func(n): finished.emit(n))
 	replacement.quit_requested.connect(func(): quit_requested.emit())
 	get_parent().add_child(replacement)
+	replacement.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	replacement.z_index = z_index
 	queue_free()
 
 func _save_checkpoint() -> void:
