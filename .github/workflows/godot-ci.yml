@@ -22,11 +22,25 @@ jobs:
         with:
           version: 4.5.1-stable
           export-templates: true
-      - name: Import project
-        run: godot --headless --path . --editor --quit
+      - name: Import project and reject script errors
+        shell: bash
+        run: |
+          set -o pipefail
+          godot --headless --path . --editor --quit 2>&1 | tee import.log
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed" import.log; then
+            echo "Godot script/import errors detected."
+            exit 1
+          fi
       - name: Validate handcrafted levels
         run: godot --headless --path . --script res://tests/validate_levels.gd
       - name: Validate campaign
         run: godot --headless --path . --script res://tests/validate_campaign.gd
       - name: Parse and boot smoke test
-        run: godot --headless --path . --quit-after 5
+        shell: bash
+        run: |
+          set -o pipefail
+          godot --headless --path . --quit-after 5 2>&1 | tee boot.log
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed" boot.log; then
+            echo "Godot runtime script errors detected."
+            exit 1
+          fi
