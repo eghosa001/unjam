@@ -1,6 +1,7 @@
 extends SceneTree
 
 const CampaignGeneratorScript = preload("res://scripts/core/campaign_generator.gd")
+const PuzzleSolverScript = preload("res://scripts/core/puzzle_solver.gd")
 const LEVEL_DIR := "res://data/levels/"
 const CAMPAIGN_LEVELS := 10000
 const VALID_TYPES: Array[String] = ["normal", "rotate", "key", "gate", "bomb", "linked", "blocker"]
@@ -13,13 +14,17 @@ func _init() -> void:
 		var level: Dictionary = load_level_for_test(level_number)
 		validate(level_number, level, errors)
 		validate_difficulty(level_number, level, errors)
+		if errors.size() < 100 and not PuzzleSolverScript.has_solution(level, 2000):
+			errors.append("Level %d has no verified solution" % level_number)
+		if errors.size() >= 100:
+			break
 	if not errors.is_empty():
 		for e in errors:
 			printerr(e)
 		printerr("Campaign validation failed with %d issue(s)." % errors.size())
 		quit(1)
 		return
-	print("Validated all %d campaign levels and difficulty pacing." % CAMPAIGN_LEVELS)
+	print("Validated all %d campaign levels: structure, difficulty pacing and solvability." % CAMPAIGN_LEVELS)
 	quit(0)
 
 func load_level_for_test(level_number: int) -> Dictionary:
