@@ -1,0 +1,177 @@
+extends RefCounted
+class_name PuzzleSolver
+
+const DIRS := {
+	"up": Vector2i.UP,
+	"down": Vector2i.DOWN,
+	"left": Vector2i.LEFT,
+	"right": Vector2i.RIGHT
+}
+
+static func find_solution(level: Dictionary, source_pieces: Array = [], max_states: int = 4000) -> Array[int]:
+	var width: int = int(level.get("width", 0))
+	var height: int = int(level.get("height", 0))
+	var rescue_raw: Array = level.get("rescue", [])
+	if width <= 0 or height <= 0 or rescue_raw.size() != 2:
+		return []
+	var rescue := Vector2i(int(rescue_raw[0]), int(rescue_raw[1]))
+	var initial: Array = []
+	var raw_pieces: Array = source_pieces if not source_pieces.is_empty() else level.get("pieces", [])
+	for raw in raw_pieces:
+		if raw is Dictionary:
+			var p: Dictionary = raw.duplicate(true)
+			p["active"] = bool(p.get("active", true))
+			initial.append(p)
+	if _rescue_has_exit(initial, rescue, width, height):
+		return []
+
+	var queue_states: Array = [initial]
+	var queue_paths: Array = [[]]
+	var head: int = 0
+	var visited: Dictionary = {_state_key(initial): true}
+	while head < queue_states.size() and visited.size() <= max_states:
+		var pieces: Array = queue_states[head]
+		var path: Array = queue_paths[head]
+		head += 1
+		for i in range(pieces.size()):
+			if not _path_clear(pieces, i, rescue, width, height):
+				continue
+			var next: Array = _apply_move(pieces, i, rescue, width, height)
+			var next_path: Array = path.duplicate()
+			next_path.append(i)
+			if _rescue_has_exit(next, rescue, width, height):
+				var result: Array[int] = []
+				for step in next_path:
+					result.append(int(step))
+				return result
+			var key := _state_key(next)
+			if not visited.has(key):
+				visited[key] = true
+				queue_states.append(next)
+				queue_paths.append(next_path)
+	return []
+
+static func has_solution(level: Dictionary, max_states: int = 4000) -> bool:
+	var rescue_raw: Array = level.get("rescue", [])
+	if rescue_raw.size() != 2:
+		return false
+	var pieces: Array = level.get("pieces", [])
+	var rescue := Vector2i(int(rescue_raw[0]), int(rescue_raw[1]))
+	if _rescue_has_exit(pieces, rescue, int(level.get("width", 0)), int(level.get("height", 0))):
+		return true
+	return not find_solution(level, [], max_states).is_empty()
+
+static func first_solution_move(level: Dictionary, source_pieces: Array, max_states: int = 4000) -> int:
+	var solution := find_solution(level, source_pieces, max_states)
+	return -1 if solution.is_empty() else int(solution[0])
+
+static func _apply_move(source: Array, index: int, rescue: Vector2i, width: int, height: int) -> Array:
+	var pieces: Array = source.duplicate(true)
+	if index < 0 or index >= pieces.size():
+		return pieces
+	var piece: Dictionary = pieces[index]
+	pieces[index]["active"] = false
+	var type := String(piece.get("type", "normal"))
+	match type:
+		"rotate":
+			_rotate_neighbors(pieces, _piece_pos(piece))
+		"key":
+			_open_gates(pieces, String(piece.get("key_id", "default")))
+		"bomb":
+			_explode(pieces, _piece_pos(piece))
+		"linked":
+			_activate_link(pieces, String(piece.get("link_id", "")), index, rescue, width, height)
+	return pieces
+
+static func _path_clear(pieces: Array, index: int, rescue: Vector2i, width: int, height: int) -> bool:
+	if index < 0 or index >= pieces.size():
+		return false
+	var piece: Dictionary = pieces[index]
+	if not bool(piece.get("active", true)):
+		return false
+	var type := String(piece.get("type", "normal"))
+	if type in ["gate", "blocker"]:
+		return false
+	var direction: Vector2i = DIRS.get(String(piece.get("direction", "right")), Vector2i.RIGHT)
+	var pos := _piece_pos(piece) + direction
+	while _inside(pos, width, height):
+		if pos == rescue:
+			return false
+		if _piece_at(pieces, pos) >= 0:
+			return false
+		pos += direction
+	return true
+
+static func _rescue_has_exit(pieces: Array, rescue: Vector2i, width: int, height: int) -> bool:
+	if width <= 0 or height <= 0:
+		return false
+	for direction in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
+		var pos := rescue + direction
+		var blocked := false
+		while _inside(pos, width, height):
+			if _piece_at(pieces, pos) >= 0:
+				blocked = true
+				break
+			pos += direction
+		if not blocked:
+			return true
+	return false
+
+static func _rotate_neighbors(pieces: Array, center: Vector2i) -> void:
+	for direction in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
+		var idx := _piece_at(pieces, center + direction)
+		if idx < 0:
+			continue
+		var type := String(pieces[idx].get("type", "normal"))
+		if type not in ["blocker", "gate"]:
+			pieces[idx]["direction"] = _rotate_direction(String(pieces[idx].get("direction", "right")))
+
+static func _open_gates(pieces: Array, key_id: String) -> void:
+	for i in range(pieces.size()):
+		if bool(pieces[i].get("active", true)) and String(pieces[i].get("type", "")) == "gate" and String(pieces[i].get("key_id", "default")) == key_id:
+			pieces[i]["active"] = false
+
+static func _explode(pieces: Array, center: Vector2i) -> void:
+	for y in range(center.y - 1, center.y + 2):
+		for x in range(center.x - 1, center.x + 2):
+			var idx := _piece_at(pieces, Vector2i(x, y))
+			if idx >= 0 and String(pieces[idx].get("type", "")) != "gate":
+				pieces[idx]["active"] = false
+
+static func _activate_link(pieces: Array, link_id: String, source_index: int, rescue: Vector2i, width: int, height: int) -> void:
+	if link_id.is_empty():
+		return
+	for i in range(pieces.size()):
+		if i == source_index or not bool(pieces[i].get("active", true)):
+			continue
+		if String(pieces[i].get("type", "")) == "linked" and String(pieces[i].get("link_id", "")) == link_id:
+			if _path_clear(pieces, i, rescue, width, height):
+				pieces[i]["active"] = false
+			else:
+				pieces[i]["direction"] = _rotate_direction(String(pieces[i].get("direction", "right")))
+
+static func _rotate_direction(direction: String) -> String:
+	match direction:
+		"up": return "right"
+		"right": return "down"
+		"down": return "left"
+		_: return "up"
+
+static func _piece_at(pieces: Array, pos: Vector2i) -> int:
+	for i in range(pieces.size()):
+		var p: Dictionary = pieces[i]
+		if bool(p.get("active", true)) and _piece_pos(p) == pos:
+			return i
+	return -1
+
+static func _piece_pos(piece: Dictionary) -> Vector2i:
+	return Vector2i(int(piece.get("x", -1)), int(piece.get("y", -1)))
+
+static func _inside(pos: Vector2i, width: int, height: int) -> bool:
+	return pos.x >= 0 and pos.y >= 0 and pos.x < width and pos.y < height
+
+static func _state_key(pieces: Array) -> String:
+	var parts: PackedStringArray = []
+	for p in pieces:
+		parts.append("%d:%s" % [1 if bool(p.get("active", true)) else 0, String(p.get("direction", ""))])
+	return "|".join(parts)
