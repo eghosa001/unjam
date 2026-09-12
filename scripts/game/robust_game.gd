@@ -94,6 +94,96 @@ func complete_level() -> void:
 	})
 	show_result(stars)
 
+func show_result(stars: int) -> void:
+	var overlay := ColorRect.new()
+	overlay.color = Color(0.012, 0.022, 0.05, 0.96)
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.modulate.a = 0.0
+	add_child(overlay)
+	var fade := create_tween()
+	fade.tween_property(overlay, "modulate:a", 1.0, 0.18)
+	var panel := PanelContainer.new()
+	panel.set_anchors_preset(Control.PRESET_CENTER)
+	panel.position = Vector2(-345, -445)
+	panel.custom_minimum_size = Vector2(690, 890)
+	panel.add_theme_stylebox_override("panel", style_box(Color("111f38"), 38, world_accent(), 3))
+	overlay.add_child(panel)
+	var box := VBoxContainer.new()
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.add_theme_constant_override("separation", 20)
+	panel.add_child(box)
+
+	var token := RescueToken.new()
+	token.custom_minimum_size = Vector2(180, 180)
+	token.configure(rescue_id, Color("ffd166"))
+	box.add_child(token)
+	var title := Label.new()
+	title.text = "DAILY COMPLETE" if daily_mode else "RESCUE COMPLETE"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 46)
+	box.add_child(title)
+	var star_label := Label.new()
+	star_label.text = "★".repeat(stars) + "☆".repeat(3 - stars)
+	star_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	star_label.add_theme_font_size_override("font_size", 56)
+	star_label.add_theme_color_override("font_color", Color("ffd166"))
+	box.add_child(star_label)
+
+	var base_reward := 100 if daily_mode else int(completion_rewards.get("base_coins", 0))
+	var bonus_reward := 0 if daily_mode else int(completion_rewards.get("bonus_coins", 0))
+	var total_reward := base_reward + bonus_reward
+	var stats := Label.new()
+	if total_reward > 0:
+		stats.text = "%d MOVES   •   +%d COINS" % [moves, total_reward]
+	else:
+		stats.text = "%d MOVES   •   BEST REWARD ALREADY CLAIMED" % moves
+	stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	stats.add_theme_font_size_override("font_size", 22)
+	box.add_child(stats)
+	var premium_summary := reward_summary()
+	if not premium_summary.is_empty():
+		var reward_card := PanelContainer.new()
+		reward_card.custom_minimum_size = Vector2(560, 120)
+		reward_card.add_theme_stylebox_override("panel", style_box(Color(world_accent(),0.12), 24, Color(world_accent(),0.55), 2))
+		var reward_label := Label.new()
+		reward_label.text = premium_summary
+		reward_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		reward_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		reward_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		reward_label.add_theme_font_size_override("font_size", 18)
+		reward_card.add_child(reward_label)
+		box.add_child(reward_card)
+		PremiumVisuals.burst(Vector2(540, 540), world_accent(), 24)
+
+	var double_reward := Button.new()
+	double_reward.text = "DOUBLE BASE REWARD" if base_reward > 0 else "REWARD ALREADY CLAIMED"
+	double_reward.custom_minimum_size = Vector2(470, 82)
+	double_reward.add_theme_font_size_override("font_size", 23)
+	style_button(double_reward, true)
+	double_reward.disabled = base_reward <= 0
+	double_reward.pressed.connect(func():
+		if base_reward <= 0:
+			return
+		double_reward.disabled = true
+		AdManager.show_rewarded("double_reward", func(): SaveManager.add_coins(base_reward))
+		double_reward.text = "BASE REWARD DOUBLED"
+	)
+	box.add_child(double_reward)
+
+	var next := Button.new()
+	next.text = "BACK HOME" if daily_mode else ("NEXT RESCUE" if LevelManager.has_level(level_number + 1) else "CAMPAIGN COMPLETE")
+	next.custom_minimum_size = Vector2(470, 88)
+	next.add_theme_font_size_override("font_size", 24)
+	style_button(next)
+	next.pressed.connect(func():
+		if AdManager.should_show_interstitial():
+			AdManager.show_interstitial()
+		finished.emit(-1 if daily_mode else level_number)
+		queue_free()
+	)
+	box.add_child(next)
+	PremiumVisuals.entrance(panel, 0.08)
+
 func show_hint() -> void:
 	if board_locked or rescued:
 		return
