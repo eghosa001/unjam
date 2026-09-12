@@ -24,32 +24,52 @@ func build_ui() -> void:
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root.add_theme_constant_override("separation", 12)
 	add_child(root)
+
 	var title := Label.new()
 	title.text = "UNJAM LEVEL EDITOR"
 	title.add_theme_font_size_override("font_size", 28)
 	root.add_child(title)
+
 	var controls := HBoxContainer.new()
 	root.add_child(controls)
+
 	var type_option := OptionButton.new()
-	for t in TYPES: type_option.add_item(t.capitalize())
-	type_option.item_selected.connect(func(i): selected_type = TYPES[i])
+	for t in TYPES:
+		type_option.add_item(t.capitalize())
+	type_option.item_selected.connect(func(i):
+		selected_type = TYPES[i]
+	)
 	controls.add_child(type_option)
+
 	var dir_option := OptionButton.new()
-	for d in DIRECTIONS: dir_option.add_item(d.capitalize())
-	dir_option.item_selected.connect(func(i): selected_direction = DIRECTIONS[i])
+	for d in DIRECTIONS:
+		dir_option.add_item(d.capitalize())
+	dir_option.item_selected.connect(func(i):
+		selected_direction = DIRECTIONS[i]
+	)
 	controls.add_child(dir_option)
+
 	var rescue_button := Button.new()
 	rescue_button.text = "Place Rescue"
-	rescue_button.pressed.connect(func(): selected_type = "rescue"; status.text = "Click a cell to place the rescue target.")
+	rescue_button.pressed.connect(func():
+		selected_type = "rescue"
+		status.text = "Click a cell to place the rescue target."
+	)
 	controls.add_child(rescue_button)
+
 	var clear := Button.new()
 	clear.text = "Clear Board"
-	clear.pressed.connect(func(): pieces.clear(); render())
+	clear.pressed.connect(func():
+		pieces.clear()
+		render()
+	)
 	controls.add_child(clear)
+
 	grid = GridContainer.new()
 	grid.columns = board_width
 	grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(grid)
+
 	var save_row := HBoxContainer.new()
 	root.add_child(save_row)
 	path_edit = LineEdit.new()
@@ -60,13 +80,16 @@ func build_ui() -> void:
 	save_button.text = "Save JSON"
 	save_button.pressed.connect(save_level)
 	save_row.add_child(save_button)
+
 	status = Label.new()
 	status.text = "Choose a piece type, then click cells. Click an occupied cell to remove it."
 	root.add_child(status)
 
 func render() -> void:
-	if grid == null: return
-	for child in grid.get_children(): child.queue_free()
+	if grid == null:
+		return
+	for child in grid.get_children():
+		child.queue_free()
 	grid.columns = board_width
 	for y in range(board_height):
 		for x in range(board_width):
@@ -85,7 +108,8 @@ func render() -> void:
 func on_cell(pos: Vector2i) -> void:
 	if selected_type == "rescue":
 		var idx := piece_at(pos)
-		if idx >= 0: pieces.remove_at(idx)
+		if idx >= 0:
+			pieces.remove_at(idx)
 		rescue = pos
 		selected_type = "normal"
 		render()
@@ -98,21 +122,27 @@ func on_cell(pos: Vector2i) -> void:
 		pieces.remove_at(existing)
 	else:
 		var p := {"x": pos.x, "y": pos.y, "type": selected_type, "direction": selected_direction}
-		if selected_type == "gate": p["key_id"] = "default"
-		if selected_type == "key": p["key_id"] = "default"
-		if selected_type == "linked": p["link_id"] = "pair"
+		if selected_type == "gate":
+			p["key_id"] = "default"
+		if selected_type == "key":
+			p["key_id"] = "default"
+		if selected_type == "linked":
+			p["link_id"] = "pair"
 		pieces.append(p)
 	render()
 
 func piece_at(pos: Vector2i) -> int:
 	for i in range(pieces.size()):
-		if int(pieces[i].get("x", -1)) == pos.x and int(pieces[i].get("y", -1)) == pos.y: return i
+		if int(pieces[i].get("x", -1)) == pos.x and int(pieces[i].get("y", -1)) == pos.y:
+			return i
 	return -1
 
 func piece_label(piece: Dictionary) -> String:
 	var type := String(piece.get("type", "normal"))
-	if type == "blocker": return "■"
-	if type == "gate": return "▣"
+	if type == "blocker":
+		return "■"
+	if type == "gate":
+		return "▣"
 	var arrow := String(ARROWS.get(String(piece.get("direction", "right")), "→"))
 	match type:
 		"rotate": return "⟳" + arrow
@@ -125,7 +155,7 @@ func save_level() -> void:
 	var payload := {
 		"width": board_width,
 		"height": board_height,
-		"par_moves": max(2, pieces.size() / 2),
+		"par_moves": max(2, int(pieces.size() / 2)),
 		"rescue_id": "chick",
 		"rescue": [rescue.x, rescue.y],
 		"pieces": pieces
