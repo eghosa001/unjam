@@ -1,32 +1,81 @@
 extends Button
 class_name BlockPieceButton
 
-var shape:Array=[]
-var selected:=false
-var used:=false
-var accent:=Color("8b7cf6")
-var hover:=0.0
+var shape: Array = []
+var selected := false
+var used := false
+var accent := Color("8b7cf6")
+var hover := false
 
-func configure(value:Array,is_selected:bool,color:=Color("8b7cf6"))->void:
- shape=value.duplicate();selected=is_selected;used=shape.is_empty();accent=color;text="";flat=true;focus_mode=Control.FOCUS_NONE;disabled=used;mouse_default_cursor_shape=Control.CURSOR_POINTING_HAND;queue_redraw()
-func _ready()->void:
- mouse_entered.connect(_hover.bind(true));mouse_exited.connect(_hover.bind(false));button_down.connect(func():scale=Vector2(0.96,0.96));button_up.connect(func():scale=Vector2.ONE)
-func _hover(on:bool)->void:
- var t:=create_tween();t.tween_property(self,"hover",1.0 if on else 0.0,0.12);t.tween_callback(queue_redraw)
-func _process(_d:float)->void:
- if hover>0.001 or selected:queue_redraw()
-func _draw()->void:
- var r:=Rect2(Vector2(5,5),size-Vector2(10,10));_box(Rect2(r.position+Vector2(0,6),r.size),Color(0,0,0,0.25),22);_box(r,Color("17233d") if not selected else Color("342b68"),22)
- _border(r,Color("67e8cf") if selected else Color(0.7,0.74,1,0.18+hover*0.22),22,3 if selected else 2)
- if used:
-  draw_string(ThemeDB.fallback_font,r.get_center()+Vector2(-24,6),"USED",HORIZONTAL_ALIGNMENT_LEFT,-1,16,Color(0.55,0.59,0.68));return
- var mx:=0;var my:=0
- for p in shape:mx=maxi(mx,p.x);my=maxi(my,p.y)
- var block:=minf(34.0,minf((r.size.x-42.0)/float(mx+1),(r.size.y-34.0)/float(my+1)))
- var total:=Vector2((mx+1)*block,(my+1)*block);var origin:=r.get_center()-total*0.5
- for p in shape:
-  var q:=Rect2(origin+Vector2(p.x,p.y)*block+Vector2(2,2),Vector2(block-4,block-4));_box(q,accent,7);draw_line(q.position+Vector2(5,5),Vector2(q.end.x-5,q.position.y+5),accent.lightened(0.3),2,true);draw_line(Vector2(q.position.x+5,q.end.y-5),q.end-Vector2(5,5),accent.darkened(0.25),2,true)
-func _box(r:Rect2,c:Color,rad:int)->void:
- var s:=StyleBoxFlat.new();s.bg_color=c;s.corner_radius_top_left=rad;s.corner_radius_top_right=rad;s.corner_radius_bottom_left=rad;s.corner_radius_bottom_right=rad;draw_style_box(s,r)
-func _border(r:Rect2,c:Color,rad:int,w:int)->void:
- var s:=StyleBoxFlat.new();s.bg_color=Color.TRANSPARENT;s.corner_radius_top_left=rad;s.corner_radius_top_right=rad;s.corner_radius_bottom_left=rad;s.corner_radius_bottom_right=rad;s.border_width_left=w;s.border_width_right=w;s.border_width_top=w;s.border_width_bottom=w;s.border_color=c;draw_style_box(s,r)
+func configure(value: Array, is_selected: bool, color := Color("8b7cf6")) -> void:
+	shape = value.duplicate()
+	selected = is_selected
+	used = shape.is_empty()
+	accent = color
+	text = "USED" if used else ""
+	focus_mode = Control.FOCUS_NONE
+	disabled = used
+	mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	_update_style()
+	call_deferred("_render_shape")
+
+func _ready() -> void:
+	mouse_entered.connect(_set_hover.bind(true))
+	mouse_exited.connect(_set_hover.bind(false))
+	button_down.connect(func(): scale = Vector2(0.97, 0.97))
+	button_up.connect(func(): scale = Vector2.ONE)
+	resized.connect(_render_shape)
+
+func _set_hover(value: bool) -> void:
+	hover = value
+	_update_style()
+
+func _update_style() -> void:
+	var normal := _style(Color("342b68") if selected else Color("17233d"), Color("67e8cf") if selected else Color(0.7, 0.74, 1.0, 0.32 if hover else 0.18), 3 if selected else 2)
+	add_theme_stylebox_override("normal", normal)
+	add_theme_stylebox_override("hover", _style(Color("28365a"), Color("67e8cf"), 2))
+	add_theme_stylebox_override("pressed", _style(Color("2f2861"), Color.WHITE, 2))
+	add_theme_stylebox_override("disabled", _style(Color("111a2c"), Color(0.4, 0.45, 0.55, 0.18), 1))
+	add_theme_color_override("font_color", Color("9aa5b8"))
+	add_theme_color_override("font_disabled_color", Color("68758a"))
+	add_theme_font_size_override("font_size", 16)
+
+func _render_shape() -> void:
+	for child in get_children():
+		if child.has_meta("piece_cell"):
+			child.queue_free()
+	if used or shape.is_empty():
+		return
+	var max_x := 0
+	var max_y := 0
+	for point in shape:
+		max_x = maxi(max_x, int(point.x))
+		max_y = maxi(max_y, int(point.y))
+	var cell := minf(34.0, minf((size.x - 44.0) / float(max_x + 1), (size.y - 36.0) / float(max_y + 1)))
+	var total := Vector2((max_x + 1) * cell, (max_y + 1) * cell)
+	var origin := (size - total) * 0.5
+	for point in shape:
+		var block := Panel.new()
+		block.set_meta("piece_cell", true)
+		block.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		block.position = origin + Vector2(int(point.x), int(point.y)) * cell + Vector2(2, 2)
+		block.size = Vector2(cell - 4, cell - 4)
+		block.add_theme_stylebox_override("panel", _style(accent, accent.lightened(0.28), 1, 7))
+		add_child(block)
+
+func _style(background: Color, border: Color, width: int, radius: int = 22) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = background
+	style.corner_radius_top_left = radius
+	style.corner_radius_top_right = radius
+	style.corner_radius_bottom_left = radius
+	style.corner_radius_bottom_right = radius
+	style.border_width_left = width
+	style.border_width_right = width
+	style.border_width_top = width
+	style.border_width_bottom = width
+	style.border_color = border
+	style.shadow_color = Color(0, 0, 0, 0.22)
+	style.shadow_size = 5
+	style.shadow_offset = Vector2(0, 4)
+	return style
