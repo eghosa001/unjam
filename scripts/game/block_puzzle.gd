@@ -18,18 +18,18 @@ const SHAPES := [
 	[Vector2i(0,0), Vector2i(1,0), Vector2i(2,0), Vector2i(0,1), Vector2i(1,1), Vector2i(2,1)]
 ]
 
-var level_number: int = 1
-var daily_mode: bool = false
+var level_number := 1
+var daily_mode := false
 var cells: Array = []
-var cell_buttons: Array[Button] = []
+var cell_buttons: Array[BlockCellButton] = []
 var pieces: Array = []
-var selected_piece: int = -1
-var score: int = 0
-var lines_cleared: int = 0
-var placements: int = 0
-var target_score: int = 80
-var target_lines: int = 2
-var par_placements: int = 18
+var selected_piece := -1
+var score := 0
+var lines_cleared := 0
+var placements := 0
+var target_score := 80
+var target_lines := 2
+var par_placements := 18
 var history: Array = []
 var rng := RandomNumberGenerator.new()
 var score_label: Label
@@ -39,10 +39,13 @@ var hint_label: Label
 var piece_row: HBoxContainer
 var title_label: Label
 var meta_label: Label
-var completed: bool = false
-var piece_batch: int = 0
+var completed := false
+var piece_batch := 0
 
 func _ready() -> void:
+	visible = true
+	mouse_filter = Control.MOUSE_FILTER_STOP
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	build_ui()
 	load_level()
 
@@ -50,11 +53,11 @@ func difficulty() -> String:
 	return MultiGameManager.difficulty_for_level(level_number)
 
 func level_config() -> Dictionary:
-	var world: int = MultiGameManager.world_for_level(level_number)
-	var d: String = difficulty()
-	var base: int = 55 + mini(100, world * 3)
-	var lines: int = 1 + int(world / 12)
-	var par: int = 20 + int(world / 15)
+	var world := MultiGameManager.world_for_level(level_number)
+	var d := difficulty()
+	var base := 55 + mini(100, world * 3)
+	var lines := 1 + int(world / 12)
+	var par := 20 + int(world / 15)
 	match d:
 		"easy":
 			base = int(base * 0.80)
@@ -71,98 +74,176 @@ func level_config() -> Dictionary:
 			lines += 3
 	return {"target_score": base, "target_lines": mini(12, lines), "par": par}
 
+func style_box(color: Color, radius: int = 22, border: Color = Color.TRANSPARENT, border_width: int = 0, shadow: int = 0) -> StyleBoxFlat:
+	var s := StyleBoxFlat.new()
+	s.bg_color = color
+	s.corner_radius_top_left = radius
+	s.corner_radius_top_right = radius
+	s.corner_radius_bottom_left = radius
+	s.corner_radius_bottom_right = radius
+	if border_width > 0:
+		s.border_width_left = border_width
+		s.border_width_right = border_width
+		s.border_width_top = border_width
+		s.border_width_bottom = border_width
+		s.border_color = border
+	if shadow > 0:
+		s.shadow_color = Color(0, 0, 0, 0.28)
+		s.shadow_size = shadow
+		s.shadow_offset = Vector2(0, 6)
+	return s
+
+func style_button(button: Button, accent: bool = false) -> void:
+	var base := Color("8b7cf6") if accent else Color("24355a")
+	button.add_theme_stylebox_override("normal", style_box(Color(base, 0.92), 20, Color(1,1,1,0.09), 1, 6))
+	button.add_theme_stylebox_override("hover", style_box(base.lightened(0.08), 20, Color("c4b5fd"), 2, 8))
+	button.add_theme_stylebox_override("pressed", style_box(base.darkened(0.12), 20, Color.WHITE, 2, 2))
+	button.add_theme_stylebox_override("disabled", style_box(Color("172238"), 20))
+	button.add_theme_color_override("font_color", Color.WHITE)
+	button.add_theme_font_size_override("font_size", 20)
+
 func build_ui() -> void:
-	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var bg := PremiumBackdrop.new()
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	bg.configure(Color("071426"), Color("8b7cf6"), MultiGameManager.world_for_level(level_number) - 1)
+	bg.configure(Color("080d1d"), Color("8b7cf6"), MultiGameManager.world_for_level(level_number) - 1)
 	add_child(bg)
+	PremiumVisuals.set_accent(Color("8b7cf6"))
+
 	var outer := MarginContainer.new()
 	outer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	outer.add_theme_constant_override("margin_left", 36)
-	outer.add_theme_constant_override("margin_right", 36)
-	outer.add_theme_constant_override("margin_top", 48)
-	outer.add_theme_constant_override("margin_bottom", 48)
+	outer.add_theme_constant_override("margin_left", 34)
+	outer.add_theme_constant_override("margin_right", 34)
+	outer.add_theme_constant_override("margin_top", 40)
+	outer.add_theme_constant_override("margin_bottom", 38)
 	add_child(outer)
 	var root := VBoxContainer.new()
-	root.add_theme_constant_override("separation", 13)
+	root.add_theme_constant_override("separation", 11)
 	outer.add_child(root)
+
+	var header_panel := PanelContainer.new()
+	header_panel.add_theme_stylebox_override("panel", style_box(Color(0.035,0.05,0.105,0.96), 27, Color(1,1,1,0.08), 1, 10))
+	root.add_child(header_panel)
+	var hm := MarginContainer.new()
+	hm.add_theme_constant_override("margin_left", 14)
+	hm.add_theme_constant_override("margin_right", 14)
+	hm.add_theme_constant_override("margin_top", 10)
+	hm.add_theme_constant_override("margin_bottom", 10)
+	header_panel.add_child(hm)
 	var header := HBoxContainer.new()
-	root.add_child(header)
+	hm.add_child(header)
 	var back := Button.new()
-	back.text = "BACK"
-	back.custom_minimum_size = Vector2(140, 68)
+	back.text = "←  BACK"
+	back.custom_minimum_size = Vector2(145, 66)
+	style_button(back)
 	back.pressed.connect(_quit)
 	header.add_child(back)
 	title_label = Label.new()
 	title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	title_label.add_theme_font_size_override("font_size", 33)
+	title_label.add_theme_font_size_override("font_size", 31)
+	title_label.add_theme_color_override("font_color", Color("f4f2ff"))
 	header.add_child(title_label)
 	var retry := Button.new()
 	retry.text = "RETRY"
-	retry.custom_minimum_size = Vector2(140, 68)
+	retry.custom_minimum_size = Vector2(135, 66)
+	style_button(retry)
 	retry.pressed.connect(restart_level)
 	header.add_child(retry)
+
 	meta_label = Label.new()
 	meta_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	meta_label.add_theme_font_size_override("font_size", 18)
-	meta_label.modulate = Color("a8b8cf")
+	meta_label.add_theme_font_size_override("font_size", 17)
+	meta_label.add_theme_color_override("font_color", Color("a7b0cb"))
 	root.add_child(meta_label)
+
+	var stats_panel := PanelContainer.new()
+	stats_panel.add_theme_stylebox_override("panel", style_box(Color(0.025,0.038,0.085,0.94), 23, Color("8b7cf655"), 2, 7))
+	root.add_child(stats_panel)
+	var stats_box := VBoxContainer.new()
+	stats_box.add_theme_constant_override("separation", 2)
+	stats_panel.add_child(stats_box)
 	score_label = Label.new()
 	score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	score_label.add_theme_font_size_override("font_size", 25)
-	root.add_child(score_label)
+	score_label.add_theme_font_size_override("font_size", 22)
+	score_label.add_theme_color_override("font_color", Color("ede9fe"))
+	stats_box.add_child(score_label)
 	goal_label = Label.new()
 	goal_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	goal_label.add_theme_font_size_override("font_size", 19)
+	goal_label.add_theme_font_size_override("font_size", 17)
 	goal_label.add_theme_color_override("font_color", Color("67e8cf"))
-	root.add_child(goal_label)
+	stats_box.add_child(goal_label)
+
+	var board_panel := PanelContainer.new()
+	board_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	board_panel.add_theme_stylebox_override("panel", style_box(Color(0.012,0.02,0.052,0.97), 36, Color("8b7cf650"), 2, 14))
+	root.add_child(board_panel)
+	var board_margin := MarginContainer.new()
+	board_margin.add_theme_constant_override("margin_left", 18)
+	board_margin.add_theme_constant_override("margin_right", 18)
+	board_margin.add_theme_constant_override("margin_top", 18)
+	board_margin.add_theme_constant_override("margin_bottom", 18)
+	board_panel.add_child(board_margin)
 	var center := CenterContainer.new()
-	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	root.add_child(center)
+	board_margin.add_child(center)
 	var grid := GridContainer.new()
 	grid.columns = GRID_SIZE
-	grid.add_theme_constant_override("h_separation", 6)
-	grid.add_theme_constant_override("v_separation", 6)
+	grid.add_theme_constant_override("h_separation", 5)
+	grid.add_theme_constant_override("v_separation", 5)
 	center.add_child(grid)
 	for y in range(GRID_SIZE):
 		for x in range(GRID_SIZE):
-			var button := Button.new()
-			button.custom_minimum_size = Vector2(111, 111)
-			button.add_theme_font_size_override("font_size", 42)
+			var button := BlockCellButton.new()
+			button.custom_minimum_size = Vector2(105, 105)
+			button.configure(false, false, Color("8b7cf6"), y * GRID_SIZE + x)
 			button.pressed.connect(place_selected.bind(Vector2i(x, y)))
 			grid.add_child(button)
 			cell_buttons.append(button)
+
+	var pieces_title := Label.new()
+	pieces_title.text = "CHOOSE A PIECE"
+	pieces_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	pieces_title.add_theme_font_size_override("font_size", 17)
+	pieces_title.add_theme_color_override("font_color", Color("b9c1d9"))
+	root.add_child(pieces_title)
 	piece_row = HBoxContainer.new()
 	piece_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	piece_row.add_theme_constant_override("separation", 14)
+	piece_row.add_theme_constant_override("separation", 12)
 	root.add_child(piece_row)
+
+	var action_panel := PanelContainer.new()
+	action_panel.add_theme_stylebox_override("panel", style_box(Color(0.025,0.038,0.085,0.94), 24, Color(1,1,1,0.07), 1, 7))
+	root.add_child(action_panel)
 	var actions := HBoxContainer.new()
 	actions.alignment = BoxContainer.ALIGNMENT_CENTER
-	actions.add_theme_constant_override("separation", 18)
-	root.add_child(actions)
+	actions.add_theme_constant_override("separation", 16)
+	action_panel.add_child(actions)
 	var undo := Button.new()
-	undo.text = "UNDO"
-	undo.custom_minimum_size = Vector2(270, 72)
+	undo.text = "↶  UNDO"
+	undo.custom_minimum_size = Vector2(250, 70)
+	style_button(undo)
 	undo.pressed.connect(undo_move)
 	actions.add_child(undo)
 	var hint := Button.new()
-	hint.text = "HINT"
-	hint.custom_minimum_size = Vector2(270, 72)
+	hint.text = "✦  HINT"
+	hint.custom_minimum_size = Vector2(250, 70)
+	style_button(hint, true)
 	hint.pressed.connect(show_hint)
 	actions.add_child(hint)
+
 	hint_label = Label.new()
 	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint_label.add_theme_font_size_override("font_size", 17)
-	hint_label.custom_minimum_size = Vector2(0, 38)
+	hint_label.add_theme_font_size_override("font_size", 16)
+	hint_label.add_theme_color_override("font_color", Color("b7c1d8"))
+	hint_label.custom_minimum_size = Vector2(0, 30)
 	root.add_child(hint_label)
 	status_label = Label.new()
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	status_label.add_theme_font_size_override("font_size", 24)
+	status_label.add_theme_font_size_override("font_size", 21)
 	status_label.add_theme_color_override("font_color", Color("67e8cf"))
+	status_label.custom_minimum_size = Vector2(0, 34)
 	root.add_child(status_label)
+	PremiumVisuals.entrance(root, 0.02)
 
 func load_level() -> void:
 	completed = false
@@ -172,7 +253,9 @@ func load_level() -> void:
 	placements = 0
 	piece_batch = 0
 	history.clear()
-	var config: Dictionary = level_config()
+	status_label.text = ""
+	hint_label.text = "Select a shape, then place it on the grid"
+	var config := level_config()
 	target_score = int(config.get("target_score", 80))
 	target_lines = int(config.get("target_lines", 2))
 	par_placements = int(config.get("par", 18))
@@ -182,8 +265,7 @@ func load_level() -> void:
 	cells.clear()
 	for _y in range(GRID_SIZE):
 		var row: Array = []
-		for _x in range(GRID_SIZE):
-			row.append(false)
+		for _x in range(GRID_SIZE): row.append(false)
 		cells.append(row)
 	refill_pieces()
 	_restore_checkpoint()
@@ -194,105 +276,98 @@ func refill_pieces() -> void:
 	pieces.clear()
 	piece_batch += 1
 	for _i in range(3):
-		var max_shape: int = SHAPES.size() - 1
-		if difficulty() == "easy":
-			max_shape = 5
-		elif difficulty() == "medium":
-			max_shape = 7
-		pieces.append(SHAPES[rng.randi_range(0, max_shape)].duplicate())
+		var max_shape := SHAPES.size() - 1
+		if difficulty() == "easy": max_shape = 5
+		elif difficulty() == "medium": max_shape = 7
+		var shape_index := rng.randi_range(0, max_shape)
+		pieces.append(SHAPES[shape_index].duplicate())
 	selected_piece = -1
 
 func render() -> void:
 	for y in range(GRID_SIZE):
 		for x in range(GRID_SIZE):
-			var index: int = y * GRID_SIZE + x
-			cell_buttons[index].text = "■" if bool(cells[y][x]) else ""
-			cell_buttons[index].add_theme_color_override("font_color", Color("8b7cf6"))
-	score_label.text = "SCORE %d / %d   •   LINES %d / %d" % [score, target_score, lines_cleared, target_lines]
-	goal_label.text = "PLACEMENTS %d  •  PERFECT ≤ %d" % [placements, par_placements]
+			var index := y * GRID_SIZE + x
+			cell_buttons[index].configure(bool(cells[y][x]), false, Color("8b7cf6"), index)
+	score_label.text = "SCORE  %d / %d    •    LINES  %d / %d" % [score, target_score, lines_cleared, target_lines]
+	goal_label.text = "PLACEMENTS  %d    •    PERFECT ≤ %d" % [placements, par_placements]
 	render_pieces()
 
 func render_pieces() -> void:
-	for child in piece_row.get_children():
-		child.queue_free()
+	for child in piece_row.get_children(): child.queue_free()
 	for i in range(pieces.size()):
 		var button := Button.new()
-		button.custom_minimum_size = Vector2(290, 145)
+		button.custom_minimum_size = Vector2(285, 130)
 		button.text = shape_text(pieces[i])
-		button.add_theme_font_size_override("font_size", 24)
 		button.disabled = pieces[i].is_empty()
-		button.modulate = Color(1.16, 1.16, 1.16) if i == selected_piece else Color.WHITE
+		style_button(button, i == selected_piece)
+		if i == selected_piece:
+			button.add_theme_stylebox_override("normal", style_box(Color("6d5bd0"), 22, Color("67e8cf"), 3, 9))
 		button.pressed.connect(select_piece.bind(i))
 		piece_row.add_child(button)
 
 func shape_text(shape: Array) -> String:
-	if shape.is_empty():
-		return "USED"
-	var max_x: int = 0
-	var max_y: int = 0
+	if shape.is_empty(): return "USED"
+	var max_x := 0
+	var max_y := 0
 	for point in shape:
-		var p: Vector2i = point
-		max_x = maxi(max_x, p.x)
-		max_y = maxi(max_y, p.y)
+		max_x = maxi(max_x, int(point.x))
+		max_y = maxi(max_y, int(point.y))
 	var lines: Array[String] = []
 	for y in range(max_y + 1):
 		var line := ""
-		for x in range(max_x + 1):
-			line += "■ " if Vector2i(x, y) in shape else "  "
+		for x in range(max_x + 1): line += "◆ " if Vector2i(x, y) in shape else "  "
 		lines.append(line)
 	return "\n".join(lines)
 
 func select_piece(index: int) -> void:
-	if completed or pieces[index].is_empty():
-		return
+	if completed or pieces[index].is_empty(): return
 	selected_piece = index
-	status_label.text = ""
-	hint_label.text = "Tap the grid to place it"
+	status_label.text = "Piece %d selected" % (index + 1)
+	hint_label.text = "Tap a grid cell to anchor the selected piece"
 	render_pieces()
 
 func place_selected(origin: Vector2i) -> void:
-	if completed:
-		return
+	if completed: return
 	if selected_piece < 0 or selected_piece >= pieces.size():
 		status_label.text = "Choose a piece first"
 		return
 	var shape: Array = pieces[selected_piece]
 	if not can_place(shape, origin):
-		status_label.text = "That piece does not fit there"
+		status_label.text = "That shape does not fit there"
+		PremiumVisuals.screen_flash(Color("ff6b7a"), 0.045)
 		return
 	history.append({"cells": cells.duplicate(true), "pieces": pieces.duplicate(true), "selected": selected_piece, "score": score, "lines": lines_cleared, "placements": placements, "batch": piece_batch, "rng_state": rng.state})
 	for point in shape:
-		var p: Vector2i = point
-		cells[origin.y + p.y][origin.x + p.x] = true
+		var px: int = origin.x + int(point.x)
+		var py: int = origin.y + int(point.y)
+		cells[py][px] = true
 	score += shape.size()
 	placements += 1
 	pieces[selected_piece] = []
 	selected_piece = -1
-	var cleared: int = clear_lines()
+	var cleared := clear_lines()
 	if cleared > 0:
 		lines_cleared += cleared
 		score += cleared * 20
-		status_label.text = "%d LINE%s CLEARED" % [cleared, "S" if cleared != 1 else ""]
+		status_label.text = "%d LINE%s CLEARED  •  COMBO +%d" % [cleared, "S" if cleared != 1 else "", cleared * 20]
+		PremiumVisuals.burst(Vector2(540, 840), Color("8b7cf6"), 10 + cleared * 4)
 	else:
-		status_label.text = ""
+		status_label.text = "Placed"
 	if reached_goal():
 		render()
 		complete_level()
 		return
-	if all_pieces_used():
-		refill_pieces()
+	if all_pieces_used(): refill_pieces()
 	render()
 	_save_checkpoint()
-	if not any_move_available():
-		status_label.text = "NO MOVES — UNDO, HINT OR RETRY"
+	if not any_move_available(): status_label.text = "NO MOVES — UNDO, HINT OR RETRY"
 
 func can_place(shape: Array, origin: Vector2i) -> bool:
 	for point in shape:
-		var p: Vector2i = point
-		var x: int = origin.x + p.x
-		var y: int = origin.y + p.y
-		if x < 0 or x >= GRID_SIZE or y < 0 or y >= GRID_SIZE or bool(cells[y][x]):
-			return false
+		var x: int = origin.x + int(point.x)
+		var y: int = origin.y + int(point.y)
+		if x < 0 or x >= GRID_SIZE or y < 0 or y >= GRID_SIZE: return false
+		if bool(cells[y][x]): return false
 	return true
 
 func clear_lines() -> int:
@@ -304,22 +379,18 @@ func clear_lines() -> int:
 			if not bool(cells[y][x]):
 				full = false
 				break
-		if full:
-			full_rows.append(y)
+		if full: full_rows.append(y)
 	for x in range(GRID_SIZE):
 		var full := true
 		for y in range(GRID_SIZE):
 			if not bool(cells[y][x]):
 				full = false
 				break
-		if full:
-			full_cols.append(x)
+		if full: full_cols.append(x)
 	for y in full_rows:
-		for x in range(GRID_SIZE):
-			cells[y][x] = false
+		for x in range(GRID_SIZE): cells[y][x] = false
 	for x in full_cols:
-		for y in range(GRID_SIZE):
-			cells[y][x] = false
+		for y in range(GRID_SIZE): cells[y][x] = false
 	return full_rows.size() + full_cols.size()
 
 func reached_goal() -> bool:
@@ -327,26 +398,24 @@ func reached_goal() -> bool:
 
 func all_pieces_used() -> bool:
 	for shape in pieces:
-		if not shape.is_empty():
-			return false
+		if not shape.is_empty(): return false
 	return true
 
 func any_move_available() -> bool:
 	for shape in pieces:
-		if shape.is_empty():
-			continue
+		if shape.is_empty(): continue
 		for y in range(GRID_SIZE):
 			for x in range(GRID_SIZE):
-				if can_place(shape, Vector2i(x, y)):
-					return true
+				if can_place(shape, Vector2i(x, y)): return true
 	return false
 
 func undo_move() -> void:
 	if history.is_empty() or completed:
+		status_label.text = "Nothing to undo"
 		return
 	var state: Dictionary = history.pop_back()
-	cells = (state.get("cells", []) as Array).duplicate(true)
-	pieces = (state.get("pieces", []) as Array).duplicate(true)
+	cells = state.get("cells", []).duplicate(true)
+	pieces = state.get("pieces", []).duplicate(true)
 	selected_piece = int(state.get("selected", -1))
 	score = int(state.get("score", 0))
 	lines_cleared = int(state.get("lines", 0))
@@ -359,12 +428,10 @@ func undo_move() -> void:
 	_save_checkpoint()
 
 func show_hint() -> void:
-	if completed:
-		return
+	if completed: return
 	for piece_index in range(pieces.size()):
 		var shape: Array = pieces[piece_index]
-		if shape.is_empty():
-			continue
+		if shape.is_empty(): continue
 		for y in range(GRID_SIZE):
 			for x in range(GRID_SIZE):
 				if can_place(shape, Vector2i(x, y)):
@@ -376,16 +443,14 @@ func show_hint() -> void:
 	hint_label.text = "No placement found — undo or retry"
 
 func complete_level() -> void:
-	if completed:
-		return
+	if completed: return
 	completed = true
 	MultiGameManager.clear_checkpoint(GAME_ID)
-	var stars: int = 3 if placements <= par_placements else (2 if placements <= par_placements + 6 else 1)
-	if daily_mode:
-		MultiGameManager.complete_daily(GAME_ID, 100 + stars * 25)
-	else:
-		MultiGameManager.complete_level(GAME_ID, level_number, stars, 30)
+	var stars := 3 if placements <= par_placements else (2 if placements <= par_placements + 6 else 1)
+	if daily_mode: MultiGameManager.complete_daily(GAME_ID, 100 + stars * 25)
+	else: MultiGameManager.complete_level(GAME_ID, level_number, stars, 30)
 	status_label.text = "LEVEL COMPLETE  •  %d ★" % stars
+	PremiumVisuals.burst(Vector2(540, 850), Color("8b7cf6"), 26)
 	AnalyticsManager.track("block_puzzle_completed", {"level": level_number, "score": score, "lines": lines_cleared, "placements": placements, "stars": stars, "daily": daily_mode})
 	await get_tree().create_timer(0.9).timeout
 	finished.emit(-1 if daily_mode else level_number)
@@ -395,20 +460,17 @@ func restart_level() -> void:
 	load_level()
 
 func _save_checkpoint() -> void:
-	if completed:
-		return
+	if completed: return
 	MultiGameManager.save_checkpoint(GAME_ID, {"level": level_number, "daily": daily_mode, "cells": cells.duplicate(true), "pieces": pieces.duplicate(true), "selected": selected_piece, "score": score, "lines": lines_cleared, "placements": placements, "batch": piece_batch, "rng_state": rng.state, "history": history.duplicate(true)})
 
 func _restore_checkpoint() -> void:
-	var checkpoint: Dictionary = MultiGameManager.checkpoint(GAME_ID)
-	if checkpoint.is_empty() or int(checkpoint.get("level", -1)) != level_number or bool(checkpoint.get("daily", false)) != daily_mode:
-		return
+	var checkpoint := MultiGameManager.checkpoint(GAME_ID)
+	if checkpoint.is_empty() or int(checkpoint.get("level", -1)) != level_number or bool(checkpoint.get("daily", false)) != daily_mode: return
 	var saved_cells = checkpoint.get("cells", [])
 	if saved_cells is Array and saved_cells.size() == GRID_SIZE:
 		cells = saved_cells.duplicate(true)
 		var saved_pieces = checkpoint.get("pieces", [])
-		if saved_pieces is Array:
-			pieces = saved_pieces.duplicate(true)
+		if saved_pieces is Array: pieces = saved_pieces.duplicate(true)
 		selected_piece = int(checkpoint.get("selected", -1))
 		score = maxi(0, int(checkpoint.get("score", 0)))
 		lines_cleared = maxi(0, int(checkpoint.get("lines", 0)))
@@ -416,8 +478,7 @@ func _restore_checkpoint() -> void:
 		piece_batch = maxi(0, int(checkpoint.get("batch", 0)))
 		rng.state = int(checkpoint.get("rng_state", rng.state))
 		var saved_history = checkpoint.get("history", [])
-		if saved_history is Array:
-			history = saved_history.duplicate(true)
+		if saved_history is Array: history = saved_history.duplicate(true)
 
 func _quit() -> void:
 	_save_checkpoint()
