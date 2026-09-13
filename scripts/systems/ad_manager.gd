@@ -19,6 +19,7 @@ var last_interstitial_unix := 0
 var provider: Node
 var _pending_reward_placement := ""
 var _pending_reward_callback := Callable()
+var rewarded_in_progress := false
 
 func _ready() -> void:
 	ads_enabled = not bool(SaveManager.data.get("remove_ads", false))
@@ -35,10 +36,15 @@ func is_test_mode() -> bool:
 	return bool(ProjectSettings.get_setting("monetization/test_mode", true))
 
 func show_rewarded(placement: String, on_reward: Callable = Callable()) -> bool:
-	# On desktop/editor, test mode deliberately simulates a completed ad so QA can test flows.
-	# Android production never grants a reward unless the ad provider confirms completion.
+	if rewarded_in_progress:
+		rewarded_failed.emit(placement, "A rewarded ad is already in progress")
+		return false
+	if OS.get_name() == "Android" and not PrivacyManager.may_request_ads():
+		rewarded_failed.emit(placement, "Advertising consent is not ready")
+		return false
 	AnalyticsManager.track("rewarded_requested", {"placement": placement, "provider": is_provider_ready()})
 	if is_provider_ready() and provider.has_method("show_rewarded"):
+		rewarded_in_progress = true
 		_pending_reward_placement = placement
 		_pending_reward_callback = on_reward
 		var accepted = provider.call("show_rewarded", placement, Callable(self, "_provider_rewarded_completed"), Callable(self, "_provider_rewarded_failed"))
@@ -51,11 +57,13 @@ func show_rewarded(placement: String, on_reward: Callable = Callable()) -> bool:
 	return false
 
 func _provider_rewarded_completed() -> void:
+	rewarded_in_progress = false
 	_grant_reward(_pending_reward_placement, _pending_reward_callback)
 	_pending_reward_placement = ""
 	_pending_reward_callback = Callable()
 
 func _provider_rewarded_failed(reason: String = "Rewarded ad failed") -> void:
+	rewarded_in_progress = false
 	var placement := _pending_reward_placement
 	_pending_reward_placement = ""
 	_pending_reward_callback = Callable()
@@ -79,7 +87,8 @@ func note_level_completed() -> void:
 func should_show_interstitial() -> bool:
 	if not ads_enabled or bool(SaveManager.data.get("remove_ads", false)):
 		return false
-	# Desktop/editor test mode intentionally skips real-time grace/cooldown gates so QA is deterministic.
+	if OS.get_name() == "Android" and not PrivacyManager.may_request_ads():
+		return false
 	if is_test_mode() and OS.get_name() != "Android":
 		return completed_since_interstitial >= interstitial_interval
 	if int(SaveManager.data.get("total_levels_completed", 0)) < MIN_LEVELS_BEFORE_FIRST_INTERSTITIAL:
