@@ -38,7 +38,10 @@ func _process(_delta: float) -> void:
 	if launcher == null:
 		return
 	var scene: Node = get_tree().current_scene
-	launcher.visible = scene != null and scene.name == "Main" and not hub_open
+	var in_game := false
+	if scene != null and "current_surface" in scene:
+		in_game = String(scene.current_surface) == "game"
+	launcher.visible = scene != null and scene.name == "Main" and not hub_open and not in_game
 	if launcher.visible:
 		launcher.text = "LIVE\n%d ◆" % int(SaveManager.data.get("event_currency", 0))
 
@@ -55,6 +58,5 @@ func open_hub() -> void:
 	scene.add_child(hub)
 	hub.closed.connect(func():
 		hub_open = false
-		launcher.visible = true
 	)
 	PremiumVisuals.screen_flash(Color("2dd4b6"), 0.12)
