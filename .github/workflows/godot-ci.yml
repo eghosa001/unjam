@@ -47,6 +47,8 @@ jobs:
         run: godot --headless --path . --script res://tests/validate_robustness.gd
       - name: Validate all three Level 1 launches
         run: godot --headless --path . --script res://tests/validate_level_launch.gd
+      - name: Validate all three campaigns through level 1000
+        run: godot --headless --path . --script res://tests/validate_campaign_1000.gd
       - name: Parse and boot smoke test
         shell: bash
         run: |
