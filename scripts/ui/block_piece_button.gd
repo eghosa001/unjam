@@ -6,14 +6,12 @@ var selected := false
 var used := false
 var accent := Color("8b7cf6")
 var hover := false
-var preview_ready := false
 
 func configure(value: Array, is_selected: bool, color := Color("8b7cf6")) -> void:
-	shape = value.duplicate()
+	shape = value.duplicate(true)
 	selected = is_selected
 	used = shape.is_empty()
 	accent = color
-	preview_ready = false
 	text = "USED" if used else ""
 	focus_mode = Control.FOCUS_NONE
 	disabled = used
@@ -26,19 +24,12 @@ func _ready() -> void:
 	mouse_exited.connect(_set_hover.bind(false))
 	button_down.connect(func(): scale = Vector2(0.97, 0.97))
 	button_up.connect(func(): scale = Vector2.ONE)
-	resized.connect(_invalidate_preview)
-	set_process(true)
-
-func _process(_delta: float) -> void:
-	if not preview_ready and size.x > 1.0 and size.y > 1.0:
-		_render_shape()
-
-func _invalidate_preview() -> void:
-	preview_ready = false
+	resized.connect(queue_redraw)
 
 func _set_hover(value: bool) -> void:
 	hover = value
 	_update_style()
+	queue_redraw()
 
 func _update_style() -> void:
 	var bg := Color("342b68") if selected else Color("17233d")
@@ -51,29 +42,45 @@ func _update_style() -> void:
 	add_theme_color_override("font_disabled_color", Color("68758a"))
 	add_theme_font_size_override("font_size", 16)
 
-func _render_shape() -> void:
-	preview_ready = true
-	for child in get_children():
-		if child.has_meta("piece_cell"):
-			child.queue_free()
-	if used or shape.is_empty():
+func _draw() -> void:
+	if used or shape.is_empty() or size.x <= 1.0 or size.y <= 1.0:
+		return
+	var points: Array[Vector2i] = []
+	for raw in shape:
+		var point := _as_point(raw)
+		if point.x >= 0 and point.y >= 0:
+			points.append(point)
+	if points.is_empty():
 		return
 	var max_x := 0
 	var max_y := 0
-	for point in shape:
-		max_x = maxi(max_x, int(point.x))
-		max_y = maxi(max_y, int(point.y))
+	for point in points:
+		max_x = maxi(max_x, point.x)
+		max_y = maxi(max_y, point.y)
 	var cell := minf(34.0, minf((size.x - 44.0) / float(max_x + 1), (size.y - 36.0) / float(max_y + 1)))
+	cell = maxf(10.0, cell)
 	var total := Vector2((max_x + 1) * cell, (max_y + 1) * cell)
 	var origin := (size - total) * 0.5
-	for point in shape:
-		var block := Panel.new()
-		block.set_meta("piece_cell", true)
-		block.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		block.position = origin + Vector2(int(point.x), int(point.y)) * cell + Vector2(2, 2)
-		block.size = Vector2(cell - 4, cell - 4)
-		block.add_theme_stylebox_override("panel", _style(accent, accent.lightened(0.28), 1, 7))
-		add_child(block)
+	for point in points:
+		var rect := Rect2(origin + Vector2(point) * cell + Vector2(2, 2), Vector2(cell - 4, cell - 4))
+		draw_style_box(_style(accent, accent.lightened(0.28), 1, 7), rect)
+		draw_line(rect.position + Vector2(5, 5), Vector2(rect.end.x - 5, rect.position.y + 5), accent.lightened(0.32), 2.0, true)
+
+func _as_point(raw: Variant) -> Vector2i:
+	if raw is Vector2i:
+		return raw
+	if raw is Vector2:
+		return Vector2i(raw)
+	if raw is Dictionary:
+		return Vector2i(int(raw.get("x", -1)), int(raw.get("y", -1)))
+	if raw is Array and raw.size() >= 2:
+		return Vector2i(int(raw[0]), int(raw[1]))
+	if raw is String:
+		var cleaned := String(raw).replace("(", "").replace(")", "").replace("Vector2i", "").strip_edges()
+		var parts := cleaned.split(",")
+		if parts.size() >= 2 and parts[0].strip_edges().is_valid_int() and parts[1].strip_edges().is_valid_int():
+			return Vector2i(int(parts[0]), int(parts[1]))
+	return Vector2i(-1, -1)
 
 func _style(background: Color, border: Color, width: int, radius: int = 22) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
