@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3]
 
-[ext_resource path="res://scripts/game/water_sort.gd" type="Script" id="1"]
+[ext_resource path="res://scripts/game/water_sort_polished.gd" type="Script" id="1"]
 [ext_resource path="res://scripts/ui/ui_touch_enhancer.gd" type="Script" id="2"]
 
 [node name="WaterSort" type="Control"]
