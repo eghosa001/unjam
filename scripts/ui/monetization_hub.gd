@@ -28,7 +28,6 @@ func _build_ui() -> void:
 	layer = CanvasLayer.new()
 	layer.layer = 500
 	add_child(layer)
-
 	shop_button = Button.new()
 	shop_button.text = "SHOP"
 	shop_button.custom_minimum_size = Vector2(230, 82)
@@ -40,7 +39,6 @@ func _build_ui() -> void:
 	shop_button.add_theme_stylebox_override("pressed", _box(Color("5c3fd6"), 24, Color.WHITE, 2))
 	shop_button.pressed.connect(_open_shop)
 	layer.add_child(shop_button)
-
 	overlay = Control.new()
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -83,7 +81,6 @@ func _build_ui() -> void:
 	balance_label.add_theme_font_size_override("font_size", 20)
 	balance_label.add_theme_color_override("font_color", Color("ffd166"))
 	header.add_child(balance_label)
-
 	var reward_panel := PanelContainer.new()
 	reward_panel.add_theme_stylebox_override("panel", _box(Color("11294a"), 26, Color("49e1c0"), 2))
 	root.add_child(reward_panel)
@@ -101,7 +98,6 @@ func _build_ui() -> void:
 	watch.add_theme_font_size_override("font_size", 20)
 	watch.pressed.connect(_watch_rewarded.bind(watch))
 	reward_row.add_child(watch)
-
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(scroll)
@@ -111,6 +107,20 @@ func _build_ui() -> void:
 	scroll.add_child(products)
 	for product_id in StoreManager.PRODUCTS.keys():
 		_add_product(products, String(product_id))
+	var utility_row := HBoxContainer.new()
+	utility_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	utility_row.add_theme_constant_override("separation", 16)
+	root.add_child(utility_row)
+	var restore := Button.new()
+	restore.text = "RESTORE PURCHASES"
+	restore.custom_minimum_size = Vector2(300, 68)
+	restore.pressed.connect(_restore_purchases)
+	utility_row.add_child(restore)
+	var privacy := Button.new()
+	privacy.text = "PRIVACY OPTIONS"
+	privacy.custom_minimum_size = Vector2(300, 68)
+	privacy.pressed.connect(PrivacyManager.show_privacy_options)
+	utility_row.add_child(privacy)
 	status_label = Label.new()
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status_label.add_theme_font_size_override("font_size", 17)
@@ -201,7 +211,6 @@ func _rebuild_shop() -> void:
 	overlay = null
 	balance_label = null
 	status_label = null
-	# Recreate the whole monetization layer to refresh ownership/price state safely.
 	layer.remove_child(shop_button)
 	shop_button.queue_free()
 	shop_button = null
@@ -236,6 +245,11 @@ func _on_puzzle_finished(_level_number: int, game_id: String) -> void:
 	AnalyticsManager.track("monetization_level_complete", {"game": game_id})
 	if AdManager.should_show_interstitial():
 		AdManager.show_interstitial()
+
+func _restore_purchases() -> void:
+	status_label.text = "Checking Google Play purchases…"
+	if not StoreManager.restore_purchases():
+		status_label.text = "Restore purchases is available on a Google Play build."
 
 func _box(color: Color, radius: int, border: Color = Color.TRANSPARENT, border_width: int = 0) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
