@@ -24,7 +24,6 @@ func build_home() -> void:
 	var root := VBoxContainer.new()
 	root.add_theme_constant_override("separation", 16)
 	margin.add_child(root)
-
 	var brand := Label.new()
 	brand.text = "UNJAM"
 	brand.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -37,7 +36,6 @@ func build_home() -> void:
 	tagline.add_theme_font_size_override("font_size", 18)
 	tagline.add_theme_color_override("font_color", Color("67e8cf"))
 	root.add_child(tagline)
-
 	var shared := add_glass_card(root, Vector2(0, 92))
 	var shared_label := Label.new()
 	shared_label.text = "%d COINS   •   %d PRESTIGE   •   %d ACHIEVEMENT POINTS" % [int(SaveManager.data.get("coins", 0)), int(SaveManager.data.get("prestige_points", 0)), int(SaveManager.data.get("achievement_points", 0))]
@@ -45,14 +43,12 @@ func build_home() -> void:
 	shared_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	shared_label.add_theme_font_size_override("font_size", 19)
 	shared.add_child(shared_label)
-
 	var games := VBoxContainer.new()
 	games.add_theme_constant_override("separation", 12)
 	root.add_child(games)
 	_add_game_card(games, "rescue_rush", Color("2dd4b6"), "CHAIN-REACTION RESCUE")
 	_add_game_card(games, "water_sort", Color("5da9ff"), "SORT EVERY COLOR")
 	_add_game_card(games, "block_puzzle", Color("8b7cf6"), "BUILD, CLEAR, COMBO")
-
 	var daily_title := Label.new()
 	daily_title.text = "DAILY CHALLENGES"
 	daily_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -71,7 +67,6 @@ func build_home() -> void:
 		daily.disabled = done
 		daily.pressed.connect(start_game_daily.bind(game_id))
 		daily_row.add_child(daily)
-
 	var bottom := HBoxContainer.new()
 	bottom.alignment = BoxContainer.ALIGNMENT_CENTER
 	bottom.add_theme_constant_override("separation", 14)
@@ -131,17 +126,14 @@ func _add_game_card(parent: VBoxContainer, game_id: String, accent: Color, subti
 		controls.add_child(resume)
 
 func _daily_done(game_id: String) -> bool:
-	if game_id == "rescue_rush":
-		return DailyChallenge.is_completed_today()
+	if game_id == "rescue_rush": return DailyChallenge.is_completed_today()
 	return MultiGameManager.is_daily_completed(game_id)
 
 func open_game_campaign(game_id: String) -> void:
 	selected_game_id = game_id
 	selected_multi_world = MultiGameManager.highest_unlocked_world(game_id)
-	if game_id == "rescue_rush":
-		build_level_select()
-	else:
-		build_multi_level_select()
+	if game_id == "rescue_rush": build_level_select()
+	else: build_multi_level_select()
 
 func build_level_select() -> void:
 	selected_game_id = "rescue_rush"
@@ -247,18 +239,15 @@ func start_level(level_number: int) -> void:
 	current_surface = "game"
 	_spawn_rescue(level_number, false, {})
 
-func start_daily() -> void:
-	start_game_daily("rescue_rush")
+func start_daily() -> void: start_game_daily("rescue_rush")
 
 func start_game_daily(game_id: String) -> void:
 	if _daily_done(game_id):
 		build_home()
 		return
 	selected_game_id = game_id
-	if game_id == "rescue_rush":
-		_spawn_rescue(1, true, DailyChallenge.build_today())
-	else:
-		start_multi_level(game_id, MultiGameManager.daily_level(game_id), true)
+	if game_id == "rescue_rush": _spawn_rescue(1, true, DailyChallenge.build_today())
+	else: start_multi_level(game_id, MultiGameManager.daily_level(game_id), true)
 
 func start_multi_level(game_id: String, level_number: int, daily: bool = false) -> void:
 	selected_game_id = game_id
@@ -302,7 +291,6 @@ func _spawn_rescue(level_number: int, daily: bool, custom_data: Dictionary) -> v
 	game_scene.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	game_scene.z_index = 100
 	active_game = game_scene
-	AnalyticsManager.track("game_scene_opened", {"game": "rescue_rush", "level": level_number, "daily": daily})
 
 func _remove_active_game() -> void:
 	if active_game and is_instance_valid(active_game): active_game.queue_free()
@@ -312,12 +300,9 @@ func _remove_active_game() -> void:
 
 func _on_rescue_finished(completed_level: int) -> void:
 	active_game = null
-	if completed_level < 0:
-		build_home()
-	elif LevelManager.has_level(completed_level + 1):
-		call_deferred("start_level", completed_level + 1)
-	else:
-		build_home()
+	if completed_level < 0: build_home()
+	elif LevelManager.has_level(completed_level + 1): call_deferred("start_level", completed_level + 1)
+	else: build_home()
 
 func _on_rescue_quit() -> void:
 	active_game = null
@@ -325,12 +310,9 @@ func _on_rescue_quit() -> void:
 
 func _on_multi_finished(completed_level: int, game_id: String) -> void:
 	active_game = null
-	if completed_level < 0:
-		build_home()
-	elif completed_level < MultiGameManager.CAMPAIGN_LEVELS:
-		call_deferred("start_multi_level", game_id, completed_level + 1, false)
-	else:
-		build_home()
+	if completed_level < 0: build_home()
+	elif completed_level < MultiGameManager.CAMPAIGN_LEVELS: call_deferred("start_multi_level", game_id, completed_level + 1, false)
+	else: build_home()
 
 func _on_multi_quit(game_id: String) -> void:
 	active_game = null
@@ -339,9 +321,8 @@ func _on_multi_quit(game_id: String) -> void:
 	build_multi_level_select()
 
 func _checkpoint_for(game_id: String) -> Dictionary:
-	if game_id == "rescue_rush":
-		return SaveManager.data.get("active_run", {})
-	return MultiGameManager.load_checkpoint(game_id)
+	if game_id == "rescue_rush": return SaveManager.data.get("active_run", {})
+	return MultiGameManager.checkpoint(game_id)
 
 func resume_game(game_id: String) -> void:
 	var checkpoint := _checkpoint_for(game_id)
@@ -355,4 +336,3 @@ func resume_game(game_id: String) -> void:
 		_spawn_rescue(int(checkpoint.get("level", 1)), bool(checkpoint.get("daily", false)), custom)
 	else:
 		start_multi_level(game_id, int(checkpoint.get("level", 1)), bool(checkpoint.get("daily", false)))
-	AnalyticsManager.track("resume_selected", {"game": game_id, "level": int(checkpoint.get("level", 1))})
