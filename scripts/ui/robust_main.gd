@@ -13,6 +13,36 @@ func build_home() -> void:
 	current_surface = "home"
 	_remove_active_game()
 	super.build_home()
+	_add_arcade_games()
+
+func _add_arcade_games() -> void:
+	if content == null or not is_instance_valid(content):
+		return
+	var home_box: VBoxContainer = null
+	for child in content.get_children():
+		if child is VBoxContainer:
+			home_box = child as VBoxContainer
+			break
+	if home_box == null:
+		return
+	var section := Label.new()
+	section.text = "MORE GAMES"
+	section.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	section.add_theme_font_size_override("font_size", 18)
+	section.add_theme_color_override("font_color", Color("67e8cf"))
+	home_box.add_child(section)
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 16)
+	home_box.add_child(row)
+	var water := make_button("WATER SORT", Vector2(272, 78))
+	water.add_theme_font_size_override("font_size", 20)
+	water.pressed.connect(start_water_sort)
+	row.add_child(water)
+	var blocks := make_button("BLOCK PUZZLE", Vector2(272, 78))
+	blocks.add_theme_font_size_override("font_size", 20)
+	blocks.pressed.connect(start_block_puzzle)
+	row.add_child(blocks)
 
 func build_level_select() -> void:
 	current_surface = "levels"
@@ -40,6 +70,44 @@ func start_daily() -> void:
 		return
 	current_surface = "game"
 	_spawn_game(1, true, DailyChallenge.build_today())
+
+func start_water_sort() -> void:
+	_spawn_arcade("res://scenes/WaterSort.tscn", "water_sort")
+
+func start_block_puzzle() -> void:
+	_spawn_arcade("res://scenes/BlockPuzzle.tscn", "block_puzzle")
+
+func _spawn_arcade(scene_path: String, game_name: String) -> void:
+	current_surface = "arcade"
+	_remove_active_game()
+	if content and is_instance_valid(content):
+		content.hide()
+	if continue_button and is_instance_valid(continue_button):
+		continue_button.hide()
+	var packed := load(scene_path) as PackedScene
+	if packed == null:
+		push_error("Arcade scene could not be loaded: %s" % scene_path)
+		build_home()
+		return
+	var game_scene := packed.instantiate() as Control
+	if game_scene == null:
+		push_error("Arcade scene could not be instantiated: %s" % scene_path)
+		build_home()
+		return
+	game_scene.name = "ActiveGame"
+	if game_scene.has_signal("quit_requested"):
+		game_scene.quit_requested.connect(_on_arcade_quit)
+	add_child(game_scene)
+	game_scene.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	game_scene.offset_left = 0.0
+	game_scene.offset_top = 0.0
+	game_scene.offset_right = 0.0
+	game_scene.offset_bottom = 0.0
+	game_scene.z_index = 100
+	game_scene.show()
+	move_child(game_scene, get_child_count() - 1)
+	active_game = game_scene
+	AnalyticsManager.track("arcade_game_opened", {"game": game_name})
 
 func _spawn_game(level_number: int, daily: bool, custom_data: Dictionary) -> void:
 	_remove_active_game()
@@ -105,6 +173,11 @@ func _on_game_quit() -> void:
 	active_game = null
 	current_surface = "levels"
 	build_level_select()
+
+func _on_arcade_quit() -> void:
+	active_game = null
+	current_surface = "home"
+	build_home()
 
 func _create_continue_button() -> void:
 	continue_button = make_button("CONTINUE RESCUE", Vector2(480, 88), true)
