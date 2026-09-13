@@ -369,8 +369,13 @@ func _spawn_clear_feedback(rows: Array[int], cols: Array[int]) -> void:
 				_spawn_cell_overlay(index, Color("67e8cf"), 0.52, 1.42, float(y) * 0.035)
 	var count := rows.size() + cols.size()
 	if count > 0:
-		_spawn_score_popup("LINE CLEAR  +%d" % (count * 20), Color("67e8cf"), 0.12)
-		PremiumVisuals.screen_flash(Color("67e8cf"), 0.07)
+		var cheer := "GREAT!" if count == 1 else ("AMAZING!" if count == 2 else "SPECTACULAR!")
+		var reward := count * 20
+		_spawn_score_popup("%s  +%d" % [cheer, reward], Color("67e8cf"), 0.10)
+		if count >= 2:
+			_spawn_score_popup("%d× CLEAR" % count, Color("c4b5fd"), 0.22)
+		PremiumVisuals.screen_flash(Color("67e8cf"), 0.055 + minf(0.055, float(count) * 0.012))
+		PremiumVisuals.burst(Vector2(540, 840), Color("67e8cf"), 12 + count * 7)
 
 func _spawn_score_popup(text_value: String, color: Color, delay: float = 0.0) -> void:
 	var label := Label.new()
@@ -381,19 +386,22 @@ func _spawn_score_popup(text_value: String, color: Color, delay: float = 0.0) ->
 	label.size = Vector2(380, 80)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 34)
+	label.add_theme_font_size_override("font_size", 42 if "!" in text_value else 34)
 	label.add_theme_color_override("font_color", color)
 	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.45))
 	label.add_theme_constant_override("shadow_offset_x", 2)
 	label.add_theme_constant_override("shadow_offset_y", 3)
 	label.modulate.a = 0.0
+	label.scale = Vector2(0.72, 0.72)
+	label.pivot_offset = label.size * 0.5
 	add_child(label)
 	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	if delay > 0.0:
 		tween.tween_interval(delay)
-	tween.tween_property(label, "modulate:a", 1.0, 0.08)
-	tween.parallel().tween_property(label, "scale", Vector2(1.12, 1.12), 0.10)
-	tween.tween_property(label, "position:y", label.position.y - 90.0, 0.42).set_trans(Tween.TRANS_QUAD)
+	tween.tween_property(label, "modulate:a", 1.0, 0.07)
+	tween.parallel().tween_property(label, "scale", Vector2(1.18, 1.18), 0.11)
+	tween.tween_property(label, "scale", Vector2.ONE, 0.10)
+	tween.tween_property(label, "position:y", label.position.y - 96.0, 0.38).set_trans(Tween.TRANS_QUAD)
 	tween.parallel().tween_property(label, "modulate:a", 0.0, 0.42)
 	tween.finished.connect(label.queue_free)
 
