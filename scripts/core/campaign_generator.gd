@@ -3,11 +3,15 @@ class_name CampaignGenerator
 
 const RESCUES: Array[String] = ["chick", "puppy", "kitten", "robot", "slime", "panda", "fox", "alien"]
 const DIRS: Array[String] = ["up", "right", "down", "left"]
-const RHYTHM: Array[String] = ["easy", "medium", "medium", "easy", "hard"]
+const RHYTHM: Array[String] = ["medium", "medium", "hard", "medium", "hard"]
 
 static func generate(level_number: int) -> Dictionary:
 	var world: int = int((level_number - 1) / 100) + 1
 	var phase: int = ((world - 1) % 6) + 1
+	# Rotate mechanics inside each world too, so the first 100 levels do not
+	# repeat the same simple corridor puzzle.
+	if world == 1:
+		phase = ((level_number - 1) % 6) + 1
 	var campaign_tier: int = _campaign_tier(level_number)
 	var rhythm_label: String = RHYTHM[(level_number - 1) % RHYTHM.size()]
 	var milestone: String = ""
@@ -19,14 +23,17 @@ static func generate(level_number: int) -> Dictionary:
 		rhythm_label = "hard"
 
 	var difficulty_score: int = _difficulty_score(campaign_tier, rhythm_label, milestone)
-	var size: int = clampi(5 + int(difficulty_score / 5), 5, 8)
+	# The opening levels previously stayed on a sparse 5x5 board. Start with a
+	# more interesting 6x6 space, then expand naturally later.
+	var size: int = clampi(6 + int(difficulty_score / 5), 6, 8)
 	var center: Vector2i = Vector2i(int(size / 2), int(size / 2))
 	var rescue_id: String = RESCUES[(level_number - 1) % RESCUES.size()]
 	var pieces: Array[Dictionary] = []
-	var filler_count: int = clampi(2 + difficulty_score, 3, 16)
+	var filler_count: int = clampi(5 + difficulty_score, 6, 18)
 
-	# Three permanent blockers frame the rescue. The left lane is the authored
-	# solution corridor and is never filled by random/bonus pieces.
+	# Three permanent blockers frame the rescue. The left lane remains the
+	# authored solution corridor, while the rest of the board carries decoys and
+	# secondary mechanics so the route has to be read rather than guessed.
 	pieces.append(_piece(center.x, center.y - 1, "blocker", "up"))
 	pieces.append(_piece(center.x, center.y + 1, "blocker", "down"))
 	pieces.append(_piece(center.x + 1, center.y, "blocker", "right"))
@@ -34,6 +41,7 @@ static func generate(level_number: int) -> Dictionary:
 	match phase:
 		1:
 			pieces.append(_piece(center.x - 1, center.y, "normal", "left"))
+			pieces.append(_piece(0, 0, "rotate", "right"))
 			_add_fillers(pieces, size, center, level_number, filler_count)
 		2:
 			var gate: Dictionary = _piece(center.x - 1, center.y, "gate", "left")
@@ -42,18 +50,19 @@ static func generate(level_number: int) -> Dictionary:
 			var key: Dictionary = _piece(0, 0, "key", "up")
 			key["key_id"] = gate["key_id"]
 			pieces.append(key)
+			pieces.append(_piece(size - 1, size - 1, "rotate", "left"))
 			_add_fillers(pieces, size, center, level_number, filler_count + 1)
 		3:
 			pieces.append(_piece(center.x - 1, center.y, "normal", "left"))
 			pieces.append(_piece(0, size - 1, "rotate", "left"))
-			if difficulty_score >= 6:
-				pieces.append(_piece(size - 1, 0, "rotate", "right"))
+			pieces.append(_piece(size - 1, 0, "rotate", "right"))
+			if level_number >= 8:
+				_add_bonus_special(pieces, size, center, level_number + 3, "bomb")
 			_add_fillers(pieces, size, center, level_number, filler_count + 1)
 		4:
 			pieces.append(_piece(center.x - 1, center.y, "blocker", "left"))
 			pieces.append(_piece(center.x - 2, center.y, "bomb", "left"))
-			if difficulty_score >= 8 and size >= 6:
-				pieces.append(_piece(size - 1, size - 1, "bomb", "down"))
+			_add_bonus_special(pieces, size, center, level_number + 9, "rotate")
 			_add_fillers(pieces, size, center, level_number, filler_count + 1)
 		5:
 			pieces.append(_piece(center.x - 1, center.y, "normal", "left"))
@@ -63,6 +72,7 @@ static func generate(level_number: int) -> Dictionary:
 			var b: Dictionary = _piece(size - 1, size - 1, "linked", "down")
 			b["link_id"] = a["link_id"]
 			pieces.append(b)
+			_add_bonus_special(pieces, size, center, level_number + 13, "rotate")
 			_add_fillers(pieces, size, center, level_number, filler_count + 2)
 		_:
 			var gate2: Dictionary = _piece(center.x - 1, center.y, "gate", "left")
@@ -97,7 +107,7 @@ static func generate(level_number: int) -> Dictionary:
 		"difficulty": rhythm_label,
 		"difficulty_score": difficulty_score,
 		"milestone": milestone,
-		"par_moves": clampi(2 + int(difficulty_score * 0.8), 3, 18),
+		"par_moves": clampi(4 + int(difficulty_score * 0.9), 5, 20),
 		"rescue_id": rescue_id,
 		"rescue": [center.x, center.y],
 		"pieces": pieces
@@ -120,10 +130,10 @@ static func _difficulty_score(campaign_tier: int, rhythm_label: String, mileston
 		"hard": rhythm_bonus = 4
 		"boss": rhythm_bonus = 6
 		_: rhythm_bonus = 1
-	var score: int = 1 + campaign_tier * 2 + rhythm_bonus
+	var score: int = 2 + campaign_tier * 2 + rhythm_bonus
 	if milestone == "milestone": score += 1
 	elif milestone == "world_finale": score += 2
-	return clampi(score, 1, 20)
+	return clampi(score, 2, 20)
 
 static func _piece(x: int, y: int, type: String, direction: String) -> Dictionary:
 	return {"x": x, "y": y, "type": type, "direction": direction}
@@ -135,7 +145,7 @@ static func _add_fillers(pieces: Array[Dictionary], size: int, center: Vector2i,
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 7301 + seed_value * 7919
 	var attempts: int = 0
-	while amount > 0 and attempts < 700:
+	while amount > 0 and attempts < 900:
 		attempts += 1
 		var pos := Vector2i(rng.randi_range(0, size - 1), rng.randi_range(0, size - 1))
 		if pos == center or _is_solution_corridor(pos, center) or _occupied(pieces, pos):
