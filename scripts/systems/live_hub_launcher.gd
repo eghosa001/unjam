@@ -38,10 +38,12 @@ func _process(_delta: float) -> void:
 	if launcher == null:
 		return
 	var scene: Node = get_tree().current_scene
-	var in_game := false
+	var surface := ""
 	if scene != null and "current_surface" in scene:
-		in_game = String(scene.current_surface) == "game"
-	launcher.visible = scene != null and scene.name == "Main" and not hub_open and not in_game
+		surface = String(scene.current_surface)
+	# Keep LIVE out of the premium home composition; it remains available on
+	# campaign/collection/settings surfaces without covering primary CTAs.
+	launcher.visible = scene != null and scene.name == "Main" and not hub_open and surface in ["levels", "collection", "settings"]
 	if launcher.visible:
 		launcher.text = "LIVE\n%d ◆" % int(SaveManager.data.get("event_currency", 0))
 

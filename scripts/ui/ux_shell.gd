@@ -9,6 +9,7 @@ var theme_button: Button
 var logo: TextureRect
 var tutorial_game := "rescue_rush"
 var seen_this_session := {}
+var tutorial_seen := {}
 var theme_mode := "dark"
 
 const ACCENT := Color("5c67d8")
@@ -17,6 +18,7 @@ const CONFIG_PATH := "user://unjam_ui.cfg"
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_load_theme()
+	_load_tutorial_seen()
 	get_tree().node_added.connect(_on_node_added)
 	call_deferred("_build_shell")
 	call_deferred("_restyle_tree")
@@ -149,7 +151,7 @@ func _process(_delta: float) -> void:
 	logo.visible = surface == "home" and not tutorial_panel.visible
 	if surface == "game":
 		var game_id := _current_game()
-		if not bool(seen_this_session.get(game_id, false)):
+		if not bool(tutorial_seen.get(game_id, false)) and not bool(seen_this_session.get(game_id, false)):
 			seen_this_session[game_id] = true
 			call_deferred("show_tutorial", game_id)
 
@@ -173,7 +175,26 @@ func _load_theme() -> void:
 
 func _save_theme() -> void:
 	var cfg := ConfigFile.new()
+	cfg.load(CONFIG_PATH)
 	cfg.set_value("appearance", "theme", theme_mode)
+	for game_id in ["rescue_rush", "water_sort", "block_puzzle"]:
+		cfg.set_value("tutorial", game_id, bool(tutorial_seen.get(game_id, false)))
+	cfg.save(CONFIG_PATH)
+
+func _load_tutorial_seen() -> void:
+	var cfg := ConfigFile.new()
+	if cfg.load(CONFIG_PATH) != OK:
+		return
+	for game_id in ["rescue_rush", "water_sort", "block_puzzle"]:
+		tutorial_seen[game_id] = bool(cfg.get_value("tutorial", game_id, false))
+
+func _mark_tutorial_seen(game_id: String) -> void:
+	tutorial_seen[game_id] = true
+	var cfg := ConfigFile.new()
+	cfg.load(CONFIG_PATH)
+	cfg.set_value("appearance", "theme", theme_mode)
+	for id in ["rescue_rush", "water_sort", "block_puzzle"]:
+		cfg.set_value("tutorial", id, bool(tutorial_seen.get(id, false)))
 	cfg.save(CONFIG_PATH)
 
 func _apply_theme() -> void:
@@ -239,6 +260,7 @@ func show_tutorial(game_id: String = "rescue_rush") -> void:
 func hide_tutorial() -> void:
 	if tutorial_panel == null:
 		return
+	_mark_tutorial_seen(tutorial_game)
 	tutorial_panel.visible = false
 	var dim := tutorial_layer.get_node("TutorialDim") as ColorRect
 	dim.visible = false
@@ -261,8 +283,8 @@ func _main() -> Node:
 	return get_tree().current_scene
 
 func _on_node_added(node: Node) -> void:
-	if node is Control:
-		call_deferred("_soften_control", node)
+	if node is Control and is_instance_valid(node):
+		_soften_control(node)
 
 func _restyle_tree() -> void:
 	var root := get_tree().current_scene

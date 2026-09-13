@@ -343,12 +343,15 @@ func place_selected(origin: Vector2i) -> void:
 	if not any_move_available(): status_label.text = "NO MOVES — UNDO, HINT OR RETRY"
 
 func _spawn_placement_feedback(shape: Array, origin: Vector2i) -> void:
+	var order := 0
 	for raw in shape:
 		var point: Vector2i = raw
 		var x := origin.x + point.x
 		var y := origin.y + point.y
 		var index := y * GRID_SIZE + x
-		_spawn_cell_overlay(index, Color("8b7cf6"), 0.26, 1.18)
+		_spawn_cell_overlay(index, Color("8b7cf6"), 0.34, 1.22, float(order) * 0.025)
+		order += 1
+	_spawn_score_popup("+%d" % shape.size(), Color("c4b5fd"), 0.0)
 
 func _spawn_clear_feedback(rows: Array[int], cols: Array[int]) -> void:
 	var seen := {}
@@ -357,15 +360,44 @@ func _spawn_clear_feedback(rows: Array[int], cols: Array[int]) -> void:
 			var index := y * GRID_SIZE + x
 			if not seen.has(index):
 				seen[index] = true
-				_spawn_cell_overlay(index, Color("67e8cf"), 0.42, 1.34)
+				_spawn_cell_overlay(index, Color("67e8cf"), 0.52, 1.42, float(x) * 0.035)
 	for x in cols:
 		for y in range(GRID_SIZE):
 			var index := y * GRID_SIZE + x
 			if not seen.has(index):
 				seen[index] = true
-				_spawn_cell_overlay(index, Color("67e8cf"), 0.42, 1.34)
+				_spawn_cell_overlay(index, Color("67e8cf"), 0.52, 1.42, float(y) * 0.035)
+	var count := rows.size() + cols.size()
+	if count > 0:
+		_spawn_score_popup("LINE CLEAR  +%d" % (count * 20), Color("67e8cf"), 0.12)
+		PremiumVisuals.screen_flash(Color("67e8cf"), 0.07)
 
-func _spawn_cell_overlay(index: int, color: Color, duration: float, peak_scale: float) -> void:
+func _spawn_score_popup(text_value: String, color: Color, delay: float = 0.0) -> void:
+	var label := Label.new()
+	label.text = text_value
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.z_index = 750
+	label.position = Vector2(350, 790)
+	label.size = Vector2(380, 80)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 34)
+	label.add_theme_color_override("font_color", color)
+	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.45))
+	label.add_theme_constant_override("shadow_offset_x", 2)
+	label.add_theme_constant_override("shadow_offset_y", 3)
+	label.modulate.a = 0.0
+	add_child(label)
+	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	if delay > 0.0:
+		tween.tween_interval(delay)
+	tween.tween_property(label, "modulate:a", 1.0, 0.08)
+	tween.parallel().tween_property(label, "scale", Vector2(1.12, 1.12), 0.10)
+	tween.tween_property(label, "position:y", label.position.y - 90.0, 0.42).set_trans(Tween.TRANS_QUAD)
+	tween.parallel().tween_property(label, "modulate:a", 0.0, 0.42)
+	tween.finished.connect(label.queue_free)
+
+func _spawn_cell_overlay(index: int, color: Color, duration: float, peak_scale: float, delay: float = 0.0) -> void:
 	if index < 0 or index >= cell_buttons.size(): return
 	var cell := cell_buttons[index]
 	if cell == null or not is_instance_valid(cell): return
@@ -377,7 +409,11 @@ func _spawn_cell_overlay(index: int, color: Color, duration: float, peak_scale: 
 	overlay.pivot_offset = overlay.size * 0.5
 	overlay.add_theme_stylebox_override("panel", style_box(Color(color, 0.76), 18, color.lightened(0.25), 2))
 	add_child(overlay)
+	overlay.scale = Vector2(0.72, 0.72)
+	overlay.modulate.a = 0.0
 	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	if delay > 0.0:
+		tween.tween_interval(delay)
 	tween.tween_property(overlay, "scale", Vector2(peak_scale, peak_scale), duration * 0.45)
 	tween.parallel().tween_property(overlay, "modulate:a", 1.0, duration * 0.25)
 	tween.tween_property(overlay, "scale", Vector2(0.72, 0.72), duration * 0.55)

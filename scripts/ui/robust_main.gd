@@ -13,78 +13,13 @@ func build_home() -> void:
 	current_surface = "home"
 	_remove_active_game()
 	clear_content()
+	# PremiumHome is the only interactive home surface. Keep the legacy content
+	# container inert so it can never intercept touches behind the launcher.
+	if has_node("PremiumHome"):
+		content.visible = false
+		content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		return
 	add_background()
-	var margin := MarginContainer.new()
-	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	margin.add_theme_constant_override("margin_left", 42)
-	margin.add_theme_constant_override("margin_right", 42)
-	margin.add_theme_constant_override("margin_top", 48)
-	margin.add_theme_constant_override("margin_bottom", 48)
-	content.add_child(margin)
-	var root := VBoxContainer.new()
-	root.add_theme_constant_override("separation", 22)
-	margin.add_child(root)
-
-	var brand := Label.new()
-	brand.text = "UNJAM"
-	brand.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	brand.add_theme_font_size_override("font_size", 72)
-	brand.add_theme_color_override("font_color", Color("f3fbff"))
-	root.add_child(brand)
-	var tagline := Label.new()
-	tagline.text = "THREE GAMES  •  30,000 LEVELS  •  ONE PROGRESSION"
-	tagline.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	tagline.add_theme_font_size_override("font_size", 18)
-	tagline.add_theme_color_override("font_color", Color("67e8cf"))
-	root.add_child(tagline)
-
-	var shared := add_glass_card(root, Vector2(0, 108))
-	var shared_label := Label.new()
-	shared_label.text = "%d COINS   •   %d PRESTIGE   •   %d ACHIEVEMENT POINTS" % [int(SaveManager.data.get("coins", 0)), int(SaveManager.data.get("prestige_points", 0)), int(SaveManager.data.get("achievement_points", 0))]
-	shared_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	shared_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	shared_label.add_theme_font_size_override("font_size", 19)
-	shared.add_child(shared_label)
-
-	var games := VBoxContainer.new()
-	games.add_theme_constant_override("separation", 12)
-	root.add_child(games)
-	_add_game_card(games, "rescue_rush", Color("2dd4b6"), "CHAIN-REACTION RESCUE")
-	_add_game_card(games, "water_sort", Color("5da9ff"), "SORT EVERY COLOR")
-	_add_game_card(games, "block_puzzle", Color("8b7cf6"), "BUILD, CLEAR, COMBO")
-
-	_add_journey_card(root)
-
-	var daily_title := Label.new()
-	daily_title.text = "DAILY CHALLENGES"
-	daily_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	daily_title.add_theme_font_size_override("font_size", 18)
-	daily_title.add_theme_color_override("font_color", Color("ffd166"))
-	root.add_child(daily_title)
-	var daily_row := HBoxContainer.new()
-	daily_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	daily_row.add_theme_constant_override("separation", 10)
-	root.add_child(daily_row)
-	for game_id in MultiGameManager.GAME_IDS:
-		var done := _daily_done(game_id)
-		var label := "%s\n%s" % [MultiGameManager.display_name(game_id), "DONE" if done else "+ DAILY REWARD"]
-		var daily := make_button(label, Vector2(302, 96), not done)
-		daily.add_theme_font_size_override("font_size", 16)
-		daily.disabled = done
-		daily.pressed.connect(start_game_daily.bind(game_id))
-		daily_row.add_child(daily)
-
-	var bottom := HBoxContainer.new()
-	bottom.alignment = BoxContainer.ALIGNMENT_CENTER
-	bottom.add_theme_constant_override("separation", 14)
-	root.add_child(bottom)
-	var collection := make_button("COLLECTION", Vector2(300, 82))
-	collection.pressed.connect(build_collection)
-	bottom.add_child(collection)
-	var settings := make_button("SETTINGS", Vector2(300, 82))
-	settings.pressed.connect(build_settings)
-	bottom.add_child(settings)
-	PremiumVisuals.entrance(root, 0.03)
 
 func _add_journey_card(parent: VBoxContainer) -> void:
 	var completed_total := 0
