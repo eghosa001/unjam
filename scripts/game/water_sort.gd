@@ -21,6 +21,7 @@ var hint_label: Label
 var title_label: Label
 var meta_label: Label
 var completed := false
+var animating := false
 
 func _ready() -> void:
 	visible = true
@@ -202,6 +203,7 @@ func build_ui() -> void:
 
 func load_level() -> void:
 	completed = false
+	animating = false
 	selected = -1
 	moves = 0
 	history.clear()
@@ -255,11 +257,12 @@ func render_board() -> void:
 	move_label.text = "MOVES  %d    •    PERFECT ≤ %d    •    %d COLORS" % [moves, par_moves, color_count]
 
 func select_tube(index: int) -> void:
-	if completed: return
+	if completed or animating: return
 	hint_label.text = ""
 	if selected < 0:
 		if tubes[index].is_empty():
 			status_label.text = "Choose a tube that contains color"
+			_play_invalid(index)
 			return
 		selected = index
 		status_label.text = "Tube %d selected" % (index + 1)
@@ -271,17 +274,72 @@ func select_tube(index: int) -> void:
 		render_board()
 		return
 	if can_pour(selected, index):
+		animating = true
+		var from_idx := selected
 		history.append({"tubes": tubes.duplicate(true), "moves": moves})
-		pour(selected, index)
+		await _animate_transfer(from_idx, index)
+		pour(from_idx, index)
 		moves += 1
 		status_label.text = "Smooth pour"
-		PremiumVisuals.screen_flash(Color("5da9ff"), 0.035)
-	else:
-		status_label.text = "That pour is not allowed"
+		PremiumVisuals.screen_flash(Color("5da9ff"), 0.025)
+		selected = -1
+		render_board()
+		_play_success(index)
+		_save_checkpoint()
+		animating = false
+		if is_complete(): complete_level()
+		return
+	status_label.text = "That pour is not allowed"
+	_play_invalid(index)
+	_play_invalid(selected)
 	selected = -1
 	render_board()
 	_save_checkpoint()
-	if is_complete(): complete_level()
+
+func _animate_transfer(from_idx: int, to_idx: int) -> void:
+	if board == null or from_idx >= board.get_child_count() or to_idx >= board.get_child_count():
+		await get_tree().create_timer(0.12).timeout
+		return
+	var source := board.get_child(from_idx) as Control
+	var target := board.get_child(to_idx) as Control
+	if source == null or target == null:
+		await get_tree().create_timer(0.12).timeout
+		return
+	var source_center := to_local(source.global_position + source.size * 0.5)
+	var target_center := to_local(target.global_position + target.size * 0.5)
+	var top_color_index := int(tubes[from_idx].back()) if not tubes[from_idx].is_empty() else 0
+	var palette := WaterTubeButton.PALETTE
+	var stream_color: Color = palette[clampi(top_color_index, 0, palette.size() - 1)]
+	var stream := Line2D.new()
+	stream.width = 14.0
+	stream.default_color = Color(stream_color, 0.92)
+	stream.z_index = 450
+	var mid := (source_center + target_center) * 0.5 + Vector2(0, -70)
+	stream.points = PackedVector2Array([source_center, mid, target_center])
+	stream.modulate = Color(1, 1, 1, 0)
+	add_child(stream)
+	if source.has_method("play_success"):
+		source.call("play_success")
+	var tween := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(stream, "modulate:a", 1.0, 0.07)
+	tween.parallel().tween_property(stream, "width", 19.0, 0.12)
+	tween.tween_interval(0.10)
+	tween.tween_property(stream, "modulate:a", 0.0, 0.09)
+	await tween.finished
+	stream.queue_free()
+
+func _play_invalid(index: int) -> void:
+	if board != null and index >= 0 and index < board.get_child_count():
+		var button := board.get_child(index)
+		if button != null and button.has_method("play_invalid"):
+			button.call("play_invalid")
+	PremiumVisuals.screen_flash(Color("ef476f"), 0.018)
+
+func _play_success(index: int) -> void:
+	if board != null and index >= 0 and index < board.get_child_count():
+		var button := board.get_child(index)
+		if button != null and button.has_method("play_success"):
+			button.call("play_success")
 
 func can_pour(from_idx: int, to_idx: int) -> bool:
 	if from_idx < 0 or to_idx < 0 or from_idx >= tubes.size() or to_idx >= tubes.size(): return false
@@ -302,7 +360,7 @@ func pour(from_idx: int, to_idx: int) -> void:
 	for _i in range(amount): target.append(source.pop_back())
 
 func undo_move() -> void:
-	if history.is_empty() or completed:
+	if history.is_empty() or completed or animating:
 		status_label.text = "Nothing to undo"
 		return
 	var state: Dictionary = history.pop_back()
@@ -315,7 +373,7 @@ func undo_move() -> void:
 	_save_checkpoint()
 
 func show_hint() -> void:
-	if completed: return
+	if completed or animating: return
 	for from_idx in range(tubes.size()):
 		if tubes[from_idx].is_empty(): continue
 		for to_idx in range(tubes.size()):
@@ -348,6 +406,7 @@ func complete_level() -> void:
 	finished.emit(-1 if daily_mode else level_number)
 
 func restart_level() -> void:
+	if animating: return
 	MultiGameManager.clear_checkpoint(GAME_ID)
 	load_level()
 
@@ -366,5 +425,6 @@ func _restore_checkpoint() -> void:
 		if saved_history is Array: history = saved_history.duplicate(true)
 
 func _quit() -> void:
+	if animating: return
 	_save_checkpoint()
 	quit_requested.emit()
