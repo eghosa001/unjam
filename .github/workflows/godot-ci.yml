@@ -66,14 +66,12 @@ jobs:
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$RUNNER_TEMP/unjam-debug.keystore" >> "$GITHUB_ENV"
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> "$GITHUB_ENV"
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> "$GITHUB_ENV"
-      - name: Install Gradle Android build template
-        run: godot --headless --editor --path . --install-android-build-template --quit
-      - name: Android API 36 debug export smoke test
+      - name: Android API 36 Gradle debug export smoke test
         shell: bash
         run: |
           set -o pipefail
           mkdir -p build/android
-          godot --headless --verbose --path . --export-debug Android build/android/unjam-debug.apk 2>&1 | tee android-export.log
+          godot --headless --verbose --path . --install-android-build-template --export-debug Android build/android/unjam-debug.apk 2>&1 | tee android-export.log
           if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" android-export.log; then exit 1; fi
           test -s build/android/unjam-debug.apk
       - name: Upload Android debug APK
