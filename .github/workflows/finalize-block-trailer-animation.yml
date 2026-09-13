@@ -16,69 +16,39 @@ jobs:
         with:
           fetch-depth: 0
       - name: Finalize block clear celebration
-        shell: python
         run: |
+          python - <<'PY'
           from pathlib import Path
 
           path = Path('scripts/game/block_puzzle.gd')
           text = path.read_text()
 
-          old = '''\tvar count := rows.size() + cols.size()
-\tif count > 0:
-\t\t_spawn_score_popup("LINE CLEAR  +%d" % (count * 20), Color("67e8cf"), 0.12)
-\t\tPremiumVisuals.screen_flash(Color("67e8cf"), 0.07)
-'''
-          new = '''\tvar count := rows.size() + cols.size()
-\tif count > 0:
-\t\tvar cheer := "GREAT!" if count == 1 else ("AMAZING!" if count == 2 else "SPECTACULAR!")
-\t\tvar reward := count * 20
-\t\t_spawn_score_popup("%s  +%d" % [cheer, reward], Color("67e8cf"), 0.10)
-\t\tif count >= 2:
-\t\t\t_spawn_score_popup("%d× CLEAR" % count, Color("c4b5fd"), 0.22)
-\t\tPremiumVisuals.screen_flash(Color("67e8cf"), 0.055 + minf(0.055, float(count) * 0.012))
-\t\tPremiumVisuals.burst(Vector2(540, 840), Color("67e8cf"), 12 + count * 7)
-'''
+          old = '\tvar count := rows.size() + cols.size()\n\tif count > 0:\n\t\t_spawn_score_popup("LINE CLEAR  +%d" % (count * 20), Color("67e8cf"), 0.12)\n\t\tPremiumVisuals.screen_flash(Color("67e8cf"), 0.07)\n'
+          new = '\tvar count := rows.size() + cols.size()\n\tif count > 0:\n\t\tvar cheer := "GREAT!" if count == 1 else ("AMAZING!" if count == 2 else "SPECTACULAR!")\n\t\tvar reward := count * 20\n\t\t_spawn_score_popup("%s  +%d" % [cheer, reward], Color("67e8cf"), 0.10)\n\t\tif count >= 2:\n\t\t\t_spawn_score_popup("%d× CLEAR" % count, Color("c4b5fd"), 0.22)\n\t\tPremiumVisuals.screen_flash(Color("67e8cf"), 0.055 + minf(0.055, float(count) * 0.012))\n\t\tPremiumVisuals.burst(Vector2(540, 840), Color("67e8cf"), 12 + count * 7)\n'
           if old not in text:
               raise SystemExit('Expected clear-feedback block not found')
           text = text.replace(old, new, 1)
 
-          old2 = '''\tlabel.add_theme_font_size_override("font_size", 34)
-'''
-          new2 = '''\tlabel.add_theme_font_size_override("font_size", 42 if "!" in text_value else 34)
-'''
+          old2 = '\tlabel.add_theme_font_size_override("font_size", 34)\n'
+          new2 = '\tlabel.add_theme_font_size_override("font_size", 42 if "!" in text_value else 34)\n'
           if old2 not in text:
               raise SystemExit('Expected popup font block not found')
           text = text.replace(old2, new2, 1)
 
-          old3 = '''\tlabel.modulate.a = 0.0
-\tadd_child(label)
-\tvar tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-'''
-          new3 = '''\tlabel.modulate.a = 0.0
-\tlabel.scale = Vector2(0.72, 0.72)
-\tlabel.pivot_offset = label.size * 0.5
-\tadd_child(label)
-\tvar tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-'''
+          old3 = '\tlabel.modulate.a = 0.0\n\tadd_child(label)\n\tvar tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)\n'
+          new3 = '\tlabel.modulate.a = 0.0\n\tlabel.scale = Vector2(0.72, 0.72)\n\tlabel.pivot_offset = label.size * 0.5\n\tadd_child(label)\n\tvar tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)\n'
           if old3 not in text:
               raise SystemExit('Expected popup animation block not found')
           text = text.replace(old3, new3, 1)
 
-          old4 = '''\ttween.tween_property(label, "modulate:a", 1.0, 0.08)
-\ttween.parallel().tween_property(label, "scale", Vector2(1.12, 1.12), 0.10)
-\ttween.tween_property(label, "position:y", label.position.y - 90.0, 0.42).set_trans(Tween.TRANS_QUAD)
-'''
-          new4 = '''\ttween.tween_property(label, "modulate:a", 1.0, 0.07)
-\ttween.parallel().tween_property(label, "scale", Vector2(1.18, 1.18), 0.11)
-\ttween.tween_property(label, "scale", Vector2.ONE, 0.10)
-\ttween.tween_property(label, "position:y", label.position.y - 96.0, 0.38).set_trans(Tween.TRANS_QUAD)
-'''
+          old4 = '\ttween.tween_property(label, "modulate:a", 1.0, 0.08)\n\ttween.parallel().tween_property(label, "scale", Vector2(1.12, 1.12), 0.10)\n\ttween.tween_property(label, "position:y", label.position.y - 90.0, 0.42).set_trans(Tween.TRANS_QUAD)\n'
+          new4 = '\ttween.tween_property(label, "modulate:a", 1.0, 0.07)\n\ttween.parallel().tween_property(label, "scale", Vector2(1.18, 1.18), 0.11)\n\ttween.tween_property(label, "scale", Vector2.ONE, 0.10)\n\ttween.tween_property(label, "position:y", label.position.y - 96.0, 0.38).set_trans(Tween.TRANS_QUAD)\n'
           if old4 not in text:
               raise SystemExit('Expected popup tween block not found')
           text = text.replace(old4, new4, 1)
 
           path.write_text(text)
-
+          PY
       - name: Remove temporary workflow and commit
         run: |
           rm -f .github/workflows/finalize-block-trailer-animation.yml
