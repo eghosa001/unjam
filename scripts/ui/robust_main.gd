@@ -22,8 +22,9 @@ func build_home() -> void:
 	margin.add_theme_constant_override("margin_bottom", 48)
 	content.add_child(margin)
 	var root := VBoxContainer.new()
-	root.add_theme_constant_override("separation", 16)
+	root.add_theme_constant_override("separation", 22)
 	margin.add_child(root)
+
 	var brand := Label.new()
 	brand.text = "UNJAM"
 	brand.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -36,19 +37,24 @@ func build_home() -> void:
 	tagline.add_theme_font_size_override("font_size", 18)
 	tagline.add_theme_color_override("font_color", Color("67e8cf"))
 	root.add_child(tagline)
-	var shared := add_glass_card(root, Vector2(0, 92))
+
+	var shared := add_glass_card(root, Vector2(0, 108))
 	var shared_label := Label.new()
 	shared_label.text = "%d COINS   •   %d PRESTIGE   •   %d ACHIEVEMENT POINTS" % [int(SaveManager.data.get("coins", 0)), int(SaveManager.data.get("prestige_points", 0)), int(SaveManager.data.get("achievement_points", 0))]
 	shared_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	shared_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	shared_label.add_theme_font_size_override("font_size", 19)
 	shared.add_child(shared_label)
+
 	var games := VBoxContainer.new()
 	games.add_theme_constant_override("separation", 12)
 	root.add_child(games)
 	_add_game_card(games, "rescue_rush", Color("2dd4b6"), "CHAIN-REACTION RESCUE")
 	_add_game_card(games, "water_sort", Color("5da9ff"), "SORT EVERY COLOR")
 	_add_game_card(games, "block_puzzle", Color("8b7cf6"), "BUILD, CLEAR, COMBO")
+
+	_add_journey_card(root)
+
 	var daily_title := Label.new()
 	daily_title.text = "DAILY CHALLENGES"
 	daily_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -62,26 +68,65 @@ func build_home() -> void:
 	for game_id in MultiGameManager.GAME_IDS:
 		var done := _daily_done(game_id)
 		var label := "%s\n%s" % [MultiGameManager.display_name(game_id), "DONE" if done else "+ DAILY REWARD"]
-		var daily := make_button(label, Vector2(302, 84), not done)
+		var daily := make_button(label, Vector2(302, 96), not done)
 		daily.add_theme_font_size_override("font_size", 16)
 		daily.disabled = done
 		daily.pressed.connect(start_game_daily.bind(game_id))
 		daily_row.add_child(daily)
+
 	var bottom := HBoxContainer.new()
 	bottom.alignment = BoxContainer.ALIGNMENT_CENTER
 	bottom.add_theme_constant_override("separation", 14)
 	root.add_child(bottom)
-	var collection := make_button("COLLECTION", Vector2(300, 70))
+	var collection := make_button("COLLECTION", Vector2(300, 82))
 	collection.pressed.connect(build_collection)
 	bottom.add_child(collection)
-	var settings := make_button("SETTINGS", Vector2(300, 70))
+	var settings := make_button("SETTINGS", Vector2(300, 82))
 	settings.pressed.connect(build_settings)
 	bottom.add_child(settings)
 	PremiumVisuals.entrance(root, 0.03)
 
+func _add_journey_card(parent: VBoxContainer) -> void:
+	var completed_total := 0
+	var perfect_total := 0
+	for game_id in MultiGameManager.GAME_IDS:
+		var progress := MultiGameManager.progress_for(game_id)
+		completed_total += int(progress.get("levels_completed", 0))
+		perfect_total += int(progress.get("perfect_clears", 0))
+	var journey := add_glass_card(parent, Vector2(0, 142))
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 24)
+	margin.add_theme_constant_override("margin_right", 24)
+	margin.add_theme_constant_override("margin_top", 16)
+	margin.add_theme_constant_override("margin_bottom", 16)
+	journey.add_child(margin)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 8)
+	margin.add_child(box)
+	var title := Label.new()
+	title.text = "UNJAM JOURNEY"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 19)
+	title.add_theme_color_override("font_color", Color("67e8cf"))
+	box.add_child(title)
+	var summary := Label.new()
+	summary.text = "%d / 30,000 LEVELS CLEARED   •   %d PERFECT CLEARS" % [completed_total, perfect_total]
+	summary.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	summary.add_theme_font_size_override("font_size", 16)
+	summary.add_theme_color_override("font_color", Color("c2cde0"))
+	box.add_child(summary)
+	var progress_bar := ProgressBar.new()
+	progress_bar.max_value = 30000.0
+	progress_bar.value = float(completed_total)
+	progress_bar.show_percentage = false
+	progress_bar.custom_minimum_size = Vector2(0, 18)
+	progress_bar.add_theme_stylebox_override("background", style_box(Color("13243d"), 9))
+	progress_bar.add_theme_stylebox_override("fill", style_box(Color("21c7a8"), 9))
+	box.add_child(progress_bar)
+
 func _add_game_card(parent: VBoxContainer, game_id: String, accent: Color, subtitle_text: String) -> void:
 	var progress := MultiGameManager.progress_for(game_id)
-	var panel := add_glass_card(parent, Vector2(0, 196))
+	var panel := add_glass_card(parent, Vector2(0, 224))
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 22)
 	margin.add_theme_constant_override("margin_right", 22)
@@ -126,14 +171,17 @@ func _add_game_card(parent: VBoxContainer, game_id: String, accent: Color, subti
 		controls.add_child(resume)
 
 func _daily_done(game_id: String) -> bool:
-	if game_id == "rescue_rush": return DailyChallenge.is_completed_today()
+	if game_id == "rescue_rush":
+		return DailyChallenge.is_completed_today()
 	return MultiGameManager.is_daily_completed(game_id)
 
 func open_game_campaign(game_id: String) -> void:
 	selected_game_id = game_id
 	selected_multi_world = MultiGameManager.highest_unlocked_world(game_id)
-	if game_id == "rescue_rush": build_level_select()
-	else: build_multi_level_select()
+	if game_id == "rescue_rush":
+		build_level_select()
+	else:
+		build_multi_level_select()
 
 func build_level_select() -> void:
 	selected_game_id = "rescue_rush"
@@ -239,21 +287,25 @@ func start_level(level_number: int) -> void:
 	current_surface = "game"
 	_spawn_rescue(level_number, false, {})
 
-func start_daily() -> void: start_game_daily("rescue_rush")
+func start_daily() -> void:
+	start_game_daily("rescue_rush")
 
 func start_game_daily(game_id: String) -> void:
 	if _daily_done(game_id):
 		build_home()
 		return
 	selected_game_id = game_id
-	if game_id == "rescue_rush": _spawn_rescue(1, true, DailyChallenge.build_today())
-	else: start_multi_level(game_id, MultiGameManager.daily_level(game_id), true)
+	if game_id == "rescue_rush":
+		_spawn_rescue(1, true, DailyChallenge.build_today())
+	else:
+		start_multi_level(game_id, MultiGameManager.daily_level(game_id), true)
 
 func start_multi_level(game_id: String, level_number: int, daily: bool = false) -> void:
 	selected_game_id = game_id
 	current_surface = "game"
 	_remove_active_game()
-	if content and is_instance_valid(content): content.hide()
+	if content and is_instance_valid(content):
+		content.hide()
 	var scene_path := "res://scenes/WaterSort.tscn" if game_id == "water_sort" else "res://scenes/BlockPuzzle.tscn"
 	var packed := load(scene_path) as PackedScene
 	if packed == null:
@@ -275,7 +327,8 @@ func start_multi_level(game_id: String, level_number: int, daily: bool = false) 
 func _spawn_rescue(level_number: int, daily: bool, custom_data: Dictionary) -> void:
 	current_surface = "game"
 	_remove_active_game()
-	if content and is_instance_valid(content): content.hide()
+	if content and is_instance_valid(content):
+		content.hide()
 	var packed := load("res://scenes/Game.tscn") as PackedScene
 	if packed == null:
 		build_home()
@@ -284,7 +337,8 @@ func _spawn_rescue(level_number: int, daily: bool, custom_data: Dictionary) -> v
 	game_scene.name = "ActiveGame"
 	game_scene.level_number = level_number
 	game_scene.daily_mode = daily
-	if not custom_data.is_empty(): game_scene.custom_level_data = custom_data.duplicate(true)
+	if not custom_data.is_empty():
+		game_scene.custom_level_data = custom_data.duplicate(true)
 	game_scene.finished.connect(_on_rescue_finished)
 	game_scene.quit_requested.connect(_on_rescue_quit)
 	add_child(game_scene)
@@ -293,16 +347,21 @@ func _spawn_rescue(level_number: int, daily: bool, custom_data: Dictionary) -> v
 	active_game = game_scene
 
 func _remove_active_game() -> void:
-	if active_game and is_instance_valid(active_game): active_game.queue_free()
+	if active_game and is_instance_valid(active_game):
+		active_game.queue_free()
 	active_game = null
 	var stale := get_node_or_null("ActiveGame")
-	if stale and is_instance_valid(stale): stale.queue_free()
+	if stale and is_instance_valid(stale):
+		stale.queue_free()
 
 func _on_rescue_finished(completed_level: int) -> void:
 	active_game = null
-	if completed_level < 0: build_home()
-	elif LevelManager.has_level(completed_level + 1): call_deferred("start_level", completed_level + 1)
-	else: build_home()
+	if completed_level < 0:
+		build_home()
+	elif LevelManager.has_level(completed_level + 1):
+		call_deferred("start_level", completed_level + 1)
+	else:
+		build_home()
 
 func _on_rescue_quit() -> void:
 	active_game = null
@@ -310,9 +369,12 @@ func _on_rescue_quit() -> void:
 
 func _on_multi_finished(completed_level: int, game_id: String) -> void:
 	active_game = null
-	if completed_level < 0: build_home()
-	elif completed_level < MultiGameManager.CAMPAIGN_LEVELS: call_deferred("start_multi_level", game_id, completed_level + 1, false)
-	else: build_home()
+	if completed_level < 0:
+		build_home()
+	elif completed_level < MultiGameManager.CAMPAIGN_LEVELS:
+		call_deferred("start_multi_level", game_id, completed_level + 1, false)
+	else:
+		build_home()
 
 func _on_multi_quit(game_id: String) -> void:
 	active_game = null
@@ -321,7 +383,8 @@ func _on_multi_quit(game_id: String) -> void:
 	build_multi_level_select()
 
 func _checkpoint_for(game_id: String) -> Dictionary:
-	if game_id == "rescue_rush": return SaveManager.data.get("active_run", {})
+	if game_id == "rescue_rush":
+		return SaveManager.data.get("active_run", {})
 	return MultiGameManager.checkpoint(game_id)
 
 func resume_game(game_id: String) -> void:
