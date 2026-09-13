@@ -167,8 +167,9 @@ func _rescue_has_open_lane(payload: Dictionary) -> bool:
 	var occupied: Dictionary = {}
 	for piece in payload.pieces:
 		occupied[Vector2i(int(piece.x), int(piece.y))] = true
-	for direction in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
-		var pos := rescue + direction
+	var directions: Array[Vector2i] = [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]
+	for direction: Vector2i in directions:
+		var pos: Vector2i = rescue + direction
 		var blocked := false
 		while pos.x >= 0 and pos.y >= 0 and pos.x < board_width and pos.y < board_height:
 			if occupied.has(pos):
