@@ -2,6 +2,7 @@
 .android/
 android/
 build/
+.plugin-cache/
 *.tmp
 *.log
 *.jks
