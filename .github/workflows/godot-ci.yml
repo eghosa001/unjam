@@ -71,9 +71,12 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p build/android
+          cp export_presets.cfg "$RUNNER_TEMP/export_presets.aab.cfg"
+          sed -i 's/gradle_build\/export_format=1/gradle_build\/export_format=0/' export_presets.cfg
           godot --headless --verbose --path . --install-android-build-template --export-debug Android build/android/unjam-debug.apk 2>&1 | tee android-apk-export.log
           if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" android-apk-export.log; then exit 1; fi
           test -s build/android/unjam-debug.apk
+          cp "$RUNNER_TEMP/export_presets.aab.cfg" export_presets.cfg
       - name: Upload Android debug APK
         uses: actions/upload-artifact@v4
         with:
