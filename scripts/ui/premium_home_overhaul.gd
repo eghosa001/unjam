@@ -7,6 +7,8 @@ var hero_art: GameShowcaseArt
 var hero_title: Label
 var hero_subtitle: Label
 var hero_progress: Label
+var choose_label: Label
+var footer_label: Label
 var primary_button: Button
 var tile_row: VBoxContainer
 var logo: UnjamLogo
@@ -148,6 +150,7 @@ func build_home_launcher() -> void:
 	hero_stack.add_child(hero_art)
 
 	hero_title = Label.new()
+	hero_title.name = "HeroTitle"
 	hero_title.text = MultiGameManager.display_name(selected_game).to_upper()
 	hero_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hero_title.add_theme_font_size_override("font_size", 42)
@@ -155,6 +158,7 @@ func build_home_launcher() -> void:
 	hero_stack.add_child(hero_title)
 
 	hero_subtitle = Label.new()
+	hero_subtitle.name = "HeroSubtitle"
 	hero_subtitle.text = SUBTITLES[selected_game]
 	hero_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hero_subtitle.add_theme_font_size_override("font_size", 17)
@@ -162,6 +166,7 @@ func build_home_launcher() -> void:
 	hero_stack.add_child(hero_subtitle)
 
 	hero_progress = Label.new()
+	hero_progress.name = "HeroProgress"
 	hero_progress.text = _hero_progress_text(selected_game)
 	hero_progress.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hero_progress.add_theme_font_size_override("font_size", 18)
@@ -176,12 +181,13 @@ func build_home_launcher() -> void:
 	primary_button.pressed.connect(_play_selected)
 	hero_stack.add_child(primary_button)
 
-	var choose := Label.new()
-	choose.text = "CHOOSE YOUR PUZZLE"
-	choose.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	choose.add_theme_font_size_override("font_size", 15)
-	choose.add_theme_color_override("font_color", _muted())
-	root.add_child(choose)
+	choose_label = Label.new()
+	choose_label.name = "ChoosePuzzleLabel"
+	choose_label.text = "CHOOSE YOUR PUZZLE"
+	choose_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	choose_label.add_theme_font_size_override("font_size", 15)
+	choose_label.add_theme_color_override("font_color", _muted())
+	root.add_child(choose_label)
 
 	tile_row = VBoxContainer.new()
 	tile_row.add_theme_constant_override("separation", 10)
@@ -210,13 +216,14 @@ func build_home_launcher() -> void:
 	settings.pressed.connect(func(): get_parent().call("build_settings"))
 	secondary.add_child(settings)
 
-	var footer := Label.new()
-	footer.text = _shared_progress_text()
-	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	footer.add_theme_font_size_override("font_size", 15)
-	footer.add_theme_color_override("font_color", _muted())
-	root.add_child(footer)
-	call_deferred("_restyle_buttons")
+	footer_label = Label.new()
+	footer_label.name = "HomeFooter"
+	footer_label.text = _shared_progress_text()
+	footer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	footer_label.add_theme_font_size_override("font_size", 15)
+	footer_label.add_theme_color_override("font_color", _muted())
+	root.add_child(footer_label)
+	call_deferred("_restore_visual_identity")
 
 func _small_button(text_value: String, minimum: Vector2) -> Button:
 	var b := Button.new()
@@ -225,7 +232,7 @@ func _small_button(text_value: String, minimum: Vector2) -> Button:
 	b.add_theme_font_size_override("font_size", 16)
 	return b
 
-func _restyle_buttons() -> void:
+func _restore_visual_identity() -> void:
 	if not is_instance_valid(primary_button):
 		return
 	var accent: Color = ACCENTS[selected_game]
@@ -233,12 +240,16 @@ func _restyle_buttons() -> void:
 	primary_button.add_theme_stylebox_override("hover", _box(accent.lightened(0.08), 26, Color.WHITE, 2))
 	primary_button.add_theme_stylebox_override("pressed", _box(accent.darkened(0.10), 26, Color.WHITE, 2))
 	primary_button.add_theme_color_override("font_color", Color("071421") if accent.get_luminance() > 0.58 else Color.WHITE)
+	if is_instance_valid(hero_title): hero_title.add_theme_color_override("font_color", accent)
+	if is_instance_valid(hero_subtitle): hero_subtitle.add_theme_color_override("font_color", _muted())
+	if is_instance_valid(hero_progress): hero_progress.add_theme_color_override("font_color", _ink())
+	if is_instance_valid(choose_label): choose_label.add_theme_color_override("font_color", _muted())
+	if is_instance_valid(footer_label): footer_label.add_theme_color_override("font_color", _muted())
 
 func _current_level(game_id: String) -> int:
 	return clampi(MultiGameManager.highest_level(game_id), 1, MultiGameManager.CAMPAIGN_LEVELS)
 
 func _hero_progress_text(game_id: String) -> String:
-	var progress := MultiGameManager.progress_for(game_id)
 	var level := _current_level(game_id)
 	var world := MultiGameManager.highest_unlocked_world(game_id)
 	var stars := MultiGameManager.total_stars(game_id)
