@@ -15,7 +15,7 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - name: Setup JDK 17
@@ -23,46 +23,52 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Setup Godot
+      - name: Setup Godot 4.7.2
         uses: solarlabyrinth/action-setup-godot@v3
         with:
-          version: 4.5.1-stable
+          version: 4.7.2-stable
           export-templates: true
+      - name: Install Android API 36
+        shell: bash
+        run: |
+          set -euxo pipefail
+          ANDROID_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          test -n "$ANDROID_ROOT"
+          SDKMANAGER=$(find "$ANDROID_ROOT/cmdline-tools" -name sdkmanager -type f | sort | tail -1)
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --sdk_root="$ANDROID_ROOT" "platform-tools" "platforms;android-36" "build-tools;36.0.0" || true
+          echo "ANDROID_HOME=$ANDROID_ROOT" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_ROOT" >> "$GITHUB_ENV"
       - name: Import project and reject script errors
         shell: bash
         run: |
           set -o pipefail
           godot --headless --path . --editor --quit 2>&1 | tee import.log
           if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" import.log; then exit 1; fi
-      - name: Validate handcrafted levels
-        run: godot --headless --path . --script res://tests/validate_levels.gd
-      - name: Validate campaign structure pacing and solvability
-        run: godot --headless --path . --script res://tests/validate_campaign.gd
-      - name: Validate retention systems
-        run: godot --headless --path . --script res://tests/validate_retention.gd
-      - name: Validate production robustness
-        run: godot --headless --path . --script res://tests/validate_robustness.gd
-      - name: Validate all three Level 1 launches
-        run: godot --headless --path . --script res://tests/validate_level_launch.gd
-      - name: Validate gameplay interactions and persistence
-        run: godot --headless --path . --script res://tests/validate_gameplay_interactions.gd
-      - name: Validate all 30000 campaign configurations
-        run: godot --headless --path . --script res://tests/validate_campaign_1000.gd
-      - name: Parse and boot smoke test
+      - name: Validate all suites
+        shell: bash
+        run: |
+          set -euxo pipefail
+          for t in validate_levels validate_campaign validate_retention validate_robustness validate_level_launch validate_gameplay_interactions validate_campaign_1000 validate_monetization; do
+            godot --headless --path . --script "res://tests/$t.gd"
+          done
+      - name: Boot smoke test
         shell: bash
         run: |
           set -o pipefail
           godot --headless --path . --quit-after 5 2>&1 | tee boot.log
           if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" boot.log; then exit 1; fi
-      - name: Prepare Android export toolchain
+      - name: Prepare Android debug keystore
         shell: bash
         run: |
           set -euxo pipefail
-          ANDROID_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"; test -n "$ANDROID_ROOT"; test -x "$ANDROID_ROOT/platform-tools/adb"
-          echo "ANDROID_HOME=$ANDROID_ROOT" >> "$GITHUB_ENV"; echo "ANDROID_SDK_ROOT=$ANDROID_ROOT" >> "$GITHUB_ENV"
           keytool -genkeypair -v -keystore "$RUNNER_TEMP/unjam-debug.keystore" -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Unjam Debug,O=Unjam,C=NG"
-          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$RUNNER_TEMP/unjam-debug.keystore" >> "$GITHUB_ENV"; echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> "$GITHUB_ENV"; echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> "$GITHUB_ENV"
-      - name: Android debug export smoke test
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$RUNNER_TEMP/unjam-debug.keystore" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> "$GITHUB_ENV"
+      - name: Install Gradle Android build template
+        run: godot --headless --path . --install-android-build-template
+      - name: Android API 36 debug export smoke test
         shell: bash
         run: |
           set -o pipefail
