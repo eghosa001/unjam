@@ -1,0 +1,25 @@
+name: Remove Logo Temp Workflow
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    if: github.event.head_commit.message == 'Remove temporary logo fix workflow runner'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Remove temporary workflow files
+        run: |
+          rm -f .github/workflows/fix-logo-overlap-temp.yml .github/workflows/remove-logo-temp-workflow-temp.yml
+          git config user.name 'AIGHEWI EGHOSA'
+          git config user.email 'aighewieghosa111@gmail.com'
+          git add -A
+          git commit -m 'Clean temporary logo fix workflows'
+          git push origin main
