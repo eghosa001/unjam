@@ -1,24 +1,29 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#10264b"/>
-      <stop offset="1" stop-color="#071326"/>
-    </linearGradient>
-    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#35d9ba"/>
-      <stop offset="1" stop-color="#1f8fd0"/>
-    </linearGradient>
-  </defs>
-  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
-  <circle cx="256" cy="256" r="174" fill="#0d1e39" stroke="#284d72" stroke-width="10"/>
-  <rect x="84" y="204" width="112" height="112" rx="30" fill="url(#tile)"/>
-  <path d="M116 260h48m0 0-22-22m22 22-22 22" fill="none" stroke="white" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
-  <rect x="316" y="204" width="112" height="112" rx="30" fill="#7656c9"/>
-  <path d="M396 260h-48m0 0 22-22m-22 22 22 22" fill="none" stroke="white" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="256" cy="256" r="72" fill="#ffd166" stroke="#fff0ad" stroke-width="8"/>
-  <circle cx="233" cy="244" r="8" fill="#1b2940"/>
-  <circle cx="279" cy="244" r="8" fill="#1b2940"/>
-  <path d="M235 281q21 19 42 0" fill="none" stroke="#1b2940" stroke-width="10" stroke-linecap="round"/>
-  <path d="M256 176v-46m0 0-20 22m20-22 20 22" fill="none" stroke="#35d9ba" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M256 336v46m0 0-20-22m20 22 20-22" fill="none" stroke="#35d9ba" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+<defs>
+ <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#173f9b"/><stop offset=".55" stop-color="#0c2d75"/><stop offset="1" stop-color="#28165f"/></linearGradient>
+ <linearGradient id="cyan" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#24d9ff"/><stop offset="1" stop-color="#1785ff"/></linearGradient>
+ <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffd94a"/><stop offset="1" stop-color="#ff9828"/></linearGradient>
+ <linearGradient id="green" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#63f28f"/><stop offset="1" stop-color="#1bc36f"/></linearGradient>
+ <filter id="shadow"><feDropShadow dx="0" dy="9" stdDeviation="8" flood-color="#050d2c" flood-opacity=".55"/></filter>
+</defs>
+<rect x="8" y="8" width="496" height="496" rx="112" fill="url(#bg)"/>
+<circle cx="388" cy="105" r="96" fill="#1bb8ff" opacity=".18"/><circle cx="120" cy="405" r="115" fill="#9a4dff" opacity=".13"/>
+<!-- water sort panel -->
+<g transform="translate(46 74) rotate(-7 105 100)" filter="url(#shadow)"><rect width="154" height="180" rx="30" fill="#123c92" stroke="#31d9ff" stroke-width="8"/><path d="M52 40v86q0 20 18 20t18-20V40M102 40v86q0 20 18 20t18-20V40" fill="none" stroke="#dff8ff" stroke-width="8" stroke-linecap="round"/><path d="M57 112h26v20q0 9-13 9t-13-9z" fill="#ff4ab0"/><path d="M107 92h26v40q0 9-13 9t-13-9z" fill="#ffd94a"/><path d="M57 86h26v26H57z" fill="#26d9ff"/><path d="M107 66h26v26h-26z" fill="#7a52ff"/></g>
+<!-- block panel -->
+<g transform="translate(179 47)" filter="url(#shadow)"><rect width="154" height="190" rx="30" fill="#2e194f" stroke="#ffbd32" stroke-width="8"/><g transform="translate(26 34)"><rect x="0" y="0" width="31" height="31" rx="7" fill="#1e9bff"/><rect x="34" y="0" width="31" height="31" rx="7" fill="#ff5b65"/><rect x="68" y="0" width="31" height="31" rx="7" fill="#ffd036"/><rect x="0" y="34" width="31" height="31" rx="7" fill="#51e26e"/><rect x="34" y="34" width="31" height="31" rx="7" fill="#9b5bff"/><rect x="68" y="34" width="31" height="31" rx="7" fill="#ff8a2e"/><rect x="0" y="68" width="31" height="31" rx="7" fill="#ff5b65"/><rect x="34" y="68" width="31" height="31" rx="7" fill="#ffd036"/><rect x="68" y="68" width="31" height="31" rx="7" fill="#1e9bff"/><rect x="34" y="102" width="31" height="31" rx="7" fill="#51e26e"/><rect x="68" y="102" width="31" height="31" rx="7" fill="#9b5bff"/></g></g>
+<!-- rescue panel -->
+<g transform="translate(320 78) rotate(7 74 90)" filter="url(#shadow)"><rect width="148" height="180" rx="30" fill="#095a69" stroke="#5ff29c" stroke-width="8"/><rect x="20" y="38" width="45" height="45" rx="10" fill="#20b8de"/><rect x="72" y="91" width="45" height="45" rx="10" fill="#3cdb76"/><circle cx="75" cy="88" r="28" fill="#ffd13b"/><circle cx="66" cy="84" r="4" fill="#14224d"/><circle cx="84" cy="84" r="4" fill="#14224d"/><path d="M65 99q10 8 20 0" fill="none" stroke="#14224d" stroke-width="5" stroke-linecap="round"/><path d="M116 32l10 10-25 25-9-9z" fill="#ffd13b"/><circle cx="122" cy="33" r="9" fill="none" stroke="#ffd13b" stroke-width="6"/></g>
+<!-- wordmark -->
+<g filter="url(#shadow)" font-family="Arial Rounded MT Bold,Arial,sans-serif" font-weight="900" font-size="92" text-anchor="middle">
+ <text x="256" y="350" fill="#09183f" stroke="#fff" stroke-width="13" paint-order="stroke">UNJAM</text>
+ <text x="256" y="350" fill="url(#cyan)">U</text>
+ <text x="215" y="350" fill="url(#gold)">N</text>
+ <text x="272" y="350" fill="#ff4b9a">J</text>
+ <text x="330" y="350" fill="url(#green)">A</text>
+ <text x="398" y="350" fill="#a85bff">M</text>
+</g>
+<text x="256" y="398" text-anchor="middle" fill="#ffffff" font-family="Arial,sans-serif" font-size="22" font-weight="700" letter-spacing="5">PLAY MORE · STRESS LESS</text>
+<rect x="85" y="424" width="342" height="48" rx="24" fill="#081a4a" stroke="#395fd7" stroke-width="3"/>
+<text x="256" y="455" text-anchor="middle" font-family="Arial,sans-serif" font-weight="700" font-size="15" fill="#8be9ff">WATER SORT  ·  BLOCK PUZZLE  ·  RESCUE RUSH</text>
 </svg>
