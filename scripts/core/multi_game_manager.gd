@@ -59,10 +59,10 @@ func total_stars(game_id: String) -> int:
 	return total
 
 func is_level_unlocked(game_id: String, level_number: int) -> bool:
-	return level_number >= 1 and level_number <= CAMPAIGN_LEVELS and level_number <= highest_level(game_id)
+	return level_number <= highest_level(game_id)
 
 func world_for_level(level_number: int) -> int:
-	return clampi(int((maxi(level_number, 1) - 1) / LEVELS_PER_WORLD) + 1, 1, WORLD_COUNT)
+	return clampi(int((maxi(1, level_number) - 1) / LEVELS_PER_WORLD) + 1, 1, WORLD_COUNT)
 
 func first_level_in_world(world: int) -> int:
 	return (clampi(world, 1, WORLD_COUNT) - 1) * LEVELS_PER_WORLD + 1
@@ -81,12 +81,15 @@ func world_name(game_id: String, world: int) -> String:
 	return "%s %d" % [base, chapter] if chapter > 1 else base
 
 func difficulty_for_level(level_number: int) -> String:
+	# Each 25-level chapter teaches first, then ramps. New players should never
+	# be dropped into a hard puzzle on level 1 just because of a hash pattern.
 	if level_number % 100 == 0: return "boss"
 	if level_number % 25 == 0: return "milestone"
-	var mixed := posmod(level_number * 37 + int(level_number / 7) * 11, 10)
-	if mixed <= 2: return "easy"
-	if mixed <= 6: return "medium"
-	return "hard"
+	var chapter_step := posmod(level_number - 1, 25) + 1
+	if chapter_step <= 5: return "easy"
+	if chapter_step <= 15:
+		return "easy" if chapter_step % 4 == 0 else "medium"
+	return "medium" if chapter_step % 3 == 0 else "hard"
 
 func daily_level(game_id: String) -> int:
 	var date := Time.get_date_dict_from_system()
@@ -117,7 +120,7 @@ func complete_daily(game_id: String, reward := 100) -> bool:
 			var prev_unix := Time.get_unix_time_from_datetime_dict({"year": int(parts[0]), "month": int(parts[1]), "day": int(parts[2]), "hour": 0, "minute": 0, "second": 0})
 			var now := Time.get_date_dict_from_system()
 			var now_unix := Time.get_unix_time_from_datetime_dict({"year": now.year, "month": now.month, "day": now.day, "hour": 0, "minute": 0, "second": 0})
-			consecutive = int(now_unix - prev_unix) == 86400
+			consecutive = int((now_unix - prev_unix) / 86400.0) == 1
 	game["daily_streak"] = int(game.get("daily_streak", 0)) + 1 if consecutive else 1
 	game["daily_best_streak"] = maxi(int(game.get("daily_best_streak", 0)), int(game.get("daily_streak", 0)))
 	game["daily_last_date"] = key
@@ -172,9 +175,7 @@ func complete_level(game_id: String, level_number: int, stars: int, coin_reward 
 		var badges: Array = game.get("world_badges", [])
 		if world_key not in badges:
 			badges.append(world_key); game["world_badges"] = badges; rewards["world_badge"] = true
-			rewards["prestige"] = int(rewards.get("prestige", 0)) + 5
 			rewards["bonus_coins"] = int(rewards.get("bonus_coins", 0)) + 250
-			SaveManager.data["prestige_points"] = int(SaveManager.data.get("prestige_points", 0)) + 5
 			SaveManager.data["coins"] = int(SaveManager.data.get("coins", 0)) + 250
 	progress[game_id] = game
 	SaveManager.data["game_progress"] = progress
