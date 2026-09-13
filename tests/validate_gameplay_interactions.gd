@@ -3,6 +3,9 @@ extends SceneTree
 func _initialize() -> void:
 	call_deferred("_run")
 
+func _manager() -> Node:
+	return root.get_node("MultiGameManager")
+
 func _run() -> void:
 	var main := (load("res://scenes/Main.tscn") as PackedScene).instantiate() as Control
 	root.add_child(main)
@@ -34,7 +37,7 @@ func _test_water(main: Control) -> bool:
 				break
 		if moved: break
 	if not moved or int(game.get("moves")) != 1: return _fail("Water Sort could not execute a legal move")
-	if MultiGameManager.checkpoint("water_sort").is_empty(): return _fail("Water Sort move did not save a checkpoint")
+	if _manager().call("checkpoint", "water_sort").is_empty(): return _fail("Water Sort move did not save a checkpoint")
 	game.call("undo_move")
 	if int(game.get("moves")) != 0 or game.get("tubes") != before: return _fail("Water Sort undo did not restore state")
 	game.call("restart_level")
@@ -63,7 +66,7 @@ func _test_block(main: Control) -> bool:
 			if placed: break
 		if placed: break
 	if not placed or int(game.get("placements")) != 1: return _fail("Block Puzzle could not place a legal piece")
-	if MultiGameManager.checkpoint("block_puzzle").is_empty(): return _fail("Block Puzzle placement did not save a checkpoint")
+	if _manager().call("checkpoint", "block_puzzle").is_empty(): return _fail("Block Puzzle placement did not save a checkpoint")
 	game.call("undo_move")
 	if int(game.get("placements")) != 0 or game.get("cells") != before: return _fail("Block Puzzle undo did not restore state")
 	game.call("restart_level")
