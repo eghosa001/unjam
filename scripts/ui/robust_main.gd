@@ -47,7 +47,6 @@ func build_home() -> void:
 	shared.add_child(shared_label)
 
 	var games := VBoxContainer.new()
-	games.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	games.add_theme_constant_override("separation", 12)
 	root.add_child(games)
 	_add_game_card(games, "rescue_rush", Color("2dd4b6"), "CHAIN-REACTION RESCUE")
@@ -87,7 +86,7 @@ func build_home() -> void:
 
 func _add_game_card(parent: VBoxContainer, game_id: String, accent: Color, subtitle_text: String) -> void:
 	var progress := MultiGameManager.progress_for(game_id)
-	var panel := add_glass_card(parent, Vector2(0, 210))
+	var panel := add_glass_card(parent, Vector2(0, 196))
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 22)
 	margin.add_theme_constant_override("margin_right", 22)
@@ -341,17 +340,8 @@ func _on_multi_quit(game_id: String) -> void:
 
 func _checkpoint_for(game_id: String) -> Dictionary:
 	if game_id == "rescue_rush":
-		return _valid_rescue_checkpoint()
-	return MultiGameManager.checkpoint(game_id)
-
-func _valid_rescue_checkpoint() -> Dictionary:
-	var raw = SaveManager.data.get("active_run", {})
-	if not raw is Dictionary or raw.is_empty(): return {}
-	var checkpoint: Dictionary = raw
-	var level := int(checkpoint.get("level", 0))
-	if level < 1 or level > LevelManager.CAMPAIGN_LEVELS: return {}
-	if bool(checkpoint.get("daily", false)) and String(checkpoint.get("daily_key", "")) != DailyChallenge.date_key(): return {}
-	return checkpoint
+		return SaveManager.data.get("active_run", {})
+	return MultiGameManager.load_checkpoint(game_id)
 
 func resume_game(game_id: String) -> void:
 	var checkpoint := _checkpoint_for(game_id)
