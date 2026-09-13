@@ -27,6 +27,9 @@ LevelManager="*res://scripts/core/level_manager.gd"
 MultiGameManager="*res://scripts/core/multi_game_manager.gd"
 AdManager="*res://scripts/systems/ad_manager.gd"
 StoreManager="*res://scripts/systems/store_manager.gd"
+PrivacyManager="*res://scripts/systems/privacy_manager.gd"
+PurchaseVerifier="*res://scripts/systems/purchase_verifier.gd"
+AndroidMonetizationBridge="*res://scripts/systems/android_monetization_bridge.gd"
 AnalyticsManager="*res://scripts/systems/analytics_manager.gd"
 DailyChallenge="*res://scripts/systems/robust_daily_challenge.gd"
 FeedbackManager="*res://scripts/systems/feedback_manager.gd"
@@ -36,7 +39,9 @@ LiveHubLauncher="*res://scripts/systems/live_hub_launcher.gd"
 
 [monetization]
 
-test_mode=true
-admob_android_app_id="ca-app-pub-3940256099942544~3347511713"
-admob_rewarded_unit_id="ca-app-pub-3940256099942544/5224354917"
-admob_interstitial_unit_id="ca-app-pub-3940256099942544/1033173712"
+test_mode=false
+admob_android_app_id=""
+admob_rewarded_unit_id=""
+admob_interstitial_unit_id=""
+privacy_policy_url="https://eghosa001.github.io/unjam/privacy.html"
+purchase_verification_url=""
