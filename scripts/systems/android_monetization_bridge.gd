@@ -1,6 +1,8 @@
 extends Node
 
+const ADMOB_PROVIDER_PATH := "res://addons/unjam_admob_provider.gd"
 var billing_client: Node
+var admob_provider: Node
 
 func _ready() -> void:
 	call_deferred("_initialize")
@@ -12,7 +14,15 @@ func _initialize() -> void:
 		if billing_client != null:
 			add_child(billing_client)
 			StoreManager.register_provider(self)
-	PrivacyManager.refresh_consent()
+	if OS.get_name() == "Android" and ResourceLoader.exists(ADMOB_PROVIDER_PATH):
+		var admob_script = load(ADMOB_PROVIDER_PATH)
+		admob_provider = admob_script.new() if admob_script != null else null
+		if admob_provider != null:
+			add_child(admob_provider)
+			AdManager.register_provider(admob_provider)
+			PrivacyManager.register_provider(admob_provider)
+	else:
+		PrivacyManager.refresh_consent()
 
 func query_products(_product_ids: Array, callback: Callable) -> void:
 	if callback.is_valid():
