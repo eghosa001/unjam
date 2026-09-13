@@ -86,18 +86,21 @@ func unlocked_achievements(id:String)->Array:
  return out
 func complete_daily(id:String,reward:=100)->bool:
  if id=="rescue_rush":return SaveManager.complete_daily(date_key(),reward)
- ensure_state();var all:Dictionary=SaveManager.data.game_progress;var g:Dictionary=all[id];var key:=date_key();var done:Array=g.daily_completed
+ ensure_state();var all:Dictionary=SaveManager.data.get("game_progress",{});var g:Dictionary=all.get(id,{});var key:=date_key();var done:Array=g.get("daily_completed",[])
  if key in done:return false
- g.daily_streak=int(g.daily_streak)+1;g.daily_best_streak=maxi(int(g.daily_best_streak),int(g.daily_streak));g.daily_last_date=key;done.append(key);g.daily_completed=done;all[id]=g;SaveManager.data.game_progress=all;SaveManager.data["coins"]=int(SaveManager.data.get("coins",0))+reward;SaveManager.save();return true
+ g["daily_streak"]=int(g.get("daily_streak",0))+1;g["daily_best_streak"]=maxi(int(g.get("daily_best_streak",0)),int(g.get("daily_streak",0)));g["daily_last_date"]=key;done.append(key);g["daily_completed"]=done;all[id]=g;SaveManager.data["game_progress"]=all;SaveManager.data["coins"]=int(SaveManager.data.get("coins",0))+reward;SaveManager.save();return true
 func complete_level(id:String,n:int,stars:int,coin_reward:=25)->Dictionary:
  if id=="rescue_rush":_advance_tasks(id,stars);return SaveManager.complete_level(n,stars,"",coin_reward)
- ensure_state();n=clampi(n,1,CAMPAIGN_LEVELS);stars=clampi(stars,1,3);var all:Dictionary=SaveManager.data.game_progress;var g:Dictionary=all[id];var sm:Dictionary=g.stars;var key:=str(n);var previous:=int(sm.get(key,0));var first:=previous==0;var rewards={"first_clear":first,"improved":stars>previous,"perfect":stars==3 and previous<3,"milestone":false,"world_badge":false,"bonus_coins":0,"prestige":0};sm[key]=maxi(previous,stars);g.stars=sm;g.highest_level=maxi(int(g.highest_level),mini(CAMPAIGN_LEVELS+1,n+1))
- if first:g.levels_completed=mini(CAMPAIGN_LEVELS,int(g.levels_completed)+1);SaveManager.data["coins"]=int(SaveManager.data.get("coins",0))+coin_reward
- if stars==3 and previous<3:g.perfect_clears=int(g.perfect_clears)+1;g.perfect_streak=int(g.perfect_streak)+1;g.best_perfect_streak=maxi(int(g.best_perfect_streak),int(g.perfect_streak))
- elif first:g.perfect_streak=0
- if first and n%10==0:var c:Array=g.milestone_chests;c.append(key);g.milestone_chests=c;rewards.milestone=true;SaveManager.data["coins"]=int(SaveManager.data.get("coins",0))+100
- if first and n%100==0:var wk:=str(int(n/100));var b:Array=g.world_badges;b.append(wk);g.world_badges=b;rewards.world_badge=true;SaveManager.data["coins"]=int(SaveManager.data.get("coins",0))+250;SaveManager.data["prestige_points"]=int(SaveManager.data.get("prestige_points",0))+5
- all[id]=g;SaveManager.data.game_progress=all;_advance_tasks(id,stars);SaveManager.save();AnalyticsManager.track("multi_game_level_complete",{"game":id,"level":n,"stars":stars,"difficulty":difficulty_for_level(n)});return rewards
-func save_checkpoint(id:String,data:Dictionary)->void:ensure_state();var r:Dictionary=SaveManager.data.multi_active_runs;var p:=data.duplicate(true);p.game=id;p.saved_at=int(Time.get_unix_time_from_system());r[id]=p;SaveManager.data.multi_active_runs=r;SaveManager.save()
-func checkpoint(id:String)->Dictionary:ensure_state();var raw=(SaveManager.data.multi_active_runs as Dictionary).get(id,{});return raw.duplicate(true) if raw is Dictionary else {}
-func clear_checkpoint(id:String)->void:ensure_state();var r:Dictionary=SaveManager.data.multi_active_runs;r.erase(id);SaveManager.data.multi_active_runs=r;SaveManager.save()
+ ensure_state();n=clampi(n,1,CAMPAIGN_LEVELS);stars=clampi(stars,1,3);var all:Dictionary=SaveManager.data.get("game_progress",{});var g:Dictionary=all.get(id,{});var sm:Dictionary=g.get("stars",{});var key:=str(n);var previous:=int(sm.get(key,0));var first:=previous==0;var rewards={"first_clear":first,"improved":stars>previous,"perfect":stars==3 and previous<3,"milestone":false,"world_badge":false,"bonus_coins":0,"prestige":0};sm[key]=maxi(previous,stars);g["stars"]=sm;g["highest_level"]=maxi(int(g.get("highest_level",1)),mini(CAMPAIGN_LEVELS+1,n+1))
+ if first:g["levels_completed"]=mini(CAMPAIGN_LEVELS,int(g.get("levels_completed",0))+1);SaveManager.data["coins"]=int(SaveManager.data.get("coins",0))+coin_reward
+ if stars==3 and previous<3:g["perfect_clears"]=int(g.get("perfect_clears",0))+1;g["perfect_streak"]=int(g.get("perfect_streak",0))+1;g["best_perfect_streak"]=maxi(int(g.get("best_perfect_streak",0)),int(g.get("perfect_streak",0)))
+ elif first:g["perfect_streak"]=0
+ if first and n%10==0:var c:Array=g.get("milestone_chests",[]);c.append(key);g["milestone_chests"]=c;rewards.milestone=true;SaveManager.data["coins"]=int(SaveManager.data.get("coins",0))+100
+ if first and n%100==0:var wk:=str(int(n/100));var b:Array=g.get("world_badges",[]);b.append(wk);g["world_badges"]=b;rewards.world_badge=true;SaveManager.data["coins"]=int(SaveManager.data.get("coins",0))+250;SaveManager.data["prestige_points"]=int(SaveManager.data.get("prestige_points",0))+5
+ all[id]=g;SaveManager.data["game_progress"]=all;_advance_tasks(id,stars);SaveManager.save();AnalyticsManager.track("multi_game_level_complete",{"game":id,"level":n,"stars":stars,"difficulty":difficulty_for_level(n)});return rewards
+func save_checkpoint(id:String,data:Dictionary)->void:
+ ensure_state();var runs:Dictionary=SaveManager.data.get("multi_active_runs",{});var payload:=data.duplicate(true);payload["game"]=id;payload["saved_at"]=int(Time.get_unix_time_from_system());runs[id]=payload;SaveManager.data["multi_active_runs"]=runs;SaveManager.save()
+func checkpoint(id:String)->Dictionary:
+ ensure_state();var runs:Dictionary=SaveManager.data.get("multi_active_runs",{});var raw=runs.get(id,{});return raw.duplicate(true) if raw is Dictionary else {}
+func clear_checkpoint(id:String)->void:
+ ensure_state();var runs:Dictionary=SaveManager.data.get("multi_active_runs",{});runs.erase(id);SaveManager.data["multi_active_runs"]=runs;SaveManager.save()
