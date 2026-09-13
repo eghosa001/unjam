@@ -372,7 +372,7 @@ func _spawn_cell_overlay(index: int, color: Color, duration: float, peak_scale: 
 	var overlay := Panel.new()
 	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	overlay.z_index = 600
-	overlay.position = to_local(cell.global_position)
+	overlay.position = cell.global_position - global_position
 	overlay.size = cell.size
 	overlay.pivot_offset = overlay.size * 0.5
 	overlay.add_theme_stylebox_override("panel", style_box(Color(color, 0.76), 18, color.lightened(0.25), 2))
