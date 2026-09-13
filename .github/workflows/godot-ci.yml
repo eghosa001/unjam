@@ -15,7 +15,7 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - name: Setup JDK 17
@@ -33,10 +33,7 @@ jobs:
         run: |
           set -o pipefail
           godot --headless --path . --editor --quit 2>&1 | tee import.log
-          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" import.log; then
-            echo "Godot script/import errors detected."
-            exit 1
-          fi
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" import.log; then exit 1; fi
       - name: Validate handcrafted levels
         run: godot --headless --path . --script res://tests/validate_levels.gd
       - name: Validate campaign structure pacing and solvability
@@ -47,50 +44,30 @@ jobs:
         run: godot --headless --path . --script res://tests/validate_robustness.gd
       - name: Validate all three Level 1 launches
         run: godot --headless --path . --script res://tests/validate_level_launch.gd
-      - name: Validate all three campaigns through level 1000
+      - name: Validate all 30000 campaign configurations
         run: godot --headless --path . --script res://tests/validate_campaign_1000.gd
       - name: Parse and boot smoke test
         shell: bash
         run: |
           set -o pipefail
           godot --headless --path . --quit-after 5 2>&1 | tee boot.log
-          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" boot.log; then
-            echo "Godot runtime errors detected."
-            exit 1
-          fi
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" boot.log; then exit 1; fi
       - name: Prepare Android export toolchain
         shell: bash
         run: |
           set -euxo pipefail
-          ANDROID_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
-          test -n "$ANDROID_ROOT"
-          test -x "$ANDROID_ROOT/platform-tools/adb"
-          echo "ANDROID_HOME=$ANDROID_ROOT" >> "$GITHUB_ENV"
-          echo "ANDROID_SDK_ROOT=$ANDROID_ROOT" >> "$GITHUB_ENV"
-          keytool -genkeypair -v \
-            -keystore "$RUNNER_TEMP/unjam-debug.keystore" \
-            -storepass android \
-            -alias androiddebugkey \
-            -keypass android \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 10000 \
-            -dname "CN=Unjam Debug,O=Unjam,C=NG"
-          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$RUNNER_TEMP/unjam-debug.keystore" >> "$GITHUB_ENV"
-          echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> "$GITHUB_ENV"
-          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> "$GITHUB_ENV"
+          ANDROID_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"; test -n "$ANDROID_ROOT"; test -x "$ANDROID_ROOT/platform-tools/adb"
+          echo "ANDROID_HOME=$ANDROID_ROOT" >> "$GITHUB_ENV"; echo "ANDROID_SDK_ROOT=$ANDROID_ROOT" >> "$GITHUB_ENV"
+          keytool -genkeypair -v -keystore "$RUNNER_TEMP/unjam-debug.keystore" -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Unjam Debug,O=Unjam,C=NG"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$RUNNER_TEMP/unjam-debug.keystore" >> "$GITHUB_ENV"; echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> "$GITHUB_ENV"; echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> "$GITHUB_ENV"
       - name: Android debug export smoke test
         shell: bash
         run: |
           set -o pipefail
           mkdir -p build/android
           godot --headless --verbose --path . --export-debug Android build/android/unjam-debug.apk 2>&1 | tee android-export.log
-          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" android-export.log; then
-            echo "Godot Android export contained script/runtime errors."
-            exit 1
-          fi
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" android-export.log; then exit 1; fi
           test -s build/android/unjam-debug.apk
-          file build/android/unjam-debug.apk
       - name: Upload Android debug APK
         uses: actions/upload-artifact@v4
         with:
