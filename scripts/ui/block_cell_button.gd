@@ -23,18 +23,18 @@ func _ready() -> void:
 	pivot_offset = size * 0.5
 
 func _draw() -> void:
-	var pad := 5.0
-	var rect := Rect2(Vector2(pad, pad), size - Vector2(pad * 2.0, pad * 2.0))
-	var shadow := rect.translated(Vector2(0, 5))
+	var pad: float = 5.0
+	var rect: Rect2 = Rect2(Vector2(pad, pad), size - Vector2(pad * 2.0, pad * 2.0))
+	var shadow: Rect2 = Rect2(rect.position + Vector2(0, 5), rect.size)
 	_draw_box(shadow, Color(0, 0, 0, 0.22), 18)
-	var base := Color(0.055, 0.09, 0.16, 0.98)
+	var base: Color = Color(0.055, 0.09, 0.16, 0.98)
 	_draw_box(rect, base, 18)
-	var border := Color(0.55, 0.64, 0.78, 0.12)
+	var border: Color = Color(0.55, 0.64, 0.78, 0.12)
 	_draw_border(rect, border, 18, 2)
 
 	if occupied or preview:
-		var inset := rect.grow(-8)
-		var fill := Color(accent, 0.42 if preview else 0.96)
+		var inset: Rect2 = rect.grow(-8)
+		var fill: Color = Color(accent, 0.42 if preview else 0.96)
 		_draw_box(inset, fill, 14)
 		draw_line(inset.position + Vector2(8, 8), Vector2(inset.end.x - 8, inset.position.y + 8), accent.lightened(0.28), 3.0, true)
 		if not preview:
