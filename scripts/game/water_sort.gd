@@ -5,6 +5,10 @@ signal quit_requested
 
 const GAME_ID := "water_sort"
 const CAPACITY := 4
+const LIQUID_PALETTE := [
+	Color("ff5f7a"), Color("3fa9f5"), Color("ffd166"), Color("45d6a4"),
+	Color("9b6cff"), Color("ff9d57"), Color("39d7cf"), Color("f472b6")
+]
 
 var level_number := 1
 var daily_mode := false
@@ -274,10 +278,9 @@ func select_tube(index: int) -> void:
 		render_board()
 		return
 	if can_pour(selected, index):
-		animating = true
 		var from_idx := selected
 		history.append({"tubes": tubes.duplicate(true), "moves": moves})
-		await _animate_transfer(from_idx, index)
+		_animate_transfer(from_idx, index)
 		pour(from_idx, index)
 		moves += 1
 		status_label.text = "Smooth pour"
@@ -286,7 +289,6 @@ func select_tube(index: int) -> void:
 		render_board()
 		_play_success(index)
 		_save_checkpoint()
-		animating = false
 		if is_complete(): complete_level()
 		return
 	status_label.text = "That pour is not allowed"
@@ -297,19 +299,16 @@ func select_tube(index: int) -> void:
 	_save_checkpoint()
 
 func _animate_transfer(from_idx: int, to_idx: int) -> void:
-	if board == null or from_idx >= board.get_child_count() or to_idx >= board.get_child_count():
-		await get_tree().create_timer(0.12).timeout
+	if board == null or from_idx < 0 or to_idx < 0 or from_idx >= board.get_child_count() or to_idx >= board.get_child_count():
 		return
 	var source := board.get_child(from_idx) as Control
 	var target := board.get_child(to_idx) as Control
 	if source == null or target == null:
-		await get_tree().create_timer(0.12).timeout
 		return
-	var source_center := to_local(source.global_position + source.size * 0.5)
-	var target_center := to_local(target.global_position + target.size * 0.5)
+	var source_center := source.global_position - global_position + source.size * 0.5
+	var target_center := target.global_position - global_position + target.size * 0.5
 	var top_color_index := int(tubes[from_idx].back()) if not tubes[from_idx].is_empty() else 0
-	var palette := WaterTubeButton.PALETTE
-	var stream_color: Color = palette[clampi(top_color_index, 0, palette.size() - 1)]
+	var stream_color: Color = LIQUID_PALETTE[clampi(top_color_index, 0, LIQUID_PALETTE.size() - 1)]
 	var stream := Line2D.new()
 	stream.width = 14.0
 	stream.default_color = Color(stream_color, 0.92)
@@ -325,8 +324,9 @@ func _animate_transfer(from_idx: int, to_idx: int) -> void:
 	tween.parallel().tween_property(stream, "width", 19.0, 0.12)
 	tween.tween_interval(0.10)
 	tween.tween_property(stream, "modulate:a", 0.0, 0.09)
-	await tween.finished
-	stream.queue_free()
+	tween.finished.connect(func():
+		if is_instance_valid(stream): stream.queue_free()
+	)
 
 func _play_invalid(index: int) -> void:
 	if board != null and index >= 0 and index < board.get_child_count():
