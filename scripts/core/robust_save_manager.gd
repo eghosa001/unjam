@@ -3,7 +3,7 @@ extends "res://scripts/core/save_manager.gd"
 const ROBUST_SAVE_PATH := "user://unjam_save.json"
 const BACKUP_PATH := "user://unjam_save.backup.json"
 const TEMP_PATH := "user://unjam_save.tmp.json"
-const SAVE_VERSION := 4
+const SAVE_VERSION := 5
 
 func _ready() -> void:
 	load_save()
@@ -40,11 +40,13 @@ func _sanitize() -> void:
 	data.coins = clampi(int(data.get("coins", 0)), 0, 2000000000)
 	data.prestige_points = max(0, int(data.get("prestige_points", 0)))
 	data.achievement_points = max(0, int(data.get("achievement_points", 0)))
-	for key in ["sound", "vibration", "music", "remove_ads"]:
+	data.rewarded_ads_watched = max(0, int(data.get("rewarded_ads_watched", 0)))
+	data.lifetime_purchased_coins = max(0, int(data.get("lifetime_purchased_coins", 0)))
+	for key in ["sound", "vibration", "music", "remove_ads", "starter_pack_purchased"]:
 		data[key] = bool(data.get(key, DEFAULT_DATA.get(key, false)))
 	if not data.get("stars", {}) is Dictionary:
 		data.stars = {}
-	for key in ["rescued", "decorations", "daily_completed", "milestone_chests", "world_badges", "achievements"]:
+	for key in ["rescued", "decorations", "daily_completed", "milestone_chests", "world_badges", "achievements", "purchased_products"]:
 		if not data.get(key, []) is Array:
 			data[key] = []
 	var clean_stars: Dictionary = {}

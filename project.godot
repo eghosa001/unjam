@@ -26,9 +26,17 @@ SaveManager="*res://scripts/core/robust_save_manager.gd"
 LevelManager="*res://scripts/core/level_manager.gd"
 MultiGameManager="*res://scripts/core/multi_game_manager.gd"
 AdManager="*res://scripts/systems/ad_manager.gd"
+StoreManager="*res://scripts/systems/store_manager.gd"
 AnalyticsManager="*res://scripts/systems/analytics_manager.gd"
 DailyChallenge="*res://scripts/systems/robust_daily_challenge.gd"
 FeedbackManager="*res://scripts/systems/feedback_manager.gd"
 PremiumVisuals="*res://scripts/systems/robust_premium_visuals.gd"
 RetentionManager="*res://scripts/systems/robust_retention_manager.gd"
 LiveHubLauncher="*res://scripts/systems/live_hub_launcher.gd"
+
+[monetization]
+
+test_mode=true
+admob_android_app_id="ca-app-pub-3940256099942544~3347511713"
+admob_rewarded_unit_id="ca-app-pub-3940256099942544/5224354917"
+admob_interstitial_unit_id="ca-app-pub-3940256099942544/1033173712"

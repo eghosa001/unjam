@@ -1,35 +1,118 @@
 extends Node
 
 signal rewarded_completed(placement: String)
+signal rewarded_failed(placement: String, reason: String)
 signal interstitial_closed
+signal interstitial_failed(reason: String)
+signal provider_changed(ready: bool)
+
+const DEFAULT_REWARDED_COINS := 50
+const MIN_LEVELS_BEFORE_FIRST_INTERSTITIAL := 3
+const INTERSTITIAL_COOLDOWN_SECONDS := 180
+const MAX_INTERSTITIALS_PER_SESSION := 6
 
 var ads_enabled := true
 var completed_since_interstitial := 0
-var interstitial_interval := 5
+var interstitial_interval := 4
+var interstitials_this_session := 0
+var last_interstitial_unix := 0
+var provider: Node
+var _pending_reward_placement := ""
+var _pending_reward_callback := Callable()
 
 func _ready() -> void:
 	ads_enabled = not bool(SaveManager.data.get("remove_ads", false))
+	last_interstitial_unix = int(Time.get_unix_time_from_system()) - INTERSTITIAL_COOLDOWN_SECONDS
 
-func show_rewarded(placement: String, on_reward: Callable = Callable()) -> void:
-	# Rewarded ads remain opt-in even for users who removed interstitial ads.
-	# Replace this development fallback with the chosen Android ad SDK adapter.
-	if on_reward.is_valid():
-		on_reward.call()
+func register_provider(value: Node) -> void:
+	provider = value
+	provider_changed.emit(is_provider_ready())
+
+func is_provider_ready() -> bool:
+	return provider != null and is_instance_valid(provider)
+
+func is_test_mode() -> bool:
+	return bool(ProjectSettings.get_setting("monetization/test_mode", true))
+
+func show_rewarded(placement: String, on_reward: Callable = Callable()) -> bool:
+	# On desktop/editor, test mode deliberately simulates a completed ad so QA can test flows.
+	# Android production never grants a reward unless the ad provider confirms completion.
+	AnalyticsManager.track("rewarded_requested", {"placement": placement, "provider": is_provider_ready()})
+	if is_provider_ready() and provider.has_method("show_rewarded"):
+		_pending_reward_placement = placement
+		_pending_reward_callback = on_reward
+		var accepted = provider.call("show_rewarded", placement, Callable(self, "_provider_rewarded_completed"), Callable(self, "_provider_rewarded_failed"))
+		return accepted != false
+	if is_test_mode() and OS.get_name() != "Android":
+		_grant_reward(placement, on_reward)
+		return true
+	rewarded_failed.emit(placement, "Ad provider unavailable")
+	AnalyticsManager.track("rewarded_unavailable", {"placement": placement})
+	return false
+
+func _provider_rewarded_completed() -> void:
+	_grant_reward(_pending_reward_placement, _pending_reward_callback)
+	_pending_reward_placement = ""
+	_pending_reward_callback = Callable()
+
+func _provider_rewarded_failed(reason: String = "Rewarded ad failed") -> void:
+	var placement := _pending_reward_placement
+	_pending_reward_placement = ""
+	_pending_reward_callback = Callable()
+	rewarded_failed.emit(placement, reason)
+	AnalyticsManager.track("rewarded_failed", {"placement": placement, "reason": reason})
+
+func _grant_reward(placement: String, callback: Callable) -> void:
+	if callback.is_valid():
+		callback.call()
+	SaveManager.data.rewarded_ads_watched = int(SaveManager.data.get("rewarded_ads_watched", 0)) + 1
+	SaveManager.save()
 	rewarded_completed.emit(placement)
+	AnalyticsManager.track("rewarded_completed", {"placement": placement})
+
+func reward_coins(placement: String = "shop_coins", amount: int = DEFAULT_REWARDED_COINS) -> bool:
+	return show_rewarded(placement, func() -> void: SaveManager.add_coins(amount))
 
 func note_level_completed() -> void:
 	completed_since_interstitial += 1
 
 func should_show_interstitial() -> bool:
-	return ads_enabled and not bool(SaveManager.data.get("remove_ads", false)) and completed_since_interstitial >= interstitial_interval
+	if not ads_enabled or bool(SaveManager.data.get("remove_ads", false)):
+		return false
+	# Desktop/editor test mode intentionally skips real-time grace/cooldown gates so QA is deterministic.
+	if is_test_mode() and OS.get_name() != "Android":
+		return completed_since_interstitial >= interstitial_interval
+	if int(SaveManager.data.get("total_levels_completed", 0)) < MIN_LEVELS_BEFORE_FIRST_INTERSTITIAL:
+		return false
+	if completed_since_interstitial < interstitial_interval:
+		return false
+	if interstitials_this_session >= MAX_INTERSTITIALS_PER_SESSION:
+		return false
+	return int(Time.get_unix_time_from_system()) - last_interstitial_unix >= INTERSTITIAL_COOLDOWN_SECONDS
 
-func show_interstitial() -> void:
+func show_interstitial() -> bool:
 	if not should_show_interstitial():
 		interstitial_closed.emit()
-		return
+		return false
+	if is_provider_ready() and provider.has_method("show_interstitial"):
+		var accepted = provider.call("show_interstitial", Callable(self, "_provider_interstitial_closed"), Callable(self, "_provider_interstitial_failed"))
+		return accepted != false
+	if is_test_mode() and OS.get_name() != "Android":
+		_provider_interstitial_closed()
+		return true
+	interstitial_failed.emit("Ad provider unavailable")
+	return false
+
+func _provider_interstitial_closed() -> void:
 	completed_since_interstitial = 0
-	# SDK integration intentionally isolated here; never call ad APIs from game.gd.
+	interstitials_this_session += 1
+	last_interstitial_unix = int(Time.get_unix_time_from_system())
 	interstitial_closed.emit()
+	AnalyticsManager.track("interstitial_closed", {"session_count": interstitials_this_session})
+
+func _provider_interstitial_failed(reason: String = "Interstitial failed") -> void:
+	interstitial_failed.emit(reason)
+	AnalyticsManager.track("interstitial_failed", {"reason": reason})
 
 func set_ads_enabled(enabled: bool) -> void:
 	ads_enabled = enabled
