@@ -5,20 +5,18 @@ var tutorial_panel: PanelContainer
 var tutorial_title: Label
 var tutorial_body: Label
 var help_button: Button
+var theme_button: Button
 var logo: TextureRect
 var tutorial_game := "rescue_rush"
 var seen_this_session := {}
+var theme_mode := "dark"
 
-const INK := Color("24324a")
-const MUTED := Color("667085")
-const SURFACE := Color("f6f4fb")
-const SURFACE_2 := Color("eef5fb")
-const BORDER := Color("cad4e3")
 const ACCENT := Color("5c67d8")
-const ACCENT_SOFT := Color("e5e7ff")
+const CONFIG_PATH := "user://unjam_ui.cfg"
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_load_theme()
 	get_tree().node_added.connect(_on_node_added)
 	call_deferred("_build_shell")
 	call_deferred("_restyle_tree")
@@ -32,22 +30,51 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		_handle_back()
 		get_viewport().set_input_as_handled()
 
+func _ink() -> Color:
+	return Color("f7f9ff") if theme_mode == "dark" else Color("14213a")
+
+func _muted() -> Color:
+	return Color("aebbd0") if theme_mode == "dark" else Color("52637a")
+
+func _surface() -> Color:
+	return Color("111a2b") if theme_mode == "dark" else Color("ffffff")
+
+func _surface_2() -> Color:
+	return Color("18243a") if theme_mode == "dark" else Color("eef3f9")
+
+func _border() -> Color:
+	return Color("34445e") if theme_mode == "dark" else Color("b7c4d6")
+
+func _disabled() -> Color:
+	return Color("202b3e") if theme_mode == "dark" else Color("e4e9f0")
+
+func _shadow() -> Color:
+	return Color(0, 0, 0, 0.34) if theme_mode == "dark" else Color(0.08, 0.12, 0.20, 0.14)
+
 func _build_shell() -> void:
 	if tutorial_layer != null:
 		return
 	tutorial_layer = CanvasLayer.new()
 	tutorial_layer.layer = 900
 	add_child(tutorial_layer)
+
 	help_button = Button.new()
 	help_button.text = "?  HOW TO PLAY"
 	help_button.custom_minimum_size = Vector2(220, 64)
 	help_button.position = Vector2(36, 1820)
 	help_button.add_theme_font_size_override("font_size", 18)
-	help_button.add_theme_stylebox_override("normal", _box(Color("ffffffdd"), 24, BORDER, 2))
-	help_button.add_theme_stylebox_override("pressed", _box(ACCENT_SOFT, 24, ACCENT, 2))
-	help_button.add_theme_color_override("font_color", INK)
 	help_button.pressed.connect(func(): show_tutorial(_current_game()))
 	tutorial_layer.add_child(help_button)
+
+	theme_button = Button.new()
+	theme_button.name = "ThemeToggle"
+	theme_button.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	theme_button.position = Vector2(-330, -100)
+	theme_button.custom_minimum_size = Vector2(290, 64)
+	theme_button.add_theme_font_size_override("font_size", 17)
+	theme_button.pressed.connect(_toggle_theme)
+	tutorial_layer.add_child(theme_button)
+
 	logo = TextureRect.new()
 	logo.texture = load("res://assets/icon.svg")
 	logo.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
@@ -57,19 +84,20 @@ func _build_shell() -> void:
 	logo.position = Vector2(42, 34)
 	logo.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	tutorial_layer.add_child(logo)
+
 	var dim := ColorRect.new()
 	dim.name = "TutorialDim"
-	dim.color = Color(0.08, 0.10, 0.16, 0.48)
+	dim.color = Color(0.02, 0.04, 0.08, 0.68)
 	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	dim.visible = false
 	dim.mouse_filter = Control.MOUSE_FILTER_STOP
 	tutorial_layer.add_child(dim)
+
 	tutorial_panel = PanelContainer.new()
 	tutorial_panel.name = "TutorialPanel"
 	tutorial_panel.set_anchors_preset(Control.PRESET_CENTER)
 	tutorial_panel.position = Vector2(-430, -560)
 	tutorial_panel.custom_minimum_size = Vector2(860, 1120)
-	tutorial_panel.add_theme_stylebox_override("panel", _box(Color("fbfbff"), 34, Color("bbc5da"), 2))
 	tutorial_panel.visible = false
 	tutorial_layer.add_child(tutorial_panel)
 	var margin := MarginContainer.new()
@@ -80,15 +108,15 @@ func _build_shell() -> void:
 	box.add_theme_constant_override("separation", 24)
 	margin.add_child(box)
 	tutorial_title = Label.new()
+	tutorial_title.name = "TutorialTitle"
 	tutorial_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	tutorial_title.add_theme_font_size_override("font_size", 36)
-	tutorial_title.add_theme_color_override("font_color", INK)
 	box.add_child(tutorial_title)
 	tutorial_body = Label.new()
+	tutorial_body.name = "TutorialBody"
 	tutorial_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	tutorial_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	tutorial_body.add_theme_font_size_override("font_size", 25)
-	tutorial_body.add_theme_color_override("font_color", INK)
 	box.add_child(tutorial_body)
 	var tabs := HBoxContainer.new()
 	tabs.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -102,13 +130,13 @@ func _build_shell() -> void:
 		b.pressed.connect(show_tutorial.bind(game_id))
 		tabs.add_child(b)
 	var close := Button.new()
+	close.name = "TutorialClose"
 	close.text = "GOT IT — PLAY"
 	close.custom_minimum_size = Vector2(0, 84)
 	close.add_theme_font_size_override("font_size", 23)
-	close.add_theme_stylebox_override("normal", _box(ACCENT, 24, ACCENT, 1))
-	close.add_theme_color_override("font_color", Color.WHITE)
 	close.pressed.connect(hide_tutorial)
 	box.add_child(close)
+	_apply_theme()
 
 func _process(_delta: float) -> void:
 	var main := _main()
@@ -117,12 +145,47 @@ func _process(_delta: float) -> void:
 	var raw_surface = main.get("current_surface")
 	var surface := String(raw_surface) if raw_surface != null else "home"
 	help_button.visible = surface in ["home", "levels", "game"] and not tutorial_panel.visible
+	theme_button.visible = surface in ["home", "settings"] and not tutorial_panel.visible
 	logo.visible = surface == "home" and not tutorial_panel.visible
 	if surface == "game":
 		var game_id := _current_game()
 		if not bool(seen_this_session.get(game_id, false)):
 			seen_this_session[game_id] = true
 			call_deferred("show_tutorial", game_id)
+
+func _toggle_theme() -> void:
+	theme_mode = "light" if theme_mode == "dark" else "dark"
+	_save_theme()
+	_apply_theme()
+	var main := _main()
+	if main != null and main.has_method("build_home"):
+		var raw_surface = main.get("current_surface")
+		var surface := String(raw_surface) if raw_surface != null else "home"
+		if surface == "home":
+			main.call_deferred("build_home")
+
+func _load_theme() -> void:
+	var cfg := ConfigFile.new()
+	if cfg.load(CONFIG_PATH) == OK:
+		theme_mode = String(cfg.get_value("appearance", "theme", "dark"))
+	if theme_mode not in ["light", "dark"]:
+		theme_mode = "dark"
+
+func _save_theme() -> void:
+	var cfg := ConfigFile.new()
+	cfg.set_value("appearance", "theme", theme_mode)
+	cfg.save(CONFIG_PATH)
+
+func _apply_theme() -> void:
+	if theme_button != null:
+		theme_button.text = "☀  LIGHT THEME" if theme_mode == "dark" else "☾  DARK THEME"
+	if tutorial_panel != null:
+		tutorial_panel.add_theme_stylebox_override("panel", _box(_surface(), 34, _border(), 2))
+	if tutorial_title != null:
+		tutorial_title.add_theme_color_override("font_color", _ink())
+	if tutorial_body != null:
+		tutorial_body.add_theme_color_override("font_color", _ink())
+	_restyle_tree()
 
 func _handle_back() -> void:
 	if tutorial_panel != null and tutorial_panel.visible:
@@ -170,6 +233,7 @@ func show_tutorial(game_id: String = "rescue_rush") -> void:
 	dim.visible = true
 	tutorial_panel.visible = true
 	help_button.visible = false
+	theme_button.visible = false
 	logo.visible = false
 
 func hide_tutorial() -> void:
@@ -204,28 +268,37 @@ func _restyle_tree() -> void:
 	var root := get_tree().current_scene
 	if root != null:
 		_soften_control(root)
+	if tutorial_layer != null:
+		_soften_control(tutorial_layer)
 
 func _soften_control(node: Node) -> void:
 	if not is_instance_valid(node):
 		return
-	if node is Button and not node is WaterTubeButton and not node is BlockPieceButton and not node is PremiumPieceButton:
+	if node is Button and not node is WaterTubeButton and not node is BlockPieceButton and not node is PremiumPieceButton and not node is BlockCellButton:
 		var b := node as Button
-		b.add_theme_stylebox_override("normal", _box(Color("f8f9fc"), 22, BORDER, 2))
-		b.add_theme_stylebox_override("hover", _box(Color("eef1ff"), 22, ACCENT, 2))
-		b.add_theme_stylebox_override("pressed", _box(ACCENT_SOFT, 22, ACCENT, 2))
-		b.add_theme_stylebox_override("disabled", _box(Color("eceff4"), 22, Color("d8dee8"), 1))
-		b.add_theme_color_override("font_color", INK)
-		b.add_theme_color_override("font_hover_color", INK)
-		b.add_theme_color_override("font_pressed_color", INK)
-		b.add_theme_color_override("font_disabled_color", Color("98a2b3"))
+		var strong := b.name in ["TutorialClose"]
+		if strong:
+			b.add_theme_stylebox_override("normal", _box(ACCENT, 22, ACCENT.lightened(0.15), 2))
+			b.add_theme_stylebox_override("hover", _box(ACCENT.lightened(0.08), 22, Color.WHITE, 2))
+			b.add_theme_stylebox_override("pressed", _box(ACCENT.darkened(0.10), 22, Color.WHITE, 2))
+			b.add_theme_color_override("font_color", Color.WHITE)
+		else:
+			b.add_theme_stylebox_override("normal", _box(_surface_2(), 22, _border(), 2))
+			b.add_theme_stylebox_override("hover", _box(_surface(), 22, ACCENT, 3))
+			b.add_theme_stylebox_override("pressed", _box(ACCENT.darkened(0.08) if theme_mode == "dark" else Color("dfe4ff"), 22, ACCENT, 3))
+			b.add_theme_stylebox_override("disabled", _box(_disabled(), 22, _border(), 1))
+			b.add_theme_color_override("font_color", _ink())
+			b.add_theme_color_override("font_hover_color", _ink())
+			b.add_theme_color_override("font_pressed_color", _ink())
+			b.add_theme_color_override("font_disabled_color", _muted())
 	elif node is PanelContainer:
 		var p := node as PanelContainer
 		if p.name != "TutorialPanel":
-			p.add_theme_stylebox_override("panel", _box(Color("f7f8fccc"), 28, Color("d5dce8aa"), 1))
+			p.add_theme_stylebox_override("panel", _box(Color(_surface(), 0.96), 28, _border(), 2))
 	elif node is Label:
 		var l := node as Label
-		if l.name != "TutorialTitle" and l.name != "TutorialBody":
-			l.add_theme_color_override("font_color", INK)
+		l.add_theme_color_override("font_color", _ink())
+		l.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.0))
 	for child in node.get_children():
 		_soften_control(child)
 
@@ -242,7 +315,7 @@ func _box(color: Color, radius: int, border: Color = Color.TRANSPARENT, width: i
 		style.border_width_top = width
 		style.border_width_bottom = width
 		style.border_color = border
-	style.shadow_color = Color(0.12, 0.16, 0.25, 0.10)
+	style.shadow_color = _shadow()
 	style.shadow_size = 8
 	style.shadow_offset = Vector2(0, 4)
 	return style
