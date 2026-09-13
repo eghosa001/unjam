@@ -1,6 +1,8 @@
 extends Button
 class_name BlockPieceButton
 
+const DragPreview = preload("res://scripts/ui/block_drag_preview.gd")
+
 var shape: Array = []
 var selected := false
 var used := false
@@ -8,6 +10,7 @@ var accent := Color("7c5cff")
 var hover := false
 var piece_index := -1
 var touch_drag_started := false
+var dragging := false
 var phase := 0.0
 var target_scale := Vector2.ONE
 var target_rotation := 0.0
@@ -22,7 +25,7 @@ func configure(value: Array, is_selected: bool, color := Color("7c5cff"), index:
 	focus_mode = Control.FOCUS_NONE
 	disabled = used
 	mouse_default_cursor_shape = Control.CURSOR_DRAG if not used else Control.CURSOR_ARROW
-	target_scale = Vector2(1.06, 1.06) if selected else Vector2.ONE
+	target_scale = Vector2(1.07, 1.07) if selected else Vector2.ONE
 	target_rotation = deg_to_rad(-1.8 if selected else 0.0)
 	_update_style()
 	queue_redraw()
@@ -41,7 +44,10 @@ func _refresh_pivot() -> void:
 
 func _process(delta: float) -> void:
 	phase += delta
-	var hover_scale := 1.035 if hover and not selected else 1.0
+	if dragging:
+		queue_redraw()
+		return
+	var hover_scale := 1.04 if hover and not selected else 1.0
 	var desired := target_scale * hover_scale
 	scale = scale.lerp(desired, minf(1.0, delta * 11.0))
 	var wobble := sin(phase * 3.4) * deg_to_rad(0.65) if selected else 0.0
@@ -50,13 +56,19 @@ func _process(delta: float) -> void:
 		queue_redraw()
 
 func _press() -> void:
-	var tween := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(self, "scale", Vector2(0.96, 0.96), 0.065)
+	if used:
+		return
+	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(self, "scale", target_scale * 1.12, 0.08)
+	tween.parallel().tween_property(self, "rotation", deg_to_rad(-3.0), 0.08)
 
 func _release() -> void:
+	if dragging:
+		return
 	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(self, "scale", target_scale * 1.06, 0.08)
-	tween.tween_property(self, "scale", target_scale, 0.14)
+	tween.tween_property(self, "scale", target_scale * 1.04, 0.07)
+	tween.tween_property(self, "scale", target_scale, 0.16)
+	tween.parallel().tween_property(self, "rotation", target_rotation, 0.16)
 
 func _drag_payload() -> Dictionary:
 	var drag_piece_index := piece_index if piece_index >= 0 else get_index()
@@ -64,25 +76,27 @@ func _drag_payload() -> Dictionary:
 
 func _make_drag_preview() -> Control:
 	var wrapper := Control.new()
-	wrapper.custom_minimum_size = Vector2(220, 210)
-	wrapper.size = Vector2(220, 210)
+	wrapper.custom_minimum_size = Vector2(250, 250)
+	wrapper.size = Vector2(250, 250)
 	wrapper.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	# Keep the shape visibly above the finger/cursor, matching mobile puzzle conventions.
-	wrapper.position = Vector2(-110, -185)
-	var preview := BlockPieceButton.new()
-	preview.custom_minimum_size = Vector2(210, 128)
-	preview.size = Vector2(210, 128)
-	preview.position = Vector2(5, 4)
-	preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	preview.configure(shape, true, accent)
-	preview.modulate = Color(1, 1, 1, 0.97)
-	preview.rotation = deg_to_rad(-4.0)
+	# Lift the actual shape well above the finger, like the reference trailer.
+	wrapper.position = Vector2(-125, -225)
+	var preview := DragPreview.new()
+	preview.position = Vector2(10, 8)
+	preview.configure(shape, accent)
 	wrapper.add_child(preview)
 	return wrapper
+
+func _begin_drag_feedback() -> void:
+	dragging = true
+	var tween := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(self, "scale", Vector2(0.88, 0.88), 0.08)
+	tween.parallel().tween_property(self, "modulate", Color(1, 1, 1, 0.32), 0.08)
 
 func _get_drag_data(_at_position: Vector2) -> Variant:
 	if used or shape.is_empty():
 		return null
+	_begin_drag_feedback()
 	set_drag_preview(_make_drag_preview())
 	return _drag_payload()
 
@@ -96,8 +110,18 @@ func _gui_input(event: InputEvent) -> void:
 			touch_drag_started = false
 	elif event is InputEventScreenDrag and not touch_drag_started:
 		touch_drag_started = true
+		_begin_drag_feedback()
 		force_drag(_drag_payload(), _make_drag_preview())
 		accept_event()
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_DRAG_END and dragging:
+		dragging = false
+		var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tween.tween_property(self, "modulate", Color.WHITE, 0.08)
+		tween.parallel().tween_property(self, "scale", target_scale * 1.12, 0.10)
+		tween.tween_property(self, "scale", target_scale, 0.18)
+		tween.parallel().tween_property(self, "rotation", target_rotation, 0.18)
 
 func _set_hover(value: bool) -> void:
 	hover = value
