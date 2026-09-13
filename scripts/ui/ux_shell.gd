@@ -24,7 +24,7 @@ func _ready() -> void:
 	call_deferred("_restyle_tree")
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_WM_GO_BACK:
+	if what == Node.NOTIFICATION_WM_GO_BACK_REQUEST:
 		_handle_back()
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -38,7 +38,6 @@ func _build_shell() -> void:
 	tutorial_layer = CanvasLayer.new()
 	tutorial_layer.layer = 900
 	add_child(tutorial_layer)
-
 	help_button = Button.new()
 	help_button.text = "?  HOW TO PLAY"
 	help_button.custom_minimum_size = Vector2(220, 64)
@@ -49,7 +48,6 @@ func _build_shell() -> void:
 	help_button.add_theme_color_override("font_color", INK)
 	help_button.pressed.connect(func(): show_tutorial(_current_game()))
 	tutorial_layer.add_child(help_button)
-
 	logo = TextureRect.new()
 	logo.texture = load("res://assets/icon.svg")
 	logo.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
@@ -59,7 +57,6 @@ func _build_shell() -> void:
 	logo.position = Vector2(42, 34)
 	logo.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	tutorial_layer.add_child(logo)
-
 	var dim := ColorRect.new()
 	dim.name = "TutorialDim"
 	dim.color = Color(0.08, 0.10, 0.16, 0.48)
@@ -67,7 +64,6 @@ func _build_shell() -> void:
 	dim.visible = false
 	dim.mouse_filter = Control.MOUSE_FILTER_STOP
 	tutorial_layer.add_child(dim)
-
 	tutorial_panel = PanelContainer.new()
 	tutorial_panel.name = "TutorialPanel"
 	tutorial_panel.set_anchors_preset(Control.PRESET_CENTER)
@@ -118,7 +114,8 @@ func _process(_delta: float) -> void:
 	var main := _main()
 	if main == null or help_button == null:
 		return
-	var surface := String(main.get("current_surface")) if "current_surface" in main else "home"
+	var raw_surface = main.get("current_surface")
+	var surface := String(raw_surface) if raw_surface != null else "home"
 	help_button.visible = surface in ["home", "levels", "game"] and not tutorial_panel.visible
 	logo.visible = surface == "home" and not tutorial_panel.visible
 	if surface == "game":
@@ -140,7 +137,8 @@ func _handle_back() -> void:
 		if is_instance_valid(overlay) and overlay.visible:
 			hub.call("_close_shop")
 			return
-	var surface := String(main.get("current_surface")) if "current_surface" in main else "home"
+	var raw_surface = main.get("current_surface")
+	var surface := String(raw_surface) if raw_surface != null else "home"
 	if surface == "game":
 		var active = main.get("active_game")
 		if active != null and is_instance_valid(active):
@@ -165,9 +163,9 @@ func show_tutorial(game_id: String = "rescue_rush") -> void:
 		"water_sort":
 			tutorial_body.text = "GOAL\nPut each colour into its own tube.\n\nHOW\n1. Tap a tube that contains liquid.\n2. Tap another tube to pour into it.\n3. You can pour only into an empty tube or onto the same colour.\n4. A tube holds four layers.\n\nTIP\nUse empty tubes as temporary space. UNDO reverses your last pour and HINT suggests a legal move."
 		"block_puzzle":
-			tutorial_body.text = "GOAL\nPlace the available shapes and clear complete rows or columns.\n\nHOW\n1. Touch and hold a piece.\n2. Drag it onto the board — the piece now follows your finger above the touch point so you can see the target.\n3. Release over a valid position to place it.\n4. Clear lines to keep space open and build combos.\n\nTIP\nPlan all three pieces before using the tight spaces."
+			tutorial_body.text = "GOAL\nPlace the available shapes and clear complete rows or columns.\n\nHOW\n1. Touch and hold a piece.\n2. Drag it onto the board — the piece follows your finger above the touch point so you can see the target.\n3. Release over a valid position to place it.\n4. Clear lines to keep space open and build combos.\n\nTIP\nPlan all three pieces before using the tight spaces."
 		_:
-			tutorial_body.text = "GOAL\nFree the trapped character by sending every arrow block out of the board.\n\nHOW\n1. Each arrow can move only in the direction it points.\n2. Tap an arrow only when its entire path to the edge is clear.\n3. Escaping arrows can trigger special pieces and chain reactions.\n4. Clear the path around the rescue character to complete the level.\n\nTIP\nLook from the outside edges inward. HINT highlights a useful move and UNDO reverses mistakes."
+			tutorial_body.text = "GOAL\nFree the trapped character by sending every arrow block out of the board.\n\nHOW\n1. Each arrow moves only in the direction it points.\n2. Tap an arrow only when its entire path to the edge is clear.\n3. Escaping arrows can trigger special pieces and chain reactions.\n4. Clear the path around the rescue character to complete the level.\n\nTIP\nLook from the outside edges inward. HINT highlights a useful move and UNDO reverses mistakes."
 	var dim := tutorial_layer.get_node("TutorialDim") as ColorRect
 	dim.visible = true
 	tutorial_panel.visible = true
@@ -183,8 +181,10 @@ func hide_tutorial() -> void:
 
 func _current_game() -> String:
 	var main := _main()
-	if main != null and "selected_game_id" in main:
-		return String(main.get("selected_game_id"))
+	if main != null:
+		var game_value = main.get("selected_game_id")
+		if game_value != null:
+			return String(game_value)
 	return "rescue_rush"
 
 func _game_name(game_id: String) -> String:
