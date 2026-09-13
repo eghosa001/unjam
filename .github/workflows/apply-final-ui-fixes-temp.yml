@@ -1,0 +1,60 @@
+name: Apply Final UI Fixes Temp
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.event.head_commit.message == 'Apply final UI fixes runner'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply verified local fixes
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          p=Path('scripts/ui/ux_shell.gd')
+          s=p.read_text()
+          s=s.replace('var seen_this_session := {}\nvar theme_mode := "dark"', 'var seen_this_session := {}\nvar tutorial_seen := {}\nvar theme_mode := "dark"')
+          s=s.replace('\t_load_theme()\n\tget_tree().node_added.connect(_on_node_added)', '\t_load_theme()\n\t_load_tutorial_seen()\n\tget_tree().node_added.connect(_on_node_added)')
+          s=s.replace('''\tif surface == "game":\n\t\tvar game_id := _current_game()\n\t\tif not bool(seen_this_session.get(game_id, false)):\n\t\t\tseen_this_session[game_id] = true\n\t\t\tcall_deferred("show_tutorial", game_id)\n''','''\tif surface == "game":\n\t\tvar game_id := _current_game()\n\t\tif not bool(tutorial_seen.get(game_id, false)) and not bool(seen_this_session.get(game_id, false)):\n\t\t\tseen_this_session[game_id] = true\n\t\t\tcall_deferred("show_tutorial", game_id)\n''')
+          s=s.replace('''func _save_theme() -> void:\n\tvar cfg := ConfigFile.new()\n\tcfg.set_value("appearance", "theme", theme_mode)\n\tcfg.save(CONFIG_PATH)\n''','''func _save_theme() -> void:\n\tvar cfg := ConfigFile.new()\n\tcfg.load(CONFIG_PATH)\n\tcfg.set_value("appearance", "theme", theme_mode)\n\tfor game_id in ["rescue_rush", "water_sort", "block_puzzle"]:\n\t\tcfg.set_value("tutorial", game_id, bool(tutorial_seen.get(game_id, false)))\n\tcfg.save(CONFIG_PATH)\n\nfunc _load_tutorial_seen() -> void:\n\tvar cfg := ConfigFile.new()\n\tif cfg.load(CONFIG_PATH) != OK:\n\t\treturn\n\tfor game_id in ["rescue_rush", "water_sort", "block_puzzle"]:\n\t\ttutorial_seen[game_id] = bool(cfg.get_value("tutorial", game_id, false))\n\nfunc _mark_tutorial_seen(game_id: String) -> void:\n\ttutorial_seen[game_id] = true\n\tvar cfg := ConfigFile.new()\n\tcfg.load(CONFIG_PATH)\n\tcfg.set_value("appearance", "theme", theme_mode)\n\tfor id in ["rescue_rush", "water_sort", "block_puzzle"]:\n\t\tcfg.set_value("tutorial", id, bool(tutorial_seen.get(id, false)))\n\tcfg.save(CONFIG_PATH)\n''')
+          s=s.replace('''func hide_tutorial() -> void:\n\tif tutorial_panel == null:\n\t\treturn\n\ttutorial_panel.visible = false\n''','''func hide_tutorial() -> void:\n\tif tutorial_panel == null:\n\t\treturn\n\t_mark_tutorial_seen(tutorial_game)\n\ttutorial_panel.visible = false\n''')
+          s=s.replace('''func _on_node_added(node: Node) -> void:\n\tif node is Control:\n\t\tcall_deferred("_soften_control", node)\n''','''func _on_node_added(node: Node) -> void:\n\tif node is Control and is_instance_valid(node):\n\t\t_soften_control(node)\n''')
+          p.write_text(s)
+
+          p=Path('scripts/ui/robust_main.gd')
+          s=p.read_text()
+          start=s.index('func build_home() -> void:')
+          end=s.index('\nfunc _add_journey_card', start)
+          new='''func build_home() -> void:\n\tcurrent_surface = "home"\n\t_remove_active_game()\n\tclear_content()\n\t# PremiumHome is the only interactive home surface. Keep the legacy content\n\t# container inert so it can never intercept touches behind the launcher.\n\tif has_node("PremiumHome"):\n\t\tcontent.visible = false\n\t\tcontent.mouse_filter = Control.MOUSE_FILTER_IGNORE\n\t\treturn\n\tadd_background()\n\n'''
+          s=s[:start]+new+s[end+1:]
+          p.write_text(s)
+
+          p=Path('scripts/systems/live_hub_launcher.gd')
+          s=p.read_text()
+          s=s.replace('''\tvar in_game := false\n\tif scene != null and "current_surface" in scene:\n\t\tin_game = String(scene.current_surface) == "game"\n\tlauncher.visible = scene != null and scene.name == "Main" and not hub_open and not in_game\n''','''\tvar surface := ""\n\tif scene != null and "current_surface" in scene:\n\t\tsurface = String(scene.current_surface)\n\t# Keep LIVE out of the premium home composition; it remains available on\n\t# campaign/collection/settings surfaces without covering primary CTAs.\n\tlauncher.visible = scene != null and scene.name == "Main" and not hub_open and surface in ["levels", "collection", "settings"]\n''')
+          p.write_text(s)
+
+          p=Path('scripts/game/block_puzzle.gd')
+          s=p.read_text()
+          s=s.replace('''func _spawn_placement_feedback(shape: Array, origin: Vector2i) -> void:\n\tfor raw in shape:\n\t\tvar point: Vector2i = raw\n\t\tvar x := origin.x + point.x\n\t\tvar y := origin.y + point.y\n\t\tvar index := y * GRID_SIZE + x\n\t\t_spawn_cell_overlay(index, Color("8b7cf6"), 0.26, 1.18)\n''','''func _spawn_placement_feedback(shape: Array, origin: Vector2i) -> void:\n\tvar order := 0\n\tfor raw in shape:\n\t\tvar point: Vector2i = raw\n\t\tvar x := origin.x + point.x\n\t\tvar y := origin.y + point.y\n\t\tvar index := y * GRID_SIZE + x\n\t\t_spawn_cell_overlay(index, Color("8b7cf6"), 0.34, 1.22, float(order) * 0.025)\n\t\torder += 1\n\t_spawn_score_popup("+%d" % shape.size(), Color("c4b5fd"), 0.0)\n''')
+          s=s.replace('''func _spawn_clear_feedback(rows: Array[int], cols: Array[int]) -> void:\n\tvar seen := {}\n\tfor y in rows:\n\t\tfor x in range(GRID_SIZE):\n\t\t\tvar index := y * GRID_SIZE + x\n\t\t\tif not seen.has(index):\n\t\t\t\tseen[index] = true\n\t\t\t\t_spawn_cell_overlay(index, Color("67e8cf"), 0.42, 1.34)\n\tfor x in cols:\n\t\tfor y in range(GRID_SIZE):\n\t\t\tvar index := y * GRID_SIZE + x\n\t\t\tif not seen.has(index):\n\t\t\t\tseen[index] = true\n\t\t\t\t_spawn_cell_overlay(index, Color("67e8cf"), 0.42, 1.34)\n\nfunc _spawn_cell_overlay(index: int, color: Color, duration: float, peak_scale: float) -> void:\n''','''func _spawn_clear_feedback(rows: Array[int], cols: Array[int]) -> void:\n\tvar seen := {}\n\tfor y in rows:\n\t\tfor x in range(GRID_SIZE):\n\t\t\tvar index := y * GRID_SIZE + x\n\t\t\tif not seen.has(index):\n\t\t\t\tseen[index] = true\n\t\t\t\t_spawn_cell_overlay(index, Color("67e8cf"), 0.52, 1.42, float(x) * 0.035)\n\tfor x in cols:\n\t\tfor y in range(GRID_SIZE):\n\t\t\tvar index := y * GRID_SIZE + x\n\t\t\tif not seen.has(index):\n\t\t\t\tseen[index] = true\n\t\t\t\t_spawn_cell_overlay(index, Color("67e8cf"), 0.52, 1.42, float(y) * 0.035)\n\tvar count := rows.size() + cols.size()\n\tif count > 0:\n\t\t_spawn_score_popup("LINE CLEAR  +%d" % (count * 20), Color("67e8cf"), 0.12)\n\t\tPremiumVisuals.screen_flash(Color("67e8cf"), 0.07)\n\nfunc _spawn_score_popup(text_value: String, color: Color, delay: float = 0.0) -> void:\n\tvar label := Label.new()\n\tlabel.text = text_value\n\tlabel.mouse_filter = Control.MOUSE_FILTER_IGNORE\n\tlabel.z_index = 750\n\tlabel.position = Vector2(350, 790)\n\tlabel.size = Vector2(380, 80)\n\tlabel.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER\n\tlabel.vertical_alignment = VERTICAL_ALIGNMENT_CENTER\n\tlabel.add_theme_font_size_override("font_size", 34)\n\tlabel.add_theme_color_override("font_color", color)\n\tlabel.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.45))\n\tlabel.add_theme_constant_override("shadow_offset_x", 2)\n\tlabel.add_theme_constant_override("shadow_offset_y", 3)\n\tlabel.modulate.a = 0.0\n\tadd_child(label)\n\tvar tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)\n\tif delay > 0.0:\n\t\ttween.tween_interval(delay)\n\ttween.tween_property(label, "modulate:a", 1.0, 0.08)\n\ttween.parallel().tween_property(label, "scale", Vector2(1.12, 1.12), 0.10)\n\ttween.tween_property(label, "position:y", label.position.y - 90.0, 0.42).set_trans(Tween.TRANS_QUAD)\n\ttween.parallel().tween_property(label, "modulate:a", 0.0, 0.42)\n\ttween.finished.connect(label.queue_free)\n\nfunc _spawn_cell_overlay(index: int, color: Color, duration: float, peak_scale: float, delay: float = 0.0) -> void:\n''')
+          s=s.replace('''\tvar tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)\n\ttween.tween_property(overlay, "scale", Vector2(peak_scale, peak_scale), duration * 0.45)\n''','''\toverlay.scale = Vector2(0.72, 0.72)\n\toverlay.modulate.a = 0.0\n\tvar tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)\n\tif delay > 0.0:\n\t\ttween.tween_interval(delay)\n\ttween.tween_property(overlay, "scale", Vector2(peak_scale, peak_scale), duration * 0.45)\n''')
+          p.write_text(s)
+          PY
+          git diff --check
+          git diff --exit-code --quiet && { echo 'No changes applied'; exit 1; } || true
+          git config user.name 'AIGHEWI EGHOSA'
+          git config user.email 'aighewieghosa111@gmail.com'
+          git add scripts/ui/ux_shell.gd scripts/ui/robust_main.gd scripts/systems/live_hub_launcher.gd scripts/game/block_puzzle.gd
+          git commit -m 'Fix persistent tutorials and Block Puzzle UX'
+          git push origin main
