@@ -33,7 +33,7 @@ jobs:
         run: |
           set -o pipefail
           godot --headless --path . --editor --quit 2>&1 | tee import.log
-          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed" import.log; then
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" import.log; then
             echo "Godot script/import errors detected."
             exit 1
           fi
@@ -45,7 +45,7 @@ jobs:
         run: godot --headless --path . --script res://tests/validate_retention.gd
       - name: Validate production robustness
         run: godot --headless --path . --script res://tests/validate_robustness.gd
-      - name: Validate Level 1 launch and board render
+      - name: Validate all three Level 1 launches
         run: godot --headless --path . --script res://tests/validate_level_launch.gd
       - name: Parse and boot smoke test
         shell: bash
@@ -80,9 +80,13 @@ jobs:
       - name: Android debug export smoke test
         shell: bash
         run: |
-          set -euxo pipefail
+          set -o pipefail
           mkdir -p build/android
-          godot --headless --verbose --path . --export-debug Android build/android/unjam-debug.apk
+          godot --headless --verbose --path . --export-debug Android build/android/unjam-debug.apk 2>&1 | tee android-export.log
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" android-export.log; then
+            echo "Godot Android export contained script/runtime errors."
+            exit 1
+          fi
           test -s build/android/unjam-debug.apk
           file build/android/unjam-debug.apk
       - name: Upload Android debug APK
