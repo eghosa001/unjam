@@ -7,6 +7,8 @@ var accent := Color("4a8bd8")
 var glow := Color("8fc5ff")
 var active_piece := true
 var phase := 0.0
+var hover_amount := 0.0
+var press_amount := 0.0
 
 func configure(type_value: String, direction_value: String, base_color: Color) -> void:
 	piece_type = type_value
@@ -21,15 +23,41 @@ func configure(type_value: String, direction_value: String, base_color: Color) -
 
 func _ready() -> void:
 	set_process(true)
+	mouse_entered.connect(func(): _set_hover(true))
+	mouse_exited.connect(func(): _set_hover(false))
+	button_down.connect(_press)
+	button_up.connect(_release)
+	resized.connect(func(): pivot_offset = size * 0.5)
+	pivot_offset = size * 0.5
+
+func _set_hover(value: bool) -> void:
+	var tween := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(self, "hover_amount", 1.0 if value else 0.0, 0.12)
+
+func _press() -> void:
+	press_amount = 1.0
+	var v := _dir_vec(direction)
+	var tween := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(self, "position", position + v * 7.0, 0.055)
+	tween.parallel().tween_property(self, "scale", Vector2(0.94, 0.94), 0.055)
+
+func _release() -> void:
+	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(self, "scale", Vector2(1.07, 1.07), 0.075)
+	tween.tween_property(self, "scale", Vector2.ONE, 0.14)
 
 func _process(delta: float) -> void:
 	phase += delta
+	press_amount = maxf(0.0, press_amount - delta * 4.5)
+	var hover_scale := 1.025 + hover_amount * 0.025
+	scale = scale.lerp(Vector2(hover_scale, hover_scale), minf(1.0, delta * 8.0))
 	queue_redraw()
 
 func _draw() -> void:
 	var rect: Rect2 = Rect2(Vector2(6, 6), size - Vector2(12, 12))
 	var center: Vector2 = size * 0.5
-	var pulse: float = 0.5 + 0.5 * sin(phase * 2.2)
+	var pulse: float = 0.5 + 0.5 * sin(phase * 3.0)
+	_draw_motion_trail(center, pulse)
 	_draw_shell(rect, center, pulse)
 	match piece_type:
 		"rotate": _draw_rotate(center)
@@ -40,14 +68,28 @@ func _draw() -> void:
 		"blocker": _draw_blocker(center)
 		_: _draw_arrow(center, direction, minf(size.x, size.y) * 0.23)
 
+func _draw_motion_trail(center: Vector2, pulse: float) -> void:
+	if piece_type == "blocker":
+		return
+	var v := _dir_vec(direction)
+	for i in range(3):
+		var offset := 20.0 + float(i) * 13.0 + pulse * 5.0
+		var alpha := (0.15 - float(i) * 0.035) * (0.55 + hover_amount * 0.45)
+		var a := center - v * offset
+		var n := Vector2(-v.y, v.x)
+		draw_line(a - n * 11.0, a + n * 11.0, Color(glow, alpha), 4.0 - float(i) * 0.7, true)
+
 func _draw_shell(rect: Rect2, center: Vector2, pulse: float) -> void:
 	var radius: float = minf(rect.size.x, rect.size.y) * 0.22
-	draw_style_box(_rounded(Color(accent, 0.96), radius, Color(glow, 0.65), 2), rect)
+	var glow_alpha := 0.62 + hover_amount * 0.25 + pulse * 0.10
+	draw_style_box(_rounded(Color(accent, 0.98), radius, Color(glow, glow_alpha), 2 + int(hover_amount)), rect)
 	var inner: Rect2 = rect.grow(-7)
-	draw_style_box(_rounded(Color(accent.darkened(0.14), 0.62), radius * 0.75, Color.WHITE, 0), inner)
+	draw_style_box(_rounded(Color(accent.darkened(0.16), 0.66), radius * 0.75, Color.WHITE, 0), inner)
 	var shine: Rect2 = Rect2(inner.position + Vector2(8, 7), Vector2(inner.size.x - 16, maxf(5.0, inner.size.y * 0.12)))
-	draw_rect(shine, Color(1, 1, 1, 0.10 + pulse * 0.05), true)
-	draw_circle(center + Vector2(0, rect.size.y * 0.34), rect.size.x * 0.23, Color(0, 0, 0, 0.10))
+	draw_rect(shine, Color(1, 1, 1, 0.12 + pulse * 0.07), true)
+	draw_circle(center + Vector2(0, rect.size.y * 0.34), rect.size.x * 0.23, Color(0, 0, 0, 0.12))
+	if hover_amount > 0.01:
+		draw_arc(center, rect.size.x * 0.53, 0, TAU, 32, Color(glow, 0.18 + 0.14 * pulse), 3.0, true)
 
 func _rounded(color: Color, radius: float, border: Color, border_width: int) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()
@@ -67,7 +109,8 @@ func _rounded(color: Color, radius: float, border: Color, border_width: int) -> 
 func _draw_arrow(center: Vector2, dir: String, scale_value: float) -> void:
 	var v: Vector2 = _dir_vec(dir)
 	var n: Vector2 = Vector2(-v.y, v.x)
-	var tip: Vector2 = center + v * scale_value
+	var breathing := 1.0 + sin(phase * 4.2) * 0.035
+	var tip: Vector2 = center + v * scale_value * breathing
 	var tail: Vector2 = center - v * scale_value * 0.75
 	var neck: Vector2 = center + v * scale_value * 0.15
 	var half: float = scale_value * 0.24
@@ -82,7 +125,7 @@ func _draw_arrow(center: Vector2, dir: String, scale_value: float) -> void:
 		tail - n * half
 	])
 	draw_polygon(points, PackedColorArray([Color.WHITE]))
-	draw_polyline(points + PackedVector2Array([points[0]]), Color(1,1,1,0.25), 2.0, true)
+	draw_polyline(points + PackedVector2Array([points[0]]), Color(1,1,1,0.28), 2.0, true)
 
 func _draw_rotate(center: Vector2) -> void:
 	var radius: float = minf(size.x, size.y) * 0.20
@@ -113,7 +156,8 @@ func _draw_bomb(center: Vector2) -> void:
 	var r: float = minf(size.x, size.y) * 0.18
 	draw_circle(center + Vector2(0, 5), r, Color.WHITE)
 	draw_line(center + Vector2(r * 0.38, -r * 0.75), center + Vector2(r * 0.82, -r * 1.3), Color.WHITE, 6.0, true)
-	draw_circle(center + Vector2(r * 0.95, -r * 1.45), r * 0.18, glow)
+	var spark := 1.0 + sin(phase * 9.0) * 0.22
+	draw_circle(center + Vector2(r * 0.95, -r * 1.45), r * 0.18 * spark, glow)
 
 func _draw_linked(center: Vector2) -> void:
 	var r: float = minf(size.x, size.y) * 0.13
