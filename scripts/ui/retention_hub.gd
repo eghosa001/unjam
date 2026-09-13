@@ -7,7 +7,7 @@ func _ready() -> void:
 	RetentionManager.retention_updated.connect(refresh)
 	refresh()
 
-func style_box(color: Color, radius := 24, border := Color.TRANSPARENT, width := 0) -> StyleBoxFlat:
+func style_box(color: Color, radius: int = 24, border: Color = Color.TRANSPARENT, width: int = 0, shadow: int = 0) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()
 	s.bg_color = color
 	for key in ["corner_radius_top_left","corner_radius_top_right","corner_radius_bottom_left","corner_radius_bottom_right"]:
@@ -18,23 +18,31 @@ func style_box(color: Color, radius := 24, border := Color.TRANSPARENT, width :=
 		s.border_width_top = width
 		s.border_width_bottom = width
 		s.border_color = border
+	if shadow > 0:
+		s.shadow_color = Color(0,0,0,0.28)
+		s.shadow_size = shadow
+		s.shadow_offset = Vector2(0, 6)
 	return s
 
-func make_button(text_value: String, accent := false) -> Button:
+func make_button(text_value: String, accent: bool = false) -> Button:
 	var b := Button.new()
 	b.text = text_value
 	b.custom_minimum_size = Vector2(0, 74)
 	b.add_theme_font_size_override("font_size", 21)
-	var c := Color("223a60") if not accent else Color("20c9aa")
-	b.add_theme_stylebox_override("normal", style_box(c, 20, Color(1,1,1,0.08), 2))
-	b.add_theme_stylebox_override("pressed", style_box(c.darkened(0.12), 20))
+	var c: Color = Color("223a60") if not accent else Color("20c9aa")
+	b.add_theme_stylebox_override("normal", style_box(Color(c,0.94), 20, Color(1,1,1,0.08), 2, 5))
+	b.add_theme_stylebox_override("hover", style_box(c.lightened(0.08), 20, Color(1,1,1,0.18), 2, 8))
+	b.add_theme_stylebox_override("pressed", style_box(c.darkened(0.12), 20, Color.WHITE, 2, 2))
+	b.add_theme_stylebox_override("disabled", style_box(Color("202a3d"), 20))
+	b.add_theme_color_override("font_color", Color.WHITE)
+	b.add_theme_color_override("font_disabled_color", Color("77849a"))
 	return b
 
 func refresh() -> void:
 	for child in get_children(): child.queue_free()
-	var backdrop := ColorRect.new()
-	backdrop.color = Color(0.018,0.032,0.07,0.985)
+	var backdrop := PremiumBackdrop.new()
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.configure(Color("071426"), Color("2dd4b6"), 4)
 	add_child(backdrop)
 	var margin := MarginContainer.new()
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -45,7 +53,11 @@ func refresh() -> void:
 	root.add_theme_constant_override("separation", 18)
 	margin.add_child(root)
 
+	var header_panel := PanelContainer.new()
+	header_panel.add_theme_stylebox_override("panel", style_box(Color(0.035,0.065,0.125,0.95), 26, Color(1,1,1,0.08), 2, 8))
+	root.add_child(header_panel)
 	var header := HBoxContainer.new()
+	header_panel.add_child(header)
 	var back := make_button("←  BACK")
 	back.custom_minimum_size.x = 170
 	back.pressed.connect(_close)
@@ -62,23 +74,22 @@ func refresh() -> void:
 	currency.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	currency.add_theme_font_size_override("font_size", 22)
 	header.add_child(currency)
-	root.add_child(header)
 
-	var profile := RetentionManager.profile_snapshot()
+	var profile: Dictionary = RetentionManager.profile_snapshot()
 	var hero := PanelContainer.new()
-	hero.add_theme_stylebox_override("panel", style_box(Color(0.05,0.10,0.19,0.96), 28, Color("2dd4b6"), 2))
+	hero.add_theme_stylebox_override("panel", style_box(Color(0.05,0.10,0.19,0.96), 28, Color("2dd4b6"), 2, 10))
 	root.add_child(hero)
 	var hero_box := VBoxContainer.new()
 	hero_box.add_theme_constant_override("separation", 8)
 	hero.add_child(hero_box)
 	var rank := Label.new()
-	rank.text = String(profile.title).to_upper()
+	rank.text = String(profile.get("title", "PLAYER")).to_upper()
 	rank.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	rank.add_theme_font_size_override("font_size", 28)
 	rank.add_theme_color_override("font_color", Color("67e8cf"))
 	hero_box.add_child(rank)
 	var stats := Label.new()
-	stats.text = "%d PRESTIGE   •   %d AP   •   %d PERFECTS   •   %d VARIANTS" % [int(profile.prestige), int(profile.achievement_points), int(profile.perfects), int(profile.variants)]
+	stats.text = "%d PRESTIGE   •   %d AP   •   %d PERFECTS   •   %d VARIANTS" % [int(profile.get("prestige",0)), int(profile.get("achievement_points",0)), int(profile.get("perfects",0)), int(profile.get("variants",0))]
 	stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	stats.add_theme_font_size_override("font_size", 18)
 	hero_box.add_child(stats)
@@ -97,10 +108,11 @@ func refresh() -> void:
 	build_achievements(body)
 	build_event_shop(body)
 	build_collection(body)
+	PremiumVisuals.entrance(root, 0.02)
 
 func section(parent: VBoxContainer, title_text: String, subtitle_text: String = "") -> VBoxContainer:
 	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", style_box(Color(0.035,0.065,0.125,0.95), 26, Color(1,1,1,0.07), 2))
+	panel.add_theme_stylebox_override("panel", style_box(Color(0.035,0.065,0.125,0.95), 26, Color(1,1,1,0.07), 2, 8))
 	parent.add_child(panel)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 10)
@@ -123,7 +135,7 @@ func build_login(parent: VBoxContainer) -> void:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
 	box.add_child(row)
-	var day := clamp(int(SaveManager.data.login_cycle_day), 1, 7)
+	var day: int = clampi(int(SaveManager.data.login_cycle_day), 1, 7)
 	for i in range(7):
 		var label := Label.new()
 		label.text = "D%d\n%d" % [i+1, RetentionManager.LOGIN_REWARDS[i]]
@@ -143,8 +155,8 @@ func build_missions(parent: VBoxContainer) -> void:
 		row.add_theme_constant_override("separation", 12)
 		box.add_child(row)
 		var text := Label.new()
-		var progress := RetentionManager.mission_progress(String(mission.id))
-		text.text = "%s\n%s   %d/%d" % [String(mission.title), String(mission.description), min(progress, int(mission.target)), int(mission.target)]
+		var progress: int = int(RetentionManager.mission_progress(String(mission.id)))
+		text.text = "%s\n%s   %d/%d" % [String(mission.title), String(mission.description), mini(progress, int(mission.target)), int(mission.target)]
 		text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		text.add_theme_font_size_override("font_size", 18)
 		row.add_child(text)
@@ -169,7 +181,7 @@ func build_streak(parent: VBoxContainer) -> void:
 	box.add_child(label)
 
 func build_weekly(parent: VBoxContainer) -> void:
-	var rank := RetentionManager.weekly_rank()
+	var rank: int = int(RetentionManager.weekly_rank())
 	var points := int(SaveManager.data.weekly_points)
 	var box := section(parent, "WEEKLY RESCUE LEAGUE", "Seeded offline rivals keep the ladder active now; the scoring layer is ready for a backend leaderboard later.")
 	var headline := Label.new()
@@ -177,11 +189,11 @@ func build_weekly(parent: VBoxContainer) -> void:
 	headline.add_theme_font_size_override("font_size", 22)
 	headline.add_theme_color_override("font_color", Color("ffd166"))
 	box.add_child(headline)
-	var rivals := RetentionManager.weekly_rivals()
-	for i in range(min(5, rivals.size())):
-		var r := rivals[i]
+	var rivals: Array = RetentionManager.weekly_rivals()
+	for i in range(mini(5, rivals.size())):
+		var r: Dictionary = rivals[i]
 		var line := Label.new()
-		line.text = "#%d  %-12s  %d" % [i+1, String(r.name), int(r.points)]
+		line.text = "#%d  %-12s  %d" % [i+1, String(r.get("name","RIVAL")), int(r.get("points",0))]
 		line.add_theme_font_size_override("font_size", 17)
 		box.add_child(line)
 	for i in range(RetentionManager.WEEKLY_TARGETS.size()):
@@ -207,9 +219,9 @@ func build_achievements(parent: VBoxContainer) -> void:
 	var box := section(parent, "ACHIEVEMENT VAULT", "Major accomplishments unlock claimable coin rewards in addition to prestige and achievement points.")
 	for id in RetentionManager.ACHIEVEMENT_REWARDS:
 		var reward: Dictionary = RetentionManager.ACHIEVEMENT_REWARDS[id]
-		var unlocked := id in SaveManager.data.achievements
-		var claimed := id in SaveManager.data.achievement_reward_claimed
-		var b := make_button("%s  •  %d COINS%s" % [String(reward.title), int(reward.coins), "  CLAIMED" if claimed else ("  LOCKED" if not unlocked else "")], unlocked and not claimed)
+		var unlocked: bool = id in SaveManager.data.achievements
+		var claimed: bool = id in SaveManager.data.achievement_reward_claimed
+		var b := make_button("%s  •  %d COINS%s" % [String(reward.get("title","ACHIEVEMENT")), int(reward.get("coins",0)), "  CLAIMED" if claimed else ("  LOCKED" if not unlocked else "")], unlocked and not claimed)
 		b.disabled = not unlocked or claimed
 		b.pressed.connect(func(key = String(id)): RetentionManager.claim_achievement_reward(key))
 		box.add_child(b)
@@ -217,7 +229,7 @@ func build_achievements(parent: VBoxContainer) -> void:
 func build_event_shop(parent: VBoxContainer) -> void:
 	var box := section(parent, "LIMITED EVENT SHOP", "Earn ◆ from missions and normal campaign play. Event cosmetics never block progression.")
 	for item in RetentionManager.event_shop():
-		var owned := String(item.id) in SaveManager.data.event_shop_owned
+		var owned: bool = String(item.id) in SaveManager.data.event_shop_owned
 		var b := make_button("%s  •  %d ◆%s" % [String(item.title), int(item.cost), "  OWNED" if owned else ""])
 		b.disabled = owned or int(SaveManager.data.event_currency) < int(item.cost)
 		b.pressed.connect(func(id = String(item.id)): RetentionManager.buy_event_item(id))
