@@ -8,6 +8,9 @@ var accent := Color("7c5cff")
 var hover := false
 var piece_index := -1
 var touch_drag_started := false
+var phase := 0.0
+var target_scale := Vector2.ONE
+var target_rotation := 0.0
 
 func configure(value: Array, is_selected: bool, color := Color("7c5cff"), index: int = -1) -> void:
 	shape = value.duplicate(true)
@@ -19,30 +22,63 @@ func configure(value: Array, is_selected: bool, color := Color("7c5cff"), index:
 	focus_mode = Control.FOCUS_NONE
 	disabled = used
 	mouse_default_cursor_shape = Control.CURSOR_DRAG if not used else Control.CURSOR_ARROW
+	target_scale = Vector2(1.06, 1.06) if selected else Vector2.ONE
+	target_rotation = deg_to_rad(-1.8 if selected else 0.0)
 	_update_style()
 	queue_redraw()
-
 
 func _ready() -> void:
 	mouse_entered.connect(_set_hover.bind(true))
 	mouse_exited.connect(_set_hover.bind(false))
-	button_down.connect(func(): scale = Vector2(0.97, 0.97))
-	button_up.connect(func(): scale = Vector2.ONE)
-	resized.connect(queue_redraw)
+	button_down.connect(_press)
+	button_up.connect(_release)
+	resized.connect(_refresh_pivot)
+	_refresh_pivot()
+	set_process(true)
+
+func _refresh_pivot() -> void:
+	pivot_offset = size * 0.5
+
+func _process(delta: float) -> void:
+	phase += delta
+	var hover_scale := 1.035 if hover and not selected else 1.0
+	var desired := target_scale * hover_scale
+	scale = scale.lerp(desired, minf(1.0, delta * 11.0))
+	var wobble := sin(phase * 3.4) * deg_to_rad(0.65) if selected else 0.0
+	rotation = lerpf(rotation, target_rotation + wobble, minf(1.0, delta * 9.0))
+	if selected or hover:
+		queue_redraw()
+
+func _press() -> void:
+	var tween := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(self, "scale", Vector2(0.96, 0.96), 0.065)
+
+func _release() -> void:
+	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(self, "scale", target_scale * 1.06, 0.08)
+	tween.tween_property(self, "scale", target_scale, 0.14)
 
 func _drag_payload() -> Dictionary:
 	var drag_piece_index := piece_index if piece_index >= 0 else get_index()
 	return {"kind": "block_piece", "piece_index": drag_piece_index, "shape": shape.duplicate(true)}
 
 func _make_drag_preview() -> Control:
+	var wrapper := Control.new()
+	wrapper.custom_minimum_size = Vector2(220, 210)
+	wrapper.size = Vector2(220, 210)
+	wrapper.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Keep the shape visibly above the finger/cursor, matching mobile puzzle conventions.
+	wrapper.position = Vector2(-110, -185)
 	var preview := BlockPieceButton.new()
-	preview.custom_minimum_size = Vector2(190, 118)
-	preview.size = Vector2(190, 118)
+	preview.custom_minimum_size = Vector2(210, 128)
+	preview.size = Vector2(210, 128)
+	preview.position = Vector2(5, 4)
 	preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	preview.configure(shape, true, accent)
-	preview.modulate = Color(1, 1, 1, 0.96)
-	preview.rotation = deg_to_rad(-3.0)
-	return preview
+	preview.modulate = Color(1, 1, 1, 0.97)
+	preview.rotation = deg_to_rad(-4.0)
+	wrapper.add_child(preview)
+	return wrapper
 
 func _get_drag_data(_at_position: Vector2) -> Variant:
 	if used or shape.is_empty():
@@ -69,14 +105,14 @@ func _set_hover(value: bool) -> void:
 	queue_redraw()
 
 func _update_style() -> void:
-	var bg := Color("ece9ff") if selected else Color("fff7ff")
-	var border := Color("12b8a6") if selected else Color(accent, 0.55 if hover else 0.30)
-	add_theme_stylebox_override("normal", _style(bg, border, 3 if selected else 2))
+	var bg := Color("e9e5ff") if selected else Color("f8f5ff")
+	var border := Color("12b8a6") if selected else Color(accent, 0.72 if hover else 0.38)
+	add_theme_stylebox_override("normal", _style(bg, border, 4 if selected else 2))
 	add_theme_stylebox_override("hover", _style(Color("ffffff"), border.lightened(0.10), 3))
-	add_theme_stylebox_override("pressed", _style(Color("e8e1ff"), Color("12b8a6"), 3))
-	add_theme_stylebox_override("disabled", _style(Color("eef1f7"), Color(0.35, 0.4, 0.5, 0.18), 1))
-	add_theme_color_override("font_color", Color("475569"))
-	add_theme_color_override("font_disabled_color", Color("94a3b8"))
+	add_theme_stylebox_override("pressed", _style(Color("e0d9ff"), Color("12b8a6"), 4))
+	add_theme_stylebox_override("disabled", _style(Color("e9edf4"), Color(0.35, 0.4, 0.5, 0.18), 1))
+	add_theme_color_override("font_color", Color("334155"))
+	add_theme_color_override("font_disabled_color", Color("64748b"))
 	add_theme_font_size_override("font_size", 16)
 
 func _draw() -> void:
@@ -94,14 +130,19 @@ func _draw() -> void:
 	for point in points:
 		max_x = maxi(max_x, point.x)
 		max_y = maxi(max_y, point.y)
-	var cell := minf(34.0, minf((size.x - 44.0) / float(max_x + 1), (size.y - 36.0) / float(max_y + 1)))
+	var cell := minf(36.0, minf((size.x - 44.0) / float(max_x + 1), (size.y - 36.0) / float(max_y + 1)))
 	cell = maxf(10.0, cell)
 	var total := Vector2((max_x + 1) * cell, (max_y + 1) * cell)
 	var origin := (size - total) * 0.5
+	var pulse := 0.5 + 0.5 * sin(phase * 4.2)
 	for point in points:
 		var rect := Rect2(origin + Vector2(point) * cell + Vector2(2, 2), Vector2(cell - 4, cell - 4))
-		draw_style_box(_style(accent, accent.lightened(0.24), 1, 7), rect)
-		draw_line(rect.position + Vector2(5, 5), Vector2(rect.end.x - 5, rect.position.y + 5), accent.lightened(0.35), 2.0, true)
+		var shadow := Rect2(rect.position + Vector2(0, 4), rect.size)
+		draw_style_box(_style(Color(0.06, 0.05, 0.16, 0.18), Color.TRANSPARENT, 0, 8), shadow)
+		draw_style_box(_style(accent, accent.lightened(0.24), 1, 8), rect)
+		draw_line(rect.position + Vector2(5, 5), Vector2(rect.end.x - 5, rect.position.y + 5), accent.lightened(0.40), 2.5, true)
+		if selected:
+			draw_arc(rect.get_center(), rect.size.x * 0.58, 0, TAU, 24, Color("34d399", 0.20 + pulse * 0.12), 2.5, true)
 
 func _as_point(raw: Variant) -> Vector2i:
 	if raw is Vector2i:
@@ -131,7 +172,7 @@ func _style(background: Color, border: Color, width: int, radius: int = 22) -> S
 	style.border_width_top = width
 	style.border_width_bottom = width
 	style.border_color = border
-	style.shadow_color = Color(0.18, 0.12, 0.35, 0.14)
-	style.shadow_size = 7
-	style.shadow_offset = Vector2(0, 4)
+	style.shadow_color = Color(0.10, 0.08, 0.22, 0.18)
+	style.shadow_size = 8
+	style.shadow_offset = Vector2(0, 5)
 	return style
