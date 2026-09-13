@@ -85,6 +85,7 @@ func _build_shell() -> void:
 	logo.size = Vector2(112, 112)
 	logo.position = Vector2(42, 34)
 	logo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	logo.visible = false
 	tutorial_layer.add_child(logo)
 
 	var dim := ColorRect.new()
@@ -148,7 +149,8 @@ func _process(_delta: float) -> void:
 	var surface := String(raw_surface) if raw_surface != null else "home"
 	help_button.visible = surface in ["home", "levels", "game"] and not tutorial_panel.visible
 	theme_button.visible = surface in ["home", "settings"] and not tutorial_panel.visible
-	logo.visible = surface == "home" and not tutorial_panel.visible
+	# PremiumHome owns the app branding. Keep the legacy shell logo hidden so it can never overlap top-left back controls.
+	logo.visible = false
 	if surface == "game":
 		var game_id := _current_game()
 		if not bool(tutorial_seen.get(game_id, false)) and not bool(seen_this_session.get(game_id, false)):
