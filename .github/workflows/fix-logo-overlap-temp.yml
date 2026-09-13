@@ -1,0 +1,34 @@
+name: Fix Logo Overlap Temp
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.event.head_commit.message == 'Apply logo overlap fix runner'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Fix shell logo overlap
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('scripts/ui/ux_shell.gd')
+          s=p.read_text()
+          s=s.replace('\tlogo.visible = surface == "home" and not tutorial_panel.visible\n', '\t# PremiumHome owns the app branding. Keep the legacy shell logo hidden so it can never overlap top-left back controls.\n\tlogo.visible = false\n')
+          s=s.replace('\ttutorial_layer.add_child(logo)\n', '\tlogo.visible = false\n\ttutorial_layer.add_child(logo)\n')
+          p.write_text(s)
+          PY
+          git diff --check
+          git config user.name 'AIGHEWI EGHOSA'
+          git config user.email 'aighewieghosa111@gmail.com'
+          git add scripts/ui/ux_shell.gd
+          git commit -m 'Fix shell logo overlap with back controls'
+          git push origin main
