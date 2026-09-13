@@ -294,7 +294,7 @@ func render_pieces() -> void:
 	for i in range(pieces.size()):
 		var button := BlockPieceButton.new()
 		button.custom_minimum_size = Vector2(285, 130)
-		button.configure(pieces[i], i == selected_piece, Color("8b7cf6"))
+		button.configure(pieces[i], i == selected_piece, Color("8b7cf6"), i)
 		button.pressed.connect(select_piece.bind(i))
 		piece_row.add_child(button)
 
@@ -302,7 +302,7 @@ func select_piece(index: int) -> void:
 	if completed or pieces[index].is_empty(): return
 	selected_piece = index
 	status_label.text = "Piece %d selected" % (index + 1)
-	hint_label.text = "Tap a grid cell to anchor the selected piece"
+	hint_label.text = "Drag the piece onto a glowing valid cell, or tap a grid cell"
 	render_pieces()
 
 func place_selected(origin: Vector2i) -> void:
@@ -320,6 +320,7 @@ func place_selected(origin: Vector2i) -> void:
 		var px: int = origin.x + int(point.x)
 		var py: int = origin.y + int(point.y)
 		cells[py][px] = true
+	_spawn_placement_feedback(shape, origin)
 	score += shape.size()
 	placements += 1
 	pieces[selected_piece] = []
@@ -340,6 +341,48 @@ func place_selected(origin: Vector2i) -> void:
 	render()
 	_save_checkpoint()
 	if not any_move_available(): status_label.text = "NO MOVES — UNDO, HINT OR RETRY"
+
+func _spawn_placement_feedback(shape: Array, origin: Vector2i) -> void:
+	for raw in shape:
+		var point: Vector2i = raw
+		var x := origin.x + point.x
+		var y := origin.y + point.y
+		var index := y * GRID_SIZE + x
+		_spawn_cell_overlay(index, Color("8b7cf6"), 0.26, 1.18)
+
+func _spawn_clear_feedback(rows: Array[int], cols: Array[int]) -> void:
+	var seen := {}
+	for y in rows:
+		for x in range(GRID_SIZE):
+			var index := y * GRID_SIZE + x
+			if not seen.has(index):
+				seen[index] = true
+				_spawn_cell_overlay(index, Color("67e8cf"), 0.42, 1.34)
+	for x in cols:
+		for y in range(GRID_SIZE):
+			var index := y * GRID_SIZE + x
+			if not seen.has(index):
+				seen[index] = true
+				_spawn_cell_overlay(index, Color("67e8cf"), 0.42, 1.34)
+
+func _spawn_cell_overlay(index: int, color: Color, duration: float, peak_scale: float) -> void:
+	if index < 0 or index >= cell_buttons.size(): return
+	var cell := cell_buttons[index]
+	if cell == null or not is_instance_valid(cell): return
+	var overlay := Panel.new()
+	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.z_index = 600
+	overlay.position = to_local(cell.global_position)
+	overlay.size = cell.size
+	overlay.pivot_offset = overlay.size * 0.5
+	overlay.add_theme_stylebox_override("panel", style_box(Color(color, 0.76), 18, color.lightened(0.25), 2))
+	add_child(overlay)
+	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(overlay, "scale", Vector2(peak_scale, peak_scale), duration * 0.45)
+	tween.parallel().tween_property(overlay, "modulate:a", 1.0, duration * 0.25)
+	tween.tween_property(overlay, "scale", Vector2(0.72, 0.72), duration * 0.55)
+	tween.parallel().tween_property(overlay, "modulate:a", 0.0, duration * 0.55)
+	tween.finished.connect(overlay.queue_free)
 
 func can_place(shape: Array, origin: Vector2i) -> bool:
 	for point in shape:
@@ -366,6 +409,8 @@ func clear_lines() -> int:
 				full = false
 				break
 		if full: full_cols.append(x)
+	if not full_rows.is_empty() or not full_cols.is_empty():
+		_spawn_clear_feedback(full_rows, full_cols)
 	for y in full_rows:
 		for x in range(GRID_SIZE): cells[y][x] = false
 	for x in full_cols:
