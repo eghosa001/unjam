@@ -3,7 +3,7 @@ class_name CampaignGenerator
 
 const RESCUES: Array[String] = ["chick", "puppy", "kitten", "robot", "slime", "panda", "fox", "alien"]
 const DIRS: Array[String] = ["up", "right", "down", "left"]
-const RHYTHM: Array[String] = ["medium", "medium", "hard", "medium", "hard"]
+const RHYTHM: Array[String] = ["easy", "medium", "medium", "easy", "hard"]
 
 static func generate(level_number: int) -> Dictionary:
 	var world: int = int((level_number - 1) / 100) + 1

@@ -8,6 +8,10 @@ var current_level := 1
 
 func load_level(level_number: int) -> Dictionary:
 	current_level = level_number
+	# The original hand-authored starter files are intentionally simple. Use the
+	# richer campaign generator for the opening ten levels as well.
+	if level_number >= 1 and level_number <= 10:
+		return CampaignGenerator.generate(level_number)
 	var path := LEVEL_DIR + "level_%02d.json" % level_number
 	if FileAccess.file_exists(path):
 		var file := FileAccess.open(path, FileAccess.READ)

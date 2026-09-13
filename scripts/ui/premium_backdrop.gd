@@ -30,12 +30,8 @@ func _process(delta: float) -> void:
 func _draw() -> void:
 	var top := base_color.lightened(0.08)
 	var bottom := base_color.lerp(accent_color.lightened(0.25), 0.30)
-	var bands := 12
-	for i in range(bands):
-		var f := float(i) / float(max(1, bands - 1))
-		var y := size.y * f
-		var c := top.lerp(bottom, f)
-		draw_rect(Rect2(Vector2(0, y), Vector2(size.x, size.y / bands + 2)), c, true)
+	draw_rect(Rect2(Vector2.ZERO, size), top, true)
+	draw_rect(Rect2(Vector2(0, size.y * 0.48), Vector2(size.x, size.y * 0.52)), Color(bottom, 0.42), true)
 
 	# Large translucent colour washes keep the screen lively without using a
 	# literal illustration as the background.
@@ -102,5 +98,5 @@ func _draw_cosmic() -> void:
 		var x := fmod(float(i*97 + 37), max(1.0,size.x))
 		var y := fmod(float(i*173 + 89) + t*(3.0 + float(i%4)), max(1.0,size.y))
 		var r := 1.8 + float(i%3)
-		var star := WASHES[posmod(i + motif, WASHES.size())]
+		var star: Color = WASHES[posmod(i + motif, WASHES.size())]
 		draw_circle(Vector2(x,y), r, Color(star, 0.22))

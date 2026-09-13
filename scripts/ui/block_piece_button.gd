@@ -6,18 +6,22 @@ var selected := false
 var used := false
 var accent := Color("7c5cff")
 var hover := false
+var piece_index := -1
+var touch_drag_started := false
 
-func configure(value: Array, is_selected: bool, color := Color("7c5cff")) -> void:
+func configure(value: Array, is_selected: bool, color := Color("7c5cff"), index: int = -1) -> void:
 	shape = value.duplicate(true)
 	selected = is_selected
 	used = shape.is_empty()
 	accent = color
+	piece_index = index
 	text = "USED" if used else ""
 	focus_mode = Control.FOCUS_NONE
 	disabled = used
 	mouse_default_cursor_shape = Control.CURSOR_DRAG if not used else Control.CURSOR_ARROW
 	_update_style()
 	queue_redraw()
+
 
 func _ready() -> void:
 	mouse_entered.connect(_set_hover.bind(true))
@@ -26,19 +30,38 @@ func _ready() -> void:
 	button_up.connect(func(): scale = Vector2.ONE)
 	resized.connect(queue_redraw)
 
-func _get_drag_data(_at_position: Vector2) -> Variant:
-	if used or shape.is_empty():
-		return null
-	var piece_index := get_index()
+func _drag_payload() -> Dictionary:
+	var drag_piece_index := piece_index if piece_index >= 0 else get_index()
+	return {"kind": "block_piece", "piece_index": drag_piece_index, "shape": shape.duplicate(true)}
+
+func _make_drag_preview() -> Control:
 	var preview := BlockPieceButton.new()
-	preview.custom_minimum_size = Vector2(180, 110)
-	preview.size = Vector2(180, 110)
+	preview.custom_minimum_size = Vector2(190, 118)
+	preview.size = Vector2(190, 118)
 	preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	preview.configure(shape, true, accent)
 	preview.modulate = Color(1, 1, 1, 0.96)
 	preview.rotation = deg_to_rad(-3.0)
-	set_drag_preview(preview)
-	return {"kind": "block_piece", "piece_index": piece_index, "shape": shape.duplicate(true)}
+	return preview
+
+func _get_drag_data(_at_position: Vector2) -> Variant:
+	if used or shape.is_empty():
+		return null
+	set_drag_preview(_make_drag_preview())
+	return _drag_payload()
+
+func _gui_input(event: InputEvent) -> void:
+	if used or shape.is_empty():
+		return
+	if event is InputEventScreenTouch:
+		if event.pressed:
+			touch_drag_started = false
+		else:
+			touch_drag_started = false
+	elif event is InputEventScreenDrag and not touch_drag_started:
+		touch_drag_started = true
+		force_drag(_drag_payload(), _make_drag_preview())
+		accept_event()
 
 func _set_hover(value: bool) -> void:
 	hover = value
