@@ -3,7 +3,7 @@ extends "res://scripts/core/save_manager.gd"
 const ROBUST_SAVE_PATH := "user://unjam_save.json"
 const BACKUP_PATH := "user://unjam_save.backup.json"
 const TEMP_PATH := "user://unjam_save.tmp.json"
-const SAVE_VERSION := 5
+const SAVE_VERSION := 6
 
 func _ready() -> void:
 	load_save()
@@ -42,11 +42,13 @@ func _sanitize() -> void:
 	data.achievement_points = max(0, int(data.get("achievement_points", 0)))
 	data.rewarded_ads_watched = max(0, int(data.get("rewarded_ads_watched", 0)))
 	data.lifetime_purchased_coins = max(0, int(data.get("lifetime_purchased_coins", 0)))
+	var consent := String(data.get("privacy_consent_status", "unknown"))
+	data.privacy_consent_status = consent if consent in ["unknown", "required", "obtained", "not_required"] else "unknown"
 	for key in ["sound", "vibration", "music", "remove_ads", "starter_pack_purchased"]:
 		data[key] = bool(data.get(key, DEFAULT_DATA.get(key, false)))
 	if not data.get("stars", {}) is Dictionary:
 		data.stars = {}
-	for key in ["rescued", "decorations", "daily_completed", "milestone_chests", "world_badges", "achievements", "purchased_products"]:
+	for key in ["rescued", "decorations", "daily_completed", "milestone_chests", "world_badges", "achievements", "purchased_products", "processed_purchase_tokens"]:
 		if not data.get(key, []) is Array:
 			data[key] = []
 	var clean_stars: Dictionary = {}
@@ -143,7 +145,6 @@ func complete_level(level_number: int, stars: int, rescue_id: String, coin_rewar
 	if first_clear and not rescue_id.is_empty() and not rescue_id in data.rescued:
 		data.rescued.append(rescue_id)
 		data.total_rescues = int(data.total_rescues) + 1
-
 	if newly_perfect:
 		data.perfect_clears = min(10000, int(data.perfect_clears) + 1)
 		data.perfect_streak = int(data.perfect_streak) + 1
@@ -156,7 +157,6 @@ func complete_level(level_number: int, stars: int, rescue_id: String, coin_rewar
 			data.prestige_points = int(data.prestige_points) + 1
 	elif stars < 3 and first_clear:
 		data.perfect_streak = 0
-
 	if first_clear and level_number % 10 == 0:
 		var chest_key := str(level_number)
 		if not chest_key in data.milestone_chests:
@@ -164,7 +164,6 @@ func complete_level(level_number: int, stars: int, rescue_id: String, coin_rewar
 			rewards.milestone = true
 			rewards.bonus_coins = int(rewards.bonus_coins) + 100
 			data.coins = int(data.coins) + 100
-
 	if first_clear and level_number % 100 == 0:
 		var world := int(level_number / 100)
 		var badge_key := str(world)
@@ -176,14 +175,12 @@ func complete_level(level_number: int, stars: int, rescue_id: String, coin_rewar
 			data.prestige_points = int(data.prestige_points) + 5
 			data.coins = int(data.coins) + 250
 			rewards.bonus_coins = int(rewards.bonus_coins) + 250
-
 	_check_achievement("first_rescue", int(data.total_levels_completed) >= 1, "FIRST RESCUE", 10, rewards)
 	_check_achievement("perfect_10", int(data.perfect_clears) >= 10, "PRECISION TEN", 20, rewards)
 	_check_achievement("perfect_streak_10", int(data.best_perfect_streak) >= 10, "FLAWLESS RUN", 30, rewards)
 	_check_achievement("levels_100", int(data.total_levels_completed) >= 100, "CENTURY RESCUER", 40, rewards)
 	_check_achievement("world_10", data.world_badges.size() >= 10, "MASTER OF TEN WORLDS", 50, rewards)
 	_check_achievement("levels_1000", int(data.total_levels_completed) >= 1000, "UNJAM LEGEND", 100, rewards)
-
 	save()
 	if bool(rewards.perfect) or bool(rewards.milestone) or bool(rewards.world_badge) or int(rewards.prestige) > 0 or not rewards.achievements.is_empty():
 		premium_reward.emit(rewards)
