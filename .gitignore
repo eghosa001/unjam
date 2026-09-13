@@ -1,5 +1,16 @@
 .godot/
 .android/
+android/
+build/
 *.tmp
 *.log
-export_presets.cfg
+*.jks
+*.keystore
+*.pem
+*.p12
+.env
+.env.*
+local.properties
+key.properties
+secrets.properties
+google-services.json
