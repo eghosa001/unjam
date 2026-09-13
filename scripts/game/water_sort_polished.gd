@@ -9,15 +9,15 @@ func _spawn_pour_animation(from_idx: int, to_idx: int) -> void:
 		return
 	if tubes[from_idx].is_empty():
 		return
-	var source := board.get_child(from_idx) as Control
-	var target := board.get_child(to_idx) as Control
+	var source: Control = board.get_child(from_idx) as Control
+	var target: Control = board.get_child(to_idx) as Control
 	if source == null or target == null:
 		return
-	var color_index := clampi(int(tubes[from_idx].back()), 0, WaterTubeButton.PALETTE.size() - 1)
+	var color_index: int = clampi(int(tubes[from_idx].back()), 0, WaterTubeButton.PALETTE.size() - 1)
 	var liquid: Color = WaterTubeButton.PALETTE[color_index]
-	var start := source.global_rect.get_center() - global_position + Vector2(0, -source.size.y * 0.26)
-	var finish := target.global_rect.get_center() - global_position + Vector2(0, -target.size.y * 0.24)
-	var arc_height := maxf(120.0, absf(finish.x - start.x) * 0.20)
+	var start: Vector2 = source.get_global_rect().get_center() - global_position + Vector2(0, -source.size.y * 0.26)
+	var finish: Vector2 = target.get_global_rect().get_center() - global_position + Vector2(0, -target.size.y * 0.24)
+	var arc_height: float = maxf(120.0, absf(finish.x - start.x) * 0.20)
 	var stream := Line2D.new()
 	stream.width = 16.0
 	stream.default_color = Color(liquid, 0.88)
@@ -40,8 +40,8 @@ func _spawn_pour_animation(from_idx: int, to_idx: int) -> void:
 	add_child(droplet)
 	var tween := create_tween()
 	for step in range(1, 13):
-		var t := float(step) / 12.0
-		var p := start.lerp(finish, t)
+		var t: float = float(step) / 12.0
+		var p: Vector2 = start.lerp(finish, t)
 		p.y -= sin(t * PI) * arc_height
 		tween.tween_property(droplet, "position", p - droplet.size * 0.5, 0.018)
 		tween.tween_callback(func():
