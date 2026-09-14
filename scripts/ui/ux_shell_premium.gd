@@ -15,7 +15,6 @@ const CONFIG_PATH := "user://unjam_ui.cfg"
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	set_process(true)
 	_load_theme()
 	_load_tutorial_seen()
 	get_tree().node_added.connect(_on_node_added)
@@ -66,18 +65,16 @@ func _build_shell() -> void:
 	add_child(tutorial_layer)
 
 	help_button = Button.new()
-	help_button.visible = false
 	help_button.text = "?  HOW TO PLAY"
-	help_button.custom_minimum_size = Vector2(236, 66)
+	help_button.custom_minimum_size = Vector2(280, 78)
 	help_button.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	help_button.position = Vector2(36, -102)
-	help_button.add_theme_font_size_override("font_size", 17)
+	help_button.add_theme_font_size_override("font_size", 20)
 	help_button.pressed.connect(func(): show_tutorial(_current_game()))
 	PremiumDesignSystem.apply_button(help_button, dark, accent, "utility", 22)
 	tutorial_layer.add_child(help_button)
 
 	theme_button = Button.new()
-	theme_button.visible = false
 	theme_button.name = "ThemeToggle"
 	theme_button.text = "☀  LIGHT THEME" if dark else "☾  DARK THEME"
 	theme_button.custom_minimum_size = Vector2(310, 68)
@@ -120,13 +117,13 @@ func _build_shell() -> void:
 	box.add_child(eyebrow)
 	tutorial_title = Label.new()
 	tutorial_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	tutorial_title.add_theme_font_size_override("font_size", 34)
+	tutorial_title.add_theme_font_size_override("font_size", 40)
 	PremiumDesignSystem.apply_label(tutorial_title, dark, "title", accent)
 	box.add_child(tutorial_title)
 	tutorial_body = Label.new()
 	tutorial_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	tutorial_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	tutorial_body.add_theme_font_size_override("font_size", 24)
+	tutorial_body.add_theme_font_size_override("font_size", 28)
 	PremiumDesignSystem.apply_label(tutorial_body, dark, "body", accent)
 	box.add_child(tutorial_body)
 
@@ -230,14 +227,9 @@ func _handle_back() -> void:
 			return
 	var surface := String(main.get("current_surface")) if main.get("current_surface") != null else "home"
 	if surface == "game":
-		var active = main.get("active_game")
-		if active != null and is_instance_valid(active):
-			if active.has_signal("quit_requested"):
-				active.emit_signal("quit_requested")
-				return
-			if active.has_method("_quit"):
-				active.call("_quit")
-				return
+		if main.has_method("force_back_from_game"):
+			main.call("force_back_from_game")
+			return
 		main.call("build_home")
 	elif surface != "home":
 		main.call("build_home")
