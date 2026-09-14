@@ -1,5 +1,72 @@
 extends "res://scripts/game/water_sort.gd"
 
+func generate_tubes(seed_value: int, colors: int) -> Array:
+	# Build from a solved state using reversible reverse-moves. Replaying those
+	# moves in reverse is always legal, so every generated board is solvable by
+	# construction while still producing thousands of different mixes.
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_value * 104729 + colors * 1543 + campaign_tier() * 8191
+	var result: Array = []
+	for color in range(colors):
+		var tube: Array = []
+		for _i in range(CAPACITY): tube.append(color)
+		result.append(tube)
+	result.append([])
+	result.append([])
+	var steps := 8 + colors * 3 + campaign_tier() * 3
+	if difficulty() == "hard": steps += 5
+	elif difficulty() == "milestone": steps += 8
+	elif difficulty() == "boss": steps += 12
+	var successful := 0
+	var guard := 0
+	while successful < steps and guard < steps * 40:
+		guard += 1
+		var donors: Array[int] = []
+		for i in range(result.size()):
+			if _is_monochrome_nonempty(result[i]): donors.append(i)
+		if donors.is_empty(): break
+		var donor := donors[rng.randi_range(0, donors.size() - 1)]
+		var donor_color := int((result[donor] as Array).back())
+		var targets: Array[int] = []
+		var preferred: Array[int] = []
+		for j in range(result.size()):
+			if j == donor: continue
+			var target: Array = result[j]
+			if target.size() >= CAPACITY: continue
+			if not target.is_empty() and int(target.back()) == donor_color: continue
+			targets.append(j)
+			if not target.is_empty(): preferred.append(j)
+		if targets.is_empty(): continue
+		var pool := preferred if not preferred.is_empty() else targets
+		var target_index := pool[rng.randi_range(0, pool.size() - 1)]
+		var source: Array = result[donor]
+		var target_tube: Array = result[target_index]
+		var max_amount := mini(source.size(), CAPACITY - target_tube.size())
+		if max_amount <= 0: continue
+		var amount := 1
+		if max_amount > 1 and campaign_tier() <= 1 and rng.randf() < 0.25:
+			amount = 2
+		for _m in range(amount):
+			source.pop_back()
+			target_tube.append(donor_color)
+		result[donor] = source
+		result[target_index] = target_tube
+		successful += 1
+	# Shuffle tube positions only; this preserves the known solution.
+	for i in range(result.size() - 1, 0, -1):
+		var j := rng.randi_range(0, i)
+		var temp = result[i]
+		result[i] = result[j]
+		result[j] = temp
+	return result
+
+func _is_monochrome_nonempty(tube: Array) -> bool:
+	if tube.is_empty(): return false
+	var color := int(tube[0])
+	for value in tube:
+		if int(value) != color: return false
+	return true
+
 func select_tube(index: int) -> void:
 	if completed or animating:
 		return
