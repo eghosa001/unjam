@@ -221,7 +221,7 @@ func _normalize_cells(raw_cells: Variant) -> Array:
 		result.append(row)
 	return result
 
-func _normalize_cell_colors(raw_colors: Variant, normalized_cells: Array) -> Array:
+func _polished_normalize_cell_colors(raw_colors: Variant, normalized_cells: Array) -> Array:
 	var result: Array = []
 	for y in range(GRID_SIZE):
 		var row: Array = []
@@ -242,7 +242,7 @@ func _normalize_pieces(raw_pieces: Variant) -> Array:
 		result.append(_normalize_shape(raw_shape))
 	return result
 
-func _normalize_piece_colors(raw_colors: Variant, count: int) -> Array[Color]:
+func _polished_normalize_piece_colors(raw_colors: Variant, count: int) -> Array[Color]:
 	var result: Array[Color] = []
 	for i in range(count):
 		var fallback: Color = PIECE_COLORS[posmod(piece_batch * 3 + i + campaign_tier(), PIECE_COLORS.size())]
@@ -272,13 +272,13 @@ func _restore_checkpoint() -> void:
 		MultiGameManager.clear_checkpoint(GAME_ID)
 		return
 	cells = restored_cells
-	cell_colors = _normalize_cell_colors(checkpoint.get("cell_colors", []), cells)
+	cell_colors = _polished_normalize_cell_colors(checkpoint.get("cell_colors", []), cells)
 	var restored_pieces := _normalize_pieces(checkpoint.get("pieces", []))
 	if restored_pieces.size() == 3:
 		pieces = restored_pieces
 	else:
 		refill_pieces()
-	piece_colors = _normalize_piece_colors(checkpoint.get("piece_colors", []), pieces.size())
+	piece_colors = _polished_normalize_piece_colors(checkpoint.get("piece_colors", []), pieces.size())
 	selected_piece = clampi(int(checkpoint.get("selected", -1)), -1, pieces.size() - 1)
 	if selected_piece >= 0 and pieces[selected_piece].is_empty():
 		selected_piece = -1
