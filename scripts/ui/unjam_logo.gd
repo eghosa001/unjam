@@ -3,12 +3,12 @@ extends Control
 
 var phase := 0.0
 var ink := Color("f7f9ff")
-var muted := Color("aebbd0")
+var muted := Color("93a4ba")
 var accents := [Color("2dd4b6"), Color("5da9ff"), Color("8b7cf6")]
 
 func configure(dark_mode: bool) -> void:
-	ink = Color("f7f9ff") if dark_mode else Color("14213a")
-	muted = Color("aebbd0") if dark_mode else Color("52637a")
+	ink = Color("f7f9ff") if dark_mode else Color("132033")
+	muted = Color("93a4ba") if dark_mode else Color("607087")
 	queue_redraw()
 
 func _ready() -> void:
@@ -22,19 +22,25 @@ func _process(delta: float) -> void:
 func _draw() -> void:
 	var font := ThemeDB.fallback_font
 	var center := size * 0.5
-	var glow := 0.04 + sin(phase * 1.8) * 0.015
-	for i in range(3):
-		var x := center.x - 170.0 + i * 170.0
-		var bob := sin(phase * 1.6 + float(i) * 0.8) * 4.0
-		var shadow_rect := Rect2(Vector2(x - 62, center.y - 59 + bob), Vector2(124, 124))
-		draw_rect(shadow_rect.grow(10), Color(accents[i], glow), true)
-		draw_rect(shadow_rect, Color(accents[i], 0.15), true)
-		draw_rect(Rect2(shadow_rect.position + Vector2(5, 5), shadow_rect.size - Vector2(10, 10)), Color(accents[i], 0.07), true)
+	var title_size := clampi(int(size.y * 0.46), 48, 72)
+	var sub_size := clampi(int(size.y * 0.12), 14, 18)
 	var letters := "UNJAM"
-	var width := font.get_string_size(letters, HORIZONTAL_ALIGNMENT_LEFT, -1, 92).x
-	var text_pos := Vector2(center.x - width * 0.5, center.y + 35)
-	draw_string(font, text_pos + Vector2(0, 8), letters, HORIZONTAL_ALIGNMENT_LEFT, -1, 92, Color(0,0,0,0.20))
-	draw_string(font, text_pos, letters, HORIZONTAL_ALIGNMENT_LEFT, -1, 92, ink)
-	var sub := "THREE PUZZLES. ONE JOURNEY."
-	var sw := font.get_string_size(sub, HORIZONTAL_ALIGNMENT_LEFT, -1, 20).x
-	draw_string(font, Vector2(center.x - sw * 0.5, center.y + 88), sub, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, muted)
+	var text_width := font.get_string_size(letters, HORIZONTAL_ALIGNMENT_LEFT, -1, title_size).x
+	var baseline := center.y + float(title_size) * 0.30
+
+	# restrained three-game accent rail; brand remains readable at every phone width.
+	var rail_width := minf(size.x * 0.52, 430.0)
+	var rail_x := center.x - rail_width * 0.5
+	var rail_y := baseline - float(title_size) - 18.0
+	for i in range(3):
+		var seg_w := rail_width / 3.0
+		var pulse := 0.45 + 0.08 * sin(phase * 1.4 + float(i))
+		draw_rect(Rect2(Vector2(rail_x + seg_w * i + 4, rail_y), Vector2(seg_w - 8, 4)), Color(accents[i], pulse), true)
+
+	var title_pos := Vector2(center.x - text_width * 0.5, baseline)
+	draw_string(font, title_pos + Vector2(0, 4), letters, HORIZONTAL_ALIGNMENT_LEFT, -1, title_size, Color(0, 0, 0, 0.30))
+	draw_string(font, title_pos, letters, HORIZONTAL_ALIGNMENT_LEFT, -1, title_size, ink)
+
+	var sub := "THREE PUZZLES  •  ONE JOURNEY"
+	var sub_width := font.get_string_size(sub, HORIZONTAL_ALIGNMENT_LEFT, -1, sub_size).x
+	draw_string(font, Vector2(center.x - sub_width * 0.5, baseline + 32), sub, HORIZONTAL_ALIGNMENT_LEFT, -1, sub_size, muted)
