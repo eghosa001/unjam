@@ -17,6 +17,8 @@ var target_rotation := 0.0
 var press_amount := 0.0
 var invalid_amount := 0.0
 var success_amount := 0.0
+var landing_amount := 0.0
+var bubble_phase := 0.0
 
 func configure(values: Array, selected: bool, index: int) -> void:
 	layers = values.duplicate()
@@ -70,15 +72,19 @@ func play_invalid() -> void:
 
 func play_success() -> void:
 	success_amount = 1.0
+	landing_amount = 1.0
 	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(self, "scale", Vector2(1.08, 1.08), 0.12)
-	tween.tween_property(self, "scale", Vector2.ONE, 0.18)
+	tween.tween_property(self, "scale", Vector2(1.10, 0.96), 0.08)
+	tween.tween_property(self, "scale", Vector2(0.98, 1.07), 0.08)
+	tween.tween_property(self, "scale", Vector2.ONE, 0.16)
 
 func _process(delta: float) -> void:
 	pulse_time += delta
+	bubble_phase += delta
 	press_amount = maxf(0.0, press_amount - delta * 5.0)
 	invalid_amount = maxf(0.0, invalid_amount - delta * 3.6)
 	success_amount = maxf(0.0, success_amount - delta * 2.4)
+	landing_amount = maxf(0.0, landing_amount - delta * 2.8)
 	rotation = lerpf(rotation, target_rotation, minf(1.0, delta * 12.0))
 	if is_selected:
 		var wobble := sin(pulse_time * 4.2) * deg_to_rad(1.8)
@@ -86,19 +92,23 @@ func _process(delta: float) -> void:
 		slosh_amount = maxf(slosh_amount, 0.78)
 	else:
 		slosh_amount = maxf(0.0, slosh_amount - delta * 2.1)
-	if hover_amount > 0.001 or is_selected or slosh_amount > 0.001 or invalid_amount > 0.001 or success_amount > 0.001:
+	if hover_amount > 0.001 or is_selected or slosh_amount > 0.001 or invalid_amount > 0.001 or success_amount > 0.001 or landing_amount > 0.001 or layers.is_empty():
 		queue_redraw()
 
 func _draw() -> void:
-	var rect: Rect2 = Rect2(Vector2(14, 18), size - Vector2(28, 40))
+	var rect: Rect2 = Rect2(Vector2(12, 14), size - Vector2(24, 34))
 	var selected_bob: float = sin(pulse_time * 4.4) * 3.5 if is_selected else 0.0
 	var lift: float = (-18.0 + selected_bob) if is_selected else -5.0 * hover_amount
 	var body: Rect2 = Rect2(rect.position + Vector2(0, lift), rect.size)
-	var shadow: Rect2 = Rect2(body.position + Vector2(0, 16), body.size)
-	_draw_round_rect(shadow, Color(0.03, 0.06, 0.12, 0.28), 31.0)
-	_draw_round_rect(body, Color("fbfdff"), 31.0)
+	var shadow: Rect2 = Rect2(body.position + Vector2(0, 17), body.size)
 
-	var inner: Rect2 = Rect2(body.position + Vector2(14, 31), body.size - Vector2(28, 61))
+	# Premium glass silhouette: translucent shell + darker inner cavity instead of a flat white bottle.
+	_draw_round_rect(shadow, Color(0.01, 0.025, 0.06, 0.34), 34.0)
+	_draw_round_rect_border(body, Color(0.66, 0.87, 1.0, 0.13), Color(0.82, 0.94, 1.0, 0.76), 34.0, 4)
+	var cavity := Rect2(body.position + Vector2(12, 27), body.size - Vector2(24, 53))
+	_draw_round_rect_border(cavity, Color(0.025, 0.075, 0.14, 0.34), Color(0.78, 0.92, 1.0, 0.16), 24.0, 2)
+
+	var inner: Rect2 = Rect2(cavity.position + Vector2(5, 12), cavity.size - Vector2(10, 24))
 	var slot_h: float = inner.size.y / float(CAPACITY)
 	for slot in range(CAPACITY):
 		var y: float = inner.end.y - slot_h * float(slot + 1)
@@ -107,32 +117,47 @@ func _draw() -> void:
 		if slot < layers.size():
 			var color_index: int = clampi(int(layers[slot]), 0, PALETTE.size() - 1)
 			var liquid: Color = PALETTE[color_index] as Color
-			draw_rect(slot_rect, Color(liquid, 0.98), true)
+			_draw_round_rect(slot_rect, Color(liquid, 0.96), 8.0 if slot == 0 else 4.0)
 			var surface_y: float = slot_rect.position.y + 4.0 + wave
-			draw_line(Vector2(slot_rect.position.x + 5, surface_y), Vector2(slot_rect.end.x - 5, surface_y - wave * 0.45), liquid.lightened(0.34), 4.0, true)
-			var shine: Rect2 = Rect2(slot_rect.position + Vector2(8, 10), Vector2(maxf(4.0, slot_rect.size.x * 0.10), maxf(5.0, slot_rect.size.y - 18)))
-			draw_rect(shine, Color(1, 1, 1, 0.20), true)
+			draw_line(Vector2(slot_rect.position.x + 6, surface_y), Vector2(slot_rect.end.x - 6, surface_y - wave * 0.45), liquid.lightened(0.36), 4.0, true)
+			var shine: Rect2 = Rect2(slot_rect.position + Vector2(8, 9), Vector2(maxf(4.0, slot_rect.size.x * 0.09), maxf(5.0, slot_rect.size.y - 17)))
+			draw_rect(shine, Color(1, 1, 1, 0.18), true)
 		else:
-			draw_rect(slot_rect, Color("e7eef7"), true)
+			# Empty capacity is glass, not opaque grey fill.
+			draw_line(Vector2(slot_rect.position.x + 7, slot_rect.end.y - 2), Vector2(slot_rect.end.x - 7, slot_rect.end.y - 2), Color(0.72, 0.88, 1.0, 0.07), 1.5, true)
 
-	var rim_color: Color = Color("16b8a6") if is_selected else Color("64748b").lerp(Color("3fa9f5"), hover_amount * 0.65)
+	var rim_color: Color = Color("16b8a6") if is_selected else Color("9ccdea").lerp(Color("5da9ff"), hover_amount * 0.55)
 	if invalid_amount > 0.0:
 		rim_color = Color("ef476f")
 	if success_amount > 0.0:
 		rim_color = Color("22c55e")
-	draw_arc(Vector2(body.position.x + body.size.x * 0.5, body.position.y + 7), body.size.x * 0.40, PI, TAU, 32, rim_color, 5.0, true)
-	draw_line(body.position + Vector2(8, 19), body.position + Vector2(8, body.size.y - 29), rim_color, 4.0, true)
-	draw_line(Vector2(body.end.x - 8, body.position.y + 19), Vector2(body.end.x - 8, body.end.y - 29), rim_color, 4.0, true)
-	draw_arc(Vector2(body.position.x + body.size.x * 0.5, body.end.y - 30), body.size.x * 0.40, 0, PI, 32, rim_color, 4.0, true)
 
-	var glass_shine: Rect2 = Rect2(body.position + Vector2(18, 34), Vector2(8, body.size.y - 78))
-	draw_rect(glass_shine, Color(1, 1, 1, 0.32), true)
+	# Thick glass lip and base make even a totally empty tube read as an intentional bottle.
+	var lip_center := Vector2(body.get_center().x, body.position.y + 12)
+	draw_arc(lip_center, body.size.x * 0.39, PI, TAU, 36, Color(rim_color, 0.90), 5.5, true)
+	draw_arc(lip_center + Vector2(0, 3), body.size.x * 0.32, PI, TAU, 30, Color(0.92, 0.98, 1.0, 0.40), 2.5, true)
+	draw_line(body.position + Vector2(9, 25), body.position + Vector2(9, body.size.y - 31), Color(rim_color, 0.86), 4.0, true)
+	draw_line(Vector2(body.end.x - 9, body.position.y + 25), Vector2(body.end.x - 9, body.end.y - 31), Color(rim_color, 0.86), 4.0, true)
+	draw_arc(Vector2(body.get_center().x, body.end.y - 31), body.size.x * 0.39, 0, PI, 36, Color(rim_color, 0.88), 4.5, true)
+	draw_arc(Vector2(body.get_center().x, body.end.y - 35), body.size.x * 0.31, 0, PI, 30, Color(0.84, 0.95, 1.0, 0.30), 2.0, true)
+
+	# Multiple glass reflections give depth without textures.
+	var glass_shine: Rect2 = Rect2(body.position + Vector2(20, 39), Vector2(7, body.size.y - 88))
+	draw_rect(glass_shine, Color(1, 1, 1, 0.26), true)
+	draw_line(body.position + Vector2(31, 43), body.position + Vector2(31, body.size.y * 0.47), Color(1, 1, 1, 0.10), 3.0, true)
+
+	if layers.is_empty():
+		var empty_pulse := 0.5 + 0.5 * sin(bubble_phase * 2.3 + float(tube_index))
+		var empty_center := cavity.get_center() + Vector2(0, 14)
+		draw_arc(empty_center, minf(cavity.size.x, cavity.size.y) * 0.13, 0, TAU, 32, Color("9ccdea", 0.13 + empty_pulse * 0.07), 2.0, true)
+		draw_circle(empty_center + Vector2(-10, -7), 3.2, Color(1, 1, 1, 0.16 + empty_pulse * 0.08))
+		draw_circle(empty_center + Vector2(9, 8), 2.2, Color(1, 1, 1, 0.12 + empty_pulse * 0.06))
+
 	if is_selected:
 		var glow_alpha: float = 0.34 + sin(pulse_time * 4.4) * 0.10
-		draw_arc(body.get_center(), body.size.x * 0.58, 0, TAU, 48, Color(0.08, 0.72, 0.65, glow_alpha), 5.0, true)
-		# Continuous pour anticipation: droplets and a short stream show the active direction.
+		draw_arc(body.get_center(), body.size.x * 0.57, 0, TAU, 48, Color(0.08, 0.72, 0.65, glow_alpha), 5.0, true)
 		var dir := -1.0 if target_rotation < 0.0 else 1.0
-		var lip := Vector2(body.get_center().x + dir * body.size.x * 0.38, body.position.y + 13.0)
+		var lip := Vector2(body.get_center().x + dir * body.size.x * 0.38, body.position.y + 14.0)
 		for i in range(5):
 			var phase := fmod(pulse_time * 2.9 + float(i) * 0.19, 1.0)
 			var p := lip + Vector2(dir * phase * 28.0, phase * 48.0 + phase * phase * 18.0)
@@ -142,8 +167,18 @@ func _draw() -> void:
 			var stream_color: Color = PALETTE[liquid_index]
 			var stream_phase := 0.5 + 0.5 * sin(pulse_time * 6.0)
 			draw_line(lip, lip + Vector2(dir * (22.0 + stream_phase * 8.0), 34.0), Color(stream_color, 0.42), 7.0, true)
+
+	if landing_amount > 0.001:
+		var land_center := Vector2(body.get_center().x, cavity.position.y + 34)
+		var spread := (1.0 - landing_amount) * 26.0
+		draw_arc(land_center, 14.0 + spread, 0.15, PI - 0.15, 28, Color("ffffff", landing_amount * 0.52), 3.0, true)
+		for i in range(4):
+			var a := -2.55 + float(i) * 1.7
+			var dp := land_center + Vector2(cos(a), sin(a)) * (18.0 + spread * 0.55)
+			draw_circle(dp, 2.5 + float(i % 2), Color("67e8cf", landing_amount * 0.72))
+
 	var number_pos: Vector2 = Vector2(body.get_center().x, body.end.y + 20)
-	draw_string(ThemeDB.fallback_font, number_pos - Vector2(7, 0), str(tube_index + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("334155"))
+	draw_string(ThemeDB.fallback_font, number_pos - Vector2(7, 0), str(tube_index + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("c6d7ea"))
 
 func _draw_round_rect(rect: Rect2, color: Color, radius: float) -> void:
 	var style := StyleBoxFlat.new()
@@ -152,4 +187,18 @@ func _draw_round_rect(rect: Rect2, color: Color, radius: float) -> void:
 	style.corner_radius_top_right = int(radius)
 	style.corner_radius_bottom_left = int(radius)
 	style.corner_radius_bottom_right = int(radius)
+	draw_style_box(style, rect)
+
+func _draw_round_rect_border(rect: Rect2, color: Color, border: Color, radius: float, width: int) -> void:
+	var style := StyleBoxFlat.new()
+	style.bg_color = color
+	style.corner_radius_top_left = int(radius)
+	style.corner_radius_top_right = int(radius)
+	style.corner_radius_bottom_left = int(radius)
+	style.corner_radius_bottom_right = int(radius)
+	style.border_width_left = width
+	style.border_width_right = width
+	style.border_width_top = width
+	style.border_width_bottom = width
+	style.border_color = border
 	draw_style_box(style, rect)
