@@ -44,6 +44,10 @@ func _update_pivot() -> void:
 func _hover(value: bool) -> void:
 	var tw := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tw.tween_property(self, "hover_amount", 1.0 if value else 0.0, 0.08)
+	if not value and footprint_active:
+		footprint_active = false
+		footprint_valid = false
+		queue_redraw()
 
 func _press() -> void:
 	var tw := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
@@ -73,6 +77,35 @@ func set_drag_footprint(active: bool, valid: bool = false) -> void:
 	footprint_active = active
 	footprint_valid = valid
 	queue_redraw()
+
+func _game() -> Node:
+	var node: Node = self
+	while node != null:
+		if node.has_method("place_piece_from_drag") and node.has_method("can_place"):
+			return node
+		node = node.get_parent()
+	return null
+
+func _can_drop_data(_at_position: Vector2, data: Variant) -> bool:
+	if not (data is Dictionary) or String(data.get("kind", "")) != "block_piece":
+		set_drag_footprint(false, false)
+		return false
+	var game := _game()
+	if game == null:
+		set_drag_footprint(false, false)
+		return false
+	var origin := Vector2i(cell_index % 8, int(cell_index / 8))
+	var valid: bool = bool(game.can_place(data.get("shape", []), origin))
+	set_drag_footprint(true, valid)
+	return valid
+
+func _drop_data(_at_position: Vector2, data: Variant) -> void:
+	var game := _game()
+	set_drag_footprint(false, false)
+	if game == null or not (data is Dictionary):
+		return
+	var origin := Vector2i(cell_index % 8, int(cell_index / 8))
+	game.place_piece_from_drag(int(data.get("piece_index", -1)), origin)
 
 func _process(delta: float) -> void:
 	impact = maxf(0.0, impact - delta * 5.5)
@@ -110,7 +143,6 @@ func _draw_block(rect: Rect2, fill: Color) -> void:
 	var darker := fill.darkened(0.26)
 	_draw_box(Rect2(rect.position + Vector2(0, 3), rect.size), darker, 3, Color.TRANSPARENT, 0)
 	_draw_box(rect, fill, 3, fill.lightened(0.22), 1)
-	# Bright top/left bevel and dark bottom/right bevel reproduce the glossy plastic blocks.
 	draw_line(rect.position + Vector2(3, 3), Vector2(rect.end.x - 3, rect.position.y + 3), Color(fill.lightened(0.48), 0.95), 2.0, true)
 	draw_line(rect.position + Vector2(3, 3), Vector2(rect.position.x + 3, rect.end.y - 3), Color(fill.lightened(0.30), 0.75), 1.5, true)
 	draw_line(Vector2(rect.position.x + 3, rect.end.y - 3), rect.end - Vector2(3, 3), Color(darker, 0.92), 2.0, true)
