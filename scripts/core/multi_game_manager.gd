@@ -46,10 +46,17 @@ func world_name(id:String,w:int)->String:
 func difficulty_for_level(n:int)->String:
  if n%100==0:return "boss"
  if n%25==0:return "milestone"
- var s:=posmod(n-1,25)+1
- if s<=5:return "easy"
- if s<=15:return "easy" if s%4==0 else "medium"
- return "medium" if s%3==0 else "hard"
+ var phase:=posmod(n-1,25)+1
+ var world:=world_for_level(n)
+ # Each 25-level chapter still breathes (recovery levels prevent fatigue), while
+ # the baseline rises with the campaign so late worlds never feel like World 1.
+ var score:=0 if phase<=5 else (1 if phase<=15 else 2)
+ if phase in [4,12,20]: score-=1
+ if world>=11:score+=1
+ if world>=41:score+=1
+ if world>=76 and phase>8:score+=1
+ score=clampi(score,0,2)
+ return ["easy","medium","hard"][score]
 func date_key()->String:
  var d:=Time.get_date_dict_from_system();return "%04d-%02d-%02d"%[d.year,d.month,d.day]
 func daily_level(id:String)->int:
