@@ -2,7 +2,7 @@ extends Button
 class_name BlockPieceButton
 
 const DragPreview = preload("res://scripts/ui/block_drag_preview.gd")
-const TOUCH_LIFT := 122.0
+const TOUCH_LIFT := 96.0
 const TOUCH_SNAP_RADIUS := 82.0
 
 var shape: Array = []
@@ -100,6 +100,7 @@ func _show_touch_preview(screen_position: Vector2) -> void:
 	if touch_preview == null or not is_instance_valid(touch_preview):
 		touch_preview = DragPreview.new()
 		touch_preview.configure(shape, accent)
+		touch_preview.scale = Vector2(1.18, 1.18)
 		touch_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		touch_preview.z_index = 950
 		var layer = game.get("effects_layer")
@@ -117,7 +118,7 @@ func _update_touch_preview_position(screen_position: Vector2) -> void:
 		return
 	var local_point: Vector2 = parent_control.get_global_transform_with_canvas().affine_inverse() * screen_position
 	# Lift the actual brick above the finger so it remains visible while aiming.
-	touch_preview.position = local_point - Vector2(touch_preview.size.x * 0.5, touch_preview.size.y + 34.0)
+	touch_preview.position = local_point - Vector2(touch_preview.size.x * 0.5, touch_preview.size.y + 8.0)
 
 func _hide_touch_preview() -> void:
 	if touch_preview != null and is_instance_valid(touch_preview):
@@ -147,7 +148,14 @@ func _gui_input(event: InputEvent) -> void:
 		return
 	if event is InputEventScreenTouch:
 		if event.pressed:
-			touch_drag_started = false
+			touch_drag_started = true
+			_begin_drag_feedback()
+			var game := _game()
+			if game != null and game.has_method("register_touch_drag"):
+				game.call("register_touch_drag", self)
+			_show_touch_preview(event.position)
+			_update_touch_footprint(event.position)
+			accept_event()
 		else:
 			if touch_drag_started:
 				_finish_touch_drag(event.position)
