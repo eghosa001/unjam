@@ -298,7 +298,7 @@ func _make_empty_cell(cell_size: int, pos: Vector2i, route: Dictionary) -> Contr
 			exit_label.add_theme_color_override("font_color", Color("8ff5b5"))
 			exit_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			slot.add_child(exit_label)
-			var pulse := create_tween().set_loops()
+			var pulse := create_tween().set_loops(2)
 			pulse.tween_property(slot, "modulate", Color(1.08, 1.16, 1.10, 1), 0.62).set_trans(Tween.TRANS_SINE)
 			pulse.tween_property(slot, "modulate", Color.WHITE, 0.62).set_trans(Tween.TRANS_SINE)
 	else:
@@ -319,7 +319,7 @@ func render_board() -> void:
 	var viewport_width := get_viewport_rect().size.x
 	var max_board_width := minf(viewport_width - 112.0, 860.0)
 	var gap := 10.0 if width <= 5 else 7.0
-	var calculated := floor((max_board_width - gap * float(width - 1)) / float(maxi(width, 1)))
+	var calculated: float = floor((max_board_width - gap * float(width - 1)) / float(maxi(width, 1)))
 	var cell_size := int(clampf(calculated, 82.0, 142.0))
 	board_grid.columns = width
 	board_grid.add_theme_constant_override("h_separation", int(gap))
@@ -339,7 +339,7 @@ func render_board() -> void:
 				slot.add_child(token)
 				board_grid.add_child(slot)
 				_animate_cell(slot, x, y)
-				var rescue_pulse := create_tween().set_loops()
+				var rescue_pulse := create_tween().set_loops(2)
 				rescue_pulse.tween_property(slot, "modulate", Color(1.08, 1.04, 0.86, 1), 0.72).set_trans(Tween.TRANS_SINE)
 				rescue_pulse.tween_property(slot, "modulate", Color.WHITE, 0.72).set_trans(Tween.TRANS_SINE)
 			elif piece_index >= 0:
