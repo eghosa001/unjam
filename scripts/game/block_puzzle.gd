@@ -33,7 +33,7 @@ var cells: Array = []
 var cell_colors: Array = []
 var cell_buttons: Array[BlockCellButton] = []
 var pieces: Array = []
-var piece_colors: Array[Color] = []
+var piece_colors: Array = []
 var selected_piece := -1
 var score := 0
 var lines_cleared := 0
@@ -322,76 +322,44 @@ func place_selected(origin: Vector2i) -> void:
 		_invalid_bump()
 		return
 	history.append({"cells": cells.duplicate(true), "cell_colors": cell_colors.duplicate(true), "pieces": pieces.duplicate(true), "piece_colors": piece_colors.duplicate(true), "selected": selected_piece, "score": score, "lines": lines_cleared, "placements": placements, "batch": piece_batch, "rng_state": rng.state})
+	if history.size() > 5:
+		history.pop_front()
 	var placed_color: Color = piece_colors[selected_piece]
-	for point in shape:
-		var px: int = origin.x + int(point.x)
-		var py: int = origin.y + int(point.y)
+	var placed_indices: Array[int] = []
+	for raw in shape:
+		var point := _as_point(raw)
+		if point.x < 0 or point.y < 0:
+			continue
+		var px: int = origin.x + point.x
+		var py: int = origin.y + point.y
 		cells[py][px] = true
 		cell_colors[py][px] = placed_color
-	_spawn_placement_feedback(shape, origin, placed_color)
-	score += shape.size() * 10
-	placements += 1
+		placed_indices.append(py * GRID_SIZE + px)
 	pieces[selected_piece] = []
-	selected_piece = -1
+	placements += 1
+	var placement_score := shape.size() * 10
+	score += placement_score
+	_play_place_feedback(placed_indices, placed_color, placement_score)
 	var cleared := clear_lines()
 	if cleared > 0:
 		lines_cleared += cleared
-		score += cleared * 40 + maxi(0, cleared - 1) * 20
+		score += cleared * 120 + maxi(0, cleared - 1) * 80
+		_spawn_score_popup("+%d" % (cleared * 120 + maxi(0, cleared - 1) * 80), Color("ff665e"), 0.18)
 	if reached_goal():
-		render()
 		complete_level()
 		return
 	if all_pieces_used():
 		refill_pieces()
+	if not any_move_available():
+		status_label.text = "No moves — new blocks"
+		refill_pieces()
+	selected_piece = -1
 	render()
 	_save_checkpoint()
-	if not any_move_available():
-		status_label.text = "NO MOVES"
-		hint_label.text = "Retry this level"
-
-func _invalid_bump() -> void:
-	if board_shell == null:
-		return
-	var start := board_shell.position
-	var tw := create_tween()
-	tw.tween_property(board_shell, "position:x", start.x - 8.0, 0.035)
-	tw.tween_property(board_shell, "position:x", start.x + 8.0, 0.055)
-	tw.tween_property(board_shell, "position:x", start.x, 0.04)
-
-func _spawn_placement_feedback(shape: Array, origin: Vector2i, color: Color) -> void:
-	var order := 0
-	for raw in shape:
-		var point: Vector2i = raw
-		var index := (origin.y + point.y) * GRID_SIZE + origin.x + point.x
-		_spawn_cell_overlay(index, color, float(order) * 0.018)
-		order += 1
-	_spawn_score_popup("+%d" % (shape.size() * 10), color.lightened(0.22), 0.0)
-
-func _spawn_cell_overlay(index: int, color: Color, delay: float) -> void:
-	if index < 0 or index >= cell_buttons.size():
-		return
-	var cell := cell_buttons[index]
-	var flash := Panel.new()
-	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	flash.position = cell.global_position
-	flash.size = cell.size
-	flash.pivot_offset = flash.size * 0.5
-	flash.add_theme_stylebox_override("panel", style_box(Color(color, 0.58), 3, color.lightened(0.35), 2))
-	effects_layer.add_child(flash)
-	flash.scale = Vector2(0.62, 0.62)
-	flash.modulate.a = 0.0
-	var tw := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	if delay > 0.0:
-		tw.tween_interval(delay)
-	tw.tween_property(flash, "modulate:a", 1.0, 0.04)
-	tw.parallel().tween_property(flash, "scale", Vector2(1.08, 1.08), 0.085)
-	tw.tween_property(flash, "scale", Vector2.ONE, 0.08)
-	tw.parallel().tween_property(flash, "modulate:a", 0.0, 0.10)
-	tw.finished.connect(flash.queue_free)
 
 func clear_lines() -> int:
-	var full_rows: Array[int] = []
-	var full_cols: Array[int] = []
+	var rows: Array[int] = []
+	var cols: Array[int] = []
 	for y in range(GRID_SIZE):
 		var full := true
 		for x in range(GRID_SIZE):
@@ -399,7 +367,7 @@ func clear_lines() -> int:
 				full = false
 				break
 		if full:
-			full_rows.append(y)
+			rows.append(y)
 	for x in range(GRID_SIZE):
 		var full := true
 		for y in range(GRID_SIZE):
@@ -407,70 +375,96 @@ func clear_lines() -> int:
 				full = false
 				break
 		if full:
-			full_cols.append(x)
-	if full_rows.is_empty() and full_cols.is_empty():
+			cols.append(x)
+	if rows.is_empty() and cols.is_empty():
 		return 0
-	_spawn_clear_feedback(full_rows, full_cols)
-	for y in full_rows:
+	var cleared_indices: Array[int] = []
+	for y in rows:
 		for x in range(GRID_SIZE):
-			cells[y][x] = false
-			cell_colors[y][x] = Color.TRANSPARENT
-	for x in full_cols:
+			var idx := y * GRID_SIZE + x
+			if idx not in cleared_indices:
+				cleared_indices.append(idx)
+	for x in cols:
 		for y in range(GRID_SIZE):
-			cells[y][x] = false
-			cell_colors[y][x] = Color.TRANSPARENT
-	return full_rows.size() + full_cols.size()
+			var idx := y * GRID_SIZE + x
+			if idx not in cleared_indices:
+				cleared_indices.append(idx)
+	_spawn_clear_feedback(cleared_indices, rows.size() + cols.size())
+	for idx in cleared_indices:
+		var y: int = idx / GRID_SIZE
+		var x: int = idx % GRID_SIZE
+		cells[y][x] = false
+		cell_colors[y][x] = Color.TRANSPARENT
+	return rows.size() + cols.size()
 
-func _spawn_clear_feedback(rows: Array[int], cols: Array[int]) -> void:
-	var count := rows.size() + cols.size()
-	var neon := Color("ff476f")
-	for y in rows:
-		_spawn_neon_line(true, y, neon)
-	for x in cols:
-		_spawn_neon_line(false, x, neon)
-	var word := "Excellent!" if count == 1 else ("Amazing!" if count <= 3 else "Spectacular!")
-	_spawn_score_popup(word, Color("ff665e"), 0.05, true)
-	_spawn_score_popup("+%d" % (count * 40 + maxi(0, count - 1) * 20), Color("65e7ff"), 0.14)
-	_spawn_particles(rows, cols, neon)
+func _play_place_feedback(indices: Array[int], color: Color, points: int) -> void:
+	for i in range(indices.size()):
+		var idx := indices[i]
+		if idx >= 0 and idx < cell_buttons.size():
+			cell_buttons[idx].play_land(0.018 * i)
+	_spawn_score_popup("+%d" % points, color.lightened(0.15), 0.0)
+	if board_shell:
+		var tw := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		board_shell.pivot_offset = board_shell.size * 0.5
+		tw.tween_property(board_shell, "scale", Vector2(1.008, 1.008), 0.05)
+		tw.tween_property(board_shell, "scale", Vector2.ONE, 0.08)
 
-func _spawn_neon_line(horizontal: bool, index: int, neon: Color) -> void:
-	var first_idx := index * GRID_SIZE if horizontal else index
-	var last_idx := first_idx + (GRID_SIZE - 1 if horizontal else (GRID_SIZE - 1) * GRID_SIZE)
-	var a := cell_buttons[first_idx]
-	var b := cell_buttons[last_idx]
-	var panel := Panel.new()
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.position = a.global_position - Vector2(3, 3)
-	panel.size = Vector2((b.global_position.x + b.size.x) - a.global_position.x + 6, a.size.y + 6) if horizontal else Vector2(a.size.x + 6, (b.global_position.y + b.size.y) - a.global_position.y + 6)
-	panel.add_theme_stylebox_override("panel", style_box(Color(neon, 0.06), 2, neon, 3, 5))
-	effects_layer.add_child(panel)
-	panel.modulate.a = 0.0
-	var tw := create_tween()
-	tw.tween_property(panel, "modulate:a", 1.0, 0.055)
-	tw.tween_interval(0.12)
-	tw.tween_property(panel, "modulate:a", 0.0, 0.24)
-	tw.finished.connect(panel.queue_free)
+func _invalid_bump() -> void:
+	if not board_shell:
+		return
+	var base_x := board_shell.position.x
+	var tw := create_tween().set_trans(Tween.TRANS_SINE)
+	tw.tween_property(board_shell, "position:x", base_x - 12.0, 0.04)
+	tw.tween_property(board_shell, "position:x", base_x + 10.0, 0.05)
+	tw.tween_property(board_shell, "position:x", base_x - 5.0, 0.04)
+	tw.tween_property(board_shell, "position:x", base_x, 0.04)
 
-func _spawn_particles(rows: Array[int], cols: Array[int], color: Color) -> void:
-	var centers: Array[Vector2] = []
-	for y in rows:
-		centers.append((cell_buttons[y * GRID_SIZE].global_position + cell_buttons[y * GRID_SIZE + GRID_SIZE - 1].global_position) * 0.5 + Vector2(CELL_SIZE * 0.5, CELL_SIZE * 0.5))
-	for x in cols:
-		centers.append((cell_buttons[x].global_position + cell_buttons[(GRID_SIZE - 1) * GRID_SIZE + x].global_position) * 0.5 + Vector2(CELL_SIZE * 0.5, CELL_SIZE * 0.5))
-	for center in centers:
-		for i in range(18):
-			var p := ColorRect.new()
-			p.color = Color(color.lightened(float(i % 4) * 0.06), 0.9)
-			p.size = Vector2(5 + i % 4, 5 + i % 3)
-			p.position = center
-			p.rotation = rng.randf_range(-0.7, 0.7)
-			effects_layer.add_child(p)
-			var direction := Vector2.from_angle(rng.randf_range(0, TAU))
-			var distance := rng.randf_range(60.0, 220.0)
-			var tw := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-			tw.tween_property(p, "position", center + direction * distance, rng.randf_range(0.28, 0.48))
-			tw.parallel().tween_property(p, "modulate:a", 0.0, 0.48)
-			tw.finished.connect(p.queue_free)
+func _spawn_clear_feedback(indices: Array[int], line_count: int) -> void:
+	for i in range(indices.size()):
+		var idx := indices[i]
+		if idx < 0 or idx >= cell_buttons.size():
+			continue
+		var cell := cell_buttons[idx]
+		cell.play_clear(0.018 * i)
+		_spawn_neon_debris(cell, 0.012 * i)
+	var phrase := "Excellent!"
+	if line_count >= 2:
+		phrase = "Amazing!"
+	if line_count >= 3:
+		phrase = "Spectacular!"
+	_spawn_score_popup(phrase, Color("ff665e"), 0.10, true)
+	if board_shell:
+		var glow := Panel.new()
+		glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		glow.position = board_shell.global_position - Vector2(12, 12)
+		glow.size = board_shell.size + Vector2(24, 24)
+		glow.add_theme_stylebox_override("panel", style_box(Color("ff335511"), 8, Color("ff416c"), 5, 8))
+		effects_layer.add_child(glow)
+		glow.modulate.a = 0.0
+		var tw := create_tween()
+		tw.tween_property(glow, "modulate:a", 1.0, 0.05)
+		tw.tween_property(glow, "modulate:a", 0.0, 0.26)
+		tw.finished.connect(glow.queue_free)
+
+func _spawn_neon_debris(cell: Control, delay: float) -> void:
+	var center := cell.global_position + cell.size * 0.5
+	for j in range(3):
+		var p := Panel.new()
+		var side := 8.0 + float((j + int(center.x)) as int % 3) * 3.0
+		p.size = Vector2(side, side)
+		p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		p.add_theme_stylebox_override("panel", style_box(Color("ff416c22"), 1, Color("ff7190"), 2))
+		p.position = center
+		p.rotation = rng.randf_range(-0.7, 0.7)
+		effects_layer.add_child(p)
+		var direction := Vector2.from_angle(rng.randf_range(0, TAU))
+		var distance := rng.randf_range(60.0, 220.0)
+		var tw := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		if delay > 0.0:
+			tw.tween_interval(delay)
+		tw.tween_property(p, "position", center + direction * distance, rng.randf_range(0.28, 0.48))
+		tw.parallel().tween_property(p, "modulate:a", 0.0, 0.48)
+		tw.finished.connect(p.queue_free)
 
 func _spawn_score_popup(text_value: String, color: Color, delay: float = 0.0, emphatic: bool = false) -> void:
 	var label := Label.new()
@@ -498,10 +492,94 @@ func _spawn_score_popup(text_value: String, color: Color, delay: float = 0.0, em
 	tw.parallel().tween_property(label, "modulate:a", 0.0, 0.36)
 	tw.finished.connect(label.queue_free)
 
+func _as_point(raw: Variant) -> Vector2i:
+	if raw is Vector2i:
+		return raw
+	if raw is Vector2:
+		return Vector2i(raw)
+	if raw is Dictionary:
+		return Vector2i(int(raw.get("x", -1)), int(raw.get("y", -1)))
+	if raw is Array and raw.size() >= 2:
+		return Vector2i(int(raw[0]), int(raw[1]))
+	if raw is String:
+		var cleaned := String(raw).replace("Vector2i", "").replace("(", "").replace(")", "").strip_edges()
+		var parts := cleaned.split(",")
+		if parts.size() >= 2:
+			var sx := parts[0].strip_edges()
+			var sy := parts[1].strip_edges()
+			if sx.is_valid_int() and sy.is_valid_int():
+				return Vector2i(int(sx), int(sy))
+	return Vector2i(-1, -1)
+
+func _as_color(raw: Variant, fallback: Color = Color("466df2")) -> Color:
+	if raw is Color:
+		return raw
+	if raw is Dictionary:
+		return Color(float(raw.get("r", fallback.r)), float(raw.get("g", fallback.g)), float(raw.get("b", fallback.b)), float(raw.get("a", fallback.a)))
+	if raw is Array and raw.size() >= 3:
+		return Color(float(raw[0]), float(raw[1]), float(raw[2]), float(raw[3]) if raw.size() >= 4 else 1.0)
+	if raw is String:
+		var cleaned := String(raw).replace("Color", "").replace("(", "").replace(")", "").strip_edges()
+		var parts := cleaned.split(",")
+		if parts.size() >= 3:
+			var values: Array[float] = []
+			for part in parts:
+				var token := String(part).strip_edges()
+				if not token.is_valid_float():
+					return fallback
+				values.append(float(token))
+			return Color(values[0], values[1], values[2], values[3] if values.size() >= 4 else 1.0)
+	return fallback
+
+func _normalize_pieces(raw: Variant) -> Array:
+	var result: Array = []
+	if not (raw is Array):
+		return result
+	for raw_shape in raw:
+		var shape: Array = []
+		if raw_shape is Array:
+			for raw_point in raw_shape:
+				var point := _as_point(raw_point)
+				if point.x >= 0 and point.y >= 0:
+					shape.append(point)
+		result.append(shape)
+	return result
+
+func _normalize_cells(raw: Variant) -> Array:
+	var result: Array = []
+	for y in range(GRID_SIZE):
+		var row: Array = []
+		var source_row: Array = raw[y] if raw is Array and y < raw.size() and raw[y] is Array else []
+		for x in range(GRID_SIZE):
+			row.append(bool(source_row[x]) if x < source_row.size() else false)
+		result.append(row)
+	return result
+
+func _normalize_cell_colors(raw: Variant) -> Array:
+	var result: Array = []
+	for y in range(GRID_SIZE):
+		var row: Array = []
+		var source_row: Array = raw[y] if raw is Array and y < raw.size() and raw[y] is Array else []
+		for x in range(GRID_SIZE):
+			row.append(_as_color(source_row[x], Color.TRANSPARENT) if x < source_row.size() else Color.TRANSPARENT)
+		result.append(row)
+	return result
+
+func _normalize_piece_colors(raw: Variant, count: int) -> Array:
+	var result: Array = []
+	var source: Array = raw if raw is Array else []
+	for i in range(count):
+		var fallback: Color = COLOR_PALETTE[posmod(piece_batch * 3 + i, COLOR_PALETTE.size())]
+		result.append(_as_color(source[i], fallback) if i < source.size() else fallback)
+	return result
+
 func can_place(shape: Array, origin: Vector2i) -> bool:
-	for point in shape:
-		var x: int = origin.x + int(point.x)
-		var y: int = origin.y + int(point.y)
+	for raw in shape:
+		var point := _as_point(raw)
+		if point.x < 0 or point.y < 0:
+			return false
+		var x: int = origin.x + point.x
+		var y: int = origin.y + point.y
 		if x < 0 or x >= GRID_SIZE or y < 0 or y >= GRID_SIZE:
 			return false
 		if bool(cells[y][x]):
@@ -531,10 +609,10 @@ func undo_move() -> void:
 	if history.is_empty() or completed:
 		return
 	var state: Dictionary = history.pop_back()
-	cells = state.get("cells", []).duplicate(true)
-	cell_colors = state.get("cell_colors", []).duplicate(true)
-	pieces = state.get("pieces", []).duplicate(true)
-	piece_colors = state.get("piece_colors", []).duplicate(true)
+	cells = _normalize_cells(state.get("cells", []))
+	cell_colors = _normalize_cell_colors(state.get("cell_colors", []))
+	pieces = _normalize_pieces(state.get("pieces", []))
+	piece_colors = _normalize_piece_colors(state.get("piece_colors", []), pieces.size())
 	selected_piece = int(state.get("selected", -1))
 	score = int(state.get("score", 0))
 	lines_cleared = int(state.get("lines", 0))
@@ -593,16 +671,12 @@ func _restore_checkpoint() -> void:
 		return
 	var saved_cells = checkpoint.get("cells", [])
 	if saved_cells is Array and saved_cells.size() == GRID_SIZE:
-		cells = saved_cells.duplicate(true)
-		var saved_colors = checkpoint.get("cell_colors", [])
-		if saved_colors is Array and saved_colors.size() == GRID_SIZE:
-			cell_colors = saved_colors.duplicate(true)
+		cells = _normalize_cells(saved_cells)
+		cell_colors = _normalize_cell_colors(checkpoint.get("cell_colors", []))
 		var saved_pieces = checkpoint.get("pieces", [])
 		if saved_pieces is Array:
-			pieces = saved_pieces.duplicate(true)
-		var saved_piece_colors = checkpoint.get("piece_colors", [])
-		if saved_piece_colors is Array and saved_piece_colors.size() == pieces.size():
-			piece_colors = saved_piece_colors.duplicate(true)
+			pieces = _normalize_pieces(saved_pieces)
+		piece_colors = _normalize_piece_colors(checkpoint.get("piece_colors", []), pieces.size())
 		selected_piece = int(checkpoint.get("selected", -1))
 		score = maxi(0, int(checkpoint.get("score", 0)))
 		lines_cleared = maxi(0, int(checkpoint.get("lines", 0)))
