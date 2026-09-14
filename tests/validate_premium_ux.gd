@@ -7,11 +7,20 @@ func _initialize() -> void:
 	_check_source("res://scripts/ui/water_tube_reference_button.gd", ["_draw_liquid_marker", "ff3b5c", "2374ff", "ffd400", "00c27a"], failures)
 	_check_source("res://scripts/ui/premium_home_overhaul.gd", ["Never fade the full-screen surface"], failures)
 	_check_source("res://scripts/systems/premium_visuals.gd", ["tactile_success", "tactile_invalid", "transition_cover"], failures)
+
+	# App-wide premium contract: every legacy surface is routed through one design
+	# system, appearance remains user-accessible, and Main wires the manager in.
+	_check_source("res://scripts/ui/premium_design_system.gd", ["class_name PremiumDesignSystem", "GAME_ACCENTS", "apply_button", "apply_panel", "game_canvas"], failures)
+	_check_source("res://scripts/ui/premium_surface_manager.gd", ["_configure_background", "_polish_tree", "_add_surface_chrome", "settings", "collection", "levels"], failures)
+	_check_source("res://scripts/ui/ux_shell_premium.gd", ["theme_button.visible = surface == \"settings\"", "PremiumDesignSystem.apply_button", "PremiumDesignSystem.apply_panel"], failures)
+	_check_source("res://scripts/ui/premium_backdrop.gd", ["light_mode", "base_color.get_luminance", "Vignette changes with appearance mode"], failures)
+	_check_source("res://scenes/Main.tscn", ["premium_surface_manager.gd", "PremiumSurfaceManager", "PremiumHome", "PremiumLive"], failures)
+
 	if not failures.is_empty():
 		for failure in failures:
 			push_error(failure)
 		quit(1)
-	print("Premium UX contract validated: direct touch feedback, distinct color language, restrained motion, flash-free home transitions.")
+	print("Premium UX contract validated: direct touch feedback, distinct game color language, app-wide design tokens, theme-aware backdrops, premium legacy surfaces, and flash-free navigation.")
 	quit(0)
 
 func _check_source(path: String, needles: Array[String], failures: Array[String]) -> void:
