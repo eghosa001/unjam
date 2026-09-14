@@ -15,6 +15,7 @@ const CONFIG_PATH := "user://unjam_ui.cfg"
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	set_process(true)
 	_load_theme()
 	_load_tutorial_seen()
 	get_tree().node_added.connect(_on_node_added)
@@ -65,6 +66,7 @@ func _build_shell() -> void:
 	add_child(tutorial_layer)
 
 	help_button = Button.new()
+	help_button.visible = false
 	help_button.text = "?  HOW TO PLAY"
 	help_button.custom_minimum_size = Vector2(236, 66)
 	help_button.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
@@ -75,6 +77,7 @@ func _build_shell() -> void:
 	tutorial_layer.add_child(help_button)
 
 	theme_button = Button.new()
+	theme_button.visible = false
 	theme_button.name = "ThemeToggle"
 	theme_button.text = "☀  LIGHT THEME" if dark else "☾  DARK THEME"
 	theme_button.custom_minimum_size = Vector2(310, 68)
