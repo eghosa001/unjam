@@ -79,10 +79,10 @@ func _draw() -> void:
 
 	var font := ThemeDB.fallback_font
 	var title_color := accent.lightened(0.12) if selected else ink
-	draw_string(font, Vector2(108, 62 - lift), title, HORIZONTAL_ALIGNMENT_LEFT, -1, 22, title_color)
-	draw_string(font, Vector2(108, 94 - lift), "LEVEL %d" % level, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, muted)
+	draw_string(font, Vector2(108, 68 - lift), title, HORIZONTAL_ALIGNMENT_LEFT, -1, 26, title_color)
+	draw_string(font, Vector2(108, 104 - lift), "LEVEL %d" % level, HORIZONTAL_ALIGNMENT_LEFT, -1, 19, muted)
 	var mode_text := _mode_label()
-	draw_string(font, Vector2(108, 123 - lift), mode_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(accent, 0.82))
+	draw_string(font, Vector2(108, 139 - lift), mode_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(accent, 0.82))
 
 	var chevron_x := size.x - 31.0
 	var chevron_y := size.y * 0.5 - lift
