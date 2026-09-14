@@ -5,8 +5,10 @@ var enabled := true
 func track(event_name: String, properties: Dictionary = {}) -> void:
 	if not enabled:
 		return
-	# Development fallback. Replace with Firebase/GameAnalytics adapter later.
-	print("[analytics] %s %s" % [event_name, JSON.stringify(properties)])
+	# Keep release builds quiet until a production analytics adapter is connected.
+	# Debug builds still expose events for QA without collecting personal data.
+	if OS.is_debug_build():
+		print("[analytics] %s %s" % [event_name, JSON.stringify(properties)])
 
 func level_started(level_number: int) -> void:
 	track("level_start", {"level": level_number})
