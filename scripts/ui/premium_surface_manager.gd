@@ -76,6 +76,8 @@ func _polish_tree(node: Node, surface: String, dark: bool, accent: Color) -> voi
 		return
 	if node is Button and not _is_gameplay_widget(node):
 		var button := node as Button
+		button.custom_minimum_size = Vector2(button.custom_minimum_size.x, maxf(button.custom_minimum_size.y, 82.0))
+		button.add_theme_font_size_override("font_size", maxi(20, button.get_theme_font_size("font_size")))
 		var role := _role_for_surface_button(button, surface)
 		var radius := 18 if _looks_like_level_button(button, surface) else 22
 		PremiumDesignSystem.apply_button(button, dark, accent, role, radius)
@@ -84,7 +86,11 @@ func _polish_tree(node: Node, surface: String, dark: bool, accent: Color) -> voi
 		var emphasis := _panel_emphasis(panel, surface)
 		PremiumDesignSystem.apply_panel(panel, dark, accent, emphasis, 30 if emphasis else 26)
 	elif node is Label:
-		_polish_label(node as Label, dark, accent)
+		var label := node as Label
+		var fs := label.get_theme_font_size("font_size")
+		if fs > 0:
+			label.add_theme_font_size_override("font_size", fs + (5 if fs >= 28 else 3))
+		_polish_label(label, dark, accent)
 	elif node is ProgressBar:
 		var progress := node as ProgressBar
 		progress.add_theme_stylebox_override("background", PremiumDesignSystem.box(PremiumDesignSystem.surface_3(dark), 8, PremiumDesignSystem.border(dark), 1, 0, dark))
@@ -166,12 +172,12 @@ func _add_surface_chrome(content: Control, surface: String, game_id: String, dar
 	chrome.add_child(badge)
 
 func _animate_surface(content: Control) -> void:
-	content.modulate.a = 0.0
+	content.modulate.a = 0.82
 	var original := content.position
-	content.position = original + Vector2(0, 10)
+	content.position = original + Vector2(0, 8)
 	var tween := content.create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(content, "modulate:a", 1.0, 0.18)
-	tween.parallel().tween_property(content, "position", original, 0.24)
+	tween.tween_property(content, "modulate:a", 1.0, 0.22)
+	tween.parallel().tween_property(content, "position", original, 0.30)
 
 func _surface_name(surface: String) -> String:
 	match surface:
