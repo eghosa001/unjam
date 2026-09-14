@@ -38,9 +38,35 @@ func set_drag_scale(value: Vector2) -> void:
 func _process(delta: float) -> void:
 	phase += delta
 	if has_target:
-		position = position.lerp(target_position, minf(1.0, delta * 28.0))
-	scale = scale.lerp(target_scale, minf(1.0, delta * 20.0))
+		var delta_to_target: Vector2 = target_position - position
+		position = position.lerp(target_position, minf(1.0, delta * 30.0))
+		var desired_rotation := clampf(delta_to_target.x * 0.00045, -0.026, 0.026)
+		rotation = lerpf(rotation, desired_rotation, minf(1.0, delta * 16.0))
+	else:
+		rotation = lerpf(rotation, 0.0, minf(1.0, delta * 16.0))
+	scale = scale.lerp(target_scale, minf(1.0, delta * 22.0))
 	queue_redraw()
+
+func shape_centroid_local() -> Vector2:
+	var points: Array[Vector2i] = []
+	var max_x := 0
+	var max_y := 0
+	for raw in shape:
+		var point := _as_point(raw)
+		if point.x < 0 or point.y < 0:
+			continue
+		points.append(point)
+		max_x = maxi(max_x, point.x)
+		max_y = maxi(max_y, point.y)
+	if points.is_empty():
+		return size * 0.5
+	var cell := minf(88.0, minf(292.0 / float(max_x + 1), 292.0 / float(max_y + 1)))
+	var total := Vector2(float(max_x + 1) * cell, float(max_y + 1) * cell)
+	var origin := (size - total) * 0.5
+	var centroid := Vector2.ZERO
+	for point in points:
+		centroid += origin + Vector2(point) * cell + Vector2.ONE * cell * 0.5
+	return centroid / float(points.size())
 
 func _draw() -> void:
 	if shape.is_empty():
@@ -64,8 +90,6 @@ func _draw() -> void:
 	for point in points:
 		var rect := Rect2(origin + Vector2(point) * cell + Vector2(4, 4), Vector2(cell - 8, cell - 8))
 		_draw_block(rect, accent, pulse)
-	var outline_color := Color(accent.lightened(0.45), 0.26 * pulse) if board_valid else Color("ff4f73", 0.36 * pulse)
-	draw_arc(size * 0.5, maxf(total.x, total.y) * 0.62, 0.0, TAU, 40, outline_color, 4.0, true)
 
 func _draw_block(rect: Rect2, color: Color, pulse: float) -> void:
 	var shadow := rect
@@ -87,7 +111,7 @@ func _draw_block(rect: Rect2, color: Color, pulse: float) -> void:
 	style.border_width_right = 3
 	style.border_width_top = 3
 	style.border_width_bottom = 3
-	style.border_color = color.lightened(0.34)
+	style.border_color = color.lightened(0.34) if board_valid else Color("ff6f8e")
 	draw_style_box(style, rect)
 	var top_glow := Color(color.lightened(0.58), 0.90 + pulse * 0.08)
 	draw_line(rect.position + Vector2(10, 9), Vector2(rect.end.x - 10, rect.position.y + 9), top_glow, 5.0, true)
