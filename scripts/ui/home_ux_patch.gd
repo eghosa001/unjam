@@ -76,52 +76,75 @@ func _patch_layout(outer: MarginContainer) -> void:
 
 	var panel := PanelContainer.new()
 	panel.name = "JourneyFill"
-	panel.custom_minimum_size = Vector2(0, 154)
+	panel.custom_minimum_size = Vector2(0, 270)
 	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	panel.add_theme_stylebox_override("panel", _box(card_color, 28, Color(accent, 0.42), 2))
 	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 22)
-	margin.add_theme_constant_override("margin_right", 22)
-	margin.add_theme_constant_override("margin_top", 14)
-	margin.add_theme_constant_override("margin_bottom", 14)
+	margin.add_theme_constant_override("margin_left", 28)
+	margin.add_theme_constant_override("margin_right", 28)
+	margin.add_theme_constant_override("margin_top", 24)
+	margin.add_theme_constant_override("margin_bottom", 24)
 	panel.add_child(margin)
-	var row := HBoxContainer.new()
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override("separation", 18)
-	margin.add_child(row)
-	var copy := VBoxContainer.new()
-	copy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	copy.alignment = BoxContainer.ALIGNMENT_CENTER
-	copy.add_theme_constant_override("separation", 6)
-	row.add_child(copy)
+	var stack := VBoxContainer.new()
+	stack.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	stack.alignment = BoxContainer.ALIGNMENT_CENTER
+	stack.add_theme_constant_override("separation", 14)
+	margin.add_child(stack)
 	var title := Label.new()
 	title.text = "YOUR %s JOURNEY" % MultiGameManager.display_name(game_id).to_upper()
-	title.add_theme_font_size_override("font_size", 21)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 25)
 	title.add_theme_color_override("font_color", accent)
-	copy.add_child(title)
+	stack.add_child(title)
 	var level := clampi(MultiGameManager.highest_level(game_id), 1, MultiGameManager.CAMPAIGN_LEVELS)
+	var world := MultiGameManager.highest_unlocked_world(game_id)
 	var meta := Label.new()
-	meta.text = "WORLD %d / 100   •   LEVEL %d / 10,000   •   %d ★" % [MultiGameManager.highest_unlocked_world(game_id), level, MultiGameManager.total_stars(game_id)]
-	meta.add_theme_font_size_override("font_size", 18)
+	meta.text = "LEVEL %d / 10,000   •   WORLD %d / 100   •   %d ★" % [level, world, MultiGameManager.total_stars(game_id)]
+	meta.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	meta.add_theme_font_size_override("font_size", 20)
 	meta.add_theme_color_override("font_color", meta_color)
-	copy.add_child(meta)
+	stack.add_child(meta)
 	var progress := ProgressBar.new()
 	progress.min_value = 0
 	progress.max_value = MultiGameManager.CAMPAIGN_LEVELS
 	progress.value = level
 	progress.show_percentage = false
-	progress.custom_minimum_size = Vector2(0, 14)
-	progress.add_theme_stylebox_override("background", _box(track_color, 7))
-	progress.add_theme_stylebox_override("fill", _box(accent, 7))
-	copy.add_child(progress)
-	var stats := Label.new()
-	stats.custom_minimum_size = Vector2(260, 72)
-	stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	stats.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	stats.text = "DAILY STREAK  %d\nPERFECT CLEARS  %d" % [int(SaveManager.data.get("daily_streak", 0)), int(MultiGameManager.progress_for(game_id).get("perfect_clears", 0))]
-	stats.add_theme_font_size_override("font_size", 17)
-	stats.add_theme_color_override("font_color", muted_color)
-	row.add_child(stats)
+	progress.custom_minimum_size = Vector2(0, 18)
+	progress.add_theme_stylebox_override("background", _box(track_color, 9))
+	progress.add_theme_stylebox_override("fill", _box(accent, 9))
+	stack.add_child(progress)
+	var stats := HBoxContainer.new()
+	stats.alignment = BoxContainer.ALIGNMENT_CENTER
+	stats.add_theme_constant_override("separation", 34)
+	stack.add_child(stats)
+	for item in [
+		["CURRENT LEVEL", str(level)],
+		["CURRENT WORLD", "%d / 100" % world],
+		["DAILY STREAK", str(int(SaveManager.data.get("daily_streak", 0)))],
+		["PERFECT CLEARS", str(int(MultiGameManager.progress_for(game_id).get("perfect_clears", 0)))]
+	]:
+		var stat := VBoxContainer.new()
+		stat.custom_minimum_size = Vector2(180, 74)
+		stat.alignment = BoxContainer.ALIGNMENT_CENTER
+		var value := Label.new()
+		value.text = String(item[1])
+		value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		value.add_theme_font_size_override("font_size", 24)
+		value.add_theme_color_override("font_color", meta_color)
+		stat.add_child(value)
+		var caption := Label.new()
+		caption.text = String(item[0])
+		caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		caption.add_theme_font_size_override("font_size", 14)
+		caption.add_theme_color_override("font_color", muted_color)
+		stat.add_child(caption)
+		stats.add_child(stat)
+	var footer := Label.new()
+	footer.text = "NEXT WORLD AT LEVEL %d   •   KEEP YOUR DAILY STREAK ALIVE" % mini(MultiGameManager.CAMPAIGN_LEVELS, world * 100)
+	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	footer.add_theme_font_size_override("font_size", 15)
+	footer.add_theme_color_override("font_color", muted_color)
+	stack.add_child(footer)
 	# Root order is header, hero, section, games, quick. Put journey immediately before quick.
 	var insert_at := maxi(0, root.get_child_count() - 1)
 	root.add_child(panel)
