@@ -69,6 +69,22 @@ jobs:
           set -o pipefail
           godot --headless --path . --quit-after 5 2>&1 | tee boot.log
           if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" boot.log; then exit 1; fi
+      - name: Render visual audit screenshots
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p build/visual-audit
+          xvfb-run -a godot --path . --rendering-method gl_compatibility --script res://tests/capture_visual_audit.gd 2>&1 | tee visual-audit.log
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" visual-audit.log; then exit 1; fi
+          test -s build/visual-audit/01-home-dark.png
+          test -s build/visual-audit/11-game-block.png
+      - name: Upload visual audit screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: unjam-visual-audit
+          path: build/visual-audit/*.png
+          if-no-files-found: error
+          retention-days: 7
       - name: Prepare Android debug keystore
         shell: bash
         run: |
