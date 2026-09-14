@@ -48,10 +48,6 @@ func clear_touch_drag(piece: BlockPieceButton) -> void:
 		active_touch_piece = null
 
 func _input(event: InputEvent) -> void:
-	# Own the complete mobile drag lifecycle at the game root. On Android the
-	# tray Button can lose GUI ownership as soon as the finger starts moving,
-	# so relying on _gui_input() to begin the drag makes the carried piece vanish.
-	# Root hit-testing guarantees pickup, follow and release all use one path.
 	if event is InputEventScreenTouch and event.pressed:
 		if active_touch_piece == null or not is_instance_valid(active_touch_piece):
 			active_touch_piece = _piece_at_screen_position(event.position)
@@ -71,7 +67,6 @@ func _input(event: InputEvent) -> void:
 	elif event is InputEventScreenTouch and not event.pressed:
 		var piece := active_touch_piece
 		active_touch_piece = null
-		# Prevent the Button's later GUI release callback from placing twice.
 		piece.touch_drag_started = false
 		piece._finish_touch_drag(event.position)
 		get_viewport().set_input_as_handled()
@@ -296,8 +291,29 @@ func render_pieces() -> void:
 		var color: Color = piece_colors[i] if i < piece_colors.size() else PIECE_COLORS[posmod(piece_batch * 3 + i + campaign_tier(), PIECE_COLORS.size())]
 		button.configure(pieces[i], i == selected_piece, color, i); button.pressed.connect(select_piece.bind(i)); piece_row.add_child(button)
 
+func _play_place_feedback(indices: Array[int], color: Color, points: int) -> void:
+	super._play_place_feedback(indices, color, points)
+	if indices.is_empty():
+		return
+	var center := Vector2.ZERO
+	var count := 0
+	for idx in indices:
+		if idx >= 0 and idx < cell_buttons.size():
+			center += cell_buttons[idx].get_global_rect().get_center()
+			count += 1
+	if count > 0:
+		center /= float(count)
+		PremiumVisuals.burst(center, color, 12)
+
+func _spawn_clear_feedback(indices: Array[int], line_count: int) -> void:
+	super._spawn_clear_feedback(indices, line_count)
+	if board_shell != null:
+		PremiumVisuals.burst(board_shell.get_global_rect().get_center(), Color("ff6688"), 18 + line_count * 4)
+
 func complete_level() -> void:
 	if completed: return
+	selected_piece = -1
+	render()
 	completed = true; MultiGameManager.clear_checkpoint(GAME_ID)
 	var stars := 3 if placements <= par_placements else (2 if placements <= par_placements + 6 else 1)
 	if daily_mode: MultiGameManager.complete_daily(GAME_ID, 100 + stars * 25)
