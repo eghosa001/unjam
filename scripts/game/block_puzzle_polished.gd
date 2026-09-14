@@ -48,9 +48,20 @@ func clear_touch_drag(piece: BlockPieceButton) -> void:
 		active_touch_piece = null
 
 func _input(event: InputEvent) -> void:
-	# Own the mobile drag stream at the game root. GUI controls stop receiving
-	# local events once the finger leaves the tray; the root keeps the floating
-	# piece and board footprint synchronized with the finger until release.
+	# Own the complete mobile drag lifecycle at the game root. On Android the
+	# tray Button can lose GUI ownership as soon as the finger starts moving,
+	# so relying on _gui_input() to begin the drag makes the carried piece vanish.
+	# Root hit-testing guarantees pickup, follow and release all use one path.
+	if event is InputEventScreenTouch and event.pressed:
+		if active_touch_piece == null or not is_instance_valid(active_touch_piece):
+			active_touch_piece = _piece_at_screen_position(event.position)
+		if active_touch_piece != null and is_instance_valid(active_touch_piece):
+			active_touch_piece.touch_drag_started = true
+			active_touch_piece._begin_drag_feedback()
+			active_touch_piece._show_touch_preview(event.position)
+			active_touch_piece._update_touch_preview_position(event.position)
+			active_touch_piece._update_touch_footprint(event.position)
+		return
 	if active_touch_piece == null or not is_instance_valid(active_touch_piece):
 		return
 	if event is InputEventScreenDrag:
@@ -60,8 +71,20 @@ func _input(event: InputEvent) -> void:
 	elif event is InputEventScreenTouch and not event.pressed:
 		var piece := active_touch_piece
 		active_touch_piece = null
+		# Prevent the Button's later GUI release callback from placing twice.
+		piece.touch_drag_started = false
 		piece._finish_touch_drag(event.position)
 		get_viewport().set_input_as_handled()
+
+func _piece_at_screen_position(screen_position: Vector2) -> BlockPieceButton:
+	if piece_row == null:
+		return null
+	for child in piece_row.get_children():
+		if child is BlockPieceButton:
+			var piece := child as BlockPieceButton
+			if not piece.used and piece.visible and piece.get_global_rect().has_point(screen_position):
+				return piece
+	return null
 
 func campaign_tier() -> int:
 	if level_number <= 100: return 0
@@ -269,7 +292,7 @@ func _restore_checkpoint() -> void:
 func render_pieces() -> void:
 	for child in piece_row.get_children(): child.queue_free()
 	for i in range(pieces.size()):
-		var button := PolishedBlockPieceButton.new(); button.custom_minimum_size = Vector2(260, 142)
+		var button := PolishedBlockPieceButton.new(); button.custom_minimum_size = Vector2(300, 176)
 		var color: Color = piece_colors[i] if i < piece_colors.size() else PIECE_COLORS[posmod(piece_batch * 3 + i + campaign_tier(), PIECE_COLORS.size())]
 		button.configure(pieces[i], i == selected_piece, color, i); button.pressed.connect(select_piece.bind(i)); piece_row.add_child(button)
 
@@ -280,6 +303,6 @@ func complete_level() -> void:
 	if daily_mode: MultiGameManager.complete_daily(GAME_ID, 100 + stars * 25)
 	else: MultiGameManager.complete_level(GAME_ID, level_number, stars, 30)
 	status_label.text = "BOARD MASTERED"; PremiumVisuals.burst(Vector2(540, 850), Color("8b7cf6"), 32); PremiumVisuals.screen_flash(Color("8b7cf6"), 0.11); PremiumVisuals.show_combo("BOARD CLEAR", Vector2(540, 720), Color("67e8cf")); AnalyticsManager.track("block_puzzle_completed", {"level": level_number, "score": score, "lines": lines_cleared, "placements": placements, "stars": stars, "daily": daily_mode})
-	await get_tree().create_timer(0.30).timeout
+	await get_tree().create_timer(0.78).timeout
 	var result := PremiumResultOverlay.new(); result.configure("BLOCK PUZZLE COMPLETE", "Strong placements. Clean lines. Space controlled.", "SCORE %d   •   %d LINES\n%d PLACEMENTS   •   PERFECT ≤ %d" % [score, lines_cleared, placements, par_placements], stars, Color("8b7cf6"), "BACK HOME" if daily_mode else "NEXT PUZZLE"); add_child(result)
 	result.continue_requested.connect(func() -> void: finished.emit(-1 if daily_mode else level_number); queue_free())
