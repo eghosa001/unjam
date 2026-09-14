@@ -6,6 +6,11 @@ var music_stream: AudioStreamWAV
 var last_music_enabled := false
 
 func _ready() -> void:
+	# Headless validation has no audio device and can retain a generated WAV
+	# playback until engine teardown. Skip audio objects there; device builds keep
+	# the exact same sound/music behaviour.
+	if DisplayServer.get_name() == "headless":
+		return
 	player = AudioStreamPlayer.new()
 	add_child(player)
 	music_player = AudioStreamPlayer.new()
@@ -15,6 +20,18 @@ func _ready() -> void:
 	music_player.stream = music_stream
 	_sync_music()
 
+func _exit_tree() -> void:
+	# Release generated WAV/playback references explicitly. Headless test runs exit
+	# immediately after interactions, so relying on shutdown order can leave the
+	# current AudioStreamPlaybackWAV referenced by the player at ObjectDB cleanup.
+	if player != null:
+		player.stop()
+		player.stream = null
+	if music_player != null:
+		music_player.stop()
+		music_player.stream = null
+	music_stream = null
+
 func _process(_delta: float) -> void:
 	var enabled := bool(SaveManager.data.get("music", true))
 	if enabled != last_music_enabled:
@@ -22,6 +39,8 @@ func _process(_delta: float) -> void:
 
 func _sync_music() -> void:
 	last_music_enabled = bool(SaveManager.data.get("music", true))
+	if music_player == null:
+		return
 	if last_music_enabled:
 		if not music_player.playing:
 			music_player.play()
@@ -53,7 +72,7 @@ func _vibrate(ms: int) -> void:
 		Input.vibrate_handheld(ms)
 
 func _play_tone(frequency: float, duration: float, volume: float) -> void:
-	if not bool(SaveManager.data.get("sound", true)):
+	if player == null or not bool(SaveManager.data.get("sound", true)):
 		return
 	var rate := 22050
 	var frames := int(rate * duration)
