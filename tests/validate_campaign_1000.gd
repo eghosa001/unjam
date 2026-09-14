@@ -70,7 +70,10 @@ func _run() -> void:
 			errors.append("Rescue %d missing" % n)
 			continue
 		var level: Dictionary = CampaignGenerator.generate(n)
-		if int(level.get("width", 0)) < 6 or int(level.get("width", 0)) > 8:
+		var board_width := int(level.get("width", 0))
+		# Levels 1-4 intentionally use a compact 5x5 tutorial board so the first
+		# interaction is immediately readable. The rest of the campaign remains 6x6-8x8.
+		if (n <= 4 and board_width != 5) or (n > 4 and (board_width < 6 or board_width > 8)):
 			errors.append("Rescue %d invalid board size" % n)
 		var occupied := {}
 		for raw in level.get("pieces", []):
