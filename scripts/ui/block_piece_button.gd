@@ -2,8 +2,8 @@ extends Button
 class_name BlockPieceButton
 
 const DragPreview = preload("res://scripts/ui/block_drag_preview.gd")
-const TOUCH_LIFT := 96.0
-const TOUCH_SNAP_RADIUS := 82.0
+const TOUCH_LIFT := 132.0
+const TOUCH_SNAP_RADIUS := 112.0
 
 var shape: Array = []
 var selected := false
@@ -49,7 +49,7 @@ func _process(delta: float) -> void:
 	if dragging:
 		queue_redraw()
 		return
-	var hover_scale := 1.045 if hover and not selected else 1.0
+	var hover_scale := 1.05 if hover and not selected else 1.0
 	var desired := target_scale * hover_scale
 	scale = scale.lerp(desired, minf(1.0, delta * 13.0))
 	rotation = lerpf(rotation, 0.0, minf(1.0, delta * 14.0))
@@ -60,7 +60,7 @@ func _press() -> void:
 	if used:
 		return
 	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(self, "scale", target_scale * 1.12, 0.06)
+	tween.tween_property(self, "scale", target_scale * 1.16, 0.06)
 
 func _release() -> void:
 	if dragging:
@@ -71,16 +71,16 @@ func _release() -> void:
 
 func _drag_payload() -> Dictionary:
 	var drag_piece_index := piece_index if piece_index >= 0 else get_index()
-	return {"kind": "block_piece", "piece_index": drag_piece_index, "shape": shape.duplicate(true)}
+	return {"kind": "block_piece", "piece_index": drag_piece_index, "shape": shape.duplicate(true), "accent": accent}
 
 func _make_drag_preview() -> Control:
 	var wrapper := Control.new()
-	wrapper.custom_minimum_size = Vector2(250, 250)
-	wrapper.size = Vector2(250, 250)
+	wrapper.custom_minimum_size = Vector2(380, 380)
+	wrapper.size = Vector2(380, 380)
 	wrapper.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	wrapper.position = Vector2(-125, -215)
+	wrapper.position = Vector2(-190, -315)
 	var preview := DragPreview.new()
-	preview.position = Vector2(10, 8)
+	preview.position = Vector2(10, 10)
 	preview.configure(shape, accent)
 	wrapper.add_child(preview)
 	return wrapper
@@ -90,8 +90,10 @@ func _begin_drag_feedback() -> void:
 		return
 	dragging = true
 	var tween := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(self, "scale", Vector2(0.90, 0.90), 0.07)
-	tween.parallel().tween_property(self, "modulate", Color(1, 1, 1, 0.24), 0.07)
+	tween.tween_property(self, "scale", Vector2(0.84, 0.84), 0.07)
+	tween.parallel().tween_property(self, "modulate", Color(1, 1, 1, 0.18), 0.07)
+	if has_node("/root/FeedbackManager"):
+		FeedbackManager.tap()
 
 func _show_touch_preview(screen_position: Vector2) -> void:
 	var game := _game()
@@ -100,7 +102,6 @@ func _show_touch_preview(screen_position: Vector2) -> void:
 	if touch_preview == null or not is_instance_valid(touch_preview):
 		touch_preview = DragPreview.new()
 		touch_preview.configure(shape, accent)
-		touch_preview.scale = Vector2(1.18, 1.18)
 		touch_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		touch_preview.z_index = 950
 		var layer = game.get("effects_layer")
@@ -116,27 +117,44 @@ func _update_touch_preview_position(screen_position: Vector2) -> void:
 	var parent_control := touch_preview.get_parent() as Control
 	if parent_control == null:
 		return
+	var game := _game()
 	var local_point: Vector2 = parent_control.get_global_transform_with_canvas().affine_inverse() * screen_position
-	# Lift the actual brick above the finger so it remains visible while aiming.
-	touch_preview.position = local_point - Vector2(touch_preview.size.x * 0.5, touch_preview.size.y + 8.0)
+	var desired := local_point - Vector2(touch_preview.size.x * 0.5, touch_preview.size.y * 0.5 + TOUCH_LIFT)
+	var valid := true
+	if game != null:
+		var origin := _best_origin(game, screen_position)
+		valid = origin.x >= 0 and bool(game.call("can_place", shape, origin))
+	if touch_preview.has_method("set_drag_target"):
+		touch_preview.call("set_drag_target", desired, valid)
+	else:
+		touch_preview.position = desired
 
-func _hide_touch_preview() -> void:
-	if touch_preview != null and is_instance_valid(touch_preview):
+func _hide_touch_preview(immediate := true) -> void:
+	if touch_preview == null or not is_instance_valid(touch_preview):
+		touch_preview = null
+		return
+	if immediate:
 		touch_preview.queue_free()
+	else:
+		var preview := touch_preview
+		var tween := preview.create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+		tween.tween_property(preview, "scale", preview.scale * 0.82, 0.08)
+		tween.parallel().tween_property(preview, "modulate:a", 0.0, 0.10)
+		tween.finished.connect(preview.queue_free)
 	touch_preview = null
 
-func _end_drag_feedback() -> void:
-	_hide_touch_preview()
+func _end_drag_feedback(hide_preview := true) -> void:
+	if hide_preview:
+		_hide_touch_preview()
 	if not dragging:
 		return
 	dragging = false
 	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tween.tween_property(self, "modulate", Color.WHITE, 0.07)
-	tween.parallel().tween_property(self, "scale", target_scale * 1.08, 0.09)
+	tween.parallel().tween_property(self, "scale", target_scale * 1.10, 0.09)
 	tween.tween_property(self, "scale", target_scale, 0.15)
 
 func _get_drag_data(_at_position: Vector2) -> Variant:
-	# Desktop/mouse path: use Godot's native drag-and-drop lifecycle.
 	if used or shape.is_empty():
 		return null
 	_begin_drag_feedback()
@@ -179,7 +197,7 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_DRAG_END:
 		_clear_touch_footprint()
 		_hide_touch_preview()
-		_end_drag_feedback()
+		_end_drag_feedback(false)
 
 func _game() -> Node:
 	var node: Node = self
@@ -216,9 +234,6 @@ func _origin_for_screen_position(game: Node, screen_position: Vector2, lifted: b
 	return Vector2i(-1, -1)
 
 func _best_origin(game: Node, screen_position: Vector2) -> Vector2i:
-	# Prefer the lifted mobile preview position used by commercial block puzzles.
-	# Fall back to the finger position so synthetic touch and accessibility input
-	# remain reliable even when they do not emulate the same drag geometry.
 	var lifted := _origin_for_screen_position(game, screen_position, true)
 	if lifted.x >= 0 and bool(game.call("can_place", shape, lifted)):
 		return lifted
@@ -235,7 +250,7 @@ func _clear_touch_footprint() -> void:
 		return
 	for cell in _cell_buttons(game):
 		if cell != null and is_instance_valid(cell) and cell.has_method("set_drag_footprint"):
-			cell.call("set_drag_footprint", false, false)
+			cell.call("set_drag_footprint", false, false, accent)
 
 func _update_touch_footprint(screen_position: Vector2) -> void:
 	var game := _game()
@@ -244,7 +259,7 @@ func _update_touch_footprint(screen_position: Vector2) -> void:
 	var cells := _cell_buttons(game)
 	for cell in cells:
 		if cell != null and is_instance_valid(cell) and cell.has_method("set_drag_footprint"):
-			cell.call("set_drag_footprint", false, false)
+			cell.call("set_drag_footprint", false, false, accent)
 	var origin := _best_origin(game, screen_position)
 	if origin.x < 0:
 		return
@@ -259,21 +274,65 @@ func _update_touch_footprint(screen_position: Vector2) -> void:
 		if index >= 0 and index < cells.size():
 			var cell = cells[index]
 			if cell != null and is_instance_valid(cell) and cell.has_method("set_drag_footprint"):
-				cell.call("set_drag_footprint", true, valid)
+				cell.call("set_drag_footprint", true, valid, accent)
+
+func _snap_preview_to_origin(game: Node, origin: Vector2i) -> void:
+	if touch_preview == null or not is_instance_valid(touch_preview):
+		return
+	var cells := _cell_buttons(game)
+	if cells.is_empty():
+		return
+	var centers: Array[Vector2] = []
+	for raw in shape:
+		var point := _as_point(raw)
+		var x := origin.x + point.x
+		var y := origin.y + point.y
+		if x < 0 or x >= 8 or y < 0 or y >= 8:
+			continue
+		var idx := y * 8 + x
+		if idx >= 0 and idx < cells.size():
+			var cell: Control = cells[idx]
+			centers.append(cell.get_global_rect().get_center())
+	if centers.is_empty():
+		return
+	var center := Vector2.ZERO
+	for value in centers:
+		center += value
+	center /= float(centers.size())
+	var parent_control := touch_preview.get_parent() as Control
+	if parent_control == null:
+		return
+	var local_center := parent_control.get_global_transform_with_canvas().affine_inverse() * center
+	var desired := local_center - touch_preview.size * 0.5
+	if touch_preview.has_method("set_drag_target"):
+		touch_preview.call("set_drag_target", desired, true)
+	if touch_preview.has_method("set_drag_scale"):
+		touch_preview.call("set_drag_scale", Vector2(1.03, 1.03))
 
 func _finish_touch_drag(screen_position: Vector2) -> void:
 	var game := _game()
-	_clear_touch_footprint()
-	_hide_touch_preview()
-	_end_drag_feedback()
 	if game == null:
+		_clear_touch_footprint()
+		_hide_touch_preview()
+		_end_drag_feedback(false)
 		return
 	if game.has_method("clear_touch_drag"):
 		game.call("clear_touch_drag", self)
 	var origin := _best_origin(game, screen_position)
-	if origin.x < 0:
-		return
-	game.call("place_piece_from_drag", piece_index if piece_index >= 0 else get_index(), origin)
+	var valid := origin.x >= 0 and bool(game.call("can_place", shape, origin))
+	if valid:
+		_snap_preview_to_origin(game, origin)
+		game.call("place_piece_from_drag", piece_index if piece_index >= 0 else get_index(), origin)
+		_clear_touch_footprint()
+		_hide_touch_preview(false)
+		_end_drag_feedback(false)
+	else:
+		_clear_touch_footprint()
+		if touch_preview != null and is_instance_valid(touch_preview):
+			if touch_preview.has_method("set_drag_scale"):
+				touch_preview.call("set_drag_scale", Vector2(0.92, 0.92))
+		_hide_touch_preview(false)
+		_end_drag_feedback(false)
 
 func _set_hover(value: bool) -> void:
 	hover = value
@@ -301,25 +360,25 @@ func _draw() -> void:
 	for point in points:
 		max_x = maxi(max_x, point.x)
 		max_y = maxi(max_y, point.y)
-	var cell := minf(42.0, minf((size.x - 26.0) / float(max_x + 1), (size.y - 20.0) / float(max_y + 1)))
-	cell = maxf(12.0, cell)
+	var cell := minf(56.0, minf((size.x - 24.0) / float(max_x + 1), (size.y - 18.0) / float(max_y + 1)))
+	cell = maxf(14.0, cell)
 	var total := Vector2((max_x + 1) * cell, (max_y + 1) * cell)
 	var origin := (size - total) * 0.5
 	for point in points:
-		var rect := Rect2(origin + Vector2(point) * cell + Vector2(1.5, 1.5), Vector2(cell - 3, cell - 3))
+		var rect := Rect2(origin + Vector2(point) * cell + Vector2(2, 2), Vector2(cell - 4, cell - 4))
 		_draw_block(rect, accent)
 	if selected:
 		var pulse := 0.55 + 0.45 * sin(phase * 7.0)
-		draw_arc(size * 0.5, maxf(total.x, total.y) * 0.58, 0.0, TAU, 32, Color(accent.lightened(0.38), 0.18 + pulse * 0.16), 3.0, true)
+		draw_arc(size * 0.5, maxf(total.x, total.y) * 0.60, 0.0, TAU, 32, Color(accent.lightened(0.38), 0.20 + pulse * 0.18), 3.0, true)
 
 func _draw_block(rect: Rect2, fill: Color) -> void:
 	var dark := fill.darkened(0.28)
-	draw_style_box(_style(dark, Color.TRANSPARENT, 0, 3), Rect2(rect.position + Vector2(0, 4), rect.size))
-	draw_style_box(_style(fill, fill.lightened(0.22), 1, 3), rect)
-	draw_line(rect.position + Vector2(4, 4), Vector2(rect.end.x - 4, rect.position.y + 4), Color(fill.lightened(0.50), 0.98), 2.2, true)
-	draw_line(rect.position + Vector2(4, 4), Vector2(rect.position.x + 4, rect.end.y - 4), Color(fill.lightened(0.30), 0.80), 1.5, true)
-	draw_line(Vector2(rect.position.x + 4, rect.end.y - 4), rect.end - Vector2(4, 4), Color(dark, 0.95), 2.2, true)
-	draw_line(Vector2(rect.end.x - 4, rect.position.y + 4), rect.end - Vector2(4, 4), Color(dark, 0.82), 1.5, true)
+	draw_style_box(_style(dark, Color.TRANSPARENT, 0, 6), Rect2(rect.position + Vector2(0, 5), rect.size))
+	draw_style_box(_style(fill, fill.lightened(0.24), 2, 6), rect)
+	draw_line(rect.position + Vector2(6, 5), Vector2(rect.end.x - 6, rect.position.y + 5), Color(fill.lightened(0.54), 0.98), 3.0, true)
+	draw_line(rect.position + Vector2(5, 7), Vector2(rect.position.x + 5, rect.end.y - 7), Color(fill.lightened(0.30), 0.80), 2.0, true)
+	draw_line(Vector2(rect.position.x + 6, rect.end.y - 5), rect.end - Vector2(6, 5), Color(dark, 0.95), 3.0, true)
+	draw_line(Vector2(rect.end.x - 5, rect.position.y + 7), rect.end - Vector2(5, 7), Color(dark, 0.82), 2.0, true)
 
 func _as_point(raw: Variant) -> Vector2i:
 	if raw is Vector2i:
@@ -344,9 +403,10 @@ func _style(background: Color, border: Color, width: int, radius: int = 3) -> St
 	style.corner_radius_top_right = radius
 	style.corner_radius_bottom_left = radius
 	style.corner_radius_bottom_right = radius
-	style.border_width_left = width
-	style.border_width_right = width
-	style.border_width_top = width
-	style.border_width_bottom = width
-	style.border_color = border
+	if width > 0:
+		style.border_width_left = width
+		style.border_width_right = width
+		style.border_width_top = width
+		style.border_width_bottom = width
+		style.border_color = border
 	return style
