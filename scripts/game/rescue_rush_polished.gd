@@ -39,10 +39,8 @@ func _spawn_escape_visual(index: int) -> void:
 	PremiumVisuals.burst(center, world_accent(), 7 + mini(chain_count, 8))
 	_spawn_chain_popup(center, chain_count)
 	_spawn_speed_lines(cell.global_rect.get_center(), direction, world_accent())
-
 	var twist := deg_to_rad(8.0 if direction.x + direction.y > 0.0 else -8.0)
 	var tween := create_tween()
-	# Anticipation -> elastic launch -> accelerating fly-off, matching Block Puzzle's staged feedback.
 	tween.tween_property(ghost, "position", start_pos - direction * 11.0, 0.055).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween.parallel().tween_property(ghost, "scale", Vector2(0.94, 0.94), 0.055)
 	tween.tween_property(ghost, "position", start_pos + direction * 36.0, 0.075).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
@@ -69,3 +67,145 @@ func _spawn_speed_lines(origin_global: Vector2, direction: Vector2, color: Color
 		tw.tween_property(line, "modulate:a", 0.0, 0.22)
 		tw.tween_property(line, "position", direction * 52.0, 0.22)
 		tw.finished.connect(line.queue_free)
+
+func _spawn_chain_popup(center: Vector2, combo: int) -> void:
+	var label := Label.new()
+	label.text = "ESCAPE!" if combo <= 1 else "CHAIN ×%d" % combo
+	label.position = center - Vector2(145, 54)
+	label.size = Vector2(290, 76)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.z_index = 610
+	label.add_theme_font_size_override("font_size", 34 if combo <= 1 else 40)
+	label.add_theme_color_override("font_color", Color("ffd166") if combo > 1 else world_accent().lightened(0.35))
+	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.65))
+	label.add_theme_constant_override("shadow_offset_x", 2)
+	label.add_theme_constant_override("shadow_offset_y", 3)
+	label.scale = Vector2(0.68, 0.68)
+	label.modulate.a = 0.0
+	add_child(label)
+	label.pivot_offset = label.size * 0.5
+	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(label, "modulate:a", 1.0, 0.06)
+	tween.parallel().tween_property(label, "scale", Vector2(1.16, 1.16), 0.11)
+	tween.tween_property(label, "scale", Vector2.ONE, 0.09)
+	tween.tween_property(label, "position:y", label.position.y - 82.0, 0.30).set_trans(Tween.TRANS_QUAD)
+	tween.parallel().tween_property(label, "modulate:a", 0.0, 0.30)
+	tween.finished.connect(label.queue_free)
+
+func _spawn_vanish_visual(index: int, text_value: String) -> void:
+	if index < 0 or index >= pieces.size() or board_grid == null:
+		return
+	var piece := pieces[index]
+	var pos := piece_position(piece)
+	var child_index := pos.y * width + pos.x
+	if child_index < 0 or child_index >= board_grid.get_child_count():
+		return
+	var source := board_grid.get_child(child_index) as Control
+	if source == null:
+		return
+	var center := source.global_position - global_position + source.size * 0.5
+	PremiumVisuals.burst(center, piece_color(String(piece.get("type", "normal"))), 10)
+	var label := Label.new()
+	label.text = text_value
+	label.position = center - Vector2(105, 32)
+	label.size = Vector2(210, 64)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 26)
+	label.add_theme_color_override("font_color", Color("ffffff"))
+	label.z_index = 600
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(label)
+	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(label, "scale", Vector2(1.18, 1.18), 0.10)
+	tween.tween_property(label, "position:y", label.position.y - 54.0, 0.24)
+	tween.parallel().tween_property(label, "modulate:a", 0.0, 0.24)
+	tween.finished.connect(label.queue_free)
+
+func open_gates(key_id: String) -> void:
+	for i in range(pieces.size()):
+		if bool(pieces[i].get("active", true)) and String(pieces[i].get("type", "")) == "gate" and String(pieces[i].get("key_id", "default")) == key_id:
+			_spawn_vanish_visual(i, "UNLOCK!")
+			pieces[i]["active"] = false
+			chain_count += 1
+
+func explode_at(center: Vector2i) -> void:
+	for y in range(center.y - 1, center.y + 2):
+		for x in range(center.x - 1, center.x + 2):
+			var idx: int = get_piece_index_at(Vector2i(x, y))
+			if idx >= 0 and String(pieces[idx].get("type", "")) != "gate":
+				_spawn_vanish_visual(idx, "BOOM!")
+				pieces[idx]["active"] = false
+				chain_count += 1
+
+func activate_link(link_id: String, source_index: int) -> void:
+	if link_id.is_empty():
+		return
+	for i in range(pieces.size()):
+		if i == source_index or not bool(pieces[i].get("active", true)):
+			continue
+		if String(pieces[i].get("type", "")) == "linked" and String(pieces[i].get("link_id", "")) == link_id:
+			if is_path_clear(i):
+				_spawn_vanish_visual(i, "LINK!")
+				pieces[i]["active"] = false
+			else:
+				pieces[i]["direction"] = rotate_direction(String(pieces[i].get("direction", "right")))
+			chain_count += 1
+
+func resolve_rescue() -> void:
+	if not rescue_has_exit():
+		return
+	_spawn_rescue_escape()
+	rescued = true
+	chain_count += 1
+	FeedbackManager.rescue()
+	PremiumVisuals.burst(Vector2(540, 860), world_accent(), 28)
+	PremiumVisuals.screen_flash(world_accent(), 0.16)
+	await get_tree().create_timer(0.42).timeout
+	complete_level()
+
+func _rescue_exit_direction() -> Vector2:
+	for direction_i in [Vector2i.UP, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT]:
+		var pos: Vector2i = rescue_pos + direction_i
+		var blocked := false
+		while is_inside(pos):
+			if get_piece_index_at(pos) >= 0:
+				blocked = true
+				break
+			pos += direction_i
+		if not blocked:
+			return Vector2(direction_i)
+	return Vector2.UP
+
+func _spawn_rescue_escape() -> void:
+	if board_grid == null:
+		return
+	var child_index := rescue_pos.y * width + rescue_pos.x
+	if child_index < 0 or child_index >= board_grid.get_child_count():
+		return
+	var source := board_grid.get_child(child_index) as Control
+	if source == null:
+		return
+	var token := RescueToken.new()
+	token.custom_minimum_size = source.size
+	token.size = source.size
+	token.position = source.global_position - global_position
+	token.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	token.z_index = 700
+	token.configure(rescue_id, Color("ffd166"))
+	add_child(token)
+	token.pivot_offset = token.size * 0.5
+	if token.has_method("celebrate"):
+		token.call("celebrate")
+	var dir := _rescue_exit_direction()
+	var start := token.position
+	var end := start + dir * 900.0
+	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(token, "scale", Vector2(1.24, 0.88), 0.10)
+	tween.tween_property(token, "scale", Vector2(0.92, 1.18), 0.08)
+	tween.tween_property(token, "position", end, 0.34).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	tween.parallel().tween_property(token, "scale", Vector2(0.78, 0.78), 0.34)
+	tween.parallel().tween_property(token, "rotation", deg_to_rad(10.0 * (1.0 if dir.x + dir.y >= 0.0 else -1.0)), 0.34)
+	tween.parallel().tween_property(token, "modulate:a", 0.0, 0.34).set_delay(0.16)
+	tween.finished.connect(token.queue_free)
