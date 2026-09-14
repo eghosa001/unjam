@@ -62,7 +62,6 @@ func _play_pour_sequence(from_idx: int, to_idx: int) -> void:
 	var source_rotation := source.rotation
 	var source_position := source.position
 
-	# Anticipation and tilt: source visibly commits to the pour before the liquid moves.
 	var prep := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	prep.tween_property(source, "position", source_position + Vector2(direction_sign * 18.0, -20.0), 0.10)
 	prep.parallel().tween_property(source, "rotation", deg_to_rad(direction_sign * 23.0), 0.10)
@@ -124,3 +123,34 @@ func _play_pour_sequence(from_idx: int, to_idx: int) -> void:
 	settle.parallel().tween_property(source, "rotation", source_rotation, 0.13)
 	settle.parallel().tween_property(source, "scale", Vector2.ONE, 0.13)
 	await settle.finished
+
+func complete_level() -> void:
+	if completed:
+		return
+	completed = true
+	animating = true
+	MultiGameManager.clear_checkpoint(GAME_ID)
+	var stars := 3 if moves <= par_moves else (2 if moves <= par_moves + maxi(6, color_count) else 1)
+	if daily_mode:
+		MultiGameManager.complete_daily(GAME_ID, 100 + stars * 25)
+	else:
+		MultiGameManager.complete_level(GAME_ID, level_number, stars, 25 + color_count * 2)
+	status_label.text = "SORT COMPLETE"
+	PremiumVisuals.burst(Vector2(540, 880), Color("5da9ff"), 28)
+	PremiumVisuals.screen_flash(Color("5da9ff"), 0.10)
+	AnalyticsManager.track("water_sort_completed", {"level": level_number, "moves": moves, "stars": stars, "daily": daily_mode})
+	await get_tree().create_timer(0.28).timeout
+	var result := PremiumResultOverlay.new()
+	result.configure(
+		"WATER SORT COMPLETE",
+		"Every colour is cleanly separated.",
+		"%d MOVES   •   PERFECT ≤ %d\n%d COLOURS SORTED" % [moves, par_moves, color_count],
+		stars,
+		Color("5da9ff"),
+		"BACK HOME" if daily_mode else "NEXT PUZZLE"
+	)
+	add_child(result)
+	result.continue_requested.connect(func() -> void:
+		finished.emit(-1 if daily_mode else level_number)
+		queue_free()
+	)
