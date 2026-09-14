@@ -2,6 +2,8 @@ extends Button
 class_name BlockPieceButton
 
 const DragPreview = preload("res://scripts/ui/block_drag_preview.gd")
+const TOUCH_LIFT := 122.0
+const TOUCH_SNAP_RADIUS := 82.0
 
 var shape: Array = []
 var selected := false
@@ -54,12 +56,14 @@ func _process(delta: float) -> void:
 		queue_redraw()
 
 func _press() -> void:
-	if used: return
+	if used:
+		return
 	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tween.tween_property(self, "scale", target_scale * 1.12, 0.06)
 
 func _release() -> void:
-	if dragging: return
+	if dragging:
+		return
 	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tween.tween_property(self, "scale", target_scale * 0.98, 0.045)
 	tween.tween_property(self, "scale", target_scale, 0.12)
@@ -81,37 +85,145 @@ func _make_drag_preview() -> Control:
 	return wrapper
 
 func _begin_drag_feedback() -> void:
+	if dragging:
+		return
 	dragging = true
 	var tween := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween.tween_property(self, "scale", Vector2(0.90, 0.90), 0.07)
 	tween.parallel().tween_property(self, "modulate", Color(1, 1, 1, 0.24), 0.07)
 
+func _end_drag_feedback() -> void:
+	if not dragging:
+		return
+	dragging = false
+	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(self, "modulate", Color.WHITE, 0.07)
+	tween.parallel().tween_property(self, "scale", target_scale * 1.08, 0.09)
+	tween.tween_property(self, "scale", target_scale, 0.15)
+
 func _get_drag_data(_at_position: Vector2) -> Variant:
-	if used or shape.is_empty(): return null
+	# Desktop/mouse path: use Godot's native drag-and-drop lifecycle.
+	if used or shape.is_empty():
+		return null
 	_begin_drag_feedback()
 	set_drag_preview(_make_drag_preview())
 	return _drag_payload()
 
 func _gui_input(event: InputEvent) -> void:
-	if used or shape.is_empty(): return
+	if used or shape.is_empty():
+		return
 	if event is InputEventScreenTouch:
 		if event.pressed:
 			touch_drag_started = false
 		else:
-			touch_drag_started = false
-	elif event is InputEventScreenDrag and not touch_drag_started:
-		touch_drag_started = true
-		_begin_drag_feedback()
-		force_drag(_drag_payload(), _make_drag_preview())
+			if touch_drag_started:
+				_finish_touch_drag(event.position)
+				touch_drag_started = false
+				accept_event()
+			else:
+				touch_drag_started = false
+	elif event is InputEventScreenDrag:
+		if not touch_drag_started:
+			touch_drag_started = true
+			_begin_drag_feedback()
+		_update_touch_footprint(event.position)
 		accept_event()
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_DRAG_END and dragging:
-		dragging = false
-		var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		tween.tween_property(self, "modulate", Color.WHITE, 0.07)
-		tween.parallel().tween_property(self, "scale", target_scale * 1.08, 0.09)
-		tween.tween_property(self, "scale", target_scale, 0.15)
+	if what == NOTIFICATION_DRAG_END:
+		_clear_touch_footprint()
+		_end_drag_feedback()
+
+func _game() -> Node:
+	var node: Node = self
+	while node != null:
+		if node.has_method("place_piece_from_drag") and node.has_method("can_place"):
+			return node
+		node = node.get_parent()
+	return null
+
+func _cell_buttons(game: Node) -> Array:
+	var value: Variant = game.get("cell_buttons")
+	return value if value is Array else []
+
+func _origin_for_screen_position(game: Node, screen_position: Vector2, lifted: bool) -> Vector2i:
+	var cells := _cell_buttons(game)
+	if cells.is_empty():
+		return Vector2i(-1, -1)
+	var probe := screen_position - (Vector2(0, TOUCH_LIFT) if lifted else Vector2.ZERO)
+	var best_index := -1
+	var best_distance := INF
+	for i in range(cells.size()):
+		var cell: Control = cells[i]
+		if cell == null or not is_instance_valid(cell):
+			continue
+		var rect := cell.get_global_rect()
+		if rect.has_point(probe):
+			return Vector2i(i % 8, int(i / 8))
+		var d := rect.get_center().distance_squared_to(probe)
+		if d < best_distance:
+			best_distance = d
+			best_index = i
+	if best_index >= 0 and sqrt(best_distance) <= TOUCH_SNAP_RADIUS:
+		return Vector2i(best_index % 8, int(best_index / 8))
+	return Vector2i(-1, -1)
+
+func _best_origin(game: Node, screen_position: Vector2) -> Vector2i:
+	# Prefer the lifted mobile preview position used by commercial block puzzles.
+	# Fall back to the finger position so synthetic touch and accessibility input
+	# remain reliable even when they do not emulate the same drag geometry.
+	var lifted := _origin_for_screen_position(game, screen_position, true)
+	if lifted.x >= 0 and bool(game.call("can_place", shape, lifted)):
+		return lifted
+	var direct := _origin_for_screen_position(game, screen_position, false)
+	if direct.x >= 0 and bool(game.call("can_place", shape, direct)):
+		return direct
+	if lifted.x >= 0:
+		return lifted
+	return direct
+
+func _clear_touch_footprint() -> void:
+	var game := _game()
+	if game == null:
+		return
+	for cell in _cell_buttons(game):
+		if cell != null and is_instance_valid(cell) and cell.has_method("set_drag_footprint"):
+			cell.call("set_drag_footprint", false, false)
+
+func _update_touch_footprint(screen_position: Vector2) -> void:
+	var game := _game()
+	if game == null:
+		return
+	var cells := _cell_buttons(game)
+	for cell in cells:
+		if cell != null and is_instance_valid(cell) and cell.has_method("set_drag_footprint"):
+			cell.call("set_drag_footprint", false, false)
+	var origin := _best_origin(game, screen_position)
+	if origin.x < 0:
+		return
+	var valid := bool(game.call("can_place", shape, origin))
+	for raw in shape:
+		var point := _as_point(raw)
+		var x := origin.x + point.x
+		var y := origin.y + point.y
+		if x < 0 or x >= 8 or y < 0 or y >= 8:
+			continue
+		var index := y * 8 + x
+		if index >= 0 and index < cells.size():
+			var cell = cells[index]
+			if cell != null and is_instance_valid(cell) and cell.has_method("set_drag_footprint"):
+				cell.call("set_drag_footprint", true, valid)
+
+func _finish_touch_drag(screen_position: Vector2) -> void:
+	var game := _game()
+	_clear_touch_footprint()
+	_end_drag_feedback()
+	if game == null:
+		return
+	var origin := _best_origin(game, screen_position)
+	if origin.x < 0:
+		return
+	game.call("place_piece_from_drag", piece_index if piece_index >= 0 else get_index(), origin)
 
 func _set_hover(value: bool) -> void:
 	hover = value
@@ -125,13 +237,15 @@ func _update_style() -> void:
 	add_theme_stylebox_override("disabled", transparent)
 
 func _draw() -> void:
-	if used or shape.is_empty() or size.x <= 1.0 or size.y <= 1.0: return
+	if used or shape.is_empty() or size.x <= 1.0 or size.y <= 1.0:
+		return
 	var points: Array[Vector2i] = []
 	for raw in shape:
 		var point := _as_point(raw)
 		if point.x >= 0 and point.y >= 0:
 			points.append(point)
-	if points.is_empty(): return
+	if points.is_empty():
+		return
 	var max_x := 0
 	var max_y := 0
 	for point in points:
@@ -158,10 +272,14 @@ func _draw_block(rect: Rect2, fill: Color) -> void:
 	draw_line(Vector2(rect.end.x - 4, rect.position.y + 4), rect.end - Vector2(4, 4), Color(dark, 0.82), 1.5, true)
 
 func _as_point(raw: Variant) -> Vector2i:
-	if raw is Vector2i: return raw
-	if raw is Vector2: return Vector2i(raw)
-	if raw is Dictionary: return Vector2i(int(raw.get("x", -1)), int(raw.get("y", -1)))
-	if raw is Array and raw.size() >= 2: return Vector2i(int(raw[0]), int(raw[1]))
+	if raw is Vector2i:
+		return raw
+	if raw is Vector2:
+		return Vector2i(raw)
+	if raw is Dictionary:
+		return Vector2i(int(raw.get("x", -1)), int(raw.get("y", -1)))
+	if raw is Array and raw.size() >= 2:
+		return Vector2i(int(raw[0]), int(raw[1]))
 	if raw is String:
 		var cleaned := String(raw).replace("(", "").replace(")", "").replace("Vector2i", "").strip_edges()
 		var parts := cleaned.split(",")
