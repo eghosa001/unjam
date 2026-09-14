@@ -18,21 +18,17 @@ static func generate(level_number: int) -> Dictionary:
 		milestone = "milestone"
 		difficulty = "hard"
 	var difficulty_score := _difficulty_score(tier, difficulty, milestone)
-	# Start at 7x7: the previous 6x6 opening produced too many 2-move rescues.
-	# Late campaign boards expand to 8x8 but remain readable on mobile.
 	var size := 7 if difficulty_score < 11 else 8
-	var center := Vector2i(int(size / 2), int(size / 2))
 	var rescue_id := RESCUES[(n * 7 + world) % RESCUES.size()]
 	var target_dir_index := posmod(n * 5 + world * 3, 4)
 	var target_dir := DIR_VECTORS[target_dir_index]
 	var target_name := DIR_NAMES[target_dir_index]
+	# Bias the rescue away from its intended exit. This guarantees a meaningful
+	# authored lane: 4 required blockers on 7x7 and 5 on 8x8 boards.
+	var center := _rescue_position_for_exit(size, target_dir_index)
 	var phase := posmod(n - 1, 6) + 1
 	var pieces: Array[Dictionary] = []
 
-	# Seal three rescue rays permanently. The fourth ray is the authored solution
-	# lane. Required movable pieces on that lane escape PERPENDICULARLY, so they
-	# are already legal before the first move and therefore cannot be removed by
-	# the automatic newly-opened cascade system.
 	for i in range(4):
 		if i == target_dir_index:
 			continue
@@ -53,8 +49,6 @@ static func generate(level_number: int) -> Dictionary:
 				_add_safe_special(pieces, size, center, target_dir, n + 29, "linked")
 		4:
 			required_moves += _add_manual_lane(pieces, target_cells, target_name, n)
-			# Bombs are tactical decoys here, not mandatory solution pieces. Keeping
-			# them away from the rescue lane prevents an accidental one-tap shortcut.
 			_add_safe_special(pieces, size, center, target_dir, n + 41, "bomb")
 		5:
 			required_moves += _add_manual_lane(pieces, target_cells, target_name, n)
@@ -63,8 +57,6 @@ static func generate(level_number: int) -> Dictionary:
 			required_moves += _add_double_gate_lane(pieces, target_cells, target_name, world, n, size, center, target_dir)
 			_add_link_pair(pieces, size, center, target_dir, n + 71)
 
-	# Every boss gets an extra independent gate/key dependency unless phase 6
-	# already has two. This makes world finales meaningfully deeper.
 	if milestone == "world_finale" and phase != 6:
 		var extra_id := "boss_%d" % n
 		if _convert_lane_piece_to_gate(pieces, target_cells, extra_id):
@@ -90,11 +82,21 @@ static func generate(level_number: int) -> Dictionary:
 		"milestone": milestone,
 		"target_exit": target_name,
 		"estimated_required_moves": required_moves,
-		"par_moves": clampi(required_moves + 2 + int(difficulty_score / 5), 6, 24),
+		"par_moves": clampi(required_moves + 2 + int(difficulty_score / 5), 7, 24),
 		"rescue_id": rescue_id,
 		"rescue": [center.x, center.y],
 		"pieces": pieces
 	}
+
+static func _rescue_position_for_exit(size: int, target_dir_index: int) -> Vector2i:
+	var mid := int(size / 2)
+	var near_side := 2
+	var far_side := size - 3
+	match target_dir_index:
+		0: return Vector2i(mid, far_side)
+		1: return Vector2i(near_side, mid)
+		2: return Vector2i(mid, near_side)
+		_: return Vector2i(far_side, mid)
 
 static func _rhythm_for_level(level_number: int, tier: int) -> String:
 	var local := posmod(level_number - 1, 32)
@@ -145,8 +147,7 @@ static func _add_manual_lane(pieces: Array[Dictionary], cells: Array[Vector2i], 
 	var count := 0
 	for i in range(cells.size()):
 		var p := cells[i]
-		var escape := _perpendicular_direction(target_direction, seed_value + i)
-		pieces.append(_piece(p.x, p.y, "normal", escape))
+		pieces.append(_piece(p.x, p.y, "normal", _perpendicular_direction(target_direction, seed_value + i)))
 		count += 1
 	return count
 
@@ -206,10 +207,8 @@ static func _add_required_edge_special(pieces: Array[Dictionary], size: int, cen
 	for offset in range(candidates.size()):
 		var candidate: Dictionary = candidates[(start + offset) % candidates.size()]
 		var pos: Vector2i = candidate["p"]
-		if pos == center or _on_target_ray(pos, center, target_dir) or _occupied(pieces, pos):
-			continue
-		if _reserved_by_authored_paths(pieces, pos, size):
-			continue
+		if pos == center or _on_target_ray(pos, center, target_dir) or _occupied(pieces, pos): continue
+		if _reserved_by_authored_paths(pieces, pos, size): continue
 		var special := _piece(pos.x, pos.y, special_type, String(candidate["d"]))
 		if special_type == "key": special["key_id"] = link_value
 		elif special_type == "linked": special["link_id"] = link_value
@@ -230,12 +229,8 @@ static func _add_fillers(pieces: Array[Dictionary], size: int, center: Vector2i,
 	while remaining > 0 and attempts < 1600:
 		attempts += 1
 		var pos := Vector2i(rng.randi_range(0, size - 1), rng.randi_range(0, size - 1))
-		if pos == center or _on_target_ray(pos, center, target_dir) or _occupied(pieces, pos):
-			continue
-		# Never place a filler in the line of sight of a required authored piece.
-		# This keeps the intended minimum solution depth stable across all seeds.
-		if _reserved_by_authored_paths(pieces, pos, size):
-			continue
+		if pos == center or _on_target_ray(pos, center, target_dir) or _occupied(pieces, pos): continue
+		if _reserved_by_authored_paths(pieces, pos, size): continue
 		var direction := DIR_NAMES[rng.randi_range(0, 3)]
 		if pos.x == 0: direction = "left"
 		elif pos.x == size - 1: direction = "right"
@@ -249,12 +244,9 @@ static func _add_safe_special(pieces: Array[Dictionary], size: int, center: Vect
 	rng.seed = 9001 + seed_value * 3571
 	for _i in range(160):
 		var pos := Vector2i(rng.randi_range(0, size - 1), rng.randi_range(0, size - 1))
-		if pos == center or _on_target_ray(pos, center, target_dir) or _occupied(pieces, pos):
-			continue
-		if _distance_to_target_ray(pos, center, target_dir, size) <= 1:
-			continue
-		if _reserved_by_authored_paths(pieces, pos, size):
-			continue
+		if pos == center or _on_target_ray(pos, center, target_dir) or _occupied(pieces, pos): continue
+		if _distance_to_target_ray(pos, center, target_dir, size) <= 1: continue
+		if _reserved_by_authored_paths(pieces, pos, size): continue
 		var direction := DIR_NAMES[rng.randi_range(0, 3)]
 		if pos.x == 0: direction = "left"
 		elif pos.x == size - 1: direction = "right"
@@ -268,14 +260,12 @@ static func _add_safe_special(pieces: Array[Dictionary], size: int, center: Vect
 static func _reserved_by_authored_paths(pieces: Array[Dictionary], candidate: Vector2i, size: int) -> bool:
 	for piece in pieces:
 		var type := String(piece.get("type", "normal"))
-		if type in ["gate", "blocker"]:
-			continue
+		if type in ["gate", "blocker"]: continue
 		var p := _piece_pos(piece)
 		var direction := _dir_vector(String(piece.get("direction", "right")))
 		p += direction
 		while _inside(p, size):
-			if p == candidate:
-				return true
+			if p == candidate: return true
 			p += direction
 	return false
 
