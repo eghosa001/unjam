@@ -91,7 +91,7 @@ func _begin_drag_feedback() -> void:
 	dragging = true
 	var tween := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween.tween_property(self, "scale", Vector2(0.84, 0.84), 0.07)
-	tween.parallel().tween_property(self, "modulate", Color(1, 1, 1, 0.18), 0.07)
+	tween.parallel().tween_property(self, "modulate", Color(1, 1, 1, 0.06), 0.07)
 	if has_node("/root/FeedbackManager"):
 		FeedbackManager.tap()
 
@@ -119,11 +119,15 @@ func _update_touch_preview_position(screen_position: Vector2) -> void:
 		return
 	var game := _game()
 	var local_point: Vector2 = parent_control.get_global_transform_with_canvas().affine_inverse() * screen_position
-	var desired := local_point - Vector2(touch_preview.size.x * 0.5, touch_preview.size.y * 0.5 + TOUCH_LIFT)
+	var desired: Vector2 = local_point - Vector2(touch_preview.size.x * 0.5, touch_preview.size.y * 0.5 + TOUCH_LIFT)
 	var valid := true
 	if game != null:
 		var origin := _best_origin(game, screen_position)
-		valid = origin.x >= 0 and bool(game.call("can_place", shape, origin))
+		if origin.x >= 0:
+			desired = _preview_position_for_origin(game, origin)
+			valid = bool(game.call("can_place", shape, origin))
+		else:
+			valid = false
 	if touch_preview.has_method("set_drag_target"):
 		touch_preview.call("set_drag_target", desired, valid)
 	else:
@@ -164,33 +168,38 @@ func _get_drag_data(_at_position: Vector2) -> Variant:
 func _gui_input(event: InputEvent) -> void:
 	if used or shape.is_empty():
 		return
+	# Control._gui_input receives touch coordinates in this button's LOCAL space.
+	# Convert them back to canvas/screen space before driving the floating preview
+	# and board hit-testing; using the local values made the ghost jump offscreen.
 	if event is InputEventScreenTouch:
+		var screen_position: Vector2 = get_global_transform_with_canvas() * event.position
 		if event.pressed:
 			touch_drag_started = true
 			_begin_drag_feedback()
 			var game := _game()
 			if game != null and game.has_method("register_touch_drag"):
 				game.call("register_touch_drag", self)
-			_show_touch_preview(event.position)
-			_update_touch_footprint(event.position)
+			_show_touch_preview(screen_position)
+			_update_touch_footprint(screen_position)
 			accept_event()
 		else:
 			if touch_drag_started:
-				_finish_touch_drag(event.position)
+				_finish_touch_drag(screen_position)
 				touch_drag_started = false
 				accept_event()
 			else:
 				touch_drag_started = false
 	elif event is InputEventScreenDrag:
+		var screen_position: Vector2 = get_global_transform_with_canvas() * event.position
 		if not touch_drag_started:
 			touch_drag_started = true
 			_begin_drag_feedback()
 			var game := _game()
 			if game != null and game.has_method("register_touch_drag"):
 				game.call("register_touch_drag", self)
-		_show_touch_preview(event.position)
-		_update_touch_preview_position(event.position)
-		_update_touch_footprint(event.position)
+		_show_touch_preview(screen_position)
+		_update_touch_preview_position(screen_position)
+		_update_touch_footprint(screen_position)
 		accept_event()
 
 func _notification(what: int) -> void:
@@ -276,13 +285,14 @@ func _update_touch_footprint(screen_position: Vector2) -> void:
 			if cell != null and is_instance_valid(cell) and cell.has_method("set_drag_footprint"):
 				cell.call("set_drag_footprint", true, valid, accent)
 
-func _snap_preview_to_origin(game: Node, origin: Vector2i) -> void:
+func _preview_position_for_origin(game: Node, origin: Vector2i) -> Vector2:
 	if touch_preview == null or not is_instance_valid(touch_preview):
-		return
+		return Vector2.ZERO
 	var cells := _cell_buttons(game)
 	if cells.is_empty():
-		return
-	var centers: Array[Vector2] = []
+		return touch_preview.position
+	var center := Vector2.ZERO
+	var count := 0
 	for raw in shape:
 		var point := _as_point(raw)
 		var x := origin.x + point.x
@@ -292,18 +302,24 @@ func _snap_preview_to_origin(game: Node, origin: Vector2i) -> void:
 		var idx := y * 8 + x
 		if idx >= 0 and idx < cells.size():
 			var cell: Control = cells[idx]
-			centers.append(cell.get_global_rect().get_center())
-	if centers.is_empty():
-		return
-	var center := Vector2.ZERO
-	for value in centers:
-		center += value
-	center /= float(centers.size())
+			center += cell.get_global_rect().get_center()
+			count += 1
+	if count <= 0:
+		return touch_preview.position
+	center /= float(count)
 	var parent_control := touch_preview.get_parent() as Control
 	if parent_control == null:
+		return touch_preview.position
+	var local_center: Vector2 = parent_control.get_global_transform_with_canvas().affine_inverse() * center
+	var centroid := touch_preview.size * 0.5
+	if touch_preview.has_method("shape_centroid_local"):
+		centroid = Vector2(touch_preview.call("shape_centroid_local"))
+	return local_center - centroid
+
+func _snap_preview_to_origin(game: Node, origin: Vector2i) -> void:
+	if touch_preview == null or not is_instance_valid(touch_preview):
 		return
-	var local_center := parent_control.get_global_transform_with_canvas().affine_inverse() * center
-	var desired := local_center - touch_preview.size * 0.5
+	var desired := _preview_position_for_origin(game, origin)
 	if touch_preview.has_method("set_drag_target"):
 		touch_preview.call("set_drag_target", desired, true)
 	if touch_preview.has_method("set_drag_scale"):
@@ -360,7 +376,7 @@ func _draw() -> void:
 	for point in points:
 		max_x = maxi(max_x, point.x)
 		max_y = maxi(max_y, point.y)
-	var cell := minf(56.0, minf((size.x - 24.0) / float(max_x + 1), (size.y - 18.0) / float(max_y + 1)))
+	var cell := minf(74.0, minf((size.x - 24.0) / float(max_x + 1), (size.y - 18.0) / float(max_y + 1)))
 	cell = maxf(14.0, cell)
 	var total := Vector2((max_x + 1) * cell, (max_y + 1) * cell)
 	var origin := (size - total) * 0.5
