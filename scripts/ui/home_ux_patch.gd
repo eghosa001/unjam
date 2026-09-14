@@ -76,8 +76,8 @@ func _patch_layout(outer: MarginContainer) -> void:
 
 	var panel := PanelContainer.new()
 	panel.name = "JourneyFill"
-	panel.custom_minimum_size = Vector2(0, 150)
-	panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	panel.custom_minimum_size = Vector2(0, 154)
+	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	panel.add_theme_stylebox_override("panel", _box(card_color, 28, Color(accent, 0.42), 2))
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 22)
@@ -96,13 +96,13 @@ func _patch_layout(outer: MarginContainer) -> void:
 	row.add_child(copy)
 	var title := Label.new()
 	title.text = "YOUR %s JOURNEY" % MultiGameManager.display_name(game_id).to_upper()
-	title.add_theme_font_size_override("font_size", 17)
+	title.add_theme_font_size_override("font_size", 21)
 	title.add_theme_color_override("font_color", accent)
 	copy.add_child(title)
 	var level := clampi(MultiGameManager.highest_level(game_id), 1, MultiGameManager.CAMPAIGN_LEVELS)
 	var meta := Label.new()
 	meta.text = "WORLD %d / 100   •   LEVEL %d / 10,000   •   %d ★" % [MultiGameManager.highest_unlocked_world(game_id), level, MultiGameManager.total_stars(game_id)]
-	meta.add_theme_font_size_override("font_size", 14)
+	meta.add_theme_font_size_override("font_size", 18)
 	meta.add_theme_color_override("font_color", meta_color)
 	copy.add_child(meta)
 	var progress := ProgressBar.new()
@@ -119,7 +119,7 @@ func _patch_layout(outer: MarginContainer) -> void:
 	stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	stats.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	stats.text = "DAILY STREAK  %d\nPERFECT CLEARS  %d" % [int(SaveManager.data.get("daily_streak", 0)), int(MultiGameManager.progress_for(game_id).get("perfect_clears", 0))]
-	stats.add_theme_font_size_override("font_size", 13)
+	stats.add_theme_font_size_override("font_size", 17)
 	stats.add_theme_color_override("font_color", muted_color)
 	row.add_child(stats)
 	# Root order is header, hero, section, games, quick. Put journey immediately before quick.
