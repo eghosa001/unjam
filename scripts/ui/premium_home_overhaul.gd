@@ -64,19 +64,19 @@ func _dark() -> bool:
 	return _theme_mode() == "dark"
 
 func _ink() -> Color:
-	return Color("f7f9ff") if _dark() else Color("132033")
+	return Color("f4f7fb") if _dark() else Color("213044")
 
 func _muted() -> Color:
-	return Color("9aa9bf") if _dark() else Color("607087")
+	return Color("b6c3d4") if _dark() else Color("6f7f92")
 
 func _surface() -> Color:
-	return Color("050a12") if _dark() else Color("edf3f8")
+	return Color("0b1220") if _dark() else Color("eef2f5")
 
 func _card() -> Color:
-	return Color("0c1524") if _dark() else Color("ffffff")
+	return Color("141f31") if _dark() else Color("f8fafc")
 
 func _border() -> Color:
-	return Color("24344a") if _dark() else Color("c4cfdd")
+	return Color("38506d") if _dark() else Color("c7d1dc")
 
 func _box(color: Color, radius: int, border: Color = Color.TRANSPARENT, width: int = 0, shadow: int = 0) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
@@ -101,7 +101,7 @@ func _button(text_value: String, minimum: Vector2, accent: Color, strong: bool =
 	var button := Button.new()
 	button.text = text_value
 	button.custom_minimum_size = minimum
-	button.add_theme_font_size_override("font_size", 16)
+	button.add_theme_font_size_override("font_size", 20)
 	button.focus_mode = Control.FOCUS_NONE
 	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	var normal := accent if strong else Color(_card(), 0.96)
@@ -113,6 +113,7 @@ func _button(text_value: String, minimum: Vector2, accent: Color, strong: bool =
 	return button
 
 func build_home_launcher() -> void:
+	var animate_entry := not built
 	for child in get_children():
 		child.queue_free()
 	last_theme = _theme_mode()
@@ -141,25 +142,25 @@ func build_home_launcher() -> void:
 	header.add_theme_constant_override("separation", 18)
 	root.add_child(header)
 	logo = UnjamLogo.new()
-	logo.custom_minimum_size = Vector2(560, 104)
+	logo.custom_minimum_size = Vector2(560, 122)
 	logo.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	logo.configure(_dark())
 	header.add_child(logo)
 	var profile := PanelContainer.new()
-	profile.custom_minimum_size = Vector2(330, 92)
+	profile.custom_minimum_size = Vector2(330, 104)
 	profile.add_theme_stylebox_override("panel", _box(Color(_card(), 0.94), 28, _border(), 2))
 	header.add_child(profile)
 	var profile_label := Label.new()
 	profile_label.text = "%d COINS   •   %d ★" % [int(SaveManager.data.get("coins", 0)), _total_stars()]
 	profile_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	profile_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	profile_label.add_theme_font_size_override("font_size", 17)
+	profile_label.add_theme_font_size_override("font_size", 21)
 	profile_label.add_theme_color_override("font_color", Color("ffd166"))
 	profile.add_child(profile_label)
 
 	var hero := PanelContainer.new()
 	hero.name = "HomeHero"
-	hero.custom_minimum_size = Vector2(0, 560)
+	hero.custom_minimum_size = Vector2(0, 610)
 	hero.add_theme_stylebox_override("panel", _box(Color(_card(), 0.96), 42, Color(accent, 0.48), 2, 16))
 	root.add_child(hero)
 	var hero_margin := MarginContainer.new()
@@ -173,7 +174,7 @@ func build_home_launcher() -> void:
 	hero_margin.add_child(hero_row)
 
 	hero_art = GameShowcaseArt.new()
-	hero_art.custom_minimum_size = Vector2(420, 500)
+	hero_art.custom_minimum_size = Vector2(430, 540)
 	hero_art.configure(selected_game, accent, _dark())
 	hero_row.add_child(hero_art)
 
@@ -184,33 +185,33 @@ func build_home_launcher() -> void:
 	hero_row.add_child(hero_copy)
 	var eyebrow := Label.new()
 	eyebrow.text = "THREE GREAT GAMES • ONE UNJAM"
-	eyebrow.add_theme_font_size_override("font_size", 15)
+	eyebrow.add_theme_font_size_override("font_size", 19)
 	eyebrow.add_theme_color_override("font_color", Color(accent, 0.95))
 	hero_copy.add_child(eyebrow)
 	var headline := Label.new()
 	headline.text = "PLAY. RELAX.\nLEVEL UP."
-	headline.add_theme_font_size_override("font_size", 48)
+	headline.add_theme_font_size_override("font_size", 56)
 	headline.add_theme_color_override("font_color", _ink())
 	hero_copy.add_child(headline)
 	hero_title = Label.new()
 	hero_title.text = MultiGameManager.display_name(selected_game).to_upper()
-	hero_title.add_theme_font_size_override("font_size", 27)
+	hero_title.add_theme_font_size_override("font_size", 32)
 	hero_title.add_theme_color_override("font_color", accent)
 	hero_copy.add_child(hero_title)
 	hero_subtitle = Label.new()
 	hero_subtitle.text = SUBTITLES[selected_game]
 	hero_subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	hero_subtitle.add_theme_font_size_override("font_size", 17)
+	hero_subtitle.add_theme_font_size_override("font_size", 21)
 	hero_subtitle.add_theme_color_override("font_color", _muted())
 	hero_copy.add_child(hero_subtitle)
 	hero_progress = Label.new()
 	hero_progress.text = _hero_progress_text(selected_game)
-	hero_progress.add_theme_font_size_override("font_size", 17)
+	hero_progress.add_theme_font_size_override("font_size", 21)
 	hero_progress.add_theme_color_override("font_color", Color("d9e5f4") if _dark() else Color("314158"))
 	hero_copy.add_child(hero_progress)
-	primary_button = _button(_primary_text(selected_game), Vector2(0, 82), accent, true)
+	primary_button = _button(_primary_text(selected_game), Vector2(0, 96), accent, true)
 	primary_button.name = "HomePrimaryAction"
-	primary_button.add_theme_font_size_override("font_size", 22)
+	primary_button.add_theme_font_size_override("font_size", 25)
 	primary_button.pressed.connect(_play_selected)
 	hero_copy.add_child(primary_button)
 
@@ -219,13 +220,13 @@ func build_home_launcher() -> void:
 	var choose := Label.new()
 	choose.text = "OUR GAMES"
 	choose.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	choose.add_theme_font_size_override("font_size", 18)
+	choose.add_theme_font_size_override("font_size", 23)
 	choose.add_theme_color_override("font_color", _ink())
 	section.add_child(choose)
 	footer_label = Label.new()
 	footer_label.text = _shared_progress_text()
 	footer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	footer_label.add_theme_font_size_override("font_size", 14)
+	footer_label.add_theme_font_size_override("font_size", 18)
 	footer_label.add_theme_color_override("font_color", _muted())
 	section.add_child(footer_label)
 
@@ -235,7 +236,7 @@ func build_home_launcher() -> void:
 	root.add_child(games)
 	for game_id in ["rescue_rush", "water_sort", "block_puzzle"]:
 		var tile := GameSelectTile.new()
-		tile.custom_minimum_size = Vector2(316, 190)
+		tile.custom_minimum_size = Vector2(316, 220)
 		tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		tile.configure(game_id, MultiGameManager.display_name(game_id).to_upper(), _current_level(game_id), ACCENTS[game_id], game_id == selected_game, _dark())
 		tile.chosen.connect(_select_game)
@@ -245,30 +246,34 @@ func build_home_launcher() -> void:
 	quick.columns = 4
 	quick.add_theme_constant_override("h_separation", 12)
 	root.add_child(quick)
-	var daily := _button("DAILY\nCHALLENGE", Vector2(0, 82), Color("ffb84d"))
+	var daily := _button("DAILY\nCHALLENGE", Vector2(0, 100), Color("ffb84d"))
 	daily.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	daily.pressed.connect(_open_daily)
 	quick.add_child(daily)
-	var levels := _button("LEVELS\n10,000", Vector2(0, 82), accent)
+	var levels := _button("LEVELS\n10,000", Vector2(0, 100), accent)
 	levels.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	levels.pressed.connect(_open_journey)
 	quick.add_child(levels)
-	var collection := _button("COLLECTION\n& REWARDS", Vector2(0, 82), Color("8b7cf6"))
+	var collection := _button("COLLECTION\n& REWARDS", Vector2(0, 100), Color("8b7cf6"))
 	collection.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	collection.pressed.connect(func(): get_parent().call("build_collection"))
 	quick.add_child(collection)
-	var live := _button("LIVE\nPLAY HUB", Vector2(0, 82), Color("5da9ff"), true)
+	var live := _button("LIVE\nPLAY HUB", Vector2(0, 100), Color("5da9ff"), true)
 	live.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	live.pressed.connect(_open_live)
 	quick.add_child(live)
 
 	_add_bottom_nav()
 
-	modulate.a = 0.0
-	position.y += 16.0
-	var tween := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(self, "modulate:a", 1.0, 0.25)
-	tween.parallel().tween_property(self, "position:y", position.y - 16.0, 0.32)
+	if animate_entry:
+		modulate.a = 0.78
+		position.y += 10.0
+		var tween := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tween.tween_property(self, "modulate:a", 1.0, 0.24)
+		tween.parallel().tween_property(self, "position:y", position.y - 10.0, 0.30)
+	else:
+		modulate = Color.WHITE
+		position = Vector2.ZERO
 
 func _add_bottom_nav() -> void:
 	var nav := PanelContainer.new()
@@ -276,25 +281,25 @@ func _add_bottom_nav() -> void:
 	nav.offset_left = 42
 	nav.offset_right = -42
 	nav.offset_bottom = -24
-	nav.offset_top = -106
+	nav.offset_top = -120
 	nav.add_theme_stylebox_override("panel", _box(Color(_card(), 0.98), 30, _border(), 2, 10))
 	add_child(nav)
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 12)
 	nav.add_child(row)
-	var home := _button("⌂  HOME", Vector2(0, 74), Color("5da9ff"), true)
+	var home := _button("⌂  HOME", Vector2(0, 88), Color("5da9ff"), true)
 	home.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(home)
-	var live := _button("●  LIVE", Vector2(0, 74), Color("5da9ff"))
+	var live := _button("●  LIVE", Vector2(0, 88), Color("5da9ff"))
 	live.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	live.pressed.connect(_open_live)
 	row.add_child(live)
-	var collection := _button("★  COLLECTION", Vector2(0, 74), Color("8b7cf6"))
+	var collection := _button("★  COLLECTION", Vector2(0, 88), Color("8b7cf6"))
 	collection.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	collection.pressed.connect(func(): get_parent().call("build_collection"))
 	row.add_child(collection)
-	var settings := _button("⚙  SETTINGS", Vector2(0, 74), Color("2dd4b6"))
+	var settings := _button("⚙  SETTINGS", Vector2(0, 88), Color("2dd4b6"))
 	settings.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	settings.pressed.connect(func(): get_parent().call("build_settings"))
 	row.add_child(settings)
