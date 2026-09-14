@@ -47,10 +47,10 @@ func _process(delta: float) -> void:
 	if dragging:
 		queue_redraw()
 		return
-	var hover_scale := 1.04 if hover and not selected else 1.0
+	var hover_scale := 1.035 if hover and not selected else 1.0
 	var desired := target_scale * hover_scale
 	scale = scale.lerp(desired, minf(1.0, delta * 11.0))
-	var wobble := sin(phase * 3.4) * deg_to_rad(0.65) if selected else 0.0
+	var wobble := sin(phase * 3.1) * deg_to_rad(0.45) if selected else 0.0
 	rotation = lerpf(rotation, target_rotation + wobble, minf(1.0, delta * 9.0))
 	if selected or hover:
 		queue_redraw()
@@ -59,16 +59,16 @@ func _press() -> void:
 	if used:
 		return
 	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(self, "scale", target_scale * 1.12, 0.08)
-	tween.parallel().tween_property(self, "rotation", deg_to_rad(-3.0), 0.08)
+	tween.tween_property(self, "scale", target_scale * 1.10, 0.075)
+	tween.parallel().tween_property(self, "rotation", deg_to_rad(-2.4), 0.075)
 
 func _release() -> void:
 	if dragging:
 		return
 	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(self, "scale", target_scale * 1.04, 0.07)
-	tween.tween_property(self, "scale", target_scale, 0.16)
-	tween.parallel().tween_property(self, "rotation", target_rotation, 0.16)
+	tween.tween_property(self, "scale", target_scale * 1.035, 0.065)
+	tween.tween_property(self, "scale", target_scale, 0.15)
+	tween.parallel().tween_property(self, "rotation", target_rotation, 0.15)
 
 func _drag_payload() -> Dictionary:
 	var drag_piece_index := piece_index if piece_index >= 0 else get_index()
@@ -79,7 +79,6 @@ func _make_drag_preview() -> Control:
 	wrapper.custom_minimum_size = Vector2(250, 250)
 	wrapper.size = Vector2(250, 250)
 	wrapper.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	# Lift the actual shape well above the finger, like the reference trailer.
 	wrapper.position = Vector2(-125, -225)
 	var preview := DragPreview.new()
 	preview.position = Vector2(10, 8)
@@ -119,7 +118,7 @@ func _notification(what: int) -> void:
 		dragging = false
 		var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		tween.tween_property(self, "modulate", Color.WHITE, 0.08)
-		tween.parallel().tween_property(self, "scale", target_scale * 1.12, 0.10)
+		tween.parallel().tween_property(self, "scale", target_scale * 1.10, 0.10)
 		tween.tween_property(self, "scale", target_scale, 0.18)
 		tween.parallel().tween_property(self, "rotation", target_rotation, 0.18)
 
@@ -129,13 +128,13 @@ func _set_hover(value: bool) -> void:
 	queue_redraw()
 
 func _update_style() -> void:
-	var bg := Color("e9e5ff") if selected else Color("f8f5ff")
-	var border := Color("12b8a6") if selected else Color(accent, 0.72 if hover else 0.38)
-	add_theme_stylebox_override("normal", _style(bg, border, 4 if selected else 2))
-	add_theme_stylebox_override("hover", _style(Color("ffffff"), border.lightened(0.10), 3))
-	add_theme_stylebox_override("pressed", _style(Color("e0d9ff"), Color("12b8a6"), 4))
-	add_theme_stylebox_override("disabled", _style(Color("e9edf4"), Color(0.35, 0.4, 0.5, 0.18), 1))
-	add_theme_color_override("font_color", Color("334155"))
+	var bg := Color("18233d") if selected else Color("101a2f")
+	var border := Color("67e8cf") if selected else Color(accent, 0.70 if hover else 0.34)
+	add_theme_stylebox_override("normal", _style(bg, border, 3 if selected else 2))
+	add_theme_stylebox_override("hover", _style(Color("162442"), border.lightened(0.10), 3))
+	add_theme_stylebox_override("pressed", _style(Color("0b1428"), Color("67e8cf"), 3))
+	add_theme_stylebox_override("disabled", _style(Color("111827"), Color(0.35, 0.4, 0.5, 0.14), 1))
+	add_theme_color_override("font_color", Color("e6edf7"))
 	add_theme_color_override("font_disabled_color", Color("64748b"))
 	add_theme_font_size_override("font_size", 16)
 
@@ -158,15 +157,16 @@ func _draw() -> void:
 	cell = maxf(10.0, cell)
 	var total := Vector2((max_x + 1) * cell, (max_y + 1) * cell)
 	var origin := (size - total) * 0.5
-	var pulse := 0.5 + 0.5 * sin(phase * 4.2)
+	var pulse := 0.5 + 0.5 * sin(phase * 4.0)
 	for point in points:
 		var rect := Rect2(origin + Vector2(point) * cell + Vector2(2, 2), Vector2(cell - 4, cell - 4))
-		var shadow := Rect2(rect.position + Vector2(0, 4), rect.size)
-		draw_style_box(_style(Color(0.06, 0.05, 0.16, 0.18), Color.TRANSPARENT, 0, 8), shadow)
-		draw_style_box(_style(accent, accent.lightened(0.24), 1, 8), rect)
-		draw_line(rect.position + Vector2(5, 5), Vector2(rect.end.x - 5, rect.position.y + 5), accent.lightened(0.40), 2.5, true)
+		var shadow := Rect2(rect.position + Vector2(0, 5), rect.size)
+		draw_style_box(_style(Color(0.01, 0.02, 0.06, 0.40), Color.TRANSPARENT, 0, 8), shadow)
+		draw_style_box(_style(accent.darkened(0.05), accent.lightened(0.28), 1, 8), rect)
+		draw_line(rect.position + Vector2(5, 5), Vector2(rect.end.x - 5, rect.position.y + 5), Color(accent.lightened(0.45), 0.78), 2.5, true)
+		draw_line(Vector2(rect.position.x + 5, rect.end.y - 5), Vector2(rect.end.x - 5, rect.end.y - 5), Color(accent.darkened(0.35), 0.50), 2.5, true)
 		if selected:
-			draw_arc(rect.get_center(), rect.size.x * 0.58, 0, TAU, 24, Color("34d399", 0.20 + pulse * 0.12), 2.5, true)
+			draw_arc(rect.get_center(), rect.size.x * 0.59, 0, TAU, 24, Color("67e8cf", 0.18 + pulse * 0.10), 2.5, true)
 
 func _as_point(raw: Variant) -> Vector2i:
 	if raw is Vector2i:
@@ -196,7 +196,7 @@ func _style(background: Color, border: Color, width: int, radius: int = 22) -> S
 	style.border_width_top = width
 	style.border_width_bottom = width
 	style.border_color = border
-	style.shadow_color = Color(0.10, 0.08, 0.22, 0.18)
+	style.shadow_color = Color(0, 0, 0, 0.32)
 	style.shadow_size = 8
 	style.shadow_offset = Vector2(0, 5)
 	return style
