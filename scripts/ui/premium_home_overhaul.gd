@@ -7,10 +7,8 @@ var hero_art: GameShowcaseArt
 var hero_title: Label
 var hero_subtitle: Label
 var hero_progress: Label
-var choose_label: Label
 var footer_label: Label
 var primary_button: Button
-var tile_row: VBoxContainer
 var logo: UnjamLogo
 
 const ACCENTS := {
@@ -19,9 +17,9 @@ const ACCENTS := {
 	"block_puzzle": Color("8b7cf6")
 }
 const SUBTITLES := {
-	"rescue_rush": "CLEAR THE PATH. TRIGGER THE CHAIN. SAVE THEM.",
-	"water_sort": "POUR. SORT. RELAX. MASTER EVERY COLOR.",
-	"block_puzzle": "PLACE SMART. CLEAR LINES. BUILD COMBOS."
+	"rescue_rush": "Clear the lane. Release the chain. Make the rescue.",
+	"water_sort": "Read the stack. Pour clean. Finish with perfect colour.",
+	"block_puzzle": "Place with intent. Build space. Detonate clean lines."
 }
 
 func _ready() -> void:
@@ -66,21 +64,21 @@ func _dark() -> bool:
 	return _theme_mode() == "dark"
 
 func _ink() -> Color:
-	return Color("f7f9ff") if _dark() else Color("14213a")
+	return Color("f7f9ff") if _dark() else Color("132033")
 
 func _muted() -> Color:
-	return Color("aebbd0") if _dark() else Color("52637a")
+	return Color("9aa9bf") if _dark() else Color("607087")
 
 func _surface() -> Color:
-	return Color("0a1220") if _dark() else Color("f5f8fc")
+	return Color("050a12") if _dark() else Color("edf3f8")
 
 func _card() -> Color:
-	return Color("111d31") if _dark() else Color("ffffff")
+	return Color("0c1524") if _dark() else Color("ffffff")
 
 func _border() -> Color:
-	return Color("33445e") if _dark() else Color("b7c4d6")
+	return Color("24344a") if _dark() else Color("c4cfdd")
 
-func _box(color: Color, radius: int, border: Color = Color.TRANSPARENT, width: int = 0) -> StyleBoxFlat:
+func _box(color: Color, radius: int, border: Color = Color.TRANSPARENT, width: int = 0, shadow: int = 0) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = color
 	style.corner_radius_top_left = radius
@@ -93,9 +91,10 @@ func _box(color: Color, radius: int, border: Color = Color.TRANSPARENT, width: i
 		style.border_width_top = width
 		style.border_width_bottom = width
 		style.border_color = border
-	style.shadow_color = Color(0,0,0,0.30) if _dark() else Color(0.08,0.12,0.2,0.12)
-	style.shadow_size = 12
-	style.shadow_offset = Vector2(0,6)
+	if shadow > 0:
+		style.shadow_color = Color(0, 0, 0, 0.38 if _dark() else 0.12)
+		style.shadow_size = shadow
+		style.shadow_offset = Vector2(0, shadow * 0.45)
 	return style
 
 func build_home_launcher() -> void:
@@ -105,60 +104,65 @@ func build_home_launcher() -> void:
 	built = true
 	visible = true
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	var accent: Color = ACCENTS[selected_game]
 
-	var bg := ColorRect.new()
+	var bg := PremiumBackdrop.new()
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	bg.color = _surface()
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bg.configure(_surface(), accent, ["rescue_rush", "water_sort", "block_puzzle"].find(selected_game))
 	add_child(bg)
 
-	var accent: Color = ACCENTS[selected_game]
-	var wash := ColorRect.new()
-	wash.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	wash.color = Color(accent, 0.045 if _dark() else 0.055)
-	wash.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(wash)
-
-	var margin := MarginContainer.new()
-	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	margin.add_theme_constant_override("margin_left", 48)
-	margin.add_theme_constant_override("margin_right", 48)
-	margin.add_theme_constant_override("margin_top", 34)
-	margin.add_theme_constant_override("margin_bottom", 150)
-	add_child(margin)
+	var outer := MarginContainer.new()
+	outer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	outer.add_theme_constant_override("margin_left", 44)
+	outer.add_theme_constant_override("margin_right", 44)
+	outer.add_theme_constant_override("margin_top", 36)
+	outer.add_theme_constant_override("margin_bottom", 118)
+	add_child(outer)
 	var root := VBoxContainer.new()
-	root.add_theme_constant_override("separation", 14)
-	margin.add_child(root)
+	root.add_theme_constant_override("separation", 16)
+	outer.add_child(root)
 
+	# Compact brand header: premium games keep branding strong without spending a quarter of the screen on it.
 	logo = UnjamLogo.new()
-	logo.custom_minimum_size = Vector2(0, 220)
+	logo.custom_minimum_size = Vector2(0, 150)
 	logo.configure(_dark())
 	root.add_child(logo)
 
 	var hero := PanelContainer.new()
 	hero.name = "HomeHero"
-	hero.custom_minimum_size = Vector2(0, 700)
-	hero.add_theme_stylebox_override("panel", _box(_card(), 42, Color(accent, 0.52), 2))
+	hero.custom_minimum_size = Vector2(0, 790)
+	hero.add_theme_stylebox_override("panel", _box(Color(_card(), 0.96), 42, Color(accent, 0.42), 2, 18))
 	root.add_child(hero)
+	var hero_margin := MarginContainer.new()
+	for side in ["margin_left", "margin_right"]:
+		hero_margin.add_theme_constant_override(side, 26)
+	hero_margin.add_theme_constant_override("margin_top", 20)
+	hero_margin.add_theme_constant_override("margin_bottom", 24)
+	hero.add_child(hero_margin)
 	var hero_stack := VBoxContainer.new()
-	hero_stack.add_theme_constant_override("separation", 4)
-	hero.add_child(hero_stack)
+	hero_stack.add_theme_constant_override("separation", 8)
+	hero_margin.add_child(hero_stack)
+
+	var eyebrow := Label.new()
+	eyebrow.text = "FEATURED PUZZLE"
+	eyebrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	eyebrow.add_theme_font_size_override("font_size", 14)
+	eyebrow.add_theme_color_override("font_color", Color(accent, 0.86))
+	hero_stack.add_child(eyebrow)
 
 	hero_art = GameShowcaseArt.new()
-	hero_art.custom_minimum_size = Vector2(0, 430)
+	hero_art.custom_minimum_size = Vector2(0, 410)
 	hero_art.configure(selected_game, accent, _dark())
 	hero_stack.add_child(hero_art)
 
 	hero_title = Label.new()
-	hero_title.name = "HeroTitle"
 	hero_title.text = MultiGameManager.display_name(selected_game).to_upper()
 	hero_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hero_title.add_theme_font_size_override("font_size", 42)
-	hero_title.add_theme_color_override("font_color", accent)
+	hero_title.add_theme_font_size_override("font_size", 46)
+	hero_title.add_theme_color_override("font_color", _ink())
 	hero_stack.add_child(hero_title)
 
 	hero_subtitle = Label.new()
-	hero_subtitle.name = "HeroSubtitle"
 	hero_subtitle.text = SUBTITLES[selected_game]
 	hero_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hero_subtitle.add_theme_font_size_override("font_size", 17)
@@ -166,85 +170,81 @@ func build_home_launcher() -> void:
 	hero_stack.add_child(hero_subtitle)
 
 	hero_progress = Label.new()
-	hero_progress.name = "HeroProgress"
 	hero_progress.text = _hero_progress_text(selected_game)
 	hero_progress.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hero_progress.add_theme_font_size_override("font_size", 18)
-	hero_progress.add_theme_color_override("font_color", _ink())
+	hero_progress.add_theme_color_override("font_color", Color("d9e5f4") if _dark() else Color("314158"))
 	hero_stack.add_child(hero_progress)
 
-	primary_button = Button.new()
+	primary_button = _button(_primary_text(selected_game), Vector2(0, 96), accent, true)
 	primary_button.name = "HomePrimaryAction"
-	primary_button.text = _primary_text(selected_game)
-	primary_button.custom_minimum_size = Vector2(0, 94)
-	primary_button.add_theme_font_size_override("font_size", 25)
+	primary_button.add_theme_font_size_override("font_size", 24)
 	primary_button.pressed.connect(_play_selected)
 	hero_stack.add_child(primary_button)
 
-	choose_label = Label.new()
-	choose_label.name = "ChoosePuzzleLabel"
-	choose_label.text = "CHOOSE YOUR PUZZLE"
-	choose_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	choose_label.add_theme_font_size_override("font_size", 15)
-	choose_label.add_theme_color_override("font_color", _muted())
-	root.add_child(choose_label)
+	var choose := Label.new()
+	choose.text = "CHOOSE A GAME"
+	choose.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	choose.add_theme_font_size_override("font_size", 14)
+	choose.add_theme_color_override("font_color", _muted())
+	root.add_child(choose)
 
-	tile_row = VBoxContainer.new()
-	tile_row.add_theme_constant_override("separation", 10)
-	root.add_child(tile_row)
+	var games := HBoxContainer.new()
+	games.alignment = BoxContainer.ALIGNMENT_CENTER
+	games.add_theme_constant_override("separation", 12)
+	root.add_child(games)
 	for game_id in ["rescue_rush", "water_sort", "block_puzzle"]:
 		var tile := GameSelectTile.new()
-		tile.custom_minimum_size = Vector2(0, 136)
+		tile.custom_minimum_size = Vector2(316, 170)
+		tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		tile.configure(game_id, MultiGameManager.display_name(game_id).to_upper(), _current_level(game_id), ACCENTS[game_id], game_id == selected_game, _dark())
 		tile.chosen.connect(_select_game)
-		tile_row.add_child(tile)
+		games.add_child(tile)
 
-	var secondary := HBoxContainer.new()
-	secondary.alignment = BoxContainer.ALIGNMENT_CENTER
-	secondary.add_theme_constant_override("separation", 12)
-	root.add_child(secondary)
-	var daily := _small_button("DAILY", Vector2(212, 72))
+	var quick := HBoxContainer.new()
+	quick.alignment = BoxContainer.ALIGNMENT_CENTER
+	quick.add_theme_constant_override("separation", 12)
+	root.add_child(quick)
+	var daily := _button("DAILY", Vector2(220, 72), accent)
 	daily.pressed.connect(_open_daily)
-	secondary.add_child(daily)
-	var journey := _small_button("JOURNEY", Vector2(212, 72))
+	quick.add_child(daily)
+	var journey := _button("LEVELS", Vector2(220, 72), accent)
 	journey.pressed.connect(_open_journey)
-	secondary.add_child(journey)
-	var collection := _small_button("COLLECTION", Vector2(212, 72))
+	quick.add_child(journey)
+	var collection := _button("COLLECTION", Vector2(220, 72), accent)
 	collection.pressed.connect(func(): get_parent().call("build_collection"))
-	secondary.add_child(collection)
-	var settings := _small_button("SETTINGS", Vector2(212, 72))
+	quick.add_child(collection)
+	var settings := _button("SETTINGS", Vector2(220, 72), accent)
 	settings.pressed.connect(func(): get_parent().call("build_settings"))
-	secondary.add_child(settings)
+	quick.add_child(settings)
 
 	footer_label = Label.new()
-	footer_label.name = "HomeFooter"
 	footer_label.text = _shared_progress_text()
 	footer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	footer_label.add_theme_font_size_override("font_size", 15)
+	footer_label.add_theme_font_size_override("font_size", 14)
 	footer_label.add_theme_color_override("font_color", _muted())
 	root.add_child(footer_label)
-	call_deferred("_restore_visual_identity")
 
-func _small_button(text_value: String, minimum: Vector2) -> Button:
+	modulate.a = 0.0
+	position.y += 18.0
+	var tween := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(self, "modulate:a", 1.0, 0.28)
+	tween.parallel().tween_property(self, "position:y", position.y - 18.0, 0.34)
+
+func _button(text_value: String, minimum: Vector2, accent: Color, strong: bool = false) -> Button:
 	var b := Button.new()
 	b.text = text_value
 	b.custom_minimum_size = minimum
 	b.add_theme_font_size_override("font_size", 16)
+	b.focus_mode = Control.FOCUS_NONE
+	b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	var normal := accent if strong else Color(_card(), 0.96)
+	var normal_border := accent.lightened(0.14) if strong else _border()
+	b.add_theme_stylebox_override("normal", _box(normal, 24, normal_border, 2, 8 if strong else 4))
+	b.add_theme_stylebox_override("hover", _box(normal.lightened(0.06), 24, accent, 2, 8))
+	b.add_theme_stylebox_override("pressed", _box(normal.darkened(0.10), 24, accent.lightened(0.22), 2, 2))
+	b.add_theme_color_override("font_color", Color("061019") if strong and accent.get_luminance() > 0.55 else _ink())
 	return b
-
-func _restore_visual_identity() -> void:
-	if not is_instance_valid(primary_button):
-		return
-	var accent: Color = ACCENTS[selected_game]
-	primary_button.add_theme_stylebox_override("normal", _box(accent, 26, accent.lightened(0.16), 2))
-	primary_button.add_theme_stylebox_override("hover", _box(accent.lightened(0.08), 26, Color.WHITE, 2))
-	primary_button.add_theme_stylebox_override("pressed", _box(accent.darkened(0.10), 26, Color.WHITE, 2))
-	primary_button.add_theme_color_override("font_color", Color("071421") if accent.get_luminance() > 0.58 else Color.WHITE)
-	if is_instance_valid(hero_title): hero_title.add_theme_color_override("font_color", accent)
-	if is_instance_valid(hero_subtitle): hero_subtitle.add_theme_color_override("font_color", _muted())
-	if is_instance_valid(hero_progress): hero_progress.add_theme_color_override("font_color", _ink())
-	if is_instance_valid(choose_label): choose_label.add_theme_color_override("font_color", _muted())
-	if is_instance_valid(footer_label): footer_label.add_theme_color_override("font_color", _muted())
 
 func _current_level(game_id: String) -> int:
 	return clampi(MultiGameManager.highest_level(game_id), 1, MultiGameManager.CAMPAIGN_LEVELS)
@@ -267,7 +267,7 @@ func _shared_progress_text() -> String:
 	var completed := 0
 	for game_id in MultiGameManager.GAME_IDS:
 		completed += int(MultiGameManager.progress_for(game_id).get("levels_completed", 0))
-	return "%d / 30,000 CLEARED   •   %d COINS   •   %d PRESTIGE" % [completed, int(SaveManager.data.get("coins",0)), int(SaveManager.data.get("prestige_points",0))]
+	return "%d / 30,000 CLEARED   •   %d COINS   •   %d PRESTIGE" % [completed, int(SaveManager.data.get("coins", 0)), int(SaveManager.data.get("prestige_points", 0))]
 
 func _select_game(game_id: String) -> void:
 	if game_id == selected_game:
@@ -296,6 +296,5 @@ func _open_daily() -> void:
 
 func _open_journey() -> void:
 	var main := get_parent()
-	if main == null:
-		return
-	main.call("open_game_campaign", selected_game)
+	if main != null:
+		main.call("open_game_campaign", selected_game)
