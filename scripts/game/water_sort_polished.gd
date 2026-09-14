@@ -1,5 +1,14 @@
 extends "res://scripts/game/water_sort.gd"
 
+func level_config() -> Dictionary:
+	# Onboarding uses fewer colours and generous par so the first pours teach the
+	# rule instead of presenting a dense puzzle immediately.
+	if not daily_mode and level_number <= 8:
+		# Keep four colours so the familiar six-tube layout stays consistent, but
+		# give new players a generous move budget while the scramble stays shallow.
+		return {"colors": 4, "par": 28 + level_number * 2, "tier": campaign_tier()}
+	return super.level_config()
+
 func generate_tubes(seed_value: int, colors: int) -> Array:
 	# Build from a solved state using reversible reverse-moves. Replaying those
 	# moves in reverse is always legal, so every generated board is solvable by
@@ -14,6 +23,10 @@ func generate_tubes(seed_value: int, colors: int) -> Array:
 	result.append([])
 	result.append([])
 	var steps := 8 + colors * 3 + campaign_tier() * 3
+	if not daily_mode and level_number <= 6:
+		# Preserve construction-by-reversal but use a much shallower scramble
+		# during onboarding so the first puzzles read immediately.
+		steps = 4 + level_number * 2
 	if difficulty() == "hard": steps += 5
 	elif difficulty() == "milestone": steps += 8
 	elif difficulty() == "boss": steps += 12

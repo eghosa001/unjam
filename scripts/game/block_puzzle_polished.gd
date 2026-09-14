@@ -48,6 +48,14 @@ func campaign_tier() -> int:
 	return 6
 
 func level_config() -> Dictionary:
+	# The first block levels are placement tutorials. Line-clearing pressure is
+	# introduced after the player has learned how pieces snap onto the board.
+	if not daily_mode and level_number <= 2:
+		return {"target_score": 20 + level_number * 15, "target_lines": 0, "par": 6}
+	if not daily_mode and level_number <= 5:
+		return {"target_score": 55 + level_number * 8, "target_lines": 1, "par": 11}
+	if not daily_mode and level_number <= 10:
+		return {"target_score": 105 + level_number * 4, "target_lines": 1, "par": 15}
 	var world: int = int(MultiGameManager.world_for_level(level_number))
 	var d := difficulty()
 	var tier := campaign_tier()
@@ -139,7 +147,11 @@ func refill_pieces() -> void:
 	var tier := campaign_tier()
 	var d := difficulty()
 	var max_index := 9
-	if tier >= 1: max_index = 17
+	if not daily_mode and level_number <= 5:
+		max_index = 4
+	elif not daily_mode and level_number <= 10:
+		max_index = 7
+	elif tier >= 1: max_index = 17
 	if tier >= 2: max_index = 23
 	if tier >= 4: max_index = ADVANCED_SHAPES.size() - 1
 	if d == "easy": max_index = mini(max_index, 11)
@@ -166,7 +178,7 @@ func _checkpoint_point(raw: Variant) -> Vector2i:
 	if raw is Dictionary:
 		return Vector2i(int(raw.get("x", -1)), int(raw.get("y", -1)))
 	if raw is Array and raw.size() >= 2:
-		return Vector2i(int(raw[0]), int(raw[1]))
+		return Vector2i(int(raw[0]), int(rag[1]))
 	if raw is String:
 		var cleaned := String(raw).replace("Vector2i", "").replace("Vector2", "").replace("(", "").replace(")", "").strip_edges()
 		var parts := cleaned.split(",")

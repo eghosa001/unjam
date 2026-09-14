@@ -15,6 +15,7 @@ var touch_drag_started := false
 var dragging := false
 var phase := 0.0
 var target_scale := Vector2.ONE
+var touch_preview: Control
 
 func configure(value: Array, is_selected: bool, color := Color("4f7cff"), index: int = -1) -> void:
 	shape = value.duplicate(true)
@@ -92,7 +93,39 @@ func _begin_drag_feedback() -> void:
 	tween.tween_property(self, "scale", Vector2(0.90, 0.90), 0.07)
 	tween.parallel().tween_property(self, "modulate", Color(1, 1, 1, 0.24), 0.07)
 
+func _show_touch_preview(screen_position: Vector2) -> void:
+	var game := _game()
+	if game == null:
+		return
+	if touch_preview == null or not is_instance_valid(touch_preview):
+		touch_preview = DragPreview.new()
+		touch_preview.configure(shape, accent)
+		touch_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		touch_preview.z_index = 950
+		var layer = game.get("effects_layer")
+		if layer is Control:
+			layer.add_child(touch_preview)
+		else:
+			game.add_child(touch_preview)
+	_update_touch_preview_position(screen_position)
+
+func _update_touch_preview_position(screen_position: Vector2) -> void:
+	if touch_preview == null or not is_instance_valid(touch_preview):
+		return
+	var parent_control := touch_preview.get_parent() as Control
+	if parent_control == null:
+		return
+	var local_point: Vector2 = parent_control.get_global_transform_with_canvas().affine_inverse() * screen_position
+	# Lift the actual brick above the finger so it remains visible while aiming.
+	touch_preview.position = local_point - Vector2(touch_preview.size.x * 0.5, touch_preview.size.y + 34.0)
+
+func _hide_touch_preview() -> void:
+	if touch_preview != null and is_instance_valid(touch_preview):
+		touch_preview.queue_free()
+	touch_preview = null
+
 func _end_drag_feedback() -> void:
+	_hide_touch_preview()
 	if not dragging:
 		return
 	dragging = false
@@ -126,12 +159,15 @@ func _gui_input(event: InputEvent) -> void:
 		if not touch_drag_started:
 			touch_drag_started = true
 			_begin_drag_feedback()
+		_show_touch_preview(event.position)
+		_update_touch_preview_position(event.position)
 		_update_touch_footprint(event.position)
 		accept_event()
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_DRAG_END:
 		_clear_touch_footprint()
+		_hide_touch_preview()
 		_end_drag_feedback()
 
 func _game() -> Node:
@@ -217,6 +253,7 @@ func _update_touch_footprint(screen_position: Vector2) -> void:
 func _finish_touch_drag(screen_position: Vector2) -> void:
 	var game := _game()
 	_clear_touch_footprint()
+	_hide_touch_preview()
 	_end_drag_feedback()
 	if game == null:
 		return
@@ -225,8 +262,7 @@ func _finish_touch_drag(screen_position: Vector2) -> void:
 		return
 	game.call("place_piece_from_drag", piece_index if piece_index >= 0 else get_index(), origin)
 
-func _set_hover(value: bool) -> void:
-	hover = value
+func _set_hover(value: bool) -> void:ihover = value
 	queue_redraw()
 
 func _update_style() -> void:

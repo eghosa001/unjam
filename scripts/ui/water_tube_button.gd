@@ -3,8 +3,10 @@ class_name WaterTubeButton
 
 const CAPACITY := 4
 const PALETTE := [
-	Color("ff5f7a"), Color("3fa9f5"), Color("ffd166"), Color("45d6a4"),
-	Color("9b6cff"), Color("ff9d57"), Color("39d7cf"), Color("f472b6")
+	# High-separation palette: red, royal blue, yellow, emerald, violet, orange,
+	# cyan and magenta. Adjacent colours differ strongly in both hue and value.
+	Color("ff355d"), Color("2478ff"), Color("ffd42a"), Color("19c56f"),
+	Color("8b4dff"), Color("ff7a00"), Color("00cfe8"), Color("ff3db8")
 ]
 
 var layers: Array = []
@@ -122,6 +124,15 @@ func _draw() -> void:
 			draw_line(Vector2(slot_rect.position.x + 6, surface_y), Vector2(slot_rect.end.x - 6, surface_y - wave * 0.45), liquid.lightened(0.36), 4.0, true)
 			var shine: Rect2 = Rect2(slot_rect.position + Vector2(8, 9), Vector2(maxf(4.0, slot_rect.size.x * 0.09), maxf(5.0, slot_rect.size.y - 17)))
 			draw_rect(shine, Color(1, 1, 1, 0.18), true)
+			# A tiny shape marker provides an accessibility cue in addition to colour.
+			# It is deliberately subtle so the tubes still look like liquid rather
+			# than labelled containers.
+			var marker_center := Vector2(slot_rect.end.x - 16, slot_rect.get_center().y)
+			match color_index % 4:
+				0: draw_circle(marker_center, 4.0, Color(1, 1, 1, 0.62))
+				1: draw_line(marker_center - Vector2(5, 0), marker_center + Vector2(5, 0), Color(1, 1, 1, 0.62), 3.0, true)
+				2: draw_rect(Rect2(marker_center - Vector2(4, 4), Vector2(8, 8)), Color(1, 1, 1, 0.55), true)
+				_: draw_line(marker_center - Vector2(4, 4), marker_center + Vector2(4, 4), Color(1, 1, 1, 0.62), 3.0, true)
 		else:
 			# Empty capacity is glass, not opaque grey fill.
 			draw_line(Vector2(slot_rect.position.x + 7, slot_rect.end.y - 2), Vector2(slot_rect.end.x - 7, slot_rect.end.y - 2), Color(0.72, 0.88, 1.0, 0.07), 1.5, true)

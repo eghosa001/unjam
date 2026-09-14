@@ -51,6 +51,8 @@ func _input(event: InputEvent) -> void:
 	if not touch_drag_started or not dragging or used or shape.is_empty():
 		return
 	if event is InputEventScreenDrag:
+		_show_touch_preview(event.position)
+		_update_touch_preview_position(event.position)
 		_update_touch_footprint(event.position)
 	elif event is InputEventScreenTouch and not event.pressed:
 		_finish_touch_drag(event.position)
