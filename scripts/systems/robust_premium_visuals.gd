@@ -47,6 +47,19 @@ func set_accent(color: Color) -> void:
 	accent = color
 	ambient_sparkles(_ambient_count())
 
+func _diamond(radius: float, color: Color) -> Polygon2D:
+	# Polygon2D is a CanvasItem, not a Control, so assigning mouse_filter causes
+	# a runtime error in Godot 4.7. The parent overlay already ignores input.
+	var p := Polygon2D.new()
+	p.polygon = PackedVector2Array([
+		Vector2(0, -radius),
+		Vector2(radius * 0.72, 0),
+		Vector2(0, radius),
+		Vector2(-radius * 0.72, 0)
+	])
+	p.color = color
+	return p
+
 func ambient_sparkles(count: int = 12) -> void:
 	if not is_instance_valid(overlay):
 		return
@@ -54,7 +67,7 @@ func ambient_sparkles(count: int = 12) -> void:
 	clear_ambient()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 44321
-	for i in range(scaled_count):
+	for _i in range(scaled_count):
 		var radius := rng.randf_range(1.7, 4.2)
 		var dot := _diamond(radius, Color(accent.lightened(0.18), rng.randf_range(0.045, 0.14)))
 		dot.position = Vector2(rng.randf_range(20.0, 1060.0), rng.randf_range(40.0, 1880.0))
