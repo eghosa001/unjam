@@ -45,20 +45,20 @@ func _refresh(force: bool) -> void:
 	_animate_surface(content)
 
 func _configure_background(root: Node, game_id: String, dark: bool, accent: Color) -> void:
-	var backdrop := _find_backdrop(root)
+	var backdrop: Node = _find_backdrop(root)
 	if backdrop != null:
 		var motif := 0
 		match game_id:
 			"water_sort": motif = 1
 			"block_puzzle": motif = 2
-		backdrop.configure(PremiumDesignSystem.game_canvas(game_id, dark), accent, motif)
+		backdrop.call("configure", PremiumDesignSystem.game_canvas(game_id, dark), accent, motif)
 	PremiumVisuals.set_accent(accent)
 
-func _find_backdrop(node: Node):
+func _find_backdrop(node: Node) -> Node:
 	if _script_path(node).ends_with("premium_backdrop.gd"):
 		return node
 	for child in node.get_children():
-		var found = _find_backdrop(child)
+		var found: Node = _find_backdrop(child)
 		if found != null:
 			return found
 	return null
