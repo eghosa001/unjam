@@ -24,6 +24,14 @@ static func find_solution(level: Dictionary, source_pieces: Array = [], max_stat
 			initial.append(p)
 	if _rescue_has_exit(initial, rescue, width, height):
 		return []
+	# Generated campaign boards contain an authored rescue lane. Try that
+	# deterministic route first so Hint stays instant on dense boss levels instead
+	# of exploring thousands of irrelevant filler-piece permutations. Every step is
+	# simulated with the same special/cascade rules as gameplay; BFS remains the
+	# fallback for custom/daily boards or when the authored route is unavailable.
+	var authored := _find_authored_solution(level, initial, rescue, width, height)
+	if not authored.is_empty():
+		return authored
 	var queue_states: Array = [initial]
 	var queue_paths: Array = [[]]
 	var head: int = 0
@@ -32,9 +40,7 @@ static func find_solution(level: Dictionary, source_pieces: Array = [], max_stat
 		var pieces: Array = queue_states[head]
 		var path: Array = queue_paths[head]
 		head += 1
-		for i in range(pieces.size()):
-			if not _path_clear(pieces, i, rescue, width, height):
-				continue
+		for i in _ordered_legal_moves(level, pieces, rescue, width, height):
 			var next: Array = _apply_move(pieces, i, rescue, width, height)
 			var next_path: Array = path.duplicate()
 			next_path.append(i)
@@ -49,6 +55,70 @@ static func find_solution(level: Dictionary, source_pieces: Array = [], max_stat
 				queue_states.append(next)
 				queue_paths.append(next_path)
 	return []
+
+static func _find_authored_solution(level: Dictionary, source: Array, rescue: Vector2i, width: int, height: int) -> Array[int]:
+	var target_direction: Vector2i = DIRS.get(String(level.get("target_exit", "")), Vector2i.ZERO)
+	if target_direction == Vector2i.ZERO:
+		return []
+	var pieces: Array = source.duplicate(true)
+	var path: Array[int] = []
+	var guard := maxi(8, pieces.size() * 2)
+	for _step in range(guard):
+		if _rescue_has_exit(pieces, rescue, width, height):
+			return path
+		var chosen := -1
+		# Required keys are authored on safe edge paths; taking them first opens
+		# any gate deliberately placed in the target rescue lane.
+		for i in range(pieces.size()):
+			if _path_clear(pieces, i, rescue, width, height) and String(pieces[i].get("type", "normal")) == "key":
+				chosen = i
+				break
+		if chosen < 0:
+			for i in range(pieces.size()):
+				if not _path_clear(pieces, i, rescue, width, height):
+					continue
+				if _on_ray(_piece_pos(pieces[i]), rescue, target_direction, width, height):
+					chosen = i
+					break
+		if chosen < 0:
+			return []
+		pieces = _apply_move(pieces, chosen, rescue, width, height)
+		path.append(chosen)
+	return path if _rescue_has_exit(pieces, rescue, width, height) else []
+
+static func _ordered_legal_moves(level: Dictionary, pieces: Array, rescue: Vector2i, width: int, height: int) -> Array[int]:
+	var keys: Array[int] = []
+	var lane: Array[int] = []
+	var specials: Array[int] = []
+	var others: Array[int] = []
+	var target_direction: Vector2i = DIRS.get(String(level.get("target_exit", "")), Vector2i.ZERO)
+	for i in range(pieces.size()):
+		if not _path_clear(pieces, i, rescue, width, height):
+			continue
+		var piece: Dictionary = pieces[i]
+		var type := String(piece.get("type", "normal"))
+		if type == "key":
+			keys.append(i)
+		elif target_direction != Vector2i.ZERO and _on_ray(_piece_pos(piece), rescue, target_direction, width, height):
+			lane.append(i)
+		elif type in ["rotate", "linked", "bomb"]:
+			specials.append(i)
+		else:
+			others.append(i)
+	var ordered: Array[int] = []
+	ordered.append_array(keys)
+	ordered.append_array(lane)
+	ordered.append_array(specials)
+	ordered.append_array(others)
+	return ordered
+
+static func _on_ray(pos: Vector2i, origin: Vector2i, direction: Vector2i, width: int, height: int) -> bool:
+	var cursor := origin + direction
+	while _inside(cursor, width, height):
+		if cursor == pos:
+			return true
+		cursor += direction
+	return false
 
 static func has_solution(level: Dictionary, max_states: int = 4000) -> bool:
 	var rescue_raw: Array = level.get("rescue", [])
@@ -163,7 +233,7 @@ static func _explode(pieces: Array, center: Vector2i) -> void:
 	for y in range(center.y - 1, center.y + 2):
 		for x in range(center.x - 1, center.x + 2):
 			var idx: int = _piece_at(pieces, Vector2i(x, y))
-			if idx >= 0 and String(pieces[idx].get("type", "")) != "gate":
+			if idx >= 0 and String(pieces[idx].get("type", "")) not in ["gate", "blocker"]:
 				pieces[idx]["active"] = false
 
 static func _activate_link(pieces: Array, link_id: String, source_index: int, rescue: Vector2i, width: int, height: int) -> void:
