@@ -159,6 +159,9 @@ func _gui_input(event: InputEvent) -> void:
 		if not touch_drag_started:
 			touch_drag_started = true
 			_begin_drag_feedback()
+			var game := _game()
+			if game != null and game.has_method("register_touch_drag"):
+				game.call("register_touch_drag", self)
 		_show_touch_preview(event.position)
 		_update_touch_preview_position(event.position)
 		_update_touch_footprint(event.position)
@@ -257,12 +260,15 @@ func _finish_touch_drag(screen_position: Vector2) -> void:
 	_end_drag_feedback()
 	if game == null:
 		return
+	if game.has_method("clear_touch_drag"):
+		game.call("clear_touch_drag", self)
 	var origin := _best_origin(game, screen_position)
 	if origin.x < 0:
 		return
 	game.call("place_piece_from_drag", piece_index if piece_index >= 0 else get_index(), origin)
 
-func _set_hover(value: bool) -> void:ihover = value
+func _set_hover(value: bool) -> void:
+	hover = value
 	queue_redraw()
 
 func _update_style() -> void:
