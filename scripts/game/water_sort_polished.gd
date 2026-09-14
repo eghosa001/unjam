@@ -107,7 +107,7 @@ func render_board() -> void:
 		hint_label.custom_minimum_size = Vector2(0, 44)
 
 func select_tube(index: int) -> void:
-	if completed or animating:
+	if completed:
 		return
 	hint_label.text = ""
 	if selected < 0:
@@ -134,101 +134,64 @@ func select_tube(index: int) -> void:
 		return
 
 	var from_idx := selected
+	var from_rect := (board.get_child(from_idx) as Control).get_global_rect()
+	var to_rect := (board.get_child(index) as Control).get_global_rect()
+	var liquid_index := clampi(int(tubes[from_idx].back()), 0, WaterTubeButton.PALETTE.size() - 1)
+	var liquid: Color = WaterTubeButton.PALETTE[liquid_index]
 	history.append({"tubes": tubes.duplicate(true), "moves": moves})
-	animating = true
-	status_label.text = "Pouring…"
-	await _play_pour_sequence(from_idx, index)
 	super.pour(from_idx, index)
 	moves += 1
 	selected = -1
-	status_label.text = "Perfect pour"
+	status_label.text = "Pouring — keep going"
 	render_board()
+	_play_pour_arc(from_rect, to_rect, liquid)
 	_play_success(index)
 	FeedbackManager.tap()
-	PremiumVisuals.screen_flash(Color("5da9ff"), 0.018)
 	_save_checkpoint()
-	animating = false
 	if is_complete():
 		complete_level()
 
-func _play_pour_sequence(from_idx: int, to_idx: int) -> void:
-	if board == null or from_idx < 0 or to_idx < 0 or from_idx >= board.get_child_count() or to_idx >= board.get_child_count():
-		return
-	if tubes[from_idx].is_empty():
-		return
-	var source := board.get_child(from_idx) as Control
-	var target := board.get_child(to_idx) as Control
-	if source == null or target == null:
-		return
-	var color_index := clampi(int(tubes[from_idx].back()), 0, WaterTubeButton.PALETTE.size() - 1)
-	var liquid: Color = WaterTubeButton.PALETTE[color_index]
-	var source_center := source.get_global_rect().get_center() - global_position
-	var target_center := target.get_global_rect().get_center() - global_position
-	var direction_sign := 1.0 if target_center.x >= source_center.x else -1.0
-	var source_rotation := source.rotation
-	var source_position := source.position
-
-	var prep := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	prep.tween_property(source, "position", source_position + Vector2(direction_sign * 18.0, -20.0), 0.10)
-	prep.parallel().tween_property(source, "rotation", deg_to_rad(direction_sign * 23.0), 0.10)
-	prep.parallel().tween_property(source, "scale", Vector2(1.06, 1.06), 0.10)
-	await prep.finished
-
-	var start := source.get_global_rect().get_center() - global_position + Vector2(direction_sign * source.size.x * 0.22, -source.size.y * 0.29)
-	var finish := target.get_global_rect().get_center() - global_position + Vector2(0, -target.size.y * 0.31)
-	var arc_height := maxf(84.0, absf(finish.x - start.x) * 0.16)
+func _play_pour_arc(from_rect: Rect2, to_rect: Rect2, liquid: Color) -> void:
+	var start := from_rect.get_center() - global_position + Vector2(0, -from_rect.size.y * 0.30)
+	var finish := to_rect.get_center() - global_position + Vector2(0, -to_rect.size.y * 0.31)
+	var arc_height := maxf(74.0, absf(finish.x - start.x) * 0.14)
 	var stream := Line2D.new()
-	stream.width = 12.0
-	stream.default_color = Color(liquid, 0.92)
+	stream.width = 13.0
+	stream.default_color = Color(liquid, 0.88)
 	stream.begin_cap_mode = Line2D.LINE_CAP_ROUND
 	stream.end_cap_mode = Line2D.LINE_CAP_ROUND
 	stream.z_index = 420
 	stream.add_point(start)
 	stream.add_point(start)
 	add_child(stream)
-
 	var droplet := Panel.new()
-	droplet.size = Vector2(24, 24)
+	droplet.size = Vector2(26, 26)
 	droplet.pivot_offset = droplet.size * 0.5
 	var style := StyleBoxFlat.new()
 	style.bg_color = liquid.lightened(0.04)
-	style.corner_radius_top_left = 12
-	style.corner_radius_top_right = 12
-	style.corner_radius_bottom_left = 12
-	style.corner_radius_bottom_right = 12
-	style.shadow_color = Color(liquid, 0.28)
-	style.shadow_size = 7
+	style.corner_radius_top_left = 13
+	style.corner_radius_top_right = 13
+	style.corner_radius_bottom_left = 13
+	style.corner_radius_bottom_right = 13
 	droplet.add_theme_stylebox_override("panel", style)
 	droplet.position = start - droplet.size * 0.5
 	droplet.z_index = 430
 	add_child(droplet)
-
-	for step in range(1, 11):
-		var progress := float(step) / 10.0
-		var p := start.lerp(finish, progress)
-		p.y -= sin(progress * PI) * arc_height
-		var segment := create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-		segment.tween_property(droplet, "position", p - droplet.size * 0.5, 0.026)
-		await segment.finished
-		if is_instance_valid(stream) and is_instance_valid(droplet):
-			stream.set_point_position(1, droplet.position + droplet.size * 0.5)
-
-	var land := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	land.tween_property(target, "scale", Vector2(1.09, 0.96), 0.07)
-	land.tween_property(target, "scale", Vector2.ONE, 0.13)
-	land.parallel().tween_property(droplet, "scale", Vector2(1.5, 0.55), 0.07)
-	await land.finished
-	PremiumVisuals.burst(finish, liquid, 8)
-	if is_instance_valid(stream):
-		stream.queue_free()
-	if is_instance_valid(droplet):
-		droplet.queue_free()
-
-	var settle := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	settle.tween_property(source, "position", source_position, 0.13)
-	settle.parallel().tween_property(source, "rotation", source_rotation, 0.13)
-	settle.parallel().tween_property(source, "scale", Vector2.ONE, 0.13)
-	await settle.finished
+	var tween := create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	for step in range(1, 8):
+		var progress := float(step) / 7.0
+		var point := start.lerp(finish, progress)
+		point.y -= sin(progress * PI) * arc_height
+		tween.tween_property(droplet, "position", point - droplet.size * 0.5, 0.035)
+		tween.tween_callback(func():
+			if is_instance_valid(stream) and is_instance_valid(droplet):
+				stream.set_point_position(1, droplet.position + droplet.size * 0.5)
+		)
+	tween.tween_callback(func():
+		PremiumVisuals.burst(finish, liquid, 6)
+		if is_instance_valid(stream): stream.queue_free()
+		if is_instance_valid(droplet): droplet.queue_free()
+	)
 
 func complete_level() -> void:
 	if completed:
