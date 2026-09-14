@@ -48,7 +48,7 @@ func campaign_tier() -> int:
 	return 6
 
 func level_config() -> Dictionary:
-	var world := MultiGameManager.world_for_level(level_number)
+	var world: int = int(MultiGameManager.world_for_level(level_number))
 	var d := difficulty()
 	var tier := campaign_tier()
 	var base := 70 + mini(170, world * 4) + tier * 18
@@ -71,32 +71,25 @@ func level_config() -> Dictionary:
 	return {"target_score": base, "target_lines": mini(18, lines), "par": par}
 
 func load_level() -> void:
-	completed = false
-	selected_piece = -1
-	score = 0
-	lines_cleared = 0
-	placements = 0
-	piece_batch = 0
-	history.clear()
-	status_label.text = ""
-	hint_label.text = "Select a shape, then place it on the grid"
-	var config := level_config()
-	target_score = int(config.get("target_score", 80))
-	target_lines = int(config.get("target_lines", 2))
-	par_placements = int(config.get("par", 18))
-	title_label.text = "DAILY BLOCK PUZZLE" if daily_mode else "BLOCK PUZZLE  •  LEVEL %04d" % level_number
-	meta_label.text = "%s  •  %s  •  WORLD %d" % [difficulty().to_upper(), MultiGameManager.world_name(GAME_ID, MultiGameManager.world_for_level(level_number)).to_upper(), MultiGameManager.world_for_level(level_number)]
-	rng.seed = level_number * 104729 + 8191 + (1 if daily_mode else 0)
-	cells.clear()
-	for _y in range(GRID_SIZE):
-		var row: Array = []
-		for _x in range(GRID_SIZE): row.append(false)
-		cells.append(row)
-	_apply_start_pattern()
-	refill_pieces()
-	_restore_checkpoint()
-	render()
-	AnalyticsManager.track("block_puzzle_level_started", {"level": level_number, "difficulty": difficulty(), "daily": daily_mode, "tier": campaign_tier()})
+	# Let the current Color Blast base implementation initialize cells, colors,
+	# score UI, checkpoints, and analytics. The old override duplicated legacy UI
+	# state (meta_label) and no longer matched the production base class.
+	var checkpoint_before := MultiGameManager.checkpoint(GAME_ID)
+	super.load_level()
+	if checkpoint_before.is_empty():
+		_apply_start_pattern()
+		if not any_move_available():
+			# Preserve a playable opening even when a high-tier pattern is dense.
+			for y in range(GRID_SIZE):
+				for x in range(GRID_SIZE):
+					if bool(cells[y][x]) and rng.randf() < 0.35:
+						cells[y][x] = false
+						cell_colors[y][x] = Color.TRANSPARENT
+			if not any_move_available():
+				pieces[0] = [Vector2i(0,0)]
+				piece_colors[0] = PIECE_COLORS[0]
+		render()
+		_save_checkpoint()
 
 func _apply_start_pattern() -> void:
 	var tier := campaign_tier()
@@ -141,9 +134,11 @@ func _apply_start_pattern() -> void:
 	for i in range(mini(count, candidates.size())):
 		var p: Vector2i = candidates[i]
 		cells[p.y][p.x] = true
+		cell_colors[p.y][p.x] = PIECE_COLORS[posmod(i + tier, PIECE_COLORS.size())]
 
 func refill_pieces() -> void:
 	pieces.clear()
+	piece_colors.clear()
 	piece_batch += 1
 	var tier := campaign_tier()
 	var d := difficulty()
@@ -159,10 +154,11 @@ func refill_pieces() -> void:
 			lower = 6
 		var shape_index := rng.randi_range(lower, max_index)
 		pieces.append((ADVANCED_SHAPES[shape_index] as Array).duplicate())
+		piece_colors.append(PIECE_COLORS[posmod(piece_batch * 3 + i + tier, PIECE_COLORS.size())])
 	selected_piece = -1
 	if not any_move_available():
-		# Guarantee recovery without making the whole batch trivial.
 		pieces[0] = (ADVANCED_SHAPES[rng.randi_range(0, 2)] as Array).duplicate()
+		piece_colors[0] = PIECE_COLORS[posmod(piece_batch * 3 + tier, PIECE_COLORS.size())]
 		if not any_move_available():
 			pieces[0] = [Vector2i(0,0)]
 
@@ -171,8 +167,8 @@ func render_pieces() -> void:
 		child.queue_free()
 	for i in range(pieces.size()):
 		var button := PolishedBlockPieceButton.new()
-		button.custom_minimum_size = Vector2(285, 130)
-		var color: Color = PIECE_COLORS[posmod(piece_batch * 3 + i + campaign_tier(), PIECE_COLORS.size())]
+		button.custom_minimum_size = Vector2(260, 142)
+		var color: Color = piece_colors[i] if i < piece_colors.size() else PIECE_COLORS[posmod(piece_batch * 3 + i + campaign_tier(), PIECE_COLORS.size())]
 		button.configure(pieces[i], i == selected_piece, color, i)
 		button.pressed.connect(select_piece.bind(i))
 		piece_row.add_child(button)
