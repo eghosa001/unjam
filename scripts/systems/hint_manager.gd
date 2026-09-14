@@ -71,7 +71,10 @@ func _track(event_name: String, properties: Dictionary) -> void:
 		analytics.call("track", event_name, properties)
 
 func _on_node_added(node: Node) -> void:
-	if node is Control:
+	# Game roots already expose their script methods when they enter the tree.
+	# Filter here so scene construction does not schedule work for every label,
+	# panel and cell button in a puzzle board.
+	if node is Control and node.has_method("show_hint"):
 		call_deferred("_attach_game", node)
 
 func _scan_existing() -> void:
