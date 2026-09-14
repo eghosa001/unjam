@@ -20,7 +20,6 @@ func _process(_delta: float) -> void:
 	var home := main.get_node_or_null("PremiumHome") as Control
 	if home == null or not home.visible:
 		return
-	# The premium backdrop must never fade out during game selection changes.
 	home.modulate = Color.WHITE
 	home.position = Vector2.ZERO
 	var outer := _find_outer(home)
@@ -33,9 +32,6 @@ func _process(_delta: float) -> void:
 	_patch_layout(outer)
 
 func _refresh_surface(surface: String) -> void:
-	# Premium screens are assembled at runtime. Refresh them whenever the user
-	# re-enters the surface so coins, stars, checkpoints and progress never show
-	# stale values after finishing or quitting a level.
 	var main := get_parent()
 	if surface == "home":
 		patched_outer_id = 0
@@ -93,7 +89,7 @@ func _patch_layout(outer: MarginContainer) -> void:
 	var title := Label.new()
 	title.text = "YOUR %s JOURNEY" % MultiGameManager.display_name(game_id).to_upper()
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 25)
+	title.add_theme_font_size_override("font_size", 30)
 	title.add_theme_color_override("font_color", accent)
 	stack.add_child(title)
 	var level := clampi(MultiGameManager.highest_level(game_id), 1, MultiGameManager.CAMPAIGN_LEVELS)
@@ -101,7 +97,7 @@ func _patch_layout(outer: MarginContainer) -> void:
 	var meta := Label.new()
 	meta.text = "LEVEL %d / 10,000   •   WORLD %d / 100   •   %d ★" % [level, world, MultiGameManager.total_stars(game_id)]
 	meta.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	meta.add_theme_font_size_override("font_size", 20)
+	meta.add_theme_font_size_override("font_size", 24)
 	meta.add_theme_color_override("font_color", meta_color)
 	stack.add_child(meta)
 	var progress := ProgressBar.new()
@@ -109,13 +105,13 @@ func _patch_layout(outer: MarginContainer) -> void:
 	progress.max_value = MultiGameManager.CAMPAIGN_LEVELS
 	progress.value = level
 	progress.show_percentage = false
-	progress.custom_minimum_size = Vector2(0, 18)
+	progress.custom_minimum_size = Vector2(0, 24)
 	progress.add_theme_stylebox_override("background", _box(track_color, 9))
 	progress.add_theme_stylebox_override("fill", _box(accent, 9))
 	stack.add_child(progress)
 	var stats := HBoxContainer.new()
 	stats.alignment = BoxContainer.ALIGNMENT_CENTER
-	stats.add_theme_constant_override("separation", 34)
+	stats.add_theme_constant_override("separation", 16)
 	stack.add_child(stats)
 	for item in [
 		["CURRENT LEVEL", str(level)],
@@ -123,29 +119,38 @@ func _patch_layout(outer: MarginContainer) -> void:
 		["DAILY STREAK", str(int(SaveManager.data.get("daily_streak", 0)))],
 		["PERFECT CLEARS", str(int(MultiGameManager.progress_for(game_id).get("perfect_clears", 0)))]
 	]:
+		var tile := PanelContainer.new()
+		tile.custom_minimum_size = Vector2(205, 132)
+		tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		tile.add_theme_stylebox_override("panel", _box(track_color, 20, Color(accent, 0.20), 1))
+		var tile_margin := MarginContainer.new()
+		tile_margin.add_theme_constant_override("margin_top", 14)
+		tile_margin.add_theme_constant_override("margin_bottom", 14)
+		tile_margin.add_theme_constant_override("margin_left", 10)
+		tile_margin.add_theme_constant_override("margin_right", 10)
+		tile.add_child(tile_margin)
 		var stat := VBoxContainer.new()
-		stat.custom_minimum_size = Vector2(180, 74)
 		stat.alignment = BoxContainer.ALIGNMENT_CENTER
+		tile_margin.add_child(stat)
 		var value := Label.new()
 		value.text = String(item[1])
 		value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		value.add_theme_font_size_override("font_size", 24)
+		value.add_theme_font_size_override("font_size", 42)
 		value.add_theme_color_override("font_color", meta_color)
 		stat.add_child(value)
 		var caption := Label.new()
 		caption.text = String(item[0])
 		caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		caption.add_theme_font_size_override("font_size", 14)
+		caption.add_theme_font_size_override("font_size", 18)
 		caption.add_theme_color_override("font_color", muted_color)
 		stat.add_child(caption)
-		stats.add_child(stat)
+		stats.add_child(tile)
 	var footer := Label.new()
 	footer.text = "NEXT WORLD AT LEVEL %d   •   KEEP YOUR DAILY STREAK ALIVE" % mini(MultiGameManager.CAMPAIGN_LEVELS, world * 100)
 	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	footer.add_theme_font_size_override("font_size", 15)
+	footer.add_theme_font_size_override("font_size", 19)
 	footer.add_theme_color_override("font_color", muted_color)
 	stack.add_child(footer)
-	# Root order is header, hero, section, games, quick. Put journey immediately before quick.
 	var insert_at := maxi(0, root.get_child_count() - 1)
 	root.add_child(panel)
 	root.move_child(panel, insert_at)
