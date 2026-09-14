@@ -111,7 +111,7 @@ static func _generate_onboarding(n: int) -> Dictionary:
 		pieces.append(_piece(pos.x, pos.y, "normal", _perpendicular_direction(target_name, n + i)))
 	return {
 		"id": n, "width": size, "height": size, "world": 1, "phase": 1,
-		"campaign_tier": 0, "difficulty": "easy", "difficulty_score": 3 + int(n / 3),
+		"campaign_tier": 0, "difficulty": "easy", "difficulty_label": "easy", "difficulty_score": 3 + int(n / 3),
 		"milestone": "", "target_exit": target_name, "estimated_required_moves": needed,
 		"par_moves": needed + 2, "rescue_id": RESCUES[(n * 7 + 1) % RESCUES.size()],
 		"rescue": [center.x, center.y], "pieces": pieces
