@@ -5,13 +5,174 @@ const PIECE_COLORS := [
 	Color("ffb454"), Color("ff6b8a"), Color("67e8cf")
 ]
 
+const ADVANCED_SHAPES := [
+	[Vector2i(0,0)],
+	[Vector2i(0,0),Vector2i(1,0)],
+	[Vector2i(0,0),Vector2i(0,1)],
+	[Vector2i(0,0),Vector2i(1,0),Vector2i(2,0)],
+	[Vector2i(0,0),Vector2i(0,1),Vector2i(0,2)],
+	[Vector2i(0,0),Vector2i(1,0),Vector2i(0,1),Vector2i(1,1)],
+	[Vector2i(0,0),Vector2i(1,0),Vector2i(0,1)],
+	[Vector2i(0,0),Vector2i(1,0),Vector2i(1,1)],
+	[Vector2i(0,0),Vector2i(0,1),Vector2i(1,1)],
+	[Vector2i(1,0),Vector2i(0,1),Vector2i(1,1)],
+	[Vector2i(0,0),Vector2i(1,0),Vector2i(2,0),Vector2i(3,0)],
+	[Vector2i(0,0),Vector2i(0,1),Vector2i(0,2),Vector2i(0,3)],
+	[Vector2i(0,0),Vector2i(1,0),Vector2i(2,0),Vector2i(1,1)],
+	[Vector2i(1,0),Vector2i(0,1),Vector2i(1,1),Vector2i(2,1)],
+	[Vector2i(0,0),Vector2i(0,1),Vector2i(0,2),Vector2i(1,2)],
+	[Vector2i(1,0),Vector2i(1,1),Vector2i(1,2),Vector2i(0,2)],
+	[Vector2i(0,0),Vector2i(1,0),Vector2i(1,1),Vector2i(2,1)],
+	[Vector2i(1,0),Vector2i(0,1),Vector2i(1,1),Vector2i(0,2)],
+	[Vector2i(0,0),Vector2i(1,0),Vector2i(2,0),Vector2i(0,1),Vector2i(1,1),Vector2i(2,1)],
+	[Vector2i(0,0),Vector2i(1,0),Vector2i(0,1),Vector2i(1,1),Vector2i(0,2),Vector2i(1,2)],
+	[Vector2i(0,0),Vector2i(1,0),Vector2i(2,0),Vector2i(0,1),Vector2i(0,2)],
+	[Vector2i(0,0),Vector2i(1,0),Vector2i(2,0),Vector2i(2,1),Vector2i(2,2)],
+	[Vector2i(0,0),Vector2i(0,1),Vector2i(1,1),Vector2i(1,2),Vector2i(2,2)],
+	[Vector2i(2,0),Vector2i(1,1),Vector2i(2,1),Vector2i(0,2),Vector2i(1,2)],
+	[Vector2i(1,0),Vector2i(0,1),Vector2i(1,1),Vector2i(2,1),Vector2i(1,2)],
+	[Vector2i(0,0),Vector2i(1,0),Vector2i(2,0),Vector2i(3,0),Vector2i(4,0)],
+	[Vector2i(0,0),Vector2i(0,1),Vector2i(0,2),Vector2i(0,3),Vector2i(0,4)],
+	[Vector2i(0,0),Vector2i(1,0),Vector2i(2,0),Vector2i(3,0),Vector2i(1,1),Vector2i(2,1)],
+	[Vector2i(0,0),Vector2i(1,0),Vector2i(0,1),Vector2i(1,1),Vector2i(2,1),Vector2i(2,2)],
+	[Vector2i(0,0),Vector2i(2,0),Vector2i(0,1),Vector2i(1,1),Vector2i(2,1)]
+]
+
+func campaign_tier() -> int:
+	if level_number <= 100: return 0
+	if level_number <= 500: return 1
+	if level_number <= 1500: return 2
+	if level_number <= 3000: return 3
+	if level_number <= 5000: return 4
+	if level_number <= 7500: return 5
+	return 6
+
+func level_config() -> Dictionary:
+	var world := MultiGameManager.world_for_level(level_number)
+	var d := difficulty()
+	var tier := campaign_tier()
+	var base := 70 + mini(170, world * 4) + tier * 18
+	var lines := 2 + int(world / 10) + int(tier / 2)
+	var par := 18 + int(world / 18) + tier
+	match d:
+		"easy":
+			base = int(base * 0.82)
+			lines = maxi(1, lines - 2)
+			par += 5
+		"hard":
+			base = int(base * 1.25)
+			lines += 2
+		"milestone":
+			base = int(base * 1.48)
+			lines += 3
+		"boss":
+			base = int(base * 1.78)
+			lines += 5
+	return {"target_score": base, "target_lines": mini(18, lines), "par": par}
+
+func load_level() -> void:
+	completed = false
+	selected_piece = -1
+	score = 0
+	lines_cleared = 0
+	placements = 0
+	piece_batch = 0
+	history.clear()
+	status_label.text = ""
+	hint_label.text = "Select a shape, then place it on the grid"
+	var config := level_config()
+	target_score = int(config.get("target_score", 80))
+	target_lines = int(config.get("target_lines", 2))
+	par_placements = int(config.get("par", 18))
+	title_label.text = "DAILY BLOCK PUZZLE" if daily_mode else "BLOCK PUZZLE  •  LEVEL %04d" % level_number
+	meta_label.text = "%s  •  %s  •  WORLD %d" % [difficulty().to_upper(), MultiGameManager.world_name(GAME_ID, MultiGameManager.world_for_level(level_number)).to_upper(), MultiGameManager.world_for_level(level_number)]
+	rng.seed = level_number * 104729 + 8191 + (1 if daily_mode else 0)
+	cells.clear()
+	for _y in range(GRID_SIZE):
+		var row: Array = []
+		for _x in range(GRID_SIZE): row.append(false)
+		cells.append(row)
+	_apply_start_pattern()
+	refill_pieces()
+	_restore_checkpoint()
+	render()
+	AnalyticsManager.track("block_puzzle_level_started", {"level": level_number, "difficulty": difficulty(), "daily": daily_mode, "tier": campaign_tier()})
+
+func _apply_start_pattern() -> void:
+	var tier := campaign_tier()
+	if tier <= 0 and level_number <= 40:
+		return
+	var d := difficulty()
+	var count := 0
+	if tier == 0: count = 3
+	else: count = 4 + tier * 2
+	if d == "easy": count = maxi(2, count - 3)
+	elif d == "hard": count += 2
+	elif d == "milestone": count += 4
+	elif d == "boss": count += 6
+	count = clampi(count, 2, 20)
+	var pattern := posmod(level_number * 7 + tier * 11, 6)
+	var candidates: Array[Vector2i] = []
+	match pattern:
+		0:
+			for x in range(GRID_SIZE):
+				if x not in [3,4]: candidates.append(Vector2i(x, 3))
+		1:
+			for y in range(GRID_SIZE):
+				if y not in [3,4]: candidates.append(Vector2i(4, y))
+		2:
+			for i in range(GRID_SIZE):
+				if i not in [2,5]: candidates.append(Vector2i(i, i))
+		3:
+			for i in range(GRID_SIZE):
+				if i not in [2,5]: candidates.append(Vector2i(GRID_SIZE - 1 - i, i))
+		4:
+			for x in range(1, GRID_SIZE - 1):
+				candidates.append(Vector2i(x, 1))
+				candidates.append(Vector2i(x, GRID_SIZE - 2))
+		_:
+			for y in range(1, GRID_SIZE - 1):
+				candidates.append(Vector2i(1, y))
+				candidates.append(Vector2i(GRID_SIZE - 2, y))
+	while candidates.size() < count:
+		var p := Vector2i(rng.randi_range(0, GRID_SIZE - 1), rng.randi_range(0, GRID_SIZE - 1))
+		if p not in candidates:
+			candidates.append(p)
+	for i in range(mini(count, candidates.size())):
+		var p: Vector2i = candidates[i]
+		cells[p.y][p.x] = true
+
+func refill_pieces() -> void:
+	pieces.clear()
+	piece_batch += 1
+	var tier := campaign_tier()
+	var d := difficulty()
+	var max_index := 9
+	if tier >= 1: max_index = 17
+	if tier >= 2: max_index = 23
+	if tier >= 4: max_index = ADVANCED_SHAPES.size() - 1
+	if d == "easy": max_index = mini(max_index, 11)
+	elif d == "medium": max_index = mini(max_index, 19)
+	for i in range(3):
+		var lower := 0
+		if tier >= 3 and d in ["hard", "milestone", "boss"] and i > 0:
+			lower = 6
+		var shape_index := rng.randi_range(lower, max_index)
+		pieces.append((ADVANCED_SHAPES[shape_index] as Array).duplicate())
+	selected_piece = -1
+	if not any_move_available():
+		# Guarantee recovery without making the whole batch trivial.
+		pieces[0] = (ADVANCED_SHAPES[rng.randi_range(0, 2)] as Array).duplicate()
+		if not any_move_available():
+			pieces[0] = [Vector2i(0,0)]
+
 func render_pieces() -> void:
 	for child in piece_row.get_children():
 		child.queue_free()
 	for i in range(pieces.size()):
 		var button := PolishedBlockPieceButton.new()
 		button.custom_minimum_size = Vector2(285, 130)
-		var color: Color = PIECE_COLORS[posmod(piece_batch * 3 + i, PIECE_COLORS.size())]
+		var color: Color = PIECE_COLORS[posmod(piece_batch * 3 + i + campaign_tier(), PIECE_COLORS.size())]
 		button.configure(pieces[i], i == selected_piece, color, i)
 		button.pressed.connect(select_piece.bind(i))
 		piece_row.add_child(button)
