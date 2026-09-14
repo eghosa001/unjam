@@ -14,7 +14,7 @@ func _animate_hover(active: bool) -> void:
 	lift_tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	lift_tween.set_parallel(true)
 	lift_tween.tween_property(self, "position:y", position.y + (-7.0 if active else 7.0), 0.12)
-	lift_tween.tween_property(self, "scale", Vector2(1.035, 1.035) if active else Vector2.ONE, 0.12)
+	lift_tween.tween_property(self, "scale", Vector2(1.035, 1.035) if active else target_scale, 0.12)
 
 func _make_drag_preview() -> Control:
 	var holder := Control.new()
@@ -31,7 +31,6 @@ func _make_drag_preview() -> Control:
 	preview.rotation = deg_to_rad(-2.0)
 	preview.scale = Vector2(1.08, 1.08)
 	holder.add_child(preview)
-	# Put the visual well above the finger so the board target stays visible.
 	holder.position = Vector2(-120, -205)
 	var tween := holder.create_tween().set_loops()
 	tween.tween_property(preview, "rotation", deg_to_rad(2.0), 0.24).set_trans(Tween.TRANS_SINE)
@@ -39,25 +38,17 @@ func _make_drag_preview() -> Control:
 	return holder
 
 func _gui_input(event: InputEvent) -> void:
+	# Keep the polished press animation, but delegate all touch-drag behavior to
+	# BlockPieceButton's deterministic manual touch lifecycle. This avoids the
+	# old force_drag() path that could leave a preview stuck after touch release.
 	if used or shape.is_empty():
 		return
-	if event is InputEventScreenTouch:
-		if event.pressed:
-			touch_drag_started = false
-			var tw := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-			tw.tween_property(self, "scale", Vector2(1.08, 1.08), 0.10)
-		else:
-			touch_drag_started = false
-			var tw := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-			tw.tween_property(self, "scale", Vector2.ONE, 0.14)
-	elif event is InputEventScreenDrag and not touch_drag_started:
-		touch_drag_started = true
-		var tw := create_tween()
-		tw.tween_property(self, "modulate:a", 0.42, 0.08)
-		force_drag(_drag_payload(), _make_drag_preview())
-		accept_event()
+	if event is InputEventScreenTouch and event.pressed:
+		var tw := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tw.tween_property(self, "scale", target_scale * 1.08, 0.10)
+	super._gui_input(event)
 
 func _notification(what: int) -> void:
+	super._notification(what)
 	if what == NOTIFICATION_DRAG_END:
 		modulate.a = 1.0
-		scale = Vector2.ONE
