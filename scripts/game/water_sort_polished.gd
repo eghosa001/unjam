@@ -67,6 +67,32 @@ func _is_monochrome_nonempty(tube: Array) -> bool:
 		if int(value) != color: return false
 	return true
 
+func render_board() -> void:
+	if board == null:
+		return
+	# queue_free() alone leaves the old buttons parented until the end of the
+	# frame. A quick second tap can therefore hit a stale tube. Detach first so
+	# get_child()/hit testing always sees only the new board immediately.
+	for child in board.get_children():
+		board.remove_child(child)
+		child.queue_free()
+	board.columns = 5 if tubes.size() <= 10 else 6
+	board.add_theme_constant_override("h_separation", 14)
+	board.add_theme_constant_override("v_separation", 18)
+	var tube_width := 170.0 if tubes.size() <= 10 else 138.0
+	var tube_height := 330.0 if tubes.size() <= 10 else 288.0
+	for i in range(tubes.size()):
+		var button := WaterTubeButton.new()
+		button.custom_minimum_size = Vector2(tube_width, tube_height)
+		button.tooltip_text = "Tube %d" % (i + 1)
+		button.configure(tubes[i], i == selected, i)
+		button.pressed.connect(select_tube.bind(i))
+		board.add_child(button)
+	move_label.text = "MOVES  %d    •    PERFECT ≤ %d    •    %d COLORS" % [moves, par_moves, color_count]
+	if hint_label != null:
+		hint_label.add_theme_font_size_override("font_size", 20)
+		hint_label.custom_minimum_size = Vector2(0, 44)
+
 func select_tube(index: int) -> void:
 	if completed or animating:
 		return

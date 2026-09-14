@@ -35,10 +35,10 @@ func _spawn_escape_visual(index: int) -> void:
 	var start_pos := ghost.position
 	var distance := maxf(get_viewport_rect().size.x, get_viewport_rect().size.y) + 380.0 + float(mini(chain_count, 8)) * 34.0
 	var target := start_pos + direction * distance + normal * sin(float(pos.x + pos.y)) * 18.0
-	var center: Vector2 = cell.global_rect.get_center() - global_position
+	var center: Vector2 = cell.get_global_rect().get_center() - global_position
 	PremiumVisuals.burst(center, world_accent(), 7 + mini(chain_count, 8))
 	_spawn_chain_popup(center, chain_count)
-	_spawn_speed_lines(cell.global_rect.get_center(), direction, world_accent())
+	_spawn_speed_lines(cell.get_global_rect().get_center(), direction, world_accent())
 	var twist := deg_to_rad(8.0 if direction.x + direction.y > 0.0 else -8.0)
 	var tween := create_tween()
 	tween.tween_property(ghost, "position", start_pos - direction * 11.0, 0.055).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
@@ -134,7 +134,7 @@ func explode_at(center: Vector2i) -> void:
 	for y in range(center.y - 1, center.y + 2):
 		for x in range(center.x - 1, center.x + 2):
 			var idx: int = get_piece_index_at(Vector2i(x, y))
-			if idx >= 0 and String(pieces[idx].get("type", "")) != "gate":
+			if idx >= 0 and String(pieces[idx].get("type", "")) not in ["gate", "blocker"]:
 				_spawn_vanish_visual(idx, "BOOM!")
 				pieces[idx]["active"] = false
 				chain_count += 1
