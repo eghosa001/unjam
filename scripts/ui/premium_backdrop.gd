@@ -22,9 +22,9 @@ func _process(delta: float) -> void:
 
 func _draw() -> void:
 	var light_mode := base_color.get_luminance() > 0.58
-	var stage := base_color.lerp(Color("ffffff"), 0.18) if light_mode else base_color.lerp(Color("040812"), 0.50)
+	var stage := base_color.lerp(Color("ffffff"), 0.08) if light_mode else base_color.lerp(Color("121d30"), 0.22)
 	var depth_target := accent_color.lightened(0.76) if light_mode else accent_color.darkened(0.68)
-	var depth := stage.lerp(depth_target, 0.13 if light_mode else 0.16)
+	var depth := stage.lerp(depth_target, 0.08 if light_mode else 0.10)
 	draw_rect(Rect2(Vector2.ZERO, size), stage, true)
 	draw_rect(Rect2(Vector2(0, size.y * 0.34), Vector2(size.x, size.y * 0.66)), Color(depth, 0.76 if light_mode else 0.72), true)
 
@@ -32,7 +32,7 @@ func _draw() -> void:
 	var c1 := Vector2(size.x * 0.16 + sin(t * 0.12) * 30.0, size.y * 0.18)
 	var c2 := Vector2(size.x * 0.86 + cos(t * 0.10) * 36.0, size.y * 0.52)
 	var c3 := Vector2(size.x * 0.48, size.y * 0.92 + sin(t * 0.08) * 22.0)
-	var glow_scale := 0.055 if light_mode else 0.10
+	var glow_scale := 0.040 if light_mode else 0.075
 	_draw_glow(c1, minf(size.x, size.y) * 0.40, Color(accent_color, glow_scale))
 	_draw_glow(c2, minf(size.x, size.y) * 0.34, Color(accent_color.lightened(0.18), glow_scale * 0.65))
 	_draw_glow(c3, minf(size.x, size.y) * 0.46, Color(accent_color.darkened(0.12), glow_scale * 0.55))
