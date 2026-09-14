@@ -1,5 +1,25 @@
 extends "res://scripts/ui/ux_shell.gd"
 
+func _process(delta: float) -> void:
+	super._process(delta)
+	var main := _main()
+	if main == null:
+		return
+	var raw_surface = main.get("current_surface")
+	var surface := String(raw_surface) if raw_surface != null else "home"
+	# Premium Home/Live own their complete bottom navigation. The legacy shell
+	# controls otherwise sit on top of those bars on a 1080x1920 canvas.
+	if surface in ["home", "live"]:
+		if help_button != null:
+			help_button.visible = false
+		if theme_button != null:
+			theme_button.visible = false
+		var hub := main.get_node_or_null("MonetizationHub")
+		if hub != null and hub.get("shop_button") != null:
+			var shop = hub.get("shop_button")
+			if is_instance_valid(shop):
+				shop.visible = false
+
 func _is_custom_surface(node: Node) -> bool:
 	var cursor: Node = node
 	while cursor != null:
