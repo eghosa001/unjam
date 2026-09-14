@@ -226,7 +226,7 @@ func _normalize_cell_colors(raw_colors: Variant, normalized_cells: Array) -> Arr
 	for y in range(GRID_SIZE):
 		var row: Array = []
 		for x in range(GRID_SIZE):
-			var fallback := PIECE_COLORS[posmod(y * GRID_SIZE + x, PIECE_COLORS.size())] if bool(normalized_cells[y][x]) else Color.TRANSPARENT
+			var fallback: Color = PIECE_COLORS[posmod(y * GRID_SIZE + x, PIECE_COLORS.size())] if bool(normalized_cells[y][x]) else Color.TRANSPARENT
 			var value: Variant = null
 			if raw_colors is Array and raw_colors.size() == GRID_SIZE and raw_colors[y] is Array and raw_colors[y].size() == GRID_SIZE:
 				value = raw_colors[y][x]
@@ -287,9 +287,6 @@ func _restore_checkpoint() -> void:
 	placements = maxi(0, int(checkpoint.get("placements", 0)))
 	piece_batch = maxi(0, int(checkpoint.get("batch", piece_batch)))
 	rng.state = int(checkpoint.get("rng_state", rng.state))
-	# Older checkpoints stored Vector2i/Color values as strings inside history.
-	# Discard persisted undo history at migration time instead of allowing a stale
-	# state to crash the next undo. New moves immediately build a fresh safe stack.
 	history.clear()
 	if not any_move_available():
 		for i in range(pieces.size()):
