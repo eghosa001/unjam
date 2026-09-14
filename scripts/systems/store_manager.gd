@@ -29,7 +29,14 @@ func register_provider(value: Node) -> void:
 	catalog_changed.emit()
 func provider_ready() -> bool: return provider != null and is_instance_valid(provider)
 func set_localized_prices(prices: Dictionary) -> void: localized_prices=prices.duplicate(true); catalog_changed.emit()
-func price_text(product_id: String) -> String: return String(localized_prices[product_id]) if localized_prices.has(product_id) else ("PLAY STORE" if OS.get_name()=="Android" else "TEST PURCHASE")
+func price_text(product_id: String) -> String:
+	if localized_prices.has(product_id):
+		return String(localized_prices[product_id])
+	if provider_ready():
+		return "PLAY STORE"
+	if bool(ProjectSettings.get_setting("monetization/test_mode", false)) and OS.get_name() != "Android":
+		return "TEST PURCHASE"
+	return "UNAVAILABLE"
 
 func purchase(product_id: String) -> bool:
 	if purchase_in_progress:

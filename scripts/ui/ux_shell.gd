@@ -147,7 +147,7 @@ func _process(_delta: float) -> void:
 		return
 	var raw_surface = main.get("current_surface")
 	var surface := String(raw_surface) if raw_surface != null else "home"
-	help_button.visible = surface in ["home", "levels", "game"] and not tutorial_panel.visible
+	help_button.visible = surface in ["home", "game"] and not tutorial_panel.visible
 	theme_button.visible = surface in ["home", "settings"] and not tutorial_panel.visible
 	# PremiumHome owns the app branding. Keep the legacy shell logo hidden so it can never overlap top-left back controls.
 	logo.visible = false

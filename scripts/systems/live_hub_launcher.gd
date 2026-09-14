@@ -43,7 +43,7 @@ func _process(_delta: float) -> void:
 		surface = String(scene.current_surface)
 	# Keep LIVE out of the premium home composition; it remains available on
 	# campaign/collection/settings surfaces without covering primary CTAs.
-	launcher.visible = scene != null and scene.name == "Main" and not hub_open and surface in ["levels", "collection", "settings"]
+	launcher.visible = scene != null and scene.name == "Main" and not hub_open and surface in ["collection", "settings"]
 	if launcher.visible:
 		launcher.text = "LIVE\n%d ◆" % int(SaveManager.data.get("event_currency", 0))
 
