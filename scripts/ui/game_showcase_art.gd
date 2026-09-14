@@ -13,6 +13,7 @@ func configure(id: String, color: Color, dark: bool) -> void:
 	queue_redraw()
 
 func _ready() -> void:
+	clip_contents = true
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_process(true)
 
