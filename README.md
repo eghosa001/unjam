@@ -1,121 +1,82 @@
-# Unjam: Rescue Rush
+# UNJAM
 
-A mobile-first chain-reaction rescue puzzle built in Godot. Tap directional pieces to clear a path for a trapped character; keys, gates, bombs, rotators and linked pieces can transform the board and create satisfying chain reactions.
+UNJAM is a portrait-first Android puzzle collection built in Godot 4.7.2 with three equal game modes:
 
-## Launch scope now implemented
+- **Rescue Rush** — directional escape and chain-reaction rescue puzzles.
+- **Water Sort** — colour-sorting tube puzzles with animated pours.
+- **Block Puzzle** — 8×8 placement and line-clearing puzzles.
 
-- Android-oriented portrait layout and compatibility renderer
-- Premium procedural UI presentation with six world themes
-- 60-level campaign split into six worlds
-- 10 handcrafted onboarding levels plus deterministic campaign generation
-- Daily challenge with deterministic daily seed, 100-coin reward and streak tracking
-- Persistent progress, stars, rescued characters, coins and settings
-- Rescue Garden with collectible characters and purchasable decorations
-- Directional path/block checks and rescue-path win detection
-- Undo, hints, restart and star scoring
-- Normal, rotate, key, gate, bomb, linked and blocker mechanics
-- Chain reaction feedback, board shake, reveal/rescue tweens
-- Procedural sound effects and Android haptic feedback without external audio dependencies
-- Rewarded-ad and interstitial placement boundaries isolated in `AdManager`
-- Analytics event boundary isolated in `AnalyticsManager`
-- Internal visual level editor
-- Handcrafted-level validator and full 60-level campaign validator
-- GitHub Actions import/validation/boot smoke tests
-- Android export preset targeting ARM64
+Each game has its own progression, stars and a deterministic 10,000-level campaign. The launcher includes premium Home and Live surfaces, daily challenges, level selection, collection/reward systems, settings, persistence, monetization boundaries and Android-oriented touch input.
 
-## Gameplay
+## Current production scope
 
-Tap a directional piece. If every tile in its direction is clear, it escapes the board. Clearing a route from the rescue character to any board edge completes the level.
+- Godot 4.7.2 compatibility renderer
+- 1080×1920 portrait design viewport with 540×960 test override
+- Premium dark/light launcher UI
+- Rescue Rush, Water Sort and Block Puzzle integrated into one app
+- 10,000 deterministic campaign levels per game
+- Per-game progress, stars, worlds and checkpoints
+- Daily challenges and retention systems
+- Save recovery/sanitization
+- Hints, undo/restart where appropriate and result overlays
+- Ad, purchase, privacy and analytics abstraction layers
+- Automated level, gameplay, monetization, robustness and first-100 progression validation
+- GitHub Actions import, test, boot and Android export gates
 
-Special pieces:
+## Run locally
 
-- **Rotate** — rotates adjacent movable pieces clockwise.
-- **Key** — opens gates with the same `key_id`.
-- **Gate** — blocks movement until the matching key is released.
-- **Bomb** — removes nearby non-gate pieces.
-- **Linked** — activates another linked piece with the same `link_id`; blocked partners rotate instead.
-- **Blocker** — permanent obstacle unless removed by a bomb.
+Use **Godot 4.7.2 stable**. Open `project.godot` and run `scenes/Main.tscn`.
 
-## Campaign worlds
-
-1. **Garden Escape** — core directional rules
-2. **Locks & Keys** — keys and gates
-3. **Chain Reaction** — rotators and changing board states
-4. **Blast Lab** — bombs and destructible blockers
-5. **Linked Zone** — paired pieces and multi-object reactions
-6. **Chaos Rescue** — mixed-mechanic mastery
-
-## Run
-
-Use Godot 4.5.x. Open `project.godot` and run the project.
-
-The project uses the compatibility renderer for lower-end Android support.
+The compatibility renderer is intentionally used for broader Android device support.
 
 ## Validation
+
+CI currently runs:
 
 ```bash
 godot --headless --path . --editor --quit
 godot --headless --path . --script res://tests/validate_levels.gd
 godot --headless --path . --script res://tests/validate_campaign.gd
+godot --headless --path . --script res://tests/validate_retention.gd
+godot --headless --path . --script res://tests/validate_robustness.gd
+godot --headless --path . --script res://tests/validate_level_launch.gd
+godot --headless --path . --script res://tests/validate_gameplay_interactions.gd
+godot --headless --path . --script res://tests/validate_first_100_progression.gd
+godot --headless --path . --script res://tests/validate_campaign_1000.gd
+godot --headless --path . --script res://tests/validate_monetization.gd
 godot --headless --path . --quit-after 5
 ```
 
-GitHub Actions runs the same checks on pushes and pull requests.
+The workflow also performs Android API 36 APK and AAB export smoke tests.
 
-## Level editor
+## Android / Google Play
 
-Open `scenes/LevelEditor.tscn` directly in Godot and run the scene. The editor can:
+`export_presets.cfg` currently uses:
 
-- place/remove pieces on a 5×5 grid
-- select piece type and direction
-- move the rescue target
-- clear the board
-- export the level as JSON into `data/levels/`
+- package id: `com.eghosa.unjam`
+- package name: `UNJAM`
+- version: `1.0.0` / version code `1`
+- minimum SDK: 24
+- target SDK: 36
+- ARM64 (`arm64-v8a`)
+- immersive portrait presentation
+- AAB as the production export format
 
-Hand-authored JSON levels override generated campaign levels with the same number, so polished levels can gradually replace generated ones without changing game code.
+A **debug APK is for installation/testing only**. Google Play deployment must use a release AAB signed with the owner's private upload key. Do not commit the keystore, alias password or store password to this repository.
 
-## Android
-
-`export_presets.cfg` contains an ARM64 Android preset with package id `com.eghosa.unjam`.
-
-Before a Play Store release you still need to configure your own Android SDK/JDK environment, upload/signing keystore and store credentials. Never commit keystore passwords or service credentials.
-
-## Monetization integration
-
-Gameplay never talks directly to an ad SDK. Replace the development fallback inside `scripts/systems/ad_manager.gd` with your selected provider implementation.
-
-Current placements are deliberately conservative:
-
-- rewarded double-reward on the result screen
-- interstitial pacing after multiple completed levels
-- no mid-puzzle interruption
-
-`remove_ads` is already represented in save data for a future purchase adapter.
-
-## Analytics integration
-
-`scripts/systems/analytics_manager.gd` currently logs events locally. Replace the `track()` implementation with Firebase Analytics, GameAnalytics or another provider. Gameplay already reports starts and completions, while the architecture supports restart/hint/undo instrumentation.
+Before public rollout, complete `RELEASE_CHECKLIST.md`, including real AdMob/Play Billing configuration, privacy/data-safety declarations, store listing assets and upload-key signing.
 
 ## Project structure
 
-- `scripts/core/` — saves, level loading and campaign generation
-- `scripts/game/` — puzzle rules and game presentation
-- `scripts/ui/` — home, worlds, settings and Rescue Garden
-- `scripts/systems/` — ads, analytics, daily challenge and feedback
-- `tools/` — internal level editor
-- `data/levels/` — handcrafted JSON level overrides
-- `tests/` — validators
-- `.github/workflows/` — CI quality gate
+- `scripts/core/` — progression, campaign generation, level management and saves
+- `scripts/game/` — Rescue Rush, Water Sort and Block Puzzle gameplay
+- `scripts/ui/` — premium launcher, game UI and touch components
+- `scripts/systems/` — ads, purchases, privacy, retention, feedback and analytics
+- `data/levels/` — handcrafted Rescue Rush overrides
+- `tests/` — automated validators and progression checks
+- `tools/` — development-only utilities
+- `.github/workflows/` — CI and Android export validation
 
-## External release blockers
+## Release status
 
-The codebase is feature-complete for the planned first commercial version. The remaining release-specific work requires owner-controlled external resources rather than more game architecture:
-
-1. choose and configure the real ad SDK/application IDs
-2. optionally connect production analytics
-3. create the Play Console listing, privacy policy and store graphics
-4. provide the Android signing/upload key
-5. replace or extend procedural visuals with commissioned/custom artwork if desired
-6. playtest and tune individual level difficulty using real-player data
-
-The project deliberately keeps those external dependencies isolated so the game remains fully playable during development.
+The game code and Android export configuration are prepared for testing and Play Internal Testing. Public monetized release still requires owner-controlled external credentials/services listed in `RELEASE_CHECKLIST.md`; those are intentionally not hard-coded or committed.
