@@ -15,6 +15,7 @@ func _run() -> void:
 		return
 	var main := packed.instantiate()
 	root.add_child(main)
+	current_scene = main
 	await _settle(8)
 
 	main.call("build_home")
