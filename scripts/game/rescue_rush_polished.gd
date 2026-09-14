@@ -25,18 +25,32 @@ func _spawn_escape_visual(index: int) -> void:
 	ghost.custom_minimum_size = cell.size
 	ghost.configure(String(piece.get("type", "normal")), String(piece.get("direction", "right")), piece_color(String(piece.get("type", "normal"))))
 	ghost.global_position = cell.global_position
-	ghost.z_index = 250
+	ghost.z_index = 520 + mini(chain_count, 20)
 	add_child(ghost)
 	ghost.global_position = cell.global_position
 	ghost.pivot_offset = ghost.size * 0.5
-	var dir: Vector2i = DIRECTIONS.get(String(piece.get("direction", "right")), Vector2i.RIGHT)
-	var distance := maxf(get_viewport_rect().size.x, get_viewport_rect().size.y) + 360.0
-	var target := ghost.position + Vector2(dir) * distance
-	var tween := create_tween().set_parallel(true)
-	tween.tween_property(ghost, "position", target, 0.34).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	tween.tween_property(ghost, "scale", Vector2(1.12, 1.12), 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(ghost, "modulate:a", 0.0, 0.16).set_delay(0.20)
-	_spawn_speed_lines(cell.global_rect.get_center(), Vector2(dir), world_accent())
+	var dir_i: Vector2i = DIRECTIONS.get(String(piece.get("direction", "right")), Vector2i.RIGHT)
+	var direction := Vector2(dir_i)
+	var normal := Vector2(-direction.y, direction.x)
+	var start_pos := ghost.position
+	var distance := maxf(get_viewport_rect().size.x, get_viewport_rect().size.y) + 380.0 + float(mini(chain_count, 8)) * 34.0
+	var target := start_pos + direction * distance + normal * sin(float(pos.x + pos.y)) * 18.0
+	var center: Vector2 = cell.global_rect.get_center() - global_position
+	PremiumVisuals.burst(center, world_accent(), 7 + mini(chain_count, 8))
+	_spawn_chain_popup(center, chain_count)
+	_spawn_speed_lines(cell.global_rect.get_center(), direction, world_accent())
+
+	var twist := deg_to_rad(8.0 if direction.x + direction.y > 0.0 else -8.0)
+	var tween := create_tween()
+	# Anticipation -> elastic launch -> accelerating fly-off, matching Block Puzzle's staged feedback.
+	tween.tween_property(ghost, "position", start_pos - direction * 11.0, 0.055).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.parallel().tween_property(ghost, "scale", Vector2(0.94, 0.94), 0.055)
+	tween.tween_property(ghost, "position", start_pos + direction * 36.0, 0.075).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.parallel().tween_property(ghost, "scale", Vector2(1.10, 1.10), 0.075)
+	tween.tween_property(ghost, "position", target, 0.34).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	tween.parallel().tween_property(ghost, "rotation", twist, 0.34)
+	tween.parallel().tween_property(ghost, "scale", Vector2(0.76, 0.76), 0.34)
+	tween.parallel().tween_property(ghost, "modulate:a", 0.0, 0.34).set_delay(0.16)
 	tween.finished.connect(ghost.queue_free)
 
 func _spawn_speed_lines(origin_global: Vector2, direction: Vector2, color: Color) -> void:
