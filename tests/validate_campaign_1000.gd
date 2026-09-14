@@ -44,12 +44,17 @@ func _run() -> void:
 	for n in range(1, MAX_LEVEL + 1):
 		block.level_number = n
 		var cfg: Dictionary = block.level_config()
-		if int(cfg.get("target_score", 0)) <= 0 or int(cfg.get("target_lines", 0)) <= 0 or int(cfg.get("par", 0)) <= 0:
+		var target_score := int(cfg.get("target_score", 0))
+		var target_lines := int(cfg.get("target_lines", -1))
+		var par := int(cfg.get("par", 0))
+		# Levels 1-2 deliberately teach placement/scoring before introducing line clears.
+		# From level 3 onward every puzzle must include a positive line-clear objective.
+		if target_score <= 0 or par <= 0 or target_lines < 0 or (n >= 3 and target_lines <= 0):
 			errors.append("Block %d invalid goal" % n)
 		if multi.difficulty_for_level(n) not in ["easy", "medium", "hard", "milestone", "boss"]:
 			errors.append("Level %d invalid difficulty" % n)
 		if n % 20 == 0:
-			block_goal_signatures["%d:%d:%d" % [int(cfg.target_score), int(cfg.target_lines), int(cfg.par)]] = true
+			block_goal_signatures["%d:%d:%d" % [target_score, target_lines, par]] = true
 	if block_goal_signatures.size() < 100:
 		errors.append("Block campaign goal diversity too low: %d signatures" % block_goal_signatures.size())
 	if block.ADVANCED_SHAPES.size() < 25:
