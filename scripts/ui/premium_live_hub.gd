@@ -48,19 +48,19 @@ func _dark() -> bool:
 	return _theme_mode() == "dark"
 
 func _ink() -> Color:
-	return Color("f7f9ff") if _dark() else Color("132033")
+	return Color("f4f7fb") if _dark() else Color("213044")
 
 func _muted() -> Color:
-	return Color("9aa9bf") if _dark() else Color("607087")
+	return Color("b6c3d4") if _dark() else Color("6f7f92")
 
 func _surface() -> Color:
-	return Color("050a12") if _dark() else Color("edf3f8")
+	return Color("0b1220") if _dark() else Color("eef2f5")
 
 func _card() -> Color:
-	return Color("0b1626") if _dark() else Color("ffffff")
+	return Color("141f31") if _dark() else Color("f8fafc")
 
 func _border() -> Color:
-	return Color("223650") if _dark() else Color("c5d1df")
+	return Color("38506d") if _dark() else Color("c7d1dc")
 
 func _box(color: Color, radius: int, border: Color = Color.TRANSPARENT, width: int = 0, shadow: int = 0) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
@@ -87,7 +87,7 @@ func _button(text_value: String, minimum: Vector2, accent: Color, strong := fals
 	button.custom_minimum_size = minimum
 	button.focus_mode = Control.FOCUS_NONE
 	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	button.add_theme_font_size_override("font_size", 18)
+	button.add_theme_font_size_override("font_size", 21)
 	var normal := accent if strong else Color(_card(), 0.98)
 	button.add_theme_stylebox_override("normal", _box(normal, 24, accent if strong else _border(), 2, 8 if strong else 3))
 	button.add_theme_stylebox_override("hover", _box(normal.lightened(0.06), 24, accent.lightened(0.15), 2, 7))
@@ -134,7 +134,7 @@ func _build() -> void:
 	titles.add_child(title)
 	var subtitle := Label.new()
 	subtitle.text = "Choose a game and jump straight back in"
-	subtitle.add_theme_font_size_override("font_size", 16)
+	subtitle.add_theme_font_size_override("font_size", 20)
 	subtitle.add_theme_color_override("font_color", _muted())
 	titles.add_child(subtitle)
 	var wallet := Label.new()
@@ -142,21 +142,21 @@ func _build() -> void:
 	wallet.custom_minimum_size = Vector2(270, 68)
 	wallet.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	wallet.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	wallet.add_theme_font_size_override("font_size", 18)
+	wallet.add_theme_font_size_override("font_size", 21)
 	wallet.add_theme_color_override("font_color", Color("ffd166"))
 	header.add_child(wallet)
 
 	var tabs := HBoxContainer.new()
 	tabs.add_theme_constant_override("separation", 10)
 	root.add_child(tabs)
-	var live_tab := _button("LIVE GAMES", Vector2(0, 66), Color("5da9ff"), true)
+	var live_tab := _button("LIVE GAMES", Vector2(0, 82), Color("5da9ff"), true)
 	live_tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	tabs.add_child(live_tab)
-	var daily := _button("DAILY CHALLENGE", Vector2(0, 66), Color("2dd4b6"))
+	var daily := _button("DAILY CHALLENGE", Vector2(0, 82), Color("2dd4b6"))
 	daily.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	daily.pressed.connect(_daily_for_best_game)
 	tabs.add_child(daily)
-	var levels := _button("LEVELS", Vector2(0, 66), Color("8b7cf6"))
+	var levels := _button("LEVELS", Vector2(0, 82), Color("8b7cf6"))
 	levels.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	levels.pressed.connect(_levels_for_best_game)
 	tabs.add_child(levels)
@@ -173,14 +173,14 @@ func _build() -> void:
 		_add_game_card(stack, game_id)
 
 	var footer := PanelContainer.new()
-	footer.custom_minimum_size = Vector2(0, 94)
+	footer.custom_minimum_size = Vector2(0, 118)
 	footer.add_theme_stylebox_override("panel", _box(Color(_card(), 0.92), 28, _border(), 2))
 	stack.add_child(footer)
 	var footer_text := Label.new()
 	footer_text.text = "⚡  PLAY MORE. MASTER MORE.\nEvery game keeps its own progress, stars and 10,000-level journey."
 	footer_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	footer_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	footer_text.add_theme_font_size_override("font_size", 16)
+	footer_text.add_theme_font_size_override("font_size", 19)
 	footer_text.add_theme_color_override("font_color", _muted())
 	footer.add_child(footer_text)
 
@@ -191,7 +191,7 @@ func _add_game_card(parent: VBoxContainer, game_id: String) -> void:
 	var progress := MultiGameManager.progress_for(game_id)
 	var highest := clampi(int(progress.get("highest_level", 1)), 1, MultiGameManager.CAMPAIGN_LEVELS)
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(0, 288)
+	panel.custom_minimum_size = Vector2(0, 390)
 	panel.add_theme_stylebox_override("panel", _box(Color(_card(), 0.97), 34, Color(accent, 0.62), 2, 10))
 	parent.add_child(panel)
 	var margin := MarginContainer.new()
@@ -205,7 +205,7 @@ func _add_game_card(parent: VBoxContainer, game_id: String) -> void:
 	margin.add_child(row)
 
 	var art := GameShowcaseArt.new()
-	art.custom_minimum_size = Vector2(250, 240)
+	art.custom_minimum_size = Vector2(310, 330)
 	art.configure(game_id, accent, _dark())
 	row.add_child(art)
 
@@ -218,32 +218,32 @@ func _add_game_card(parent: VBoxContainer, game_id: String) -> void:
 	var name := Label.new()
 	name.text = MultiGameManager.display_name(game_id).to_upper()
 	name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name.add_theme_font_size_override("font_size", 30)
+	name.add_theme_font_size_override("font_size", 36)
 	name.add_theme_color_override("font_color", _ink())
 	top.add_child(name)
 	var tag := Label.new()
 	tag.text = TAGS[game_id]
-	tag.add_theme_font_size_override("font_size", 13)
+	tag.add_theme_font_size_override("font_size", 16)
 	tag.add_theme_color_override("font_color", accent)
 	top.add_child(tag)
 	var desc := Label.new()
 	desc.text = DESCRIPTIONS[game_id]
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	desc.add_theme_font_size_override("font_size", 16)
+	desc.add_theme_font_size_override("font_size", 20)
 	desc.add_theme_color_override("font_color", _muted())
 	info.add_child(desc)
 	var stats := Label.new()
 	stats.text = "LEVEL %d / 10,000   •   %d ★\nWORLD %d / 100   •   %d PERFECT" % [highest, MultiGameManager.total_stars(game_id), MultiGameManager.highest_unlocked_world(game_id), int(progress.get("perfect_clears", 0))]
-	stats.add_theme_font_size_override("font_size", 16)
+	stats.add_theme_font_size_override("font_size", 20)
 	stats.add_theme_color_override("font_color", Color("d8e4f4") if _dark() else Color("34445a"))
 	info.add_child(stats)
 	var actions := HBoxContainer.new()
 	actions.add_theme_constant_override("separation", 10)
 	info.add_child(actions)
-	var play := _button("PLAY  ›", Vector2(210, 68), accent, true)
+	var play := _button("PLAY  ›", Vector2(250, 88), accent, true)
 	play.pressed.connect(_play.bind(game_id))
 	actions.add_child(play)
-	var daily := _button("DAILY", Vector2(150, 68), accent)
+	var daily := _button("DAILY", Vector2(180, 88), accent)
 	daily.pressed.connect(_daily.bind(game_id))
 	actions.add_child(daily)
 
@@ -253,25 +253,25 @@ func _add_bottom_nav() -> void:
 	nav.offset_left = 42
 	nav.offset_right = -42
 	nav.offset_bottom = -24
-	nav.offset_top = -106
+	nav.offset_top = -120
 	nav.add_theme_stylebox_override("panel", _box(Color(_card(), 0.98), 30, _border(), 2, 10))
 	add_child(nav)
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 12)
 	nav.add_child(row)
-	var home := _button("⌂  HOME", Vector2(0, 74), Color("5da9ff"))
+	var home := _button("⌂  HOME", Vector2(0, 88), Color("5da9ff"))
 	home.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	home.pressed.connect(_go_home)
 	row.add_child(home)
-	var live := _button("●  LIVE", Vector2(0, 74), Color("5da9ff"), true)
+	var live := _button("●  LIVE", Vector2(0, 88), Color("5da9ff"), true)
 	live.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(live)
-	var collection := _button("★  COLLECTION", Vector2(0, 74), Color("8b7cf6"))
+	var collection := _button("★  COLLECTION", Vector2(0, 88), Color("8b7cf6"))
 	collection.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	collection.pressed.connect(func(): get_parent().call("build_collection"))
 	row.add_child(collection)
-	var settings := _button("⚙  SETTINGS", Vector2(0, 74), Color("2dd4b6"))
+	var settings := _button("⚙  SETTINGS", Vector2(0, 88), Color("2dd4b6"))
 	settings.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	settings.pressed.connect(func(): get_parent().call("build_settings"))
 	row.add_child(settings)
