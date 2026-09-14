@@ -124,13 +124,13 @@ func build_home_launcher() -> void:
 
 	# Compact brand header: premium games keep branding strong without spending a quarter of the screen on it.
 	logo = UnjamLogo.new()
-	logo.custom_minimum_size = Vector2(0, 150)
+	logo.custom_minimum_size = Vector2(0, 120)
 	logo.configure(_dark())
 	root.add_child(logo)
 
 	var hero := PanelContainer.new()
 	hero.name = "HomeHero"
-	hero.custom_minimum_size = Vector2(0, 790)
+	hero.custom_minimum_size = Vector2(0, 700)
 	hero.add_theme_stylebox_override("panel", _box(Color(_card(), 0.96), 42, Color(accent, 0.42), 2, 18))
 	root.add_child(hero)
 	var hero_margin := MarginContainer.new()
@@ -151,7 +151,7 @@ func build_home_launcher() -> void:
 	hero_stack.add_child(eyebrow)
 
 	hero_art = GameShowcaseArt.new()
-	hero_art.custom_minimum_size = Vector2(0, 410)
+	hero_art.custom_minimum_size = Vector2(0, 340)
 	hero_art.configure(selected_game, accent, _dark())
 	hero_stack.add_child(hero_art)
 
@@ -176,7 +176,7 @@ func build_home_launcher() -> void:
 	hero_progress.add_theme_color_override("font_color", Color("d9e5f4") if _dark() else Color("314158"))
 	hero_stack.add_child(hero_progress)
 
-	primary_button = _button(_primary_text(selected_game), Vector2(0, 96), accent, true)
+	primary_button = _button(_primary_text(selected_game), Vector2(0, 90), accent, true)
 	primary_button.name = "HomePrimaryAction"
 	primary_button.add_theme_font_size_override("font_size", 24)
 	primary_button.pressed.connect(_play_selected)
@@ -201,20 +201,25 @@ func build_home_launcher() -> void:
 		tile.chosen.connect(_select_game)
 		games.add_child(tile)
 
-	var quick := HBoxContainer.new()
-	quick.alignment = BoxContainer.ALIGNMENT_CENTER
-	quick.add_theme_constant_override("separation", 12)
+	var quick := GridContainer.new()
+	quick.columns = 2
+	quick.add_theme_constant_override("h_separation", 12)
+	quick.add_theme_constant_override("v_separation", 12)
 	root.add_child(quick)
-	var daily := _button("DAILY", Vector2(220, 72), accent)
+	var daily := _button("DAILY", Vector2(0, 76), accent)
+	daily.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	daily.pressed.connect(_open_daily)
 	quick.add_child(daily)
-	var journey := _button("LEVELS", Vector2(220, 72), accent)
+	var journey := _button("LEVELS", Vector2(0, 76), accent)
+	journey.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	journey.pressed.connect(_open_journey)
 	quick.add_child(journey)
-	var collection := _button("COLLECTION", Vector2(220, 72), accent)
+	var collection := _button("COLLECTION", Vector2(0, 76), accent)
+	collection.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	collection.pressed.connect(func(): get_parent().call("build_collection"))
 	quick.add_child(collection)
-	var settings := _button("SETTINGS", Vector2(220, 72), accent)
+	var settings := _button("SETTINGS", Vector2(0, 76), accent)
+	settings.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	settings.pressed.connect(func(): get_parent().call("build_settings"))
 	quick.add_child(settings)
 
