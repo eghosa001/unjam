@@ -52,23 +52,29 @@ func _configure_background(root: Node, game_id: String, dark: bool, accent: Colo
 			"water_sort": motif = 1
 			"block_puzzle": motif = 2
 		backdrop.configure(PremiumDesignSystem.game_canvas(game_id, dark), accent, motif)
-	var main := get_parent()
-	if main != null:
-		PremiumVisuals.set_accent(accent)
+	PremiumVisuals.set_accent(accent)
 
-func _find_backdrop(node: Node) -> PremiumBackdrop:
-	if node is PremiumBackdrop:
-		return node as PremiumBackdrop
+func _find_backdrop(node: Node):
+	if _script_path(node).ends_with("premium_backdrop.gd"):
+		return node
 	for child in node.get_children():
-		var found := _find_backdrop(child)
+		var found = _find_backdrop(child)
 		if found != null:
 			return found
 	return null
 
+func _script_path(node: Node) -> String:
+	var script := node.get_script() as Script
+	return String(script.resource_path) if script != null else ""
+
+func _is_gameplay_widget(node: Node) -> bool:
+	var path := _script_path(node)
+	return path.contains("water_tube") or path.contains("block_piece_button") or path.contains("block_cell_button") or path.contains("premium_piece_button")
+
 func _polish_tree(node: Node, surface: String, dark: bool, accent: Color) -> void:
 	if not is_instance_valid(node):
 		return
-	if node is Button and not node is WaterTubeButton and not node is BlockPieceButton and not node is PremiumPieceButton and not node is BlockCellButton:
+	if node is Button and not _is_gameplay_widget(node):
 		var button := node as Button
 		var role := _role_for_surface_button(button, surface)
 		var radius := 18 if _looks_like_level_button(button, surface) else 22
@@ -78,8 +84,7 @@ func _polish_tree(node: Node, surface: String, dark: bool, accent: Color) -> voi
 		var emphasis := _panel_emphasis(panel, surface)
 		PremiumDesignSystem.apply_panel(panel, dark, accent, emphasis, 30 if emphasis else 26)
 	elif node is Label:
-		var label := node as Label
-		_polish_label(label, surface, dark, accent)
+		_polish_label(node as Label, dark, accent)
 	elif node is ProgressBar:
 		var progress := node as ProgressBar
 		progress.add_theme_stylebox_override("background", PremiumDesignSystem.box(PremiumDesignSystem.surface_3(dark), 8, PremiumDesignSystem.border(dark), 1, 0, dark))
@@ -106,18 +111,16 @@ func _looks_like_level_button(button: Button, surface: String) -> bool:
 	var text := button.text.strip_edges()
 	if "\n" not in text:
 		return false
-	var first := text.get_slice("\n", 0)
-	return first.is_valid_int()
+	return text.get_slice("\n", 0).is_valid_int()
 
 func _panel_emphasis(panel: PanelContainer, surface: String) -> bool:
 	if panel.name in ["TutorialPanel", "HomeHero", "JourneyFill"]:
 		return true
 	if surface in ["collection", "levels"]:
-		var size := panel.custom_minimum_size
-		return size.y >= 95.0
+		return panel.custom_minimum_size.y >= 95.0
 	return false
 
-func _polish_label(label: Label, surface: String, dark: bool, accent: Color) -> void:
+func _polish_label(label: Label, dark: bool, accent: Color) -> void:
 	var text := label.text.strip_edges().to_upper()
 	var font_size := label.get_theme_font_size("font_size")
 	if font_size >= 30 or text in ["SETTINGS", "RESCUE GARDEN"] or text.begins_with("WORLD "):
@@ -137,9 +140,8 @@ func _add_surface_chrome(content: Control, surface: String, game_id: String, dar
 	chrome.name = "PremiumSurfaceChrome"
 	chrome.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	chrome.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	chrome.z_index = -1
+	chrome.z_index = 2
 	content.add_child(chrome)
-	content.move_child(chrome, 1 if content.get_child_count() > 1 else 0)
 
 	var top_line := ColorRect.new()
 	top_line.set_anchors_preset(Control.PRESET_TOP_WIDE)
