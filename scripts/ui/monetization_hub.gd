@@ -230,9 +230,9 @@ func _on_node_added(node: Node) -> void:
 		return
 	var path := String(script.resource_path)
 	var game_id := ""
-	if path.ends_with("scripts/game/water_sort.gd"):
+	if path.ends_with("scripts/game/water_sort.gd") or path.ends_with("scripts/game/water_sort_polished.gd"):
 		game_id = "water_sort"
-	elif path.ends_with("scripts/game/block_puzzle.gd"):
+	elif path.ends_with("scripts/game/block_puzzle.gd") or path.ends_with("scripts/game/block_puzzle_polished.gd"):
 		game_id = "block_puzzle"
 	if game_id.is_empty():
 		return
