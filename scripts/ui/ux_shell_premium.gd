@@ -3,12 +3,12 @@ extends "res://scripts/ui/ux_shell.gd"
 func _is_custom_surface(node: Node) -> bool:
 	var cursor: Node = node
 	while cursor != null:
-		if cursor.name in ["PremiumHome", "ActiveGame"]:
+		if cursor.name in ["PremiumHome", "PremiumLive", "ActiveGame"]:
 			return true
 		var script := cursor.get_script() as Script
 		if script != null:
 			var path := String(script.resource_path)
-			if path.begins_with("res://scripts/game/") or path.ends_with("premium_home_overhaul.gd"):
+			if path.begins_with("res://scripts/game/") or path.ends_with("premium_home_overhaul.gd") or path.ends_with("premium_live_hub.gd"):
 				return true
 		cursor = cursor.get_parent()
 	return false
@@ -16,9 +16,8 @@ func _is_custom_surface(node: Node) -> bool:
 func _soften_control(node: Node) -> void:
 	if not is_instance_valid(node):
 		return
-	# Gameplay and PremiumHome have deliberately authored art direction. The old
-	# shell used to overwrite their panels, labels and buttons with one generic
-	# theme after they entered the tree, flattening the whole app visually.
+	# Gameplay and premium launcher surfaces have deliberately authored art direction.
+	# Do not let the generic shell flatten their cards, controls or typography.
 	if _is_custom_surface(node):
 		return
 	if node is Button and not node is WaterTubeButton and not node is BlockPieceButton and not node is PremiumPieceButton and not node is BlockCellButton:
