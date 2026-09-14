@@ -283,11 +283,26 @@ func _spawn_rescue(level_number: int, daily: bool, custom_data: Dictionary) -> v
 
 func _remove_active_game() -> void:
 	if active_game and is_instance_valid(active_game):
+		if active_game.get_parent() == self:
+			remove_child(active_game)
 		active_game.queue_free()
 	active_game = null
 	var stale := get_node_or_null("ActiveGame")
 	if stale and is_instance_valid(stale):
+		if stale.get_parent() == self:
+			remove_child(stale)
 		stale.queue_free()
+
+func force_back_from_game() -> void:
+	# Android back must never depend on the active game's animation/busy state.
+	var game_id := selected_game_id
+	_remove_active_game()
+	if game_id == "rescue_rush":
+		build_level_select()
+	else:
+		selected_game_id = game_id
+		selected_multi_world = MultiGameManager.world_for_level(MultiGameManager.highest_level(game_id))
+		build_multi_level_select()
 
 func _on_rescue_finished(completed_level: int) -> void:
 	active_game = null
