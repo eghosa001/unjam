@@ -26,8 +26,16 @@ func _apply_enhancements() -> void:
 	_enlarge_buttons(host)
 	if host.name == "BlockPuzzle":
 		var hint = host.get("hint_label")
-		if hint is Label and (hint.text.is_empty() or hint.text.begins_with("Select a shape")):
-			hint.text = "Drag a shape onto the grid • tap placement still works"
+		if hint is Label:
+			hint.add_theme_font_size_override("font_size", 20)
+			hint.custom_minimum_size = Vector2(0, 44)
+			if hint.text.is_empty() or hint.text.begins_with("Select a shape"):
+				hint.text = "Drag a shape onto the grid • tap placement still works"
+	elif host.name == "WaterSort":
+		var hint = host.get("hint_label")
+		if hint is Label:
+			hint.add_theme_font_size_override("font_size", 20)
+			hint.custom_minimum_size = Vector2(0, 44)
 
 func _enlarge_buttons(node: Node) -> void:
 	for child in node.get_children():
@@ -45,7 +53,8 @@ func _apply_button_size(button: Button) -> void:
 			elif label.contains("NEXT RESCUE") or label.contains("BACK HOME"): wanted = Vector2(520, 98)
 			elif label.contains("DOUBLE BASE REWARD"): wanted = Vector2(520, 92)
 		"WaterSort":
-			if label.contains("BACK"): wanted = Vector2(180, 82)
+			if button is WaterTubeButton: wanted = Vector2(170, 330)
+			elif label.contains("BACK"): wanted = Vector2(180, 82)
 			elif label == "RETRY": wanted = Vector2(170, 82)
 			elif label.contains("UNDO") or label.contains("HINT"): wanted = Vector2(270, 88)
 		"BlockPuzzle":
