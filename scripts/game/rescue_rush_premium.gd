@@ -298,9 +298,9 @@ func _make_empty_cell(cell_size: int, pos: Vector2i, route: Dictionary) -> Contr
 			exit_label.add_theme_color_override("font_color", Color("8ff5b5"))
 			exit_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			slot.add_child(exit_label)
-			var pulse := create_tween().set_loops(2)
-			pulse.tween_property(slot, "modulate", Color(1.08, 1.16, 1.10, 1), 0.62).set_trans(Tween.TRANS_SINE)
-			pulse.tween_property(slot, "modulate", Color.WHITE, 0.62).set_trans(Tween.TRANS_SINE)
+			var pulse := create_tween().set_loops(1)
+			pulse.tween_property(slot, "modulate", Color(1.08, 1.16, 1.10, 1), 0.40).set_trans(Tween.TRANS_CUBIC)
+			pulse.tween_property(slot, "modulate", Color.WHITE, 0.40).set_trans(Tween.TRANS_CUBIC)
 	else:
 		slot.add_theme_stylebox_override("panel", style_box(Color(1, 1, 1, 0.022), 24, Color(1, 1, 1, 0.045), 1))
 	return slot
@@ -339,9 +339,9 @@ func render_board() -> void:
 				slot.add_child(token)
 				board_grid.add_child(slot)
 				_animate_cell(slot, x, y)
-				var rescue_pulse := create_tween().set_loops(2)
-				rescue_pulse.tween_property(slot, "modulate", Color(1.08, 1.04, 0.86, 1), 0.72).set_trans(Tween.TRANS_SINE)
-				rescue_pulse.tween_property(slot, "modulate", Color.WHITE, 0.72).set_trans(Tween.TRANS_SINE)
+				var rescue_pulse := create_tween().set_loops(1)
+				rescue_pulse.tween_property(slot, "modulate", Color(1.08, 1.04, 0.86, 1), 0.46).set_trans(Tween.TRANS_CUBIC)
+				rescue_pulse.tween_property(slot, "modulate", Color.WHITE, 0.46).set_trans(Tween.TRANS_CUBIC)
 			elif piece_index >= 0:
 				var piece: Dictionary = pieces[piece_index]
 				var button := PremiumPieceButton.new()

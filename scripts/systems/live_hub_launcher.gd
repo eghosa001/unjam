@@ -37,15 +37,9 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if launcher == null:
 		return
-	var scene: Node = get_tree().current_scene
-	var surface := ""
-	if scene != null and "current_surface" in scene:
-		surface = String(scene.current_surface)
-	# Keep LIVE out of the premium home composition; it remains available on
-	# campaign/collection/settings surfaces without covering primary CTAs.
-	launcher.visible = scene != null and scene.name == "Main" and not hub_open and surface in ["collection", "settings"]
-	if launcher.visible:
-		launcher.text = "LIVE\n%d ◆" % int(SaveManager.data.get("event_currency", 0))
+	# Premium navigation owns Live access. A floating global button made secondary
+	# screens feel like debug UI and could cover authored controls.
+	launcher.visible = false
 
 func open_hub() -> void:
 	if hub_open:

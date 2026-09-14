@@ -46,10 +46,14 @@ func world_name(id:String,w:int)->String:
 func difficulty_for_level(n:int)->String:
  if n%100==0:return "boss"
  if n%25==0:return "milestone"
+ # Premium casual onboarding: the first ten levels teach interaction, the next
+ # ten introduce planning, and only then does the normal chapter cadence begin.
+ if n<=10:return "easy"
+ if n<=20:return "medium"
  var phase:=posmod(n-1,25)+1
  var world:=world_for_level(n)
- # Each 25-level chapter still breathes (recovery levels prevent fatigue), while
- # the baseline rises with the campaign so late worlds never feel like World 1.
+ # Each 25-level chapter breathes with deliberate recovery levels. Later worlds
+ # raise the baseline without turning every board into a hard wall.
  var score:=0 if phase<=5 else (1 if phase<=15 else 2)
  if phase in [4,12,20]: score-=1
  if world>=11:score+=1
@@ -67,11 +71,11 @@ func is_daily_completed(id:String)->bool:
 
 func daily_tasks(id:String)->Array:
  ensure_state();var key:=date_key()+":"+id;var store:Dictionary=SaveManager.data.get("daily_tasks",{})
- if not store.get(key,[]) is Array:
+ if not store.has(key) or not store.get(key) is Array:
   store[key]=[{"id":"play3","title":"Complete 3 levels","target":3,"progress":0,"claimed":false},{"id":"stars6","title":"Earn 6 stars","target":6,"progress":0,"claimed":false},{"id":"perfect1","title":"Get a perfect clear","target":1,"progress":0,"claimed":false}];SaveManager.data["daily_tasks"]=store;SaveManager.save()
  return (store.get(key,[]) as Array).duplicate(true)
 func _advance_tasks(id:String,stars:int)->void:
- var key:=date_key()+":"+id;daily_tasks(id);var store:Dictionary=SaveManager.data.get("daily_tasks",{});var tasks:Array=store[key]
+ var key:=date_key()+":"+id;daily_tasks(id);var store:Dictionary=SaveManager.data.get("daily_tasks",{});var tasks:Array=(store.get(key,[]) as Array)
  for t in tasks:
   match String(t.get("id","")):
    "play3":t["progress"]=mini(int(t.target),int(t.progress)+1)
@@ -80,7 +84,7 @@ func _advance_tasks(id:String,stars:int)->void:
     if stars==3:t["progress"]=1
  store[key]=tasks;SaveManager.data["daily_tasks"]=store
 func claim_daily_task(id:String,task_id:String)->bool:
- var key:=date_key()+":"+id;daily_tasks(id);var store:Dictionary=SaveManager.data.get("daily_tasks",{});var tasks:Array=store[key]
+ var key:=date_key()+":"+id;daily_tasks(id);var store:Dictionary=SaveManager.data.get("daily_tasks",{});var tasks:Array=(store.get(key,[]) as Array)
  for t in tasks:
   if String(t.id)==task_id and int(t.progress)>=int(t.target) and not bool(t.claimed):t["claimed"]=true;SaveManager.data["coins"]=int(SaveManager.data.get("coins",0))+TASK_REWARD;SaveManager.data["achievement_points"]=int(SaveManager.data.get("achievement_points",0))+10;store[key]=tasks;SaveManager.data["daily_tasks"]=store;SaveManager.save();return true
  return false
