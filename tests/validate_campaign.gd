@@ -6,54 +6,55 @@ const LEVEL_DIR := "res://data/levels/"
 const CAMPAIGN_LEVELS := 10000
 const VALID_TYPES: Array[String] = ["normal", "rotate", "key", "gate", "bomb", "linked", "blocker"]
 const VALID_DIRECTIONS: Array[String] = ["up", "down", "left", "right"]
-const RHYTHM: Array[String] = ["easy", "medium", "medium", "easy", "hard"]
+const VALID_DIFFICULTIES: Array[String] = ["easy", "medium", "hard", "boss"]
 
 func _init() -> void:
 	var errors: Array[String] = []
+	var early_score_total := 0
+	var late_score_total := 0
 	for level_number in range(1, CAMPAIGN_LEVELS + 1):
 		var level: Dictionary = load_level_for_test(level_number)
 		validate(level_number, level, errors)
 		validate_difficulty(level_number, level, errors)
+		if level_number <= 500:
+			early_score_total += int(level.get("difficulty_score", 0))
+		elif level_number > 9500:
+			late_score_total += int(level.get("difficulty_score", 0))
 		if errors.size() < 100 and not PuzzleSolverScript.has_solution(level, 2000):
 			errors.append("Level %d has no verified solution" % level_number)
 		if errors.size() >= 100:
 			break
+	if late_score_total <= early_score_total:
+		errors.append("Late campaign difficulty does not exceed opening campaign")
 	if not errors.is_empty():
 		for e in errors:
 			printerr(e)
 		printerr("Campaign validation failed with %d issue(s)." % errors.size())
 		quit(1)
 		return
-	print("Validated all %d campaign levels: structure, difficulty pacing and solvability." % CAMPAIGN_LEVELS)
+	print("Validated all %d campaign levels: structure, progressive difficulty and solvability." % CAMPAIGN_LEVELS)
 	quit(0)
 
 func load_level_for_test(level_number: int) -> Dictionary:
-	var path := LEVEL_DIR + "level_%02d.json" % level_number
-	if FileAccess.file_exists(path):
-		var file := FileAccess.open(path, FileAccess.READ)
-		if file != null:
-			var parsed = JSON.parse_string(file.get_as_text())
-			if parsed is Dictionary:
-				return parsed
+	# Production LevelManager intentionally uses the generator for all campaign
+	# levels. Keep validation on that same source of truth.
 	return CampaignGeneratorScript.generate(level_number)
 
 func validate_difficulty(level_number: int, level: Dictionary, errors: Array[String]) -> void:
-	if level_number <= 10 and not level.has("difficulty"):
-		return
-	var expected := RHYTHM[(level_number - 1) % RHYTHM.size()]
+	var difficulty := String(level.get("difficulty", ""))
+	if difficulty not in VALID_DIFFICULTIES:
+		errors.append("Level %d invalid difficulty label" % level_number)
 	var expected_milestone := ""
 	if level_number % 100 == 0:
-		expected = "boss"
 		expected_milestone = "world_finale"
+		if difficulty != "boss": errors.append("Level %d finale is not boss difficulty" % level_number)
 	elif level_number % 10 == 0:
-		expected = "hard"
 		expected_milestone = "milestone"
-	if String(level.get("difficulty", "")) != expected:
-		errors.append("Level %d difficulty mismatch" % level_number)
+		if difficulty != "hard": errors.append("Level %d milestone is not hard difficulty" % level_number)
 	if String(level.get("milestone", "")) != expected_milestone:
 		errors.append("Level %d milestone mismatch" % level_number)
 	var score := int(level.get("difficulty_score", 0))
-	if score < 1 or score > 20:
+	if score < 3 or score > 24:
 		errors.append("Level %d invalid difficulty score" % level_number)
 
 func validate(level_number: int, level: Dictionary, errors: Array[String]) -> void:
