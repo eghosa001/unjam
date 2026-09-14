@@ -7,6 +7,8 @@ const DIR_VECTORS: Array[Vector2i] = [Vector2i.UP, Vector2i.RIGHT, Vector2i.DOWN
 
 static func generate(level_number: int) -> Dictionary:
 	var n := clampi(level_number, 1, 10000)
+	if n <= 8:
+		return _generate_onboarding(n)
 	var world := int((n - 1) / 100) + 1
 	var tier := _campaign_tier(n)
 	var difficulty := _rhythm_for_level(n, tier)
@@ -86,6 +88,33 @@ static func generate(level_number: int) -> Dictionary:
 		"rescue_id": rescue_id,
 		"rescue": [center.x, center.y],
 		"pieces": pieces
+	}
+
+static func _generate_onboarding(n: int) -> Dictionary:
+	# Levels 1–8 are intentionally readable in seconds: no gates, bombs or
+	# filler maze. The player learns that arrows with a clear ray can leave.
+	var size := 5 if n <= 4 else 6
+	var center := Vector2i(int(size / 2), int(size / 2))
+	var target_dir_index := posmod(n - 1, 4)
+	var target_dir := DIR_VECTORS[target_dir_index]
+	var target_name := DIR_NAMES[target_dir_index]
+	var pieces: Array[Dictionary] = []
+	for i in range(4):
+		if i == target_dir_index:
+			continue
+		var sealed := center + DIR_VECTORS[i]
+		pieces.append(_piece(sealed.x, sealed.y, "blocker", DIR_NAMES[i]))
+	var lane := _ray_cells(center, target_dir, size)
+	var needed := 1 if n <= 2 else (2 if n <= 6 else mini(3, lane.size()))
+	for i in range(mini(needed, lane.size())):
+		var pos := lane[i]
+		pieces.append(_piece(pos.x, pos.y, "normal", _perpendicular_direction(target_name, n + i)))
+	return {
+		"id": n, "width": size, "height": size, "world": 1, "phase": 1,
+		"campaign_tier": 0, "difficulty": "easy", "difficulty_score": 3 + int(n / 3),
+		"milestone": "", "target_exit": target_name, "estimated_required_moves": needed,
+		"par_moves": needed + 2, "rescue_id": RESCUES[(n * 7 + 1) % RESCUES.size()],
+		"rescue": [center.x, center.y], "pieces": pieces
 	}
 
 static func _rescue_position_for_exit(size: int, target_dir_index: int) -> Vector2i:
