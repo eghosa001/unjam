@@ -12,10 +12,12 @@ var hover_amount := 0.0
 var impact := 0.0
 var clear_echo := 0.0
 var clear_phase := 0.0
+var clear_color := Color("8b7cf6")
 var footprint_phase := 0.0
 
 func configure(value: bool, preview_value: bool = false, color: Color = Color("4f7cff"), index: int = 0) -> void:
 	var old := occupied
+	var old_accent := accent
 	occupied = value
 	preview = preview_value
 	accent = color
@@ -28,6 +30,7 @@ func configure(value: bool, preview_value: bool = false, color: Color = Color("4
 		if not old and occupied:
 			_play_land()
 		elif old and not occupied:
+			clear_color = old_accent
 			_play_clear()
 	queue_redraw()
 
@@ -77,10 +80,15 @@ func play_clear(delay: float = 0.0) -> void:
 func _play_clear() -> void:
 	clear_echo = 1.0
 	clear_phase = 1.0
-	var tw := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	tw.tween_property(self, "scale", Vector2(1.12, 1.12), 0.055)
-	tw.tween_property(self, "scale", Vector2(0.10, 0.10), 0.115)
-	tw.tween_property(self, "scale", Vector2.ONE, 0.055)
+	var tw := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+	tw.tween_property(self, "scale", Vector2(1.18, 1.18), 0.065)
+	tw.tween_property(self, "scale", Vector2(0.05, 0.05), 0.155).set_trans(Tween.TRANS_QUAD)
+	tw.tween_callback(_finish_clear_visual)
+	tw.tween_property(self, "scale", Vector2.ONE, 0.075)
+
+func _finish_clear_visual() -> void:
+	clear_phase = 0.0
+	queue_redraw()
 
 func set_drag_footprint(active: bool, valid: bool = false, color: Color = Color("8b7cf6")) -> void:
 	footprint_active = active
@@ -124,7 +132,7 @@ func _process(delta: float) -> void:
 	var animating := impact > 0.001 or clear_echo > 0.001 or clear_phase > 0.001 or footprint_active or hover_amount > 0.001
 	impact = maxf(0.0, impact - delta * 5.5)
 	clear_echo = maxf(0.0, clear_echo - delta * 3.8)
-	clear_phase = maxf(0.0, clear_phase - delta * 4.8)
+	clear_phase = maxf(0.0, clear_phase - delta * 3.2)
 	footprint_phase += delta * 6.0
 	if animating:
 		queue_redraw()
@@ -150,6 +158,11 @@ func _draw() -> void:
 		if footprint_active:
 			var edge := Color(footprint_color.lightened(0.42), 0.88) if footprint_valid else Color("ff8ba3", 0.90)
 			_draw_box(inset.grow(1.5), Color.TRANSPARENT, 5, edge, 3)
+	if clear_phase > 0.001 and not occupied:
+		var clear_fill := Color(clear_color, clampf(clear_phase, 0.0, 1.0))
+		_draw_block(rect.grow(-3.0), clear_fill)
+		var flash_alpha := clampf(clear_phase * 0.42, 0.0, 0.42)
+		_draw_box(rect.grow(-6.0), Color(1, 1, 1, flash_alpha), 5, Color.TRANSPARENT, 0)
 	if impact > 0.001:
 		_draw_box(rect.grow(1.0 + impact * 3.0), Color.TRANSPARENT, 5, Color(accent.lightened(0.42), impact * 0.90), 3)
 	if clear_echo > 0.001:
