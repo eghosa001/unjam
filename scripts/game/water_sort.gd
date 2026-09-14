@@ -37,21 +37,31 @@ func _ready() -> void:
 func difficulty() -> String:
 	return MultiGameManager.difficulty_for_level(level_number)
 
+func campaign_tier() -> int:
+	if level_number <= 100: return 0
+	if level_number <= 500: return 1
+	if level_number <= 1500: return 2
+	if level_number <= 3000: return 3
+	if level_number <= 5000: return 4
+	if level_number <= 7500: return 5
+	return 6
+
 func level_config() -> Dictionary:
 	var d := difficulty()
-	var tier := mini(3, int((level_number - 1) / 2000))
-	var colors := 4
+	var tier := campaign_tier()
+	var colors := 4 + mini(2, int(tier / 2))
 	match d:
-		"easy": colors = 4 + mini(1, tier)
-		"medium": colors = 5 + mini(1, tier)
-		"hard": colors = 6 + mini(2, tier)
-		"milestone": colors = 7
+		"easy": colors = 4 + mini(1, int(tier / 3))
+		"medium": colors = 5 + mini(2, int(tier / 2))
+		"hard": colors = 6 + mini(2, int((tier + 1) / 2))
+		"milestone": colors = 7 + (1 if tier >= 4 else 0)
 		"boss": colors = 8
-	var par := 18 + colors * 3
-	if d == "hard": par += 6
-	elif d == "milestone": par += 9
-	elif d == "boss": par += 12
-	return {"colors": clampi(colors, 4, 8), "par": par}
+	colors = clampi(colors, 4, 8)
+	var par := 12 + colors * 4 + tier * 2
+	if d == "hard": par += 5
+	elif d == "milestone": par += 8
+	elif d == "boss": par += 11
+	return {"colors": colors, "par": par, "tier": tier}
 
 func style_box(color: Color, radius: int = 24, border: Color = Color.TRANSPARENT, border_width: int = 0, shadow: int = 0) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()
@@ -224,26 +234,81 @@ func load_level() -> void:
 	AnalyticsManager.track("water_sort_level_started", {"level": level_number, "difficulty": difficulty(), "daily": daily_mode})
 
 func generate_tubes(seed_value: int, colors: int) -> Array:
-	var result: Array = []
+	# Each layer is a full permutation of all colours. That guarantees exactly
+	# CAPACITY copies of every colour while allowing thousands of structurally
+	# different mixes instead of the old single Latin-square pattern.
 	var rng := RandomNumberGenerator.new()
-	rng.seed = seed_value * 7919 + colors * 97
-	var permutation: Array[int] = []
-	for i in range(colors): permutation.append(i)
-	for i in range(permutation.size() - 1, 0, -1):
-		var j := rng.randi_range(0, i)
-		var tmp := permutation[i]
-		permutation[i] = permutation[j]
-		permutation[j] = tmp
-	var offset := rng.randi_range(1, maxi(1, colors - 1))
-	for tube_index in range(colors):
-		var tube: Array = []
-		for layer in range(CAPACITY):
-			var color_index := permutation[posmod(tube_index + layer * offset, colors)]
-			tube.append(color_index)
-		result.append(tube)
+	rng.seed = seed_value * 104729 + colors * 1543
+	var best: Array = []
+	var best_score := -1
+	var target_score := 5 + campaign_tier() * 2
+	if difficulty() in ["hard", "milestone", "boss"]:
+		target_score += 3
+	for _attempt in range(18):
+		var layers: Array = []
+		for layer_index in range(CAPACITY):
+			var perm: Array[int] = []
+			for c in range(colors): perm.append(c)
+			_shuffle_int_array(perm, rng)
+			if layer_index > 0:
+				for i in range(colors):
+					if int(perm[i]) == int((layers[layer_index - 1] as Array)[i]):
+						var swap_index := (i + 1 + rng.randi_range(0, maxi(0, colors - 2))) % colors
+						var temp := perm[i]
+						perm[i] = perm[swap_index]
+						perm[swap_index] = temp
+			layers.append(perm)
+		var candidate: Array = []
+		for tube_index in range(colors):
+			var tube: Array = []
+			for layer_index in range(CAPACITY):
+				tube.append(int((layers[layer_index] as Array)[tube_index]))
+			candidate.append(tube)
+		candidate.append([])
+		candidate.append([])
+		var score := _mix_score(candidate)
+		if score > best_score:
+			best = candidate.duplicate(true)
+			best_score = score
+		if score >= target_score:
+			best = candidate
+			break
+	# Deterministic tube order permutation further multiplies board layouts while
+	# keeping the same colour counts and rules.
+	var filled: Array = best.slice(0, colors)
+	_shuffle_variant_array(filled, rng)
+	var result: Array = filled
 	result.append([])
 	result.append([])
 	return result
+
+func _mix_score(candidate: Array) -> int:
+	var transitions := 0
+	var diversity := 0
+	for tube in candidate:
+		if not tube is Array or tube.is_empty():
+			continue
+		var seen := {}
+		for i in range(tube.size()):
+			seen[int(tube[i])] = true
+			if i > 0 and int(tube[i]) != int(tube[i - 1]):
+				transitions += 1
+		diversity += maxi(0, seen.size() - 1)
+	return transitions + int(diversity / 2)
+
+func _shuffle_int_array(values: Array[int], rng: RandomNumberGenerator) -> void:
+	for i in range(values.size() - 1, 0, -1):
+		var j := rng.randi_range(0, i)
+		var temp := values[i]
+		values[i] = values[j]
+		values[j] = temp
+
+func _shuffle_variant_array(values: Array, rng: RandomNumberGenerator) -> void:
+	for i in range(values.size() - 1, 0, -1):
+		var j := rng.randi_range(0, i)
+		var temp = values[i]
+		values[i] = values[j]
+		values[j] = temp
 
 func render_board() -> void:
 	if board == null: return
@@ -299,12 +364,10 @@ func select_tube(index: int) -> void:
 	_save_checkpoint()
 
 func _animate_transfer(from_idx: int, to_idx: int) -> void:
-	if board == null or from_idx < 0 or to_idx < 0 or from_idx >= board.get_child_count() or to_idx >= board.get_child_count():
-		return
+	if board == null or from_idx < 0 or to_idx < 0 or from_idx >= board.get_child_count() or to_idx >= board.get_child_count(): return
 	var source := board.get_child(from_idx) as Control
 	var target := board.get_child(to_idx) as Control
-	if source == null or target == null:
-		return
+	if source == null or target == null: return
 	var source_center := source.global_position - global_position + source.size * 0.5
 	var target_center := target.global_position - global_position + target.size * 0.5
 	var top_color_index := int(tubes[from_idx].back()) if not tubes[from_idx].is_empty() else 0
@@ -317,47 +380,37 @@ func _animate_transfer(from_idx: int, to_idx: int) -> void:
 	stream.points = PackedVector2Array([source_center, mid, target_center])
 	stream.modulate = Color(1, 1, 1, 0)
 	add_child(stream)
-	if source.has_method("play_success"):
-		source.call("play_success")
 	var tween := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(stream, "modulate:a", 1.0, 0.07)
-	tween.parallel().tween_property(stream, "width", 19.0, 0.12)
-	tween.tween_interval(0.10)
-	tween.tween_property(stream, "modulate:a", 0.0, 0.09)
-	tween.finished.connect(func():
-		if is_instance_valid(stream): stream.queue_free()
-	)
-
-func _play_invalid(index: int) -> void:
-	if board != null and index >= 0 and index < board.get_child_count():
-		var button := board.get_child(index)
-		if button != null and button.has_method("play_invalid"):
-			button.call("play_invalid")
-	PremiumVisuals.screen_flash(Color("ef476f"), 0.018)
-
-func _play_success(index: int) -> void:
-	if board != null and index >= 0 and index < board.get_child_count():
-		var button := board.get_child(index)
-		if button != null and button.has_method("play_success"):
-			button.call("play_success")
+	tween.tween_property(stream, "modulate:a", 1.0, 0.08)
+	tween.tween_property(stream, "modulate:a", 0.0, 0.18)
+	tween.finished.connect(stream.queue_free)
 
 func can_pour(from_idx: int, to_idx: int) -> bool:
-	if from_idx < 0 or to_idx < 0 or from_idx >= tubes.size() or to_idx >= tubes.size(): return false
-	var source: Array = tubes[from_idx]
-	var target: Array = tubes[to_idx]
-	if source.is_empty() or target.size() >= CAPACITY: return false
-	return target.is_empty() or int(target.back()) == int(source.back())
+	if from_idx < 0 or from_idx >= tubes.size() or to_idx < 0 or to_idx >= tubes.size() or from_idx == to_idx: return false
+	if tubes[from_idx].is_empty() or tubes[to_idx].size() >= CAPACITY: return false
+	return tubes[to_idx].is_empty() or int(tubes[to_idx].back()) == int(tubes[from_idx].back())
 
 func pour(from_idx: int, to_idx: int) -> void:
-	var source: Array = tubes[from_idx]
-	var target: Array = tubes[to_idx]
-	var color := int(source.back())
-	var same_count := 0
-	for i in range(source.size() - 1, -1, -1):
-		if int(source[i]) != color: break
-		same_count += 1
-	var amount := mini(same_count, CAPACITY - target.size())
-	for _i in range(amount): target.append(source.pop_back())
+	if not can_pour(from_idx, to_idx): return
+	var color := int(tubes[from_idx].back())
+	var amount := 0
+	for i in range(tubes[from_idx].size() - 1, -1, -1):
+		if int(tubes[from_idx][i]) == color: amount += 1
+		else: break
+	amount = mini(amount, CAPACITY - tubes[to_idx].size())
+	for _i in range(amount):
+		tubes[from_idx].pop_back()
+		tubes[to_idx].append(color)
+
+func _play_invalid(index: int) -> void:
+	if board == null or index < 0 or index >= board.get_child_count(): return
+	var node := board.get_child(index)
+	if node != null and node.has_method("play_invalid"): node.call("play_invalid")
+
+func _play_success(index: int) -> void:
+	if board == null or index < 0 or index >= board.get_child_count(): return
+	var node := board.get_child(index)
+	if node != null and node.has_method("play_success"): node.call("play_success")
 
 func undo_move() -> void:
 	if history.is_empty() or completed or animating:
@@ -367,15 +420,14 @@ func undo_move() -> void:
 	tubes = state.get("tubes", []).duplicate(true)
 	moves = int(state.get("moves", 0))
 	selected = -1
-	SaveManager.record_undo()
 	status_label.text = "Move undone"
+	SaveManager.record_undo()
 	render_board()
 	_save_checkpoint()
 
 func show_hint() -> void:
 	if completed or animating: return
 	for from_idx in range(tubes.size()):
-		if tubes[from_idx].is_empty(): continue
 		for to_idx in range(tubes.size()):
 			if from_idx == to_idx or not can_pour(from_idx, to_idx): continue
 			if tubes[to_idx].is_empty() or int(tubes[to_idx].back()) == int(tubes[from_idx].back()):
