@@ -71,15 +71,11 @@ func level_config() -> Dictionary:
 	return {"target_score": base, "target_lines": mini(18, lines), "par": par}
 
 func load_level() -> void:
-	# Let the current Color Blast base implementation initialize cells, colors,
-	# score UI, checkpoints, and analytics. The old override duplicated legacy UI
-	# state (meta_label) and no longer matched the production base class.
 	var checkpoint_before := MultiGameManager.checkpoint(GAME_ID)
 	super.load_level()
 	if checkpoint_before.is_empty():
 		_apply_start_pattern()
 		if not any_move_available():
-			# Preserve a playable opening even when a high-tier pattern is dense.
 			for y in range(GRID_SIZE):
 				for x in range(GRID_SIZE):
 					if bool(cells[y][x]) and rng.randf() < 0.35:
@@ -161,6 +157,148 @@ func refill_pieces() -> void:
 		piece_colors[0] = PIECE_COLORS[posmod(piece_batch * 3 + tier, PIECE_COLORS.size())]
 		if not any_move_available():
 			pieces[0] = [Vector2i(0,0)]
+
+func _checkpoint_point(raw: Variant) -> Vector2i:
+	if raw is Vector2i:
+		return raw
+	if raw is Vector2:
+		return Vector2i(raw)
+	if raw is Dictionary:
+		return Vector2i(int(raw.get("x", -1)), int(raw.get("y", -1)))
+	if raw is Array and raw.size() >= 2:
+		return Vector2i(int(raw[0]), int(raw[1]))
+	if raw is String:
+		var cleaned := String(raw).replace("Vector2i", "").replace("Vector2", "").replace("(", "").replace(")", "").strip_edges()
+		var parts := cleaned.split(",")
+		if parts.size() >= 2:
+			var xs := parts[0].strip_edges()
+			var ys := parts[1].strip_edges()
+			if xs.is_valid_int() and ys.is_valid_int():
+				return Vector2i(int(xs), int(ys))
+	return Vector2i(-1, -1)
+
+func _normalize_shape(raw_shape: Variant) -> Array:
+	var result: Array = []
+	if not (raw_shape is Array):
+		return result
+	for raw in raw_shape:
+		var point := _checkpoint_point(raw)
+		if point.x >= 0 and point.y >= 0:
+			result.append(point)
+	return result
+
+func _checkpoint_color(raw: Variant, fallback: Color) -> Color:
+	if raw is Color:
+		return raw
+	if raw is String:
+		var text := String(raw).strip_edges()
+		if text.begins_with("Color("):
+			text = text.trim_prefix("Color(").trim_suffix(")")
+			var parts := text.split(",")
+			if parts.size() >= 3:
+				var r := float(parts[0].strip_edges())
+				var g := float(parts[1].strip_edges())
+				var b := float(parts[2].strip_edges())
+				var a := float(parts[3].strip_edges()) if parts.size() >= 4 else 1.0
+				return Color(r, g, b, a)
+		return Color.from_string(text, fallback)
+	if raw is Array and raw.size() >= 3:
+		return Color(float(raw[0]), float(raw[1]), float(raw[2]), float(raw[3]) if raw.size() >= 4 else 1.0)
+	if raw is Dictionary:
+		return Color(float(raw.get("r", fallback.r)), float(raw.get("g", fallback.g)), float(raw.get("b", fallback.b)), float(raw.get("a", fallback.a)))
+	return fallback
+
+func _normalize_cells(raw_cells: Variant) -> Array:
+	var result: Array = []
+	if not (raw_cells is Array) or raw_cells.size() != GRID_SIZE:
+		return result
+	for y in range(GRID_SIZE):
+		if not (raw_cells[y] is Array) or raw_cells[y].size() != GRID_SIZE:
+			return []
+		var row: Array = []
+		for x in range(GRID_SIZE):
+			row.append(bool(raw_cells[y][x]))
+		result.append(row)
+	return result
+
+func _normalize_cell_colors(raw_colors: Variant, normalized_cells: Array) -> Array:
+	var result: Array = []
+	for y in range(GRID_SIZE):
+		var row: Array = []
+		for x in range(GRID_SIZE):
+			var fallback := PIECE_COLORS[posmod(y * GRID_SIZE + x, PIECE_COLORS.size())] if bool(normalized_cells[y][x]) else Color.TRANSPARENT
+			var value: Variant = null
+			if raw_colors is Array and raw_colors.size() == GRID_SIZE and raw_colors[y] is Array and raw_colors[y].size() == GRID_SIZE:
+				value = raw_colors[y][x]
+			row.append(_checkpoint_color(value, fallback))
+		result.append(row)
+	return result
+
+func _normalize_pieces(raw_pieces: Variant) -> Array:
+	var result: Array = []
+	if not (raw_pieces is Array):
+		return result
+	for raw_shape in raw_pieces:
+		result.append(_normalize_shape(raw_shape))
+	return result
+
+func _normalize_piece_colors(raw_colors: Variant, count: int) -> Array[Color]:
+	var result: Array[Color] = []
+	for i in range(count):
+		var fallback: Color = PIECE_COLORS[posmod(piece_batch * 3 + i + campaign_tier(), PIECE_COLORS.size())]
+		var value: Variant = raw_colors[i] if raw_colors is Array and i < raw_colors.size() else null
+		result.append(_checkpoint_color(value, fallback))
+	return result
+
+func can_place(shape: Array, origin: Vector2i) -> bool:
+	var normalized := _normalize_shape(shape)
+	if normalized.is_empty() and not shape.is_empty():
+		return false
+	for point: Vector2i in normalized:
+		var x := origin.x + point.x
+		var y := origin.y + point.y
+		if x < 0 or x >= GRID_SIZE or y < 0 or y >= GRID_SIZE:
+			return false
+		if bool(cells[y][x]):
+			return false
+	return true
+
+func _restore_checkpoint() -> void:
+	var checkpoint: Dictionary = MultiGameManager.checkpoint(GAME_ID)
+	if checkpoint.is_empty() or int(checkpoint.get("level", -1)) != level_number or bool(checkpoint.get("daily", false)) != daily_mode:
+		return
+	var restored_cells := _normalize_cells(checkpoint.get("cells", []))
+	if restored_cells.is_empty():
+		MultiGameManager.clear_checkpoint(GAME_ID)
+		return
+	cells = restored_cells
+	cell_colors = _normalize_cell_colors(checkpoint.get("cell_colors", []), cells)
+	var restored_pieces := _normalize_pieces(checkpoint.get("pieces", []))
+	if restored_pieces.size() == 3:
+		pieces = restored_pieces
+	else:
+		refill_pieces()
+	piece_colors = _normalize_piece_colors(checkpoint.get("piece_colors", []), pieces.size())
+	selected_piece = clampi(int(checkpoint.get("selected", -1)), -1, pieces.size() - 1)
+	if selected_piece >= 0 and pieces[selected_piece].is_empty():
+		selected_piece = -1
+	score = maxi(0, int(checkpoint.get("score", 0)))
+	lines_cleared = maxi(0, int(checkpoint.get("lines", 0)))
+	placements = maxi(0, int(checkpoint.get("placements", 0)))
+	piece_batch = maxi(0, int(checkpoint.get("batch", piece_batch)))
+	rng.state = int(checkpoint.get("rng_state", rng.state))
+	# Older checkpoints stored Vector2i/Color values as strings inside history.
+	# Discard persisted undo history at migration time instead of allowing a stale
+	# state to crash the next undo. New moves immediately build a fresh safe stack.
+	history.clear()
+	if not any_move_available():
+		for i in range(pieces.size()):
+			if pieces[i].is_empty():
+				continue
+			pieces[i] = [Vector2i(0,0)]
+			piece_colors[i] = PIECE_COLORS[posmod(i, PIECE_COLORS.size())]
+			if any_move_available():
+				break
 
 func render_pieces() -> void:
 	for child in piece_row.get_children():
