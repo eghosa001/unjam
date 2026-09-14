@@ -45,20 +45,6 @@ func _gui_input(event: InputEvent) -> void:
 		tw.tween_property(self, "scale", target_scale * 1.08, 0.10)
 	super._gui_input(event)
 
-func _input(event: InputEvent) -> void:
-	# Once a touch drag has left this button, GUI routing may deliver the release
-	# elsewhere. Track subsequent drag/release events globally until completion.
-	if not touch_drag_started or not dragging or used or shape.is_empty():
-		return
-	if event is InputEventScreenDrag:
-		_show_touch_preview(event.position)
-		_update_touch_preview_position(event.position)
-		_update_touch_footprint(event.position)
-	elif event is InputEventScreenTouch and not event.pressed:
-		_finish_touch_drag(event.position)
-		touch_drag_started = false
-		get_viewport().set_input_as_handled()
-
 func _notification(what: int) -> void:
 	super._notification(what)
 	if what == NOTIFICATION_DRAG_END:

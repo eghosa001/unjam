@@ -20,8 +20,7 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	phase += delta
-	var breathe := 1.0 + sin(phase * 5.2) * 0.018
-	scale = Vector2(breathe, breathe)
+	scale = scale.lerp(Vector2.ONE, minf(1.0, delta * 18.0))
 	queue_redraw()
 
 func _draw() -> void:
@@ -70,8 +69,7 @@ func _draw_block(rect: Rect2, color: Color) -> void:
 	draw_style_box(style, rect)
 	draw_line(rect.position + Vector2(8, 8), Vector2(rect.end.x - 8, rect.position.y + 8), Color(color.lightened(0.45), 0.9), 4.0, true)
 	draw_line(Vector2(rect.position.x + 8, rect.end.y - 7), rect.end - Vector2(8, 7), Color(color.darkened(0.24), 0.8), 4.0, true)
-	var glow_alpha := 0.16 + (0.5 + 0.5 * sin(phase * 6.0)) * 0.10
-	draw_arc(rect.get_center(), rect.size.x * 0.56, 0.0, TAU, 28, Color(color.lightened(0.40), glow_alpha), 3.0, true)
+	draw_arc(rect.get_center(), rect.size.x * 0.56, 0.0, TAU, 28, Color(color.lightened(0.40), 0.13), 2.0, true)
 
 func _as_point(raw: Variant) -> Vector2i:
 	if raw is Vector2i:

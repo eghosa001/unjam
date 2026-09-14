@@ -7,9 +7,7 @@ func _process(delta: float) -> void:
 		return
 	var raw_surface = main.get("current_surface")
 	var surface := String(raw_surface) if raw_surface != null else "home"
-	# Premium Home/Live own their complete bottom navigation. The legacy shell
-	# controls otherwise sit on top of those bars on a 1080x1920 canvas.
-	if surface in ["home", "live"]:
+	if surface in ["home", "live", "collection", "settings"]:
 		if help_button != null:
 			help_button.visible = false
 		if theme_button != null:
@@ -36,8 +34,6 @@ func _is_custom_surface(node: Node) -> bool:
 func _soften_control(node: Node) -> void:
 	if not is_instance_valid(node):
 		return
-	# Gameplay and premium launcher surfaces have deliberately authored art direction.
-	# Do not let the generic shell flatten their cards, controls or typography.
 	if _is_custom_surface(node):
 		return
 	if node is Button and not node is WaterTubeButton and not node is BlockPieceButton and not node is PremiumPieceButton and not node is BlockCellButton:
