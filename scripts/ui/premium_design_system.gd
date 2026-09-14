@@ -15,25 +15,25 @@ static func accent_for_game(game_id: String) -> Color:
 	return GAME_ACCENTS.get(game_id, GAME_ACCENTS["rescue_rush"])
 
 static func ink(dark: bool) -> Color:
-	return Color("f7f9ff") if dark else Color("132033")
+	return Color("f4f7fb") if dark else Color("213044")
 
 static func muted(dark: bool) -> Color:
-	return Color("9fb0c7") if dark else Color("5f7087")
+	return Color("b6c3d4") if dark else Color("6f7f92")
 
 static func canvas(dark: bool) -> Color:
-	return Color("050a12") if dark else Color("edf3f8")
+	return Color("0b1220") if dark else Color("eef2f5")
 
 static func surface(dark: bool) -> Color:
-	return Color("0b1524") if dark else Color("ffffff")
+	return Color("141f31") if dark else Color("f8fafc")
 
 static func surface_2(dark: bool) -> Color:
-	return Color("111e31") if dark else Color("f3f7fb")
+	return Color("1b2940") if dark else Color("e9eef3")
 
 static func surface_3(dark: bool) -> Color:
-	return Color("17263c") if dark else Color("e7eef6")
+	return Color("22334d") if dark else Color("dfe6ed")
 
 static func border(dark: bool) -> Color:
-	return Color("2a3d57") if dark else Color("c3cfdd")
+	return Color("38506d") if dark else Color("c7d1dc")
 
 static func disabled(dark: bool) -> Color:
 	return Color("202c3f") if dark else Color("e5eaf0")
@@ -92,6 +92,9 @@ static func apply_button(button: Button, dark: bool, accent: Color, role: String
 	button.flat = false
 	button.focus_mode = Control.FOCUS_NONE
 	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	button.custom_minimum_size = Vector2(button.custom_minimum_size.x, maxf(button.custom_minimum_size.y, 78.0))
+	var current_font := button.get_theme_font_size("font_size")
+	button.add_theme_font_size_override("font_size", maxi(20, current_font))
 	var normal := surface_2(dark)
 	var edge := border(dark)
 	var text_color := ink(dark)
