@@ -65,6 +65,16 @@ func _play_land() -> void:
 	tw.tween_property(self, "scale", Vector2(1.10, 1.10), 0.09)
 	tw.tween_property(self, "scale", Vector2.ONE, 0.11)
 
+func play_land(delay: float = 0.0) -> void:
+	if delay > 0.0:
+		await get_tree().create_timer(delay).timeout
+	_play_land()
+
+func play_clear(delay: float = 0.0) -> void:
+	if delay > 0.0:
+		await get_tree().create_timer(delay).timeout
+	_play_clear()
+
 func _play_clear() -> void:
 	clear_echo = 1.0
 	clear_phase = 1.0
