@@ -7,16 +7,28 @@ func _process(delta: float) -> void:
 		return
 	var raw_surface = main.get("current_surface")
 	var surface := String(raw_surface) if raw_surface != null else "home"
-	if surface in ["home", "live", "collection", "settings"]:
-		if help_button != null:
-			help_button.visible = false
-		if theme_button != null:
-			theme_button.visible = false
-		var hub := main.get_node_or_null("MonetizationHub")
-		if hub != null and hub.get("shop_button") != null:
-			var shop = hub.get("shop_button")
-			if is_instance_valid(shop):
-				shop.visible = false
+	# Home/Live own their navigation. Settings deliberately keeps the appearance
+	# control visible so light/dark mode is actually reachable from the premium UI.
+	if help_button != null:
+		help_button.visible = surface == "game" and not tutorial_panel.visible
+	if theme_button != null:
+		theme_button.visible = surface == "settings" and not tutorial_panel.visible
+		if theme_button.visible:
+			theme_button.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+			theme_button.position = Vector2(-350, -112)
+			theme_button.custom_minimum_size = Vector2(310, 68)
+			PremiumDesignSystem.apply_button(theme_button, theme_mode == "dark", _current_accent(), "secondary", 22)
+	var hub := main.get_node_or_null("MonetizationHub")
+	if hub != null and hub.get("shop_button") != null:
+		var shop = hub.get("shop_button")
+		if is_instance_valid(shop):
+			shop.visible = false
+
+func _current_accent() -> Color:
+	var main := _main()
+	if main != null and main.get("selected_game_id") != null:
+		return PremiumDesignSystem.accent_for_game(String(main.get("selected_game_id")))
+	return PremiumDesignSystem.accent_for_game("rescue_rush")
 
 func _is_custom_surface(node: Node) -> bool:
 	var cursor: Node = node
@@ -36,31 +48,23 @@ func _soften_control(node: Node) -> void:
 		return
 	if _is_custom_surface(node):
 		return
+	var dark := theme_mode == "dark"
+	var accent := _current_accent()
 	if node is Button and not node is WaterTubeButton and not node is BlockPieceButton and not node is PremiumPieceButton and not node is BlockCellButton:
-		var b := node as Button
-		var strong := b.name in ["TutorialClose"]
-		if strong:
-			b.add_theme_stylebox_override("normal", _box(ACCENT, 22, ACCENT.lightened(0.15), 2))
-			b.add_theme_stylebox_override("hover", _box(ACCENT.lightened(0.08), 22, Color.WHITE, 2))
-			b.add_theme_stylebox_override("pressed", _box(ACCENT.darkened(0.10), 22, Color.WHITE, 2))
-			b.add_theme_color_override("font_color", Color.WHITE)
-		else:
-			b.add_theme_stylebox_override("normal", _box(_surface_2(), 22, _border(), 2))
-			b.add_theme_stylebox_override("hover", _box(_surface(), 22, ACCENT, 3))
-			b.add_theme_stylebox_override("pressed", _box(ACCENT.darkened(0.08) if theme_mode == "dark" else Color("dfe4ff"), 22, ACCENT, 3))
-			b.add_theme_stylebox_override("disabled", _box(_disabled(), 22, _border(), 1))
-			b.add_theme_color_override("font_color", _ink())
-			b.add_theme_color_override("font_hover_color", _ink())
-			b.add_theme_color_override("font_pressed_color", _ink())
-			b.add_theme_color_override("font_disabled_color", _muted())
+		var button := node as Button
+		var role := "primary" if button.name == "TutorialClose" else PremiumDesignSystem.role_for_button(button)
+		PremiumDesignSystem.apply_button(button, dark, accent, role, 22)
 	elif node is PanelContainer:
-		var p := node as PanelContainer
-		if p.name != "TutorialPanel" and not p.has_theme_stylebox_override("panel"):
-			p.add_theme_stylebox_override("panel", _box(Color(_surface(), 0.96), 28, _border(), 2))
+		var panel := node as PanelContainer
+		if panel.name == "TutorialPanel":
+			PremiumDesignSystem.apply_panel(panel, dark, accent, true, 34)
+		elif not panel.has_theme_stylebox_override("panel"):
+			PremiumDesignSystem.apply_panel(panel, dark, accent, false, 28)
 	elif node is Label:
-		var l := node as Label
-		if not l.has_theme_color_override("font_color"):
-			l.add_theme_color_override("font_color", _ink())
-		l.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.0))
+		var label := node as Label
+		if not label.has_theme_color_override("font_color"):
+			var font_size := label.get_theme_font_size("font_size")
+			PremiumDesignSystem.apply_label(label, dark, "title" if font_size >= 30 else "body", accent)
+		label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.0))
 	for child in node.get_children():
 		_soften_control(child)
