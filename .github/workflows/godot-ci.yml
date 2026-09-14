@@ -18,6 +18,17 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
+      - name: Upload current source snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: unjam-current-source
+          path: |
+            .
+            !.git/**
+            !build/**
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
       - name: Setup JDK 17
         uses: actions/setup-java@v4
         with:
