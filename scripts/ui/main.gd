@@ -418,6 +418,16 @@ func build_settings() -> void:
 		var button := make_button("%s: %s" % [String(setting[1]), "ON" if bool(SaveManager.data.get(key, true)) else "OFF"], Vector2(500, 86))
 		button.pressed.connect(_toggle_setting.bind(key))
 		box.add_child(button)
+	var shell := get_node_or_null("UXShell")
+	if shell != null:
+		var current_theme := String(shell.get("theme_mode")) if shell.get("theme_mode") != null else "dark"
+		var appearance := make_button("APPEARANCE: %s" % current_theme.to_upper(), Vector2(500, 86))
+		appearance.pressed.connect(func() -> void:
+			if shell.has_method("_toggle_theme"):
+				shell.call("_toggle_theme")
+			call_deferred("build_settings")
+		)
+		box.add_child(appearance)
 	var info := Label.new()
 	info.text = "Progress saves automatically.\nHints %d   •   Undos %d   •   Perfect clears %d\nPrestige %d   •   Achievement points %d" % [int(SaveManager.data.hints_used), int(SaveManager.data.undos_used), int(SaveManager.data.perfect_clears), int(SaveManager.data.prestige_points), int(SaveManager.data.achievement_points)]
 	info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
