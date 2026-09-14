@@ -6,6 +6,8 @@ var music_stream: AudioStreamWAV
 var last_music_enabled := false
 
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	set_process(true)
 	# Headless validation has no audio device and can retain a generated WAV
 	# playback until engine teardown. Skip audio objects there; device builds keep
 	# the exact same sound/music behaviour.
@@ -14,7 +16,7 @@ func _ready() -> void:
 	player = AudioStreamPlayer.new()
 	add_child(player)
 	music_player = AudioStreamPlayer.new()
-	music_player.volume_db = -24.0
+	music_player.volume_db = -11.0
 	add_child(music_player)
 	music_stream = _build_ambient_loop()
 	music_player.stream = music_stream
@@ -96,14 +98,15 @@ func _build_ambient_loop() -> AudioStreamWAV:
 	var frames := int(rate * duration)
 	var bytes := PackedByteArray()
 	bytes.resize(frames * 2)
-	var notes := [110.0, 164.81, 220.0]
+	var notes := [130.81, 164.81, 196.00, 261.63]
 	for i in range(frames):
 		var t := float(i) / float(rate)
 		var envelope := 0.6 + 0.4 * sin(TAU * t / duration)
 		var sample := 0.0
 		for f in notes:
 			sample += sin(TAU * float(f) * t)
-		sample = sample / float(notes.size()) * 0.06 * envelope
+		var pulse := 0.72 + 0.28 * sin(TAU * t * 0.5)
+		sample = sample / float(notes.size()) * 0.16 * envelope * pulse
 		_write_sample(bytes, i, sample)
 	var stream := AudioStreamWAV.new()
 	stream.format = AudioStreamWAV.FORMAT_16_BITS
