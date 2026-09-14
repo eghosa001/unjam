@@ -31,8 +31,8 @@ func _build_ui() -> void:
 	shop_button = Button.new()
 	shop_button.text = "SHOP"
 	shop_button.custom_minimum_size = Vector2(230, 82)
-	shop_button.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	shop_button.position = Vector2(-270, -120)
+	shop_button.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	shop_button.position = Vector2(425, -120)
 	shop_button.add_theme_font_size_override("font_size", 22)
 	shop_button.add_theme_stylebox_override("normal", _box(Color("7c5cff"), 24, Color("ffffff33"), 2))
 	shop_button.add_theme_stylebox_override("hover", _box(Color("957cff"), 24, Color("ffffff66"), 2))
