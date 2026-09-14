@@ -76,8 +76,8 @@ func _patch_layout(outer: MarginContainer) -> void:
 
 	var panel := PanelContainer.new()
 	panel.name = "JourneyFill"
-	panel.custom_minimum_size = Vector2(0, 118)
-	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel.custom_minimum_size = Vector2(0, 150)
+	panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	panel.add_theme_stylebox_override("panel", _box(card_color, 28, Color(accent, 0.42), 2))
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 22)
