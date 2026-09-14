@@ -13,3 +13,16 @@ The repository is hardened to fail closed until production services are configur
 - Keep release keystore path, alias and passwords only in CI/Play secrets; never commit them.
 - Upload the AAB to Play Internal Testing and test purchase success, cancel, pending, restore, refund, repeat consumable purchase, offline behavior and consent flows with license testers.
 - Increment `version/code` for every Play release.
+
+## Code-side release gates
+
+- HINT buttons disclose a 25-coin cost. When the player has enough coins the hint is charged immediately; when the balance is too low a hint is granted only after a rewarded ad completes.
+- Rewarded ads and Play purchases fail closed when their provider/configuration is unavailable; gameplay remains usable without monetization services.
+- Difficulty stays intentionally variable within each 25-level chapter, while later worlds raise the baseline difficulty. Every 25th level is a milestone and every 100th is a boss.
+- Save data is sanitized, backed up and written through a temporary file before replacement.
+- Release builds do not emit the development analytics event stream.
+- CI must pass project import, all validation suites, the first-100 lifecycle test, boot smoke, Android API 36 APK export and Android API 36 AAB export on the exact release commit.
+
+## External launch blockers
+
+A public monetized release is **not launch-ready** until the AdMob IDs, provider plugins, Play Billing products and HTTPS purchase-verification service above are configured. These values are intentionally not invented or committed here. Until they are supplied, monetization features fail closed rather than granting rewards or purchases incorrectly.
