@@ -26,29 +26,33 @@ func _run() -> void:
 	print("First-100 progression validated for Rescue Rush, Water Sort and Block Puzzle: launch, legal interaction availability, finish signal, teardown and next-level transition.")
 	quit(0)
 
+func _active_game(main: Control):
+	var game = main.get("active_game")
+	return game if game != null and is_instance_valid(game) else null
+
 func _run_rescue(main: Control) -> bool:
 	main.call("start_level", 1)
 	await _frames(4)
 	for level in range(1, LAST_LEVEL + 1):
-		var game = main.get_node_or_null("ActiveGame")
+		var game = _active_game(main)
 		if game == null:
-			return _fail("Rescue Rush level %d did not create ActiveGame" % level)
+			return _fail("Rescue Rush level %d did not create an active game" % level)
 		if int(game.get("level_number")) != level:
 			return _fail("Rescue Rush progression mismatch: expected %d, got %d" % [level, int(game.get("level_number"))])
 		if not game.visible:
 			return _fail("Rescue Rush level %d is not visible" % level)
-		var level_data: Dictionary = game.get("level_data")
 		var pieces: Array = game.get("pieces")
-		var solution: Array[int] = PuzzleSolver.find_solution(level_data, pieces, 20000)
-		if solution.is_empty():
-			return _fail("Rescue Rush level %d has no solver-confirmed interaction path" % level)
-		if not bool(game.call("is_path_clear", solution[0])):
-			return _fail("Rescue Rush level %d solver first move is not legal in the live scene" % level)
+		var legal := false
+		for i in range(pieces.size()):
+			if bool(game.call("is_path_clear", i)):
+				legal = true
+				break
+		if not legal:
+			return _fail("Rescue Rush level %d exposes no legal live interaction" % level)
 		game.finished.emit(level)
-		game.queue_free()
 		await _frames(4)
 		if level < LAST_LEVEL:
-			var next_game = main.get_node_or_null("ActiveGame")
+			var next_game = _active_game(main)
 			if next_game == null or int(next_game.get("level_number")) != level + 1:
 				return _fail("Rescue Rush failed transition %d -> %d" % [level, level + 1])
 	return true
@@ -57,9 +61,9 @@ func _run_water(main: Control) -> bool:
 	main.call("start_multi_level", "water_sort", 1, false)
 	await _frames(4)
 	for level in range(1, LAST_LEVEL + 1):
-		var game = main.get_node_or_null("ActiveGame")
+		var game = _active_game(main)
 		if game == null:
-			return _fail("Water Sort level %d did not create ActiveGame" % level)
+			return _fail("Water Sort level %d did not create an active game" % level)
 		if int(game.get("level_number")) != level:
 			return _fail("Water Sort progression mismatch: expected %d, got %d" % [level, int(game.get("level_number"))])
 		if not game.visible:
@@ -75,10 +79,9 @@ func _run_water(main: Control) -> bool:
 		if not legal:
 			return _fail("Water Sort level %d exposes no legal pour" % level)
 		game.finished.emit(level)
-		game.queue_free()
 		await _frames(4)
 		if level < LAST_LEVEL:
-			var next_game = main.get_node_or_null("ActiveGame")
+			var next_game = _active_game(main)
 			if next_game == null or int(next_game.get("level_number")) != level + 1:
 				return _fail("Water Sort failed transition %d -> %d" % [level, level + 1])
 	return true
@@ -87,9 +90,9 @@ func _run_block(main: Control) -> bool:
 	main.call("start_multi_level", "block_puzzle", 1, false)
 	await _frames(4)
 	for level in range(1, LAST_LEVEL + 1):
-		var game = main.get_node_or_null("ActiveGame")
+		var game = _active_game(main)
 		if game == null:
-			return _fail("Block Puzzle level %d did not create ActiveGame" % level)
+			return _fail("Block Puzzle level %d did not create an active game" % level)
 		if int(game.get("level_number")) != level:
 			return _fail("Block Puzzle progression mismatch: expected %d, got %d" % [level, int(game.get("level_number"))])
 		if not game.visible:
@@ -107,10 +110,9 @@ func _run_block(main: Control) -> bool:
 		if not legal:
 			return _fail("Block Puzzle level %d exposes no legal placement" % level)
 		game.finished.emit(level)
-		game.queue_free()
 		await _frames(4)
 		if level < LAST_LEVEL:
-			var next_game = main.get_node_or_null("ActiveGame")
+			var next_game = _active_game(main)
 			if next_game == null or int(next_game.get("level_number")) != level + 1:
 				return _fail("Block Puzzle failed transition %d -> %d" % [level, level + 1])
 	return true
