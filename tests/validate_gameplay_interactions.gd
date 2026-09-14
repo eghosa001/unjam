@@ -31,13 +31,14 @@ func _test_water(main: Control) -> bool:
 	for a in range(before.size()):
 		for b in range(before.size()):
 			if a != b and bool(game.call("can_pour", a, b)):
-				# Model the real UI as two distinct taps and let the scene rebuild after
-				# the source selection before pressing the destination tube.
+				# Model the real UI as two distinct taps. The premium pour sequence is
+				# asynchronous, so wait for the live move counter and animation state
+				# instead of assuming a fixed number of frames.
 				game.call("select_tube", a)
 				await _frames(2)
+				var before_moves := int(game.get("moves"))
 				game.call("select_tube", b)
-				await _frames(3)
-				moved = true
+				moved = await _wait_for_water_move(game, before_moves)
 				break
 		if moved: break
 	if not moved or int(game.get("moves")) != 1: return _fail("Water Sort could not execute a legal move")
@@ -49,6 +50,15 @@ func _test_water(main: Control) -> bool:
 	await _frames(2)
 	if int(game.get("moves")) != 0: return _fail("Water Sort retry did not reset moves")
 	return true
+
+func _wait_for_water_move(game: Node, previous_moves: int, max_frames: int = 240) -> bool:
+	for _i in range(max_frames):
+		if not is_instance_valid(game):
+			return false
+		if int(game.get("moves")) > previous_moves and not bool(game.get("animating")):
+			return true
+		await process_frame
+	return false
 
 func _test_block(main: Control) -> bool:
 	main.call("start_multi_level", "block_puzzle", 1, false)
