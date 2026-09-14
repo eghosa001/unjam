@@ -79,8 +79,19 @@ func _draw_lantern(center: Vector2, radius: float) -> void:
 
 func _draw_flying_shape(center: Vector2, span: float) -> void:
 	var c := Color("141214")
+	# Draw the silhouette as two simple convex wings plus a tiny body. The old
+	# single polygon repeated `center`, creating a self-intersection that Godot
+	# could not triangulate reliably.
 	draw_colored_polygon(PackedVector2Array([
-		center + Vector2(-span, 0), center + Vector2(-span * 0.45, -span * 0.32), center,
-		center + Vector2(span * 0.45, -span * 0.32), center + Vector2(span, 0),
-		center + Vector2(span * 0.45, span * 0.16), center, center + Vector2(-span * 0.45, span * 0.16)
+		center,
+		center + Vector2(-span * 0.45, -span * 0.32),
+		center + Vector2(-span, 0),
+		center + Vector2(-span * 0.45, span * 0.16)
 	]), c)
+	draw_colored_polygon(PackedVector2Array([
+		center,
+		center + Vector2(span * 0.45, -span * 0.32),
+		center + Vector2(span, 0),
+		center + Vector2(span * 0.45, span * 0.16)
+	]), c)
+	draw_circle(center + Vector2(0, span * 0.04), maxf(1.8, span * 0.10), c)
