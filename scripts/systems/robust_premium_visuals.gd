@@ -41,13 +41,13 @@ func _set_quality(value: float) -> void:
 	high_fps_samples = 0
 
 func _ambient_count() -> int:
-	return 18 if quality_scale >= 0.9 else 8
+	return 14 if quality_scale >= 0.9 else 7
 
 func set_accent(color: Color) -> void:
 	accent = color
 	ambient_sparkles(_ambient_count())
 
-func ambient_sparkles(count: int = 14) -> void:
+func ambient_sparkles(count: int = 12) -> void:
 	if not is_instance_valid(overlay):
 		return
 	var scaled_count := mini(count, _ambient_count())
@@ -55,14 +55,12 @@ func ambient_sparkles(count: int = 14) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 44321
 	for i in range(scaled_count):
-		var dot := ColorRect.new()
-		var dot_size := rng.randf_range(3.0, 8.0)
-		dot.size = Vector2(dot_size, dot_size)
+		var radius := rng.randf_range(1.7, 4.2)
+		var dot := _diamond(radius, Color(accent.lightened(0.18), rng.randf_range(0.045, 0.14)))
 		dot.position = Vector2(rng.randf_range(20.0, 1060.0), rng.randf_range(40.0, 1880.0))
-		dot.color = Color(accent, rng.randf_range(0.08, 0.24))
-		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		dot.rotation = rng.randf_range(0.0, TAU)
 		dot.set_meta("ambient", true)
-		dot.set_meta("speed", rng.randf_range(4.0, 16.0))
+		dot.set_meta("speed", rng.randf_range(3.0, 9.0))
 		overlay.add_child(dot)
 
 func burst(global_pos: Vector2, color: Color = Color("2dd4b6"), count: int = 18) -> void:
