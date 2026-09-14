@@ -108,10 +108,12 @@ func _drop_data(_at_position: Vector2, data: Variant) -> void:
 	game.place_piece_from_drag(int(data.get("piece_index", -1)), origin)
 
 func _process(delta: float) -> void:
+	var animating := impact > 0.001 or clear_echo > 0.001 or clear_phase > 0.001 or footprint_active or hover_amount > 0.001
 	impact = maxf(0.0, impact - delta * 5.5)
 	clear_echo = maxf(0.0, clear_echo - delta * 3.8)
 	clear_phase = maxf(0.0, clear_phase - delta * 4.8)
-	queue_redraw()
+	if animating:
+		queue_redraw()
 
 func _draw() -> void:
 	var rect := Rect2(Vector2(1.5, 1.5), size - Vector2(3, 3))
@@ -119,7 +121,6 @@ func _draw() -> void:
 	if hover_amount > 0.01 and not occupied:
 		board_fill = board_fill.lightened(0.035 * hover_amount)
 	_draw_box(rect, board_fill, 3, Color("111833"), 1)
-
 	if occupied or preview or footprint_active:
 		var inset := rect.grow(-2.0)
 		var fill := accent
@@ -128,10 +129,8 @@ func _draw() -> void:
 		elif footprint_active and not occupied:
 			fill = Color("48e27a", 0.40) if footprint_valid else Color("ff4f73", 0.32)
 		_draw_block(inset, fill)
-
 	if impact > 0.001:
 		_draw_box(rect.grow(1.0 + impact * 2.0), Color.TRANSPARENT, 4, Color(accent.lightened(0.38), impact * 0.78), 2)
-
 	if clear_echo > 0.001:
 		var neon := Color("ff416c", clear_echo)
 		_draw_box(rect.grow(1.0 + clear_echo * 3.0), Color(neon, 0.08), 3, neon, 3)
