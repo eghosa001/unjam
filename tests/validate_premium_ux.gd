@@ -14,7 +14,7 @@ func _initialize() -> void:
 	# App-wide premium contract: every legacy surface is routed through one design
 	# system, appearance remains user-accessible, and Main wires the manager in.
 	_check_source("res://scripts/ui/premium_design_system.gd", ["class_name PremiumDesignSystem", "GAME_ACCENTS", "apply_button", "apply_panel", "game_canvas"], failures)
-	_check_source("res://scripts/ui/premium_surface_manager.gd", ["_configure_background", "_polish_tree", "_add_surface_chrome", "settings", "collection", "levels"], failures)
+	_check_source("res://scripts/ui/premium_surface_manager.gd", ["_configure_background", "_polish_tree", "_add_surface_chrome", "MotionDirector is the single owner of surface-entry motion", "settings", "collection", "levels"], failures)
 	_check_source("res://scripts/ui/ux_shell_premium.gd", ["theme_button.visible = surface == \"settings\"", "PremiumDesignSystem.apply_button", "PremiumDesignSystem.apply_panel"], failures)
 	_check_source("res://scripts/ui/premium_backdrop.gd", ["light_mode", "base_color.get_luminance", "Vignette changes with appearance mode"], failures)
 	_check_source("res://scripts/ui/motion_director.gd", ["create_tween", "TRANS", "EASE", "screen itself must remain geometrically fixed"], failures)
