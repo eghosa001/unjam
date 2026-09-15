@@ -32,8 +32,14 @@ func run() -> void:
 	expect_true(FileAccess.file_exists("res://tools/install_monetization_plugins.sh"), "monetization installer missing")
 	if FileAccess.file_exists("res://tools/install_monetization_plugins.sh"):
 		var installer := FileAccess.get_file_as_string("res://tools/install_monetization_plugins.sh")
-		expect_true("poing-godot-admob-v5.1.0.zip" in installer, "AdMob 5.1.0 installer URL missing")
-		expect_true("android-template-v4.7.2.zip" in installer, "Godot 4.7.2 AdMob Android template installer missing")
+		# Validate the pinned configuration and URL templates rather than requiring
+		# shell-expanded literal URLs to appear in source. The installer composes
+		# release filenames from these version variables at runtime.
+		expect_true('ADMOB_VERSION="5.1.0"' in installer, "AdMob 5.1.0 version pin missing")
+		expect_true('GODOT_ADMOB_TEMPLATE_VERSION="4.7.2"' in installer, "Godot 4.7.2 AdMob Android template version pin missing")
+		expect_true("poingstudios/godot-admob-plugin/releases/download/v${ADMOB_VERSION}" in installer, "AdMob release source missing")
+		expect_true("poing-godot-admob-v${ADMOB_VERSION}.zip" in installer, "AdMob package filename template missing")
+		expect_true("android-template-v${GODOT_ADMOB_TEMPLATE_VERSION}.zip" in installer, "AdMob Android template filename template missing")
 		expect_true("addons/admob/android/bin" in installer, "AdMob native Android dependency destination missing")
 		expect_true("cat > addons/unjam_admob_provider.gd" not in installer, "installer must not overwrite the maintained provider adapter")
 
