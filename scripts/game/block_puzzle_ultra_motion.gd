@@ -3,10 +3,20 @@ extends "res://scripts/game/block_puzzle_premium_layout.gd"
 # GAME_FIRST_BLOCK
 
 const SmoothPieceButton = preload("res://scripts/ui/smooth_block_piece_button.gd")
+const PLACEMENT_HELP := "Release when the placement preview locks into place"
 
 func build_ui() -> void:
 	super.build_ui()
 	_patch_game_first_layout()
+
+func load_level() -> void:
+	super.load_level()
+	hint_label.text = PLACEMENT_HELP
+
+func select_piece(index: int) -> void:
+	super.select_piece(index)
+	if not completed and index >= 0 and index < pieces.size() and not pieces[index].is_empty():
+		hint_label.text = PLACEMENT_HELP
 
 func _patch_game_first_layout() -> void:
 	for node in _descendants(self):
@@ -17,8 +27,8 @@ func _patch_game_first_layout() -> void:
 			elif _contains_label(panel, "DRAG A BLOCK"):
 				panel.custom_minimum_size.y = 196.0
 			elif _contains_label(panel, "RUN PROGRESS"):
-				panel.custom_minimum_size.y = 112.0
-				panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+				panel.visible = false
+				panel.custom_minimum_size = Vector2.ZERO
 		elif node is CenterContainer:
 			var center := node as CenterContainer
 			if _contains_grid(center):
