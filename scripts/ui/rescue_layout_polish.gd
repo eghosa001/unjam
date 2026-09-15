@@ -14,6 +14,7 @@ func _process(delta: float) -> void:
 		return
 	timer = 0.0
 	_update_live_context()
+	_fit_board_to_viewport()
 
 func _polish_layout() -> void:
 	var game := get_parent() as Control
@@ -31,12 +32,36 @@ func _polish_layout() -> void:
 	var board_holder: CenterContainer = _find_board_holder(game)
 	if board_holder != null:
 		board_holder.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		board_holder.custom_minimum_size = Vector2(0, 820)
 	var board_panel: PanelContainer = _find_board_panel(game)
 	if board_panel != null:
 		board_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		board_panel.add_theme_stylebox_override("panel", PremiumDesignSystem.box(Color(0.008, 0.024, 0.052, 0.98), 42, Color(PremiumDesignSystem.accent_for_game("rescue_rush"), 0.52), 3, 12, true))
+	_fit_board_to_viewport()
 	_update_live_context()
+
+func _fit_board_to_viewport() -> void:
+	var game := get_parent() as Control
+	if game == null:
+		return
+	var grid: GridContainer = game.get("board_grid") as GridContainer
+	if grid == null or grid.get_child_count() == 0:
+		return
+	var board_width := int(game.get("width")) if game.get("width") != null else maxi(1, grid.columns)
+	var board_height := int(game.get("height")) if game.get("height") != null else maxi(1, int(ceil(float(grid.get_child_count()) / float(maxi(board_width, 1)))))
+	var viewport_size := game.get_viewport_rect().size
+	var viewport_width := viewport_size.x
+	var viewport_height := viewport_size.y
+	var gap := 10.0 if board_width <= 5 else 7.0
+	var max_board_width := minf(viewport_width - 112.0, 860.0)
+	var max_board_height := maxf(360.0, viewport_height - clampf(viewport_height * 0.42, 640.0, 860.0))
+	var width_cell := floor((max_board_width - gap * float(maxi(board_width - 1, 0))) / float(maxi(board_width, 1)))
+	var height_cell := floor((max_board_height - gap * float(maxi(board_height - 1, 0))) / float(maxi(board_height, 1)))
+	var cell_size := int(clampf(minf(width_cell, height_cell), 62.0, 142.0))
+	grid.add_theme_constant_override("h_separation", int(gap))
+	grid.add_theme_constant_override("v_separation", int(gap))
+	for child in grid.get_children():
+		if child is Control:
+			(child as Control).custom_minimum_size = Vector2(cell_size, cell_size)
 
 func _add_live_context(root: VBoxContainer) -> void:
 	if root.get_node_or_null("RescueRunDeck") != null:
@@ -76,12 +101,6 @@ func _add_live_context(root: VBoxContainer) -> void:
 	live_label.add_theme_font_size_override("font_size", 17)
 	live_label.add_theme_color_override("font_color", Color("b9c9dc"))
 	box.add_child(live_label)
-	var tip := Label.new()
-	tip.text = "READ THE OUTSIDE LANES FIRST  •  OPEN SPACE CREATES LONGER CHAINS"
-	tip.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	tip.add_theme_font_size_override("font_size", 14)
-	tip.add_theme_color_override("font_color", Color("7190ad"))
-	box.add_child(tip)
 
 func _update_live_context() -> void:
 	var game := get_parent()
