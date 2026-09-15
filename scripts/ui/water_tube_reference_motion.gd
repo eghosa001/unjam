@@ -26,6 +26,22 @@ func set_pour_progress(value: float) -> void:
 	pour_progress = clampf(value, 0.0, 1.0)
 	queue_redraw()
 
+func visual_pour_rim_local(direction: float) -> Vector2:
+	# Match the exact lip drawn in _draw(). The stream must begin on the outside
+	# edge of the visible glass mouth, never from the tube centre.
+	var lift := -13.0 if is_selected and pour_mode == 0 else 0.0
+	var outer := Rect2(Vector2(size.x * 0.18, 13.0 + lift), Vector2(size.x * 0.64, size.y - 42.0))
+	var neck_h := outer.size.y * 0.10
+	var body := Rect2(outer.position + Vector2(0, neck_h * 0.40), Vector2(outer.size.x, outer.size.y - neck_h * 0.40))
+	var dir := 1.0 if direction >= 0.0 else -1.0
+	return Vector2(body.get_center().x + dir * body.size.x * 0.50, body.position.y + 3.0)
+
+func visual_receive_rim_local() -> Vector2:
+	var outer := Rect2(Vector2(size.x * 0.18, 13.0), Vector2(size.x * 0.64, size.y - 42.0))
+	var neck_h := outer.size.y * 0.10
+	var body := Rect2(outer.position + Vector2(0, neck_h * 0.40), Vector2(outer.size.x, outer.size.y - neck_h * 0.40))
+	return Vector2(body.get_center().x, body.position.y + 3.0)
+
 func _slot_fill(slot: int) -> float:
 	if pour_mode == -1 and pour_amount > 0:
 		var first := layers.size() - pour_amount
