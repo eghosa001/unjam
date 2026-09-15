@@ -83,6 +83,31 @@ func _run() -> void:
 	main.set("current_surface", "live")
 	await _capture("14-live-light")
 
+	if shell != null:
+		shell.set("theme_mode", "dark")
+		if shell.has_method("_apply_theme"):
+			shell.call("_apply_theme")
+	main.call("start_level", 1)
+	await _settle(8)
+	if shell != null and shell.has_method("show_tutorial"):
+		shell.call("show_tutorial", "rescue_rush")
+	await _capture("15-tutorial-rescue-dark")
+	_hide_tutorial(shell)
+
+	var result := PremiumResultOverlay.new()
+	result.configure(
+		"LEVEL COMPLETE",
+		"Clean play. Strong route. Keep the streak moving.",
+		"7 MOVES   •   PERFECT ≤ 8\n1 RESCUE SECURED",
+		3,
+		Color("2dd4b6"),
+		"NEXT PUZZLE"
+	)
+	main.add_child(result)
+	await _capture("16-result-overlay-dark")
+	result.queue_free()
+	await _settle(3)
+
 	print("Visual audit captures written to %s" % OUT_DIR)
 	quit(0)
 
