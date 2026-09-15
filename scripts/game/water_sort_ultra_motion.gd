@@ -1,7 +1,10 @@
 extends "res://scripts/game/water_sort_reference_motion.gd"
 
-# Return the point on the visible bottle lip, not the nominal centre point.
-# When a source bottle tilts, the stream must leave from the downhill rim.
+func render_board() -> void:
+	super.render_board()
+	if board != null and tubes.size() == 6:
+		board.columns = 3
+
 func _visual_mouth_local(control: Control) -> Vector2:
 	var outer_x := control.size.x * 0.18
 	var outer_y := 13.0
@@ -17,8 +20,6 @@ func _visual_mouth_local(control: Control) -> Vector2:
 
 func _control_point(control: Control, local_point: Vector2) -> Vector2:
 	var adjusted := local_point
-	# The parent animation asks for a point around y=30 for both source and
-	# receiver. Replace only that mouth probe; other control-point requests stay intact.
 	if local_point.y <= 42.0 and absf(local_point.x - control.size.x * 0.5) <= control.size.x * 0.18:
 		adjusted = _visual_mouth_local(control)
 	return super._control_point(control, adjusted)
