@@ -42,15 +42,9 @@ func _surface_target(main: Node, surface: String, content: Control, active: Cont
 	return null
 
 func _animate_surface_in(target: Control) -> void:
-	# Preserve the authored layout position/scale while adding a short cinematic
-	# settle. No full-screen flash and no input-blocking transition layer.
-	var final_position := target.position
-	var final_scale := target.scale
+	# Navigation may fade, but the screen itself must remain geometrically fixed.
+	# Moving/scaling the root reads as a whole-screen vibration on phones.
 	var final_modulate := target.modulate
-	target.position = final_position + Vector2(0, 16)
-	target.scale = final_scale * Vector2(0.992, 0.992)
-	target.modulate = Color(final_modulate.r, final_modulate.g, final_modulate.b, final_modulate.a * 0.78)
+	target.modulate = Color(final_modulate.r, final_modulate.g, final_modulate.b, final_modulate.a * 0.86)
 	var tween := target.create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	tween.tween_property(target, "position", final_position, 0.22)
-	tween.parallel().tween_property(target, "scale", final_scale, 0.24)
-	tween.parallel().tween_property(target, "modulate", final_modulate, 0.18)
+	tween.tween_property(target, "modulate", final_modulate, 0.14)
