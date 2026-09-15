@@ -14,6 +14,7 @@ func _run() -> void:
 	var settings := FileAccess.open("res://scripts/ui/premium_main_casual.gd", FileAccess.READ).get_as_text()
 	var motion := FileAccess.open("res://scripts/ui/motion_director.gd", FileAccess.READ).get_as_text()
 	var ux_shell := FileAccess.open("res://scripts/ui/ux_shell_casual.gd", FileAccess.READ).get_as_text()
+	var ux_shell_base := FileAccess.open("res://scripts/ui/ux_shell_premium.gd", FileAccess.READ).get_as_text()
 	var monetization := FileAccess.open("res://scripts/ui/monetization_hub.gd", FileAccess.READ).get_as_text()
 	var main_scene := FileAccess.open("res://scenes/Main.tscn", FileAccess.READ).get_as_text()
 	var water_scene := FileAccess.open("res://scenes/WaterSort.tscn", FileAccess.READ).get_as_text()
@@ -42,7 +43,7 @@ func _run() -> void:
 		return _fail("Home does not expose a Shop path")
 	if not monetization.contains("func open_shop"):
 		return _fail("MonetizationHub does not expose a public Shop opener")
-	if ux_shell.contains("shop.visible = false"):
+	if ux_shell.contains("shop.visible = false") or ux_shell_base.contains("shop.visible = false"):
 		return _fail("UXShell still force-hides the Shop")
 	if not settings.contains("REDUCED MOTION") or settings.contains("PLAY HISTORY"):
 		return _fail("Settings is not yet a compact preferences surface")
