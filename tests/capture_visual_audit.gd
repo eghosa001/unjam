@@ -68,6 +68,21 @@ func _run() -> void:
 	_hide_tutorial(shell)
 	await _capture("11-game-block")
 
+	main.call("force_back_from_game")
+	main.set("selected_game_id", "block_puzzle")
+	main.set("selected_multi_world", 1)
+	main.call("build_multi_level_select")
+	await _capture("12-levels-block-dark")
+
+	if shell != null:
+		shell.set("theme_mode", "light")
+		if shell.has_method("_apply_theme"):
+			shell.call("_apply_theme")
+	main.call("build_collection")
+	await _capture("13-collection-light")
+	main.set("current_surface", "live")
+	await _capture("14-live-light")
+
 	print("Visual audit captures written to %s" % OUT_DIR)
 	quit(0)
 
