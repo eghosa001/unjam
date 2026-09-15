@@ -7,7 +7,7 @@ const DIR_VECTORS: Array[Vector2i] = [Vector2i.UP, Vector2i.RIGHT, Vector2i.DOWN
 
 static func generate(level_number: int) -> Dictionary:
 	var n := clampi(level_number, 1, 10000)
-	if n <= 8:
+	if n <= 12:
 		return _generate_onboarding(n)
 	var world := int((n - 1) / 100) + 1
 	var tier := _campaign_tier(n)
@@ -91,8 +91,8 @@ static func generate(level_number: int) -> Dictionary:
 	}
 
 static func _generate_onboarding(n: int) -> Dictionary:
-	# Levels 1–8 are intentionally readable in seconds: no gates, bombs or
-	# filler maze. The player learns that arrows with a clear ray can leave.
+	# Levels 1–12 are intentionally readable in seconds: no gates, bombs or
+	# filler maze. The player learns clear-ray movement before campaign systems arrive.
 	var size := 5 if n <= 4 else 6
 	var center := Vector2i(int(size / 2), int(size / 2))
 	var target_dir_index := posmod(n - 1, 4)
@@ -105,7 +105,7 @@ static func _generate_onboarding(n: int) -> Dictionary:
 		var sealed := center + DIR_VECTORS[i]
 		pieces.append(_piece(sealed.x, sealed.y, "blocker", DIR_NAMES[i]))
 	var lane := _ray_cells(center, target_dir, size)
-	var needed := 1 if n <= 2 else (2 if n <= 6 else mini(3, lane.size()))
+	var needed := 1 if n <= 3 else (2 if n <= 8 else mini(3, lane.size()))
 	for i in range(mini(needed, lane.size())):
 		var pos := lane[i]
 		pieces.append(_piece(pos.x, pos.y, "normal", _perpendicular_direction(target_name, n + i)))
