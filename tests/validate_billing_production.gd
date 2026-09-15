@@ -21,6 +21,13 @@ func run() -> void:
 	expect_true("purchase_state" in source and "PURCHASE_STATE_PURCHASED" in source, "Purchase completion state is not validated")
 	expect_true("query_purchases" in source, "Restore-purchases path is missing")
 	expect_true("consume_purchase" in source and "acknowledge_purchase" in source, "Purchase finalization is incomplete")
+
+	var store_path := "res://scripts/systems/store_manager.gd"
+	expect_true(ResourceLoader.exists(store_path), "StoreManager missing")
+	if ResourceLoader.exists(store_path):
+		var store_source := FileAccess.get_file_as_string(store_path)
+		expect_true('purchase.get("product_ids"' in store_source, "Restore must read Google Play purchase product_ids")
+
 	expect_true(FileAccess.file_exists("res://tools/install_monetization_plugins.sh"), "Monetization plugin installer missing")
 	if FileAccess.file_exists("res://tools/install_monetization_plugins.sh"):
 		var installer := FileAccess.get_file_as_string("res://tools/install_monetization_plugins.sh")
