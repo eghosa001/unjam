@@ -1,17 +1,16 @@
 extends Node
 class_name UiTouchEnhancer
 
+# This helper now owns only sizing/readability. BlockPieceButton owns drag input.
+# Keeping two independent drag handlers caused competing footprints and release
+# placement on mobile, which made otherwise-correct dragging feel jittery.
 var host: Control
 var scan_elapsed := 0.0
-var drag_piece_index := -1
-var drag_press_position := Vector2.ZERO
-var drag_active := false
-var drag_hover_origin := Vector2i(-1, -1)
 
 func _ready() -> void:
 	host = get_parent() as Control
 	set_process(true)
-	set_process_input(true)
+	set_process_input(false)
 	call_deferred("_apply_enhancements")
 
 func _process(delta: float) -> void:
@@ -78,107 +77,7 @@ func _apply_button_size(button: Button) -> void:
 
 func _is_block_piece_button(button: Button) -> bool:
 	var script: Script = button.get_script() as Script
-	return script != null and String(script.resource_path).ends_with("block_piece_button.gd")
-
-func _input(event: InputEvent) -> void:
-	if host == null or host.name != "BlockPuzzle" or bool(host.get("completed")):
-		return
-	if event is InputEventScreenTouch:
-		if event.pressed:
-			_begin_drag(event.position)
-		else:
-			_finish_drag(event.position)
-	elif event is InputEventScreenDrag:
-		_update_drag(event.position)
-	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if event.pressed:
-			_begin_drag(event.position)
-		else:
-			_finish_drag(event.position)
-	elif event is InputEventMouseMotion and drag_piece_index >= 0 and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
-		_update_drag(event.position)
-
-func _begin_drag(position: Vector2) -> void:
-	drag_piece_index = _piece_at(position)
-	drag_press_position = position
-	drag_active = false
-	drag_hover_origin = Vector2i(-1, -1)
-
-func _piece_at(position: Vector2) -> int:
-	var row: Variant = host.get("piece_row")
-	if not row is HBoxContainer:
-		return -1
-	for i in range(row.get_child_count()):
-		var child: Node = row.get_child(i)
-		if child is Control and child.visible and not child.disabled and child.get_global_rect().has_point(position):
-			return i
-	return -1
-
-func _cell_at(position: Vector2) -> Vector2i:
-	var buttons: Variant = host.get("cell_buttons")
-	if not buttons is Array:
-		return Vector2i(-1, -1)
-	for i in range(buttons.size()):
-		var cell = buttons[i]
-		if cell is Control and cell.visible and cell.get_global_rect().has_point(position):
-			return Vector2i(i % 8, int(i / 8))
-	return Vector2i(-1, -1)
-
-func _update_drag(position: Vector2) -> void:
-	var pieces = host.get("pieces")
-	if not pieces is Array or drag_piece_index < 0 or drag_piece_index >= pieces.size():
-		return
-	var shape = pieces[drag_piece_index]
-	if not shape is Array or shape.is_empty():
-		return
-	if not drag_active and position.distance_to(drag_press_position) < 18.0:
-		return
-	drag_active = true
-	var origin := _cell_at(position)
-	if origin != drag_hover_origin:
-		drag_hover_origin = origin
-		_show_preview(shape, origin)
-
-func _finish_drag(position: Vector2) -> void:
-	if drag_piece_index < 0:
-		return
-	var piece_index := drag_piece_index
-	var was_dragging := drag_active
-	var origin := _cell_at(position)
-	drag_piece_index = -1
-	drag_active = false
-	drag_hover_origin = Vector2i(-1, -1)
-	_clear_preview()
-	if was_dragging and origin.x >= 0 and origin.y >= 0:
-		host.set("selected_piece", piece_index)
-		host.call("place_selected", origin)
-
-func _show_preview(shape: Array, origin: Vector2i) -> void:
-	_clear_preview()
-	if origin.x < 0 or origin.y < 0:
-		return
-	var valid := bool(host.call("can_place", shape, origin))
-	var preview_color := Color("10b981") if valid else Color("ef476f")
-	var buttons: Variant = host.get("cell_buttons")
-	if not buttons is Array:
-		return
-	for point in shape:
-		var x := origin.x + int(point.x)
-		var y := origin.y + int(point.y)
-		if x < 0 or x >= 8 or y < 0 or y >= 8:
-			continue
-		var cell = buttons[y * 8 + x]
-		cell.set("preview", true)
-		cell.set("accent", preview_color)
-		cell.queue_redraw()
-
-func _clear_preview() -> void:
-	var buttons: Variant = host.get("cell_buttons")
-	if not buttons is Array:
-		return
-	for cell in buttons:
-		if cell == null:
-			continue
-		cell.set("preview", false)
-		cell.set("accent", Color("8b7cf6"))
-		cell.queue_redraw()
+	if script == null:
+		return false
+	var path := String(script.resource_path)
+	return path.ends_with("block_piece_button.gd") or path.ends_with("smooth_block_piece_button.gd")
