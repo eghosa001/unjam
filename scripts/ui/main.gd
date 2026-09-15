@@ -184,262 +184,4 @@ func build_level_select() -> void:
 	root.add_theme_constant_override("separation", 15)
 	margin.add_child(root)
 
-	var header := HBoxContainer.new()
-	var back := make_button("â†", Vector2(90, 66))
-	back.pressed.connect(build_home)
-	header.add_child(back)
-	var label := Label.new()
-	label.text = "WORLD %d / %d" % [selected_world, LevelManager.WORLD_COUNT]
-	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 31)
-	header.add_child(label)
-	var prestige := Label.new()
-	prestige.text = "%d P" % int(SaveManager.data.prestige_points)
-	prestige.custom_minimum_size = Vector2(120, 66)
-	prestige.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	prestige.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	header.add_child(prestige)
-	root.add_child(header)
-
-	var hero := add_glass_card(root, Vector2(0, 110))
-	var hero_box := VBoxContainer.new()
-	hero_box.alignment = BoxContainer.ALIGNMENT_CENTER
-	hero.add_child(hero_box)
-	var world_title := Label.new()
-	world_title.text = LevelManager.world_name(selected_world).to_upper()
-	world_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	world_title.add_theme_font_size_override("font_size", 26)
-	world_title.add_theme_color_override("font_color", world_palette(selected_world)[1])
-	hero_box.add_child(world_title)
-	var range_label := Label.new()
-	range_label.text = "LEVELS %dâ€“%d   â€¢   %d â˜…" % [LevelManager.first_level_in_world(selected_world), LevelManager.last_level_in_world(selected_world), SaveManager.total_stars()]
-	range_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	range_label.add_theme_font_size_override("font_size", 17)
-	range_label.modulate = Color("95a4bb")
-	hero_box.add_child(range_label)
-
-	var nav := HBoxContainer.new()
-	nav.alignment = BoxContainer.ALIGNMENT_CENTER
-	nav.add_theme_constant_override("separation", 14)
-	var previous := make_button("â—€ PREV", Vector2(220, 62))
-	previous.disabled = selected_world <= 1
-	previous.pressed.connect(_change_world.bind(-1))
-	nav.add_child(previous)
-	var jump := make_button("CURRENT", Vector2(200, 62), true)
-	jump.pressed.connect(_jump_to_current_world)
-	nav.add_child(jump)
-	var next := make_button("NEXT â–¶", Vector2(220, 62))
-	next.disabled = selected_world >= LevelManager.WORLD_COUNT or selected_world >= LevelManager.highest_unlocked_world() + 1
-	next.pressed.connect(_change_world.bind(1))
-	nav.add_child(next)
-	root.add_child(nav)
-
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	root.add_child(scroll)
-	var grid := GridContainer.new()
-	grid.columns = 5
-	grid.add_theme_constant_override("h_separation", 12)
-	grid.add_theme_constant_override("v_separation", 12)
-	scroll.add_child(grid)
-
-	var first := LevelManager.first_level_in_world(selected_world)
-	var last := LevelManager.last_level_in_world(selected_world)
-	for level_number in range(first, last + 1):
-		var unlocked := SaveManager.is_level_unlocked(level_number)
-		var level_stars := SaveManager.get_stars(level_number)
-		var level_data := LevelManager.load_level(level_number)
-		var d_label := String(level_data.get("difficulty_label", "medium"))
-		var text := "%d\n%s   %s" % [level_number, "â˜…".repeat(level_stars), difficulty_short(d_label)]
-		var button := make_button(text, Vector2(170, 108), level_number == int(SaveManager.data.highest_level))
-		button.disabled = not unlocked
-		button.add_theme_font_size_override("font_size", 17)
-		button.add_theme_color_override("font_color", difficulty_color(d_label) if unlocked else Color("697387"))
-		button.pressed.connect(start_level.bind(level_number))
-		grid.add_child(button)
-
-func _change_world(delta: int) -> void:
-	selected_world = clamp(selected_world + delta, 1, LevelManager.WORLD_COUNT)
-	build_level_select()
-
-func _jump_to_current_world() -> void:
-	selected_world = LevelManager.highest_unlocked_world()
-	build_level_select()
-
-func start_level(level_number: int) -> void:
-	if content:
-		content.visible = false
-	var game_scene = load("res://scenes/Game.tscn").instantiate()
-	game_scene.level_number = level_number
-	game_scene.finished.connect(_on_game_finished)
-	game_scene.quit_requested.connect(_on_game_quit)
-	add_child(game_scene)
-
-func start_daily() -> void:
-	if DailyChallenge.is_completed_today():
-		build_home()
-		return
-	if content:
-		content.visible = false
-	var game_scene = load("res://scenes/Game.tscn").instantiate()
-	game_scene.level_number = 1
-	game_scene.daily_mode = true
-	game_scene.custom_level_data = DailyChallenge.build_today()
-	game_scene.finished.connect(_on_game_finished)
-	game_scene.quit_requested.connect(_on_game_quit)
-	add_child(game_scene)
-
-func _on_game_finished(completed_level: int) -> void:
-	if completed_level < 0:
-		build_home()
-		content.visible = true
-		return
-	if LevelManager.has_level(completed_level + 1):
-		start_level(completed_level + 1)
-	else:
-		build_home()
-		content.visible = true
-
-func _on_game_quit() -> void:
-	selected_world = LevelManager.highest_unlocked_world()
-	build_level_select()
-	content.visible = true
-
-func build_collection() -> void:
-	clear_content()
-	add_background()
-	var margin := MarginContainer.new()
-	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	margin.add_theme_constant_override("margin_left", 60)
-	margin.add_theme_constant_override("margin_right", 60)
-	margin.add_theme_constant_override("margin_top", 65)
-	margin.add_theme_constant_override("margin_bottom", 65)
-	content.add_child(margin)
-	var root := VBoxContainer.new()
-	root.add_theme_constant_override("separation", 22)
-	margin.add_child(root)
-	var header := HBoxContainer.new()
-	var back := make_button("â†", Vector2(94, 68))
-	back.pressed.connect(build_home)
-	header.add_child(back)
-	var title := Label.new()
-	title.text = "RESCUE GARDEN"
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 36)
-	header.add_child(title)
-	var coins := Label.new()
-	coins.text = "%d â—ˆ" % int(SaveManager.data.coins)
-	coins.custom_minimum_size = Vector2(130, 68)
-	coins.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	header.add_child(coins)
-	root.add_child(header)
-
-	var garden := add_glass_card(root, Vector2(0, 520))
-	var garden_box := VBoxContainer.new()
-	garden_box.alignment = BoxContainer.ALIGNMENT_CENTER
-	garden.add_child(garden_box)
-	var inhabitants := Label.new()
-	inhabitants.text = rescue_garden_text()
-	inhabitants.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	inhabitants.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	inhabitants.add_theme_font_size_override("font_size", 48)
-	garden_box.add_child(inhabitants)
-	var decor := Label.new()
-	decor.text = decoration_text()
-	decor.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	decor.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	decor.add_theme_font_size_override("font_size", 34)
-	garden_box.add_child(decor)
-
-	var prestige := Label.new()
-	prestige.text = "PRESTIGE %d   â€¢   ACHIEVEMENT POINTS %d   â€¢   WORLD BADGES %d" % [int(SaveManager.data.prestige_points), int(SaveManager.data.achievement_points), SaveManager.data.world_badges.size()]
-	prestige.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	prestige.add_theme_font_size_override("font_size", 18)
-	root.add_child(prestige)
-
-	var shop_title := Label.new()
-	shop_title.text = "GARDEN DECORATIONS"
-	shop_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	shop_title.add_theme_font_size_override("font_size", 24)
-	root.add_child(shop_title)
-	var shop := HBoxContainer.new()
-	shop.alignment = BoxContainer.ALIGNMENT_CENTER
-	shop.add_theme_constant_override("separation", 14)
-	root.add_child(shop)
-	for item in [["tree", "TREE", 100], ["bench", "BENCH", 150], ["fountain", "FOUNTAIN", 250]]:
-		var id := String(item[0])
-		var owned: bool = id in SaveManager.data.decorations
-		var button := make_button((String(item[1]) + ("  OWNED" if owned else "\n%d COINS" % int(item[2]))), Vector2(280, 105), owned)
-		button.disabled = owned
-		button.pressed.connect(_buy_decoration.bind(id, int(item[2])))
-		shop.add_child(button)
-
-func rescue_garden_text() -> String:
-	if SaveManager.data.rescued.is_empty():
-		return "Your first friend is waiting to be rescued."
-	var names := []
-	for id in SaveManager.data.rescued:
-		names.append(String(id).capitalize())
-	return "RESCUED FRIENDS\n" + "  â€¢  ".join(names)
-
-func decoration_text() -> String:
-	if SaveManager.data.decorations.is_empty():
-		return "Build a home worthy of your rescued crew."
-	var names := []
-	for id in SaveManager.data.decorations:
-		names.append(String(id).capitalize())
-	return "GARDEN: " + "  â€¢  ".join(names)
-
-func _buy_decoration(id: String, cost: int) -> void:
-	if SaveManager.unlock_decoration(id, cost):
-		FeedbackManager.effect()
-		PremiumVisuals.burst(Vector2(540, 1100), Color("2dd4b6"), 20)
-		build_collection()
-
-func build_settings() -> void:
-	clear_content()
-	add_background()
-	var box := VBoxContainer.new()
-	box.set_anchors_preset(Control.PRESET_CENTER)
-	box.position = Vector2(-300, -500)
-	box.custom_minimum_size = Vector2(600, 1000)
-	box.alignment = BoxContainer.ALIGNMENT_CENTER
-	box.add_theme_constant_override("separation", 28)
-	content.add_child(box)
-	var title := Label.new()
-	title.text = "SETTINGS"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 44)
-	box.add_child(title)
-	for setting in [["sound", "SOUND"], ["vibration", "HAPTICS"], ["music", "MUSIC"]]:
-		var key := String(setting[0])
-		var button := make_button("%s: %s" % [String(setting[1]), "ON" if bool(SaveManager.data.get(key, true)) else "OFF"], Vector2(500, 86))
-		button.pressed.connect(_toggle_setting.bind(key))
-		box.add_child(button)
-	var shell := get_node_or_null("UXShell")
-	if shell != null:
-		var current_theme := String(shell.get("theme_mode")) if shell.get("theme_mode") != null else "dark"
-		var appearance := make_button("APPEARANCE: %s" % current_theme.to_upper(), Vector2(500, 86))
-		appearance.pressed.connect(func() -> void:
-			if shell.has_method("_toggle_theme"):
-				shell.call("_toggle_theme")
-			call_deferred("build_settings")
-		)
-		box.add_child(appearance)
-	var info := Label.new()
-	info.text = "Progress saves automatically.\nHints %d   â€¢   Undos %d   â€¢   Perfect clears %d\nPrestige %d   â€¢   Achievement points %d" % [int(SaveManager.data.hints_used), int(SaveManager.data.undos_used), int(SaveManager.data.perfect_clears), int(SaveManager.data.prestige_points), int(SaveManager.data.achievement_points)]
-	info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	info.add_theme_font_size_override("font_size", 20)
-	box.add_child(info)
-	var back := make_button("BACK", Vector2(500, 82), true)
-	back.pressed.connect(build_home)
-	box.add_child(back)
-
-func _toggle_setting(key: String) -> void:
-	SaveManager.data[key] = not bool(SaveManager.data.get(key, true))
-	SaveManager.save()
-	FeedbackManager.tap()
-	build_settings()
+	var²È="25­••±Í”½±½È ˆØäÜÌàÜˆ¤¤($%‰ÕÑÑ½¸¹ÁÉ•ÍÍ•¹½¹¹•Ð¡ÍÑ…ÉÑ}±•Ù•°¹‰¥¹¡±•Ù•±}¹Õµ‰•È¤¤($%É¥¹…‘‘}¡¥±¡‰ÕÑÑ½¸¤()™Õ¹Œ}¡…¹•}Ý½É±¡‘•±Ñ„è¥¹Ð¤€´øÙ½¥è(%Í•±•Ñ•‘}Ý½É±€ô±…µÀ¡Í•±•Ñ•‘}Ý½É±€¬‘•±Ñ„°€Ä°1•Ù•±5…¹…•È¹]=I1}=U9P¤(%‰Õ¥±‘}±•Ù•±}Í•±•Ð ¤()™Õ¹Œ}©ÕµÁ}Ñ½}ÕÉÉ•¹Ñ}Ý½É± ¤€´øÙ½¥è(%Í•±•Ñ•‘}Ý½É±€ô1•Ù•±5…¹…•È¹¡¥¡•ÍÑ}Õ¹±½­•‘}Ý½É± ¤(%‰Õ¥±‘}±•Ù•±}Í•±•Ð ¤()™Õ¹ŒÍÑ…ÉÑ}±•Ù•°¡±•Ù•±}¹Õµ‰•Èè¥¹Ð¤€´øÙ½¥è(%¥˜½¹Ñ•¹Ðè($%½¹Ñ•¹Ð¹Ù¥Í¥‰±”€ô™…±Í”(%Ù…È…µ•}Í•¹”€ô±½… ‰É•Ìè¼½Í•¹•Ì½…µ”¹ÑÍ¸ˆ¤¹¥¹ÍÑ…¹Ñ¥…Ñ” ¤(%…µ•}Í•¹”¹±•Ù•±}¹Õµ‰•È€ô±•Ù•±}¹Õµ‰•È(%…µ•}Í•¹”¹™¥¹¥Í¡•¹½¹¹•Ð¡}½¹}…µ•}™¥¹¥Í¡•¤(%…µ•}Í•¹”¹ÅÕ¥Ñ}É•ÅÕ•ÍÑ•¹½¹¹•Ð¡}½¹}…µ•}ÅÕ¥Ð¤(%…‘‘}¡¥±¡…µ•}Í•¹”¤()™Õ¹ŒÍÑ…ÉÑ}‘…¥±ä ¤€´øÙ½¥è(%¥˜…¥±å¡…±±•¹”¹¥Í}½µÁ±•Ñ•‘}Ñ½‘…ä ¤è($%‰Õ¥±‘}¡½µ” ¤($%É•ÑÕÉ¸(%¥˜½¹Ñ•¹Ðè($%½¹Ñ•¹Ð¹Ù¥Í¥‰±”€ô™…±Í”(%Ù…È…µ•}Í•¹”€ô±½… ‰É•Ìè¼½Í•¹•Ì½…µ”¹ÑÍ¸ˆ¤¹¥¹ÍÑ…¹Ñ¥…Ñ” ¤(%…µ•}Í•¹”¹±•Ù•±}¹Õµ‰•È€ô€Ä(%…µ•}Í•¹”¹‘…¥±å}µ½‘”€ôÑÉÕ”(%…µ•}Í•¹”¹ÕÍÑ½µ}±•Ù•±}‘…Ñ„€ô…¥±å¡…±±•¹”¹‰Õ¥±‘}Ñ½‘…ä ¤(%…µ•}Í•¹”¹™¥¹¥Í¡•¹½¹¹•Ð¡}½¹}…µ•}™¥¹¥Í¡•¤(%…µ•}Í•¹”¹ÅÕ¥Ñ}É•ÅÕ•ÍÑ•¹½¹¹•Ð¡}½¹}…µ•}ÅÕ¥Ð¤(%…‘‘}¡¥±¡…µ•}Í•¹”¤()™Õ¹Œ}½¹}…µ•}™¥¹¥Í¡•¡½µÁ±•Ñ•‘}±•Ù•°è¥¹Ð¤€´øÙ½¥è(%¥˜½µÁ±•Ñ•‘}±•Ù•°€ð€Àè($%‰Õ¥±‘}¡½µ” ¤($%½¹Ñ•¹Ð¹Ù¥Í¥‰±”€ôÑÉÕ”($%É•ÑÕÉ¸(%¥˜1•Ù•±5…¹…•È¹¡…Í}±•Ù•°¡½µÁ±•Ñ•‘}±•Ù•°€¬€Ä¤è($%ÍÑ…ÉÑ}±•Ù•°¡½µÁ±•Ñ•‘}±•Ù•°€¬€Ä¤(%•±Í”è($%‰Õ¥±‘}¡½µ” ¤($%½¹Ñ•¹Ð¹Ù¥Í¥‰±”€ôÑÉÕ”()™Õ¹Œ}½¹}…µ•}ÅÕ¥Ð ¤€´øÙ½¥è(%Í•±•Ñ•‘}Ý½É±€ô1•Ù•±5…¹…•È¹¡¥¡•ÍÑ}Õ¹±½­•‘}Ý½É± ¤(%‰Õ¥±‘}±•Ù•±}Í•±•Ð ¤(%½¹Ñ•¹Ð¹Ù¥Í¥‰±”€ôÑÉÕ”()™Õ¹Œ‰Õ¥±‘}½±±•Ñ¥½¸ ¤€´øÙ½¥è(%±•…É}½¹Ñ•¹Ð ¤(%…‘‘}‰…­É½Õ¹ ¤(%Ù…Èµ…É¥¸€èô5…É¥¹½¹Ñ…¥¹•È¹¹•Ü ¤(%µ…É¥¸¹Í•Ñ}…¹¡½ÉÍ}…¹‘}½™™Í•ÑÍ}ÁÉ•Í•Ð¡½¹ÑÉ½°¹AIMQ}U11}IP¤(%µ…É¥¸¹…‘‘}Ñ¡•µ•}½¹ÍÑ…¹Ñ}½Ù•ÉÉ¥‘” ‰µ…É¥¹}±•™Ðˆ°€ØÀ¤(%µ…É¥¸¹…‘‘}Ñ¡•µ•}½¹ÍÑ…¹Ñ}½Ù•ÉÉ¥‘” ‰µ…É¥¹}É¥¡Ðˆ°€ØÀ¤(%µ…É¥¸¹…‘‘}Ñ¡•µ•}½¹ÍÑ…¹Ñ}½Ù•ÉÉ¥‘” ‰µ…É¥¹}Ñ½Àˆ°€ØÔ¤(%µ…É¥¸¹…‘‘}Ñ¡•µ•}½¹ÍÑ…¹Ñ}½Ù•ÉÉ¥‘” ‰µ…É¥¹}‰½ÑÑ½´ˆ°€ØÔ¤(%½¹Ñ•¹Ð¹…‘‘}¡¥±¡µ…É¥¸¤(%Ù…ÈÉ½½Ð€èôY	½á½¹Ñ…¥¹•È¹¹•Ü ¤(%É½½Ð¹…‘‘}Ñ¡•µ•}½¹ÍÑ…¹Ñ}½Ù•ÉÉ¥‘” ‰Í•Á…É…Ñ¥½¸ˆ°€ÈÈ¤(%µ…É¥¸¹…‘‘}¡¥±¡É½½Ð¤(%Ù…È¡•…‘•È€èô!	½á½¹Ñ…¥¹•È¹¹•Ü ¤(%Ù…È‰…¬€èôµ…­•}‰ÕÑÑ½¸ ‹Š@ˆ°Y•Ñ½ÈÈ ÄÈØ°€àØ¤¤(%‰…¬¹…‘‘}Ñ¡•µ•}™½¹Ñ}Í¥é•}½Ù•ÉÉ¥‘” ‰™½¹Ñ}Í¥é”ˆ°€ÌÀ¤(%‰…¬¹ÁÉ•ÍÍ•¹½¹¹•Ð¡‰Õ¥±‘}¡½µ”¤(%¡•…‘•È¹…‘‘}¡¥±¡‰…¬¤(%Ù…ÈÑ¥Ñ±”€èô1…‰•°¹¹•Ü ¤(%Ñ¥Ñ±”¹Ñ•áÐ€ô€‰IMUI8ˆ(%Ñ¥Ñ±”¹Í¥é•}™±…Í}¡½É¥é½¹Ñ…°€ô½¹ÑÉ½°¹M%i}aA9}%10(%Ñ¥Ñ±”¹¡½É¥é½¹Ñ…±}…±¥¹µ•¹Ð€ô!=I%i=9Q1}1%959Q}9QH(%Ñ¥Ñ±”¹…‘‘}Ñ¡•µ•}™½¹Ñ}Í¥é•}½Ù•ÉÉ¥‘” ‰™½¹Ñ}Í¥é”ˆ°€ÌØ¤(%¡•…‘•È¹…‘‘}¡¥±¡Ñ¥Ñ±”¤(%Ù…È½¥¹Ì€èô1…‰•°¹¹•Ü ¤(%½¥¹Ì¹Ñ•áÐ€ô€ˆ•ƒŠ^ ˆ€”¥¹Ð¡M…Ù•5…¹…•È¹‘…Ñ„¹½¥¹Ì¤(%½¥¹Ì¹ÕÍÑ½µ}µ¥¹¥µÕµ}Í¥é”€ôY•Ñ½ÈÈ ÄÌÀ°€Øà¤(%½¥¹Ì¹Ù•ÉÑ¥…±}…±¥¹µ•¹Ð€ôYIQ%1}1%959Q}9QH(%¡•…‘•È¹…‘‘}¡¥±¡½¥¹Ì¤(%É½½Ð¹…‘‘}¡¥±¡¡•…‘•È¤((%Ù…È…É‘•¸€èô…‘‘}±…ÍÍ}…É¡É½½Ð°Y•Ñ½ÈÈ À°€ÔÈÀ¤¤(%Ù…È…É‘•¹}‰½à€èôY	½á½¹Ñ…¥¹•È¹¹•Ü ¤(%…É‘•¹}‰½à¹…±¥¹µ•¹Ð€ô	½á½¹Ñ…¥¹•È¹1%959Q}9QH(%…É‘•¸¹…‘‘}¡¥±¡…É‘•¹}‰½à¤(%Ù…È¥¹¡…‰¥Ñ…¹ÑÌ€èô1…‰•°¹¹•Ü ¤(%¥¹¡…‰¥Ñ…¹ÑÌ¹Ñ•áÐ€ôÉ•ÍÕ•}…É‘•¹}Ñ•áÐ ¤(%¥¹¡…‰¥Ñ…¹ÑÌ¹¡½É¥é½¹Ñ…±}…±¥¹µ•¹Ð€ô!=I%i=9Q1}1%959Q}9QH(%¥¹¡…‰¥Ñ…¹ÑÌ¹…ÕÑ½ÝÉ…Á}µ½‘”€ôQ•áÑM•ÉÙ•È¹UQ=]IA}]=I}M5IP(%¥¹¡…‰¥Ñ…¹ÑÌ¹…‘‘}Ñ¡•µ•}™½¹Ñ}Í¥é•}½Ù•ÉÉ¥‘” ‰™½¹Ñ}Í¥é”ˆ°€Ðà¤(%…É‘•¹}‰½à¹…‘‘}¡¥±¡¥¹¡…‰¥Ñ…¹ÑÌ¤(%Ù…È‘•½È€èô1…‰•°¹¹•Ü ¤(%‘•½È¹Ñ•áÐ€ô‘•½É…Ñ¥½¹}Ñ•áÐ ¤(%‘•½È¹¡½É¥é½¹Ñ…±}…±¥¹µ•¹Ð€ô!=I%i=9Q1}1%959Q}9QH(%‘•½È¹…ÕÑ½ÝÉ…Á}µ½‘”€ôQ•áÑM•ÉÙ•È¹UQ=]IA}]=I}M5IP(%‘•½È¹…‘‘}Ñ¡•µ•}™½¹Ñ}Í¥é•}½Ù•ÉÉ¥‘” ‰™½¹Ñ}Í¥é”ˆ°€ÌÐ¤(%…É‘•¹}‰½à¹…‘‘}¡¥±¡‘•½È¤((%Ù…ÈÁÉ•ÍÑ¥”€èô1…‰•°¹¹•Ü ¤(%ÁÉ•ÍÑ¥”¹Ñ•áÐ€ô€‰AIMQ%€•€€ƒŠˆ€€!%Y59PA=%9QL€•€€ƒŠˆ€€]=I1	L€•ˆ€”m¥¹Ð¡M…Ù•5…¹…•È¹‘…Ñ„¹ÁÉ•ÍÑ¥•}Á½¥¹ÑÌ¤°¥¹Ð¡M…Ù•5…¹…•È¹‘…Ñ„¹…¡¥•Ù•µ•¹Ñ}Á½¥¹ÑÌ¤°M…Ù•5…¹…•È¹‘…Ñ„¹Ý½É±‘}‰…‘•Ì¹Í¥é” ¥t(%ÁÉ•ÍÑ¥”¹¡½É¥é½¹Ñ…±}…±¥¹µ•¹Ð€ô!=I%i=9Q1}1%959Q}9QH(%ÁÉ•ÍÑ¥”¹…‘‘}Ñ¡•µ•}™½¹Ñ}Í¥é•}½Ù•ÉÉ¥‘” ‰™½¹Ñ}Í¥é”ˆ°€Äà¤(%É½½Ð¹…‘‘}¡¥±¡ÁÉ•ÍÑ¥”¤((%Ù…ÈÍ¡½Á}Ñ¥Ñ±”€èô1…‰•°¹¹•Ü ¤(%Í¡½Á}Ñ¥Ñ±”¹Ñ•áÐ€ô€‰I8=IQ%=9Lˆ(%Í¡½Á}Ñ¥Ñ±”¹¡½É¥é½¹Ñ…±}…±¥¹µ•¹Ð€ô!=I%i=9Q1}1%959Q}9QH(%Í¡½Á}Ñ¥Ñ±”¹…‘‘}Ñ¡•µ•}™½¹Ñ}Í¥é•}½Ù•ÉÉ¥‘” ‰™½¹Ñ}Í¥é”ˆ°€ÈÐ¤(%É½½Ð¹…‘‘}¡¥±¡Í¡½Á}Ñ¥Ñ±”¤(%Ù…ÈÍ¡½À€èô!	½á½¹Ñ…¥¹•È¹¹•Ü ¤(%Í¡½À¹…±¥¹µ•¹Ð€ô	½á½¹Ñ…¥¹•È¹1%959Q}9QH(%Í¡½À¹…‘‘}Ñ¡•µ•}½¹ÍÑ…¹Ñ}½Ù•ÉÉ¥‘” ‰Í•Á…É…Ñ¥½¸ˆ°€ÄÐ¤(%É½½Ð¹…‘‘}¡¥±¡Í¡½À¤(%™½È¥Ñ•´¥¸ml‰ÑÉ•”ˆ°€‰QIˆ°€ÄÀÁt°l‰‰•¹ ˆ°€‰	9 ˆ°€ÄÔÁt°l‰™½Õ¹Ñ…¥¸ˆ°€‰=U9Q%8ˆ°€ÈÔÁutè($%Ù…È¥€èôMÑÉ¥¹œ¡¥Ñ•µlÁt¤($%Ù…È½Ý¹•è‰½½°€ô¥¥¸M…Ù•5…¹…•È¹‘…Ñ„¹‘•½É…Ñ¥½¹Ì($%Ù…È‰ÕÑÑ½¸€èôµ…­•}‰ÕÑÑ½¸ ¡MÑÉ¥¹œ¡¥Ñ•µlÅt¤€¬€ ˆ€=]9ˆ¥˜½Ý¹••±Í”€‰q¸•=%9Lˆ€”¥¹Ð¡¥Ñ•µlÉt¤¤¤°Y•Ñ½ÈÈ ÈàÀ°€ÄÀÔ¤°½Ý¹•¤($%‰ÕÑÑ½¸¹‘¥Í…‰±•€ô½Ý¹•($%‰ÕÑÑ½¸¹ÁÉ•ÍÍ•¹½¹¹•Ð¡}‰Õå}‘•½É…Ñ¥½¸¹‰¥¹¡¥°¥¹Ð¡¥Ñ•µlÉt¤¤¤($%Í¡½À¹…‘‘}¡¥±¡‰ÕÑÑ½¸¤()™Õ¹ŒÉ•ÍÕ•}…É‘•¹}Ñ•áÐ ¤€´øMÑÉ¥¹œè(%¥˜M…Ù•5…¹…•È¹‘…Ñ„¹É•ÍÕ•¹¥Í}•µÁÑä ¤è($%É•ÑÕÉ¸€‰e½ÕÈ™¥ÉÍÐ™É¥•¹¥ÌÝ…¥Ñ¥¹œÑ¼‰”É•ÍÕ•¸ˆ(%Ù…È¹…µ•Ì€èômt(%™½È¥¥¸M…Ù•5…¹…•È¹‘…Ñ„¹É•ÍÕ•è($%¹…µ•Ì¹…ÁÁ•¹¡MÑÉ¥¹œ¡¥¤¹…Á¥Ñ…±¥é” ¤¤(%É•ÑÕÉ¸€‰IMUI%9Mq¸ˆ€¬€ˆ€ƒŠˆ€€ˆ¹©½¥¸¡¹…µ•Ì¤()™Õ¹Œ‘•½É…Ñ¥½¹}Ñ•áÐ ¤€´øMÑÉ¥¹œè(%¥˜M…Ù•5…¹…•È¹‘…Ñ„¹‘•½É…Ñ¥½¹Ì¹¥Í}•µÁÑä ¤è($%É•ÑÕÉ¸€‰	Õ¥±„¡½µ”Ý½ÉÑ¡ä½˜å½ÕÈÉ•ÍÕ•É•Ü¸ˆ(%Ù…È¹…µ•Ì€èômt(%™½È¥¥¸M…Ù•5…¹…•È¹‘…Ñ„¹‘•½É…Ñ¥½¹Ìè($%¹…µ•Ì¹…ÁÁ•¹¡MÑÉ¥¹œ¡¥¤¹…Á¥Ñ…±¥é” ¤¤(%É•ÑÕÉ¸€‰I8è€ˆ€¬€ˆ€ƒŠˆ€€ˆ¹©½¥¸¡¹…µ•Ì¤()™Õ¹Œ}‰Õå}‘•½É…Ñ¥½¸¡¥èMÑÉ¥¹œ°½ÍÐè¥¹Ð¤€´øÙ½¥è(%¥˜M…Ù•5…¹…•È¹Õ¹±½­}‘•½É…Ñ¥½¸¡¥°½ÍÐ¤è($%••‘‰…­5…¹…•È¹•™™•Ð ¤($%AÉ•µ¥ÕµY¥ÍÕ…±Ì¹‰ÕÉÍÐ¡Y•Ñ½ÈÈ ÔÐÀ°€ÄÄÀÀ¤°½±½È ˆÉ‘ÑˆØˆ¤°€ÈÀ¤($%‰Õ¥±‘}½±±•Ñ¥½¸ ¤()™Õ¹Œ‰Õ¥±‘}Í•ÑÑ¥¹Ì ¤€´øÙ½¥è(%±•…É}½¹Ñ•¹Ð ¤(%…‘‘}‰…­É½Õ¹ ¤(%Ù…È‰½à€èôY	½á½¹Ñ…¥¹•È¹¹•Ü ¤(%‰½à¹Í•Ñ}…¹¡½ÉÍ}ÁÉ•Í•Ð¡½¹ÑÉ½°¹AIMQ}9QH¤(%‰½à¹Á½Í¥Ñ¥½¸€ôY•Ñ½ÈÈ ´ÌÀÀ°€´ÔÀÀ¤(%‰½à¹ÕÍÑ½µ}µ¥¹¥µÕµ}Í¥é”€ôY•Ñ½ÈÈ ØÀÀ°€ÄÀÀÀ¤(%‰½à¹…±¥¹µ•¹Ð€ô	½á½¹Ñ…¥¹•È¹1%959Q}9QH(%‰½à¹…‘‘}Ñ¡•µ•}½¹ÍÑ…¹Ñ}½Ù•ÉÉ¥‘” ‰Í•Á…É…Ñ¥½¸ˆ°€Èà¤(%½¹Ñ•¹Ð¹…‘‘}¡¥±¡‰½à¤(%Ù…ÈÑ¥Ñ±”€èô1…‰•°¹¹•Ü ¤(%Ñ¥Ñ±”¹Ñ•áÐ€ô€‰MQQ%9Lˆ(%Ñ¥Ñ±”¹¡½É¥é½¹Ñ…±}…±¥¹µ•¹Ð€ô!=I%i=9Q1}1%959Q}9QH(%Ñ¥Ñ±”¹…‘‘}Ñ¡•µ•}™½¹Ñ}Í¥é•}½Ù•ÉÉ¥‘” ‰™½¹Ñ}Í¥é”ˆ°€ÐÐ¤(%‰½à¹…‘‘}¡¥±¡Ñ¥Ñ±”¤(%™½ÈÍ•ÑÑ¥¹œ¥¸ml‰Í½Õ¹ˆ°€‰M=U9‰t°l‰Ù¥‰É…Ñ¥½¸ˆ°€‰!AQ%L‰t°l‰µÕÍ¥Œˆ°€‰5UM%‰utè($%Ù…È­•ä€èôMÑÉ¥¹œ¡Í•ÑÑ¥¹lÁt¤($%Ù…È‰ÕÑÑ½¸€èôµ…­•}‰ÕÑÑ½¸ ˆ•Ìè€•Ìˆ€”mMÑÉ¥¹œ¡Í•ÑÑ¥¹lÅt¤°€‰=8ˆ¥˜‰½½°¡M…Ù•5…¹…•È¹‘…Ñ„¹•Ð¡­•ä°ÑÉÕ”¤¤•±Í”€‰=‰t°Y•Ñ½ÈÈ ÔÀÀ°€àØ¤¤($%‰ÕÑÑ½¸¹ÁÉ•ÍÍ•¹½¹¹•Ð¡}Ñ½±•}Í•ÑÑ¥¹œ¹‰¥¹¡­•ä¤¤($%‰½à¹…‘‘}¡¥±¡‰ÕÑÑ½¸¤(%Ù…ÈÍ¡•±°€èô•Ñ}¹½‘•}½É}¹Õ±° ‰UaM¡•±°ˆ¤(%¥˜Í¡•±°€„ô¹Õ±°è($%Ù…ÈÕÉÉ•¹Ñ}Ñ¡•µ”€èôMÑÉ¥¹œ¡Í¡•±°¹•Ð ‰Ñ¡•µ•}µ½‘”ˆ¤¤¥˜Í¡•±°¹•Ð ‰Ñ¡•µ•}µ½‘”ˆ¤€„ô¹Õ±°•±Í”€‰‘…É¬ˆ($%Ù…È…ÁÁ•…É…¹”€èôµ…­•}‰ÕÑÑ½¸ ‰AAI9è€•Ìˆ€”ÕÉÉ•¹Ñ}Ñ¡•µ”¹Ñ½}ÕÁÁ•È ¤°Y•Ñ½ÈÈ ÔÀÀ°€àØ¤¤($%…ÁÁ•…É…¹”¹ÁÉ•ÍÍ•¹½¹¹•Ð¡™Õ¹Œ ¤€´øÙ½¥è($$%¥˜Í¡•±°¹¡…Í}µ•Ñ¡½ ‰}Ñ½±•}Ñ¡•µ”ˆ¤è($$$%Í¡•±°¹…±° ‰}Ñ½±•}Ñ¡•µ”ˆ¤($$%…±±}‘•™•ÉÉ• ‰‰Õ¥±‘}Í•ÑÑ¥¹Ìˆ¤($$¤($%‰½à¹…‘‘}¡¥±¡…ÁÁ•…É…¹”¤(%Ù…È¥¹™¼€èô1…‰•°¹¹•Ü ¤(%¥¹™¼¹Ñ•áÐ€ô€‰AÉ½É•ÍÌÍ…Ù•Ì…ÕÑ½µ…Ñ¥…±±ä¹q¹!¥¹ÑÌ€•€€ƒŠˆ€€U¹‘½Ì€•€€ƒŠˆ€€A•É™•Ð±•…ÉÌ€•‘q¹AÉ•ÍÑ¥”€•€€ƒŠˆ€€¡¥•Ù•µ•¹ÐÁ½¥¹ÑÌ€•ˆ€”m¥¹Ð¡M…Ù•5…¹…•È¹‘…Ñ„¹¡¥¹ÑÍ}ÕÍ•¤°¥¹Ð¡M…Ù•5…¹…•È¹‘…Ñ„¹Õ¹‘½Í}ÕÍ•¤°¥¹Ð¡M…Ù•5…¹…•È¹‘…Ñ„¹Á•É™•Ñ}±•…ÉÌ¤°¥¹Ð¡M…Ù•5…¹…•È¹‘…Ñ„¹ÁÉ•ÍÑ¥•}Á½¥¹ÑÌ¤°¥¹Ð¡M…Ù•5…¹…•È¹‘…Ñ„¹…¡¥•Ù•µ•¹Ñ}Á½¥¹ÑÌ¥t(%¥¹™¼¹¡½É¥é½¹Ñ…±}…±¥¹µ•¹Ð€ô!=I%i=9Q1}1%959Q}9QH(%¥¹™¼¹…ÕÑ½ÝÉ…Á}µ½‘”€ôQ•áÑM•ÉÙ•È¹UQ=]IA}]=I}M5IP(%¥¹™¼¹…‘‘}Ñ¡•µ•}™½¹Ñ}Í¥é•}½Ù•ÉÉ¥‘” ‰™½¹Ñ}Í¥é”ˆ°€ÈÀ¤(%‰½à¹…‘‘}¡¥±¡¥¹™¼¤(%Ù…È‰…¬€èôµ…­•}‰ÕÑÑ½¸ ‰	,ˆ°Y•Ñ½ÈÈ ÔÀÀ°€àÈ¤°ÑÉÕ”¤(%‰…¬¹ÁÉ•ÍÍ•¹½¹¹•Ð¡‰Õ¥±‘}¡½µ”¤(%‰½à¹…‘‘}¡¥±¡‰…¬¤()™Õ¹Œ}Ñ½±•}Í•ÑÑ¥¹œ¡­•äèMÑÉ¥¹œ¤€´øÙ½¥è(%M…Ù•5…¹…•È¹‘…Ñ…m­•åt€ô¹½Ð‰½½°¡M…Ù•5…¹…•È¹‘…Ñ„¹•Ð¡­•ä°ÑÉÕ”¤¤(%M…Ù•5…¹…•È¹Í…Ù” ¤(%••‘‰…­5…¹…•È¹Ñ…À ¤(%‰Õ¥±‘}Í•ÑÑ¥¹Ì ¤(

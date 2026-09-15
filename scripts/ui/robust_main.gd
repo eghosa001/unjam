@@ -142,7 +142,8 @@ func build_multi_level_select() -> void:
 	margin.add_child(root)
 	var header := HBoxContainer.new()
 	root.add_child(header)
-	var back := make_button("←", Vector2(90, 64))
+	var back := make_button("←", Vector2(126, 86))
+	back.add_theme_font_size_override("font_size", 30)
 	back.pressed.connect(build_home)
 	header.add_child(back)
 	var title := Label.new()
@@ -177,7 +178,7 @@ func build_multi_level_select() -> void:
 	current.pressed.connect(_jump_multi_current)
 	nav.add_child(current)
 	var next := make_button("NEXT ▶", Vector2(220, 60))
-	next.disabled = selected_multi_world >= MultiGameManager.WORLD_COUNT or selected_multi_world > MultiGameManager.highest_unlocked_world(selected_game_id)
+	next.disabled = selected_multi_world >= MultiGameManager.WORLD_COUNT
 	next.pressed.connect(_change_multi_world.bind(1))
 	nav.add_child(next)
 	var scroll := ScrollContainer.new()

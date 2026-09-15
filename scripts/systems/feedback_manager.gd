@@ -8,24 +8,18 @@ var last_music_enabled := false
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	set_process(true)
-	# Headless validation has no audio device and can retain a generated WAV
-	# playback until engine teardown. Skip audio objects there; device builds keep
-	# the exact same sound/music behaviour.
 	if DisplayServer.get_name() == "headless":
 		return
 	player = AudioStreamPlayer.new()
 	add_child(player)
 	music_player = AudioStreamPlayer.new()
-	music_player.volume_db = -11.0
+	music_player.volume_db = -13.0
 	add_child(music_player)
-	music_stream = _build_ambient_loop()
+	music_stream = _build_premium_loop()
 	music_player.stream = music_stream
 	_sync_music()
 
 func _exit_tree() -> void:
-	# Release generated WAV/playback references explicitly. Headless test runs exit
-	# immediately after interactions, so relying on shutdown order can leave the
-	# current AudioStreamPlaybackWAV referenced by the player at ObjectDB cleanup.
 	if player != null:
 		player.stop()
 		player.stream = null
@@ -83,7 +77,7 @@ func _play_tone(frequency: float, duration: float, volume: float) -> void:
 	for i in range(frames):
 		var fade := 1.0 - float(i) / float(max(frames, 1))
 		var sample := sin(TAU * frequency * float(i) / float(rate)) * volume * fade
-		_write_sample(bytes, i, sample)
+		_write_mono(bytes, i, sample)
 	var stream := AudioStreamWAV.new()
 	stream.format = AudioStreamWAV.FORMAT_16_BITS
 	stream.mix_rate = rate
@@ -92,33 +86,60 @@ func _play_tone(frequency: float, duration: float, volume: float) -> void:
 	player.stream = stream
 	player.play()
 
-func _build_ambient_loop() -> AudioStreamWAV:
-	var rate := 11025
-	var duration := 6.0
+func _build_premium_loop() -> AudioStreamWAV:
+	# 12-second original stereo puzzle ambience: warm pads, sub bass,
+	# arpeggiated plucks and a restrained pulse with slightly different L/R delay.
+	var rate := 16000
+	var duration := 12.0
 	var frames := int(rate * duration)
 	var bytes := PackedByteArray()
-	bytes.resize(frames * 2)
-	var notes := [130.81, 164.81, 196.00, 261.63]
+	bytes.resize(frames * 4)
+	var roots := [73.42, 58.27, 65.41, 65.41]
+	var thirds := [87.31, 73.42, 87.31, 82.41]
+	var fifths := [110.0, 87.31, 98.0, 98.0]
+	var arp := [293.66, 349.23, 440.0, 523.25, 233.08, 293.66, 349.23, 440.0, 261.63, 349.23, 440.0, 523.25, 261.63, 329.63, 392.0, 523.25]
+	var segment := duration / 4.0
 	for i in range(frames):
 		var t := float(i) / float(rate)
-		var envelope := 0.6 + 0.4 * sin(TAU * t / duration)
-		var sample := 0.0
-		for f in notes:
-			sample += sin(TAU * float(f) * t)
-		var pulse := 0.72 + 0.28 * sin(TAU * t * 0.5)
-		sample = sample / float(notes.size()) * 0.16 * envelope * pulse
-		_write_sample(bytes, i, sample)
+		var section := mini(3, int(t / segment))
+		var local := fmod(t, segment)
+		var edge := minf(1.0, minf(local / 0.45, (segment - local) / 0.45))
+		var r := float(roots[section])
+		var pad := sin(TAU * r * 2.0 * t) * 0.16 + sin(TAU * float(thirds[section]) * 2.0 * t + 0.5) * 0.13 + sin(TAU * float(fifths[section]) * 2.0 * t + 1.1) * 0.11
+		pad += sin(TAU * r * t + 0.2) * 0.12
+		var beat_phase := fmod(t * 1.5, 1.0)
+		var bass_env := exp(-beat_phase * 4.4)
+		var bass := sin(TAU * r * t) * bass_env * 0.16
+		var step := int(t * 3.0) % arp.size()
+		var pluck_phase := fmod(t * 3.0, 1.0)
+		var pluck_env := exp(-pluck_phase * 7.5)
+		var pluck := sin(TAU * float(arp[step]) * t) * pluck_env * 0.065
+		var shimmer := sin(TAU * (float(arp[(step + 5) % arp.size()]) * 2.0) * t + sin(t * 0.7) * 0.8) * 0.018
+		var pulse := 0.78 + 0.22 * sin(TAU * t / 4.0)
+		var base := (pad * edge + bass + pluck + shimmer) * pulse
+		var left := base + sin(TAU * 0.083 * t) * 0.012
+		var right := base * 0.985 + sin(TAU * 0.071 * t + 1.2) * 0.012 + sin(TAU * float(arp[(step + 2) % arp.size()]) * t) * pluck_env * 0.012
+		_write_stereo(bytes, i, left, right)
 	var stream := AudioStreamWAV.new()
 	stream.format = AudioStreamWAV.FORMAT_16_BITS
 	stream.mix_rate = rate
-	stream.stereo = false
+	stream.stereo = true
 	stream.data = bytes
 	stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
 	stream.loop_begin = 0
 	stream.loop_end = frames
 	return stream
 
-func _write_sample(bytes: PackedByteArray, frame: int, sample: float) -> void:
+func _write_mono(bytes: PackedByteArray, frame: int, sample: float) -> void:
 	var value := int(clamp(sample, -1.0, 1.0) * 32767.0)
 	bytes[frame * 2] = value & 0xff
 	bytes[frame * 2 + 1] = (value >> 8) & 0xff
+
+func _write_stereo(bytes: PackedByteArray, frame: int, left: float, right: float) -> void:
+	var l := int(clamp(left, -1.0, 1.0) * 32767.0)
+	var r := int(clamp(right, -1.0, 1.0) * 32767.0)
+	var o := frame * 4
+	bytes[o] = l & 0xff
+	bytes[o + 1] = (l >> 8) & 0xff
+	bytes[o + 2] = r & 0xff
+	bytes[o + 3] = (r >> 8) & 0xff

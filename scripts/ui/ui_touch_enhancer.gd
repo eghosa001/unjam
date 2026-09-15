@@ -46,6 +46,10 @@ func _enlarge_buttons(node: Node) -> void:
 func _apply_button_size(button: Button) -> void:
 	var label := button.text.strip_edges().to_upper()
 	var wanted := button.custom_minimum_size
+	var is_back := label == "←" or label == "‹" or label == "BACK" or label.begins_with("← ") or label.contains("BACK HOME")
+	if is_back:
+		wanted = Vector2(maxf(wanted.x, 132.0), maxf(wanted.y, 88.0))
+		button.add_theme_font_size_override("font_size", maxi(28, button.get_theme_font_size("font_size")))
 	match host.name:
 		"Game":
 			if label == "BACK" or label == "RETRY": wanted = Vector2(160, 82)
@@ -54,12 +58,12 @@ func _apply_button_size(button: Button) -> void:
 			elif label.contains("DOUBLE BASE REWARD"): wanted = Vector2(520, 92)
 		"WaterSort":
 			if button is WaterTubeButton: wanted = Vector2(170, 330)
-			elif label.contains("BACK"): wanted = Vector2(180, 82)
+			elif is_back: wanted = Vector2(190, 92)
 			elif label == "RETRY": wanted = Vector2(170, 82)
 			elif label.contains("UNDO") or label.contains("HINT"): wanted = Vector2(270, 88)
 		"BlockPuzzle":
 			if _is_block_piece_button(button): wanted = Vector2(310, 150)
-			elif label.contains("BACK"): wanted = Vector2(175, 82)
+			elif is_back: wanted = Vector2(185, 92)
 			elif label == "RETRY": wanted = Vector2(165, 82)
 			elif label.contains("UNDO") or label.contains("HINT"): wanted = Vector2(290, 86)
 		"Main":
@@ -67,7 +71,7 @@ func _apply_button_size(button: Button) -> void:
 			elif label == "CONTINUE": wanted = Vector2(270, 72)
 			elif label.contains("DAILY REWARD") or label.ends_with("\nDONE"): wanted = Vector2(326, 110)
 			elif label == "COLLECTION" or label == "SETTINGS": wanted = Vector2(326, 94)
-			elif label == "←": wanted = Vector2(120, 82)
+			elif is_back: wanted = Vector2(136, 88)
 			elif label.contains("PREV") or label == "CURRENT" or label.contains("NEXT"): wanted = Vector2(240, 76)
 	if wanted.x > button.custom_minimum_size.x or wanted.y > button.custom_minimum_size.y:
 		button.custom_minimum_size = Vector2(maxf(wanted.x, button.custom_minimum_size.x), maxf(wanted.y, button.custom_minimum_size.y))
