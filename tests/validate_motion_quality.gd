@@ -6,9 +6,12 @@ func _initialize() -> void:
 func _run() -> void:
 	if not _validate_rescue_completion_buffer(): return
 	if not _validate_water_lip_geometry(): return
+	if not _validate_water_stream_layering(): return
 	if not await _validate_block_follow_response(): return
 	if not _validate_single_block_drag_owner(): return
-	print("Motion quality validated: rescue completion buffer, bottle-lip pour geometry, responsive continuous block drag, single drag owner.")
+	if not _validate_gameplay_controls_keep_layout_size(): return
+	if not _validate_screen_geometry_static(): return
+	print("Motion quality validated: rescue completion buffer, visible bottle-rim pour, responsive continuous block drag, single drag owner, gameplay controls preserve layout size, screen roots never move/scale on interaction.")
 	quit(0)
 
 func _validate_rescue_completion_buffer() -> bool:
@@ -39,6 +42,35 @@ func _validate_water_lip_geometry() -> bool:
 		return _fail("Water Sort stream is not anchored to the downhill bottle rim")
 	if center_mouth.y > 45.0:
 		return _fail("Water Sort receiver mouth probe is too low in the bottle")
+	return true
+
+func _validate_water_stream_layering() -> bool:
+	var file := FileAccess.open("res://scripts/game/water_sort_reference_motion.gd", FileAccess.READ)
+	if file == null:
+		return _fail("Water Sort reference motion script is missing")
+	var source := file.get_as_text()
+	if not source.contains("visual_pour_rim_local") or not source.contains("exit_point"):
+		return _fail("Water Sort pour no longer visibly exits from the bottle rim")
+	if not source.contains("stream.z_index = 670"):
+		return _fail("Water Sort stream can render behind the translucent bottle and look centre-originated")
+	return true
+
+func _validate_gameplay_controls_keep_layout_size() -> bool:
+	var file := FileAccess.open("res://scripts/ui/ui_touch_enhancer.gd", FileAccess.READ)
+	if file == null:
+		return _fail("UI touch enhancer is missing")
+	var source := file.get_as_text()
+	if not source.contains("_is_block_cell_button(button)") or not source.contains("_is_water_tube_widget(button)"):
+		return _fail("Global touch sizing can inflate Block Puzzle cells or Water Sort bottles")
+	return true
+
+func _validate_screen_geometry_static() -> bool:
+	var director := FileAccess.open("res://scripts/ui/motion_director.gd", FileAccess.READ)
+	if director == null:
+		return _fail("Motion director is missing")
+	var director_source := director.get_as_text()
+	if director_source.contains("target.position =") or director_source.contains("target.scale =") or director_source.contains("tween_property(target, \"position\"") or director_source.contains("tween_property(target, \"scale\""):
+		return _fail("Motion director can still move/scale whole screens")
 	return true
 
 func _validate_block_follow_response() -> bool:
