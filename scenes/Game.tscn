@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource path="res://scripts/game/rescue_rush_premium.gd" type="Script" id="1"]
 [ext_resource path="res://scripts/ui/ui_touch_enhancer.gd" type="Script" id="2"]
 [ext_resource path="res://scripts/ui/rescue_result_guard.gd" type="Script" id="3"]
+[ext_resource path="res://scripts/ui/rescue_layout_polish.gd" type="Script" id="4"]
 
 [node name="Game" type="Control"]
 layout_mode = 3
@@ -18,3 +19,6 @@ script = ExtResource("2")
 
 [node name="ResultGuard" type="Node" parent="."]
 script = ExtResource("3")
+
+[node name="RescueLayoutPolish" type="Node" parent="."]
+script = ExtResource("4")
