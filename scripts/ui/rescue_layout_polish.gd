@@ -1,17 +1,18 @@
 extends Node
 
-var timer := 0.0
-
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	get_viewport().size_changed.connect(_queue_fit)
+	get_tree().node_added.connect(_on_node_added)
 	call_deferred("_fit_board_to_viewport")
 
-func _process(delta: float) -> void:
-	timer += delta
-	if timer < 0.18:
-		return
-	timer = 0.0
-	_fit_board_to_viewport()
+func _queue_fit() -> void:
+	call_deferred("_fit_board_to_viewport")
+
+func _on_node_added(node: Node) -> void:
+	var game := get_parent()
+	if game != null and is_instance_valid(game) and (node == game or game.is_ancestor_of(node)):
+		call_deferred("_fit_board_to_viewport")
 
 func _fit_board_to_viewport() -> void:
 	var game := get_parent() as Control
