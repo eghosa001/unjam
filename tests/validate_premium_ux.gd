@@ -2,11 +2,12 @@ extends SceneTree
 
 func _initialize() -> void:
 	var failures: Array[String] = []
-	_check_source("res://scripts/ui/block_piece_button.gd", ["touch_preview", "TOUCH_LIFT", "_update_touch_footprint", "register_touch_drag", "_shape_centroid_grid", "_candidate_origin_for_probe"], failures)
+	_check_source("res://scripts/ui/block_piece_button.gd", ["touch_preview", "TOUCH_LIFT", "_update_touch_footprint", "register_touch_drag"], failures)
+	_check_source("res://scripts/ui/smooth_block_piece_button.gd", ["_shape_centroid_grid", "_candidate_origin_for_probe", "_best_origin"], failures)
 	_check_source("res://scripts/game/block_puzzle_polished.gd", ["active_touch_piece", "register_touch_drag", "_finish_touch_drag"], failures)
 	_check_source("res://scripts/ui/water_tube_reference_button.gd", ["PALETTE", "Bright top meniscus", "Tube lip", "draw_line", "play_invalid", "play_success"], failures)
 	_check_source("res://scripts/game/water_sort_reference_motion.gd", ["_stream_curve_points", "source_tangent", "receiver_mouth", "PackedVector2Array"], failures)
-	_check_source("res://scripts/game/rescue_rush_premium.gd", ["_fit_board_to_viewport", "max_board_height", "calculated_height", "board_panel.custom_minimum_size"], failures)
+	_check_source("res://scripts/game/rescue_rush_motion_final.gd", ["_fit_board_to_viewport", "max_board_height", "calculated_height", "board_panel.custom_minimum_size"], failures)
 	_check_source("res://scripts/ui/premium_home_overhaul.gd", ["PremiumBackdrop", "build_home_launcher", "animate_entry", "mouse_filter = Control.MOUSE_FILTER_STOP"], failures)
 	_check_source("res://scripts/systems/premium_visuals.gd", ["tactile_success", "tactile_invalid", "transition_cover"], failures)
 
