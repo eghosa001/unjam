@@ -14,14 +14,17 @@ func _run() -> void:
 	var home := FileAccess.open("res://scripts/ui/premium_home_casual.gd", FileAccess.READ).get_as_text()
 	var settings := FileAccess.open("res://scripts/ui/premium_main_casual.gd", FileAccess.READ).get_as_text()
 	var motion := FileAccess.open("res://scripts/ui/motion_director.gd", FileAccess.READ).get_as_text()
+	var touch := FileAccess.open("res://scripts/ui/ui_touch_enhancer.gd", FileAccess.READ).get_as_text()
 	var ux_shell := FileAccess.open("res://scripts/ui/ux_shell_casual.gd", FileAccess.READ).get_as_text()
 	var ux_shell_base := FileAccess.open("res://scripts/ui/ux_shell_premium.gd", FileAccess.READ).get_as_text()
 	var monetization := FileAccess.open("res://scripts/ui/monetization_hub.gd", FileAccess.READ).get_as_text()
+	var main_controller := FileAccess.open("res://scripts/ui/robust_main.gd", FileAccess.READ).get_as_text()
 	var main_scene := FileAccess.open("res://scenes/Main.tscn", FileAccess.READ).get_as_text()
 	var water_scene := FileAccess.open("res://scenes/WaterSort.tscn", FileAccess.READ).get_as_text()
 	var block_scene := FileAccess.open("res://scenes/BlockPuzzle.tscn", FileAccess.READ).get_as_text()
 	var rescue_scene := FileAccess.open("res://scenes/Game.tscn", FileAccess.READ).get_as_text()
 	var surface := FileAccess.open("res://scripts/ui/premium_surface_manager_static.gd", FileAccess.READ).get_as_text()
+	var surface_base := FileAccess.open("res://scripts/ui/premium_surface_manager.gd", FileAccess.READ).get_as_text()
 
 	if not rescue.contains("viewport_height") or not rescue.contains("max_board_height"):
 		return _fail("Rescue height-aware sizing missing")
@@ -35,6 +38,16 @@ func _run() -> void:
 		return _fail("Block centroid magnetism missing")
 	if block_ui.contains("func _process") or not block_ui.contains("size_changed.connect") or not block_ui.contains("node_added.connect"):
 		return _fail("Block Puzzle layout is still timer-polled instead of event-driven")
+	if not main_controller.contains("signal surface_changed"):
+		return _fail("Main controller does not publish surface changes")
+	if touch.contains("func _process") or not touch.contains("node_added.connect"):
+		return _fail("Touch/readability enhancement still rescans the full UI on a timer")
+	if surface_base.contains("func _process") or not surface_base.contains("surface_changed.connect"):
+		return _fail("Secondary-surface styling still polls state instead of following surface events")
+	if ux_shell.contains("func _process") or ux_shell_base.contains("func _process") or not ux_shell_base.contains("surface_changed.connect") or not ux_shell_base.contains("size_changed.connect"):
+		return _fail("UX shell still maintains visibility/geometry every frame")
+	if motion.contains("func _process") or not motion.contains("surface_changed.connect"):
+		return _fail("Navigation motion still polls surface state every frame")
 	if not main_scene.contains("premium_surface_manager_static.gd") or not main_scene.contains("premium_home_casual.gd") or not main_scene.contains("premium_main_casual.gd"):
 		return _fail("Active main scene is not using the casual-polish surfaces")
 	if main_scene.contains("home_ux_patch.gd") or main_scene.contains("secondary_surface_fill.gd") or main_scene.contains("global_finish_polish.gd"):
