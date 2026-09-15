@@ -1,5 +1,21 @@
 extends "res://scripts/game/water_sort_reference_motion.gd"
 
+func _balanced_columns(tube_count: int) -> int:
+	if tube_count <= 6:
+		return 3
+	if tube_count <= 8:
+		return 4
+	if tube_count <= 10:
+		return 5
+	return 6
+
+func render_board() -> void:
+	super.render_board()
+	if board != null:
+		# Keep common 6/8-tube boards visually balanced instead of producing a
+		# sparse 5+1 row. The stage CenterContainer then centers the complete group.
+		board.columns = _balanced_columns(tubes.size())
+
 # Return the point on the visible bottle lip, not the nominal centre point.
 # When a source bottle tilts, the stream must leave from the downhill rim.
 func _visual_mouth_local(control: Control) -> Vector2:
