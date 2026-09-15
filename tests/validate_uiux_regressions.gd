@@ -32,6 +32,8 @@ func _run() -> void:
 		return _fail("Active main scene is not using the casual-polish surfaces")
 	if main_scene.contains("home_ux_patch.gd") or main_scene.contains("secondary_surface_fill.gd") or main_scene.contains("global_finish_polish.gd"):
 		return _fail("Legacy dashboard/flash polish layers are still active")
+	if main_scene.contains("home_cinematic_polish.gd"):
+		return _fail("Home still depends on a periodic geometry override")
 	if surface.contains("content.position =") or surface.contains("tween_property(content, \"position\""):
 		return _fail("Active surface manager still moves content root")
 	if not motion.contains("reduced_motion"):
@@ -39,6 +41,8 @@ func _run() -> void:
 
 	if not home.contains("HomeSecondaryActions") or home.contains("LIVE\nPLAY HUB"):
 		return _fail("Home still uses dashboard-like equally weighted secondary actions")
+	if not home.contains("hero.custom_minimum_size = Vector2(0, 520)") or not home.contains("hero_art.custom_minimum_size = Vector2(390, 480)") or not home.contains('hero_title.add_theme_font_size_override("font_size", 46)') or not home.contains('hero_subtitle.add_theme_font_size_override("font_size", 21)') or not home.contains("Vector2(0, 92)"):
+		return _fail("Home script does not own the final cinematic geometry")
 	if not home.contains("SHOP") or not home.contains("open_shop"):
 		return _fail("Home does not expose a Shop path")
 	if not monetization.contains("func open_shop"):
