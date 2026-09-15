@@ -86,11 +86,23 @@ func _on_verified(product_id: String, token: String, valid: bool, reason: String
 func restore_purchases() -> bool:
 	if not provider_ready() or not provider.has_method("restore_purchases"): return false
 	return provider.call("restore_purchases",Callable(self,"_on_restore_result"))!=false
+
+func _purchase_product_ids(purchase: Dictionary) -> Array:
+	var product_ids = purchase.get("product_ids", [])
+	if product_ids is Array and not product_ids.is_empty():
+		return product_ids
+	# Compatibility with any older provider adapter that exposed `products`.
+	var legacy_products = purchase.get("products", [])
+	return legacy_products if legacy_products is Array else []
+
 func _on_restore_result(purchases: Array) -> void:
 	var restored:=0
-	for purchase in purchases:
+	for purchase_value in purchases:
+		if not purchase_value is Dictionary:
+			continue
+		var purchase: Dictionary = purchase_value
 		var token:=String(purchase.get("purchase_token",""))
-		for product_id in purchase.get("products",[]):
+		for product_id in _purchase_product_ids(purchase):
 			if PRODUCTS.has(product_id) and bool(PRODUCTS[product_id].get("non_consumable",false)):
 				confirm_purchase(String(product_id),token); restored+=1
 	restore_completed.emit(restored)
