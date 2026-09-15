@@ -57,7 +57,7 @@ func run() -> void:
 	expect_true(int(save_manager.data.get("rewarded_ads_watched", 0)) == rewarded_before + 1, "rewarded-ad completion was not recorded")
 
 	# Verify the real gameplay HINT control is routed through HintManager, not the
-	# old free show_hint callback.
+	# old free show_hint callback, and that a busy pour can never consume coins.
 	var main := (load("res://scenes/Main.tscn") as PackedScene).instantiate() as Control
 	root.add_child(main)
 	await _frames(4)
@@ -70,7 +70,18 @@ func run() -> void:
 		expect_true(hint_button != null, "Gameplay hint button missing")
 		if hint_button != null:
 			expect_true("25" in hint_button.text, "Hint button does not disclose its coin cost")
+
+			# Simulate the exact invalid state that previously lost 25 coins.
 			save_manager.data.coins = int(hint_manager.HINT_COST)
+			var busy_hints_before := int(save_manager.data.get("hints_used", 0))
+			game.active_source_tubes[0] = true
+			hint_button.emit_signal("pressed")
+			await _frames(2)
+			expect_true(int(save_manager.data.get("coins", -1)) == int(hint_manager.HINT_COST), "Busy Water Sort hint incorrectly consumed coins")
+			expect_true(int(save_manager.data.get("hints_used", 0)) == busy_hints_before, "Busy Water Sort hint incorrectly recorded/revealed a hint")
+			game.active_source_tubes.clear()
+
+			# Normal ready-state hint must still charge and reveal exactly once.
 			var hints_before := int(save_manager.data.get("hints_used", 0))
 			hint_button.emit_signal("pressed")
 			await _frames(2)
