@@ -13,7 +13,7 @@ func _ready() -> void:
 	player = AudioStreamPlayer.new()
 	add_child(player)
 	music_player = AudioStreamPlayer.new()
-	music_player.volume_db = -13.0
+	music_player.volume_db = -19.0
 	add_child(music_player)
 	music_stream = _build_premium_loop()
 	music_player.stream = music_stream
