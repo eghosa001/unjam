@@ -126,6 +126,23 @@ jobs:
           godot --headless --verbose --path . --export-debug Android build/android/unjam-debug.aab 2>&1 | tee android-aab-export.log
           if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" android-aab-export.log; then exit 1; fi
           test -s build/android/unjam-debug.aab
+      - name: Android API 36 unsigned release AAB export
+        shell: bash
+        run: |
+          set -o pipefail
+          cp export_presets.cfg "$RUNNER_TEMP/export_presets.release.cfg"
+          sed -i 's/package\/signed=true/package\/signed=false/' export_presets.cfg
+          godot --headless --verbose --path . --export-release Android build/android/unjam-release-unsigned.aab 2>&1 | tee android-release-aab-export.log
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" android-release-aab-export.log; then exit 1; fi
+          test -s build/android/unjam-release-unsigned.aab
+          cp "$RUNNER_TEMP/export_presets.release.cfg" export_presets.cfg
+      - name: Upload Android unsigned release AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: unjam-release-unsigned-aab
+          path: build/android/unjam-release-unsigned.aab
+          if-no-files-found: error
+          retention-days: 1
       - name: Upload Android debug AAB
         uses: actions/upload-artifact@v4
         with:
