@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource path="res://scripts/ui/premium_main.gd" type="Script" id="1"]
 [ext_resource path="res://scripts/ui/ui_touch_enhancer.gd" type="Script" id="2"]
@@ -8,6 +8,7 @@
 [ext_resource path="res://scripts/ui/premium_live_hub.gd" type="Script" id="6"]
 [ext_resource path="res://scripts/ui/home_ux_patch.gd" type="Script" id="7"]
 [ext_resource path="res://scripts/ui/premium_surface_manager.gd" type="Script" id="8"]
+[ext_resource path="res://scripts/ui/secondary_surface_fill.gd" type="Script" id="9"]
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -32,6 +33,9 @@ script = ExtResource("7")
 
 [node name="PremiumSurfaceManager" type="Node" parent="."]
 script = ExtResource("8")
+
+[node name="SecondarySurfaceFill" type="Node" parent="."]
+script = ExtResource("9")
 
 [node name="PremiumHome" type="Control" parent="."]
 layout_mode = 1
