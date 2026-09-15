@@ -49,11 +49,6 @@ func _process(_delta: float) -> void:
 		if not bool(tutorial_seen.get(game_id, false)) and not bool(seen_this_session.get(game_id, false)):
 			seen_this_session[game_id] = true
 			call_deferred("show_tutorial", game_id)
-	var hub := main.get_node_or_null("MonetizationHub")
-	if hub != null and hub.get("shop_button") != null:
-		var shop = hub.get("shop_button")
-		if is_instance_valid(shop):
-			shop.visible = false
 
 func _build_shell() -> void:
 	if tutorial_layer != null:
