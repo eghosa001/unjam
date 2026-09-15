@@ -14,14 +14,6 @@ func _ready() -> void:
 	AdManager.rewarded_completed.connect(_on_rewarded_completed)
 	AdManager.rewarded_failed.connect(_on_rewarded_failed)
 	call_deferred("_build_ui")
-	set_process(true)
-
-func _process(_delta: float) -> void:
-	if shop_button == null or not is_instance_valid(shop_button):
-		return
-	var host := get_parent()
-	var surface := str(host.get("current_surface")) if host != null else ""
-	shop_button.visible = surface == "home" and (overlay == null or not overlay.visible)
 
 func _build_ui() -> void:
 	if layer != null:
@@ -29,16 +21,14 @@ func _build_ui() -> void:
 	layer = CanvasLayer.new()
 	layer.layer = 500
 	add_child(layer)
+	# Home owns the visible Shop navigation entry. Keep this launcher node only
+	# as an internal compatibility target for rebuild code; it never competes
+	# with Home for layout or visibility ownership.
 	shop_button = Button.new()
 	shop_button.text = "SHOP"
+	shop_button.visible = false
 	shop_button.custom_minimum_size = Vector2(230, 82)
-	shop_button.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-	shop_button.position = Vector2(425, -120)
-	shop_button.add_theme_font_size_override("font_size", 22)
-	shop_button.add_theme_stylebox_override("normal", _box(Color("7c5cff"), 24, Color("ffffff33"), 2))
-	shop_button.add_theme_stylebox_override("hover", _box(Color("957cff"), 24, Color("ffffff66"), 2))
-	shop_button.add_theme_stylebox_override("pressed", _box(Color("5c3fd6"), 24, Color.WHITE, 2))
-	shop_button.pressed.connect(_open_shop)
+	shop_button.pressed.connect(open_shop)
 	layer.add_child(shop_button)
 	overlay = Control.new()
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -157,9 +147,11 @@ func _add_product(parent: VBoxContainer, product_id: String) -> void:
 		buy.pressed.connect(_purchase.bind(product_id, buy))
 	row.add_child(buy)
 
-func _open_shop() -> void:
+func open_shop() -> void:
+	if overlay == null or not is_instance_valid(overlay):
+		call_deferred("open_shop")
+		return
 	overlay.visible = true
-	shop_button.visible = false
 	_refresh()
 	AnalyticsManager.track("shop_opened", {})
 
@@ -228,7 +220,6 @@ func _rebuild_shop() -> void:
 	_build_ui()
 	if was_open:
 		overlay.visible = true
-		shop_button.visible = false
 
 func _on_node_added(node: Node) -> void:
 	if node == null or not node.has_signal("finished"):
