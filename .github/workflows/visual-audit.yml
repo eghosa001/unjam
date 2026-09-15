@@ -34,7 +34,14 @@ jobs:
           xvfb-run -a godot --path . --rendering-method gl_compatibility --script res://tests/capture_visual_audit.gd 2>&1 | tee visual-audit.log
           if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" visual-audit.log; then exit 1; fi
           test -s build/visual-audit/01-home-dark.png
+          test -s build/visual-audit/05-collection-dark.png
+          test -s build/visual-audit/08-settings-light.png
+          test -s build/visual-audit/09-game-rescue.png
+          test -s build/visual-audit/10-game-water.png
           test -s build/visual-audit/11-game-block.png
+          test -s build/visual-audit/12-levels-block-dark.png
+          test -s build/visual-audit/13-collection-light.png
+          test -s build/visual-audit/14-live-light.png
       - name: Upload rendered audit
         uses: actions/upload-artifact@v4
         with:
