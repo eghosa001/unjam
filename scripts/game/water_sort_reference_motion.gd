@@ -103,6 +103,21 @@ func _game_local(global_point: Vector2) -> Vector2:
 func _control_point(control: Control, local_point: Vector2) -> Vector2:
 	return _game_local(control.get_global_transform_with_canvas() * local_point)
 
+func _stream_curve_points(source_mouth: Vector2, source_tangent: Vector2, receiver_mouth: Vector2) -> PackedVector2Array:
+	var points := PackedVector2Array()
+	var tangent := source_tangent
+	if tangent.length() < 1.0:
+		tangent = Vector2(0.0, 28.0)
+	var c1 := source_mouth + tangent.normalized() * clampf(tangent.length() * 1.45, 34.0, 74.0)
+	var vertical_drop := maxf(32.0, absf(receiver_mouth.y - source_mouth.y) * 0.30)
+	var c2 := receiver_mouth + Vector2(0.0, -vertical_drop)
+	for i in range(11):
+		var t := float(i) / 10.0
+		var u := 1.0 - t
+		var point := source_mouth * (u * u * u) + c1 * (3.0 * u * u * t) + c2 * (3.0 * u * t * t) + receiver_mouth * (t * t * t)
+		points.append(point)
+	return points
+
 func _play_premium_concurrent_pour(source_values: Array, target_values: Array, from_rect: Rect2, to_rect: Rect2, color_index: int, amount: int, source_index: int, target_index: int, will_complete: bool = false) -> void:
 	var liquid: Color = MotionTube.PALETTE[color_index]
 	var ghost := MotionTube.new()
@@ -181,12 +196,10 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 		var source_mouth := _control_point(ghost, source_local)
 		var exit_point := _control_point(ghost, source_local + Vector2(direction * 34.0, 20.0))
 		var receiver_mouth := _control_point(receiver, receiver_local)
-		# Render the jet above the tilted ghost. If it sits behind the translucent
-		# glass, the same correct rim geometry still looks as though liquid comes
-		# through the middle of the bottle on a phone.
-		# The short outward segment makes the liquid visibly leave the glass lip
-		# before falling toward the receiver.
-		stream.points = PackedVector2Array([source_mouth, exit_point, receiver_mouth])
+		var source_tangent := exit_point - source_mouth
+		# A short cubic jet makes the stream visibly leave the downhill rim and
+		# fall into the receiver mouth instead of reading as a line through glass.
+		stream.points = _stream_curve_points(source_mouth, source_tangent, receiver_mouth)
 		shine.points = stream.points
 	flow.tween_method(update_flow, 0.0, 1.0, pour_time)
 	flow.parallel().tween_property(stream, "width", 13.5, pour_time * 0.55)
