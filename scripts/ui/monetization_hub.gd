@@ -8,6 +8,7 @@ var status_label: Label
 
 func _ready() -> void:
 	get_tree().node_added.connect(_on_node_added)
+	StoreManager.purchase_pending.connect(_on_purchase_pending)
 	StoreManager.purchase_succeeded.connect(_on_purchase_succeeded)
 	StoreManager.purchase_failed.connect(_on_purchase_failed)
 	AdManager.rewarded_completed.connect(_on_rewarded_completed)
@@ -148,6 +149,9 @@ func _add_product(parent: VBoxContainer, product_id: String) -> void:
 	if bool(info.get("non_consumable", false)) and product_id in purchased:
 		buy.text = "OWNED"
 		buy.disabled = true
+	elif StoreManager.is_purchase_pending(product_id):
+		buy.text = "PENDING"
+		buy.disabled = true
 	else:
 		buy.text = StoreManager.price_text(product_id)
 		buy.pressed.connect(_purchase.bind(product_id, buy))
@@ -181,6 +185,10 @@ func _purchase(product_id: String, button: Button) -> void:
 	if not StoreManager.purchase(product_id):
 		button.disabled = false
 		button.text = StoreManager.price_text(product_id)
+
+func _on_purchase_pending(_product_id: String, reason: String) -> void:
+	status_label.text = reason + ". You can keep playing while Google Play completes it."
+	call_deferred("_rebuild_shop")
 
 func _on_purchase_succeeded(_product_id: String) -> void:
 	status_label.text = "Purchase confirmed. Thank you!"
