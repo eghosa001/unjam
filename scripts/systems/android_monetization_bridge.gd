@@ -83,8 +83,8 @@ func _schedule_billing_reconnect() -> void:
 		return
 	_billing_reconnect_scheduled = true
 	_billing_reconnect_attempt += 1
-	var exponent := max(0, _billing_reconnect_attempt - 1)
-	var delay := min(BILLING_RECONNECT_MAX_SECONDS, BILLING_RECONNECT_BASE_SECONDS * pow(2.0, float(exponent)))
+	var exponent: int = maxi(0, _billing_reconnect_attempt - 1)
+	var delay: float = minf(BILLING_RECONNECT_MAX_SECONDS, BILLING_RECONNECT_BASE_SECONDS * pow(2.0, float(exponent)))
 	get_tree().create_timer(delay).timeout.connect(_retry_billing_connection, CONNECT_ONE_SHOT)
 
 func _retry_billing_connection() -> void:
