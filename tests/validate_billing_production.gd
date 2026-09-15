@@ -31,6 +31,12 @@ func run() -> void:
 	expect_true("on_purchase_updated.connect(handler, CONNECT_ONE_SHOT)" not in source, "Purchase updates must not use a one-shot listener")
 	expect_true("pending: Callable" in source, "Billing provider does not expose a pending-purchase callback")
 
+	# Billing service disconnects are expected on Android. The bridge must retry
+	# with bounded backoff instead of leaving the store unavailable for the rest
+	# of the session.
+	expect_true("BILLING_RECONNECT_BASE_SECONDS" in source and "BILLING_RECONNECT_MAX_SECONDS" in source, "Billing reconnect backoff constants are missing")
+	expect_true("_schedule_billing_reconnect" in source, "Billing disconnects do not schedule reconnection")
+
 	var store_path := "res://scripts/systems/store_manager.gd"
 	expect_true(ResourceLoader.exists(store_path), "StoreManager missing")
 	if ResourceLoader.exists(store_path):
@@ -38,6 +44,15 @@ func run() -> void:
 		expect_true('purchase.get("product_ids"' in store_source, "Restore must read Google Play purchase product_ids")
 		expect_true("signal purchase_pending" in store_source, "StoreManager does not expose pending purchase state")
 		expect_true("_provider_purchase_pending" in store_source, "StoreManager does not release its purchase lock on pending state")
+		expect_true("PURCHASE_TIMEOUT_SECONDS" in store_source and "_watch_purchase_timeout" in store_source, "Store purchase launch has no timeout recovery")
+		expect_true("_on_reconcile_result" in store_source, "Store does not reconcile Play-owned purchases after reconnect/startup")
+
+	var verifier_path := "res://scripts/systems/purchase_verifier.gd"
+	expect_true(ResourceLoader.exists(verifier_path), "PurchaseVerifier missing")
+	if ResourceLoader.exists(verifier_path):
+		var verifier_source := FileAccess.get_file_as_string(verifier_path)
+		expect_true("VERIFICATION_TIMEOUT_SECONDS" in verifier_source, "Purchase verification timeout constant is missing")
+		expect_true("request.timeout" in verifier_source, "Purchase verification HTTP request has no timeout")
 
 	expect_true(FileAccess.file_exists("res://tools/install_monetization_plugins.sh"), "Monetization plugin installer missing")
 	if FileAccess.file_exists("res://tools/install_monetization_plugins.sh"):
