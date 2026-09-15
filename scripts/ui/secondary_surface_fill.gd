@@ -22,7 +22,7 @@ func _refresh() -> void:
 	if surface not in ["settings", "collection"]:
 		signature = ""
 		return
-	var content = main.get("content")
+	var content: Control = main.get("content") as Control
 	if content == null or not is_instance_valid(content):
 		return
 	var shell := main.get_node_or_null("UXShell")
@@ -31,7 +31,7 @@ func _refresh() -> void:
 	if new_signature == signature:
 		return
 	signature = new_signature
-	var old := content.get_node_or_null("PremiumMiddleFill")
+	var old: Node = content.get_node_or_null("PremiumMiddleFill")
 	if old != null:
 		old.queue_free()
 	var layer := Control.new()
@@ -133,7 +133,7 @@ func _build_collection_fill(layer: Control, dark: bool) -> void:
 	slots.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(slots)
 	for i in range(4):
-		var filled := i < rescued.size()
+		var filled: bool = i < rescued.size()
 		var card := PanelContainer.new()
 		card.custom_minimum_size = Vector2(210, 230)
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
