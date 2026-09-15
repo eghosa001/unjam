@@ -56,7 +56,6 @@ func build_ui() -> void:
 	PremiumVisuals.set_accent(world_accent())
 	PremiumVisuals.ambient_sparkles(18)
 
-	# Soft upper glow gives the header depth without using a static image asset.
 	var top_glow := ColorRect.new()
 	top_glow.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
 	top_glow.custom_minimum_size = Vector2(0, 360)
@@ -76,7 +75,6 @@ func build_ui() -> void:
 	root_box.add_theme_constant_override("separation", 13)
 	outer.add_child(root_box)
 
-	# Compact premium header, matching the hierarchy used by Water Sort.
 	var header_panel := PanelContainer.new()
 	header_panel.add_theme_stylebox_override("panel", style_box(Color(0.018, 0.045, 0.09, 0.94), 28, Color(1, 1, 1, 0.09), 1))
 	root_box.add_child(header_panel)
@@ -88,7 +86,7 @@ func build_ui() -> void:
 
 	var back_button := Button.new()
 	back_button.text = "←  BACK"
-	back_button.custom_minimum_size = Vector2(148, 66)
+	back_button.custom_minimum_size = Vector2(288, 124)
 	back_button.add_theme_font_size_override("font_size", 18)
 	style_button(back_button)
 	back_button.pressed.connect(_quit)
@@ -107,13 +105,12 @@ func build_ui() -> void:
 
 	var retry := Button.new()
 	retry.text = "↻  RETRY"
-	retry.custom_minimum_size = Vector2(148, 66)
+	retry.custom_minimum_size = Vector2(244, 120)
 	retry.add_theme_font_size_override("font_size", 18)
 	style_button(retry)
 	retry.pressed.connect(restart_level)
 	header.add_child(retry)
 
-	# Branded game title row.
 	var brand_row := HBoxContainer.new()
 	brand_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	brand_row.add_theme_constant_override("separation", 14)
@@ -145,7 +142,6 @@ func build_ui() -> void:
 	world_subtitle_label.add_theme_color_override("font_color", Color("9eb3cf"))
 	root_box.add_child(world_subtitle_label)
 
-	# Three-part HUD mirrors the reference image while remaining text-localizable.
 	var status_panel := PanelContainer.new()
 	status_panel.add_theme_stylebox_override("panel", style_box(Color(0.018, 0.043, 0.085, 0.94), 28, Color(world_accent(), 0.38), 2))
 	root_box.add_child(status_panel)
@@ -165,7 +161,6 @@ func build_ui() -> void:
 	chain_label.add_theme_color_override("font_color", Color("67e8ff"))
 	status.add_child(chain_label)
 
-	# Main board shell owns most of the screen, instead of leaving the puzzle cramped.
 	var board_holder := CenterContainer.new()
 	board_holder.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root_box.add_child(board_holder)

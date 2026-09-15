@@ -41,8 +41,8 @@ func build_ui() -> void:
 	header.add_theme_constant_override("separation", 14)
 	root.add_child(header)
 	var back := Button.new()
-	back.text = "‹"
-	back.custom_minimum_size = Vector2(92, 76)
+	back.text = "← BACK"
+	back.custom_minimum_size = Vector2(288, 124)
 	style_small_button(back)
 	back.add_theme_font_size_override("font_size", 34)
 	back.pressed.connect(_quit)
@@ -55,8 +55,8 @@ func build_ui() -> void:
 	title_label.add_theme_color_override("font_color", Color.WHITE)
 	header.add_child(title_label)
 	var retry := Button.new()
-	retry.text = "↻"
-	retry.custom_minimum_size = Vector2(92, 76)
+	retry.text = "↻ RETRY"
+	retry.custom_minimum_size = Vector2(244, 120)
 	style_small_button(retry)
 	retry.add_theme_font_size_override("font_size", 28)
 	retry.pressed.connect(restart_level)

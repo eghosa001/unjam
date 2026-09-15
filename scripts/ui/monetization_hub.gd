@@ -19,7 +19,7 @@ func _process(_delta: float) -> void:
 	if shop_button == null or not is_instance_valid(shop_button):
 		return
 	var host := get_parent()
-	var surface := String(host.get("current_surface")) if host != null else ""
+	var surface := str(host.get("current_surface")) if host != null else ""
 	shop_button.visible = surface == "home" and (overlay == null or not overlay.visible)
 
 func _build_ui() -> void:

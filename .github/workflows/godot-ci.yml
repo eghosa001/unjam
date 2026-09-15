@@ -68,7 +68,7 @@ jobs:
         shell: bash
         run: |
           set -euxo pipefail
-          for t in validate_levels validate_campaign validate_retention validate_robustness validate_level_launch validate_gameplay_interactions validate_motion_quality validate_first_100_progression validate_campaign_1000 validate_monetization validate_premium_ux; do
+          for t in validate_levels validate_campaign validate_retention validate_robustness validate_level_launch validate_gameplay_interactions validate_motion_quality validate_first_100_progression validate_first_200_playability validate_campaign_1000 validate_monetization validate_premium_ux; do
             godot --headless --path . --script "res://tests/$t.gd"
           done
       - name: Boot smoke test

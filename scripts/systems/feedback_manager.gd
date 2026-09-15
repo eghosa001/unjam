@@ -44,24 +44,26 @@ func _sync_music() -> void:
 		music_player.stop()
 
 func tap() -> void:
+	# Routine taps stay silent in the haptic channel. Continuous vibration on
+	# every button press made navigation and puzzle input feel harsh.
 	_play_tone(540.0, 0.045, 0.16)
-	_vibrate(12)
 
 func blocked() -> void:
 	_play_tone(180.0, 0.08, 0.20)
 	_vibrate(28)
 
 func escape(chain: int = 1) -> void:
+	# Escaping a normal piece is a frequent gameplay action; reserve vibration
+	# for blocked/error states and meaningful completion effects.
 	_play_tone(620.0 + float(min(chain, 8)) * 70.0, 0.07, 0.22)
-	_vibrate(18)
 
 func effect() -> void:
 	_play_tone(880.0, 0.09, 0.24)
-	_vibrate(32)
+	_vibrate(20)
 
 func rescue() -> void:
 	_play_tone(1040.0, 0.18, 0.28)
-	_vibrate(55)
+	_vibrate(36)
 
 func _vibrate(ms: int) -> void:
 	if bool(SaveManager.data.get("vibration", true)):

@@ -60,7 +60,7 @@ func _process(delta: float) -> void:
 
 func _draw() -> void:
 	var lift := -13.0 if is_selected else 0.0
-	var outer := Rect2(Vector2(size.x * 0.22, 13.0 + lift), Vector2(size.x * 0.56, size.y - 42.0))
+	var outer := Rect2(Vector2(size.x * 0.18, 13.0 + lift), Vector2(size.x * 0.64, size.y - 42.0))
 	var neck_h := outer.size.y * 0.10
 	var body := Rect2(outer.position + Vector2(0, neck_h * 0.40), Vector2(outer.size.x, outer.size.y - neck_h * 0.40))
 	var inner := Rect2(body.position + Vector2(7, 10), body.size - Vector2(14, 20))

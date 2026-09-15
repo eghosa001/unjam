@@ -81,28 +81,35 @@ func entrance(node: Control, delay: float = 0.0) -> void:
 	node.modulate.a = 0.0; node.position.y += 10.0; node.scale = Vector2(0.992, 0.992); node.pivot_offset = node.size * 0.5
 	var tween := create_tween().set_parallel(true); tween.tween_property(node, "modulate:a", 1.0, 0.16).set_delay(delay); tween.tween_property(node, "position:y", node.position.y - 10.0, 0.22).set_delay(delay).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT); tween.tween_property(node, "scale", Vector2.ONE, 0.24).set_delay(delay).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
-func premium_button(button: BaseButton) -> void:
-	if not is_instance_valid(button) or button.has_meta("premium_motion"): return
-	button.set_meta("premium_motion", true); button.focus_mode = Control.FOCUS_NONE; button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	button.resized.connect(func():
-		if is_instance_valid(button): button.pivot_offset = button.size * 0.5
+func premium_button(button: Variant) -> void:
+	# Nodes can be freed between node_added and the deferred styling call. Keep
+	# this entry point untyped so Godot does not fail argument conversion before
+	# we can validate the object.
+	if not is_instance_valid(button) or not button is BaseButton:
+		return
+	var target := button as BaseButton
+	if target.has_meta("premium_motion"):
+		return
+	target.set_meta("premium_motion", true); target.focus_mode = Control.FOCUS_NONE; target.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	target.resized.connect(func():
+		if is_instance_valid(target): target.pivot_offset = target.size * 0.5
 	)
-	button.pivot_offset = button.size * 0.5
-	button.mouse_entered.connect(func():
-		if not is_instance_valid(button) or button.disabled: return
-		create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT).tween_property(button, "scale", Vector2(1.008, 1.008), 0.10)
+	target.pivot_offset = target.size * 0.5
+	target.mouse_entered.connect(func():
+		if not is_instance_valid(target) or target.disabled: return
+		create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT).tween_property(target, "scale", Vector2(1.008, 1.008), 0.10)
 	)
-	button.mouse_exited.connect(func():
-		if not is_instance_valid(button): return
-		create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT).tween_property(button, "scale", Vector2.ONE, 0.10)
+	target.mouse_exited.connect(func():
+		if not is_instance_valid(target): return
+		create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT).tween_property(target, "scale", Vector2.ONE, 0.10)
 	)
-	button.button_down.connect(func():
-		if not is_instance_valid(button) or button.disabled: return
-		create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT).tween_property(button, "scale", Vector2(0.975, 0.975), 0.055)
+	target.button_down.connect(func():
+		if not is_instance_valid(target) or target.disabled: return
+		create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT).tween_property(target, "scale", Vector2(0.975, 0.975), 0.055)
 	)
-	button.button_up.connect(func():
-		if not is_instance_valid(button): return
-		var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT); tween.tween_property(button, "scale", Vector2(1.012, 1.012), 0.07); tween.tween_property(button, "scale", Vector2.ONE, 0.12)
+	target.button_up.connect(func():
+		if not is_instance_valid(target): return
+		var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT); tween.tween_property(target, "scale", Vector2(1.012, 1.012), 0.07); tween.tween_property(target, "scale", Vector2.ONE, 0.12)
 	)
 
 func show_combo(text_value: String, global_pos: Vector2, color: Color = Color("ffd166")) -> void:
