@@ -1,6 +1,7 @@
 extends "res://scripts/game/block_puzzle_polished.gd"
 
-const PREMIUM_CELL := 104.0
+const PREMIUM_CELL_MAX := 90.0
+const PREMIUM_CELL_MIN := 72.0
 
 var run_score_bar: ProgressBar
 var run_line_bar: ProgressBar
@@ -85,8 +86,14 @@ func build_ui() -> void:
 
 	var center := CenterContainer.new()
 	root.add_child(center)
+	# Keep the full 8x8 board comfortably inside narrow/tall phones. The old
+	# 104 px cells produced an ~852 px board before screen margins, which was too
+	# dominant on real devices. Cap at 90 and shrink further when width requires.
+	var viewport_width := get_viewport_rect().size.x
+	var available_board_width := maxf(600.0, viewport_width - 150.0)
+	var premium_cell := clampf(floor((available_board_width - 34.0) / float(GRID_SIZE)), PREMIUM_CELL_MIN, PREMIUM_CELL_MAX)
 	board_shell = PanelContainer.new()
-	board_shell.custom_minimum_size = Vector2(PREMIUM_CELL * GRID_SIZE + 20, PREMIUM_CELL * GRID_SIZE + 20)
+	board_shell.custom_minimum_size = Vector2(premium_cell * GRID_SIZE + 20, premium_cell * GRID_SIZE + 20)
 	board_shell.add_theme_stylebox_override("panel", style_box(Color("111936"), 8, Color("080d22"), 4, 12))
 	center.add_child(board_shell)
 	var board_margin := MarginContainer.new()
@@ -103,7 +110,7 @@ func build_ui() -> void:
 	for y in range(GRID_SIZE):
 		for x in range(GRID_SIZE):
 			var cell := BlockCellButton.new()
-			cell.custom_minimum_size = Vector2(PREMIUM_CELL, PREMIUM_CELL)
+			cell.custom_minimum_size = Vector2(premium_cell, premium_cell)
 			cell.configure(false, false, Color("466df2"), y * GRID_SIZE + x)
 			cell.pressed.connect(place_selected.bind(Vector2i(x, y)))
 			board_grid.add_child(cell)
