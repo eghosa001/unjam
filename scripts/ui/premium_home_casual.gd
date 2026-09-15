@@ -66,7 +66,8 @@ func build_home_launcher() -> void:
 
 	var hero := PanelContainer.new()
 	hero.name = "HomeHero"
-	hero.custom_minimum_size = Vector2(0, 438)
+	hero.custom_minimum_size = Vector2(0, 520)
+	hero.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	hero.add_theme_stylebox_override("panel", _box(Color(_card(), 0.965), 38, Color(accent, 0.42), 2, 14))
 	root.add_child(hero)
 	var hero_margin := MarginContainer.new()
@@ -80,7 +81,8 @@ func build_home_launcher() -> void:
 	hero_margin.add_child(hero_row)
 
 	hero_art = GameShowcaseArt.new()
-	hero_art.custom_minimum_size = Vector2(330, 390)
+	hero_art.custom_minimum_size = Vector2(390, 480)
+	hero_art.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	hero_art.configure(selected_game, accent, _dark())
 	hero_row.add_child(hero_art)
 
@@ -96,13 +98,13 @@ func build_home_launcher() -> void:
 	hero_copy.add_child(eyebrow)
 	hero_title = Label.new()
 	hero_title.text = MultiGameManager.display_name(selected_game).to_upper()
-	hero_title.add_theme_font_size_override("font_size", 42)
+	hero_title.add_theme_font_size_override("font_size", 46)
 	hero_title.add_theme_color_override("font_color", _ink())
 	hero_copy.add_child(hero_title)
 	hero_subtitle = Label.new()
 	hero_subtitle.text = SUBTITLES[selected_game]
 	hero_subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	hero_subtitle.add_theme_font_size_override("font_size", 19)
+	hero_subtitle.add_theme_font_size_override("font_size", 21)
 	hero_subtitle.add_theme_color_override("font_color", _muted())
 	hero_copy.add_child(hero_subtitle)
 	hero_progress = Label.new()
@@ -110,7 +112,7 @@ func build_home_launcher() -> void:
 	hero_progress.add_theme_font_size_override("font_size", 18)
 	hero_progress.add_theme_color_override("font_color", Color("d9e5f4") if _dark() else Color("314158"))
 	hero_copy.add_child(hero_progress)
-	primary_button = _button(_primary_text(selected_game), Vector2(0, 82), accent, true)
+	primary_button = _button(_primary_text(selected_game), Vector2(0, 92), accent, true)
 	primary_button.name = "HomePrimaryAction"
 	primary_button.add_theme_font_size_override("font_size", 24)
 	primary_button.pressed.connect(_play_selected)
