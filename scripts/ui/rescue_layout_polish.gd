@@ -54,8 +54,8 @@ func _fit_board_to_viewport() -> void:
 	var gap := 10.0 if board_width <= 5 else 7.0
 	var max_board_width := minf(viewport_width - 112.0, 860.0)
 	var max_board_height := maxf(360.0, viewport_height - clampf(viewport_height * 0.42, 640.0, 860.0))
-	var width_cell := floor((max_board_width - gap * float(maxi(board_width - 1, 0))) / float(maxi(board_width, 1)))
-	var height_cell := floor((max_board_height - gap * float(maxi(board_height - 1, 0))) / float(maxi(board_height, 1)))
+	var width_cell: float = floor((max_board_width - gap * float(maxi(board_width - 1, 0))) / float(maxi(board_width, 1)))
+	var height_cell: float = floor((max_board_height - gap * float(maxi(board_height - 1, 0))) / float(maxi(board_height, 1)))
 	var cell_size := int(clampf(minf(width_cell, height_cell), 62.0, 142.0))
 	grid.add_theme_constant_override("h_separation", int(gap))
 	grid.add_theme_constant_override("v_separation", int(gap))
