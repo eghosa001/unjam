@@ -9,7 +9,7 @@ func _run() -> void:
 	var water_motion := FileAccess.open("res://scripts/game/water_sort_ultra_motion.gd", FileAccess.READ).get_as_text()
 	var water_ui := FileAccess.open("res://scripts/game/water_sort_casual.gd", FileAccess.READ).get_as_text()
 	var block_drag := FileAccess.open("res://scripts/ui/smooth_block_piece_button.gd", FileAccess.READ).get_as_text()
-	var block_ui := FileAccess.open("res://scripts/game/block_puzzle_casual.gd", FileAccess.READ).get_as_text()
+	var block_ui := FileAccess.open("res://scripts/ui/puzzle_casual_polish.gd", FileAccess.READ).get_as_text()
 	var home := FileAccess.open("res://scripts/ui/premium_home_casual.gd", FileAccess.READ).get_as_text()
 	var settings := FileAccess.open("res://scripts/ui/premium_main_casual.gd", FileAccess.READ).get_as_text()
 	var motion := FileAccess.open("res://scripts/ui/motion_director.gd", FileAccess.READ).get_as_text()
@@ -40,8 +40,8 @@ func _run() -> void:
 		return _fail("Settings is not yet a compact preferences surface")
 	if not water_ui.contains("GameplayStage") or water_ui.contains("Vector2(0, 1040)") or not water_scene.contains("water_sort_casual.gd"):
 		return _fail("Water Sort is not using the gameplay-first stage")
-	if not block_ui.contains("CompactProgressStrip") or not block_ui.contains("available_height") or not block_scene.contains("block_puzzle_casual.gd"):
-		return _fail("Block Puzzle is not using the board-first responsive layout")
+	if not block_ui.contains("CompactProgressStrip") or not block_ui.contains("available_height") or not block_scene.contains("puzzle_casual_polish.gd"):
+		return _fail("Block Puzzle is not using the board-first responsive polish")
 	if not rescue_ui.contains("GameplayBoardHolder") or rescue_ui.contains("EVERY RESCUE COUNTS") or rescue_ui.contains("Tip: clear blockers") or not rescue_scene.contains("rescue_rush_casual.gd"):
 		return _fail("Rescue Rush still contains duplicate gameplay chrome")
 
