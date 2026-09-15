@@ -58,6 +58,12 @@ func request_hint_for_game(game: Node) -> bool:
 		return false
 	var placement := _game_id(game)
 	var unavailable := Callable(self, "_show_unavailable_on_game").bind(game)
+	if game.has_method("can_show_hint") and not bool(game.call("can_show_hint")):
+		var reason := "Finish the current move before using a hint."
+		unavailable.call(reason)
+		hint_unavailable.emit(placement, reason)
+		_track("hint_unavailable", {"placement": placement, "balance": coin_balance(), "reason": "game_busy"})
+		return false
 	return request_hint(placement, Callable(game, "show_hint"), unavailable)
 
 func _grant(placement: String, source: String, reveal_hint: Callable) -> void:
