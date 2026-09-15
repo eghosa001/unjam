@@ -41,6 +41,9 @@ PremiumVisuals="*res://scripts/systems/robust_premium_visuals.gd"
 RetentionManager="*res://scripts/systems/robust_retention_manager.gd"
 LiveHubLauncher="*res://scripts/systems/live_hub_launcher.gd"
 
+[editor_plugins]
+enabled=PackedStringArray("res://addons/release_aab_builder/plugin.cfg")
+
 [monetization]
 
 test_mode=false
