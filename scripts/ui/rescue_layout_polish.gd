@@ -9,12 +9,16 @@ func _polish_layout() -> void:
 		return
 	var root_box: VBoxContainer = _find_primary_vbox(game)
 	if root_box != null:
-		root_box.alignment = BoxContainer.ALIGNMENT_CENTER
+		root_box.alignment = BoxContainer.ALIGNMENT_BEGIN
 		root_box.add_theme_constant_override("separation", 15)
+		var outer := root_box.get_parent() as MarginContainer
+		if outer != null:
+			outer.add_theme_constant_override("margin_top", 26)
+			outer.add_theme_constant_override("margin_bottom", 24)
 	var board_holder: CenterContainer = _find_board_holder(game)
 	if board_holder != null:
 		board_holder.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		board_holder.custom_minimum_size = Vector2(0, 650)
+		board_holder.custom_minimum_size = Vector2(0, 900)
 	var board_panel: PanelContainer = _find_board_panel(game)
 	if board_panel != null:
 		board_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
