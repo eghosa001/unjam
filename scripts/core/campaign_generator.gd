@@ -91,8 +91,9 @@ static func generate(level_number: int) -> Dictionary:
 	}
 
 static func _generate_onboarding(n: int) -> Dictionary:
-	# Levels 1–12 are intentionally readable in seconds: no gates, bombs or
-	# filler maze. The player learns clear-ray movement before campaign systems arrive.
+	# Levels 1–12 stay mechanically simple: no gates, bombs or filler maze.
+	# Level 10 retains milestone metadata for the campaign cadence while using
+	# the same readable teaching geometry as its neighbours.
 	var size := 5 if n <= 4 else 6
 	var center := Vector2i(int(size / 2), int(size / 2))
 	var target_dir_index := posmod(n - 1, 4)
@@ -109,10 +110,13 @@ static func _generate_onboarding(n: int) -> Dictionary:
 	for i in range(mini(needed, lane.size())):
 		var pos := lane[i]
 		pieces.append(_piece(pos.x, pos.y, "normal", _perpendicular_direction(target_name, n + i)))
+	var milestone := "milestone" if n % 10 == 0 else ""
+	var difficulty := "hard" if milestone != "" else "easy"
+	var difficulty_score := 11 if milestone != "" else 3 + int(n / 3)
 	return {
 		"id": n, "width": size, "height": size, "world": 1, "phase": 1,
-		"campaign_tier": 0, "difficulty": "easy", "difficulty_label": "easy", "difficulty_score": 3 + int(n / 3),
-		"milestone": "", "target_exit": target_name, "estimated_required_moves": needed,
+		"campaign_tier": 0, "difficulty": difficulty, "difficulty_label": difficulty, "difficulty_score": difficulty_score,
+		"milestone": milestone, "target_exit": target_name, "estimated_required_moves": needed,
 		"par_moves": needed + 2, "rescue_id": RESCUES[(n * 7 + 1) % RESCUES.size()],
 		"rescue": [center.x, center.y], "pieces": pieces
 	}
