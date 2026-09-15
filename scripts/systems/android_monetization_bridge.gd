@@ -7,11 +7,15 @@ const BILLING_USER_CANCELED := 1
 const PRODUCT_TYPE_INAPP := 0
 const PURCHASE_STATE_PURCHASED := 1
 const PURCHASE_STATE_PENDING := 2
+const BILLING_RECONNECT_BASE_SECONDS := 2.0
+const BILLING_RECONNECT_MAX_SECONDS := 30.0
 
 var billing_client: Node
 var admob_provider: Node
 var _billing_connected := false
 var _billing_registered := false
+var _billing_reconnect_attempt := 0
+var _billing_reconnect_scheduled := false
 var _purchase_requests: Dictionary = {}
 var _launch_product_id := ""
 
@@ -57,15 +61,38 @@ func _initialize_admob() -> void:
 
 func _on_billing_connected() -> void:
 	_billing_connected = true
-	if not _billing_registered:
-		_billing_registered = true
-		StoreManager.register_provider(self)
+	_billing_reconnect_attempt = 0
+	_billing_reconnect_scheduled = false
+	# Re-registering is intentional. StoreManager refreshes localized prices and
+	# reconciles Play-owned purchases on both initial startup and every reconnect.
+	StoreManager.register_provider(self)
+	_billing_registered = true
 
 func _on_billing_disconnected() -> void:
 	_billing_connected = false
+	_schedule_billing_reconnect()
 
 func _on_billing_connect_error(_response_code: int, _debug_message: String) -> void:
 	_billing_connected = false
+	_schedule_billing_reconnect()
+
+func _schedule_billing_reconnect() -> void:
+	if OS.get_name() != "Android" or billing_client == null or not is_instance_valid(billing_client):
+		return
+	if _billing_connected or _billing_reconnect_scheduled:
+		return
+	_billing_reconnect_scheduled = true
+	_billing_reconnect_attempt += 1
+	var exponent := max(0, _billing_reconnect_attempt - 1)
+	var delay := min(BILLING_RECONNECT_MAX_SECONDS, BILLING_RECONNECT_BASE_SECONDS * pow(2.0, float(exponent)))
+	get_tree().create_timer(delay).timeout.connect(_retry_billing_connection, CONNECT_ONE_SHOT)
+
+func _retry_billing_connection() -> void:
+	_billing_reconnect_scheduled = false
+	if _billing_connected or billing_client == null or not is_instance_valid(billing_client):
+		return
+	if billing_client.has_method("start_connection"):
+		billing_client.start_connection()
 
 func billing_ready() -> bool:
 	if billing_client == null or not _billing_connected:
