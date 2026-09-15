@@ -30,7 +30,11 @@ func register_provider(value: Node) -> void:
 	provider_changed.emit(is_provider_ready())
 
 func is_provider_ready() -> bool:
-	return provider != null and is_instance_valid(provider)
+	if provider == null or not is_instance_valid(provider):
+		return false
+	if provider.has_method("is_ready"):
+		return bool(provider.call("is_ready"))
+	return true
 
 func is_test_mode() -> bool:
 	return bool(ProjectSettings.get_setting("monetization/test_mode", true))
@@ -48,6 +52,12 @@ func show_rewarded(placement: String, on_reward: Callable = Callable()) -> bool:
 		_pending_reward_placement = placement
 		_pending_reward_callback = on_reward
 		var accepted = provider.call("show_rewarded", placement, Callable(self, "_provider_rewarded_completed"), Callable(self, "_provider_rewarded_failed"))
+		if accepted == false and rewarded_in_progress:
+			rewarded_in_progress = false
+			_pending_reward_placement = ""
+			_pending_reward_callback = Callable()
+			rewarded_failed.emit(placement, "Ad provider rejected rewarded request")
+			AnalyticsManager.track("rewarded_failed", {"placement": placement, "reason": "provider_rejected"})
 		return accepted != false
 	if is_test_mode() and OS.get_name() != "Android":
 		_grant_reward(placement, on_reward)
