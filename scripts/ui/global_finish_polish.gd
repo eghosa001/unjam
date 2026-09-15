@@ -10,7 +10,9 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	timer += delta
-	if timer < 0.12:
+	# Check often enough that a newly-built surface is animated on the next
+	# visible frame rather than up to 120 ms later.
+	if timer < 0.025:
 		return
 	timer = 0.0
 	_sync()
@@ -88,8 +90,8 @@ func _play_transition(theme: String) -> void:
 	veil.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	veil.color = Color("07101d") if theme == "dark" else Color("dbe6e9")
-	veil.modulate.a = 0.16
+	veil.modulate.a = 0.09
 	layer.add_child(veil)
-	var tween := veil.create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(veil, "modulate:a", 0.0, 0.20)
+	var tween := veil.create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tween.tween_property(veil, "modulate:a", 0.0, 0.15)
 	tween.finished.connect(layer.queue_free)
