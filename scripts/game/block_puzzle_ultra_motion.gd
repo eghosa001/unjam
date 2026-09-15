@@ -2,6 +2,11 @@ extends "res://scripts/game/block_puzzle_premium_layout.gd"
 
 const SmoothPieceButton = preload("res://scripts/ui/smooth_block_piece_button.gd")
 
+func _ready() -> void:
+	super._ready()
+	if hint_label != null:
+		hint_label.text = "Release when the placement preview locks into place"
+
 func render_pieces() -> void:
 	for child in piece_row.get_children():
 		child.queue_free()
