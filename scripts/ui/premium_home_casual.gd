@@ -171,6 +171,11 @@ func build_home_launcher() -> void:
 	tween.tween_property(hero, "modulate:a", 1.0, 0.18)
 	tween.parallel().tween_property(games, "modulate:a", 1.0, 0.22)
 
+func _open_shop() -> void:
+	var hub := get_parent().get_node_or_null("MonetizationHub")
+	if hub != null and hub.has_method("open_shop"):
+		hub.call("open_shop")
+
 func _add_bottom_nav() -> void:
 	var nav := PanelContainer.new()
 	nav.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
@@ -187,6 +192,7 @@ func _add_bottom_nav() -> void:
 	var entries: Array = [
 		["⌂  HOME", PremiumDesignSystem.accent_for_game("water_sort"), Callable()],
 		["●  LIVE", PremiumDesignSystem.accent_for_game("water_sort"), Callable(self, "_open_live")],
+		["SHOP", Color("7c5cff"), Callable(self, "_open_shop")],
 		["★  COLLECTION", PremiumDesignSystem.accent_for_game("block_puzzle"), func(): get_parent().call("build_collection")],
 		["⚙  SETTINGS", PremiumDesignSystem.accent_for_game("rescue_rush"), func(): get_parent().call("build_settings")]
 	]
@@ -194,7 +200,7 @@ func _add_bottom_nav() -> void:
 		var entry: Array = entries[i]
 		var button := _button(String(entry[0]), Vector2(0, 64), Color(entry[1]), i == 0)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.add_theme_font_size_override("font_size", 16)
+		button.add_theme_font_size_override("font_size", 15)
 		var callback: Callable = entry[2]
 		if callback.is_valid():
 			button.pressed.connect(callback)
