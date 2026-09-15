@@ -42,6 +42,8 @@ jobs:
           test -s build/visual-audit/12-levels-block-dark.png
           test -s build/visual-audit/13-collection-light.png
           test -s build/visual-audit/14-live-light.png
+          test -s build/visual-audit/15-tutorial-rescue-dark.png
+          test -s build/visual-audit/16-result-overlay-dark.png
       - name: Upload rendered audit
         uses: actions/upload-artifact@v4
         with:
