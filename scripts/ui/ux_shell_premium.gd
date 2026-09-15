@@ -155,9 +155,9 @@ func _toggle_theme() -> void:
 	var main := _main()
 	if main == null:
 		return
-	var home := main.get_node_or_null("PremiumHome")
-	if home != null and home.has_method("_sync"):
-		home.call_deferred("_sync")
+	# PremiumHome watches theme_mode in its own _process() and rebuilds once.
+	# Do not schedule a second deferred rebuild here; that caused a visible
+	# one-frame flash/double composition on theme changes.
 	var live := main.get_node_or_null("PremiumLive")
 	if live != null and live.visible and live.has_method("_build"):
 		live.call_deferred("_build")
