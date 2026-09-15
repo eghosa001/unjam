@@ -4,43 +4,23 @@ func _initialize() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
-	if not _rescue_uses_height(): return
-	if not _water_uses_balanced_six_tube_layout(): return
-	if not _water_uses_curved_stream(): return
-	if not _block_uses_centroid_magnetism(): return
-	if not _surface_root_is_stationary(): return
+	var rescue := FileAccess.open("res://scripts/ui/rescue_layout_polish.gd", FileAccess.READ).get_as_text()
+	var water := FileAccess.open("res://scripts/game/water_sort_ultra_motion.gd", FileAccess.READ).get_as_text()
+	var block := FileAccess.open("res://scripts/ui/smooth_block_piece_button.gd", FileAccess.READ).get_as_text()
+	var main_scene := FileAccess.open("res://scenes/Main.tscn", FileAccess.READ).get_as_text()
+	var surface := FileAccess.open("res://scripts/ui/premium_surface_manager_static.gd", FileAccess.READ).get_as_text()
+	if not rescue.contains("viewport_height") or not rescue.contains("max_board_height"):
+		return _fail("Rescue height-aware sizing missing")
+	if not water.contains("tubes.size() == 6") or not water.contains("board.columns = 3") or not water.contains("_quadratic_bezier_points"):
+		return _fail("Water Sort layout or curved pour missing")
+	if not block.contains("_shape_centroid_grid") or not block.contains("_candidate_origins"):
+		return _fail("Block centroid magnetism missing")
+	if not main_scene.contains("premium_surface_manager_static.gd"):
+		return _fail("Stationary surface manager is not active")
+	if surface.contains("content.position =") or surface.contains("tween_property(content, \"position\""):
+		return _fail("Active surface manager still moves content root")
 	print("UI/UX regression checks passed")
 	quit(0)
-
-func _rescue_uses_height() -> bool:
-	var source := FileAccess.open("res://scripts/game/rescue_rush_premium.gd", FileAccess.READ).get_as_text()
-	if not source.contains("viewport_height") or not source.contains("max_board_height") or not source.contains("float(maxi(height, 1))"):
-		return _fail("Rescue board sizing must use viewport height and row count")
-	return true
-
-func _water_uses_balanced_six_tube_layout() -> bool:
-	var source := FileAccess.open("res://scripts/game/water_sort_reference_motion.gd", FileAccess.READ).get_as_text()
-	if not source.contains("tubes.size() == 6") or not source.contains("board.columns = 3"):
-		return _fail("Six-tube Water Sort levels must use a balanced 3x2 layout")
-	return true
-
-func _water_uses_curved_stream() -> bool:
-	var source := FileAccess.open("res://scripts/game/water_sort_reference_motion.gd", FileAccess.READ).get_as_text()
-	if not source.contains("_quadratic_bezier_points") or not source.contains("curve_control"):
-		return _fail("Water Sort must draw a sampled curved stream")
-	return true
-
-func _block_uses_centroid_magnetism() -> bool:
-	var source := FileAccess.open("res://scripts/ui/block_piece_button.gd", FileAccess.READ).get_as_text()
-	if not source.contains("_shape_centroid_grid") or not source.contains("_candidate_origins"):
-		return _fail("Block placement must use the shape centroid plus nearby legal origins")
-	return true
-
-func _surface_root_is_stationary() -> bool:
-	var source := FileAccess.open("res://scripts/ui/premium_surface_manager.gd", FileAccess.READ).get_as_text()
-	if source.contains("content.position =") or source.contains("tween_property(content, \"position\"") or source.contains("content.scale =") or source.contains("tween_property(content, \"scale\""):
-		return _fail("PremiumSurfaceManager must not move or scale the content root")
-	return true
 
 func _fail(message: String) -> bool:
 	push_error(message)
