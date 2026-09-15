@@ -56,6 +56,14 @@ jobs:
           set -o pipefail
           godot --headless --path . --editor --quit 2>&1 | tee import.log
           if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" import.log; then exit 1; fi
+      - name: Upload Godot import diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unjam-import-diagnostics
+          path: import.log
+          if-no-files-found: warn
+          retention-days: 3
       - name: Validate all suites
         shell: bash
         run: |
