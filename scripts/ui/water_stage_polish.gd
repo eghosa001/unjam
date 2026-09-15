@@ -1,17 +1,18 @@
 extends Node
 
-var timer := 0.0
-
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	get_viewport().size_changed.connect(_queue_apply)
+	get_tree().node_added.connect(_on_node_added)
 	call_deferred("_apply")
 
-func _process(delta: float) -> void:
-	timer += delta
-	if timer < 0.20:
-		return
-	timer = 0.0
-	_apply()
+func _queue_apply() -> void:
+	call_deferred("_apply")
+
+func _on_node_added(node: Node) -> void:
+	var game := get_parent()
+	if game != null and is_instance_valid(game) and (node == game or game.is_ancestor_of(node)):
+		call_deferred("_apply")
 
 func _apply() -> void:
 	var game := get_parent()
