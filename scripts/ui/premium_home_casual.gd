@@ -1,5 +1,23 @@
 extends "res://scripts/ui/premium_home_overhaul.gd"
 
+func _ink() -> Color:
+	return PremiumDesignSystem.ink(_dark())
+
+func _muted() -> Color:
+	return PremiumDesignSystem.muted(_dark())
+
+func _surface() -> Color:
+	return PremiumDesignSystem.canvas(_dark())
+
+func _card() -> Color:
+	return PremiumDesignSystem.surface(_dark())
+
+func _border() -> Color:
+	return PremiumDesignSystem.border(_dark())
+
+func _casual_accent(game_id: String) -> Color:
+	return PremiumDesignSystem.accent_for_game(game_id)
+
 func build_home_launcher() -> void:
 	for child in get_children():
 		child.queue_free()
@@ -7,7 +25,7 @@ func build_home_launcher() -> void:
 	built = true
 	visible = true
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	var accent: Color = ACCENTS[selected_game]
+	var accent: Color = _casual_accent(selected_game)
 
 	var bg := PremiumBackdrop.new()
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -121,7 +139,7 @@ func build_home_launcher() -> void:
 		var tile := GameSelectTile.new()
 		tile.custom_minimum_size = Vector2(0, 176)
 		tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		tile.configure(game_id, MultiGameManager.display_name(game_id).to_upper(), _current_level(game_id), ACCENTS[game_id], game_id == selected_game, _dark())
+		tile.configure(game_id, MultiGameManager.display_name(game_id).to_upper(), _current_level(game_id), _casual_accent(game_id), game_id == selected_game, _dark())
 		tile.chosen.connect(_select_game)
 		games.add_child(tile)
 
@@ -133,8 +151,8 @@ func build_home_launcher() -> void:
 	var actions: Array = [
 		["DAILY", Color("ffb84d"), Callable(self, "_open_daily")],
 		["LEVELS", accent, Callable(self, "_open_journey")],
-		["COLLECTION", Color("8b7cf6"), func(): get_parent().call("build_collection")],
-		["LIVE", Color("5da9ff"), Callable(self, "_open_live")]
+		["COLLECTION", PremiumDesignSystem.accent_for_game("block_puzzle"), func(): get_parent().call("build_collection")],
+		["LIVE", PremiumDesignSystem.accent_for_game("water_sort"), Callable(self, "_open_live")]
 	]
 	for action in actions:
 		var button := _button(String(action[0]), Vector2(0, 68), Color(action[1]))
@@ -167,10 +185,10 @@ func _add_bottom_nav() -> void:
 	row.add_theme_constant_override("separation", 8)
 	nav.add_child(row)
 	var entries: Array = [
-		["⌂  HOME", Color("5da9ff"), Callable()],
-		["●  LIVE", Color("5da9ff"), Callable(self, "_open_live")],
-		["★  COLLECTION", Color("8b7cf6"), func(): get_parent().call("build_collection")],
-		["⚙  SETTINGS", Color("2dd4b6"), func(): get_parent().call("build_settings")]
+		["⌂  HOME", PremiumDesignSystem.accent_for_game("water_sort"), Callable()],
+		["●  LIVE", PremiumDesignSystem.accent_for_game("water_sort"), Callable(self, "_open_live")],
+		["★  COLLECTION", PremiumDesignSystem.accent_for_game("block_puzzle"), func(): get_parent().call("build_collection")],
+		["⚙  SETTINGS", PremiumDesignSystem.accent_for_game("rescue_rush"), func(): get_parent().call("build_settings")]
 	]
 	for i in range(entries.size()):
 		var entry: Array = entries[i]
