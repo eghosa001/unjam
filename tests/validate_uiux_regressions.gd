@@ -13,6 +13,8 @@ func _run() -> void:
 	var home := FileAccess.open("res://scripts/ui/premium_home_casual.gd", FileAccess.READ).get_as_text()
 	var settings := FileAccess.open("res://scripts/ui/premium_main_casual.gd", FileAccess.READ).get_as_text()
 	var motion := FileAccess.open("res://scripts/ui/motion_director.gd", FileAccess.READ).get_as_text()
+	var ux_shell := FileAccess.open("res://scripts/ui/ux_shell_casual.gd", FileAccess.READ).get_as_text()
+	var monetization := FileAccess.open("res://scripts/ui/monetization_hub.gd", FileAccess.READ).get_as_text()
 	var main_scene := FileAccess.open("res://scenes/Main.tscn", FileAccess.READ).get_as_text()
 	var water_scene := FileAccess.open("res://scenes/WaterSort.tscn", FileAccess.READ).get_as_text()
 	var block_scene := FileAccess.open("res://scenes/BlockPuzzle.tscn", FileAccess.READ).get_as_text()
@@ -36,6 +38,12 @@ func _run() -> void:
 
 	if not home.contains("HomeSecondaryActions") or home.contains("LIVE\nPLAY HUB"):
 		return _fail("Home still uses dashboard-like equally weighted secondary actions")
+	if not home.contains("SHOP") or not home.contains("open_shop"):
+		return _fail("Home does not expose a Shop path")
+	if not monetization.contains("func open_shop"):
+		return _fail("MonetizationHub does not expose a public Shop opener")
+	if ux_shell.contains("shop.visible = false"):
+		return _fail("UXShell still force-hides the Shop")
 	if not settings.contains("REDUCED MOTION") or settings.contains("PLAY HISTORY"):
 		return _fail("Settings is not yet a compact preferences surface")
 	if not water_ui.contains("GameplayStage") or water_ui.contains("Vector2(0, 1040)") or not water_scene.contains("water_sort_casual.gd"):
