@@ -12,7 +12,7 @@ func _initialize() -> void:
 	_check_source("res://scripts/game/water_sort_ultra_motion.gd", ["GAME_FIRST_WATER", "_balanced_columns", "_tube_size_for_count", "Vector2(208, 370)"], failures)
 	_check_source("res://scripts/game/rescue_rush_motion_final.gd", ["_fit_board_to_viewport", "max_board_height", "calculated_height", "board_panel.custom_minimum_size"], failures)
 	_check_source("res://scripts/ui/rescue_layout_polish.gd", ["GAME_FIRST_RESCUE", "board_holder.size_flags_vertical = Control.SIZE_EXPAND_FILL", "deck.custom_minimum_size = Vector2(0, 116)"], failures)
-	_check_source("res://scripts/ui/game_first_polish.gd", ["GAME_FIRST_HOME", "GAME_FIRST_SETTINGS", "quick.columns = 2", "YOUR PROGRESS LIVES ON THE HOME AND COLLECTION SCREENS", "screen itself remains geometrically fixed"], failures)
+	_check_source("res://scripts/ui/game_first_polish.gd", ["GAME_FIRST_HOME", "GAME_FIRST_SETTINGS", "grid.columns = 2", "YOUR PROGRESS LIVES ON THE HOME AND COLLECTION SCREENS", "Screen itself remains geometrically fixed"], failures)
 	_check_source("res://scripts/ui/home_ux_patch.gd", ["game_first_polish.gd"], failures)
 	_check_source("res://scripts/systems/premium_visuals.gd", ["tactile_success", "tactile_invalid", "transition_cover"], failures)
 	_check_source("res://scripts/ui/premium_design_system.gd", ["class_name PremiumDesignSystem", "GAME_ACCENTS", "apply_button", "apply_panel", "game_canvas"], failures)
