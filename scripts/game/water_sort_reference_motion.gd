@@ -7,7 +7,8 @@ var active_target_tubes: Dictionary = {}
 var pending_completion := false
 
 func render_board() -> void:
-	if board == null: return
+	if board == null:
+		return
 	for child in board.get_children():
 		board.remove_child(child)
 		child.queue_free()
@@ -23,9 +24,6 @@ func render_board() -> void:
 		button.configure(tubes[i], i == selected, i)
 		button.pressed.connect(select_tube.bind(i))
 		if active_source_tubes.has(i) or active_target_tubes.has(i):
-			# Independent motion ghosts own participating slots while a pour is in
-			# flight. The faint live glass preserves the board geometry but prevents
-			# the doubled-tube artifact from the previous implementation.
 			button.modulate = Color(1, 1, 1, 0.08)
 			button.disabled = true
 		board.add_child(button)
@@ -34,9 +32,6 @@ func render_board() -> void:
 func select_tube(index: int) -> void:
 	if completed or pending_completion:
 		return
-	# Tubes already participating in a physical pour stay reserved until their
-	# visual state reconciles. All unrelated tubes remain live, so another pour
-	# can start before the first stream has finished.
 	if active_source_tubes.has(index) or active_target_tubes.has(index):
 		return
 	hint_label.text = ""
@@ -91,12 +86,15 @@ func select_tube(index: int) -> void:
 	_save_checkpoint()
 
 func _transfer_amount(from_idx: int, to_idx: int) -> int:
-	if not can_pour(from_idx, to_idx): return 0
+	if not can_pour(from_idx, to_idx):
+		return 0
 	var color := int(tubes[from_idx].back())
 	var amount := 0
 	for i in range(tubes[from_idx].size() - 1, -1, -1):
-		if int(tubes[from_idx][i]) == color: amount += 1
-		else: break
+		if int(tubes[from_idx][i]) == color:
+			amount += 1
+		else:
+			break
 	return mini(amount, CAPACITY - tubes[to_idx].size())
 
 func _game_local(global_point: Vector2) -> Vector2:
@@ -117,8 +115,6 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 	ghost.z_index = 650
 	add_child(ghost)
 
-	# The receiver is also a motion ghost. Rapid taps may rebuild the live board;
-	# keeping both animated controls outside that tree prevents freed-object races.
 	var receiver := MotionTube.new()
 	receiver.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	receiver.custom_minimum_size = to_rect.size
@@ -136,19 +132,22 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 	lift.tween_property(ghost, "position", home_pos + Vector2(direction * 10.0, -34.0), 0.08)
 	lift.parallel().tween_property(ghost, "scale", Vector2(1.04, 1.04), 0.08)
 	await lift.finished
-	if not is_instance_valid(ghost) or not is_instance_valid(receiver): return
+	if not is_instance_valid(ghost) or not is_instance_valid(receiver):
+		return
 
 	var target_lip := _control_point(receiver, Vector2(receiver.size.x * 0.5, 34.0))
 	var desired := target_lip - ghost.pivot_offset + Vector2(direction * 13.0, -34.0)
 	var travel := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
 	travel.tween_property(ghost, "position", desired, 0.15)
 	await travel.finished
-	if not is_instance_valid(ghost) or not is_instance_valid(receiver): return
+	if not is_instance_valid(ghost) or not is_instance_valid(receiver):
+		return
 
 	var tip := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
 	tip.tween_property(ghost, "rotation", deg_to_rad(70.0 * direction), 0.11)
 	await tip.finished
-	if not is_instance_valid(ghost) or not is_instance_valid(receiver): return
+	if not is_instance_valid(ghost) or not is_instance_valid(receiver):
+		return
 
 	ghost.call("begin_pour_out", amount)
 	var stream := Line2D.new()
@@ -168,14 +167,16 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 
 	var pour_time := 0.28 + float(amount) * 0.075
 	var flow := create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	flow.tween_method(func(v: float) -> void:
-		if not is_instance_valid(ghost) or not is_instance_valid(receiver): return
+	var update_flow := func(v: float) -> void:
+		if not is_instance_valid(ghost) or not is_instance_valid(receiver):
+			return
 		ghost.call("set_pour_progress", v)
 		receiver.call("set_pour_progress", v)
 		var source_mouth := _control_point(ghost, Vector2(ghost.size.x * 0.5, 30.0))
 		var receiver_mouth := _control_point(receiver, Vector2(receiver.size.x * 0.5, 34.0))
 		stream.points = PackedVector2Array([source_mouth, receiver_mouth])
-		shine.points = stream.points, 0.0, 1.0, pour_time)
+		shine.points = stream.points
+	flow.tween_method(update_flow, 0.0, 1.0, pour_time)
 	flow.parallel().tween_property(stream, "width", 13.5, pour_time * 0.55)
 	flow.parallel().tween_property(receiver, "scale", Vector2(1.025, 0.988), pour_time * 0.45)
 	await flow.finished
@@ -186,35 +187,39 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 		fade.parallel().tween_property(shine, "modulate:a", 0.0, 0.055)
 		fade.parallel().tween_property(receiver, "scale", Vector2.ONE, 0.07)
 		await fade.finished
-	if is_instance_valid(stream): stream.queue_free()
-	if is_instance_valid(shine): shine.queue_free()
-	PremiumVisuals.burst(_control_point(receiver, Vector2(receiver.size.x * 0.5, 34.0)), liquid, 9)
+	if is_instance_valid(stream):
+		stream.queue_free()
+	if is_instance_valid(shine):
+		shine.queue_free()
+	if is_instance_valid(receiver):
+		PremiumVisuals.burst(_control_point(receiver, Vector2(receiver.size.x * 0.5, 34.0)), liquid, 9)
 
-	if not is_instance_valid(ghost): return
+	if not is_instance_valid(ghost):
+		return
 	var upright := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
 	upright.tween_property(ghost, "rotation", 0.0, 0.09)
 	await upright.finished
-	if not is_instance_valid(ghost): return
+	if not is_instance_valid(ghost):
+		return
 	var returning := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
 	returning.tween_property(ghost, "position", home_pos, 0.14)
 	returning.parallel().tween_property(ghost, "scale", Vector2.ONE, 0.14)
 	await returning.finished
-	if is_instance_valid(ghost): ghost.queue_free()
-	if is_instance_valid(receiver): receiver.queue_free()
+	if is_instance_valid(ghost):
+		ghost.queue_free()
+	if is_instance_valid(receiver):
+		receiver.queue_free()
 
 	active_source_tubes.erase(source_index)
 	active_target_tubes.erase(target_index)
-	# Only touch the current live controls if they still represent these slots.
-	# A concurrent unrelated move may have rebuilt the board in the meantime.
 	for idx in [source_index, target_index]:
 		if board != null and idx >= 0 and idx < board.get_child_count():
-			var live := board.get_child(idx) as MotionTube
-			if live != null:
+			var live := board.get_child(idx)
+			if live != null and is_instance_valid(live):
 				live.modulate = Color.WHITE
 				live.disabled = false
-				live.configure(tubes[idx], false, idx)
+				live.call("configure", tubes[idx], false, idx)
 
 	if will_complete and pending_completion and not completed:
 		pending_completion = false
 		complete_level()
-
