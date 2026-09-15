@@ -1,6 +1,6 @@
 [gd_scene load_steps=9 format=3]
 
-[ext_resource path="res://scripts/ui/robust_main.gd" type="Script" id="1"]
+[ext_resource path="res://scripts/ui/premium_main.gd" type="Script" id="1"]
 [ext_resource path="res://scripts/ui/ui_touch_enhancer.gd" type="Script" id="2"]
 [ext_resource path="res://scripts/ui/monetization_hub.gd" type="Script" id="3"]
 [ext_resource path="res://scripts/ui/ux_shell_premium.gd" type="Script" id="4"]
