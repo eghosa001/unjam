@@ -28,8 +28,8 @@ func _apply_enhancements() -> void:
 		if hint is Label:
 			hint.add_theme_font_size_override("font_size", 20)
 			hint.custom_minimum_size = Vector2(0, 44)
-			if hint.text.is_empty() or hint.text.begins_with("Select a shape"):
-				hint.text = "Drag a shape onto the grid • tap placement still works"
+			if hint.text.is_empty() or hint.text.begins_with("Select a shape") or hint.text.begins_with("Drag a block") or hint.text.begins_with("Drag a shape"):
+				hint.text = "Release when the placement preview locks into place"
 	elif host.name == "WaterSort":
 		var hint = host.get("hint_label")
 		if hint is Label:
