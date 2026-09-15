@@ -171,13 +171,11 @@ func _add_surface_chrome(content: Control, surface: String, game_id: String, dar
 	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	chrome.add_child(badge)
 
-func _animate_surface(content: Control) -> void:
-	content.modulate.a = 0.82
-	var original := content.position
-	content.position = original + Vector2(0, 8)
-	var tween := content.create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(content, "modulate:a", 1.0, 0.22)
-	tween.parallel().tween_property(content, "position", original, 0.30)
+func _animate_surface(_content: Control) -> void:
+	# MotionDirector is the single owner of surface-entry motion. Keeping this
+	# manager presentation-only prevents competing tweens from nudging or flashing
+	# the same screen after a button press.
+	pass
 
 func _surface_name(surface: String) -> String:
 	match surface:
