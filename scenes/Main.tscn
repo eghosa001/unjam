@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource path="res://scripts/ui/premium_main.gd" type="Script" id="1"]
 [ext_resource path="res://scripts/ui/ui_touch_enhancer.gd" type="Script" id="2"]
@@ -11,6 +11,7 @@
 [ext_resource path="res://scripts/ui/secondary_surface_fill.gd" type="Script" id="9"]
 [ext_resource path="res://scripts/ui/level_browser_polish.gd" type="Script" id="10"]
 [ext_resource path="res://scripts/ui/global_finish_polish.gd" type="Script" id="11"]
+[ext_resource path="res://scripts/ui/motion_director.gd" type="Script" id="12"]
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -44,6 +45,9 @@ script = ExtResource("10")
 
 [node name="GlobalFinishPolish" type="Node" parent="."]
 script = ExtResource("11")
+
+[node name="MotionDirector" type="Node" parent="."]
+script = ExtResource("12")
 
 [node name="PremiumHome" type="Control" parent="."]
 layout_mode = 1
