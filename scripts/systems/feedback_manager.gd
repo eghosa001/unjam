@@ -102,8 +102,8 @@ func _build_premium_loop() -> AudioStreamWAV:
 	for i in range(frames):
 		var t := float(i) / float(rate)
 		var section := mini(3, int(t / segment))
-		var local := fmod(t, segment)
-		var edge := minf(1.0, minf(local / 0.45, (segment - local) / 0.45))
+		var segment_time := fmod(t, segment)
+		var edge := minf(1.0, minf(segment_time / 0.45, (segment - segment_time) / 0.45))
 		var r := float(roots[section])
 		var pad := sin(TAU * r * 2.0 * t) * 0.16 + sin(TAU * float(thirds[section]) * 2.0 * t + 0.5) * 0.13 + sin(TAU * float(fifths[section]) * 2.0 * t + 1.1) * 0.11
 		pad += sin(TAU * r * t + 0.2) * 0.12
