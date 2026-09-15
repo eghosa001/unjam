@@ -54,16 +54,29 @@ func _run() -> void:
 			shell.call("_apply_theme")
 
 	main.call("start_level", 1)
+	await _settle(8)
+	_hide_tutorial(shell)
 	await _capture("09-game-rescue")
 
 	main.call("start_multi_level", "water_sort", 1, false)
+	await _settle(8)
+	_hide_tutorial(shell)
 	await _capture("10-game-water")
 
 	main.call("start_multi_level", "block_puzzle", 1, false)
+	await _settle(8)
+	_hide_tutorial(shell)
 	await _capture("11-game-block")
 
 	print("Visual audit captures written to %s" % OUT_DIR)
 	quit(0)
+
+func _hide_tutorial(shell: Node) -> void:
+	if shell == null:
+		return
+	var panel = shell.get("tutorial_panel")
+	if panel != null and is_instance_valid(panel) and panel.visible and shell.has_method("hide_tutorial"):
+		shell.call("hide_tutorial")
 
 func _settle(frames: int = 5) -> void:
 	for _i in range(frames):
