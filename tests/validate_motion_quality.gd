@@ -7,7 +7,8 @@ func _run() -> void:
 	if not _validate_rescue_completion_buffer(): return
 	if not _validate_water_lip_geometry(): return
 	if not await _validate_block_follow_response(): return
-	print("Motion quality validated: rescue completion buffer, bottle-lip pour geometry, responsive continuous block drag.")
+	if not _validate_single_block_drag_owner(): return
+	print("Motion quality validated: rescue completion buffer, bottle-lip pour geometry, responsive continuous block drag, single drag owner.")
 	quit(0)
 
 func _validate_rescue_completion_buffer() -> bool:
@@ -58,6 +59,17 @@ func _validate_block_follow_response() -> bool:
 	var button_file := FileAccess.open("res://scripts/ui/smooth_block_piece_button.gd", FileAccess.READ)
 	if button_file == null or button_file.get_as_text().contains("desired = _preview_position_for_origin"):
 		return _fail("Block Puzzle drag preview is snapping between board centroids during movement")
+	return true
+
+func _validate_single_block_drag_owner() -> bool:
+	var enhancer := FileAccess.open("res://scripts/ui/ui_touch_enhancer.gd", FileAccess.READ)
+	if enhancer == null:
+		return _fail("UI touch enhancer is missing")
+	var source: String = enhancer.get_as_text()
+	if source.contains("func _input(") or source.contains("func _begin_drag(") or source.contains("func _finish_drag("):
+		return _fail("A legacy global Block Puzzle drag handler is competing with the piece control")
+	if not source.contains("set_process_input(false)"):
+		return _fail("Global touch enhancer can still intercept Block Puzzle drag input")
 	return true
 
 func _fail(message: String) -> bool:
