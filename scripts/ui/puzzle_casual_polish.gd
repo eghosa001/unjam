@@ -47,30 +47,30 @@ func _fit_board() -> void:
 	if grid == null or grid.get_child_count() == 0:
 		return
 	var viewport := game.get_viewport_rect().size
-	var available_width: float = maxf(560.0, viewport.x - 92.0)
-	var available_height: float = maxf(560.0, viewport.y - 670.0)
-	var width_cell: float = floor((available_width - 30.0) / 8.0)
-	var height_cell: float = floor((available_height - 30.0) / 8.0)
-	var cell_size: float = clampf(minf(width_cell, height_cell), 68.0, 102.0)
+	var available_width: float = maxf(320.0, viewport.x - 96.0)
+	var available_height: float = maxf(320.0, viewport.y * 0.52)
+	var width_cell: float = floor((available_width - 24.0) / 8.0)
+	var height_cell: float = floor((available_height - 24.0) / 8.0)
+	var cell_size: float = clampf(minf(width_cell, height_cell), 44.0, 102.0)
 	for child in grid.get_children():
 		if child is Control:
 			(child as Control).custom_minimum_size = Vector2(cell_size, cell_size)
 	var shell: Control = game.get("board_shell") as Control
 	if shell != null:
-		shell.custom_minimum_size = Vector2(cell_size * 8.0 + 20.0, cell_size * 8.0 + 20.0)
+		shell.custom_minimum_size = Vector2(cell_size * 8.0 + 18.0, cell_size * 8.0 + 18.0)
 	var pieces: HBoxContainer = game.get("piece_row") as HBoxContainer
 	if pieces != null:
-		pieces.custom_minimum_size.y = 132
+		pieces.custom_minimum_size.y = 124
 		var tray := _nearest_panel(pieces)
 		if tray != null:
-			tray.custom_minimum_size.y = 176
+			tray.custom_minimum_size.y = 164
 
 func _compact_buttons(root: Node) -> void:
 	for node in _descendants(root):
 		if node is Button:
 			var button := node as Button
 			if "BACK" in button.text or "RETRY" in button.text:
-				button.custom_minimum_size = Vector2(150, 76)
+				button.custom_minimum_size = Vector2(144, 72)
 				button.add_theme_font_size_override("font_size", 20)
 
 func _nearest_panel(node: Node) -> PanelContainer:
