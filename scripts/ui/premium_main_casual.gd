@@ -7,9 +7,9 @@ func build_settings() -> void:
 	var accent := _accent()
 	_page_header(root, "SETTINGS", "Comfort, sound and accessibility", "AUTO-SAVE", PremiumDesignSystem.SUCCESS)
 
-	var intro := _card(root, Vector2(0, 96), true)
+	var intro := _card(root, Vector2(0, 88), true)
 	var intro_margin := _pad(intro, 18)
-	var intro_label := _label("Keep the game feeling fast and comfortable. Changes apply across all three games.", 18, "muted", accent)
+	var intro_label := _label("Tune sound, comfort and appearance across all three games.", 18, "muted", accent)
 	intro_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	intro_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	intro_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -59,7 +59,7 @@ func build_settings() -> void:
 	accessibility.disabled = true
 	controls.add_child(accessibility)
 
-	var help_card := _card(root, Vector2(0, 142), false)
+	var help_card := _card(root, Vector2(0, 132), false)
 	var help_margin := _pad(help_card, 18)
 	var help_box := VBoxContainer.new()
 	help_box.add_theme_constant_override("separation", 12)
@@ -78,7 +78,7 @@ func build_settings() -> void:
 	privacy.pressed.connect(PrivacyManager.show_privacy_options)
 	utility.add_child(privacy)
 
-	var note := _label("Progress saves automatically. Sound, music, haptics, theme and motion preferences can be changed at any time.", 15, "muted", accent)
+	var note := _label("Progress saves automatically. You can adjust sound, music, haptics, motion and appearance at any time.", 15, "muted", accent)
 	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	root.add_child(note)
