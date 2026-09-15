@@ -155,14 +155,14 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 	stream.default_color = Color(liquid, 0.96)
 	stream.begin_cap_mode = Line2D.LINE_CAP_ROUND
 	stream.end_cap_mode = Line2D.LINE_CAP_ROUND
-	stream.z_index = 640
+	stream.z_index = 670
 	add_child(stream)
 	var shine := Line2D.new()
 	shine.width = 3.0
 	shine.default_color = Color(liquid.lightened(0.42), 0.90)
 	shine.begin_cap_mode = Line2D.LINE_CAP_ROUND
 	shine.end_cap_mode = Line2D.LINE_CAP_ROUND
-	shine.z_index = 641
+	shine.z_index = 671
 	add_child(shine)
 
 	var pour_time := 0.28 + float(amount) * 0.075
@@ -172,9 +172,21 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 			return
 		ghost.call("set_pour_progress", v)
 		receiver.call("set_pour_progress", v)
-		var source_mouth := _control_point(ghost, Vector2(ghost.size.x * 0.5, 30.0))
-		var receiver_mouth := _control_point(receiver, Vector2(receiver.size.x * 0.5, 34.0))
-		stream.points = PackedVector2Array([source_mouth, receiver_mouth])
+		var source_local := Vector2(ghost.size.x * 0.5, 30.0)
+		if ghost.has_method("visual_pour_rim_local"):
+			source_local = Vector2(ghost.call("visual_pour_rim_local", direction))
+		var receiver_local := Vector2(receiver.size.x * 0.5, 34.0)
+		if receiver.has_method("visual_receive_rim_local"):
+			receiver_local = Vector2(receiver.call("visual_receive_rim_local"))
+		var source_mouth := _control_point(ghost, source_local)
+		var exit_point := _control_point(ghost, source_local + Vector2(direction * 34.0, 20.0))
+		var receiver_mouth := _control_point(receiver, receiver_local)
+		# Render the jet above the tilted ghost. If it sits behind the translucent
+		# glass, the same correct rim geometry still looks as though liquid comes
+		# through the middle of the bottle on a phone.
+		# The short outward segment makes the liquid visibly leave the glass lip
+		# before falling toward the receiver.
+		stream.points = PackedVector2Array([source_mouth, exit_point, receiver_mouth])
 		shine.points = stream.points
 	flow.tween_method(update_flow, 0.0, 1.0, pour_time)
 	flow.parallel().tween_property(stream, "width", 13.5, pour_time * 0.55)
