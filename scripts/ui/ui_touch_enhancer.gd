@@ -43,6 +43,11 @@ func _enlarge_buttons(node: Node) -> void:
 		_enlarge_buttons(child)
 
 func _apply_button_size(button: Button) -> void:
+	# Gameplay drawing controls are not ordinary buttons. Enforcing navigation
+	# touch-target sizes on them can blow up an 8x8 board or distort bottle
+	# geometry. Their game layouts own their dimensions.
+	if _is_block_cell_button(button) or _is_water_tube_widget(button):
+		return
 	var label := button.text.strip_edges().to_upper()
 	var wanted := Vector2(maxf(button.custom_minimum_size.x, 160.0), maxf(button.custom_minimum_size.y, 108.0))
 	var is_back := label == "←" or label == "‹" or label == "BACK" or label.begins_with("← ") or label.contains("BACK HOME")
@@ -81,3 +86,13 @@ func _is_block_piece_button(button: Button) -> bool:
 		return false
 	var path := String(script.resource_path)
 	return path.ends_with("block_piece_button.gd") or path.ends_with("smooth_block_piece_button.gd")
+
+func _button_script_path(button: Button) -> String:
+	var script := button.get_script() as Script
+	return String(script.resource_path) if script != null else ""
+
+func _is_block_cell_button(button: Button) -> bool:
+	return _button_script_path(button).contains("block_cell_button.gd")
+
+func _is_water_tube_widget(button: Button) -> bool:
+	return _button_script_path(button).contains("water_tube")
