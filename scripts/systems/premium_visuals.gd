@@ -70,22 +70,18 @@ func burst(global_pos: Vector2, color: Color = Color("2dd4b6"), count: int = 18)
 		var tween := create_tween().set_parallel(true); tween.tween_property(particle, "position", target, duration).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT); tween.tween_property(particle, "rotation", particle.rotation + rng.randf_range(-3.5, 3.5), duration); tween.tween_property(particle, "scale", Vector2(0.25, 0.25), duration); tween.tween_property(particle, "modulate:a", 0.0, duration).set_delay(duration * 0.34); tween.chain().tween_callback(particle.queue_free)
 
 func screen_flash(color: Color = Color("2dd4b6"), strength: float = 0.18) -> void:
-	# Premium feedback uses a low-energy accent wash instead of a bright/full-white flash.
-	# This keeps transitions comfortable and prevents the cheap "screen blink" feeling.
 	if not is_instance_valid(overlay): return
 	var flash := ColorRect.new(); flash.color = Color(color.darkened(0.38), minf(strength, 0.12)); flash.mouse_filter = Control.MOUSE_FILTER_IGNORE; flash.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); overlay.add_child(flash)
 	var tween := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT); tween.tween_property(flash, "modulate:a", 0.0, 0.14); tween.tween_callback(flash.queue_free)
 
 func entrance(node: Control, delay: float = 0.0) -> void:
 	if not is_instance_valid(node): return
-	node.modulate.a = 0.0; node.position.y += 10.0; node.scale = Vector2(0.992, 0.992); node.pivot_offset = node.size * 0.5
-	var tween := create_tween().set_parallel(true); tween.tween_property(node, "modulate:a", 1.0, 0.16).set_delay(delay); tween.tween_property(node, "position:y", node.position.y - 10.0, 0.22).set_delay(delay).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT); tween.tween_property(node, "scale", Vector2.ONE, 0.24).set_delay(delay).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	var final_alpha := node.modulate.a
+	node.modulate.a = 0.0
+	var tween := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tween.tween_property(node, "modulate:a", final_alpha, 0.14).set_delay(delay)
 
 func premium_button(button: Variant) -> void:
-	# Normal navigation/settings buttons must never move or scale under the
-	# finger. On phones, scaling controls inside dense layouts reads as a
-	# whole-screen vibration/jump. Let the theme's pressed/hover style provide
-	# feedback while geometry stays completely stable.
 	if not is_instance_valid(button) or not button is BaseButton:
 		return
 	var target := button as BaseButton
