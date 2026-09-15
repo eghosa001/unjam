@@ -28,11 +28,16 @@ func register_provider(value: Node) -> void:
 		provider.call("query_products", PRODUCTS.keys(), Callable(self,"set_localized_prices"))
 	catalog_changed.emit()
 func provider_ready() -> bool: return provider != null and is_instance_valid(provider)
+func verifier_ready() -> bool:
+	var endpoint := String(ProjectSettings.get_setting("monetization/purchase_verification_url", ""))
+	return endpoint.begins_with("https://")
+func _token_fingerprint(token: String) -> String:
+	return token.sha256_text() if not token.is_empty() else ""
 func set_localized_prices(prices: Dictionary) -> void: localized_prices=prices.duplicate(true); catalog_changed.emit()
 func price_text(product_id: String) -> String:
 	if localized_prices.has(product_id):
 		return String(localized_prices[product_id])
-	if provider_ready():
+	if provider_ready() and verifier_ready():
 		return "PLAY STORE"
 	if bool(ProjectSettings.get_setting("monetization/test_mode", false)) and OS.get_name() != "Android":
 		return "TEST PURCHASE"
@@ -42,6 +47,7 @@ func purchase(product_id: String) -> bool:
 	if purchase_in_progress:
 		purchase_failed.emit(product_id,"Another purchase is already in progress"); return false
 	if not PRODUCTS.has(product_id): purchase_failed.emit(product_id,"Unknown product"); return false
+	if OS.get_name()=="Android" and not verifier_ready(): purchase_failed.emit(product_id,"Secure purchase verification is not configured"); return false
 	purchase_in_progress=true; purchase_started.emit(product_id); AnalyticsManager.track("purchase_started",{"product":product_id})
 	if provider_ready() and provider.has_method("purchase"):
 		var accepted=provider.call("purchase",product_id,Callable(self,"confirm_purchase"),Callable(self,"_provider_purchase_failed"))
@@ -59,7 +65,8 @@ func _on_verified(product_id: String, token: String, valid: bool, reason: String
 	if not valid:
 		purchase_in_progress=false; purchase_failed.emit(product_id,reason); AnalyticsManager.track("purchase_verification_failed",{"product":product_id}); return
 	var processed: Array=SaveManager.data.get("processed_purchase_tokens",[])
-	if not token.is_empty() and token!="desktop-test" and token in processed:
+	var fingerprint := _token_fingerprint(token)
+	if not token.is_empty() and token!="desktop-test" and (fingerprint in processed or token in processed):
 		purchase_in_progress=false; purchase_succeeded.emit(product_id); return
 	var info: Dictionary=PRODUCTS[product_id]; var coins:=int(info.get("coins",0)); var non_consumable:=bool(info.get("non_consumable",false)); var purchased: Array=SaveManager.data.get("purchased_products",[])
 	if non_consumable and product_id in purchased:
@@ -70,7 +77,8 @@ func _on_verified(product_id: String, token: String, valid: bool, reason: String
 	elif coins>0:
 		SaveManager.add_coins(coins); SaveManager.data.lifetime_purchased_coins=int(SaveManager.data.get("lifetime_purchased_coins",0))+coins
 	if non_consumable and product_id not in purchased: purchased.append(product_id)
-	if not token.is_empty() and token!="desktop-test": processed.append(token)
+	if not token.is_empty() and token!="desktop-test" and fingerprint not in processed: processed.append(fingerprint)
+	if token in processed: processed.erase(token)
 	SaveManager.data.purchased_products=purchased; SaveManager.data.processed_purchase_tokens=processed; SaveManager.save()
 	if provider_ready() and provider.has_method("finalize_purchase"): provider.call("finalize_purchase",token,not non_consumable)
 	purchase_in_progress=false; purchase_succeeded.emit(product_id); AnalyticsManager.track("purchase_succeeded",{"product":product_id,"coins":coins})
