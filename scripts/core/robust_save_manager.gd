@@ -3,7 +3,7 @@ extends "res://scripts/core/save_manager.gd"
 const ROBUST_SAVE_PATH := "user://unjam_save.json"
 const BACKUP_PATH := "user://unjam_save.backup.json"
 const TEMP_PATH := "user://unjam_save.tmp.json"
-const SAVE_VERSION := 6
+const SAVE_VERSION := 7
 
 func _ready() -> void:
 	load_save()
@@ -30,9 +30,15 @@ func _read_dictionary(path: String) -> Dictionary:
 	return parsed if parsed is Dictionary else {}
 
 func _migrate_robust() -> void:
+	var previous_version := int(data.get("save_version", 0))
 	for key in DEFAULT_DATA:
 		if not data.has(key):
 			data[key] = DEFAULT_DATA[key]
+	# Version 7 changes the default interaction feel: haptics are opt-in.
+	# Existing installs created when vibration defaulted on are migrated once,
+	# so upgrading does not preserve the aggressive old phone vibration.
+	if previous_version < 7:
+		data["vibration"] = false
 	data["save_version"] = SAVE_VERSION
 
 func _sanitize() -> void:
