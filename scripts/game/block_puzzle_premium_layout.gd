@@ -2,6 +2,11 @@ extends "res://scripts/game/block_puzzle_polished.gd"
 
 const PREMIUM_CELL := 104.0
 
+var run_score_bar: ProgressBar
+var run_line_bar: ProgressBar
+var run_pace_label: Label
+var run_objective_label: Label
+
 func build_ui() -> void:
 	var background := ColorRect.new()
 	background.color = Color("405ca8")
@@ -28,7 +33,7 @@ func build_ui() -> void:
 	outer.add_theme_constant_override("margin_bottom", 28)
 	add_child(outer)
 	var root := VBoxContainer.new()
-	root.alignment = BoxContainer.ALIGNMENT_CENTER
+	root.alignment = BoxContainer.ALIGNMENT_BEGIN
 	root.add_theme_constant_override("separation", 12)
 	outer.add_child(root)
 
@@ -143,8 +148,79 @@ func build_ui() -> void:
 	hint_label.custom_minimum_size = Vector2(0, 28)
 	root.add_child(hint_label)
 
+	_add_run_progress_deck(root)
+
 	effects_layer = Control.new()
 	effects_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	effects_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	effects_layer.z_index = 800
 	add_child(effects_layer)
+
+func _add_run_progress_deck(root: VBoxContainer) -> void:
+	var deck := PanelContainer.new()
+	deck.custom_minimum_size = Vector2(0, 196)
+	deck.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	deck.add_theme_stylebox_override("panel", style_box(Color("263f86aa"), 28, Color("ffffff20"), 1, 5))
+	root.add_child(deck)
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 24)
+	margin.add_theme_constant_override("margin_right", 24)
+	margin.add_theme_constant_override("margin_top", 18)
+	margin.add_theme_constant_override("margin_bottom", 18)
+	deck.add_child(margin)
+	var box := VBoxContainer.new()
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.add_theme_constant_override("separation", 10)
+	margin.add_child(box)
+	run_objective_label = Label.new()
+	run_objective_label.text = "RUN PROGRESS"
+	run_objective_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	run_objective_label.add_theme_font_size_override("font_size", 20)
+	run_objective_label.add_theme_color_override("font_color", Color("f4f7ff"))
+	box.add_child(run_objective_label)
+	var bars := GridContainer.new()
+	bars.columns = 2
+	bars.add_theme_constant_override("h_separation", 18)
+	bars.add_theme_constant_override("v_separation", 7)
+	box.add_child(bars)
+	var score_name := Label.new()
+	score_name.text = "SCORE TARGET"
+	score_name.add_theme_font_size_override("font_size", 15)
+	score_name.add_theme_color_override("font_color", Color("dfe7ff"))
+	bars.add_child(score_name)
+	var line_name := Label.new()
+	line_name.text = "LINE TARGET"
+	line_name.add_theme_font_size_override("font_size", 15)
+	line_name.add_theme_color_override("font_color", Color("dfe7ff"))
+	bars.add_child(line_name)
+	run_score_bar = ProgressBar.new()
+	run_score_bar.show_percentage = false
+	run_score_bar.custom_minimum_size = Vector2(430, 18)
+	run_score_bar.add_theme_stylebox_override("background", style_box(Color("162551"), 9))
+	run_score_bar.add_theme_stylebox_override("fill", style_box(Color("8b7cf6"), 9))
+	bars.add_child(run_score_bar)
+	run_line_bar = ProgressBar.new()
+	run_line_bar.show_percentage = false
+	run_line_bar.custom_minimum_size = Vector2(430, 18)
+	run_line_bar.add_theme_stylebox_override("background", style_box(Color("162551"), 9))
+	run_line_bar.add_theme_stylebox_override("fill", style_box(Color("2dd4b6"), 9))
+	bars.add_child(run_line_bar)
+	run_pace_label = Label.new()
+	run_pace_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	run_pace_label.add_theme_font_size_override("font_size", 16)
+	run_pace_label.add_theme_color_override("font_color", Color("d7e2ff"))
+	box.add_child(run_pace_label)
+
+func render() -> void:
+	super.render()
+	_update_run_progress()
+
+func _update_run_progress() -> void:
+	if run_score_bar == null or run_line_bar == null or run_pace_label == null:
+		return
+	run_score_bar.max_value = maxf(1.0, float(target_score))
+	run_score_bar.value = minf(float(score), float(target_score))
+	run_line_bar.max_value = maxf(1.0, float(target_lines))
+	run_line_bar.value = minf(float(lines_cleared), float(target_lines))
+	var pace_left := maxi(0, par_placements - placements)
+	run_pace_label.text = "%d / %d SCORE   •   %d / %d LINES   •   PERFECT PACE: %d PLACEMENTS LEFT" % [score, target_score, lines_cleared, target_lines, pace_left]
