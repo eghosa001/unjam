@@ -7,6 +7,7 @@ func _run() -> void:
 	var rescue := FileAccess.open("res://scripts/ui/rescue_layout_polish.gd", FileAccess.READ).get_as_text()
 	var rescue_ui := FileAccess.open("res://scripts/game/rescue_rush_casual.gd", FileAccess.READ).get_as_text()
 	var water_motion := FileAccess.open("res://scripts/game/water_sort_ultra_motion.gd", FileAccess.READ).get_as_text()
+	var water_stage := FileAccess.open("res://scripts/ui/water_stage_polish.gd", FileAccess.READ).get_as_text()
 	var water_ui := FileAccess.open("res://scripts/game/water_sort_casual.gd", FileAccess.READ).get_as_text()
 	var block_drag := FileAccess.open("res://scripts/ui/smooth_block_piece_button.gd", FileAccess.READ).get_as_text()
 	var block_ui := FileAccess.open("res://scripts/ui/puzzle_casual_polish.gd", FileAccess.READ).get_as_text()
@@ -24,10 +25,16 @@ func _run() -> void:
 
 	if not rescue.contains("viewport_height") or not rescue.contains("max_board_height"):
 		return _fail("Rescue height-aware sizing missing")
+	if rescue.contains("func _process") or not rescue.contains("size_changed.connect") or not rescue.contains("node_added.connect"):
+		return _fail("Rescue layout is still timer-polled instead of event-driven")
 	if not water_motion.contains("tubes.size() == 6") or not water_motion.contains("board.columns = 3") or not water_motion.contains("_quadratic_bezier_points"):
 		return _fail("Water Sort layout or curved pour missing")
+	if water_stage.contains("func _process") or not water_stage.contains("size_changed.connect") or not water_stage.contains("node_added.connect"):
+		return _fail("Water Sort stage layout is still timer-polled instead of event-driven")
 	if not block_drag.contains("_shape_centroid_grid") or not block_drag.contains("_candidate_origins"):
 		return _fail("Block centroid magnetism missing")
+	if block_ui.contains("func _process") or not block_ui.contains("size_changed.connect") or not block_ui.contains("node_added.connect"):
+		return _fail("Block Puzzle layout is still timer-polled instead of event-driven")
 	if not main_scene.contains("premium_surface_manager_static.gd") or not main_scene.contains("premium_home_casual.gd") or not main_scene.contains("premium_main_casual.gd"):
 		return _fail("Active main scene is not using the casual-polish surfaces")
 	if main_scene.contains("home_ux_patch.gd") or main_scene.contains("secondary_surface_fill.gd") or main_scene.contains("global_finish_polish.gd"):
