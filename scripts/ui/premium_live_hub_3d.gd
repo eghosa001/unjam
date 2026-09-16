@@ -10,6 +10,7 @@ func _button(text_value: String, minimum: Vector2, accent: Color, strong := fals
 
 func _build() -> void:
 	for child in get_children():
+		remove_child(child)
 		child.queue_free()
 	built = true
 	last_theme = _theme_mode()
