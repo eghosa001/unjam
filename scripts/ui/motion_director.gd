@@ -5,13 +5,15 @@ var _first := true
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	set_process(true)
+	var main := get_parent()
+	if main != null and main.has_signal("surface_changed"):
+		main.surface_changed.connect(_on_surface_changed)
+	call_deferred("_on_surface_changed", String(main.get("current_surface")) if main != null and main.get("current_surface") != null else "home")
 
-func _process(_delta: float) -> void:
+func _on_surface_changed(surface: String) -> void:
 	var main := get_parent()
 	if main == null:
 		return
-	var surface := String(main.get("current_surface")) if main.get("current_surface") != null else "home"
 	var content: Control = main.get("content") as Control
 	var active: Control = main.get("active_game") as Control
 	var target := _surface_target(main, surface, content, active)
