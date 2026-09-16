@@ -9,6 +9,7 @@ var viewport_3d: SubViewport
 var stage_3d: Node3D
 var liquid_root_3d: Node3D
 var liquid_segments_3d: Array[MeshInstance3D] = []
+var liquid_materials_3d: Array[StandardMaterial3D] = []
 
 func configure(values: Array, selected: bool, index: int) -> void:
 	super.configure(values, selected, index)
@@ -42,7 +43,6 @@ func _build_3d_view() -> void:
 	viewport_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	viewport_container.stretch = true
 	viewport_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	viewport_container.z_index = -1
 	add_child(viewport_container)
 
 	viewport_3d = SubViewport.new()
@@ -86,6 +86,7 @@ func _build_3d_view() -> void:
 	camera.current = true
 
 	_build_glass_3d()
+	_build_liquid_materials_3d()
 	_build_liquid_segments_3d()
 
 func _build_glass_3d() -> void:
@@ -133,6 +134,11 @@ func _build_glass_3d() -> void:
 	highlight.material_override = _material_3d(Color(1, 1, 1, 0.52), 0.0, 0.06)
 	stage_3d.add_child(highlight)
 
+func _build_liquid_materials_3d() -> void:
+	liquid_materials_3d.clear()
+	for color in PALETTE:
+		liquid_materials_3d.append(_material_3d(color, 0.02, 0.20))
+
 func _build_liquid_segments_3d() -> void:
 	liquid_root_3d = Node3D.new()
 	liquid_root_3d.name = "LiquidVolumes3D"
@@ -172,7 +178,8 @@ func _refresh_liquid_3d() -> void:
 		var slot_bottom := liquid_bottom + float(slot) * slot_height
 		segment.position = Vector3(0, slot_bottom + height * 0.5, 0)
 		var color_index := clampi(_slot_color(slot), 0, PALETTE.size() - 1)
-		segment.material_override = _material_3d(PALETTE[color_index], 0.02, 0.20)
+		if color_index < liquid_materials_3d.size():
+			segment.material_override = liquid_materials_3d[color_index]
 	_request_3d_frame()
 
 func _material_3d(color: Color, metallic_value: float, roughness_value: float) -> StandardMaterial3D:
