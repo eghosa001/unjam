@@ -3,7 +3,7 @@ extends "res://scripts/core/save_manager.gd"
 const ROBUST_SAVE_PATH := "user://unjam_save.json"
 const BACKUP_PATH := "user://unjam_save.backup.json"
 const TEMP_PATH := "user://unjam_save.tmp.json"
-const SAVE_VERSION := 7
+const SAVE_VERSION := 8
 
 func _ready() -> void:
 	load_save()
@@ -39,6 +39,16 @@ func _migrate_robust() -> void:
 	# so upgrading does not preserve the aggressive old phone vibration.
 	if previous_version < 7:
 		data["vibration"] = false
+	# Version 8 consolidates Rescue Rush achievements into the same canonical
+	# `achievements` array used by the save manager. Merge rather than replace so
+	# unlocks survive builds that briefly wrote `rescue_achievements` separately.
+	var canonical: Array = data.get("achievements", []) if data.get("achievements", []) is Array else []
+	var legacy = data.get("rescue_achievements", [])
+	if legacy is Array:
+		for achievement_id in legacy:
+			if achievement_id not in canonical:
+				canonical.append(achievement_id)
+	data["achievements"] = canonical
 	data["save_version"] = SAVE_VERSION
 
 func _sanitize() -> void:
@@ -50,7 +60,7 @@ func _sanitize() -> void:
 	data.lifetime_purchased_coins = max(0, int(data.get("lifetime_purchased_coins", 0)))
 	var consent := String(data.get("privacy_consent_status", "unknown"))
 	data.privacy_consent_status = consent if consent in ["unknown", "required", "obtained", "not_required"] else "unknown"
-	for key in ["sound", "vibration", "music", "remove_ads", "starter_pack_purchased"]:
+	for key in ["sound", "vibration", "music", "reduce_motion", "fast_animation", "remove_ads", "starter_pack_purchased"]:
 		data[key] = bool(data.get(key, DEFAULT_DATA.get(key, false)))
 	if not data.get("stars", {}) is Dictionary:
 		data.stars = {}

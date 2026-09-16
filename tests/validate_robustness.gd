@@ -3,12 +3,29 @@ extends SceneTree
 const Solver = preload("res://scripts/core/puzzle_solver.gd")
 const Generator = preload("res://scripts/core/campaign_generator.gd")
 
+const RETIRED_UI_PATCHES := [
+	"res://scripts/ui/global_finish_polish.gd",
+	"res://scripts/ui/home_cinematic_polish.gd",
+	"res://scripts/ui/home_ux_patch.gd",
+	"res://scripts/ui/secondary_surface_fill.gd"
+]
+
 func _init() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
 	ProjectSettings.set_setting("monetization/test_mode", true)
 	var errors: Array[String] = []
+	var project_file := FileAccess.open("res://project.godot", FileAccess.READ)
+	if project_file == null:
+		errors.append("project.godot could not be read")
+	else:
+		var project_text := project_file.get_as_text()
+		if project_text.contains("res://addons/stagehand/plugin.cfg"):
+			errors.append("Missing Stagehand editor plugin is still enabled in production project config")
+	for retired_path in RETIRED_UI_PATCHES:
+		if FileAccess.file_exists(retired_path):
+			errors.append("Retired UI patch layer still ships: %s" % retired_path)
 	var save_manager := get_root().get_node_or_null("SaveManager")
 	var daily := get_root().get_node_or_null("DailyChallenge")
 	var ads := get_root().get_node_or_null("AdManager")
@@ -47,5 +64,5 @@ func _finish(errors: Array[String]) -> void:
 		printerr("Production robustness validation failed with %d issue(s)." % errors.size())
 		quit(1)
 		return
-	print("Production robustness validated: solvability, daily challenge, save accounting, ad pacing and retention invariants.")
+	print("Production robustness validated: solvability, daily challenge, save accounting, ad pacing, retention invariants and production cleanup.")
 	quit(0)

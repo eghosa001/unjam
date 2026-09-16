@@ -9,29 +9,19 @@ var run_pace_label: Label
 var run_objective_label: Label
 
 func build_ui() -> void:
-	var background := ColorRect.new()
-	background.color = Color("405ca8")
+	var accent := PremiumDesignSystem.accent_for_game("block_puzzle")
+	var background := PremiumBackdrop.new()
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	background.configure(PremiumDesignSystem.game_canvas("block_puzzle", true), accent, 2)
 	add_child(background)
-	for i in range(24):
-		var shard := ColorRect.new()
-		shard.color = Color(1, 1, 1, 0.08 + float(i % 4) * 0.02)
-		shard.size = Vector2(5 + (i % 3) * 2, 10 + (i % 5) * 3)
-		shard.rotation = deg_to_rad(float((i * 19) % 70 - 35))
-		shard.position = Vector2(30 + (i * 131) % 1010, 90 + (i * 173) % 1650)
-		shard.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		background.add_child(shard)
-		var drift := shard.create_tween().set_loops()
-		drift.tween_property(shard, "position:y", shard.position.y + 34.0, 3.1 + float(i % 4) * 0.4)
-		drift.tween_property(shard, "position:y", shard.position.y, 0.01)
+	PremiumVisuals.set_accent(accent)
 
 	var outer := MarginContainer.new()
 	outer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	outer.add_theme_constant_override("margin_left", 26)
-	outer.add_theme_constant_override("margin_right", 26)
-	outer.add_theme_constant_override("margin_top", 22)
-	outer.add_theme_constant_override("margin_bottom", 28)
+	outer.add_theme_constant_override("margin_left", 24)
+	outer.add_theme_constant_override("margin_right", 24)
+	outer.add_theme_constant_override("margin_top", 18)
+	outer.add_theme_constant_override("margin_bottom", 22)
 	add_child(outer)
 	var root := VBoxContainer.new()
 	root.alignment = BoxContainer.ALIGNMENT_BEGIN
@@ -43,9 +33,9 @@ func build_ui() -> void:
 	root.add_child(header)
 	var back := Button.new()
 	back.text = "← BACK"
-	back.custom_minimum_size = Vector2(288, 124)
+	back.custom_minimum_size = Vector2(156, 76)
 	style_small_button(back)
-	back.add_theme_font_size_override("font_size", 34)
+	back.add_theme_font_size_override("font_size", 20)
 	back.pressed.connect(_quit)
 	header.add_child(back)
 	title_label = Label.new()
@@ -57,15 +47,15 @@ func build_ui() -> void:
 	header.add_child(title_label)
 	var retry := Button.new()
 	retry.text = "↻ RETRY"
-	retry.custom_minimum_size = Vector2(244, 120)
+	retry.custom_minimum_size = Vector2(156, 76)
 	style_small_button(retry)
-	retry.add_theme_font_size_override("font_size", 28)
+	retry.add_theme_font_size_override("font_size", 20)
 	retry.pressed.connect(restart_level)
 	header.add_child(retry)
 
 	var score_card := PanelContainer.new()
-	score_card.custom_minimum_size = Vector2(0, 118)
-	score_card.add_theme_stylebox_override("panel", style_box(Color("304a94aa"), 28, Color("ffffff26"), 1, 5))
+	score_card.custom_minimum_size = Vector2(0, 94)
+	score_card.add_theme_stylebox_override("panel", style_box(Color(0.10, 0.09, 0.22, 0.92), 28, Color(accent, 0.34), 2, 8))
 	root.add_child(score_card)
 	var score_box := VBoxContainer.new()
 	score_box.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -73,7 +63,7 @@ func build_ui() -> void:
 	score_card.add_child(score_box)
 	score_label = Label.new()
 	score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	score_label.add_theme_font_size_override("font_size", 44)
+	score_label.add_theme_font_size_override("font_size", 36)
 	score_label.add_theme_color_override("font_color", Color.WHITE)
 	score_label.add_theme_color_override("font_shadow_color", Color(0,0,0,0.30))
 	score_label.add_theme_constant_override("shadow_offset_y", 2)
@@ -81,20 +71,18 @@ func build_ui() -> void:
 	goal_label = Label.new()
 	goal_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	goal_label.add_theme_font_size_override("font_size", 19)
-	goal_label.add_theme_color_override("font_color", Color("e7edff"))
+	goal_label.add_theme_color_override("font_color", Color("d6ddff"))
 	score_box.add_child(goal_label)
 
 	var center := CenterContainer.new()
 	root.add_child(center)
-	# Keep the full 8x8 board comfortably inside narrow/tall phones. The old
-	# 104 px cells produced an ~852 px board before screen margins, which was too
-	# dominant on real devices. Cap at 90 and shrink further when width requires.
-	var viewport_width := get_viewport_rect().size.x
-	var available_board_width := maxf(600.0, viewport_width - 150.0)
-	var premium_cell := clampf(floor((available_board_width - 34.0) / float(GRID_SIZE)), PREMIUM_CELL_MIN, PREMIUM_CELL_MAX)
+	var viewport_size := get_viewport_rect().size
+	var available_board_width := maxf(360.0, viewport_size.x - 96.0)
+	var available_board_height := maxf(360.0, viewport_size.y * 0.52)
+	var premium_cell := clampf(floor(minf((available_board_width - 22.0) / float(GRID_SIZE), (available_board_height - 22.0) / float(GRID_SIZE))), 44.0, PREMIUM_CELL_MAX)
 	board_shell = PanelContainer.new()
-	board_shell.custom_minimum_size = Vector2(premium_cell * GRID_SIZE + 20, premium_cell * GRID_SIZE + 20)
-	board_shell.add_theme_stylebox_override("panel", style_box(Color("111936"), 8, Color("080d22"), 4, 12))
+	board_shell.custom_minimum_size = Vector2(premium_cell * GRID_SIZE + 18, premium_cell * GRID_SIZE + 18)
+	board_shell.add_theme_stylebox_override("panel", style_box(Color(0.05, 0.06, 0.14, 0.98), 24, Color(accent, 0.22), 2, 12))
 	center.add_child(board_shell)
 	var board_margin := MarginContainer.new()
 	board_margin.add_theme_constant_override("margin_left", 8)
@@ -117,13 +105,13 @@ func build_ui() -> void:
 			cell_buttons.append(cell)
 
 	var tray := PanelContainer.new()
-	tray.custom_minimum_size = Vector2(0, 220)
-	tray.add_theme_stylebox_override("panel", style_box(Color("304a9477"), 30, Color("ffffff22"), 1, 5))
+	tray.custom_minimum_size = Vector2(0, 182)
+	tray.add_theme_stylebox_override("panel", style_box(Color(0.09, 0.10, 0.22, 0.90), 28, Color(accent, 0.28), 1, 6))
 	root.add_child(tray)
 	var tray_margin := MarginContainer.new()
 	tray_margin.add_theme_constant_override("margin_left", 20)
 	tray_margin.add_theme_constant_override("margin_right", 20)
-	tray_margin.add_theme_constant_override("margin_top", 18)
+	tray_margin.add_theme_constant_override("margin_top", 14)
 	tray_margin.add_theme_constant_override("margin_bottom", 14)
 	tray.add_child(tray_margin)
 	var tray_box := VBoxContainer.new()
@@ -134,7 +122,7 @@ func build_ui() -> void:
 	tray_title.text = "DRAG A BLOCK ONTO THE BOARD"
 	tray_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	tray_title.add_theme_font_size_override("font_size", 18)
-	tray_title.add_theme_color_override("font_color", Color("eef3ff"))
+	tray_title.add_theme_color_override("font_color", Color("eef2ff"))
 	tray_box.add_child(tray_title)
 	piece_row = HBoxContainer.new()
 	piece_row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -145,13 +133,13 @@ func build_ui() -> void:
 	status_label = Label.new()
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status_label.add_theme_font_size_override("font_size", 22)
-	status_label.add_theme_color_override("font_color", Color("ffcf63"))
+	status_label.add_theme_color_override("font_color", Color("ffd978"))
 	status_label.custom_minimum_size = Vector2(0, 32)
 	root.add_child(status_label)
 	hint_label = Label.new()
 	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint_label.add_theme_font_size_override("font_size", 17)
-	hint_label.add_theme_color_override("font_color", Color("e1e8ff"))
+	hint_label.add_theme_color_override("font_color", Color("cfd9ff"))
 	hint_label.custom_minimum_size = Vector2(0, 28)
 	root.add_child(hint_label)
 
@@ -164,20 +152,21 @@ func build_ui() -> void:
 	add_child(effects_layer)
 
 func _add_run_progress_deck(root: VBoxContainer) -> void:
+	var accent := PremiumDesignSystem.accent_for_game("block_puzzle")
 	var deck := PanelContainer.new()
-	deck.custom_minimum_size = Vector2(0, 196)
+	deck.custom_minimum_size = Vector2(0, 112)
 	deck.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	deck.add_theme_stylebox_override("panel", style_box(Color("263f86aa"), 28, Color("ffffff20"), 1, 5))
+	deck.add_theme_stylebox_override("panel", style_box(Color(0.09, 0.10, 0.22, 0.88), 24, Color(accent, 0.22), 1, 4))
 	root.add_child(deck)
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 24)
 	margin.add_theme_constant_override("margin_right", 24)
-	margin.add_theme_constant_override("margin_top", 18)
-	margin.add_theme_constant_override("margin_bottom", 18)
+	margin.add_theme_constant_override("margin_top", 14)
+	margin.add_theme_constant_override("margin_bottom", 14)
 	deck.add_child(margin)
 	var box := VBoxContainer.new()
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
-	box.add_theme_constant_override("separation", 10)
+	box.add_theme_constant_override("separation", 8)
 	margin.add_child(box)
 	run_objective_label = Label.new()
 	run_objective_label.text = "RUN PROGRESS"
@@ -204,13 +193,13 @@ func _add_run_progress_deck(root: VBoxContainer) -> void:
 	run_score_bar.show_percentage = false
 	run_score_bar.custom_minimum_size = Vector2(430, 18)
 	run_score_bar.add_theme_stylebox_override("background", style_box(Color("162551"), 9))
-	run_score_bar.add_theme_stylebox_override("fill", style_box(Color("8b7cf6"), 9))
+	run_score_bar.add_theme_stylebox_override("fill", style_box(accent, 9))
 	bars.add_child(run_score_bar)
 	run_line_bar = ProgressBar.new()
 	run_line_bar.show_percentage = false
 	run_line_bar.custom_minimum_size = Vector2(430, 18)
 	run_line_bar.add_theme_stylebox_override("background", style_box(Color("162551"), 9))
-	run_line_bar.add_theme_stylebox_override("fill", style_box(Color("2dd4b6"), 9))
+	run_line_bar.add_theme_stylebox_override("fill", style_box(accent.lightened(0.22), 9))
 	bars.add_child(run_line_bar)
 	run_pace_label = Label.new()
 	run_pace_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

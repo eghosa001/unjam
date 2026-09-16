@@ -18,6 +18,10 @@ func _ready() -> void:
 	_load_theme()
 	_load_tutorial_seen()
 	get_tree().node_added.connect(_on_node_added)
+	var main := _main()
+	if main != null and main.has_signal("surface_changed"):
+		main.surface_changed.connect(_on_surface_changed)
+	get_viewport().size_changed.connect(_on_viewport_size_changed)
 	call_deferred("_build_shell")
 	call_deferred("_restyle_tree")
 
@@ -30,11 +34,21 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		_handle_back()
 		get_viewport().set_input_as_handled()
 
-func _process(_delta: float) -> void:
+func _on_surface_changed(surface: String) -> void:
+	call_deferred("_sync_shell", surface)
+
+func _on_viewport_size_changed() -> void:
+	call_deferred("_sync_shell", _current_surface())
+
+func _current_surface() -> String:
 	var main := _main()
-	if main == null or tutorial_panel == null:
+	if main != null and main.get("current_surface") != null:
+		return String(main.get("current_surface"))
+	return "home"
+
+func _sync_shell(surface: String) -> void:
+	if tutorial_panel == null:
 		return
-	var surface := String(main.get("current_surface")) if main.get("current_surface") != null else "home"
 	if help_button != null:
 		help_button.visible = surface == "game" and not tutorial_panel.visible
 	if theme_button != null:
@@ -49,11 +63,10 @@ func _process(_delta: float) -> void:
 		if not bool(tutorial_seen.get(game_id, false)) and not bool(seen_this_session.get(game_id, false)):
 			seen_this_session[game_id] = true
 			call_deferred("show_tutorial", game_id)
-	var hub := main.get_node_or_null("MonetizationHub")
-	if hub != null and hub.get("shop_button") != null:
-		var shop = hub.get("shop_button")
-		if is_instance_valid(shop):
-			shop.visible = false
+	_after_shell_sync()
+
+func _after_shell_sync() -> void:
+	pass
 
 func _build_shell() -> void:
 	if tutorial_layer != null:
@@ -147,6 +160,7 @@ func _build_shell() -> void:
 	close.pressed.connect(hide_tutorial)
 	PremiumDesignSystem.apply_button(close, dark, accent, "primary", 24)
 	box.add_child(close)
+	_sync_shell(_current_surface())
 
 func _toggle_theme() -> void:
 	theme_mode = "light" if theme_mode == "dark" else "dark"
@@ -155,9 +169,7 @@ func _toggle_theme() -> void:
 	var main := _main()
 	if main == null:
 		return
-	# PremiumHome watches theme_mode in its own _process() and rebuilds once.
-	# Do not schedule a second deferred rebuild here; that caused a visible
-	# one-frame flash/double composition on theme changes.
+	# PremiumHome watches theme_mode in its own state and rebuilds once.
 	var live := main.get_node_or_null("PremiumLive")
 	if live != null and live.visible and live.has_method("_build"):
 		live.call_deferred("_build")
@@ -182,6 +194,7 @@ func _apply_theme() -> void:
 	if tutorial_body != null:
 		PremiumDesignSystem.apply_label(tutorial_body, dark, "body", accent)
 	_restyle_tree()
+	_sync_shell(_current_surface())
 
 func show_tutorial(game_id: String = "rescue_rush") -> void:
 	if tutorial_panel == null:
@@ -211,6 +224,7 @@ func hide_tutorial() -> void:
 	tutorial_panel.visible = false
 	var dim := tutorial_layer.get_node("TutorialDim") as ColorRect
 	dim.visible = false
+	_sync_shell(_current_surface())
 
 func _handle_back() -> void:
 	if tutorial_panel != null and tutorial_panel.visible:
@@ -225,7 +239,7 @@ func _handle_back() -> void:
 		if is_instance_valid(overlay) and overlay.visible:
 			hub.call("_close_shop")
 			return
-	var surface := String(main.get("current_surface")) if main.get("current_surface") != null else "home"
+	var surface := _current_surface()
 	if surface == "game":
 		if main.has_method("force_back_from_game"):
 			main.call("force_back_from_game")

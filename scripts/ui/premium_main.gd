@@ -99,7 +99,7 @@ func build_settings() -> void:
 	controls.add_theme_constant_override("v_separation", 18)
 	controls.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(controls)
-	var setting_rows: Array = [["sound", "SOUND", "GAME EFFECTS"], ["music", "MUSIC", "AMBIENT LOOP"], ["vibration", "HAPTICS", "TOUCH FEEDBACK"]]
+	var setting_rows: Array = [["sound", "SOUND", "GAME EFFECTS"], ["music", "MUSIC", "AMBIENT LOOP"], ["vibration", "HAPTICS", "TOUCH FEEDBACK"], ["reduce_motion", "REDUCE MOTION", "LESS MOVEMENT"], ["fast_animation", "FAST ANIMATION", "QUICKER GAMEPLAY"]]
 	for setting in setting_rows:
 		var key := String(setting[0])
 		var enabled: bool = bool(SaveManager.data.get(key, true))

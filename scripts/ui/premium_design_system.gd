@@ -2,9 +2,9 @@ class_name PremiumDesignSystem
 extends RefCounted
 
 const GAME_ACCENTS := {
-	"rescue_rush": Color("2dd4b6"),
-	"water_sort": Color("5da9ff"),
-	"block_puzzle": Color("8b7cf6")
+	"rescue_rush": Color("39d8c2"),
+	"water_sort": Color("62b6ff"),
+	"block_puzzle": Color("9a86ff")
 }
 
 const GOLD := Color("ffd166")
@@ -24,16 +24,16 @@ static func canvas(dark: bool) -> Color:
 	return Color("0b1220") if dark else Color("eef2f5")
 
 static func surface(dark: bool) -> Color:
-	return Color("141f31") if dark else Color("f8fafc")
+	return Color("121a29") if dark else Color("f8fafc")
 
 static func surface_2(dark: bool) -> Color:
-	return Color("1b2940") if dark else Color("e9eef3")
+	return Color("182538") if dark else Color("e9eef3")
 
 static func surface_3(dark: bool) -> Color:
-	return Color("22334d") if dark else Color("dfe6ed")
+	return Color("22304a") if dark else Color("dfe6ed")
 
 static func border(dark: bool) -> Color:
-	return Color("38506d") if dark else Color("c7d1dc")
+	return Color("334a67") if dark else Color("c7d1dc")
 
 static func disabled(dark: bool) -> Color:
 	return Color("202c3f") if dark else Color("e5eaf0")

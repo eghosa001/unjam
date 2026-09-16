@@ -1,7 +1,39 @@
 extends "res://scripts/game/water_sort_reference_motion.gd"
 
-# Return the point on the visible bottle lip, not the nominal centre point.
-# When a source bottle tilts, the stream must leave from the downhill rim.
+# GAME_FIRST_WATER
+
+func _balanced_columns(tube_count: int) -> int:
+	if tube_count <= 6:
+		return 3
+	if tube_count <= 8:
+		return 4
+	if tube_count <= 10:
+		return 5
+	return 6
+
+func render_board() -> void:
+	super.render_board()
+	if board == null:
+		return
+	var count := tubes.size()
+	board.columns = _balanced_columns(count)
+	var tube_size := _tube_size_for_count(count)
+	var gap := 22 if count <= 8 else 14
+	board.add_theme_constant_override("h_separation", gap)
+	board.add_theme_constant_override("v_separation", 26)
+	for child in board.get_children():
+		if child is Control:
+			(child as Control).custom_minimum_size = tube_size
+
+func _tube_size_for_count(tube_count: int) -> Vector2:
+	if tube_count <= 6:
+		return Vector2(208, 370)
+	if tube_count <= 8:
+		return Vector2(184, 348)
+	if tube_count <= 10:
+		return Vector2(164, 324)
+	return Vector2(138, 296)
+
 func _visual_mouth_local(control: Control) -> Vector2:
 	var outer_x := control.size.x * 0.18
 	var outer_y := 13.0
@@ -17,8 +49,6 @@ func _visual_mouth_local(control: Control) -> Vector2:
 
 func _control_point(control: Control, local_point: Vector2) -> Vector2:
 	var adjusted := local_point
-	# The parent animation asks for a point around y=30 for both source and
-	# receiver. Replace only that mouth probe; other control-point requests stay intact.
 	if local_point.y <= 42.0 and absf(local_point.x - control.size.x * 0.5) <= control.size.x * 0.18:
 		adjusted = _visual_mouth_local(control)
 	return super._control_point(control, adjusted)

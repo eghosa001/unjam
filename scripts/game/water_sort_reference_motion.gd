@@ -38,19 +38,23 @@ func select_tube(index: int) -> void:
 	if selected < 0:
 		if tubes[index].is_empty():
 			status_label.text = "Choose a tube that contains colour"
+			FeedbackManager.invalid()
 			_play_invalid(index)
 			return
 		selected = index
 		status_label.text = "Ready to pour"
+		FeedbackManager.lift()
 		render_board()
 		return
 	if selected == index:
 		selected = -1
 		status_label.text = ""
+		FeedbackManager.drop()
 		render_board()
 		return
 	if not can_pour(selected, index):
 		status_label.text = "That pour is blocked"
+		FeedbackManager.invalid()
 		_play_invalid(index)
 		_play_invalid(selected)
 		selected = -1
@@ -82,7 +86,6 @@ func select_tube(index: int) -> void:
 		pending_completion = true
 	render_board()
 	_play_premium_concurrent_pour(source_values, target_values, from_rect, to_rect, color_index, amount, from_idx, index, will_complete)
-	FeedbackManager.tap()
 	_save_checkpoint()
 
 func _transfer_amount(from_idx: int, to_idx: int) -> int:
@@ -128,28 +131,36 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 
 	var direction := 1.0 if to_rect.get_center().x >= from_rect.get_center().x else -1.0
 	var home_pos := ghost.position
-	var lift := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	lift.tween_property(ghost, "position", home_pos + Vector2(direction * 10.0, -34.0), 0.08)
-	lift.parallel().tween_property(ghost, "scale", Vector2(1.04, 1.04), 0.08)
+	var lift_distance := 12.0 if MotionSystem.reduced() else 34.0
+	var lift_time := MotionSystem.duration(&"press")
+	var lift := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	lift.tween_property(ghost, "position", home_pos + Vector2(direction * 10.0, -lift_distance), lift_time)
+	if not MotionSystem.reduced():
+		lift.parallel().tween_property(ghost, "scale", Vector2(1.04, 1.04), lift_time)
+	FeedbackManager.lift()
 	await lift.finished
 	if not is_instance_valid(ghost) or not is_instance_valid(receiver):
 		return
 
 	var target_lip := _control_point(receiver, Vector2(receiver.size.x * 0.5, 34.0))
-	var desired := target_lip - ghost.pivot_offset + Vector2(direction * 13.0, -34.0)
-	var travel := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
-	travel.tween_property(ghost, "position", desired, 0.15)
+	var desired := target_lip - ghost.pivot_offset + Vector2(direction * 13.0, -lift_distance)
+	var travel_time := MotionSystem.duration(&"travel")
+	var travel := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	travel.tween_property(ghost, "position", desired, travel_time)
 	await travel.finished
 	if not is_instance_valid(ghost) or not is_instance_valid(receiver):
 		return
 
-	var tip := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
-	tip.tween_property(ghost, "rotation", deg_to_rad(70.0 * direction), 0.11)
+	var tilt_degrees := 34.0 if MotionSystem.reduced() else 70.0
+	var tip_time := MotionSystem.duration(&"settle") * 0.78
+	var tip := create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tip.tween_property(ghost, "rotation", deg_to_rad(tilt_degrees * direction), tip_time)
 	await tip.finished
 	if not is_instance_valid(ghost) or not is_instance_valid(receiver):
 		return
 
 	ghost.call("begin_pour_out", amount)
+	FeedbackManager.pour_start()
 	var stream := Line2D.new()
 	stream.width = 10.0
 	stream.default_color = Color(liquid, 0.96)
@@ -165,7 +176,7 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 	shine.z_index = 671
 	add_child(shine)
 
-	var pour_time := 0.28 + float(amount) * 0.075
+	var pour_time := MotionSystem.duration(&"pour") + float(amount) * MotionSystem.duration(&"micro") * 0.75
 	var flow := create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	var update_flow := func(v: float) -> void:
 		if not is_instance_valid(ghost) or not is_instance_valid(receiver):
@@ -181,23 +192,23 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 		var source_mouth := _control_point(ghost, source_local)
 		var exit_point := _control_point(ghost, source_local + Vector2(direction * 34.0, 20.0))
 		var receiver_mouth := _control_point(receiver, receiver_local)
-		# Render the jet above the tilted ghost. If it sits behind the translucent
-		# glass, the same correct rim geometry still looks as though liquid comes
-		# through the middle of the bottle on a phone.
-		# The short outward segment makes the liquid visibly leave the glass lip
-		# before falling toward the receiver.
+		# The short outward segment makes the liquid visibly leave the downhill
+		# glass lip before falling toward the receiver.
 		stream.points = PackedVector2Array([source_mouth, exit_point, receiver_mouth])
 		shine.points = stream.points
 	flow.tween_method(update_flow, 0.0, 1.0, pour_time)
 	flow.parallel().tween_property(stream, "width", 13.5, pour_time * 0.55)
-	flow.parallel().tween_property(receiver, "scale", Vector2(1.025, 0.988), pour_time * 0.45)
+	if not MotionSystem.reduced():
+		flow.parallel().tween_property(receiver, "scale", Vector2(1.025, 0.988), pour_time * 0.45)
 	await flow.finished
+	FeedbackManager.pour_land()
 
 	if is_instance_valid(stream) and is_instance_valid(shine):
-		var fade := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		fade.tween_property(stream, "modulate:a", 0.0, 0.055)
-		fade.parallel().tween_property(shine, "modulate:a", 0.0, 0.055)
-		fade.parallel().tween_property(receiver, "scale", Vector2.ONE, 0.07)
+		var fade_time := MotionSystem.duration(&"micro")
+		var fade := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		fade.tween_property(stream, "modulate:a", 0.0, fade_time)
+		fade.parallel().tween_property(shine, "modulate:a", 0.0, fade_time)
+		fade.parallel().tween_property(receiver, "scale", Vector2.ONE, fade_time)
 		await fade.finished
 	if is_instance_valid(stream):
 		stream.queue_free()
@@ -208,14 +219,16 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 
 	if not is_instance_valid(ghost):
 		return
-	var upright := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
-	upright.tween_property(ghost, "rotation", 0.0, 0.09)
+	var upright_time := MotionSystem.duration(&"settle") * 0.64
+	var upright := create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	upright.tween_property(ghost, "rotation", 0.0, upright_time)
 	await upright.finished
 	if not is_instance_valid(ghost):
 		return
-	var returning := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
-	returning.tween_property(ghost, "position", home_pos, 0.14)
-	returning.parallel().tween_property(ghost, "scale", Vector2.ONE, 0.14)
+	var return_time := MotionSystem.duration(&"travel") * 0.72
+	var returning := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	returning.tween_property(ghost, "position", home_pos, return_time)
+	returning.parallel().tween_property(ghost, "scale", Vector2.ONE, return_time)
 	await returning.finished
 	if is_instance_valid(ghost):
 		ghost.queue_free()
@@ -234,4 +247,5 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 
 	if will_complete and pending_completion and not completed:
 		pending_completion = false
+		FeedbackManager.complete("water")
 		complete_level()

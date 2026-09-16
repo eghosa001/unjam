@@ -4,6 +4,7 @@ var player: AudioStreamPlayer
 var music_player: AudioStreamPlayer
 var music_stream: AudioStreamWAV
 var last_music_enabled := false
+var _tone_cache: Dictionary = {}
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -27,6 +28,7 @@ func _exit_tree() -> void:
 		music_player.stop()
 		music_player.stream = null
 	music_stream = null
+	_tone_cache.clear()
 
 func _process(_delta: float) -> void:
 	var enabled := bool(SaveManager.data.get("music", true))
@@ -43,6 +45,45 @@ func _sync_music() -> void:
 	else:
 		music_player.stop()
 
+# Semantic feedback API. Gameplay code should prefer these names so sound,
+# haptics and animation beats stay synchronized across all three games.
+func nav() -> void:
+	_play_tone(510.0, 0.035, 0.12)
+
+func lift() -> void:
+	_play_tone(680.0, 0.040, 0.13)
+
+func drop() -> void:
+	_play_tone(430.0, 0.055, 0.16)
+
+func pour_start() -> void:
+	_play_tone(560.0, 0.055, 0.10)
+
+func pour_land() -> void:
+	_play_tone(720.0, 0.060, 0.13)
+
+func invalid() -> void:
+	blocked()
+
+func line_clear(lines: int = 1) -> void:
+	var tier := clampi(lines, 1, 4)
+	_play_tone(760.0 + float(tier) * 90.0, 0.075 + float(tier) * 0.012, 0.18 + float(tier) * 0.015)
+	if tier >= 2:
+		_vibrate(14 + tier * 4)
+
+func combo(chain: int = 1) -> void:
+	var tier := clampi(chain, 1, 8)
+	_play_tone(700.0 + float(tier) * 65.0, 0.065 + minf(0.035, float(tier) * 0.004), 0.17 + minf(0.08, float(tier) * 0.01))
+	if tier >= 5:
+		_vibrate(16 + tier * 2)
+
+func complete(kind: String = "level") -> void:
+	var frequency := 1120.0 if kind == "rescue" else 980.0
+	_play_tone(frequency, 0.16, 0.26)
+	_vibrate(32 if kind != "rescue" else 36)
+
+# Backward-compatible API used by existing scenes while they migrate to the
+# semantic methods above.
 func tap() -> void:
 	# Routine taps stay silent in the haptic channel. Continuous vibration on
 	# every button press made navigation and puzzle input feel harsh.
@@ -62,8 +103,7 @@ func effect() -> void:
 	_vibrate(20)
 
 func rescue() -> void:
-	_play_tone(1040.0, 0.18, 0.28)
-	_vibrate(36)
+	complete("rescue")
 
 func _vibrate(ms: int) -> void:
 	if bool(SaveManager.data.get("vibration", true)):
@@ -72,6 +112,15 @@ func _vibrate(ms: int) -> void:
 func _play_tone(frequency: float, duration: float, volume: float) -> void:
 	if player == null or not bool(SaveManager.data.get("sound", true)):
 		return
+	player.stream = _tone_stream(frequency, duration, volume)
+	player.play()
+
+func _tone_stream(frequency: float, duration: float, volume: float) -> AudioStreamWAV:
+	# Tone synthesis is deterministic. Cache each profile so repeated taps,
+	# pours and clears do not allocate/fill a new byte buffer every time.
+	var key := "%.2f|%.4f|%.4f" % [frequency, duration, volume]
+	if _tone_cache.has(key):
+		return _tone_cache[key] as AudioStreamWAV
 	var rate := 22050
 	var frames := int(rate * duration)
 	var bytes := PackedByteArray()
@@ -85,8 +134,8 @@ func _play_tone(frequency: float, duration: float, volume: float) -> void:
 	stream.mix_rate = rate
 	stream.stereo = false
 	stream.data = bytes
-	player.stream = stream
-	player.play()
+	_tone_cache[key] = stream
+	return stream
 
 func _build_premium_loop() -> AudioStreamWAV:
 	# 12-second original stereo puzzle ambience: warm pads, sub bass,

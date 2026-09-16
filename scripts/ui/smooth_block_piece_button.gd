@@ -3,6 +3,49 @@ class_name SmoothBlockPieceButton
 
 const SmoothDragPreview = preload("res://scripts/ui/smooth_block_drag_preview.gd")
 
+func _shape_centroid_grid() -> Vector2:
+	if shape.is_empty():
+		return Vector2.ZERO
+	var sum := Vector2.ZERO
+	var count := 0
+	for raw in shape:
+		var point := _as_point(raw)
+		if point.x >= 0 and point.y >= 0:
+			sum += Vector2(point)
+			count += 1
+	return sum / float(maxi(count, 1))
+
+func _candidate_origin_for_probe(game: Node, probe_cell: Vector2i) -> Vector2i:
+	if probe_cell.x < 0:
+		return Vector2i(-1, -1)
+	var centroid := _shape_centroid_grid()
+	var anchor := probe_cell - Vector2i(int(round(centroid.x)), int(round(centroid.y)))
+	# Prefer the centroid-aligned drop, then nearby cells. This gives touch users
+	# a forgiving magnetic landing zone without permitting illegal placements.
+	var offsets := [
+		Vector2i.ZERO,
+		Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1),
+		Vector2i(-1, -1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(1, 1)
+	]
+	for offset in offsets:
+		var candidate: Vector2i = anchor + offset
+		if bool(game.call("can_place", shape, candidate)):
+			return candidate
+	return anchor
+
+func _best_origin(game: Node, screen_position: Vector2) -> Vector2i:
+	var lifted_probe := _origin_for_screen_position(game, screen_position, true)
+	var lifted := _candidate_origin_for_probe(game, lifted_probe)
+	if lifted.x >= 0 and bool(game.call("can_place", shape, lifted)):
+		return lifted
+	var direct_probe := _origin_for_screen_position(game, screen_position, false)
+	var direct := _candidate_origin_for_probe(game, direct_probe)
+	if direct.x >= 0 and bool(game.call("can_place", shape, direct)):
+		return direct
+	if lifted_probe.x >= 0:
+		return lifted
+	return direct
+
 func _show_touch_preview(screen_position: Vector2) -> void:
 	var game := _game()
 	if game == null:

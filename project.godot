@@ -16,6 +16,7 @@ window/size/viewport_height=1920
 window/size/window_width_override=540
 window/size/window_height_override=960
 window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
 window/handheld/orientation=1
 
 [rendering]
@@ -40,12 +41,21 @@ FeedbackManager="*res://scripts/systems/feedback_manager.gd"
 PremiumVisuals="*res://scripts/systems/robust_premium_visuals.gd"
 RetentionManager="*res://scripts/systems/robust_retention_manager.gd"
 LiveHubLauncher="*res://scripts/systems/live_hub_launcher.gd"
+MotionSystem="*res://scripts/ui/motion_system.gd"
+
+[admob]
+
+general/android/app_id="ca-app-pub-7517898921176341~1892369383"
 
 [monetization]
 
 test_mode=false
-admob_android_app_id=""
-admob_rewarded_unit_id=""
-admob_interstitial_unit_id=""
+admob_android_app_id="ca-app-pub-7517898921176341~1892369383"
+admob_rewarded_unit_id="ca-app-pub-7517898921176341/2926249456"
+admob_interstitial_unit_id="ca-app-pub-7517898921176341/9108514429"
 privacy_policy_url="https://eghosa001.github.io/unjam/privacy.html"
 purchase_verification_url=""
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/admob/plugin.cfg")
