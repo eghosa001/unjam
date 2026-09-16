@@ -42,7 +42,7 @@ func _run() -> void:
 		return _fail("Water Sort bottle-rim pour geometry missing")
 	if water_stage.contains("func _process") or not water_stage.contains("size_changed.connect") or not water_stage.contains("node_added.connect"):
 		return _fail("Water Sort stage layout is still timer-polled instead of event-driven")
-	if not block_drag.contains("_shape_centroid_grid") or not block_drag.contains("_candidate_origins"):
+	if not block_drag.contains("_shape_centroid_grid") or not block_drag.contains("_candidate_origin_for_probe") or not block_drag.contains("game.call(\"can_place\", shape, candidate)"):
 		return _fail("Block centroid magnetism missing")
 	if block_ui.contains("func _process") or not block_ui.contains("size_changed.connect") or not block_ui.contains("node_added.connect"):
 		return _fail("Block Puzzle layout is still timer-polled instead of event-driven")
