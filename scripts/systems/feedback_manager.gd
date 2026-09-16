@@ -21,12 +21,23 @@ func _ready() -> void:
 	_sync_music()
 
 func _exit_tree() -> void:
-	if player != null:
+	shutdown_audio()
+
+func shutdown_audio() -> void:
+	# Generated WAV streams keep an AudioStreamPlaybackWAV alive until the
+	# player itself is released. Explicit teardown keeps visual/CI runs clean
+	# and also avoids retaining audio resources during controlled shutdowns.
+	set_process(false)
+	if player != null and is_instance_valid(player):
 		player.stop()
 		player.stream = null
-	if music_player != null:
+		player.free()
+	player = null
+	if music_player != null and is_instance_valid(music_player):
 		music_player.stop()
 		music_player.stream = null
+		music_player.free()
+	music_player = null
 	music_stream = null
 	_tone_cache.clear()
 

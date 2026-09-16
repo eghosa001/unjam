@@ -78,7 +78,7 @@ jobs:
         shell: bash
         run: |
           set -euxo pipefail
-          for t in validate_motion_quality validate_monetization validate_admob_production validate_billing_production validate_premium_ux validate_visual_quality_contract validate_production_completion validate_uiux_regressions validate_viewport_fit validate_retention validate_robustness; do
+          for t in validate_motion_quality validate_monetization validate_admob_production validate_billing_production validate_premium_ux validate_visual_quality_contract validate_production_completion validate_uiux_regressions validate_viewport_fit validate_retention validate_robustness validate_production_hardening_regressions; do
             echo "===== START $t ====="
             timeout 45s godot --headless --path . --script "res://tests/$t.gd"
             echo "===== PASS $t ====="
@@ -87,7 +87,7 @@ jobs:
         shell: bash
         run: |
           set -euxo pipefail
-          for t in validate_levels validate_campaign validate_level_launch validate_gameplay_interactions validate_first_100_progression validate_first_200_playability validate_campaign_1000; do
+          for t in validate_levels validate_campaign validate_level_launch validate_gameplay_interactions validate_first_100_progression validate_first_200_playability validate_campaign_1000 validate_water_constructive_solvability; do
             echo "===== START $t ====="
             timeout 180s godot --headless --path . --script "res://tests/$t.gd"
             echo "===== PASS $t ====="
@@ -104,7 +104,7 @@ jobs:
           set -euxo pipefail
           mkdir -p build/visual-audit
           xvfb-run -a godot --path . --rendering-method gl_compatibility --script res://tests/capture_visual_audit.gd 2>&1 | tee visual-audit.log
-          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" visual-audit.log; then exit 1; fi
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access|ObjectDB instances were leaked|Leaked instance:" visual-audit.log; then exit 1; fi
           test -s build/visual-audit/01-home-dark.png
           test -s build/visual-audit/11-game-block.png
       - name: Upload visual audit screenshots

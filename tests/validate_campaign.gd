@@ -24,6 +24,8 @@ func _init() -> void:
 			errors.append("Level %d has no verified solution" % level_number)
 		if errors.size() >= 100:
 			break
+		if level_number % 1000 == 0:
+			print("Rescue campaign solvability: %d/%d" % [level_number, CAMPAIGN_LEVELS])
 	if late_score_total <= early_score_total:
 		errors.append("Late campaign difficulty does not exceed opening campaign")
 	if not errors.is_empty():

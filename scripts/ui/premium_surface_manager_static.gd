@@ -1,7 +1,7 @@
 extends "res://scripts/ui/premium_surface_manager.gd"
 
 func _animate_surface(content: Control) -> void:
-	if bool(SaveManager.data.get("reduced_motion", false)):
+	if MotionSystem.reduced():
 		content.modulate.a = 1.0
 		return
 	var final_alpha := content.modulate.a

@@ -19,6 +19,7 @@ var last_interstitial_unix := 0
 var provider: Node
 var _pending_reward_placement := ""
 var _pending_reward_callback := Callable()
+var _pending_reward_failed_callback := Callable()
 var rewarded_in_progress := false
 
 func _ready() -> void:
@@ -39,30 +40,44 @@ func is_provider_ready() -> bool:
 func is_test_mode() -> bool:
 	return bool(ProjectSettings.get_setting("monetization/test_mode", true))
 
-func show_rewarded(placement: String, on_reward: Callable = Callable()) -> bool:
+func show_rewarded(placement: String, on_reward: Callable = Callable(), on_failed: Callable = Callable()) -> bool:
 	if rewarded_in_progress:
-		rewarded_failed.emit(placement, "A rewarded ad is already in progress")
+		var reason := "A rewarded ad is already in progress"
+		if on_failed.is_valid():
+			on_failed.call(reason)
+		rewarded_failed.emit(placement, reason)
 		return false
 	if OS.get_name() == "Android" and not PrivacyManager.may_request_ads():
-		rewarded_failed.emit(placement, "Advertising consent is not ready")
+		var reason := "Advertising consent is not ready"
+		if on_failed.is_valid():
+			on_failed.call(reason)
+		rewarded_failed.emit(placement, reason)
 		return false
 	AnalyticsManager.track("rewarded_requested", {"placement": placement, "provider": is_provider_ready()})
 	if is_provider_ready() and provider.has_method("show_rewarded"):
 		rewarded_in_progress = true
 		_pending_reward_placement = placement
 		_pending_reward_callback = on_reward
+		_pending_reward_failed_callback = on_failed
 		var accepted = provider.call("show_rewarded", placement, Callable(self, "_provider_rewarded_completed"), Callable(self, "_provider_rewarded_failed"))
 		if accepted == false and rewarded_in_progress:
 			rewarded_in_progress = false
 			_pending_reward_placement = ""
 			_pending_reward_callback = Callable()
-			rewarded_failed.emit(placement, "Ad provider rejected rewarded request")
+			_pending_reward_failed_callback = Callable()
+			var reason := "Ad provider rejected rewarded request"
+			if on_failed.is_valid():
+				on_failed.call(reason)
+			rewarded_failed.emit(placement, reason)
 			AnalyticsManager.track("rewarded_failed", {"placement": placement, "reason": "provider_rejected"})
 		return accepted != false
 	if is_test_mode() and OS.get_name() != "Android":
 		_grant_reward(placement, on_reward)
 		return true
-	rewarded_failed.emit(placement, "Ad provider unavailable")
+	var reason := "Ad provider unavailable"
+	if on_failed.is_valid():
+		on_failed.call(reason)
+	rewarded_failed.emit(placement, reason)
 	AnalyticsManager.track("rewarded_unavailable", {"placement": placement})
 	return false
 
@@ -71,12 +86,17 @@ func _provider_rewarded_completed() -> void:
 	_grant_reward(_pending_reward_placement, _pending_reward_callback)
 	_pending_reward_placement = ""
 	_pending_reward_callback = Callable()
+	_pending_reward_failed_callback = Callable()
 
 func _provider_rewarded_failed(reason: String = "Rewarded ad failed") -> void:
 	rewarded_in_progress = false
 	var placement := _pending_reward_placement
+	var failed_callback := _pending_reward_failed_callback
 	_pending_reward_placement = ""
 	_pending_reward_callback = Callable()
+	_pending_reward_failed_callback = Callable()
+	if failed_callback.is_valid():
+		failed_callback.call(reason)
 	rewarded_failed.emit(placement, reason)
 	AnalyticsManager.track("rewarded_failed", {"placement": placement, "reason": reason})
 

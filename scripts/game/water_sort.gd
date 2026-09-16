@@ -34,6 +34,9 @@ func _ready() -> void:
 	build_ui()
 	load_level()
 
+func monetization_game_id() -> String:
+	return GAME_ID
+
 func difficulty() -> String:
 	return MultiGameManager.difficulty_for_level(level_number)
 

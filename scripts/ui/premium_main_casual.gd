@@ -99,11 +99,7 @@ func _setting_button(title_text: String, detail_text: String, enabled: bool, acc
 
 func _toggle_reduced_motion() -> void:
 	var enabled := not bool(SaveManager.data.get("reduce_motion", false))
-	# `reduce_motion` is the canonical preference used by MotionSystem. Mirror the
-	# legacy key during this release so existing decorative systems and old saves
-	# cannot disagree while the migration is rolling forward.
 	SaveManager.data["reduce_motion"] = enabled
-	SaveManager.data["reduced_motion"] = enabled
 	SaveManager.save()
 	PremiumVisuals.apply_motion_preference()
 	FeedbackManager.tap()

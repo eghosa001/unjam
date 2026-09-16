@@ -179,15 +179,17 @@ func claim_daily_all() -> Dictionary:
 	retention_updated.emit()
 	return payload
 
-func record_level_complete(level_number: int, stars: int, _moves: int, _par_moves: int, chain_count: int, rescue_id: String, _hints_used_this_level: int = -1) -> Dictionary:
+func record_level_complete(level_number: int, stars: int, _moves: int, _par_moves: int, chain_count: int, rescue_id: String, _hints_used_this_level: int = -1, game_id: String = "rescue_rush", difficulty_override: String = "") -> Dictionary:
 	ensure_state()
 	var base_coins: int = 25 * stars
 	_increment_mission("clear_levels", 1)
 	_increment_mission("coins", base_coins)
 	if stars == 3:
 		_increment_mission("perfects", 1)
-	var level: Dictionary = LevelManager.load_level(level_number)
-	var difficulty: String = String(level.get("difficulty", level.get("difficulty_label", "medium"))).to_lower()
+	var difficulty := difficulty_override.to_lower()
+	if difficulty.is_empty():
+		var level: Dictionary = LevelManager.load_level(level_number)
+		difficulty = String(level.get("difficulty", level.get("difficulty_label", "medium"))).to_lower()
 	if difficulty in ["hard", "boss"]:
 		_increment_mission("hard_levels", 1)
 
@@ -206,11 +208,14 @@ func record_level_complete(level_number: int, stars: int, _moves: int, _par_move
 	if int(SaveManager.data.win_streak) in [3, 5, 10, 15, 25]:
 		streak_reward = int(SaveManager.data.win_streak) * 10
 		SaveManager.add_coins(streak_reward)
-	var variant: String = _maybe_unlock_variant(level_number, rescue_id, stars)
+	var variant := ""
+	if game_id == "rescue_rush" and not rescue_id.is_empty():
+		variant = _maybe_unlock_variant(level_number, rescue_id, stars)
 	_update_profile_title()
 	SaveManager.save()
 	var payload: Dictionary = {
 		"type":"level_retention",
+		"game":game_id,
 		"weekly_points":weekly_gain,
 		"season_points":weekly_gain,
 		"event_currency":2 + stars,

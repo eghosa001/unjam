@@ -1,0 +1,138 @@
+name: Android Production Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: Human-readable version (for example 1.0.1)
+        required: true
+        default: 1.0.1
+      version_code:
+        description: Monotonically increasing Google Play version code
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-production-release
+  cancel-in-progress: false
+
+jobs:
+  release-aab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require production secrets
+        env:
+          KEYSTORE_B64: ${{ secrets.UNJAM_ANDROID_KEYSTORE_BASE64 }}
+          KEY_ALIAS: ${{ secrets.UNJAM_ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.UNJAM_ANDROID_KEY_PASSWORD }}
+          VERIFY_URL: ${{ secrets.UNJAM_PURCHASE_VERIFICATION_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$KEYSTORE_B64"
+          test -n "$KEY_ALIAS"
+          test -n "$KEY_PASSWORD"
+          [[ "$VERIFY_URL" == https://* ]]
+          [[ "${{ inputs.version_code }}" =~ ^[1-9][0-9]*$ ]]
+          test "${{ inputs.version_code }}" -le 2100000000
+      - name: Setup JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Setup Godot 4.7.2
+        uses: solarlabyrinth/action-setup-godot@v3
+        with:
+          version: 4.7.2-stable
+          export-templates: true
+      - name: Install Android API 36
+        shell: bash
+        run: |
+          set -euxo pipefail
+          ANDROID_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          test -n "$ANDROID_ROOT"
+          SDKMANAGER=$(find "$ANDROID_ROOT/cmdline-tools" -name sdkmanager -type f | sort | tail -1)
+          test -x "$SDKMANAGER"
+          set +o pipefail
+          yes | "$SDKMANAGER" --sdk_root="$ANDROID_ROOT" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+          SDK_STATUS=${PIPESTATUS[1]}
+          set -o pipefail
+          test "$SDK_STATUS" -eq 0
+          echo "ANDROID_HOME=$ANDROID_ROOT" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_ROOT" >> "$GITHUB_ENV"
+      - name: Install monetization plugins
+        shell: bash
+        run: |
+          set -euxo pipefail
+          chmod +x tools/install_monetization_plugins.sh
+          tools/install_monetization_plugins.sh
+      - name: Configure production verification and signing
+        env:
+          KEYSTORE_B64: ${{ secrets.UNJAM_ANDROID_KEYSTORE_BASE64 }}
+          KEY_ALIAS: ${{ secrets.UNJAM_ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.UNJAM_ANDROID_KEY_PASSWORD }}
+          VERIFY_URL: ${{ secrets.UNJAM_PURCHASE_VERIFICATION_URL }}
+          VERSION_NAME: ${{ inputs.version_name }}
+          VERSION_CODE: ${{ inputs.version_code }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          KEYSTORE="$RUNNER_TEMP/unjam-release.keystore"
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$KEYSTORE"
+          chmod 600 "$KEYSTORE"
+          # Godot currently uses one release password for both the keystore and
+          # key entry. Validate the configured alias before attempting a long build.
+          keytool -list -keystore "$KEYSTORE" -storepass "$KEY_PASSWORD" -alias "$KEY_ALIAS" >/dev/null
+          python3 - <<'PY'
+          import os, re
+          from pathlib import Path
+          p = Path('project.godot')
+          text = p.read_text()
+          url = os.environ['VERIFY_URL']
+          text = re.sub(r'purchase_verification_url="[^"]*"', f'purchase_verification_url="{url}"', text)
+          p.write_text(text)
+          cfg = Path('export_presets.cfg')
+          out = cfg.read_text()
+          out = re.sub(r'version/code=\d+', f'version/code={os.environ["VERSION_CODE"]}', out)
+          out = re.sub(r'version/name="[^"]*"', f'version/name="{os.environ["VERSION_NAME"]}"', out)
+          cfg.write_text(out)
+          PY
+          echo "GODOT_ANDROID_KEYSTORE_RELEASE_PATH=$KEYSTORE" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_RELEASE_USER=$KEY_ALIAS" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
+      - name: Import and run release gates
+        shell: bash
+        run: |
+          set -euxo pipefail
+          godot --headless --path . --editor --quit
+          for t in validate_motion_quality validate_monetization validate_admob_production validate_billing_production validate_premium_ux validate_visual_quality_contract validate_production_completion validate_uiux_regressions validate_viewport_fit validate_retention validate_robustness validate_production_hardening_regressions; do
+            timeout 60s godot --headless --path . --script "res://tests/$t.gd"
+          done
+      - name: Run full release gameplay and campaign gates
+        shell: bash
+        run: |
+          set -euxo pipefail
+          for t in validate_levels validate_campaign validate_level_launch validate_gameplay_interactions validate_first_100_progression validate_first_200_playability validate_campaign_1000 validate_water_constructive_solvability; do
+            echo "===== START $t ====="
+            timeout 180s godot --headless --path . --script "res://tests/$t.gd"
+            echo "===== PASS $t ====="
+          done
+      - name: Export release AAB
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p build/android
+          godot --headless --verbose --path . --install-android-build-template --export-release Android build/android/unjam-release.aab 2>&1 | tee android-release-export.log
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" android-release-export.log; then exit 1; fi
+          test -s build/android/unjam-release.aab
+      - name: Upload release AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: unjam-release-aab-${{ inputs.version_name }}-${{ inputs.version_code }}
+          path: build/android/unjam-release.aab
+          if-no-files-found: error
+          retention-days: 14

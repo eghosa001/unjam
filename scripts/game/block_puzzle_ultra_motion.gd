@@ -74,13 +74,26 @@ func complete_level() -> void:
 		MultiGameManager.complete_daily(GAME_ID, 100 + stars * 25)
 	else:
 		MultiGameManager.complete_level(GAME_ID, level_number, stars, 30)
-	status_label.text = "LEVEL COMPLETE  •  %d ★" % stars
+	status_label.text = "BOARD MASTERED"
 	_spawn_score_popup("SPECTACULAR!", Color("ff665e"), 0.0, true)
 	FeedbackManager.complete()
 	AnalyticsManager.track("block_puzzle_completed", {"level": level_number, "score": score, "lines": lines_cleared, "placements": placements, "stars": stars, "daily": daily_mode})
 	var completion_hold := MotionSystem.duration(&"celebrate") + MotionSystem.duration(&"settle")
 	await get_tree().create_timer(completion_hold).timeout
-	finished.emit(-1 if daily_mode else level_number)
+	var result := PremiumResultOverlay.new()
+	result.configure(
+		"BLOCK PUZZLE COMPLETE",
+		"Strong placements. Clean lines. Space controlled.",
+		"SCORE %d   •   %d LINES\n%d PLACEMENTS   •   PERFECT ≤ %d" % [score, lines_cleared, placements, par_placements],
+		stars,
+		Color("8b7cf6"),
+		"BACK HOME" if daily_mode else "NEXT PUZZLE"
+	)
+	add_child(result)
+	result.continue_requested.connect(func() -> void:
+		finished.emit(-1 if daily_mode else level_number)
+		queue_free()
+	)
 
 func _patch_game_first_layout() -> void:
 	for node in _descendants(self):

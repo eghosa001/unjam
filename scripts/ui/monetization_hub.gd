@@ -231,16 +231,13 @@ func _rebuild_shop() -> void:
 func _on_node_added(node: Node) -> void:
 	if node == null or not node.has_signal("finished"):
 		return
-	var script: Script = node.get_script() as Script
-	if script == null:
+	# Active game scenes inherit through several presentation layers. Identifying
+	# them by the leaf script filename silently broke whenever a newer casual/
+	# motion subclass became active. Ask the game for its stable semantic id.
+	if not node.has_method("monetization_game_id"):
 		return
-	var path := String(script.resource_path)
-	var game_id := ""
-	if path.ends_with("scripts/game/water_sort.gd") or path.ends_with("scripts/game/water_sort_polished.gd"):
-		game_id = "water_sort"
-	elif path.ends_with("scripts/game/block_puzzle.gd") or path.ends_with("scripts/game/block_puzzle_polished.gd"):
-		game_id = "block_puzzle"
-	if game_id.is_empty():
+	var game_id := String(node.call("monetization_game_id"))
+	if game_id not in ["water_sort", "block_puzzle"]:
 		return
 	var callback := Callable(self, "_on_puzzle_finished").bind(game_id)
 	if not node.is_connected("finished", callback):

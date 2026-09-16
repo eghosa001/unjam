@@ -5,6 +5,7 @@ const MotionTube = preload("res://scripts/ui/water_tube_reference_motion.gd")
 var active_source_tubes: Dictionary = {}
 var active_target_tubes: Dictionary = {}
 var pending_completion := false
+var _queued_action := ""
 
 func render_board() -> void:
 	if board == null:
@@ -87,6 +88,55 @@ func select_tube(index: int) -> void:
 	render_board()
 	_play_premium_concurrent_pour(source_values, target_values, from_rect, to_rect, color_index, amount, from_idx, index, will_complete)
 	_save_checkpoint()
+
+
+func _has_active_pours() -> bool:
+	return not active_source_tubes.is_empty() or not active_target_tubes.is_empty()
+
+func undo_move() -> void:
+	if _has_active_pours():
+		_queued_action = "undo"
+		if status_label != null:
+			status_label.text = "Undo queued — finishing active pours"
+		return
+	super.undo_move()
+
+func show_hint() -> void:
+	if _has_active_pours():
+		if status_label != null:
+			status_label.text = "Finish active pours to use a hint"
+		return
+	super.show_hint()
+
+func restart_level() -> void:
+	if _has_active_pours():
+		_queued_action = "restart"
+		if status_label != null:
+			status_label.text = "Retry queued — finishing active pours"
+		return
+	super.restart_level()
+
+func _quit() -> void:
+	if _has_active_pours():
+		_queued_action = "quit"
+		if status_label != null:
+			status_label.text = "Back queued — finishing active pours"
+		return
+	super._quit()
+
+func _run_queued_action_if_ready() -> bool:
+	if _queued_action.is_empty() or _has_active_pours():
+		return false
+	var action := _queued_action
+	_queued_action = ""
+	# A queued navigation/state command takes precedence over a completion that
+	# was detected while its final visual pour was still in flight.
+	pending_completion = false
+	match action:
+		"undo": super.undo_move()
+		"restart": super.restart_level()
+		"quit": super._quit()
+	return true
 
 func _transfer_amount(from_idx: int, to_idx: int) -> int:
 	if not can_pour(from_idx, to_idx):
@@ -244,6 +294,9 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 				live.modulate = Color.WHITE
 				live.disabled = false
 				live.call("configure", tubes[idx], false, idx)
+
+	if _run_queued_action_if_ready():
+		return
 
 	if will_complete and pending_completion and not completed:
 		pending_completion = false

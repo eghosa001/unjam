@@ -70,17 +70,20 @@ func _rank_for_week(key: String, points: int) -> int:
 			rank += 1
 	return rank
 
-func record_level_complete(level_number: int, stars: int, moves: int, par_moves: int, chain_count: int, rescue_id: String, hints_used_this_level: int = -1) -> Dictionary:
+func record_level_complete(level_number: int, stars: int, moves: int, par_moves: int, chain_count: int, rescue_id: String, hints_used_this_level: int = -1, game_id: String = "rescue_rush", difficulty_override: String = "") -> Dictionary:
 	ensure_state()
-	var level_key: String = str(level_number)
-	var duplicate_today: bool = level_key in SaveManager.data.daily_unique_levels
-	var duplicate_week: bool = level_key in SaveManager.data.weekly_played_levels
+	var level_key := "%s:%d" % [game_id, level_number]
+	var legacy_key := str(level_number)
+	var daily_levels: Array = SaveManager.data.daily_unique_levels
+	var weekly_levels: Array = SaveManager.data.weekly_played_levels
+	var duplicate_today := level_key in daily_levels or (game_id == "rescue_rush" and legacy_key in daily_levels)
+	var duplicate_week := level_key in weekly_levels or (game_id == "rescue_rush" and legacy_key in weekly_levels)
 	var mission_before: Dictionary = SaveManager.data.daily_mission_progress.duplicate(true)
 	var weekly_before: int = int(SaveManager.data.weekly_points)
 	var season_before: int = int(SaveManager.data.season_points)
 	var event_before: int = int(SaveManager.data.event_currency)
 	var streak_before: int = int(SaveManager.data.win_streak)
-	var payload: Dictionary = super.record_level_complete(level_number, stars, moves, par_moves, chain_count, rescue_id, hints_used_this_level)
+	var payload: Dictionary = super.record_level_complete(level_number, stars, moves, par_moves, chain_count, rescue_id, hints_used_this_level, game_id, difficulty_override)
 
 	if duplicate_today:
 		SaveManager.data.daily_mission_progress = mission_before

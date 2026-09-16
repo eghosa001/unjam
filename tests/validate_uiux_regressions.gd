@@ -64,8 +64,8 @@ func _run() -> void:
 		return _fail("Home still depends on a periodic geometry override")
 	if surface.contains("content.position =") or surface.contains("tween_property(content, \"position\""):
 		return _fail("Active surface manager still moves content root")
-	if not motion.contains("reduced_motion"):
-		return _fail("Reduced Motion preference is not wired into navigation motion")
+	if not motion.contains("MotionSystem.reduced()"):
+		return _fail("Reduced Motion preference is not wired through MotionSystem")
 	var visuals_has_gate := visuals.contains("func _reduced_motion") or visuals.contains("func reduced_motion_enabled")
 	var visuals_uses_gate := visuals.contains("if _reduced_motion()") or visuals.contains("if reduced_motion_enabled()")
 	if not visuals_has_gate or not visuals_uses_gate:
@@ -74,8 +74,8 @@ func _run() -> void:
 		return _fail("Adaptive premium visuals still ignore Reduced Motion")
 	if not backdrop.contains("reduced_motion") or not backdrop.contains("set_process(not reduced)") or not showcase.contains("reduced_motion") or not showcase.contains("set_process(not reduced)"):
 		return _fail("Continuous decorative animation ignores Reduced Motion")
-	if not home.contains("reduced_motion") or not surface.contains("reduced_motion"):
-		return _fail("Home or secondary-surface entrance animation ignores Reduced Motion")
+	if not home.contains("MotionSystem.reduced()") or not surface.contains("MotionSystem.reduced()"):
+		return _fail("Home or secondary-surface entrance animation ignores canonical Reduced Motion")
 	if not settings.contains("PremiumVisuals.apply_motion_preference()"):
 		return _fail("Reduced Motion setting is not applied immediately")
 
@@ -93,7 +93,7 @@ func _run() -> void:
 
 	if not home.contains("HomeSecondaryActions") or home.contains("LIVE\nPLAY HUB"):
 		return _fail("Home still uses dashboard-like equally weighted secondary actions")
-	if not home.contains("hero.custom_minimum_size = Vector2(0, 520)") or not home.contains("hero_art.custom_minimum_size = Vector2(390, 480)") or not home.contains('hero_title.add_theme_font_size_override("font_size", 46)') or not home.contains('hero_subtitle.add_theme_font_size_override("font_size", 21)') or not home.contains("Vector2(0, 92)"):
+	if not home.contains("hero.custom_minimum_size = Vector2(0, 760)") or not home.contains("hero_art.custom_minimum_size = Vector2(0, 600)") or not home.contains('hero_title.add_theme_font_size_override("font_size", 46)') or not home.contains('hero_subtitle.add_theme_font_size_override("font_size", 21)') or not home.contains("Vector2(0, 92)"):
 		return _fail("Home script does not own the final cinematic geometry")
 	if not home.contains("SHOP") or not home.contains("open_shop"):
 		return _fail("Home does not expose a Shop path")

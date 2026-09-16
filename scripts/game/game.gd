@@ -499,72 +499,42 @@ func reward_summary() -> String:
 	return "\n".join(lines)
 
 func show_result(stars: int) -> void:
-	var overlay := ColorRect.new()
-	overlay.color = Color(0.012, 0.022, 0.05, 0.96)
-	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(overlay)
-	var panel := PanelContainer.new()
-	panel.set_anchors_preset(Control.PRESET_CENTER)
-	panel.position = Vector2(-345, -405)
-	panel.custom_minimum_size = Vector2(690, 810)
-	panel.add_theme_stylebox_override("panel", style_box(Color("111f38"), 38, world_accent(), 3))
-	overlay.add_child(panel)
-	var box := VBoxContainer.new()
-	box.alignment = BoxContainer.ALIGNMENT_CENTER
-	box.add_theme_constant_override("separation", 20)
-	panel.add_child(box)
-	var token := RescueToken.new()
-	token.custom_minimum_size = Vector2(170, 170)
-	token.configure(rescue_id, Color("ffd166"))
-	box.add_child(token)
-	var title := Label.new()
-	title.text = "DAILY COMPLETE" if daily_mode else "RESCUE COMPLETE"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 44)
-	box.add_child(title)
-	var star_label := Label.new()
-	star_label.text = "★".repeat(stars) + "☆".repeat(3 - stars)
-	star_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	star_label.add_theme_font_size_override("font_size", 54)
-	star_label.add_theme_color_override("font_color", Color("ffd166"))
-	box.add_child(star_label)
 	var base_reward: int = 100 if daily_mode else int(completion_rewards.get("base_coins", 0))
 	var bonus_reward: int = 0 if daily_mode else int(completion_rewards.get("bonus_coins", 0))
-	var stats := Label.new()
-	stats.text = "%d MOVES   •   +%d COINS" % [moves, base_reward + bonus_reward]
-	stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	stats.add_theme_font_size_override("font_size", 22)
-	box.add_child(stats)
-	var summary: String = reward_summary()
+	var summary := reward_summary()
+	var subtitle := "Rescue secured. The path is clear."
 	if not summary.is_empty():
-		var reward_label := Label.new()
-		reward_label.text = summary
-		reward_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		reward_label.add_theme_font_size_override("font_size", 18)
-		box.add_child(reward_label)
-	var double_reward := Button.new()
-	double_reward.text = "DOUBLE BASE REWARD" if base_reward > 0 else "REWARD CLAIMED"
-	double_reward.disabled = base_reward <= 0
-	double_reward.custom_minimum_size = Vector2(470, 78)
-	style_button(double_reward, true)
-	double_reward.pressed.connect(func() -> void:
-		double_reward.disabled = true
-		AdManager.show_rewarded("double_reward", func() -> void: SaveManager.add_coins(base_reward))
-		double_reward.text = "BASE REWARD DOUBLED"
+		subtitle += "\n" + summary
+	var result := PremiumResultOverlay.new()
+	result.configure(
+		"DAILY COMPLETE" if daily_mode else "RESCUE COMPLETE",
+		subtitle,
+		"%d MOVES   •   +%d COINS\nPERFECT ≤ %d" % [moves, base_reward + bonus_reward, par_moves],
+		stars,
+		world_accent(),
+		"BACK HOME" if daily_mode else ("NEXT RESCUE" if LevelManager.has_level(level_number + 1) else "CAMPAIGN COMPLETE"),
+		"RESCUE SECURED"
 	)
-	box.add_child(double_reward)
-	var next := Button.new()
-	next.text = "BACK HOME" if daily_mode else ("NEXT RESCUE" if LevelManager.has_level(level_number + 1) else "CAMPAIGN COMPLETE")
-	next.custom_minimum_size = Vector2(470, 84)
-	style_button(next)
-	next.pressed.connect(func() -> void:
+	if base_reward > 0:
+		result.configure_secondary("DOUBLE BASE REWARD", true)
+	add_child(result)
+	result.secondary_requested.connect(func() -> void:
+		result.set_secondary_state("WATCHING AD…", false)
+		var on_failed := func(reason: String) -> void:
+			if is_instance_valid(result):
+				result.set_secondary_state("DOUBLE BASE REWARD", true, reason)
+		var on_reward := func() -> void:
+			SaveManager.add_coins(base_reward)
+			if is_instance_valid(result):
+				result.set_secondary_state("BASE REWARD DOUBLED", false, "Reward granted")
+		AdManager.show_rewarded("double_reward", on_reward, on_failed)
+	)
+	result.continue_requested.connect(func() -> void:
 		if AdManager.should_show_interstitial():
 			AdManager.show_interstitial()
 		finished.emit(-1 if daily_mode else level_number)
 		queue_free()
 	)
-	box.add_child(next)
-	PremiumVisuals.entrance(panel, 0.08)
 
 func undo_move() -> void:
 	if history.is_empty() or rescued or board_locked:

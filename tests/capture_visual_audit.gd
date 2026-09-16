@@ -109,6 +109,13 @@ func _run() -> void:
 	await _settle(3)
 
 	print("Visual audit captures written to %s" % OUT_DIR)
+	# The visual runner synthesizes music through FeedbackManager. Release the
+	# generated stream/player before SceneTree quits so leak diagnostics remain
+	# meaningful instead of reporting the intentionally persistent autoload.
+	var feedback := root.get_node_or_null("FeedbackManager")
+	if feedback != null and feedback.has_method("shutdown_audio"):
+		feedback.call("shutdown_audio")
+	await _settle(3)
 	quit(0)
 
 func _hide_tutorial(shell: Node) -> void:

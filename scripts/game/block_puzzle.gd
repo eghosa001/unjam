@@ -55,6 +55,9 @@ var board_grid: GridContainer
 var board_shell: Control
 var effects_layer: Control
 
+func monetization_game_id() -> String:
+	return GAME_ID
+
 func _ready() -> void:
 	visible = true
 	mouse_filter = Control.MOUSE_FILTER_STOP

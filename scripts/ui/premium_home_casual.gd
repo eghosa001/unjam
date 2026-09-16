@@ -66,7 +66,7 @@ func build_home_launcher() -> void:
 
 	var hero := PanelContainer.new()
 	hero.name = "HomeHero"
-	hero.custom_minimum_size = Vector2(0, 520)
+	hero.custom_minimum_size = Vector2(0, 760)
 	hero.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	hero.add_theme_stylebox_override("panel", _box(Color(_card(), 0.965), 38, Color(accent, 0.42), 2, 14))
 	root.add_child(hero)
@@ -76,39 +76,46 @@ func build_home_launcher() -> void:
 	hero_margin.add_theme_constant_override("margin_top", 16)
 	hero_margin.add_theme_constant_override("margin_bottom", 16)
 	hero.add_child(hero_margin)
-	var hero_row := HBoxContainer.new()
-	hero_row.add_theme_constant_override("separation", 24)
+	var hero_row := VBoxContainer.new()
+	hero_row.add_theme_constant_override("separation", 14)
 	hero_margin.add_child(hero_row)
 
 	hero_art = GameShowcaseArt.new()
-	hero_art.custom_minimum_size = Vector2(390, 480)
+	hero_art.name = "HomeShowcaseArt"
+	hero_art.custom_minimum_size = Vector2(0, 600)
+	hero_art.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	hero_art.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	hero_art.configure(selected_game, accent, _dark())
 	hero_row.add_child(hero_art)
 
 	var hero_copy := VBoxContainer.new()
+	hero_copy.custom_minimum_size = Vector2(0, 250)
 	hero_copy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	hero_copy.alignment = BoxContainer.ALIGNMENT_CENTER
 	hero_copy.add_theme_constant_override("separation", 8)
 	hero_row.add_child(hero_copy)
 	var eyebrow := Label.new()
 	eyebrow.text = "YOUR NEXT RUN"
+	eyebrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	eyebrow.add_theme_font_size_override("font_size", 16)
 	eyebrow.add_theme_color_override("font_color", Color(accent, 0.92))
 	hero_copy.add_child(eyebrow)
 	hero_title = Label.new()
 	hero_title.text = MultiGameManager.display_name(selected_game).to_upper()
+	hero_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hero_title.add_theme_font_size_override("font_size", 46)
 	hero_title.add_theme_color_override("font_color", _ink())
 	hero_copy.add_child(hero_title)
 	hero_subtitle = Label.new()
 	hero_subtitle.text = SUBTITLES[selected_game]
+	hero_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hero_subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hero_subtitle.add_theme_font_size_override("font_size", 21)
 	hero_subtitle.add_theme_color_override("font_color", _muted())
 	hero_copy.add_child(hero_subtitle)
 	hero_progress = Label.new()
 	hero_progress.text = _hero_progress_text(selected_game)
+	hero_progress.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hero_progress.add_theme_font_size_override("font_size", 18)
 	hero_progress.add_theme_color_override("font_color", Color("d9e5f4") if _dark() else Color("314158"))
 	hero_copy.add_child(hero_progress)
@@ -167,7 +174,7 @@ func build_home_launcher() -> void:
 
 	if not is_instance_valid(hero):
 		return
-	if bool(SaveManager.data.get("reduced_motion", false)):
+	if MotionSystem.reduced():
 		hero.modulate.a = 1.0
 		games.modulate.a = 1.0
 		return

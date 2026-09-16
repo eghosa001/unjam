@@ -3,7 +3,7 @@ extends "res://scripts/core/save_manager.gd"
 const ROBUST_SAVE_PATH := "user://unjam_save.json"
 const BACKUP_PATH := "user://unjam_save.backup.json"
 const TEMP_PATH := "user://unjam_save.tmp.json"
-const SAVE_VERSION := 8
+const SAVE_VERSION := 9
 
 func _ready() -> void:
 	load_save()
@@ -31,9 +31,17 @@ func _read_dictionary(path: String) -> Dictionary:
 
 func _migrate_robust() -> void:
 	var previous_version := int(data.get("save_version", 0))
+	var had_canonical_motion := data.has("reduce_motion")
+	var legacy_motion = data.get("reduced_motion", null)
 	for key in DEFAULT_DATA:
 		if not data.has(key):
 			data[key] = DEFAULT_DATA[key]
+	# Version 9 finishes the Reduced Motion migration. The canonical key is
+	# `reduce_motion`; copy the legacy value only for saves that never had the
+	# canonical field, then remove the duplicate key permanently.
+	if not had_canonical_motion and legacy_motion != null:
+		data["reduce_motion"] = bool(legacy_motion)
+	data.erase("reduced_motion")
 	# Version 7 changes the default interaction feel: haptics are opt-in.
 	# Existing installs created when vibration defaulted on are migrated once,
 	# so upgrading does not preserve the aggressive old phone vibration.

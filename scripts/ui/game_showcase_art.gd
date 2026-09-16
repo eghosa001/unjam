@@ -19,7 +19,7 @@ func _ready() -> void:
 	apply_motion_preference()
 
 func apply_motion_preference() -> void:
-	var reduced := bool(SaveManager.data.get("reduced_motion", false))
+	var reduced := MotionSystem.reduced()
 	if reduced:
 		phase = 0.0
 	set_process(not reduced)
@@ -30,13 +30,15 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 func _draw() -> void:
+	var scale_factor := clampf(minf(size.x / 700.0, size.y / 520.0), 0.72, 1.65)
+	draw_set_transform(size * 0.5, 0.0, Vector2.ONE * scale_factor)
 	match game_id:
 		"water_sort": _draw_water_sort()
 		"block_puzzle": _draw_block_puzzle()
 		_: _draw_rescue_rush()
 
 func _draw_rescue_rush() -> void:
-	var c := size * 0.5 + Vector2(0, 6)
+	var c := Vector2(0, 6)
 	var pulse := 0.5 + 0.5 * sin(phase * 2.4)
 	for i in range(4, 0, -1):
 		draw_circle(c, 62.0 + float(i) * 34.0, Color(accent, 0.018 * float(i)))
@@ -81,7 +83,7 @@ func _draw_arrow_block(center: Vector2, dir: Vector2, index: int, pulse: float) 
 	draw_arc(center, 48 + pulse * 3.0, 0, TAU, 36, Color(base.lightened(0.35), 0.12 + pulse * 0.05), 2.0, true)
 
 func _draw_water_sort() -> void:
-	var c := size * 0.5
+	var c := Vector2.ZERO
 	var colors: Array[Color] = [Color("ff6680"), Color("ffd166"), Color("5da9ff"), Color("43d6ad"), Color("9b7cff")]
 	for i in range(5):
 		var x := c.x - 224.0 + float(i) * 112.0
@@ -115,7 +117,7 @@ func _draw_tube(center: Vector2, colors: Array[Color], index: int) -> void:
 	draw_line(body.position + Vector2(18, 30), body.position + Vector2(18, body.size.y - 37), Color(1, 1, 1, 0.24), 4.0, true)
 
 func _draw_block_puzzle() -> void:
-	var c := size * 0.5
+	var c := Vector2.ZERO
 	var cell := 42.0
 	var origin := c - Vector2(cell * 4.0, cell * 4.0) + Vector2(0, 18)
 	var filled_positions := {

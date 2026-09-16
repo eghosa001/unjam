@@ -10,52 +10,75 @@ func level_config() -> Dictionary:
 	return super.level_config()
 
 func generate_tubes(seed_value: int, colors: int) -> Array:
-	# Build from a solved state using reversible reverse-moves. Replaying those
-	# moves in reverse is always legal, so every generated board is solvable by
-	# construction while still producing thousands of different mixes.
+	return (generate_tubes_with_solution(seed_value, colors).get("tubes", []) as Array).duplicate(true)
+
+func generate_tubes_with_solution(seed_value: int, colors: int) -> Dictionary:
+	# Start solved, then perform reversible reverse-pours. Every accepted scramble
+	# operation records its exact legal inverse, giving each generated board a
+	# deterministic constructive solution proof without an expensive runtime solver.
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value * 104729 + colors * 1543 + campaign_tier() * 8191
 	var result: Array = []
 	for color in range(colors):
 		var tube: Array = []
-		for _i in range(CAPACITY): tube.append(color)
+		for _i in range(CAPACITY):
+			tube.append(color)
 		result.append(tube)
 	result.append([])
 	result.append([])
+	# Randomize the solved tube locations before scrambling. This increases layout
+	# diversity while keeping recorded tube indices stable for the proof path.
+	_shuffle_variant_array(result, rng)
+
 	var steps := 8 + colors * 3 + campaign_tier() * 3
 	if not daily_mode and level_number <= 6:
-		# Preserve construction-by-reversal but use a much shallower scramble
-		# during onboarding so the first puzzles read immediately.
 		steps = 4 + level_number * 2
-	if difficulty() == "hard": steps += 5
-	elif difficulty() == "milestone": steps += 8
-	elif difficulty() == "boss": steps += 12
+	if difficulty() == "hard":
+		steps += 5
+	elif difficulty() == "milestone":
+		steps += 8
+	elif difficulty() == "boss":
+		steps += 12
+	# Never construct a proof longer than the advertised perfect-move budget.
+	steps = mini(steps, int(level_config().get("par", steps)))
+
+	var inverse_moves: Array[Vector2i] = []
 	var successful := 0
 	var guard := 0
-	while successful < steps and guard < steps * 40:
+	while successful < steps and guard < steps * 60:
 		guard += 1
 		var donors: Array[int] = []
 		for i in range(result.size()):
-			if _is_monochrome_nonempty(result[i]): donors.append(i)
-		if donors.is_empty(): break
+			if _is_monochrome_nonempty(result[i]):
+				donors.append(i)
+		if donors.is_empty():
+			break
 		var donor := donors[rng.randi_range(0, donors.size() - 1)]
 		var donor_color := int((result[donor] as Array).back())
 		var targets: Array[int] = []
 		var preferred: Array[int] = []
 		for j in range(result.size()):
-			if j == donor: continue
+			if j == donor:
+				continue
 			var target: Array = result[j]
-			if target.size() >= CAPACITY: continue
-			if not target.is_empty() and int(target.back()) == donor_color: continue
+			if target.size() >= CAPACITY:
+				continue
+			# The inverse proof relies on the transferred run remaining distinct
+			# from the target's previous top colour.
+			if not target.is_empty() and int(target.back()) == donor_color:
+				continue
 			targets.append(j)
-			if not target.is_empty(): preferred.append(j)
-		if targets.is_empty(): continue
-		var pool := preferred if not preferred.is_empty() else targets
+			if not target.is_empty():
+				preferred.append(j)
+		if targets.is_empty():
+			continue
+		var pool: Array[int] = preferred if not preferred.is_empty() else targets
 		var target_index := pool[rng.randi_range(0, pool.size() - 1)]
 		var source: Array = result[donor]
 		var target_tube: Array = result[target_index]
 		var max_amount := mini(source.size(), CAPACITY - target_tube.size())
-		if max_amount <= 0: continue
+		if max_amount <= 0:
+			continue
 		var amount := 1
 		if max_amount > 1 and campaign_tier() <= 1 and rng.randf() < 0.25:
 			amount = 2
@@ -64,14 +87,13 @@ func generate_tubes(seed_value: int, colors: int) -> Array:
 			target_tube.append(donor_color)
 		result[donor] = source
 		result[target_index] = target_tube
+		inverse_moves.append(Vector2i(target_index, donor))
 		successful += 1
-	# Shuffle tube positions only; this preserves the known solution.
-	for i in range(result.size() - 1, 0, -1):
-		var j := rng.randi_range(0, i)
-		var temp = result[i]
-		result[i] = result[j]
-		result[j] = temp
-	return result
+
+	var solution: Array[Vector2i] = []
+	for i in range(inverse_moves.size() - 1, -1, -1):
+		solution.append(inverse_moves[i])
+	return {"tubes": result, "solution": solution}
 
 func _is_monochrome_nonempty(tube: Array) -> bool:
 	if tube.is_empty(): return false

@@ -20,7 +20,7 @@ func _ready() -> void:
 	set_process(true)
 
 func _reduced_motion() -> bool:
-	return bool(SaveManager.data.get("reduced_motion", false))
+	return MotionSystem.reduced()
 
 func apply_motion_preference() -> void:
 	if is_instance_valid(overlay):

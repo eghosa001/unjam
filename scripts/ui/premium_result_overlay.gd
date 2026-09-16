@@ -2,6 +2,7 @@ class_name PremiumResultOverlay
 extends Control
 
 signal continue_requested
+signal secondary_requested
 
 var accent := Color("5da9ff")
 var title_text := "LEVEL COMPLETE"
@@ -9,14 +10,36 @@ var subtitle_text := ""
 var stats_text := ""
 var stars := 3
 var button_text := "CONTINUE"
+var badge_text := "PUZZLE CLEARED"
+var secondary_text := ""
+var secondary_enabled := false
+var _secondary_button: Button
 
-func configure(title_value: String, subtitle_value: String, stats_value: String, star_count: int, color: Color, action_text: String = "CONTINUE") -> void:
+func configure(title_value: String, subtitle_value: String, stats_value: String, star_count: int, color: Color, action_text: String = "CONTINUE", badge_value: String = "PUZZLE CLEARED") -> void:
 	title_text = title_value
 	subtitle_text = subtitle_value
 	stats_text = stats_value
 	stars = clampi(star_count, 1, 3)
 	accent = color
 	button_text = action_text
+	badge_text = badge_value
+
+func configure_secondary(text_value: String, enabled: bool = true) -> void:
+	secondary_text = text_value
+	secondary_enabled = enabled
+	if _secondary_button != null and is_instance_valid(_secondary_button):
+		_secondary_button.text = secondary_text
+		_secondary_button.disabled = not secondary_enabled
+		_secondary_button.visible = not secondary_text.is_empty()
+
+func set_secondary_state(text_value: String, enabled: bool, tooltip: String = "") -> void:
+	secondary_text = text_value
+	secondary_enabled = enabled
+	if _secondary_button != null and is_instance_valid(_secondary_button):
+		_secondary_button.text = text_value
+		_secondary_button.disabled = not enabled
+		_secondary_button.tooltip_text = tooltip
+		_secondary_button.visible = not text_value.is_empty()
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -59,24 +82,27 @@ func _build() -> void:
 	add_child(glow)
 
 	var card := PanelContainer.new()
+	card.name = "ResultCard"
 	card.set_anchors_preset(Control.PRESET_CENTER)
-	card.position = Vector2(-350, -430)
-	card.custom_minimum_size = Vector2(700, 860)
+	card.position = Vector2(-350, -470)
+	card.custom_minimum_size = Vector2(700, 940)
 	card.add_theme_stylebox_override("panel", _box(Color("0b1628"), 42, Color(accent, 0.72), 2, 24))
 	add_child(card)
 	var margin := MarginContainer.new()
+	margin.name = "ResultMargin"
 	for side in ["margin_left", "margin_right"]:
 		margin.add_theme_constant_override(side, 44)
 	margin.add_theme_constant_override("margin_top", 42)
 	margin.add_theme_constant_override("margin_bottom", 38)
 	card.add_child(margin)
 	var box := VBoxContainer.new()
+	box.name = "ResultBox"
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
 	box.add_theme_constant_override("separation", 20)
 	margin.add_child(box)
 
 	var badge := Label.new()
-	badge.text = "PUZZLE CLEARED"
+	badge.text = badge_text
 	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	badge.add_theme_font_size_override("font_size", 15)
 	badge.add_theme_color_override("font_color", Color(accent, 0.92))
@@ -134,7 +160,22 @@ func _build() -> void:
 	stats.custom_minimum_size = Vector2(0, 110)
 	box.add_child(stats)
 
+	_secondary_button = Button.new()
+	_secondary_button.name = "SecondaryAction"
+	_secondary_button.text = secondary_text
+	_secondary_button.visible = not secondary_text.is_empty()
+	_secondary_button.disabled = not secondary_enabled
+	_secondary_button.custom_minimum_size = Vector2(0, 78)
+	_secondary_button.add_theme_font_size_override("font_size", 21)
+	_secondary_button.add_theme_stylebox_override("normal", _box(Color("13233a"), 23, Color(accent, 0.72), 2, 5))
+	_secondary_button.add_theme_stylebox_override("hover", _box(Color("18304e"), 23, Color(accent, 0.96), 2, 7))
+	_secondary_button.add_theme_stylebox_override("pressed", _box(Color("0e1b2e"), 23, accent, 2, 2))
+	_secondary_button.add_theme_color_override("font_color", Color("e8f2ff"))
+	_secondary_button.pressed.connect(func() -> void: secondary_requested.emit())
+	box.add_child(_secondary_button)
+
 	var continue_button := Button.new()
+	continue_button.name = "PrimaryAction"
 	continue_button.text = button_text
 	continue_button.custom_minimum_size = Vector2(0, 92)
 	continue_button.add_theme_font_size_override("font_size", 24)
@@ -154,7 +195,7 @@ func _build() -> void:
 
 	card.modulate.a = 0.0
 	card.scale = Vector2(0.90, 0.90)
-	card.pivot_offset = Vector2(350, 430)
+	card.pivot_offset = Vector2(350, 470)
 	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tween.tween_property(card, "modulate:a", 1.0, 0.14)
 	tween.parallel().tween_property(card, "scale", Vector2(1.02, 1.02), 0.28)

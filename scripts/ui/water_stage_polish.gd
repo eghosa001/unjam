@@ -24,8 +24,12 @@ func _apply() -> void:
 		return
 	if tubes.size() == 6:
 		board.columns = 3
-		board.add_theme_constant_override("h_separation", 34)
+		var gap := 34
+		board.add_theme_constant_override("h_separation", gap)
 		board.add_theme_constant_override("v_separation", 30)
+		var viewport_width: float = float(game.get_viewport_rect().size.x)
+		var tube_width: float = clampf(floor((viewport_width - 100.0 - float(gap * 2)) / 3.0), 158.0, 220.0)
+		var tube_height: float = tube_width * 2.02
 		for child in board.get_children():
 			if child is Control:
-				(child as Control).custom_minimum_size = Vector2(184, 372)
+				(child as Control).custom_minimum_size = Vector2(tube_width, tube_height)

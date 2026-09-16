@@ -160,7 +160,7 @@ func complete_level(id:String,n:int,stars:int,coin_reward:=25)->Dictionary:
  elif first:g["perfect_streak"]=0
  if first and n%10==0:var c:Array=g.get("milestone_chests",[]);c.append(key);g["milestone_chests"]=c;rewards.milestone=true;SaveManager.data["coins"]=int(SaveManager.data.get("coins",0))+100
  if first and n%100==0:var wk:=str(int(n/100));var b:Array=g.get("world_badges",[]);b.append(wk);g["world_badges"]=b;rewards.world_badge=true;SaveManager.data["coins"]=int(SaveManager.data.get("coins",0))+250;SaveManager.data["prestige_points"]=int(SaveManager.data.get("prestige_points",0))+5
- all[id]=g;SaveManager.data["game_progress"]=all;_advance_tasks(id,stars);SaveManager.save();AnalyticsManager.track("multi_game_level_complete",{"game":id,"level":n,"stars":stars,"difficulty":difficulty_for_level(n)});return rewards
+ all[id]=g;SaveManager.data["game_progress"]=all;_advance_tasks(id,stars);SaveManager.save();var difficulty:=difficulty_for_level(n);RetentionManager.record_level_complete(n,stars,0,0,0,"",-1,id,difficulty);AnalyticsManager.track("multi_game_level_complete",{"game":id,"level":n,"stars":stars,"difficulty":difficulty});return rewards
 func save_checkpoint(id:String,data:Dictionary)->void:
  ensure_state();var runs:Dictionary=SaveManager.data.get("multi_active_runs",{});var payload:=data.duplicate(true);payload["game"]=id;payload["saved_at"]=int(Time.get_unix_time_from_system());runs[id]=payload;SaveManager.data["multi_active_runs"]=runs;SaveManager.save()
 func checkpoint(id:String)->Dictionary:

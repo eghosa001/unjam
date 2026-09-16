@@ -46,7 +46,7 @@ func _surface_target(main: Node, surface: String, content: Control, active: Cont
 func _animate_surface_in(target: Control) -> void:
 	# Navigation may fade, but the screen itself must remain geometrically fixed.
 	# Moving/scaling the root reads as a whole-screen vibration on phones.
-	if bool(SaveManager.data.get("reduced_motion", false)):
+	if MotionSystem.reduced():
 		target.modulate = Color.WHITE
 		return
 	var final_modulate := target.modulate

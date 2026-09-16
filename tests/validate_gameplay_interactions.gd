@@ -20,6 +20,9 @@ func _run() -> void:
 	quit(0)
 
 func _test_water(main: Control) -> bool:
+	# Keep the interaction contract repeatable even when a previous test run
+	# intentionally saved an in-flight checkpoint.
+	_manager().call("clear_checkpoint", "water_sort")
 	main.call("start_multi_level", "water_sort", 1, false)
 	await _frames(4)
 	var game = main.get("active_game")
@@ -44,8 +47,11 @@ func _test_water(main: Control) -> bool:
 	if not moved or int(game.get("moves")) != 1: return _fail("Water Sort could not execute a legal move")
 	if _manager().call("checkpoint", "water_sort").is_empty(): return _fail("Water Sort move did not save a checkpoint")
 	game.call("undo_move")
-	await _frames(2)
-	if int(game.get("moves")) != 0 or game.get("tubes") != before: return _fail("Water Sort undo did not restore state")
+	if game.has_method("_has_active_pours") and bool(game.call("_has_active_pours")):
+		if not String(game.get("status_label").text).contains("queued"):
+			return _fail("Water Sort active-pour undo was not visibly queued")
+	if not await _wait_for_water_undo(game, before):
+		return _fail("Water Sort queued undo did not restore state after active pour settled")
 	game.call("restart_level")
 	await _frames(2)
 	if int(game.get("moves")) != 0: return _fail("Water Sort retry did not reset moves")
@@ -60,7 +66,18 @@ func _wait_for_water_move(game: Node, previous_moves: int, max_frames: int = 240
 		await process_frame
 	return false
 
+func _wait_for_water_undo(game: Node, expected_tubes: Array, max_frames: int = 300) -> bool:
+	for _i in range(max_frames):
+		if not is_instance_valid(game):
+			return false
+		var active := bool(game.call("_has_active_pours")) if game.has_method("_has_active_pours") else bool(game.get("animating"))
+		if not active and int(game.get("moves")) == 0 and game.get("tubes") == expected_tubes:
+			return true
+		await process_frame
+	return false
+
 func _test_block(main: Control) -> bool:
+	_manager().call("clear_checkpoint", "block_puzzle")
 	main.call("start_multi_level", "block_puzzle", 1, false)
 	await _frames(4)
 	var game = main.get("active_game")
