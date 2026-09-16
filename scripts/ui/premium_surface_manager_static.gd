@@ -6,5 +6,5 @@ func _animate_surface(content: Control) -> void:
 		return
 	var final_alpha := content.modulate.a
 	content.modulate.a = minf(final_alpha, 0.82)
-	var tween := content.create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(content, "modulate:a", final_alpha, 0.20)
+	var tween := content.create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tween.tween_property(content, "modulate:a", final_alpha, MotionSystem.duration(&"screen"))
