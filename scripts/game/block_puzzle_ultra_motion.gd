@@ -29,6 +29,7 @@ func select_piece(index: int) -> void:
 
 func render_pieces() -> void:
 	for child in piece_row.get_children():
+		piece_row.remove_child(child)
 		child.queue_free()
 	for i in range(pieces.size()):
 		var button := SmoothPieceButton.new()
