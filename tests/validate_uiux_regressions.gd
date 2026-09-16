@@ -93,8 +93,8 @@ func _run() -> void:
 
 	if not home.contains("HomeSecondaryActions") or home.contains("LIVE\nPLAY HUB"):
 		return _fail("Home still uses dashboard-like equally weighted secondary actions")
-	if not home.contains("hero.custom_minimum_size = Vector2(0, 760)") or not home.contains("hero_art.custom_minimum_size = Vector2(0, 600)") or not home.contains('hero_title.add_theme_font_size_override("font_size", 46)') or not home.contains('hero_subtitle.add_theme_font_size_override("font_size", 21)') or not home.contains("Vector2(0, 92)"):
-		return _fail("Home script does not own the final cinematic geometry")
+	if not home.contains("hero.custom_minimum_size = Vector2(0, 760)") or not home.contains("hero_art.custom_minimum_size = Vector2(0, 500)") or not home.contains('hero_title.add_theme_font_size_override("font_size", 42)') or not home.contains('hero_subtitle.add_theme_font_size_override("font_size", 19)') or not home.contains("Vector2(0, 96)"):
+		return _fail("Home script does not own the final vibrant reference geometry")
 	if not home.contains("SHOP") or not home.contains("open_shop"):
 		return _fail("Home does not expose a Shop path")
 	if not monetization.contains("func open_shop"):
