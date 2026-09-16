@@ -1,18 +1,16 @@
 extends Node
 
 var last_signature := ""
-var timer := 0.0
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	var main := get_parent()
+	if main != null and main.has_signal("surface_changed"):
+		main.surface_changed.connect(_on_surface_changed)
 	call_deferred("_refresh", true)
 
-func _process(delta: float) -> void:
-	timer += delta
-	if timer < 0.18:
-		return
-	timer = 0.0
-	_refresh(false)
+func _on_surface_changed(_surface: String) -> void:
+	call_deferred("_refresh", true)
 
 func _refresh(force: bool) -> void:
 	var main := get_parent()
