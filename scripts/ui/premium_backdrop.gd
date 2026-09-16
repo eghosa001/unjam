@@ -20,15 +20,24 @@ func _ready() -> void:
 	add_to_group("reduced_motion_aware")
 	apply_motion_preference()
 
+func _motion_service() -> Node:
+	return get_node_or_null("/root/MotionSystem")
+
+func _reduced_motion() -> bool:
+	var motion := _motion_service()
+	if motion != null and motion.has_method("reduced"):
+		return bool(motion.call("reduced"))
+	return false
+
 func apply_motion_preference() -> void:
-	var reduced := MotionSystem.reduced()
+	var reduced := _reduced_motion()
 	if reduced:
 		t = 0.0
 	set_process(not reduced)
 	queue_redraw()
 
 func _process(delta: float) -> void:
-	if MotionSystem.reduced():
+	if _reduced_motion():
 		return
 	t += delta
 	queue_redraw()
@@ -45,7 +54,7 @@ func _quality_scale() -> float:
 
 func _draw() -> void:
 	var quality := _quality_scale()
-	var reduced_motion := MotionSystem.reduced()
+	var reduced_motion := _reduced_motion()
 	var motion_t := 0.0 if reduced_motion else t
 	var light_mode := base_color.get_luminance() > 0.58
 	var sky_top := base_color.lerp(Color.WHITE, 0.58 if light_mode else 0.28)
