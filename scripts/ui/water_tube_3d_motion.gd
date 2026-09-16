@@ -43,11 +43,14 @@ func _build_3d_view() -> void:
 	viewport_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	viewport_container.stretch = true
 	viewport_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	viewport_container.z_index = -1
 	add_child(viewport_container)
 
 	viewport_3d = SubViewport.new()
 	viewport_3d.name = "TubeViewport3D"
-	viewport_3d.size = Vector2i(220, 420)
+	# Slightly above the on-screen tube resolution, but far below the old
+	# 220x420 buffer. Idle tubes still render only once.
+	viewport_3d.size = Vector2i(168, 336)
 	viewport_3d.transparent_bg = true
 	viewport_3d.render_target_update_mode = SubViewport.UPDATE_ONCE
 	viewport_container.add_child(viewport_3d)
@@ -94,7 +97,7 @@ func _build_glass_3d() -> void:
 	glass_mesh.top_radius = 0.62
 	glass_mesh.bottom_radius = 0.54
 	glass_mesh.height = 3.32
-	glass_mesh.radial_segments = 20
+	glass_mesh.radial_segments = 16
 	glass_mesh.cap_top = false
 	glass_mesh.cap_bottom = true
 	var glass := MeshInstance3D.new()
@@ -106,8 +109,8 @@ func _build_glass_3d() -> void:
 	var rim_mesh := TorusMesh.new()
 	rim_mesh.inner_radius = 0.56
 	rim_mesh.outer_radius = 0.68
-	rim_mesh.rings = 20
-	rim_mesh.ring_segments = 8
+	rim_mesh.rings = 16
+	rim_mesh.ring_segments = 6
 	var rim := MeshInstance3D.new()
 	rim.name = "OpenGlassRim"
 	rim.mesh = rim_mesh
@@ -118,8 +121,8 @@ func _build_glass_3d() -> void:
 	var base_mesh := TorusMesh.new()
 	base_mesh.inner_radius = 0.47
 	base_mesh.outer_radius = 0.57
-	base_mesh.rings = 18
-	base_mesh.ring_segments = 8
+	base_mesh.rings = 14
+	base_mesh.ring_segments = 6
 	var base_rim := MeshInstance3D.new()
 	base_rim.mesh = base_mesh
 	base_rim.position.y = -1.61
@@ -135,6 +138,8 @@ func _build_glass_3d() -> void:
 	stage_3d.add_child(highlight)
 
 func _build_liquid_materials_3d() -> void:
+	# Cache palette materials once. Pour progress changes mesh height only; it no
+	# longer allocates new StandardMaterial3D resources every animation frame.
 	liquid_materials_3d.clear()
 	for color in PALETTE:
 		liquid_materials_3d.append(_material_3d(color, 0.02, 0.20))
@@ -149,7 +154,7 @@ func _build_liquid_segments_3d() -> void:
 		mesh.top_radius = 0.46
 		mesh.bottom_radius = 0.46
 		mesh.height = 0.60
-		mesh.radial_segments = 18
+		mesh.radial_segments = 14
 		mesh.cap_top = true
 		mesh.cap_bottom = true
 		var segment := MeshInstance3D.new()
