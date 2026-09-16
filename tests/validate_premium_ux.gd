@@ -7,6 +7,7 @@ func _initialize() -> void:
 	_check_source("res://scripts/ui/water_tube_reference_button.gd", ["PALETTE", "Bright top meniscus", "Tube lip", "draw_line", "play_invalid", "play_success"], failures)
 	_check_source("res://scripts/ui/premium_home_overhaul.gd", ["PremiumBackdrop", "build_home_launcher", "animate_entry", "mouse_filter = Control.MOUSE_FILTER_STOP"], failures)
 	_check_source("res://scripts/systems/premium_visuals.gd", ["tactile_success", "tactile_invalid", "transition_cover"], failures)
+	_validate_feedback_contract(failures)
 
 	# App-wide premium contract: every legacy surface is routed through one design
 	# system, appearance remains user-accessible, and Main wires the manager in.
@@ -22,8 +23,27 @@ func _initialize() -> void:
 			push_error(failure)
 		quit(1)
 		return
-	print("Premium UX contract validated: direct touch feedback, distinct game color language, app-wide design tokens, theme-aware backdrops, premium legacy surfaces, and flash-free navigation.")
+	print("Premium UX contract validated: direct touch feedback, semantic cached sound, distinct game color language, app-wide design tokens, theme-aware backdrops, premium legacy surfaces, and flash-free navigation.")
 	quit(0)
+
+func _validate_feedback_contract(failures: Array[String]) -> void:
+	var script := load("res://scripts/systems/feedback_manager.gd") as Script
+	if script == null:
+		failures.append("Feedback manager script is missing")
+		return
+	var feedback: Node = script.new()
+	for method in ["nav", "lift", "drop", "pour_start", "pour_land", "invalid", "line_clear", "combo", "complete"]:
+		if not feedback.has_method(method):
+			failures.append("Feedback manager is missing semantic method: " + method)
+	if not feedback.has_method("_tone_stream"):
+		failures.append("Feedback manager does not expose the shared cached tone builder")
+		feedback.free()
+		return
+	var first = feedback.call("_tone_stream", 440.0, 0.05, 0.10)
+	var second = feedback.call("_tone_stream", 440.0, 0.05, 0.10)
+	if first == null or first != second:
+		failures.append("Repeated feedback tones are not reusing a cached AudioStreamWAV")
+	feedback.free()
 
 func _check_source(path: String, needles: Array[String], failures: Array[String]) -> void:
 	var file := FileAccess.open(path, FileAccess.READ)
