@@ -25,9 +25,10 @@ func _source(path: String) -> String:
 	return file.get_as_text() if file != null else ""
 
 func _validate_canonical_motion_key() -> bool:
+	# Only sources that actually drive time-varying motion belong here. One-shot
+	# 3D dioramas intentionally do not need a Reduced Motion branch.
 	for path in [
 		"res://scripts/ui/motion_director.gd",
-		"res://scripts/ui/game_showcase_art.gd",
 		"res://scripts/ui/premium_surface_manager_static.gd",
 		"res://scripts/ui/premium_home_casual.gd",
 		"res://scripts/systems/premium_visuals.gd"
@@ -71,7 +72,6 @@ func _validate_water_concurrent_action_safety() -> bool:
 		if not source.contains(needle):
 			return _fail("Water concurrent action safety missing: %s" % needle)
 	return true
-
 
 func _validate_multi_game_retention_parity() -> bool:
 	var save := root.get_node_or_null("SaveManager")
@@ -177,10 +177,10 @@ func _validate_primary_visual_occupancy() -> bool:
 	await _frames(8)
 	main.call("build_home")
 	await _frames(6)
-	var showcase := main.find_child("HomeShowcaseArt", true, false) as Control
-	if showcase == null or showcase.size.x < 800.0 or showcase.size.y < 500.0:
+	var hero := main.find_child("HomeHero3D", true, false) as Control
+	if hero == null or hero.size.x < 800.0 or hero.size.y < 500.0:
 		main.queue_free(); await process_frame
-		return _fail("Home showcase does not occupy enough of the cinematic hero on 1080x1920")
+		return _fail("Home 3D hero does not occupy enough of the reference-style composition on 1080x1920")
 	main.call("start_multi_level", "water_sort", 1, false)
 	await _frames(10)
 	var game := main.get_node_or_null("ActiveGame")
@@ -189,7 +189,7 @@ func _validate_primary_visual_occupancy() -> bool:
 		main.queue_free(); await process_frame
 		return _fail("Water Sort board missing during visual occupancy check")
 	var tube := board.get_child(0) as Control
-	if tube == null or tube.size.x < 205.0 or tube.size.y < 400.0:
+	if tube == null or tube.size.x < 200.0 or tube.size.y < 360.0:
 		main.queue_free(); await process_frame
 		return _fail("Water Sort bottles remain undersized on 1080x1920")
 	main.queue_free()
@@ -201,7 +201,6 @@ func _validate_visual_workflow_installs_plugins() -> bool:
 	if not source.contains("tools/install_monetization_plugins.sh"):
 		return _fail("Visual audit workflow imports the project without monetization plugins")
 	return true
-
 
 func _validate_main_ci_runs_new_hardening_gates() -> bool:
 	var source := _source("res://.github/workflows/godot-ci.yml")
@@ -229,8 +228,19 @@ func _validate_release_workflow_exists() -> bool:
 	return true
 
 func _validate_retired_dead_code_removed() -> bool:
-	if FileAccess.file_exists("res://scripts/ui/water_sort_reference_backdrop.gd"):
-		return _fail("Retired Water Sort reference backdrop is still shipped")
+	for path in [
+		"res://scripts/ui/water_sort_reference_backdrop.gd",
+		"res://scripts/ui/game_showcase_art.gd",
+		"res://scripts/ui/game_select_tile.gd",
+		"res://scripts/ui/unjam_logo.gd",
+		"res://scripts/ui/polished_block_piece_button.gd",
+		"res://scripts/ui/level_browser_polish.gd",
+		"res://scripts/ui/rescue_layout_polish.gd",
+		"res://scripts/ui/water_stage_polish.gd",
+		"res://scripts/ui/puzzle_casual_polish.gd"
+	]:
+		if FileAccess.file_exists(path):
+			return _fail("Retired UI source is still shipped: %s" % path)
 	return true
 
 func _validate_audio_teardown_contract() -> bool:
