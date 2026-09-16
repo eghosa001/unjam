@@ -16,8 +16,8 @@ func _apply_3d_retention_skin() -> void:
 	if not is_inside_tree():
 		return
 	for child in get_children():
-		var script := child.get_script()
-		if script is Script and String(script.resource_path).ends_with("premium_backdrop.gd") and child is CanvasItem:
+		var script: Script = child.get_script() as Script
+		if script != null and String(script.resource_path).ends_with("premium_backdrop.gd") and child is CanvasItem:
 			(child as CanvasItem).visible = false
 	var backdrop := get_node_or_null("Retention3DBackdrop") as Unjam3DBackdrop
 	if backdrop == null:
