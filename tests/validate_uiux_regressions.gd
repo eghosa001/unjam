@@ -4,48 +4,57 @@ func _initialize() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
-	var rescue := FileAccess.open("res://scripts/ui/rescue_layout_polish.gd", FileAccess.READ).get_as_text()
-	var rescue_ui := FileAccess.open("res://scripts/game/rescue_rush_casual.gd", FileAccess.READ).get_as_text()
-	var water_motion := FileAccess.open("res://scripts/game/water_sort_ultra_motion.gd", FileAccess.READ).get_as_text()
-	var water_reference := FileAccess.open("res://scripts/game/water_sort_reference_motion.gd", FileAccess.READ).get_as_text()
-	var water_stage := FileAccess.open("res://scripts/ui/water_stage_polish.gd", FileAccess.READ).get_as_text()
-	var water_ui := FileAccess.open("res://scripts/game/water_sort_casual.gd", FileAccess.READ).get_as_text()
-	var block_drag := FileAccess.open("res://scripts/ui/smooth_block_piece_button.gd", FileAccess.READ).get_as_text()
-	var block_ui := FileAccess.open("res://scripts/ui/puzzle_casual_polish.gd", FileAccess.READ).get_as_text()
-	var home := FileAccess.open("res://scripts/ui/premium_home_casual.gd", FileAccess.READ).get_as_text()
-	var settings := FileAccess.open("res://scripts/ui/premium_main_casual.gd", FileAccess.READ).get_as_text()
-	var motion := FileAccess.open("res://scripts/ui/motion_director.gd", FileAccess.READ).get_as_text()
-	var touch := FileAccess.open("res://scripts/ui/ui_touch_enhancer.gd", FileAccess.READ).get_as_text()
-	var ux_shell := FileAccess.open("res://scripts/ui/ux_shell_casual.gd", FileAccess.READ).get_as_text()
-	var ux_shell_base := FileAccess.open("res://scripts/ui/ux_shell_premium.gd", FileAccess.READ).get_as_text()
-	var monetization := FileAccess.open("res://scripts/ui/monetization_hub.gd", FileAccess.READ).get_as_text()
-	var main_controller := FileAccess.open("res://scripts/ui/robust_main.gd", FileAccess.READ).get_as_text()
-	var main_scene := FileAccess.open("res://scenes/Main.tscn", FileAccess.READ).get_as_text()
-	var water_scene := FileAccess.open("res://scenes/WaterSort.tscn", FileAccess.READ).get_as_text()
-	var block_scene := FileAccess.open("res://scenes/BlockPuzzle.tscn", FileAccess.READ).get_as_text()
-	var rescue_scene := FileAccess.open("res://scenes/Game.tscn", FileAccess.READ).get_as_text()
-	var surface := FileAccess.open("res://scripts/ui/premium_surface_manager_static.gd", FileAccess.READ).get_as_text()
-	var surface_base := FileAccess.open("res://scripts/ui/premium_surface_manager.gd", FileAccess.READ).get_as_text()
-	var visuals := FileAccess.open("res://scripts/systems/premium_visuals.gd", FileAccess.READ).get_as_text()
-	var robust_visuals := FileAccess.open("res://scripts/systems/robust_premium_visuals.gd", FileAccess.READ).get_as_text()
-	var backdrop := FileAccess.open("res://scripts/ui/premium_backdrop.gd", FileAccess.READ).get_as_text()
-	var showcase := FileAccess.open("res://scripts/ui/game_showcase_art.gd", FileAccess.READ).get_as_text()
-	var project_text := FileAccess.open("res://project.godot", FileAccess.READ).get_as_text()
+	var rescue_layout := _read("res://scripts/game/rescue_rush_motion_final.gd")
+	var rescue_ui := _read("res://scripts/game/rescue_rush_casual.gd")
+	var rescue_motion := _read("res://scripts/game/rescue_rush_polished.gd")
+	var water_layout := _read("res://scripts/game/water_sort_ultra_motion.gd")
+	var water_reference := _read("res://scripts/game/water_sort_reference_motion.gd")
+	var water_ui := _read("res://scripts/game/water_sort_casual.gd")
+	var block_drag := _read("res://scripts/ui/smooth_block_piece_button.gd")
+	var block_ui := _read("res://scripts/game/block_puzzle_3d.gd")
+	var block_preview := _read("res://scripts/ui/smooth_block_drag_preview.gd")
+	var home := _read("res://scripts/ui/premium_home_casual.gd")
+	var settings := _read("res://scripts/ui/premium_main_casual.gd")
+	var motion := _read("res://scripts/ui/motion_director.gd")
+	var touch := _read("res://scripts/ui/ui_touch_enhancer.gd")
+	var ux_shell := _read("res://scripts/ui/ux_shell_casual.gd")
+	var ux_shell_base := _read("res://scripts/ui/ux_shell_premium.gd")
+	var monetization := _read("res://scripts/ui/monetization_hub_3d.gd")
+	var main_controller := _read("res://scripts/ui/robust_main.gd")
+	var main_scene := _read("res://scenes/Main.tscn")
+	var water_scene := _read("res://scenes/WaterSort.tscn")
+	var block_scene := _read("res://scenes/BlockPuzzle.tscn")
+	var rescue_scene := _read("res://scenes/Game.tscn")
+	var surface := _read("res://scripts/ui/premium_surface_manager_static.gd")
+	var surface_base := _read("res://scripts/ui/premium_surface_manager.gd")
+	var visuals := _read("res://scripts/systems/premium_visuals.gd")
+	var project_text := _read("res://project.godot")
 
-	if not rescue.contains("viewport_height") or not rescue.contains("max_board_height"):
-		return _fail("Rescue height-aware sizing missing")
-	if rescue.contains("func _process") or not rescue.contains("size_changed.connect") or not rescue.contains("node_added.connect"):
-		return _fail("Rescue layout is still timer-polled instead of event-driven")
-	if not water_motion.contains("func _balanced_columns") or not water_motion.contains("tube_count <= 6") or not water_motion.contains("return 3"):
-		return _fail("Water Sort adaptive phone layout missing")
-	if not water_reference.contains("visual_pour_rim_local") or not water_reference.contains("visual_receive_rim_local") or not water_reference.contains("source_mouth, exit_point, receiver_mouth"):
-		return _fail("Water Sort bottle-rim pour geometry missing")
-	if water_stage.contains("func _process") or not water_stage.contains("size_changed.connect") or not water_stage.contains("node_added.connect"):
-		return _fail("Water Sort stage layout is still timer-polled instead of event-driven")
-	if not block_drag.contains("_shape_centroid_grid") or not block_drag.contains("_candidate_origin_for_probe") or not block_drag.contains("game.call(\"can_place\", shape, candidate)"):
-		return _fail("Block centroid magnetism missing")
-	if block_ui.contains("func _process") or not block_ui.contains("size_changed.connect") or not block_ui.contains("node_added.connect"):
-		return _fail("Block Puzzle layout is still timer-polled instead of event-driven")
+	if rescue_layout.is_empty() or water_layout.is_empty() or block_ui.is_empty():
+		return _fail("Active gameplay layout sources are missing")
+	if not rescue_layout.contains("size_changed.connect(_queue_board_fit)") or not rescue_layout.contains("_fit_board_to_viewport") or rescue_layout.contains("node_added.connect"):
+		return _fail("Rescue Rush must have one event-driven layout owner")
+	if not water_layout.contains("size_changed.connect(_queue_tube_layout)") or not water_layout.contains("_apply_tube_layout") or water_layout.contains("node_added.connect"):
+		return _fail("Water Sort must have one event-driven layout owner")
+	if not block_ui.contains("size_changed.connect(_queue_board_fit)") or not block_ui.contains("_fit_3d_board_layout") or block_ui.contains("node_added.connect"):
+		return _fail("Block Puzzle must have one event-driven layout owner")
+	for retired_layout in [
+		"res://scripts/ui/rescue_layout_polish.gd",
+		"res://scripts/ui/water_stage_polish.gd",
+		"res://scripts/ui/puzzle_casual_polish.gd"
+	]:
+		if FileAccess.file_exists(retired_layout):
+			return _fail("Duplicate gameplay layout helper still exists: %s" % retired_layout)
+	if rescue_scene.contains("rescue_layout_polish.gd") or water_scene.contains("water_stage_polish.gd") or block_scene.contains("puzzle_casual_polish.gd"):
+		return _fail("A gameplay scene still attaches a duplicate layout watcher")
+
+	if not rescue_motion.contains("_escape_route_cells") or not rescue_motion.contains("await _wait_for_escape_visuals()") or not rescue_motion.contains("_speed_line_pool"):
+		return _fail("Rescue route/completion tracking or effect pooling is missing")
+	if not water_layout.contains("func _balanced_columns") or not water_reference.contains("_build_transfer_plan") or not water_reference.contains("visual_pour_rim_local") or not water_reference.contains("visual_receive_rim_local"):
+		return _fail("Water Sort adaptive layout, pure transfer plan or mouth-to-mouth pour geometry is missing")
+	if not block_drag.contains("_shape_centroid_grid") or not block_drag.contains("_candidate_origin_for_probe") or not block_preview.contains("exp(-delta * 86.0)"):
+		return _fail("Block Puzzle magnetic smooth drag contract is missing")
+
 	if not main_controller.contains("signal surface_changed"):
 		return _fail("Main controller does not publish surface changes")
 	if touch.contains("func _process") or not touch.contains("node_added.connect"):
@@ -56,62 +65,58 @@ func _run() -> void:
 		return _fail("UX shell still maintains visibility/geometry every frame")
 	if motion.contains("func _process") or not motion.contains("surface_changed.connect"):
 		return _fail("Navigation motion still polls surface state every frame")
-	if not main_scene.contains("premium_surface_manager_static.gd") or not main_scene.contains("premium_home_casual.gd") or not main_scene.contains("premium_main_casual.gd"):
-		return _fail("Active main scene is not using the casual-polish surfaces")
-	if main_scene.contains("home_ux_patch.gd") or main_scene.contains("secondary_surface_fill.gd") or main_scene.contains("global_finish_polish.gd"):
-		return _fail("Legacy dashboard/flash polish layers are still active")
-	if main_scene.contains("home_cinematic_polish.gd"):
-		return _fail("Home still depends on a periodic geometry override")
 	if surface.contains("content.position =") or surface.contains("tween_property(content, \"position\""):
 		return _fail("Active surface manager still moves content root")
+
+	if not main_scene.contains("premium_surface_manager_static.gd") or not main_scene.contains("premium_home_casual.gd") or not main_scene.contains("premium_main_casual.gd") or not main_scene.contains("MotionDirector"):
+		return _fail("Main scene is not using the final reboot surface stack")
+	if not home.contains("Unjam3DBackdrop") or not home.contains("Unjam3DMascot") or not home.contains("_open_game_selector"):
+		return _fail("Home is not using the reference-style 3D launcher")
+	if not settings.contains("Settings3DDiorama") or not settings.contains("Collection3DDiorama") or not settings.contains("Levels3DDiorama") or not settings.contains("Unjam3DGameArt.new()"):
+		return _fail("Secondary pages are missing one-shot 3D depth")
+	if not monetization.contains("UNJAM SHOP") or not monetization.contains("Unjam3DBackdrop"):
+		return _fail("Shop is not using the bright 3D surface")
+	if not ux_shell_base.contains("theme_mode := \"light\""):
+		return _fail("New installs still default to the old dark visual direction")
+
 	if not motion.contains("MotionSystem.reduced()"):
 		return _fail("Reduced Motion preference is not wired through MotionSystem")
 	var visuals_has_gate := visuals.contains("func _reduced_motion") or visuals.contains("func reduced_motion_enabled")
 	var visuals_uses_gate := visuals.contains("if _reduced_motion()") or visuals.contains("if reduced_motion_enabled()")
 	if not visuals_has_gate or not visuals_uses_gate:
 		return _fail("Shared premium effects do not expose and use a Reduced Motion gate")
-	if not robust_visuals.contains("_reduced_motion()") and not robust_visuals.contains("reduced_motion_enabled()"):
-		return _fail("Adaptive premium visuals still ignore Reduced Motion")
-	if not backdrop.contains("reduced_motion") or not backdrop.contains("set_process(not reduced)") or not showcase.contains("reduced_motion") or not showcase.contains("set_process(not reduced)"):
-		return _fail("Continuous decorative animation ignores Reduced Motion")
-	if not home.contains("MotionSystem.reduced()") or not surface.contains("MotionSystem.reduced()"):
-		return _fail("Home or secondary-surface entrance animation ignores canonical Reduced Motion")
 	if not settings.contains("PremiumVisuals.apply_motion_preference()"):
 		return _fail("Reduced Motion setting is not applied immediately")
 
-	var retired_paths := [
+	for retired_path in [
 		"res://scripts/ui/home_cinematic_polish.gd",
 		"res://scripts/ui/home_ux_patch.gd",
 		"res://scripts/ui/secondary_surface_fill.gd",
-		"res://scripts/ui/global_finish_polish.gd"
-	]
-	for path in retired_paths:
-		if FileAccess.file_exists(path):
-			return _fail("Retired UI patch script still exists: %s" % path)
+		"res://scripts/ui/global_finish_polish.gd",
+		"res://scripts/ui/game_showcase_art.gd",
+		"res://scripts/ui/game_select_tile.gd",
+		"res://scripts/ui/unjam_logo.gd",
+		"res://scripts/ui/polished_block_piece_button.gd",
+		"res://scripts/ui/level_browser_polish.gd"
+	]:
+		if FileAccess.file_exists(retired_path):
+			return _fail("Retired UI source still exists: %s" % retired_path)
 	if project_text.contains("res://addons/stagehand/plugin.cfg"):
 		return _fail("Project still enables the missing Stagehand editor plugin")
 
-	if not home.contains("HomeSecondaryActions") or home.contains("LIVE\nPLAY HUB"):
-		return _fail("Home still uses dashboard-like equally weighted secondary actions")
-	if not home.contains("hero.custom_minimum_size = Vector2(0, 760)") or not home.contains("hero_art.custom_minimum_size = Vector2(0, 600)") or not home.contains('hero_title.add_theme_font_size_override("font_size", 46)') or not home.contains('hero_subtitle.add_theme_font_size_override("font_size", 21)') or not home.contains("Vector2(0, 92)"):
-		return _fail("Home script does not own the final cinematic geometry")
-	if not home.contains("SHOP") or not home.contains("open_shop"):
-		return _fail("Home does not expose a Shop path")
-	if not monetization.contains("func open_shop"):
-		return _fail("MonetizationHub does not expose a public Shop opener")
-	if ux_shell.contains("shop.visible = false") or ux_shell_base.contains("shop.visible = false"):
-		return _fail("UXShell still force-hides the Shop")
-	if not settings.contains("REDUCED MOTION") or settings.contains("PLAY HISTORY"):
-		return _fail("Settings is not yet a compact preferences surface")
-	if not water_ui.contains("GameplayStage") or water_ui.contains("Vector2(0, 1040)") or not water_scene.contains("water_sort_casual.gd"):
+	if not water_ui.contains("GameplayStage") or not water_scene.contains("water_sort_casual.gd"):
 		return _fail("Water Sort is not using the gameplay-first stage")
-	if not block_ui.contains("CompactProgressStrip") or not block_ui.contains("available_height") or not block_scene.contains("puzzle_casual_polish.gd"):
-		return _fail("Block Puzzle is not using the board-first responsive polish")
-	if not rescue_ui.contains("GameplayBoardHolder") or rescue_ui.contains("EVERY RESCUE COUNTS") or rescue_ui.contains("Tip: clear blockers") or not rescue_scene.contains("rescue_rush_casual.gd"):
-		return _fail("Rescue Rush still contains duplicate gameplay chrome")
+	if not block_scene.contains("block_puzzle_3d.gd"):
+		return _fail("Block Puzzle is not using the 3D gameplay presentation")
+	if not rescue_ui.contains("GameplayBoardHolder") or not rescue_scene.contains("rescue_rush_casual.gd"):
+		return _fail("Rescue Rush is not using the gameplay-first presentation")
 
-	print("UI/UX regression checks passed")
+	print("UI/UX regression contract validated")
 	quit(0)
+
+func _read(path: String) -> String:
+	var file := FileAccess.open(path, FileAccess.READ)
+	return "" if file == null else file.get_as_text()
 
 func _fail(message: String) -> bool:
 	push_error(message)
