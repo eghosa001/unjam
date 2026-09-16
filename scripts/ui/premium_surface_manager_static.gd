@@ -52,7 +52,7 @@ func _polish_tree(node: Node, surface: String, _dark: bool, accent: Color) -> vo
 			label.set_meta("unjam_surface_base_font_size", base_font_size)
 		if base_font_size > 0:
 			label.add_theme_font_size_override("font_size", base_font_size + (4 if base_font_size >= 28 else 2))
-		var font_size := label.get_theme_font_size("font_size")
+		var font_size := base_font_size
 		var text := label.text.strip_edges().to_upper()
 		var color := Unjam3DTheme.NAVY
 		if "COIN" in text or "★" in text or "PRESTIGE" in text:
