@@ -30,7 +30,7 @@ jobs:
           if-no-files-found: error
           retention-days: 1
       - name: Setup JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -47,12 +47,17 @@ jobs:
           test -n "$ANDROID_ROOT"
           SDKMANAGER=$(find "$ANDROID_ROOT/cmdline-tools" -name sdkmanager -type f | sort | tail -1)
           test -x "$SDKMANAGER"
-          yes | "$SDKMANAGER" --sdk_root="$ANDROID_ROOT" "platform-tools" "platforms;android-36" "build-tools;36.0.0" || true
+          set +o pipefail
+          yes | "$SDKMANAGER" --sdk_root="$ANDROID_ROOT" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+          SDK_STATUS=${PIPESTATUS[1]}
+          set -o pipefail
+          test "$SDK_STATUS" -eq 0
           echo "ANDROID_HOME=$ANDROID_ROOT" >> "$GITHUB_ENV"
           echo "ANDROID_SDK_ROOT=$ANDROID_ROOT" >> "$GITHUB_ENV"
       - name: Install monetization plugins
         shell: bash
         run: |
+          set -euxo pipefail
           chmod +x tools/install_monetization_plugins.sh
           tools/install_monetization_plugins.sh
       - name: Import project and reject script errors
@@ -69,19 +74,23 @@ jobs:
           path: import.log
           if-no-files-found: warn
           retention-days: 3
-      - name: Validate fast production guards
+      - name: Fast quality contracts
         shell: bash
         run: |
           set -euxo pipefail
-          for t in validate_monetization validate_admob_production validate_billing_production validate_motion_quality validate_uiux_regressions validate_viewport_fit validate_premium_ux validate_retention validate_robustness; do
-            godot --headless --path . --script "res://tests/$t.gd"
+          for t in validate_motion_quality validate_monetization validate_admob_production validate_billing_production validate_premium_ux validate_visual_quality_contract validate_production_completion validate_uiux_regressions validate_viewport_fit validate_retention validate_robustness; do
+            echo "===== START $t ====="
+            timeout 45s godot --headless --path . --script "res://tests/$t.gd"
+            echo "===== PASS $t ====="
           done
-      - name: Validate gameplay and campaign suites
+      - name: Validate all gameplay and campaign suites
         shell: bash
         run: |
           set -euxo pipefail
           for t in validate_levels validate_campaign validate_level_launch validate_gameplay_interactions validate_first_100_progression validate_first_200_playability validate_campaign_1000; do
-            godot --headless --path . --script "res://tests/$t.gd"
+            echo "===== START $t ====="
+            timeout 180s godot --headless --path . --script "res://tests/$t.gd"
+            echo "===== PASS $t ====="
           done
       - name: Boot smoke test
         shell: bash
