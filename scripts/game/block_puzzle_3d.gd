@@ -33,7 +33,7 @@ func _fit_3d_board_layout() -> void:
 		cell_size * GRID_SIZE + gap * float(GRID_SIZE - 1) + 18.0
 	)
 	if piece_row != null:
-		piece_row.custom_minimum_size.y = 150.0
+		piece_row.custom_minimum_size.y = 180.0
 
 func build_ui() -> void:
 	var accent := Unjam3DTheme.PURPLE
@@ -49,20 +49,20 @@ func build_ui() -> void:
 	outer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	outer.add_theme_constant_override("margin_left", 28)
 	outer.add_theme_constant_override("margin_right", 28)
-	outer.add_theme_constant_override("margin_top", 24)
-	outer.add_theme_constant_override("margin_bottom", 28)
+	outer.add_theme_constant_override("margin_top", 18)
+	outer.add_theme_constant_override("margin_bottom", 22)
 	add_child(outer)
 	var root := VBoxContainer.new()
-	root.add_theme_constant_override("separation", 11)
+	root.add_theme_constant_override("separation", 8)
 	outer.add_child(root)
 
 	var header := HBoxContainer.new()
-	header.custom_minimum_size = Vector2(0, 86)
+	header.custom_minimum_size = Vector2(0, 78)
 	header.add_theme_constant_override("separation", 12)
 	root.add_child(header)
 	var back := Button.new()
 	back.text = "←"
-	back.custom_minimum_size = Vector2(92, 78)
+	back.custom_minimum_size = Vector2(84, 70)
 	back.add_theme_font_size_override("font_size", 34)
 	Unjam3DTheme.gloss_button(back, Unjam3DTheme.PURPLE_DARK, true, 24)
 	back.pressed.connect(_quit)
@@ -76,15 +76,15 @@ func build_ui() -> void:
 	header.add_child(title_label)
 	var retry := Button.new()
 	retry.text = "↻"
-	retry.custom_minimum_size = Vector2(92, 78)
+	retry.custom_minimum_size = Vector2(84, 70)
 	retry.add_theme_font_size_override("font_size", 34)
 	Unjam3DTheme.gloss_button(retry, Unjam3DTheme.PURPLE_DARK, true, 24)
 	retry.pressed.connect(restart_level)
 	header.add_child(retry)
 
 	var score_card := PanelContainer.new()
-	score_card.custom_minimum_size = Vector2(0, 105)
-	score_card.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("8d27d7"), 30, Color("e58cff"), 3, 10))
+	score_card.custom_minimum_size = Vector2(0, 92)
+	score_card.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("8f35dd"), 28, Color("f0b8ff"), 3, 14))
 	root.add_child(score_card)
 	var score_box := VBoxContainer.new()
 	score_box.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -92,24 +92,24 @@ func build_ui() -> void:
 	score_card.add_child(score_box)
 	score_label = Label.new()
 	score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	score_label.add_theme_font_size_override("font_size", 35)
+	score_label.add_theme_font_size_override("font_size", 39)
 	Unjam3DTheme.label_3d(score_label, Color.WHITE, Color("541285"), 4)
 	score_box.add_child(score_label)
 	goal_label = Label.new()
 	goal_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	goal_label.add_theme_font_size_override("font_size", 18)
+	goal_label.add_theme_font_size_override("font_size", 20)
 	Unjam3DTheme.label_3d(goal_label, Color("fff0ff"), Color("541285"), 3)
 	score_box.add_child(goal_label)
 
 	var objective := PanelContainer.new()
-	objective.custom_minimum_size = Vector2(0, 62)
-	objective.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color(1.0, 0.97, 1.0, 0.94), 24, Color("e7a4ff"), 2, 6))
+	objective.custom_minimum_size = Vector2(0, 52)
+	objective.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color(1.0, 0.98, 1.0, 0.96), 22, Color("f0b8ff"), 2, 8))
 	root.add_child(objective)
 	var objective_label := Label.new()
-	objective_label.text = "▦  DRAG • PLACE • CLEAR • KEEP THE BOARD TIDY"
+	objective_label.text = "▦  DRAG • PLACE • CLEAR"
 	objective_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	objective_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	objective_label.add_theme_font_size_override("font_size", 18)
+	objective_label.add_theme_font_size_override("font_size", 21)
 	Unjam3DTheme.label_3d(objective_label, Unjam3DTheme.NAVY, Color.WHITE, 2)
 	objective.add_child(objective_label)
 
@@ -122,7 +122,7 @@ func build_ui() -> void:
 	var cell_size := clampf(floor(minf((available_board_width - 24.0) / float(GRID_SIZE), (available_board_height - 24.0) / float(GRID_SIZE))), 44.0, PREMIUM_CELL_MAX)
 	board_shell = PanelContainer.new()
 	board_shell.custom_minimum_size = Vector2(cell_size * GRID_SIZE + 22, cell_size * GRID_SIZE + 22)
-	board_shell.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("66338a"), 30, Color("f0bdff"), 4, 16))
+	board_shell.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("5a2d86"), 30, Color("f5c8ff"), 4, 22))
 	center.add_child(board_shell)
 	var board_margin := MarginContainer.new()
 	for side in ["left", "right", "top", "bottom"]:
@@ -130,8 +130,8 @@ func build_ui() -> void:
 	board_shell.add_child(board_margin)
 	board_grid = GridContainer.new()
 	board_grid.columns = GRID_SIZE
-	board_grid.add_theme_constant_override("h_separation", 3)
-	board_grid.add_theme_constant_override("v_separation", 3)
+	board_grid.add_theme_constant_override("h_separation", 4)
+	board_grid.add_theme_constant_override("v_separation", 4)
 	board_margin.add_child(board_grid)
 	for y in range(GRID_SIZE):
 		for x in range(GRID_SIZE):
@@ -143,8 +143,8 @@ func build_ui() -> void:
 			cell_buttons.append(cell)
 
 	var tray := PanelContainer.new()
-	tray.custom_minimum_size = Vector2(0, 190)
-	tray.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color(0.98, 0.94, 1.0, 0.94), 30, Color("dda0ff"), 3, 9))
+	tray.custom_minimum_size = Vector2(0, 218)
+	tray.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color(0.985, 0.945, 1.0, 0.97), 30, Color("f3c6ff"), 3, 14))
 	root.add_child(tray)
 	var tray_margin := MarginContainer.new()
 	tray_margin.add_theme_constant_override("margin_left", 18)
@@ -159,13 +159,13 @@ func build_ui() -> void:
 	var tray_title := Label.new()
 	tray_title.text = "DRAG A BLOCK ONTO THE BOARD"
 	tray_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	tray_title.add_theme_font_size_override("font_size", 18)
+	tray_title.add_theme_font_size_override("font_size", 20)
 	Unjam3DTheme.label_3d(tray_title, Unjam3DTheme.PURPLE_DARK, Color.WHITE, 2)
 	tray_box.add_child(tray_title)
 	piece_row = HBoxContainer.new()
 	piece_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	piece_row.add_theme_constant_override("separation", 24)
-	piece_row.custom_minimum_size = Vector2(0, 150)
+	piece_row.custom_minimum_size = Vector2(0, 180)
 	tray_box.add_child(piece_row)
 
 	status_label = Label.new()

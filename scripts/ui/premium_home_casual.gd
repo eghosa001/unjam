@@ -27,31 +27,31 @@ func build_home_launcher() -> void:
 	add_child(outer)
 
 	var root := VBoxContainer.new()
-	root.add_theme_constant_override("separation", 12)
+	root.add_theme_constant_override("separation", 9)
 	outer.add_child(root)
 
 	_make_status_bar(root)
 	_make_brand_logo(root)
-	_make_tagline(root)
 	_make_hero(root)
 
 	primary_button = Button.new()
 	primary_button.name = "HomePrimaryAction"
 	primary_button.text = "▶   PLAY"
-	primary_button.custom_minimum_size = Vector2(0, 124)
+	primary_button.custom_minimum_size = Vector2(0, 112)
 	primary_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	primary_button.add_theme_font_size_override("font_size", 45)
+	primary_button.add_theme_font_size_override("font_size", 42)
 	Unjam3DTheme.gloss_button(primary_button, Unjam3DTheme.GREEN, true, 44)
 	primary_button.pressed.connect(_open_game_selector)
 	root.add_child(primary_button)
 
 	var play_hint := Label.new()
-	play_hint.text = "START THE JOURNEY   •   CHOOSE YOUR PUZZLE"
+	play_hint.text = "PICK YOUR PUZZLE   •   START PLAYING"
 	play_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	play_hint.add_theme_font_size_override("font_size", 18)
+	play_hint.add_theme_font_size_override("font_size", 19)
 	Unjam3DTheme.label_3d(play_hint, Color.WHITE, Unjam3DTheme.NAVY, 3)
 	root.add_child(play_hint)
 
+	_make_game_strip(root)
 	_make_motto(root)
 	_make_bottom_nav()
 	_animate_entry(root)
@@ -133,40 +133,24 @@ func _make_tagline(parent: VBoxContainer) -> void:
 func _make_hero(parent: VBoxContainer) -> void:
 	var hero := PanelContainer.new()
 	hero.name = "HomeHero3D"
-	hero.custom_minimum_size = Vector2(0, 540)
-	hero.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color(0.82, 0.97, 1.0, 0.12), 42, Color(1, 1, 1, 0.44), 2, 8))
+	hero.custom_minimum_size = Vector2(0, 440)
+	hero.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color(0.82, 0.97, 1.0, 0.09), 42, Color(1, 1, 1, 0.38), 2, 8))
 	parent.add_child(hero)
 	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 14)
-	margin.add_theme_constant_override("margin_right", 14)
-	margin.add_theme_constant_override("margin_top", 8)
-	margin.add_theme_constant_override("margin_bottom", 8)
+	margin.add_theme_constant_override("margin_left", 12)
+	margin.add_theme_constant_override("margin_right", 12)
+	margin.add_theme_constant_override("margin_top", 6)
+	margin.add_theme_constant_override("margin_bottom", 6)
 	hero.add_child(margin)
-	var row := HBoxContainer.new()
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override("separation", 12)
-	margin.add_child(row)
-
-	_make_sign_stack(row)
-
+	var center := CenterContainer.new()
+	margin.add_child(center)
 	var mascot := Unjam3DMascot.new()
 	mascot.name = "HomeMascot3D"
-	mascot.custom_minimum_size = Vector2(470, 500)
+	mascot.custom_minimum_size = Vector2(700, 420)
 	mascot.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	mascot.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	row.add_child(mascot)
+	center.add_child(mascot)
 
-	var message_panel := PanelContainer.new()
-	message_panel.custom_minimum_size = Vector2(245, 300)
-	message_panel.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color(1.0, 0.98, 0.82, 0.72), 34, Color("fff1a1"), 2, 6))
-	row.add_child(message_panel)
-	var message := Label.new()
-	message.text = "Small\nPuzzles\n\nBrighter\nDays ♥"
-	message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	message.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	message.add_theme_font_size_override("font_size", 29)
-	Unjam3DTheme.label_3d(message, Color("21438d"), Color.WHITE, 2)
-	message_panel.add_child(message)
 
 func _make_sign_stack(parent: HBoxContainer) -> void:
 	var stack := VBoxContainer.new()
@@ -188,19 +172,47 @@ func _make_sign_stack(parent: HBoxContainer) -> void:
 		Unjam3DTheme.label_3d(label, Color("5b2513"), Color("ffd394"), 2)
 		sign.add_child(label)
 
+func _make_game_strip(parent: VBoxContainer) -> void:
+	var strip := HBoxContainer.new()
+	strip.name = "HomeGameStrip"
+	strip.custom_minimum_size = Vector2(0, 92)
+	strip.alignment = BoxContainer.ALIGNMENT_CENTER
+	strip.add_theme_constant_override("separation", 12)
+	parent.add_child(strip)
+	var games := [
+		["RESCUE", "RUSH", Unjam3DTheme.GREEN],
+		["WATER", "SORT", Unjam3DTheme.WATER],
+		["BLOCK", "PUZZLE", Unjam3DTheme.PURPLE]
+	]
+	for game in games:
+		var card := PanelContainer.new()
+		card.custom_minimum_size = Vector2(0, 86)
+		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var accent: Color = game[2]
+		card.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(accent, 24, accent.lightened(0.34), 2, 8))
+		strip.add_child(card)
+		var label := Label.new()
+		label.text = "%s\n%s" % [game[0], game[1]]
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		label.add_theme_font_size_override("font_size", 18)
+		Unjam3DTheme.label_3d(label, Color.WHITE, accent.darkened(0.48), 3)
+		card.add_child(label)
+
+
 func _make_motto(parent: VBoxContainer) -> void:
 	var center := CenterContainer.new()
 	parent.add_child(center)
 	var stone := PanelContainer.new()
 	stone.name = "HomeMottoStone"
-	stone.custom_minimum_size = Vector2(620, 96)
+	stone.custom_minimum_size = Vector2(700, 78)
 	stone.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("c8c4a7"), 30, Color("eef0cf"), 3, 8))
 	center.add_child(stone)
 	var label := Label.new()
-	label.text = "Good puzzles\nbrighter people.  ♥"
+	label.text = "SMALL PUZZLES  •  BRIGHTER DAYS  ♥"
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 22)
+	label.add_theme_font_size_override("font_size", 21)
 	Unjam3DTheme.label_3d(label, Color("244279"), Color(1,1,1,0.82), 2)
 	stone.add_child(label)
 
