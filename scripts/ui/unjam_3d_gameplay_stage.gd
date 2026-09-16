@@ -30,14 +30,16 @@ func _ready() -> void:
 	_build_stage()
 
 func _rebuild() -> void:
+	if not is_inside_tree() or viewport_3d == null:
+		return
 	if stage != null and is_instance_valid(stage):
+		if stage.get_parent() == viewport_3d:
+			viewport_3d.remove_child(stage)
 		stage.queue_free()
 		stage = null
 		scenic_root = null
-	await get_tree().process_frame
 	_build_stage()
-	if viewport_3d != null:
-		viewport_3d.render_target_update_mode = SubViewport.UPDATE_ONCE
+	viewport_3d.render_target_update_mode = SubViewport.UPDATE_ONCE
 
 func _build_stage() -> void:
 	if viewport_3d == null:

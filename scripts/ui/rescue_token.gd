@@ -88,14 +88,15 @@ func celebrate() -> void:
 	)
 
 func _rebuild() -> void:
+	if not is_inside_tree() or viewport_3d == null:
+		return
 	if stage != null and is_instance_valid(stage):
+		if stage.get_parent() == viewport_3d:
+			viewport_3d.remove_child(stage)
 		stage.queue_free()
 		stage = null
 		character_root = null
 		face_root = null
-	await get_tree().process_frame
-	if not is_inside_tree():
-		return
 	_build_stage()
 	_sync_render_lifecycle()
 

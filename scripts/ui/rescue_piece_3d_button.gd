@@ -85,6 +85,8 @@ func _rebuild_piece_3d() -> void:
 	if viewport_3d == null or stage_3d == null:
 		return
 	if piece_root_3d != null and is_instance_valid(piece_root_3d):
+		if piece_root_3d.get_parent() == stage_3d:
+			stage_3d.remove_child(piece_root_3d)
 		piece_root_3d.queue_free()
 	piece_root_3d = Node3D.new()
 	piece_root_3d.name = "PieceVisual3D"

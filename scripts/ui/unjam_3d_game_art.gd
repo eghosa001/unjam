@@ -39,11 +39,14 @@ func _finish_initial_render() -> void:
 		viewport_3d.render_target_update_mode = SubViewport.UPDATE_ONCE
 
 func _rebuild_stage() -> void:
+	if not is_inside_tree() or viewport_3d == null:
+		return
 	if stage != null and is_instance_valid(stage):
+		if stage.get_parent() == viewport_3d:
+			viewport_3d.remove_child(stage)
 		stage.queue_free()
 		stage = null
 		display_root = null
-	await get_tree().process_frame
 	_build_stage()
 	viewport_3d.render_target_update_mode = SubViewport.UPDATE_ONCE
 

@@ -39,7 +39,9 @@ func make_button(text_value: String, accent: bool = false) -> Button:
 	return b
 
 func refresh() -> void:
-	for child in get_children(): child.queue_free()
+	for child in get_children():
+		remove_child(child)
+		child.queue_free()
 	var backdrop := PremiumBackdrop.new()
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	backdrop.configure(Color("071426"), Color("2dd4b6"), 4)
