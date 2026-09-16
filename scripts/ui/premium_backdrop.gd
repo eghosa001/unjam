@@ -86,10 +86,11 @@ func _draw() -> void:
 		draw_circle(Vector2(x - 28 + drift, y + 10), 23.0, Color(1, 1, 1, 0.12))
 
 	var dust_count := decorative_particle_count_for(quality, reduced_motion)
+	var sparkle_palette: Array[Color] = [Color("ffffff"), Color("fff273"), Color("ff85ce"), Color("7effe0")]
 	for i in range(dust_count):
 		var x := fposmod(float(i * 149 + motif * 53) + sin(motion_t * 0.21 + i) * 18.0, maxf(1.0, size.x))
 		var y := fposmod(float(i * 223 + 91) - motion_t * (2.5 + float(i % 3)), maxf(1.0, size.y))
-		var sparkle := [Color("ffffff"), Color("fff273"), Color("ff85ce"), Color("7effe0")][i % 4]
+		var sparkle: Color = sparkle_palette[i % sparkle_palette.size()]
 		draw_circle(Vector2(x, y), 1.8 + float(i % 3) * 0.75, Color(sparkle, 0.22 + float(i % 3) * 0.05))
 
 	var ground_y := size.y * 0.88
