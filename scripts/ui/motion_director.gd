@@ -44,6 +44,11 @@ func _surface_target(main: Node, surface: String, content: Control, active: Cont
 func _animate_surface_in(target: Control) -> void:
 	# Navigation may fade, but the screen itself must remain geometrically fixed.
 	# Moving/scaling the root reads as a whole-screen vibration on phones.
+	var motion := get_node_or_null("/root/MotionSystem")
+	if motion != null:
+		motion.call("fade_in", target)
+		return
+	# Compatibility fallback if this node is used outside the full application tree.
 	var final_modulate := target.modulate
 	target.modulate = Color(final_modulate.r, final_modulate.g, final_modulate.b, final_modulate.a * 0.86)
 	var tween := target.create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
