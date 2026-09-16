@@ -3,6 +3,10 @@ extends "res://scripts/game/game.gd"
 # Authoritative board state resolves first; visual ghosts are tracked separately.
 # Completion waits for the actual final escape tween instead of guessing with a timer.
 var _active_escape_visuals: Array[Node] = []
+var _speed_line_pool: Array[Line2D] = []
+var _effect_label_pool: Array[Label] = []
+const MAX_SPEED_LINE_POOL := 12
+const MAX_EFFECT_LABEL_POOL := 8
 
 func escape_piece(index: int, trigger_effect: bool) -> void:
 	if index < 0 or index >= pieces.size() or not bool(pieces[index].get("active", true)):
@@ -130,31 +134,84 @@ func _spawn_escape_visual(index: int, route: Array[Vector2i] = []) -> void:
 	tween.parallel().tween_property(ghost, "rotation", deg_to_rad(8.0 if direction.x + direction.y > 0.0 else -8.0), exit_time)
 	tween.finished.connect(_finish_escape_visual.bind(ghost))
 
+func _acquire_speed_line() -> Line2D:
+	var line: Line2D
+	if not _speed_line_pool.is_empty():
+		line = _speed_line_pool.pop_back()
+	else:
+		line = Line2D.new()
+		line.z_index = 220
+		add_child(line)
+	line.visible = true
+	line.position = Vector2.ZERO
+	line.modulate = Color.WHITE
+	line.points = PackedVector2Array()
+	return line
+
+func _release_speed_line(line: Line2D) -> void:
+	if line == null or not is_instance_valid(line):
+		return
+	line.visible = false
+	line.position = Vector2.ZERO
+	line.modulate = Color.WHITE
+	line.points = PackedVector2Array()
+	if _speed_line_pool.size() < MAX_SPEED_LINE_POOL:
+		_speed_line_pool.append(line)
+	else:
+		line.queue_free()
+
+func _acquire_effect_label() -> Label:
+	var label: Label
+	if not _effect_label_pool.is_empty():
+		label = _effect_label_pool.pop_back()
+	else:
+		label = Label.new()
+		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(label)
+	label.visible = true
+	label.position = Vector2.ZERO
+	label.scale = Vector2.ONE
+	label.rotation = 0.0
+	label.modulate = Color.WHITE
+	return label
+
+func _release_effect_label(label: Label) -> void:
+	if label == null or not is_instance_valid(label):
+		return
+	label.visible = false
+	label.position = Vector2.ZERO
+	label.scale = Vector2.ONE
+	label.rotation = 0.0
+	label.modulate = Color.WHITE
+	if _effect_label_pool.size() < MAX_EFFECT_LABEL_POOL:
+		_effect_label_pool.append(label)
+	else:
+		label.queue_free()
+
 func _spawn_speed_lines(origin_global: Vector2, direction: Vector2, color: Color) -> void:
 	var origin := origin_global - global_position
+	var perpendicular := Vector2(-direction.y, direction.x)
 	for i in range(4):
-		var line := Line2D.new()
+		var line := _acquire_speed_line()
 		line.width = 5.0 - float(i) * 0.6
 		line.default_color = Color(color, 0.55 - float(i) * 0.08)
-		line.z_index = 220
-		var perpendicular := Vector2(-direction.y, direction.x)
 		var offset := perpendicular * (float(i) - 1.5) * 14.0
-		line.add_point(origin + offset - direction * 12.0)
-		line.add_point(origin + offset - direction * (90.0 + float(i) * 18.0))
-		add_child(line)
+		line.points = PackedVector2Array([
+			origin + offset - direction * 12.0,
+			origin + offset - direction * (90.0 + float(i) * 18.0)
+		])
 		var tw := create_tween().set_parallel(true)
 		tw.tween_property(line, "modulate:a", 0.0, 0.22)
 		tw.tween_property(line, "position", direction * 52.0, 0.22)
-		tw.finished.connect(line.queue_free)
+		tw.finished.connect(_release_speed_line.bind(line))
 
 func _spawn_chain_popup(center: Vector2, combo: int) -> void:
-	var label := Label.new()
+	var label := _acquire_effect_label()
 	label.text = "ESCAPE!" if combo <= 1 else "CHAIN ×%d" % combo
 	label.position = center - Vector2(145, 54)
 	label.size = Vector2(290, 76)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	label.z_index = 610
 	label.add_theme_font_size_override("font_size", 34 if combo <= 1 else 40)
 	label.add_theme_color_override("font_color", Color("ffd166") if combo > 1 else world_accent().lightened(0.35))
@@ -163,7 +220,6 @@ func _spawn_chain_popup(center: Vector2, combo: int) -> void:
 	label.add_theme_constant_override("shadow_offset_y", 3)
 	label.scale = Vector2(0.68, 0.68)
 	label.modulate.a = 0.0
-	add_child(label)
 	label.pivot_offset = label.size * 0.5
 	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tween.tween_property(label, "modulate:a", 1.0, 0.06)
@@ -171,7 +227,7 @@ func _spawn_chain_popup(center: Vector2, combo: int) -> void:
 	tween.tween_property(label, "scale", Vector2.ONE, 0.09)
 	tween.tween_property(label, "position:y", label.position.y - 82.0, 0.30).set_trans(Tween.TRANS_QUAD)
 	tween.parallel().tween_property(label, "modulate:a", 0.0, 0.30)
-	tween.finished.connect(label.queue_free)
+	tween.finished.connect(_release_effect_label.bind(label))
 
 func _spawn_vanish_visual(index: int, text_value: String) -> void:
 	if index < 0 or index >= pieces.size() or board_grid == null:
@@ -186,21 +242,21 @@ func _spawn_vanish_visual(index: int, text_value: String) -> void:
 		return
 	var center := source.global_position - global_position + source.size * 0.5
 	PremiumVisuals.burst(center, piece_color(String(piece.get("type", "normal"))), 10)
-	var label := Label.new()
+	var label := _acquire_effect_label()
 	label.text = text_value
 	label.position = center - Vector2(105, 32)
 	label.size = Vector2(210, 64)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", 26)
 	label.add_theme_color_override("font_color", Color("ffffff"))
 	label.z_index = 600
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(label)
+	label.pivot_offset = label.size * 0.5
 	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tween.tween_property(label, "scale", Vector2(1.18, 1.18), 0.10)
 	tween.tween_property(label, "position:y", label.position.y - 54.0, 0.24)
 	tween.parallel().tween_property(label, "modulate:a", 0.0, 0.24)
-	tween.finished.connect(label.queue_free)
+	tween.finished.connect(_release_effect_label.bind(label))
 
 func open_gates(key_id: String) -> void:
 	for i in range(pieces.size()):
