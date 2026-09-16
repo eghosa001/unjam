@@ -29,7 +29,7 @@ jobs:
           curl -fsSL \
             -H "Authorization: Bearer ${GITHUB_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
-            https://api.github.com/repos/eghosa001/unjam/git/blobs/REPLACE_BLOB_SHA \
+            https://api.github.com/repos/eghosa001/unjam/git/blobs/c1a0ed0b143431082f050374f33249e96f86ad3a \
             | jq -r '.content' | tr -d '\n' | base64 -d > /tmp/visual-pass.patch.gz
           gzip -dc /tmp/visual-pass.patch.gz > /tmp/visual-pass.patch
           echo 'a7802dd7cf53d525d9448ef6de882ca4f540a6c8e72717491627e34c56818146  /tmp/visual-pass.patch' | sha256sum -c -
