@@ -2,6 +2,7 @@ extends "res://scripts/game/rescue_rush_premium.gd"
 
 # Final active Rescue Rush layout layer. Escape timing lives in the polished
 # gameplay renderer; this script is the single owner of responsive board sizing.
+var _board_has_rendered := false
 
 func _ready() -> void:
 	super._ready()
@@ -18,7 +19,16 @@ func render_board() -> void:
 			board_grid.remove_child(child)
 			child.queue_free()
 	super.render_board()
+	_board_has_rendered = true
 	_fit_board_to_viewport()
+
+func _animate_cell(cell: Control, x: int, y: int) -> void:
+	if _board_has_rendered:
+		cell.modulate.a = 1.0
+		cell.scale = Vector2.ONE
+		cell.pivot_offset = cell.custom_minimum_size * 0.5
+		return
+	super._animate_cell(cell, x, y)
 
 func _fit_board_to_viewport() -> void:
 	if board_grid == null or board_panel == null or width <= 0 or height <= 0:
