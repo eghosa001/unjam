@@ -45,9 +45,14 @@ func _polish_tree(node: Node, surface: String, _dark: bool, accent: Color) -> vo
 		panel.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(fill, 30 if emphasis else 25, Color(accent, 0.66) if emphasis else Color("9adfff"), 3 if emphasis else 2, 11 if emphasis else 6))
 	elif node is Label:
 		var label := node as Label
+		var base_font_size := label.get_theme_font_size("font_size")
+		if label.has_meta("unjam_surface_base_font_size"):
+			base_font_size = int(label.get_meta("unjam_surface_base_font_size"))
+		elif base_font_size > 0:
+			label.set_meta("unjam_surface_base_font_size", base_font_size)
+		if base_font_size > 0:
+			label.add_theme_font_size_override("font_size", base_font_size + (4 if base_font_size >= 28 else 2))
 		var font_size := label.get_theme_font_size("font_size")
-		if font_size > 0:
-			label.add_theme_font_size_override("font_size", font_size + (4 if font_size >= 28 else 2))
 		var text := label.text.strip_edges().to_upper()
 		var color := Unjam3DTheme.NAVY
 		if "COIN" in text or "★" in text or "PRESTIGE" in text:
@@ -82,6 +87,7 @@ func _game_id_from_accent(accent: Color) -> String:
 func _add_surface_chrome(content: Control, surface: String, game_id: String, _dark: bool, accent: Color) -> void:
 	var existing := content.get_node_or_null("PremiumSurfaceChrome")
 	if existing != null:
+		content.remove_child(existing)
 		existing.queue_free()
 	var chrome := Control.new()
 	chrome.name = "PremiumSurfaceChrome"
