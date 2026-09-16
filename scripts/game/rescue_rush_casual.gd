@@ -96,7 +96,7 @@ func build_ui() -> void:
 
 	var holder := CenterContainer.new()
 	holder.name = "GameplayBoardHolder"
-	holder.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	holder.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	root.add_child(holder)
 	board_panel = PanelContainer.new()
 	# Warm stone frame with pale rim reads more like a toy diorama than a dark app panel.
