@@ -68,7 +68,7 @@ func build_ui() -> void:
 
 	var status_panel := PanelContainer.new()
 	status_panel.name = "CompactStatusStrip"
-	status_panel.custom_minimum_size = Vector2(0, 104)
+	status_panel.custom_minimum_size = Vector2(0, 94)
 	status_panel.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("0760ad"), 30, Color("55cfff"), 3, 10))
 	root.add_child(status_panel)
 	var status := HBoxContainer.new()
@@ -83,14 +83,14 @@ func build_ui() -> void:
 		status.add_child(label)
 
 	var objective := PanelContainer.new()
-	objective.custom_minimum_size = Vector2(0, 66)
+	objective.custom_minimum_size = Vector2(0, 56)
 	objective.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color(0.96, 0.99, 1.0, 0.94), 25, Color("82dbff"), 2, 6))
 	root.add_child(objective)
 	var objective_label := Label.new()
-	objective_label.text = "💡  CLEAR THE LANE TO RESCUE THE CHICK!"
+	objective_label.text = "🐥  CLEAR THE LANE • FREE THE CHICK"
 	objective_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	objective_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	objective_label.add_theme_font_size_override("font_size", 18)
+	objective_label.add_theme_font_size_override("font_size", 20)
 	Unjam3DTheme.label_3d(objective_label, Unjam3DTheme.NAVY, Color.WHITE, 2)
 	objective.add_child(objective_label)
 
@@ -100,7 +100,7 @@ func build_ui() -> void:
 	root.add_child(holder)
 	board_panel = PanelContainer.new()
 	# Warm stone frame with pale rim reads more like a toy diorama than a dark app panel.
-	board_panel.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("566b6a"), 38, Color("c4e5d5"), 5, 16))
+	board_panel.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("566b6a"), 38, Color("d7f3e4"), 5, 20))
 	holder.add_child(board_panel)
 	var board_margin := _panel_margin(18, 18, 18, 18)
 	board_panel.add_child(board_margin)

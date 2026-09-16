@@ -70,14 +70,14 @@ func build_ui() -> void:
 	info_row.add_child(move_label)
 
 	var objective := PanelContainer.new()
-	objective.custom_minimum_size = Vector2(0, 64)
+	objective.custom_minimum_size = Vector2(0, 56)
 	objective.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color(0.97, 0.995, 1.0, 0.94), 24, Color("8be6ff"), 2, 6))
 	root.add_child(objective)
 	var objective_label := Label.new()
-	objective_label.text = "💧  SORT THE COLOURS • BUILD THE PERFECT FLOW"
+	objective_label.text = "💧  SORT • POUR • SOLVE"
 	objective_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	objective_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	objective_label.add_theme_font_size_override("font_size", 18)
+	objective_label.add_theme_font_size_override("font_size", 20)
 	Unjam3DTheme.label_3d(objective_label, Unjam3DTheme.NAVY, Color.WHITE, 2)
 	objective.add_child(objective_label)
 
@@ -87,6 +87,7 @@ func build_ui() -> void:
 	root.add_child(center)
 	var stage := PanelContainer.new()
 	stage.name = "GameplayStage"
+	stage.custom_minimum_size = Vector2(0, 1080)
 	stage.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	stage.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	stage.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color(0.88, 0.98, 1.0, 0.74), 38, Color("baf2ff"), 3, 14))

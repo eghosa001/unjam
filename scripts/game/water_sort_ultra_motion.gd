@@ -49,7 +49,7 @@ func _apply_tube_layout() -> void:
 
 func _tube_size_for_count(tube_count: int) -> Vector2:
 	if tube_count <= 6:
-		return Vector2(208, 370)
+		return Vector2(236, 420)
 	if tube_count <= 8:
 		return Vector2(184, 348)
 	if tube_count <= 10:
