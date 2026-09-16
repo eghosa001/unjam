@@ -34,10 +34,15 @@ func build_settings() -> void:
 		button.pressed.connect(_toggle_setting.bind(key))
 		controls.add_child(button)
 
-	var reduced := bool(SaveManager.data.get("reduced_motion", false))
+	var reduced := bool(SaveManager.data.get("reduce_motion", false))
 	var reduced_button := _setting_button("REDUCED MOTION", "Minimise non-essential animation", reduced, accent)
 	reduced_button.pressed.connect(_toggle_reduced_motion)
 	controls.add_child(reduced_button)
+
+	var fast := bool(SaveManager.data.get("fast_animation", false))
+	var fast_button := _setting_button("FAST ANIMATION", "Quicker gameplay motion", fast, accent)
+	fast_button.pressed.connect(_toggle_setting.bind("fast_animation"))
+	controls.add_child(fast_button)
 
 	var shell := get_node_or_null("UXShell")
 	var theme_name := "DARK"
@@ -93,7 +98,12 @@ func _setting_button(title_text: String, detail_text: String, enabled: bool, acc
 	return button
 
 func _toggle_reduced_motion() -> void:
-	SaveManager.data["reduced_motion"] = not bool(SaveManager.data.get("reduced_motion", false))
+	var enabled := not bool(SaveManager.data.get("reduce_motion", false))
+	# `reduce_motion` is the canonical preference used by MotionSystem. Mirror the
+	# legacy key during this release so existing decorative systems and old saves
+	# cannot disagree while the migration is rolling forward.
+	SaveManager.data["reduce_motion"] = enabled
+	SaveManager.data["reduced_motion"] = enabled
 	SaveManager.save()
 	PremiumVisuals.apply_motion_preference()
 	FeedbackManager.tap()
