@@ -1,5 +1,6 @@
 extends Node
 
+const VIBRANT_REFERENCE_TARGET := "approved-colorful-reference"
 var last_signature := ""
 
 func _ready() -> void:
@@ -38,7 +39,7 @@ func _refresh(force: bool) -> void:
 		return
 	var accent := PremiumDesignSystem.accent_for_game(game_id)
 	_configure_background(content, game_id, dark, accent)
-	_polish_tree(content, surface, dark, accent)
+	_polish_tree(content, surface, game_id, dark, accent)
 	_add_surface_chrome(content, surface, game_id, dark, accent)
 	_animate_surface(content)
 
@@ -49,7 +50,12 @@ func _configure_background(root: Node, game_id: String, dark: bool, accent: Colo
 		match game_id:
 			"water_sort": motif = 1
 			"block_puzzle": motif = 2
-		backdrop.call("configure", PremiumDesignSystem.game_canvas(game_id, dark), accent, motif)
+		var gradient: Array = PremiumDesignSystem.game_gradient(game_id)
+		var secondary: Color = gradient[1]
+		var canvas := PremiumDesignSystem.vibrant_canvas(game_id)
+		if dark:
+			canvas = canvas.darkened(0.18)
+		backdrop.call("configure", canvas, secondary, motif)
 	PremiumVisuals.set_accent(accent)
 
 func _find_backdrop(node: Node) -> Node:
@@ -69,32 +75,50 @@ func _is_gameplay_widget(node: Node) -> bool:
 	var path := _script_path(node)
 	return path.contains("water_tube") or path.contains("block_piece_button") or path.contains("block_cell_button") or path.contains("premium_piece_button")
 
-func _polish_tree(node: Node, surface: String, dark: bool, accent: Color) -> void:
+func _polish_tree(node: Node, surface: String, game_id: String, dark: bool, accent: Color) -> void:
 	if not is_instance_valid(node):
 		return
 	if node is Button and not _is_gameplay_widget(node):
 		var button := node as Button
-		button.custom_minimum_size = Vector2(button.custom_minimum_size.x, maxf(button.custom_minimum_size.y, 82.0))
-		button.add_theme_font_size_override("font_size", maxi(20, button.get_theme_font_size("font_size")))
+		button.custom_minimum_size = Vector2(button.custom_minimum_size.x, maxf(button.custom_minimum_size.y, 84.0))
+		button.add_theme_font_size_override("font_size", maxi(21, button.get_theme_font_size("font_size")))
 		var role := _role_for_surface_button(button, surface)
-		var radius := 18 if _looks_like_level_button(button, surface) else 22
+		var radius := 18 if _looks_like_level_button(button, surface) else 24
 		PremiumDesignSystem.apply_button(button, dark, accent, role, radius)
 	elif node is PanelContainer:
 		var panel := node as PanelContainer
 		var emphasis := _panel_emphasis(panel, surface)
-		PremiumDesignSystem.apply_panel(panel, dark, accent, emphasis, 30 if emphasis else 26)
+		_apply_vibrant_panel(panel, surface, game_id, dark, accent, emphasis)
 	elif node is Label:
 		var label := node as Label
 		var fs := label.get_theme_font_size("font_size")
 		if fs > 0:
-			label.add_theme_font_size_override("font_size", fs + (5 if fs >= 28 else 3))
+			label.add_theme_font_size_override("font_size", fs + (6 if fs >= 28 else 3))
 		_polish_label(label, dark, accent)
 	elif node is ProgressBar:
 		var progress := node as ProgressBar
-		progress.add_theme_stylebox_override("background", PremiumDesignSystem.box(PremiumDesignSystem.surface_3(dark), 8, PremiumDesignSystem.border(dark), 1, 0, dark))
-		progress.add_theme_stylebox_override("fill", PremiumDesignSystem.box(accent, 8, accent.lightened(0.12), 1, 0, dark))
+		progress.add_theme_stylebox_override("background", PremiumDesignSystem.box(Color("143a67"), 9, Color("78d7ff"), 1, 0, true))
+		progress.add_theme_stylebox_override("fill", PremiumDesignSystem.box(accent.lightened(0.10), 9, Color.WHITE, 1, 0, true))
 	for child in node.get_children():
-		_polish_tree(child, surface, dark, accent)
+		_polish_tree(child, surface, game_id, dark, accent)
+
+func _apply_vibrant_panel(panel: PanelContainer, surface: String, game_id: String, dark: bool, accent: Color, emphasis: bool) -> void:
+	var gradient: Array = PremiumDesignSystem.game_gradient(game_id)
+	var primary: Color = gradient[0]
+	var secondary: Color = gradient[1]
+	var fill := PremiumDesignSystem.vibrant_surface(game_id)
+	if dark:
+		fill = primary.darkened(0.52).lerp(secondary.darkened(0.50), 0.34)
+	else:
+		fill = fill.lerp(primary.lightened(0.52), 0.18)
+	if surface == "settings":
+		fill = fill.lerp(Color("7bdcff"), 0.12)
+	elif surface == "collection":
+		fill = fill.lerp(Color("f7a4ff"), 0.10)
+	elif surface == "levels":
+		fill = fill.lerp(Color("ffdd71"), 0.08)
+	var edge := Color(accent.lightened(0.24), 0.92 if emphasis else 0.64)
+	panel.add_theme_stylebox_override("panel", PremiumDesignSystem.box(fill, 32 if emphasis else 26, edge, 3 if emphasis else 2, 10 if emphasis else 5, dark))
 
 func _role_for_surface_button(button: Button, surface: String) -> String:
 	var text := button.text.strip_edges().to_upper()
@@ -120,8 +144,8 @@ func _looks_like_level_button(button: Button, surface: String) -> bool:
 func _panel_emphasis(panel: PanelContainer, surface: String) -> bool:
 	if panel.name in ["TutorialPanel", "HomeHero", "JourneyFill"]:
 		return true
-	if surface in ["collection", "levels"]:
-		return panel.custom_minimum_size.y >= 95.0
+	if surface in ["collection", "levels", "settings"]:
+		return panel.custom_minimum_size.y >= 90.0
 	return false
 
 func _polish_label(label: Label, dark: bool, accent: Color) -> void:
@@ -129,6 +153,8 @@ func _polish_label(label: Label, dark: bool, accent: Color) -> void:
 	var font_size := label.get_theme_font_size("font_size")
 	if font_size >= 30 or text in ["SETTINGS", "RESCUE GARDEN"] or text.begins_with("WORLD "):
 		PremiumDesignSystem.apply_label(label, dark, "title", accent)
+		label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.20))
+		label.add_theme_constant_override("shadow_offset_y", 2)
 	elif "COINS" in text or "★" in text or "PRESTIGE" in text:
 		PremiumDesignSystem.apply_label(label, dark, "accent", PremiumDesignSystem.GOLD)
 	elif font_size <= 19:
@@ -147,27 +173,35 @@ func _add_surface_chrome(content: Control, surface: String, game_id: String, dar
 	chrome.z_index = 2
 	content.add_child(chrome)
 
+	var gradient: Array = PremiumDesignSystem.game_gradient(game_id)
 	var top_line := ColorRect.new()
 	top_line.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	top_line.offset_bottom = 4
-	top_line.color = Color(accent, 0.72 if dark else 0.52)
+	top_line.offset_bottom = 6
+	top_line.color = Color(gradient[1], 0.92)
 	top_line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	chrome.add_child(top_line)
 
 	var glow := ColorRect.new()
 	glow.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	glow.offset_bottom = 210
-	glow.color = Color(accent, 0.035 if dark else 0.05)
+	glow.offset_bottom = 230
+	glow.color = Color(gradient[0], 0.09 if dark else 0.12)
 	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	chrome.add_child(glow)
 
+	var badge_panel := PanelContainer.new()
+	badge_panel.position = Vector2(22, 14)
+	badge_panel.custom_minimum_size = Vector2(280, 42)
+	badge_panel.add_theme_stylebox_override("panel", PremiumDesignSystem.box(Color("ffffff", 0.82), 18, Color(gradient[0], 0.72), 2, 3, false))
+	badge_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	chrome.add_child(badge_panel)
 	var badge := Label.new()
-	badge.position = Vector2(50, 18)
 	badge.text = "%s  •  %s" % [_game_name(game_id), _surface_name(surface)]
-	badge.add_theme_font_size_override("font_size", 13)
-	badge.add_theme_color_override("font_color", Color(accent, 0.82))
+	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	badge.add_theme_font_size_override("font_size", 15)
+	badge.add_theme_color_override("font_color", gradient[1].darkened(0.35))
 	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	chrome.add_child(badge)
+	badge_panel.add_child(badge)
 
 func _animate_surface(content: Control) -> void:
 	content.modulate.a = 0.82
