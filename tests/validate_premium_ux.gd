@@ -4,22 +4,30 @@ func _initialize() -> void:
 	var failures: Array[String] = []
 	_check_source("res://scripts/ui/block_piece_button.gd", ["touch_preview", "TOUCH_LIFT", "_update_touch_footprint", "register_touch_drag"], failures)
 	_check_source("res://scripts/game/block_puzzle_polished.gd", ["active_touch_piece", "register_touch_drag", "_finish_touch_drag"], failures)
-	_check_source("res://scripts/ui/water_tube_reference_button.gd", ["PALETTE", "Bright top meniscus", "Tube lip", "draw_line", "play_invalid", "play_success"], failures)
-	_check_source("res://scripts/ui/premium_home_overhaul.gd", ["PremiumBackdrop", "build_home_launcher", "animate_entry", "mouse_filter = Control.MOUSE_FILTER_STOP"], failures)
+	_check_source("res://scripts/ui/water_tube_reference_button.gd", ["PALETTE", "Tube lip", "play_invalid", "play_success"], failures)
+	_check_source("res://scripts/ui/premium_home_casual.gd", ["Unjam3DBackdrop", "Unjam3DMascot", "Unjam3DGameArt", "HomePrimaryAction"], failures)
+	_check_source("res://scripts/ui/unjam_3d_mascot.gd", ["extends SubViewportContainer", "Camera3D", "SphereMesh", "DirectionalLight3D"], failures)
+	_check_source("res://scripts/ui/unjam_3d_game_art.gd", ["extends SubViewportContainer", "_build_rescue_rush", "_build_water_sort", "_build_block_puzzle"], failures)
+	_check_source("res://scripts/ui/unjam_3d_backdrop.gd", ["_draw_floating_island", "_draw_water_world", "_draw_foreground"], failures)
 	_check_source("res://scripts/systems/premium_visuals.gd", ["tactile_success", "tactile_invalid", "transition_cover"], failures)
-	_check_source("res://scripts/ui/premium_design_system.gd", ["class_name PremiumDesignSystem", "GAME_ACCENTS", "apply_button", "apply_panel", "game_canvas"], failures)
-	_check_source("res://scripts/ui/premium_surface_manager.gd", ["_configure_background", "_polish_tree", "_add_surface_chrome", "settings", "collection", "levels"], failures)
-	_check_source("res://scripts/ui/ux_shell_premium.gd", ["theme_button.visible = surface == \"settings\"", "PremiumDesignSystem.apply_button", "PremiumDesignSystem.apply_panel"], failures)
-	_check_source("res://scripts/ui/premium_backdrop.gd", ["light_mode", "base_color.get_luminance", "Vignette changes with appearance mode"], failures)
 	_check_source("res://scripts/ui/motion_director.gd", ["create_tween", "TRANS", "EASE"], failures)
-	_check_source("res://scenes/Main.tscn", ["premium_surface_manager_static.gd", "PremiumSurfaceManager", "PremiumHome", "PremiumLive"], failures)
+	_check_source("res://scenes/Main.tscn", ["premium_home_casual.gd", "premium_live_hub_3d.gd", "PremiumHome", "PremiumLive"], failures)
+
+	for retired in [
+		"res://scripts/ui/game_select_tile.gd",
+		"res://scripts/ui/game_showcase_art.gd",
+		"res://scripts/ui/unjam_logo.gd",
+		"res://scripts/ui/polished_block_piece_button.gd"
+	]:
+		if FileAccess.file_exists(retired):
+			failures.append("Retired visual source still present: " + retired)
 
 	if not failures.is_empty():
 		for failure in failures:
 			push_error(failure)
 		quit(1)
 		return
-	print("Premium UX contract validated: direct touch feedback, distinct game color language, app-wide design tokens, theme-aware backdrops, premium legacy surfaces, and flash-free navigation.")
+	print("Premium UX contract validated: true 3D home/game previews, bright reference-style scenery, direct touch feedback, and retired flat visual paths removed.")
 	quit(0)
 
 func _check_source(path: String, needles: Array[String], failures: Array[String]) -> void:
