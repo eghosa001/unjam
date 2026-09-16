@@ -2,52 +2,67 @@ class_name PremiumDesignSystem
 extends RefCounted
 
 const GAME_ACCENTS := {
-	"rescue_rush": Color("39d8c2"),
-	"water_sort": Color("62b6ff"),
-	"block_puzzle": Color("9a86ff")
+	"rescue_rush": Color("19dba9"),
+	"water_sort": Color("279cff"),
+	"block_puzzle": Color("bd4cff")
 }
 
-const GOLD := Color("ffd166")
-const DANGER := Color("ff6b7a")
-const SUCCESS := Color("55d68b")
+const GOLD := Color("ffd23f")
+const DANGER := Color("ff5f78")
+const SUCCESS := Color("35d979")
 
 static func accent_for_game(game_id: String) -> Color:
 	return GAME_ACCENTS.get(game_id, GAME_ACCENTS["rescue_rush"])
 
+static func vibrant_canvas(game_id: String) -> Color:
+	match game_id:
+		"water_sort": return Color("78d7ff")
+		"block_puzzle": return Color("efa6ff")
+		_: return Color("76efd9")
+
+static func vibrant_surface(game_id: String) -> Color:
+	match game_id:
+		"water_sort": return Color("e6f8ff")
+		"block_puzzle": return Color("fae9ff")
+		_: return Color("e7fff7")
+
+static func game_gradient(game_id: String) -> Array[Color]:
+	match game_id:
+		"water_sort": return [Color("14a8ff"), Color("4368ff"), Color("69e6ff")]
+		"block_puzzle": return [Color("9d36ff"), Color("f14fd4"), Color("ff8b6e")]
+		_: return [Color("08cf93"), Color("10b8e7"), Color("7cf05d")]
+
 static func ink(dark: bool) -> Color:
-	return Color("f4f7fb") if dark else Color("213044")
+	return Color("f8fbff") if dark else Color("12304b")
 
 static func muted(dark: bool) -> Color:
-	return Color("b6c3d4") if dark else Color("6f7f92")
+	return Color("c4d2e4") if dark else Color("516d88")
 
 static func canvas(dark: bool) -> Color:
-	return Color("0b1220") if dark else Color("eef2f5")
+	return Color("0b1730") if dark else Color("eef8ff")
 
 static func surface(dark: bool) -> Color:
-	return Color("121a29") if dark else Color("f8fafc")
+	return Color("11223f") if dark else Color("fbfdff")
 
 static func surface_2(dark: bool) -> Color:
-	return Color("182538") if dark else Color("e9eef3")
+	return Color("183052") if dark else Color("eef7ff")
 
 static func surface_3(dark: bool) -> Color:
-	return Color("22304a") if dark else Color("dfe6ed")
+	return Color("234267") if dark else Color("dceeff")
 
 static func border(dark: bool) -> Color:
-	return Color("334a67") if dark else Color("c7d1dc")
+	return Color("3e6b94") if dark else Color("9bc5e6")
 
 static func disabled(dark: bool) -> Color:
-	return Color("202c3f") if dark else Color("e5eaf0")
+	return Color("24354c") if dark else Color("e5edf5")
 
 static func game_canvas(game_id: String, dark: bool) -> Color:
 	if not dark:
-		match game_id:
-			"water_sort": return Color("eef6ff")
-			"block_puzzle": return Color("f3f0ff")
-			_: return Color("ecf8f5")
+		return vibrant_canvas(game_id).lerp(Color.WHITE, 0.32)
 	match game_id:
-		"water_sort": return Color("06101e")
-		"block_puzzle": return Color("0c0a1b")
-		_: return Color("061411")
+		"water_sort": return Color("0b3f74")
+		"block_puzzle": return Color("43105f")
+		_: return Color("075f59")
 
 static func box(color: Color, radius: int = 24, edge: Color = Color.TRANSPARENT, edge_width: int = 0, shadow: int = 0, dark: bool = true) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
@@ -63,7 +78,7 @@ static func box(color: Color, radius: int = 24, edge: Color = Color.TRANSPARENT,
 		style.border_width_bottom = edge_width
 		style.border_color = edge
 	if shadow > 0:
-		style.shadow_color = Color(0, 0, 0, 0.34 if dark else 0.12)
+		style.shadow_color = Color(0.015, 0.08, 0.16, 0.32 if dark else 0.16)
 		style.shadow_size = shadow
 		style.shadow_offset = Vector2(0, maxf(1.0, shadow * 0.42))
 	return style
@@ -98,33 +113,33 @@ static func apply_button(button: Button, dark: bool, accent: Color, role: String
 	var normal := surface_2(dark)
 	var edge := border(dark)
 	var text_color := ink(dark)
-	var shadow := 3
+	var shadow := 5
 	match role:
 		"primary":
-			normal = accent
-			edge = accent.lightened(0.16)
-			text_color = Color("061019") if accent.get_luminance() > 0.55 else Color.WHITE
-			shadow = 8
+			normal = accent.lightened(0.06)
+			edge = accent.lightened(0.28)
+			text_color = Color("05243a") if accent.get_luminance() > 0.58 else Color.WHITE
+			shadow = 10
 		"reward":
-			normal = Color(GOLD, 0.96) if dark else Color("fff0bd")
+			normal = Color("ffe16c")
 			edge = GOLD
-			text_color = Color("241a05")
-			shadow = 6
+			text_color = Color("372600")
+			shadow = 8
 		"success":
-			normal = Color(SUCCESS, 0.19) if dark else Color("e4f8ed")
-			edge = Color(SUCCESS, 0.78)
-			text_color = SUCCESS.lightened(0.18) if dark else Color("1d7043")
+			normal = Color(SUCCESS, 0.30) if dark else Color("d8ffe8")
+			edge = Color(SUCCESS, 0.92)
+			text_color = SUCCESS.lightened(0.22) if dark else Color("12683a")
 		"danger":
-			normal = Color(DANGER, 0.16) if dark else Color("fff0f2")
-			edge = Color(DANGER, 0.72)
-			text_color = DANGER.lightened(0.14) if dark else Color("a83243")
+			normal = Color(DANGER, 0.24) if dark else Color("ffe7ec")
+			edge = Color(DANGER, 0.88)
+			text_color = DANGER.lightened(0.18) if dark else Color("9e2638")
 		"toggle_off":
 			normal = surface_3(dark)
 			edge = border(dark)
 			text_color = muted(dark)
 		"utility":
-			normal = Color(surface_2(dark), 0.96)
-			edge = Color(accent, 0.38)
+			normal = Color(surface_2(dark), 0.98)
+			edge = Color(accent, 0.62)
 		"disabled":
 			normal = disabled(dark)
 			edge = Color(border(dark), 0.55)
@@ -132,10 +147,10 @@ static func apply_button(button: Button, dark: bool, accent: Color, role: String
 			shadow = 0
 		_:
 			normal = Color(surface_2(dark), 0.98)
-			edge = border(dark)
+			edge = Color(accent, 0.42)
 	button.add_theme_stylebox_override("normal", box(normal, radius, edge, 2, shadow, dark))
-	button.add_theme_stylebox_override("hover", box(normal.lightened(0.055), radius, accent, 2, max(3, shadow), dark))
-	button.add_theme_stylebox_override("pressed", box(normal.darkened(0.08), radius, accent.lightened(0.14), 2, 1, dark))
+	button.add_theme_stylebox_override("hover", box(normal.lightened(0.075), radius, accent.lightened(0.12), 3, max(4, shadow), dark))
+	button.add_theme_stylebox_override("pressed", box(normal.darkened(0.09), radius, accent.lightened(0.20), 2, 2, dark))
 	button.add_theme_stylebox_override("focus", box(Color.TRANSPARENT, radius, accent, 3, 0, dark))
 	button.add_theme_stylebox_override("disabled", box(disabled(dark), radius, Color(border(dark), 0.5), 1, 0, dark))
 	button.add_theme_color_override("font_color", text_color)
@@ -144,15 +159,15 @@ static func apply_button(button: Button, dark: bool, accent: Color, role: String
 	button.add_theme_color_override("font_disabled_color", muted(dark))
 
 static func apply_panel(panel: PanelContainer, dark: bool, accent: Color, emphasis: bool = false, radius: int = 28) -> void:
-	var fill := Color(surface(dark), 0.97)
-	var edge := Color(accent, 0.44) if emphasis else border(dark)
-	panel.add_theme_stylebox_override("panel", box(fill, radius, edge, 2 if emphasis else 1, 10 if emphasis else 4, dark))
+	var fill := Color(surface(dark), 0.95)
+	var edge := Color(accent, 0.64) if emphasis else border(dark)
+	panel.add_theme_stylebox_override("panel", box(fill, radius, edge, 3 if emphasis else 1, 12 if emphasis else 5, dark))
 
 static func apply_label(label: Label, dark: bool, kind: String = "body", accent: Color = Color.WHITE) -> void:
 	match kind:
 		"title":
 			label.add_theme_color_override("font_color", ink(dark))
-			label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.18 if dark else 0.05))
+			label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.22 if dark else 0.08))
 			label.add_theme_constant_override("shadow_offset_y", 2)
 		"accent":
 			label.add_theme_color_override("font_color", accent)
