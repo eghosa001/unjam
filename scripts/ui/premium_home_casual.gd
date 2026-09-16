@@ -167,6 +167,10 @@ func build_home_launcher() -> void:
 
 	if not is_instance_valid(hero):
 		return
+	if bool(SaveManager.data.get("reduced_motion", false)):
+		hero.modulate.a = 1.0
+		games.modulate.a = 1.0
+		return
 	hero.modulate.a = 0.82
 	games.modulate.a = 0.84
 	var tween := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
