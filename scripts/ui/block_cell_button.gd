@@ -1,6 +1,8 @@
 extends Button
 class_name BlockCellButton
 
+const MATERIALS_SCRIPT = preload("res://scripts/ui/procedural_materials.gd")
+
 var occupied := false
 var preview := false
 var accent := Color("4f7cff")
@@ -14,6 +16,7 @@ var clear_echo := 0.0
 var clear_phase := 0.0
 var clear_color := Color("8b7cf6")
 var footprint_phase := 0.0
+var _materials = MATERIALS_SCRIPT.new()
 
 func configure(value: bool, preview_value: bool = false, color: Color = Color("4f7cff"), index: int = 0) -> void:
 	var old := occupied
@@ -47,25 +50,34 @@ func _update_pivot() -> void:
 	pivot_offset = size * 0.5
 
 func _hover(value: bool) -> void:
-	var tw := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tw.tween_property(self, "hover_amount", 1.0 if value else 0.0, 0.08)
+	var tw := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tw.tween_property(self, "hover_amount", 1.0 if value else 0.0, MotionSystem.duration(&"micro"))
 
 func _press() -> void:
-	var tw := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tw.tween_property(self, "scale", Vector2(0.965, 0.965), 0.045)
+	if MotionSystem.reduced():
+		return
+	var tw := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tw.tween_property(self, "scale", Vector2(0.965, 0.965), MotionSystem.duration(&"micro") * 0.65)
 
 func _release() -> void:
+	if MotionSystem.reduced():
+		scale = Vector2.ONE
+		return
 	var tw := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tw.tween_property(self, "scale", Vector2(1.045, 1.045), 0.055)
-	tw.tween_property(self, "scale", Vector2.ONE, 0.11)
+	tw.tween_property(self, "scale", Vector2(1.045, 1.045), MotionSystem.duration(&"micro") * 0.8)
+	tw.tween_property(self, "scale", Vector2.ONE, MotionSystem.duration(&"settle"))
 
 func _play_land() -> void:
 	impact = 1.0
+	if MotionSystem.reduced():
+		scale = Vector2.ONE
+		queue_redraw()
+		return
 	scale = Vector2(0.66, 0.66)
 	var tw := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tw.tween_property(self, "scale", Vector2(1.14, 1.14), 0.09)
-	tw.tween_property(self, "scale", Vector2(0.98, 0.98), 0.07)
-	tw.tween_property(self, "scale", Vector2.ONE, 0.08)
+	tw.tween_property(self, "scale", Vector2(1.14, 1.14), MotionSystem.duration(&"press"))
+	tw.tween_property(self, "scale", Vector2(0.98, 0.98), MotionSystem.duration(&"micro"))
+	tw.tween_property(self, "scale", Vector2.ONE, MotionSystem.duration(&"micro"))
 
 func play_land(delay: float = 0.0) -> void:
 	if delay > 0.0:
@@ -80,11 +92,15 @@ func play_clear(delay: float = 0.0) -> void:
 func _play_clear() -> void:
 	clear_echo = 1.0
 	clear_phase = 1.0
+	if MotionSystem.reduced():
+		scale = Vector2.ONE
+		_finish_clear_visual()
+		return
 	var tw := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
-	tw.tween_property(self, "scale", Vector2(1.18, 1.18), 0.065)
-	tw.tween_property(self, "scale", Vector2(0.05, 0.05), 0.155).set_trans(Tween.TRANS_QUAD)
+	tw.tween_property(self, "scale", Vector2(1.18, 1.18), MotionSystem.duration(&"micro"))
+	tw.tween_property(self, "scale", Vector2(0.05, 0.05), MotionSystem.duration(&"settle")).set_trans(Tween.TRANS_QUAD)
 	tw.tween_callback(_finish_clear_visual)
-	tw.tween_property(self, "scale", Vector2.ONE, 0.075)
+	tw.tween_property(self, "scale", Vector2.ONE, MotionSystem.duration(&"micro"))
 
 func _finish_clear_visual() -> void:
 	clear_phase = 0.0
@@ -133,7 +149,8 @@ func _process(delta: float) -> void:
 	impact = maxf(0.0, impact - delta * 5.5)
 	clear_echo = maxf(0.0, clear_echo - delta * 3.8)
 	clear_phase = maxf(0.0, clear_phase - delta * 3.2)
-	footprint_phase += delta * 6.0
+	if not MotionSystem.reduced():
+		footprint_phase += delta * 6.0
 	if animating:
 		queue_redraw()
 
@@ -150,7 +167,7 @@ func _draw() -> void:
 			fill = Color(accent, 0.52)
 		elif footprint_active and not occupied:
 			if footprint_valid:
-				var pulse := 0.82 + 0.18 * sin(footprint_phase)
+				var pulse := 0.82 if MotionSystem.reduced() else 0.82 + 0.18 * sin(footprint_phase)
 				fill = Color(footprint_color, 0.64 + pulse * 0.16)
 			else:
 				fill = Color("ff4f73", 0.48)
@@ -164,7 +181,7 @@ func _draw() -> void:
 		var flash_alpha := clampf(clear_phase * 0.42, 0.0, 0.42)
 		_draw_box(rect.grow(-6.0), Color(1, 1, 1, flash_alpha), 5, Color.TRANSPARENT, 0)
 	if impact > 0.001:
-		_draw_box(rect.grow(1.0 + impact * 3.0), Color.TRANSPARENT, 5, Color(accent.lightened(0.42), impact * 0.90), 3)
+		_draw_box(rect.grow(1.0 + impact * 3.0), Color.TRANSPARENT, 5, Color(_materials.bevel_light(accent), impact * 0.90), 3)
 	if clear_echo > 0.001:
 		var neon := Color("ff416c", clear_echo)
 		_draw_box(rect.grow(1.0 + clear_echo * 4.0), Color(neon, 0.08), 4, neon, 3)
@@ -173,13 +190,20 @@ func _draw() -> void:
 		draw_arc(c, r, 0.0, TAU, 24, Color("ff7a96", clear_echo), 2.5, true)
 
 func _draw_block(rect: Rect2, fill: Color) -> void:
-	var darker := fill.darkened(0.26)
-	_draw_box(Rect2(rect.position + Vector2(0, 4), rect.size), darker, 5, Color.TRANSPARENT, 0)
-	_draw_box(rect, fill, 5, fill.lightened(0.24), 2)
-	draw_line(rect.position + Vector2(5, 5), Vector2(rect.end.x - 5, rect.position.y + 5), Color(fill.lightened(0.50), 0.96), 3.0, true)
-	draw_line(rect.position + Vector2(5, 5), Vector2(rect.position.x + 5, rect.end.y - 5), Color(fill.lightened(0.30), 0.78), 2.0, true)
-	draw_line(Vector2(rect.position.x + 5, rect.end.y - 5), rect.end - Vector2(5, 5), Color(darker, 0.92), 3.0, true)
-	draw_line(Vector2(rect.end.x - 5, rect.position.y + 5), rect.end - Vector2(5, 5), Color(darker, 0.78), 2.0, true)
+	var reduced := MotionSystem.reduced()
+	var depth_offset := _materials.extrusion_offset(0.82, reduced)
+	var layers := _materials.depth_layers_for(0.82, reduced)
+	var depth: Color = _materials.depth_tone(fill)
+	for layer in range(layers, 0, -1):
+		var factor := float(layer) / float(layers)
+		_draw_box(Rect2(rect.position + depth_offset * factor, rect.size), Color(depth, fill.a * (0.82 + 0.10 * factor)), 5, Color.TRANSPARENT, 0)
+	var bevel_light: Color = _materials.bevel_light(fill)
+	var bevel_dark: Color = _materials.bevel_dark(fill)
+	_draw_box(rect, fill, 5, bevel_light, 2)
+	draw_line(rect.position + Vector2(5, 5), Vector2(rect.end.x - 5, rect.position.y + 5), Color(bevel_light, minf(0.98, fill.a)), 3.0, true)
+	draw_line(rect.position + Vector2(5, 5), Vector2(rect.position.x + 5, rect.end.y - 5), Color(bevel_light, fill.a * 0.72), 2.0, true)
+	draw_line(Vector2(rect.position.x + 5, rect.end.y - 5), rect.end - Vector2(5, 5), Color(bevel_dark, fill.a * 0.94), 3.0, true)
+	draw_line(Vector2(rect.end.x - 5, rect.position.y + 5), rect.end - Vector2(5, 5), Color(bevel_dark, fill.a * 0.82), 2.0, true)
 
 func _draw_box(rect: Rect2, color: Color, radius: int, border: Color, border_width: int) -> void:
 	var style := StyleBoxFlat.new()
