@@ -9,7 +9,7 @@ var theme_button: Button
 var tutorial_game := "rescue_rush"
 var seen_this_session := {}
 var tutorial_seen := {}
-var theme_mode := "dark"
+var theme_mode := "light"
 
 const CONFIG_PATH := "user://unjam_ui.cfg"
 
@@ -273,9 +273,9 @@ func _main() -> Node:
 func _load_theme() -> void:
 	var cfg := ConfigFile.new()
 	if cfg.load(CONFIG_PATH) == OK:
-		theme_mode = String(cfg.get_value("appearance", "theme", "dark"))
+		theme_mode = String(cfg.get_value("appearance", "theme", "light"))
 	if theme_mode not in ["light", "dark"]:
-		theme_mode = "dark"
+		theme_mode = "light"
 
 func _load_tutorial_seen() -> void:
 	var cfg := ConfigFile.new()
