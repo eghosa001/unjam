@@ -26,12 +26,20 @@ func _animate_cell(cell: Control, x: int, y: int) -> void:
 	# Subsequent state refreshes should never replay a whole-board pulse. Reduced
 	# Motion also skips the initial grid entrance entirely instead of animating 25+
 	# controls at a shortened duration.
-	if _board_has_rendered or MotionSystem.reduced():
+	if _board_has_rendered or _reduced_motion_enabled():
 		cell.modulate.a = 1.0
 		cell.scale = Vector2.ONE
 		cell.pivot_offset = cell.custom_minimum_size * 0.5
 		return
 	super._animate_cell(cell, x, y)
+
+func _reduced_motion_enabled() -> bool:
+	# Resolve the autoload through the scene tree here. The final Rescue leaf is
+	# dynamically loaded by viewport tests and some navigation paths; avoiding a
+	# direct compile-time singleton symbol keeps that inheritance chain resolvable
+	# while still using MotionSystem as the single source of truth.
+	var motion := get_node_or_null("/root/MotionSystem")
+	return motion != null and bool(motion.call("reduced"))
 
 func _fit_board_to_viewport() -> void:
 	if board_grid == null or board_panel == null or width <= 0 or height <= 0:
