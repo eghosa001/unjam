@@ -14,6 +14,9 @@ const PRODUCT_COINS_MEDIUM := "unjam_coins_1500"
 const PRODUCT_COINS_LARGE := "unjam_coins_4000"
 const PURCHASE_STATE_PURCHASED := 1
 const PURCHASE_STATE_PENDING := 2
+# Public semantic alias used by release/readiness code. Keep the numeric bridge
+# constant separate so StoreManager does not depend on a plugin implementation.
+const PURCHASE_PENDING := PURCHASE_STATE_PENDING
 const PURCHASE_TIMEOUT_SECONDS := 60.0
 const PRODUCTS := {
 	PRODUCT_REMOVE_ADS: {"title":"REMOVE ADS","subtitle":"No interstitial ads","coins":0,"non_consumable":true},
@@ -37,7 +40,7 @@ func register_provider(value: Node) -> void:
 	# Query owned purchases at startup and after every billing reconnect. This
 	# recovers PURCHASED/PENDING transactions whose callback arrived while the
 	# app or Play Billing service was unavailable.
-	_reconcile_owned_purchases()
+	reconcile_purchases()
 	catalog_changed.emit()
 
 func provider_ready() -> bool:
@@ -46,6 +49,16 @@ func provider_ready() -> bool:
 func verifier_ready() -> bool:
 	var endpoint := String(ProjectSettings.get_setting("monetization/purchase_verification_url", ""))
 	return endpoint.begins_with("https://")
+
+func release_configuration_issues() -> Array[String]:
+	var issues: Array[String] = []
+	var verification_url := String(ProjectSettings.get_setting("monetization/purchase_verification_url", ""))
+	if not verification_url.begins_with("https://"):
+		issues.append("Secure purchase verification URL is not configured with HTTPS")
+	var privacy_url := String(ProjectSettings.get_setting("monetization/privacy_policy_url", ""))
+	if not privacy_url.begins_with("https://"):
+		issues.append("Privacy policy URL is not configured with HTTPS")
+	return issues
 
 func _token_fingerprint(token: String) -> String:
 	return token.sha256_text() if not token.is_empty() else ""
@@ -193,6 +206,9 @@ func _on_restore_result(purchases: Array) -> void:
 				restored += 1
 	restore_completed.emit(restored)
 
+func reconcile_purchases() -> void:
+	_reconcile_owned_purchases()
+
 func _reconcile_owned_purchases() -> void:
 	if not provider_ready() or not provider.has_method("restore_purchases"):
 		return
@@ -209,7 +225,7 @@ func _on_reconcile_result(purchases: Array) -> void:
 			var product_id := String(product_value)
 			if not PRODUCTS.has(product_id):
 				continue
-			if state == PURCHASE_STATE_PENDING:
+			if state == PURCHASE_PENDING:
 				pending_products[product_id] = true
 				purchase_pending.emit(product_id, "Purchase is pending in Google Play")
 			elif state == PURCHASE_STATE_PURCHASED:
@@ -242,7 +258,7 @@ func _watch_purchase_timeout(product_id: String, serial: int) -> void:
 	# mark it pending, and immediately reconcile so a late PURCHASED result can
 	# still be verified and granted exactly once.
 	_provider_purchase_pending(product_id, "Google Play is still processing this purchase")
-	_reconcile_owned_purchases()
+	reconcile_purchases()
 
 func _clear_purchase_busy(product_id: String) -> void:
 	# A pending purchase can become PURCHASED while another product is being
