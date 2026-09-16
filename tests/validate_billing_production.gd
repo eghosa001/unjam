@@ -30,6 +30,7 @@ func run() -> void:
 	expect_true("on_purchase_updated.connect(_on_purchase_updated)" in source, "Purchase updates are not handled by a persistent listener")
 	expect_true("on_purchase_updated.connect(handler, CONNECT_ONE_SHOT)" not in source, "Purchase updates must not use a one-shot listener")
 	expect_true("pending: Callable" in source, "Billing provider does not expose a pending-purchase callback")
+	expect_true("Another purchase is already in progress" in source, "Billing bridge can launch a second purchase while another Play flow is active")
 
 	# Billing service disconnects are expected on Android. The bridge must retry
 	# with bounded backoff instead of leaving the store unavailable for the rest
