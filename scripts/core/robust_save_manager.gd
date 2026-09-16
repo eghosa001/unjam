@@ -60,7 +60,7 @@ func _sanitize() -> void:
 	data.lifetime_purchased_coins = max(0, int(data.get("lifetime_purchased_coins", 0)))
 	var consent := String(data.get("privacy_consent_status", "unknown"))
 	data.privacy_consent_status = consent if consent in ["unknown", "required", "obtained", "not_required"] else "unknown"
-	for key in ["sound", "vibration", "music", "remove_ads", "starter_pack_purchased"]:
+	for key in ["sound", "vibration", "music", "reduce_motion", "fast_animation", "remove_ads", "starter_pack_purchased"]:
 		data[key] = bool(data.get(key, DEFAULT_DATA.get(key, false)))
 	if not data.get("stars", {}) is Dictionary:
 		data.stars = {}
