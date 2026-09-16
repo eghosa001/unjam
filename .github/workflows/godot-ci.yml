@@ -29,6 +29,11 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
+      - name: Validate release contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/validate_release_contract.py
       - name: Setup JDK 17
         uses: actions/setup-java@v5
         with:
