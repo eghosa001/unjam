@@ -17,12 +17,21 @@ func _initialize() -> void:
 	_check("res://scripts/ui/ux_shell_casual.gd", ["_restyle_3d_shell", "Unjam3DTheme"], failures)
 	_check("res://scripts/ui/ux_shell_premium.gd", ["theme_mode := \"light\"", "get_value(\"appearance\", \"theme\", \"light\")"], failures)
 	_check("res://scripts/ui/premium_piece_button.gd", ["chunky toy depth", "Unjam3DTheme.GOLD"], failures)
+
 	_check("res://scripts/game/rescue_rush_casual.gd", ["Unjam3DGameplayStage", "rescue_rush", "CLEAR THE LANE", "RESTART"], failures)
+	_check("res://scripts/game/rescue_rush_motion_final.gd", ["viewport.size_changed.connect(_queue_board_fit)", "_fit_board_to_viewport"], failures)
 	_check("res://scripts/game/water_sort_casual.gd", ["Unjam3DGameplayStage", "water_sort", "SORT THE COLOURS", "RESTART"], failures)
-	_check("res://scripts/game/block_puzzle_3d.gd", ["Unjam3DGameplayStage", "block_puzzle", "DRAG • PLACE • CLEAR", "board_shell"], failures)
+	_check("res://scripts/game/water_sort_ultra_motion.gd", ["viewport.size_changed.connect(_queue_tube_layout)", "_apply_tube_layout"], failures)
+	_check("res://scripts/game/block_puzzle_3d.gd", ["Unjam3DGameplayStage", "block_puzzle", "DRAG • PLACE • CLEAR", "board_shell", "viewport.size_changed.connect(_queue_board_fit)", "_fit_3d_board_layout"], failures)
+
 	_check("res://scenes/Main.tscn", ["premium_live_hub_3d.gd", "monetization_hub_3d.gd", "PremiumHome", "PremiumLive", "MotionDirector"], failures)
 	_check_absent("res://scenes/Main.tscn", ["level_browser_polish.gd", "LevelBrowserPolish"], failures)
-	_check("res://scenes/BlockPuzzle.tscn", ["block_puzzle_3d.gd"], failures)
+	_check("res://scenes/Game.tscn", ["rescue_rush_casual.gd", "rescue_result_guard.gd"], failures)
+	_check_absent("res://scenes/Game.tscn", ["rescue_layout_polish.gd", "RescueLayoutPolish"], failures)
+	_check("res://scenes/WaterSort.tscn", ["water_sort_casual.gd", "ui_touch_enhancer_casual.gd"], failures)
+	_check_absent("res://scenes/WaterSort.tscn", ["water_stage_polish.gd", "WaterStagePolish"], failures)
+	_check("res://scenes/BlockPuzzle.tscn", ["block_puzzle_3d.gd", "ui_touch_enhancer_casual.gd"], failures)
+	_check_absent("res://scenes/BlockPuzzle.tscn", ["puzzle_casual_polish.gd", "PuzzleCasualPolish"], failures)
 	_check("res://scenes/RetentionHub.tscn", ["retention_hub_3d.gd"], failures)
 	_check("res://project.godot", ["boot_splash/bg_color=Color(0.255, 0.725, 1, 1)", "environment/defaults/default_clear_color=Color(0.255, 0.725, 1, 1)"], failures)
 
@@ -35,7 +44,10 @@ func _initialize() -> void:
 		"res://scripts/ui/game_showcase_art.gd",
 		"res://scripts/ui/unjam_logo.gd",
 		"res://scripts/ui/polished_block_piece_button.gd",
-		"res://scripts/ui/level_browser_polish.gd"
+		"res://scripts/ui/level_browser_polish.gd",
+		"res://scripts/ui/rescue_layout_polish.gd",
+		"res://scripts/ui/water_stage_polish.gd",
+		"res://scripts/ui/puzzle_casual_polish.gd"
 	]:
 		if FileAccess.file_exists(retired):
 			failures.append("Retired visual source still present: " + retired)
@@ -45,7 +57,7 @@ func _initialize() -> void:
 			push_error(failure)
 		quit(1)
 		return
-	print("3D visual reboot contract validated: Home, secondary surfaces, shop/results and all three games use the bright hybrid 3D visual system with retired flat paths removed.")
+	print("3D visual reboot contract validated: bright hybrid 3D surfaces, single-owner gameplay layouts and retired flat/duplicate paths removed.")
 	quit(0)
 
 func _read(path: String) -> String:
