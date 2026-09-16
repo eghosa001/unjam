@@ -4,7 +4,7 @@ func _initialize() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
-	if not _validate_shared_motion_system(): return
+	if not await _validate_shared_motion_system(): return
 	if not _validate_rescue_completion_buffer(): return
 	if not _validate_water_lip_geometry(): return
 	if not _validate_water_stream_layering(): return
