@@ -1,6 +1,6 @@
 extends "res://scripts/game/water_sort_reference.gd"
 
-const MotionTube = preload("res://scripts/ui/water_tube_reference_motion.gd")
+const MotionTube = preload("res://scripts/ui/water_tube_3d_motion.gd")
 
 var active_source_tubes: Dictionary = {}
 var active_target_tubes: Dictionary = {}
@@ -88,7 +88,6 @@ func select_tube(index: int) -> void:
 	render_board()
 	_play_premium_concurrent_pour(source_values, target_values, from_rect, to_rect, color_index, amount, from_idx, index, will_complete)
 	_save_checkpoint()
-
 
 func _has_active_pours() -> bool:
 	return not active_source_tubes.is_empty() or not active_target_tubes.is_empty()
