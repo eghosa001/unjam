@@ -73,7 +73,9 @@ jobs:
         run: |
           set -euxo pipefail
           for t in validate_motion_quality validate_monetization validate_premium_ux validate_visual_quality_contract; do
-            godot --headless --path . --script "res://tests/$t.gd"
+            echo "===== START $t ====="
+            timeout 45s godot --headless --path . --script "res://tests/$t.gd"
+            echo "===== PASS $t ====="
           done
       - name: Validate all gameplay and campaign suites
         shell: bash
