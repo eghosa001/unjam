@@ -36,7 +36,7 @@ func _initialize() -> void:
 		"_commit_transfer_plan",
 		"pending_completion",
 		"_complete_if_visuals_settled",
-		"not _has_active_pours()",
+		"_has_active_pours()",
 		"visual_pour_rim_local",
 		"visual_receive_rim_local"
 	], failures)
