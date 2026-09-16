@@ -93,8 +93,10 @@ func _run() -> void:
 
 	if not home.contains("HomeSecondaryActions") or home.contains("LIVE\nPLAY HUB"):
 		return _fail("Home still uses dashboard-like equally weighted secondary actions")
-	if not home.contains("hero.custom_minimum_size = Vector2(0, 760)") or not home.contains("hero_art.custom_minimum_size = Vector2(0, 500)") or not home.contains('hero_title.add_theme_font_size_override("font_size", 42)') or not home.contains('hero_subtitle.add_theme_font_size_override("font_size", 19)') or not home.contains("Vector2(0, 96)"):
-		return _fail("Home script does not own the final vibrant reference geometry")
+	if not home.contains("VIBRANT_REFERENCE_TARGET") or not home.contains("HomeHero") or not home.contains("HomeShowcaseArt") or not home.contains("HomePrimaryAction") or not home.contains("HomeGameShelf") or not home.contains("game_gradient") or not home.contains("vibrant_canvas"):
+		return _fail("Home no longer owns the vibrant reference composition")
+	if not home.contains("hero.custom_minimum_size = Vector2(0, 760)") or not home.contains("hero_art.custom_minimum_size = Vector2(0, 600)") or not home.contains('hero_title.add_theme_font_size_override("font_size", 46)') or not home.contains('hero_subtitle.add_theme_font_size_override("font_size", 21)') or not home.contains("Vector2(0, 92)"):
+		return _fail("Home vibrant composition has regressed below the current premium geometry")
 	if not home.contains("SHOP") or not home.contains("open_shop"):
 		return _fail("Home does not expose a Shop path")
 	if not monetization.contains("func open_shop"):
