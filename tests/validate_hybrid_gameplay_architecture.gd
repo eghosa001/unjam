@@ -14,12 +14,20 @@ func _initialize() -> void:
 	], failures)
 
 	_check("res://scripts/game/water_sort_reference_motion.gd", [
+		"water_tube_3d_motion.gd",
 		"active_source_tubes",
 		"active_target_tubes",
 		"_transfer_amount",
 		"pending_completion",
 		"visual_pour_rim_local",
 		"visual_receive_rim_local"
+	], failures)
+	_check("res://scripts/ui/water_tube_3d_motion.gd", [
+		"SubViewport",
+		"CylinderMesh",
+		"TorusMesh",
+		"SubViewport.UPDATE_ONCE",
+		"_refresh_liquid_3d"
 	], failures)
 
 	_check("res://scripts/game/block_puzzle_ultra_motion.gd", [
