@@ -29,10 +29,10 @@ jobs:
           curl -fsSL \
             -H "Authorization: Bearer ${GITHUB_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
-            https://api.github.com/repos/eghosa001/unjam/git/blobs/12b234f737bb424c58243f56aec7c4847dc96a5d \
+            https://api.github.com/repos/eghosa001/unjam/git/blobs/06763a65e14ddca83e60de996991b45332f362f0 \
             | jq -r '.content' | tr -d '\n' | base64 -d > /tmp/visual-pass.patch.gz
           gzip -dc /tmp/visual-pass.patch.gz > /tmp/visual-pass.patch
-          echo 'fcb5cdd11438b59270e1fd196be86b125acdb55fbc6aee33c87c788f905df369  /tmp/visual-pass.patch' | sha256sum -c -
+          echo 'cc8abdf1a5748c7cc77fee86565d6f7d218a2c68fd80e0c470f5e91b22928e5a  /tmp/visual-pass.patch' | sha256sum -c -
           git apply --check /tmp/visual-pass.patch
           git apply --index /tmp/visual-pass.patch
           changed="$(git diff --cached --name-only)"
