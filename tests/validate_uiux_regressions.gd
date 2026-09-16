@@ -29,6 +29,7 @@ func _run() -> void:
 	var robust_visuals := FileAccess.open("res://scripts/systems/robust_premium_visuals.gd", FileAccess.READ).get_as_text()
 	var backdrop := FileAccess.open("res://scripts/ui/premium_backdrop.gd", FileAccess.READ).get_as_text()
 	var showcase := FileAccess.open("res://scripts/ui/game_showcase_art.gd", FileAccess.READ).get_as_text()
+	var project_text := FileAccess.open("res://project.godot", FileAccess.READ).get_as_text()
 
 	if not rescue.contains("viewport_height") or not rescue.contains("max_board_height"):
 		return _fail("Rescue height-aware sizing missing")
@@ -62,22 +63,28 @@ func _run() -> void:
 		return _fail("Active surface manager still moves content root")
 	if not motion.contains("reduced_motion"):
 		return _fail("Reduced Motion preference is not wired into navigation motion")
-	if not visuals.contains("func _reduced_motion") or not visuals.contains("func apply_motion_preference"):
+	if not visuals.contains("func reduced_motion_enabled") or not visuals.contains("if reduced_motion_enabled()"):
 		return _fail("Shared premium effects do not expose a Reduced Motion gate")
-	if not visuals.contains("if _reduced_motion():") or not visuals.contains("clear_ambient()"):
-		return _fail("Shared premium effects do not suppress ambient/reward motion")
-	if not robust_visuals.contains("_reduced_motion"):
-		return _fail("Adaptive premium visuals can still recreate ambient motion")
-	if not backdrop.contains("apply_motion_preference") or not backdrop.contains("reduced_motion_aware"):
-		return _fail("Premium backdrop does not stop continuous drift for Reduced Motion")
-	if not showcase.contains("apply_motion_preference") or not showcase.contains("reduced_motion_aware"):
-		return _fail("Home showcase art does not stop continuous animation for Reduced Motion")
-	if not home.contains("reduced_motion"):
-		return _fail("Home entrance animation ignores Reduced Motion")
-	if not surface.contains("reduced_motion"):
-		return _fail("Secondary-surface entrance animation ignores Reduced Motion")
-	if not settings.contains("apply_motion_preference"):
-		return _fail("Reduced Motion toggle does not apply immediately to active visual systems")
+	if not robust_visuals.contains("if not reduced_motion_enabled()"):
+		return _fail("Adaptive premium visuals still move ambient decoration in Reduced Motion")
+	if not backdrop.contains("reduced_motion") or not showcase.contains("reduced_motion"):
+		return _fail("Continuous decorative animation ignores Reduced Motion")
+	if not home.contains("reduced_motion") or not surface.contains("reduced_motion"):
+		return _fail("Home or secondary-surface entrance animation ignores Reduced Motion")
+	if not settings.contains("apply_reduced_motion"):
+		return _fail("Reduced Motion setting is not applied immediately")
+
+	var retired_paths := [
+		"res://scripts/ui/home_cinematic_polish.gd",
+		"res://scripts/ui/home_ux_patch.gd",
+		"res://scripts/ui/secondary_surface_fill.gd",
+		"res://scripts/ui/global_finish_polish.gd"
+	]
+	for path in retired_paths:
+		if FileAccess.file_exists(path):
+			return _fail("Retired UI patch script still exists: %s" % path)
+	if project_text.contains("res://addons/stagehand/plugin.cfg"):
+		return _fail("Project still enables the missing Stagehand editor plugin")
 
 	if not home.contains("HomeSecondaryActions") or home.contains("LIVE\nPLAY HUB"):
 		return _fail("Home still uses dashboard-like equally weighted secondary actions")
