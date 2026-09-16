@@ -19,31 +19,31 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
-      - name: Apply verified compact gameplay stack patch
+      - name: Apply verified immediate surface handoff patch
         env:
           GITHUB_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "41297e3ca6998c5f96522657da52b816e3923036"
+          test "$(git rev-parse HEAD)" = "57bd66df48a6af8d5388be3559a0bcacf1dee625"
           curl -fsSL \
             -H "Authorization: Bearer ${GITHUB_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
-            https://api.github.com/repos/eghosa001/unjam/git/blobs/4d05ca17c8ff4b3fc7a597e592580ff603a8593f \
+            https://api.github.com/repos/eghosa001/unjam/git/blobs/12b234f737bb424c58243f56aec7c4847dc96a5d \
             | jq -r '.content' | tr -d '\n' | base64 -d > /tmp/visual-pass.patch.gz
           gzip -dc /tmp/visual-pass.patch.gz > /tmp/visual-pass.patch
-          echo 'dbdf20bd4be86029d1cabdaafba612b681f95ed0c9aa1ab0247d103228a68892  /tmp/visual-pass.patch' | sha256sum -c -
+          echo 'fcb5cdd11438b59270e1fd196be86b125acdb55fbc6aee33c87c788f905df369  /tmp/visual-pass.patch' | sha256sum -c -
           git apply --check /tmp/visual-pass.patch
           git apply --index /tmp/visual-pass.patch
           changed="$(git diff --cached --name-only)"
           count="$(printf '%s\n' "$changed" | sed '/^$/d' | wc -l)"
           test "$count" -eq 3
           if printf '%s\n' "$changed" | grep -Eq '^\.github/|^addons/stagehand/|^project\.godot$|(^|/)\.uid$'; then
-            echo 'Unexpected generated/QA file in compact gameplay stack pass' >&2
+            echo 'Unexpected generated/QA file in immediate surface handoff pass' >&2
             printf '%s\n' "$changed" >&2
             exit 1
           fi
           git config user.name 'AIGHEWI EGHOSA'
           git config user.email 'aighewieghosa111@gmail.com'
-          git commit -m 'visual: compact water and rescue gameplay stacks'
+          git commit -m 'fix: switch persistent surfaces in the same frame'
           git push origin HEAD:main
