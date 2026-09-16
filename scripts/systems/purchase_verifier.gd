@@ -20,6 +20,9 @@ func verify(product_id: String, token: String, callback: Callable) -> void:
 		return
 	var request := HTTPRequest.new()
 	request.timeout = VERIFICATION_TIMEOUT_SECONDS
+	# Purchase tokens are bearer-like credentials. Never follow redirects to a
+	# different endpoint; the configured HTTPS verifier must answer directly.
+	request.max_redirects = 0
 	add_child(request)
 	request.request_completed.connect(func(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray):
 		var ok := false
@@ -29,7 +32,8 @@ func verify(product_id: String, token: String, callback: Callable) -> void:
 		elif response_code >= 200 and response_code < 300:
 			var parsed = JSON.parse_string(body.get_string_from_utf8())
 			if parsed is Dictionary:
-				ok = bool(parsed.get("valid", false)) and String(parsed.get("product_id", product_id)) == product_id
+				var verified_product_id := String(parsed.get("product_id", ""))
+				ok = bool(parsed.get("valid", false)) and not verified_product_id.is_empty() and verified_product_id == product_id
 				reason = String(parsed.get("reason", "verified" if ok else "Verification rejected"))
 		callback.call(ok, reason)
 		verification_completed.emit(product_id, token, ok, reason)
