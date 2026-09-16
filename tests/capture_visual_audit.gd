@@ -87,11 +87,26 @@ func _run() -> void:
 		shell.set("theme_mode", "dark")
 		if shell.has_method("_apply_theme"):
 			shell.call("_apply_theme")
+
 	main.call("start_level", 1)
 	await _settle(8)
 	if shell != null and shell.has_method("show_tutorial"):
 		shell.call("show_tutorial", "rescue_rush")
 	await _capture("15-tutorial-rescue-dark")
+	_hide_tutorial(shell)
+
+	main.call("start_multi_level", "water_sort", 1, false)
+	await _settle(8)
+	if shell != null and shell.has_method("show_tutorial"):
+		shell.call("show_tutorial", "water_sort")
+	await _capture("16-tutorial-water-dark")
+	_hide_tutorial(shell)
+
+	main.call("start_multi_level", "block_puzzle", 1, false)
+	await _settle(8)
+	if shell != null and shell.has_method("show_tutorial"):
+		shell.call("show_tutorial", "block_puzzle")
+	await _capture("17-tutorial-block-dark")
 	_hide_tutorial(shell)
 
 	var result := PremiumResultOverlay.new()
@@ -104,14 +119,11 @@ func _run() -> void:
 		"NEXT PUZZLE"
 	)
 	main.add_child(result)
-	await _capture("16-result-overlay-dark")
+	await _capture("18-result-overlay-dark")
 	result.queue_free()
 	await _settle(3)
 
 	print("Visual audit captures written to %s" % OUT_DIR)
-	# The visual runner synthesizes music through FeedbackManager. Release the
-	# generated stream/player before SceneTree quits so leak diagnostics remain
-	# meaningful instead of reporting the intentionally persistent autoload.
 	var feedback := root.get_node_or_null("FeedbackManager")
 	if feedback != null and feedback.has_method("shutdown_audio"):
 		feedback.call("shutdown_audio")
