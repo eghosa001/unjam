@@ -14,7 +14,15 @@ func configure(base: Color, accent: Color, motif_index: int) -> void:
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	set_process(true)
+	add_to_group("reduced_motion_aware")
+	apply_motion_preference()
+
+func apply_motion_preference() -> void:
+	var reduced := bool(SaveManager.data.get("reduced_motion", false))
+	if reduced:
+		t = 0.0
+	set_process(not reduced)
+	queue_redraw()
 
 func _process(delta: float) -> void:
 	t += delta
