@@ -17,12 +17,12 @@ func _ready() -> void:
 	if SaveManager.has_signal("premium_reward"):
 		SaveManager.premium_reward.connect(_on_premium_reward)
 	apply_motion_preference()
-	set_process(true)
 
 func _reduced_motion() -> bool:
 	return MotionSystem.reduced()
 
 func apply_motion_preference() -> void:
+	set_process(not _reduced_motion())
 	if is_instance_valid(overlay):
 		if _reduced_motion():
 			clear_ambient()
