@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3]
 
-[ext_resource path="res://scripts/game/block_puzzle_3d_clear.gd" type="Script" id="1"]
+[ext_resource path="res://scripts/game/block_puzzle_3d.gd" type="Script" id="1"]
 [ext_resource path="res://scripts/ui/ui_touch_enhancer_casual.gd" type="Script" id="2"]
 
 [node name="BlockPuzzle" type="Control"]
