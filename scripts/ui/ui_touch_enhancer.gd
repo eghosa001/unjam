@@ -54,9 +54,9 @@ func _enlarge_buttons(node: Node) -> void:
 
 func _apply_button_size(button: Button) -> void:
 	# Gameplay drawing controls are not ordinary buttons. Enforcing navigation
-	# touch-target sizes on them can blow up an 8x8 board or distort bottle
-	# geometry. Their game layouts own their dimensions.
-	if _is_block_cell_button(button) or _is_water_tube_widget(button):
+	# touch-target sizes on them can blow up an 8x8 board, distort bottles, or
+	# resize Rescue Rush board pieces when Main scans an active game subtree.
+	if _is_block_cell_button(button) or _is_water_tube_widget(button) or _is_rescue_piece_button(button):
 		return
 	var label := button.text.strip_edges().to_upper()
 	var wanted := Vector2(maxf(button.custom_minimum_size.x, 160.0), maxf(button.custom_minimum_size.y, 108.0))
@@ -106,3 +106,6 @@ func _is_block_cell_button(button: Button) -> bool:
 
 func _is_water_tube_widget(button: Button) -> bool:
 	return _button_script_path(button).contains("water_tube")
+
+func _is_rescue_piece_button(button: Button) -> bool:
+	return _button_script_path(button).contains("rescue_piece_3d_button.gd")
