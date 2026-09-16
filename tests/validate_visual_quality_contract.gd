@@ -109,8 +109,9 @@ func _validate_full_app_vibrant_adoption() -> bool:
 		"res://scripts/game/rescue_rush_casual.gd": ["VIBRANT_REFERENCE_TARGET", "vibrant_canvas", "game_gradient"],
 		"res://scripts/game/water_sort_casual.gd": ["VIBRANT_REFERENCE_TARGET", "vibrant_canvas", "game_gradient"],
 		"res://scripts/game/block_puzzle_premium_layout.gd": ["VIBRANT_REFERENCE_TARGET", "vibrant_canvas", "game_gradient"],
-		"res://scripts/ui/main.gd": ["VIBRANT_REFERENCE_TARGET", "vibrant_surface", "PremiumDesignSystem"],
-		"res://scripts/ui/monetization_hub.gd": ["VIBRANT_REFERENCE_TARGET", "PremiumDesignSystem"],
+		"res://scripts/ui/premium_surface_manager.gd": ["VIBRANT_REFERENCE_TARGET", "vibrant_surface", "_densify_layout"],
+		"res://scripts/ui/monetization_hub.gd": ["VIBRANT_REFERENCE_TARGET", "PremiumDesignSystem", "vibrant_canvas"],
+		"res://scripts/ui/premium_result_overlay.gd": ["VIBRANT_REFERENCE_TARGET", "PremiumBackdrop", "PremiumDesignSystem"],
 		"res://tests/capture_visual_audit.gd": ["tutorial-water", "tutorial-block", "result-overlay", "settings-light", "levels-block"]
 	}
 	for path in required.keys():
