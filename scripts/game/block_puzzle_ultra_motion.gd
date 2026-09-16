@@ -9,6 +9,7 @@ const PLACEMENT_HELP := "Release when the placement preview locks into place"
 func build_ui() -> void:
 	super.build_ui()
 	_patch_game_first_layout()
+	_apply_premium_block_surface()
 
 func load_level() -> void:
 	super.load_level()
@@ -55,8 +56,6 @@ func _invalid_bump() -> void:
 	tween.tween_property(board_shell, "position:x", base_x, beat * 0.50)
 
 func _spawn_clear_feedback(indices: Array[int], line_count: int) -> void:
-	# Preserve the proven clear/debris rendering while standardizing its semantic
-	# audio/haptic beat and local board impact through the shared motion system.
 	FeedbackManager.line_clear(line_count)
 	if line_count >= 2:
 		FeedbackManager.combo(line_count)
@@ -94,6 +93,35 @@ func complete_level() -> void:
 		finished.emit(-1 if daily_mode else level_number)
 		queue_free()
 	)
+
+func _apply_premium_block_surface() -> void:
+	var accent := PremiumDesignSystem.accent_for_game("block_puzzle")
+	for node in _descendants(self):
+		if node is Button and not node is BlockCellButton and not node is SmoothPieceButton:
+			var button := node as Button
+			var role := PremiumDesignSystem.role_for_button(button)
+			PremiumDesignSystem.apply_button(button, true, accent, role, 24)
+		elif node is PanelContainer:
+			var panel := node as PanelContainer
+			if panel == board_shell:
+				panel.add_theme_stylebox_override("panel", PremiumDesignSystem.raised_box(PremiumDesignSystem.material_color("toy", true, accent).darkened(0.72), 30, Color(accent, 0.48), true, 12))
+			elif _contains_label(panel, "DRAG A BLOCK"):
+				panel.add_theme_stylebox_override("panel", PremiumDesignSystem.raised_box(Color(PremiumDesignSystem.surface_2(true), 0.96), 28, Color(accent, 0.40), true, 7))
+			else:
+				PremiumDesignSystem.apply_panel(panel, true, accent, panel.custom_minimum_size.y >= 90.0, 28)
+		elif node is Label:
+			var label := node as Label
+			var size_now := label.get_theme_font_size("font_size")
+			if size_now >= 30:
+				PremiumDesignSystem.apply_label(label, true, "title", accent)
+			elif size_now <= 18:
+				PremiumDesignSystem.apply_label(label, true, "muted", accent)
+			else:
+				PremiumDesignSystem.apply_label(label, true, "body", accent)
+		elif node is ProgressBar:
+			var bar := node as ProgressBar
+			bar.add_theme_stylebox_override("background", PremiumDesignSystem.recessed_box(PremiumDesignSystem.surface_3(true), 9, PremiumDesignSystem.border(true), true))
+			bar.add_theme_stylebox_override("fill", PremiumDesignSystem.gloss_button(accent, 9, true, 2))
 
 func _patch_game_first_layout() -> void:
 	for node in _descendants(self):
