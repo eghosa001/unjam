@@ -1,7 +1,6 @@
 extends Control
 
-# Shared Home state/navigation only. The retired flat renderer that used
-# PremiumBackdrop, GameSelectTile, GameShowcaseArt and UnjamLogo has been
+# Shared Home state/navigation only. Retired flat presentation code has been
 # removed; premium_home_casual.gd owns the active 3D presentation.
 var selected_game := "rescue_rush"
 var built := false
