@@ -13,6 +13,10 @@ func _queue_board_fit() -> void:
 	call_deferred("_fit_board_to_viewport")
 
 func render_board() -> void:
+	if board_grid != null:
+		for child in board_grid.get_children():
+			board_grid.remove_child(child)
+			child.queue_free()
 	super.render_board()
 	_fit_board_to_viewport()
 
