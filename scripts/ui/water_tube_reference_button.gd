@@ -30,29 +30,41 @@ func _ready() -> void:
 	pivot_offset = size * 0.5
 
 func _press() -> void:
-	var t := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	t.tween_property(self, "scale", Vector2(0.95, 0.95), 0.06)
+	if MotionSystem.reduced():
+		return
+	var t := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	t.tween_property(self, "scale", Vector2(0.95, 0.95), MotionSystem.duration(&"micro"))
 
 func _release() -> void:
+	if MotionSystem.reduced():
+		scale = Vector2.ONE
+		return
 	var t := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	t.tween_property(self, "scale", Vector2(1.04, 1.04), 0.08)
-	t.tween_property(self, "scale", Vector2.ONE, 0.13)
+	t.tween_property(self, "scale", Vector2(1.04, 1.04), MotionSystem.duration(&"micro"))
+	t.tween_property(self, "scale", Vector2.ONE, MotionSystem.duration(&"settle"))
 
 func play_invalid() -> void:
 	invalid_flash = 1.0
+	if MotionSystem.reduced():
+		queue_redraw()
+		return
 	var original := position
-	var t := create_tween()
+	var t := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	for dx in [7.0, -7.0, 5.0, -5.0, 0.0]:
-		t.tween_property(self, "position", original + Vector2(dx, 0), 0.04)
+		t.tween_property(self, "position", original + Vector2(dx, 0), MotionSystem.duration(&"micro") * 0.58)
 
 func play_success() -> void:
 	success_flash = 1.0
+	if MotionSystem.reduced():
+		queue_redraw()
+		return
 	var t := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	t.tween_property(self, "scale", Vector2(1.08, 0.97), 0.07)
-	t.tween_property(self, "scale", Vector2.ONE, 0.14)
+	t.tween_property(self, "scale", Vector2(1.08, 0.97), MotionSystem.duration(&"micro"))
+	t.tween_property(self, "scale", Vector2.ONE, MotionSystem.duration(&"settle"))
 
 func _process(delta: float) -> void:
-	pulse += delta
+	if not MotionSystem.reduced():
+		pulse += delta
 	invalid_flash = maxf(0.0, invalid_flash - delta * 3.8)
 	success_flash = maxf(0.0, success_flash - delta * 2.8)
 	if is_selected or invalid_flash > 0.0 or success_flash > 0.0:
@@ -105,7 +117,7 @@ func _draw() -> void:
 	draw_line(Vector2(body.end.x - 7, body.position.y + 23), Vector2(body.end.x - 7, body.size.y * 0.38 + body.position.y), Color(1, 1, 1, 0.13), 2.0, true)
 
 	if is_selected:
-		var a := 0.35 + 0.12 * sin(pulse * 5.0)
+		var a := 0.35 if MotionSystem.reduced() else 0.35 + 0.12 * sin(pulse * 5.0)
 		draw_arc(body.get_center(), body.size.x * 0.68, 0, TAU, 42, Color(1.0, 0.88, 0.35, a), 4.0, true)
 
 func _draw_glass_shape(rect: Rect2, fill: Color, border: Color, radius: float, border_width: float) -> void:
