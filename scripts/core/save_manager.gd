@@ -11,6 +11,8 @@ const DEFAULT_DATA := {
 	"sound": true,
 	"vibration": true,
 	"music": true,
+	"reduce_motion": false,
+	"fast_animation": false,
 	"decorations": [],
 	"daily_last_date": "",
 	"daily_streak": 0,
