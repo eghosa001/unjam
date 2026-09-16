@@ -17,6 +17,11 @@ func configure(type_value: String, direction_value: String, base_color: Color) -
 
 func _ready() -> void:
 	super._ready()
+	# PremiumPieceButton animates its Canvas drawing every frame. This subclass
+	# renders the tile through a one-shot 3D viewport and overrides _draw(), so the
+	# inherited idle loop only wastes per-piece CPU/redraw work and can fight the
+	# direct press/release tweens. Keep it asleep while idle.
+	set_process(false)
 	_build_viewport_3d()
 	_rebuild_piece_3d()
 
