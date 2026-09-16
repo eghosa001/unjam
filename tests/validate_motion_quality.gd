@@ -8,11 +8,12 @@ func _run() -> void:
 	if not _validate_rescue_completion_buffer(): return
 	if not _validate_water_lip_geometry(): return
 	if not _validate_water_stream_layering(): return
+	if not _validate_water_premium_contract(): return
 	if not await _validate_block_follow_response(): return
 	if not _validate_single_block_drag_owner(): return
 	if not _validate_gameplay_controls_keep_layout_size(): return
 	if not _validate_screen_geometry_static(): return
-	print("Motion quality validated: shared motion preferences, rescue completion buffer, visible bottle-rim pour, responsive continuous block drag, single drag owner, gameplay controls preserve layout size, screen roots never move/scale on interaction.")
+	print("Motion quality validated: shared motion preferences, rescue completion buffer, visible bottle-rim pour, premium water motion/feedback, responsive continuous block drag, single drag owner, gameplay controls preserve layout size, screen roots never move/scale on interaction.")
 	quit(0)
 
 func _validate_shared_motion_system() -> bool:
@@ -79,6 +80,22 @@ func _validate_water_stream_layering() -> bool:
 		return _fail("Water Sort pour no longer visibly exits from the bottle rim")
 	if not source.contains("stream.z_index = 670"):
 		return _fail("Water Sort stream can render behind the translucent bottle and look centre-originated")
+	return true
+
+func _validate_water_premium_contract() -> bool:
+	var motion_file := FileAccess.open("res://scripts/game/water_sort_reference_motion.gd", FileAccess.READ)
+	if motion_file == null:
+		return _fail("Water Sort reference motion source is missing")
+	var source := motion_file.get_as_text()
+	for needle in ["MotionSystem.duration(&\"travel\")", "MotionSystem.duration(&\"pour\")", "FeedbackManager.lift()", "FeedbackManager.pour_start()", "FeedbackManager.pour_land()"]:
+		if not source.contains(needle):
+			return _fail("Water Sort does not use shared premium motion/feedback contract: " + needle)
+	var tube_file := FileAccess.open("res://scripts/ui/water_tube_reference_motion.gd", FileAccess.READ)
+	if tube_file == null:
+		return _fail("Water Sort motion tube source is missing")
+	var tube_source := tube_file.get_as_text()
+	if not tube_source.contains("procedural_materials.gd") or not tube_source.contains("vertical_shade"):
+		return _fail("Water Sort liquid/glass rendering does not use procedural depth material helpers")
 	return true
 
 func _validate_gameplay_controls_keep_layout_size() -> bool:
