@@ -1,9 +1,12 @@
 extends "res://scripts/systems/premium_visuals.gd"
 
+const MATERIALS_SCRIPT = preload("res://scripts/ui/procedural_materials.gd")
+
 var quality_scale := 1.0
 var sample_time := 0.0
 var low_fps_samples := 0
 var high_fps_samples := 0
+var _materials = MATERIALS_SCRIPT.new()
 
 func _ready() -> void:
 	super._ready()
@@ -12,7 +15,9 @@ func _ready() -> void:
 	ambient_sparkles(_ambient_count())
 
 func _process(delta: float) -> void:
-	super._process(delta)
+	# Keep the global sparkle field completely static when Reduce Motion is on.
+	if not MotionSystem.reduced():
+		super._process(delta)
 	sample_time += delta
 	if sample_time < 2.0:
 		return
@@ -41,7 +46,7 @@ func _set_quality(value: float) -> void:
 	high_fps_samples = 0
 
 func _ambient_count() -> int:
-	return 14 if quality_scale >= 0.9 else 7
+	return _materials.particle_budget(14, quality_scale, MotionSystem.reduced())
 
 func set_accent(color: Color) -> void:
 	accent = color
@@ -77,5 +82,7 @@ func ambient_sparkles(count: int = 12) -> void:
 		overlay.add_child(dot)
 
 func burst(global_pos: Vector2, color: Color = Color("2dd4b6"), count: int = 18) -> void:
-	var scaled := maxi(4, int(round(float(count) * quality_scale)))
-	super.burst(global_pos, color, scaled)
+	var scaled := _materials.particle_budget(count, quality_scale, MotionSystem.reduced())
+	if scaled <= 0:
+		return
+	super.burst(global_pos, color, maxi(2, scaled))
