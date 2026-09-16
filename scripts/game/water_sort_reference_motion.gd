@@ -104,6 +104,11 @@ func _complete_if_visuals_settled() -> void:
 	FeedbackManager.complete("water")
 	complete_level()
 
+func _refresh_idle_status_after_pours() -> void:
+	if status_label == null or completed or pending_completion or _has_active_pours() or not _queued_action.is_empty():
+		return
+	status_label.text = "Ready to pour"
+
 func undo_move() -> void:
 	if _has_active_pours():
 		_queued_action = "undo"
@@ -349,3 +354,4 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 	if _run_queued_action_if_ready():
 		return
 	_complete_if_visuals_settled()
+	_refresh_idle_status_after_pours()

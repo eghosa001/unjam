@@ -33,6 +33,7 @@ func _process(delta: float) -> void:
 
 func _build_3d_scene() -> void:
 	viewport_3d = SubViewport.new()
+	viewport_3d.own_world_3d = true
 	viewport_3d.name = "MascotViewport3D"
 	viewport_3d.size = Vector2i(512, 512)
 	viewport_3d.transparent_bg = true

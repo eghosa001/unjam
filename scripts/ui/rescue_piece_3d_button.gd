@@ -41,6 +41,7 @@ func _build_viewport_3d() -> void:
 	add_child(viewport_container)
 
 	viewport_3d = SubViewport.new()
+	viewport_3d.own_world_3d = true
 	viewport_3d.name = "RescuePieceViewport3D"
 	viewport_3d.size = Vector2i(256, 256)
 	viewport_3d.transparent_bg = true

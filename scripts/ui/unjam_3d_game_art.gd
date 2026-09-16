@@ -20,12 +20,23 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stretch = true
 	viewport_3d = SubViewport.new()
+	viewport_3d.own_world_3d = true
 	viewport_3d.name = "GamePreviewViewport3D"
 	viewport_3d.size = Vector2i(480, 360)
 	viewport_3d.transparent_bg = true
-	viewport_3d.render_target_update_mode = SubViewport.UPDATE_ONCE
+	viewport_3d.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	add_child(viewport_3d)
 	_build_stage()
+	call_deferred("_finish_initial_render")
+
+func _finish_initial_render() -> void:
+	# The card can enter the tree before its ScrollContainer/layout is visible.
+	# Render a couple of real frames, then return to one-shot mode so previews
+	# stay cheap on mobile instead of becoming permanent 3D render loops.
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if viewport_3d != null and is_instance_valid(viewport_3d):
+		viewport_3d.render_target_update_mode = SubViewport.UPDATE_ONCE
 
 func _rebuild_stage() -> void:
 	if stage != null and is_instance_valid(stage):

@@ -23,6 +23,7 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stretch = true
 	viewport_3d = SubViewport.new()
+	viewport_3d.own_world_3d = true
 	viewport_3d.name = "RescueCharacterViewport3D"
 	viewport_3d.size = Vector2i(320, 320)
 	viewport_3d.transparent_bg = true

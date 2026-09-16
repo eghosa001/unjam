@@ -287,7 +287,7 @@ func _restore_checkpoint() -> void:
 func render_pieces() -> void:
 	for child in piece_row.get_children(): child.queue_free()
 	for i in range(pieces.size()):
-		var button := PolishedBlockPieceButton.new(); button.custom_minimum_size = Vector2(300, 176)
+		var button := BlockPieceButton.new(); button.custom_minimum_size = Vector2(300, 176)
 		var color: Color = piece_colors[i] if i < piece_colors.size() else PIECE_COLORS[posmod(piece_batch * 3 + i + campaign_tier(), PIECE_COLORS.size())]
 		button.configure(pieces[i], i == selected_piece, color, i); button.pressed.connect(select_piece.bind(i)); piece_row.add_child(button)
 

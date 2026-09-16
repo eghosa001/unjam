@@ -35,7 +35,7 @@ func _apply_tube_layout() -> void:
 	var gap := 22 if count <= 8 else 14
 	var viewport_width := get_viewport_rect().size.x
 	var usable_width := maxf(360.0, viewport_width - 108.0)
-	var max_width_from_screen := floor((usable_width - float(gap * maxi(columns - 1, 0))) / float(columns))
+	var max_width_from_screen: float = floorf((usable_width - float(gap * maxi(columns - 1, 0))) / float(columns))
 	var tube_size := _tube_size_for_count(count)
 	tube_size.x = minf(tube_size.x, max_width_from_screen)
 	# Preserve the tall glass silhouette while scaling down on narrow phones.

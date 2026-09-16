@@ -65,10 +65,13 @@ func _build_3d_view() -> void:
 	viewport_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	viewport_container.stretch = true
 	viewport_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	viewport_container.z_index = -1
+	# Keep the real 3D bottle above the translucent stage panel. A negative
+	# z-index puts it behind ancestor panel chrome and visibly bleaches the liquid.
+	viewport_container.z_index = 0
 	add_child(viewport_container)
 
 	viewport_3d = SubViewport.new()
+	viewport_3d.own_world_3d = true
 	viewport_3d.name = "TubeViewport3D"
 	# Slightly above the on-screen tube resolution, but far below the old
 	# 220x420 buffer. Idle tubes still render only once.

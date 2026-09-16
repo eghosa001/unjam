@@ -21,6 +21,7 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stretch = true
 	viewport_3d = SubViewport.new()
+	viewport_3d.own_world_3d = true
 	viewport_3d.name = "GameplayViewport3D"
 	viewport_3d.size = Vector2i(540, 960)
 	viewport_3d.render_target_update_mode = SubViewport.UPDATE_ONCE

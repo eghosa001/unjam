@@ -84,29 +84,15 @@ func _game_id_from_accent(accent: Color) -> String:
 		return "block_puzzle"
 	return "rescue_rush"
 
-func _add_surface_chrome(content: Control, surface: String, game_id: String, _dark: bool, accent: Color) -> void:
+func _add_surface_chrome(content: Control, _surface: String, _game_id: String, _dark: bool, _accent: Color) -> void:
+	# Secondary screens already own their header/back navigation. Adding another
+	# badge here duplicates that information and can overlap the native header.
+	# Remove any older injected chrome atomically, then leave header ownership to
+	# the screen itself while this manager continues to provide backdrop/skinning.
 	var existing := content.get_node_or_null("PremiumSurfaceChrome")
 	if existing != null:
 		content.remove_child(existing)
 		existing.queue_free()
-	var chrome := Control.new()
-	chrome.name = "PremiumSurfaceChrome"
-	chrome.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	chrome.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	chrome.z_index = 90
-	content.add_child(chrome)
-	var badge := PanelContainer.new()
-	badge.position = Vector2(46, 16)
-	badge.custom_minimum_size = Vector2(270, 52)
-	badge.add_theme_stylebox_override("panel", Unjam3DTheme.badge(Unjam3DTheme.game_dark(game_id), 22))
-	chrome.add_child(badge)
-	var label := Label.new()
-	label.text = "%s  •  %s" % [_game_name(game_id), _surface_name(surface)]
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 13)
-	Unjam3DTheme.label_3d(label, Color.WHITE, Unjam3DTheme.game_dark(game_id).darkened(0.35), 2)
-	badge.add_child(label)
 
 func _animate_surface(content: Control) -> void:
 	# MotionDirector owns navigation transitions. This manager owns only skinning,
