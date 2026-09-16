@@ -135,15 +135,16 @@ func _build() -> void:
 		star.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		star.add_theme_font_size_override("font_size", 72)
 		star.add_theme_color_override("font_color", Color("ffd166") if i < stars else Color("435168"))
-		star.scale = Vector2(0.10, 0.10)
-		star.modulate.a = 0.0
+		star.scale = Vector2.ONE if MotionSystem.reduced() else Vector2(0.10, 0.10)
+		star.modulate.a = 1.0 if MotionSystem.reduced() else 0.0
 		star.pivot_offset = star.custom_minimum_size * 0.5
 		star_row.add_child(star)
-		var tw := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		tw.tween_interval(0.10 + float(i) * 0.13)
-		tw.tween_property(star, "modulate:a", 1.0, 0.06)
-		tw.parallel().tween_property(star, "scale", Vector2(1.18, 1.18), 0.16)
-		tw.tween_property(star, "scale", Vector2.ONE, 0.10)
+		if not MotionSystem.reduced():
+			var tw := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+			tw.tween_interval(MotionSystem.duration(&"press") + float(i) * MotionSystem.duration(&"settle"))
+			tw.tween_property(star, "modulate:a", 1.0, MotionSystem.duration(&"micro"))
+			tw.parallel().tween_property(star, "scale", Vector2(1.18, 1.18), MotionSystem.duration(&"settle"))
+			tw.tween_property(star, "scale", Vector2.ONE, MotionSystem.duration(&"press"))
 
 	var divider := ColorRect.new()
 	divider.custom_minimum_size = Vector2(0, 2)
@@ -193,10 +194,11 @@ func _build() -> void:
 	hint.add_theme_color_override("font_color", Color("6f8098"))
 	box.add_child(hint)
 
-	card.modulate.a = 0.0
-	card.scale = Vector2(0.90, 0.90)
+	card.modulate.a = 1.0 if MotionSystem.reduced() else 0.0
+	card.scale = Vector2.ONE if MotionSystem.reduced() else Vector2(0.90, 0.90)
 	card.pivot_offset = Vector2(350, 470)
-	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(card, "modulate:a", 1.0, 0.14)
-	tween.parallel().tween_property(card, "scale", Vector2(1.02, 1.02), 0.28)
-	tween.tween_property(card, "scale", Vector2.ONE, 0.11)
+	if not MotionSystem.reduced():
+		var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tween.tween_property(card, "modulate:a", 1.0, MotionSystem.duration(&"settle"))
+		tween.parallel().tween_property(card, "scale", Vector2(1.02, 1.02), MotionSystem.duration(&"celebrate"))
+		tween.tween_property(card, "scale", Vector2.ONE, MotionSystem.duration(&"press"))
