@@ -63,11 +63,12 @@ func play_success() -> void:
 	t.tween_property(self, "scale", Vector2.ONE, MotionSystem.duration(&"settle"))
 
 func _process(delta: float) -> void:
-	if not MotionSystem.reduced():
+	var reduced := MotionSystem.reduced()
+	if not reduced:
 		pulse += delta
 	invalid_flash = maxf(0.0, invalid_flash - delta * 3.8)
 	success_flash = maxf(0.0, success_flash - delta * 2.8)
-	if is_selected or invalid_flash > 0.0 or success_flash > 0.0:
+	if (is_selected and not reduced) or invalid_flash > 0.0 or success_flash > 0.0:
 		queue_redraw()
 
 func _draw() -> void:
