@@ -3,6 +3,21 @@ extends "res://scripts/game/rescue_rush_motion_final.gd"
 func style_button(button: Button, accent: bool = false) -> void:
 	Unjam3DTheme.gloss_button(button, Unjam3DTheme.ORANGE if accent else Unjam3DTheme.WATER_DARK, true, 24)
 
+
+func restart_level() -> void:
+	# The scene-owned touch enhancer must survive retries. Detach it while the
+	# inherited restart retires runtime UI, and remove those runtime controls
+	# immediately so old/new screen trees never overlap in the same frame.
+	var enhancer := get_node_or_null("UiTouchEnhancer")
+	if enhancer != null and enhancer.get_parent() == self:
+		remove_child(enhancer)
+	for child in get_children():
+		remove_child(child)
+		child.queue_free()
+	super.restart_level()
+	if enhancer != null and is_instance_valid(enhancer):
+		add_child(enhancer)
+
 func build_ui() -> void:
 	var world: int = int(level_data.get("world", 1))
 	var environment_3d := Unjam3DGameplayStage.new()
