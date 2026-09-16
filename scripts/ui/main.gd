@@ -12,6 +12,8 @@ func _ready() -> void:
 
 func clear_content() -> void:
 	if content and is_instance_valid(content):
+		if content.get_parent() == self:
+			remove_child(content)
 		content.queue_free()
 	content = Control.new()
 	content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
