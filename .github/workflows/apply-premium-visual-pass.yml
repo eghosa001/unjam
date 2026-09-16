@@ -19,31 +19,31 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
-      - name: Apply verified water rescue visual patch
+      - name: Apply verified compact gameplay stack patch
         env:
           GITHUB_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "3d06abe58c077eeca5183917300957df99aa0e4d"
+          test "$(git rev-parse HEAD)" = "41297e3ca6998c5f96522657da52b816e3923036"
           curl -fsSL \
             -H "Authorization: Bearer ${GITHUB_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
-            https://api.github.com/repos/eghosa001/unjam/git/blobs/6d3da942dbb466c750e9923702c50f200a4902ad \
+            https://api.github.com/repos/eghosa001/unjam/git/blobs/4d05ca17c8ff4b3fc7a597e592580ff603a8593f \
             | jq -r '.content' | tr -d '\n' | base64 -d > /tmp/visual-pass.patch.gz
           gzip -dc /tmp/visual-pass.patch.gz > /tmp/visual-pass.patch
-          echo '146cf79f63e2b64d5cc4bd7fedc1a3b8ab5e9273520c6fe605b7e86900454a53  /tmp/visual-pass.patch' | sha256sum -c -
+          echo 'dbdf20bd4be86029d1cabdaafba612b681f95ed0c9aa1ab0247d103228a68892  /tmp/visual-pass.patch' | sha256sum -c -
           git apply --check /tmp/visual-pass.patch
           git apply --index /tmp/visual-pass.patch
           changed="$(git diff --cached --name-only)"
           count="$(printf '%s\n' "$changed" | sed '/^$/d' | wc -l)"
-          test "$count" -eq 7
+          test "$count" -eq 3
           if printf '%s\n' "$changed" | grep -Eq '^\.github/|^addons/stagehand/|^project\.godot$|(^|/)\.uid$'; then
-            echo 'Unexpected generated/QA file in water rescue visual pass' >&2
+            echo 'Unexpected generated/QA file in compact gameplay stack pass' >&2
             printf '%s\n' "$changed" >&2
             exit 1
           fi
           git config user.name 'AIGHEWI EGHOSA'
           git config user.email 'aighewieghosa111@gmail.com'
-          git commit -m 'visual: enlarge water and rescue gameplay focus'
+          git commit -m 'visual: compact water and rescue gameplay stacks'
           git push origin HEAD:main
