@@ -1,5 +1,11 @@
 extends "res://scripts/ui/ux_shell_premium.gd"
 
+func _main() -> Node:
+	var parent := get_parent()
+	if parent != null:
+		return parent
+	return super._main()
+
 func _build_shell() -> void:
 	super._build_shell()
 	_compact_shell()
