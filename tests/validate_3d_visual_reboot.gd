@@ -7,6 +7,7 @@ func _initialize() -> void:
 	_check("res://scripts/ui/unjam_3d_mascot.gd", ["extends SubViewportContainer", "Camera3D", "SphereMesh", "ExplorerMascot"], failures)
 	_check("res://scripts/ui/unjam_3d_game_art.gd", ["extends SubViewportContainer", "_build_rescue_rush", "_build_water_sort", "_build_block_puzzle"], failures)
 	_check("res://scripts/ui/unjam_3d_gameplay_stage.gd", ["class_name Unjam3DGameplayStage", "SubViewport", "Camera3D", "configure", "_build_rescue_world", "_build_water_world", "_build_block_world"], failures)
+	_check("res://scripts/ui/rescue_token.gd", ["extends SubViewportContainer", "Camera3D", "SphereMesh", "celebrate", "RescueCharacter3D"], failures)
 	_check("res://scripts/ui/premium_home_casual.gd", ["UNJAM", "build_home_launcher", "_make_game_card", "_make_bottom_nav", "Unjam3DBackdrop", "Unjam3DMascot"], failures)
 	_check("res://scripts/ui/premium_live_hub_3d.gd", ["CHOOSE A GAME", "Unjam3DGameArt", "_add_game_card"], failures)
 	_check("res://scripts/ui/monetization_hub_3d.gd", ["UNJAM SHOP", "Unjam3DBackdrop", "POWER UP YOUR JOURNEY"], failures)
@@ -40,7 +41,7 @@ func _initialize() -> void:
 			push_error(failure)
 		quit(1)
 		return
-	print("3D visual reboot contract validated: real 3D mascot, game previews and gameplay environments with retired flat visual paths removed.")
+	print("3D visual reboot contract validated: real 3D mascot, rescue character, game previews and gameplay environments with retired flat visual paths removed.")
 	quit(0)
 
 func _read(path: String) -> String:
