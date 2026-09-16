@@ -5,7 +5,7 @@ func _initialize() -> void:
 
 func _run() -> void:
 	if not await _validate_shared_motion_system(): return
-	if not _validate_rescue_completion_buffer(): return
+	if not _validate_rescue_completion_tracking(): return
 	if not _validate_water_lip_geometry(): return
 	if not _validate_water_stream_layering(): return
 	if not _validate_water_premium_contract(): return
@@ -13,7 +13,7 @@ func _run() -> void:
 	if not _validate_single_block_drag_owner(): return
 	if not _validate_gameplay_controls_keep_layout_size(): return
 	if not _validate_screen_geometry_static(): return
-	print("Motion quality validated: shared motion preferences, rescue completion buffer, visible bottle-rim pour, premium water motion/feedback, responsive continuous block drag, single drag owner, gameplay controls preserve layout size, screen roots never move/scale on interaction.")
+	print("Motion quality validated: shared preferences, tracked Rescue completion, bottle-rim pours, responsive continuous Block drag and static screen-root geometry.")
 	quit(0)
 
 func _validate_shared_motion_system() -> bool:
@@ -41,13 +41,24 @@ func _validate_shared_motion_system() -> bool:
 		return _fail("Motion accessibility preferences are not persisted in save defaults")
 	return true
 
-func _validate_rescue_completion_buffer() -> bool:
-	var file := FileAccess.open("res://scripts/game/rescue_rush_motion_final.gd", FileAccess.READ)
-	if file == null:
-		return _fail("Rescue motion final script is missing")
-	var source: String = file.get_as_text()
-	if not source.contains("_escape_visual_deadline_msec") or not source.contains("render_board()") or not source.contains("await get_tree().process_frame"):
-		return _fail("Rescue Rush no longer guarantees the final escape clears before completion")
+func _validate_rescue_completion_tracking() -> bool:
+	var polished_file := FileAccess.open("res://scripts/game/rescue_rush_polished.gd", FileAccess.READ)
+	var final_file := FileAccess.open("res://scripts/game/rescue_rush_motion_final.gd", FileAccess.READ)
+	if polished_file == null or final_file == null:
+		return _fail("Rescue motion sources are missing")
+	var source := polished_file.get_as_text()
+	var final_source := final_file.get_as_text()
+	for needle in ["_active_escape_visuals", "_track_escape_visual", "_finish_escape_visual", "_wait_for_escape_visuals", "await _wait_for_escape_visuals()"]:
+		if not source.contains(needle):
+			return _fail("Rescue Rush does not track the actual final escape animation: " + needle)
+	if source.find("await _wait_for_escape_visuals()") > source.find("complete_level()") and source.find("complete_level()") >= 0:
+		# There are other complete_level references in inherited-style code; use the
+		# resolve block markers below rather than trusting the first global match.
+		pass
+	if not source.contains("render_board()\n\tawait _wait_for_escape_visuals()\n\tcomplete_level()"):
+		return _fail("Rescue result can appear before the final escape visual clears")
+	if final_source.contains("_escape_visual_deadline_msec"):
+		return _fail("Rescue Rush still uses the obsolete guessed completion deadline")
 	return true
 
 func _validate_water_lip_geometry() -> bool:
@@ -96,6 +107,12 @@ func _validate_water_premium_contract() -> bool:
 	var tube_source := tube_file.get_as_text()
 	if not tube_source.contains("procedural_materials.gd") or not tube_source.contains("vertical_shade"):
 		return _fail("Water Sort liquid/glass rendering does not use procedural depth material helpers")
+	var tube_3d := FileAccess.open("res://scripts/ui/water_tube_3d_motion.gd", FileAccess.READ)
+	if tube_3d == null:
+		return _fail("Water Sort 3D tube renderer is missing")
+	var tube_3d_source := tube_3d.get_as_text()
+	if not tube_3d_source.contains("SubViewport.UPDATE_ONCE") or not tube_3d_source.contains("liquid_materials_3d"):
+		return _fail("Water Sort 3D tubes are not using one-shot rendering and cached liquid materials")
 	return true
 
 func _validate_gameplay_controls_keep_layout_size() -> bool:
