@@ -94,10 +94,18 @@ func complete_level() -> void:
 		queue_free()
 	)
 
+func _node_script_path(node: Node) -> String:
+	var script := node.get_script() as Script
+	return String(script.resource_path) if script != null else ""
+
+func _is_block_gameplay_widget(node: Node) -> bool:
+	var path := _node_script_path(node)
+	return path.ends_with("block_cell_button.gd") or path.ends_with("smooth_block_piece_button.gd") or path.ends_with("block_piece_button.gd") or path.ends_with("polished_block_piece_button.gd")
+
 func _apply_premium_block_surface() -> void:
 	var accent := PremiumDesignSystem.accent_for_game("block_puzzle")
 	for node in _descendants(self):
-		if node is Button and not node is BlockCellButton and not node is SmoothPieceButton:
+		if node is Button and not _is_block_gameplay_widget(node):
 			var button := node as Button
 			var role := PremiumDesignSystem.role_for_button(button)
 			PremiumDesignSystem.apply_button(button, true, accent, role, 24)
