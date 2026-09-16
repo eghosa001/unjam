@@ -11,6 +11,41 @@ func vertical_shade(base: Color, vertical_t: float) -> Color:
 	var bottom := base.darkened(0.19)
 	return top.lerp(bottom, t)
 
+func bevel_light(base: Color, strength: float = 1.0) -> Color:
+	var amount := clampf(0.28 * strength, 0.08, 0.42)
+	var result := base.lightened(amount)
+	result.a = base.a
+	return result
+
+func bevel_dark(base: Color, strength: float = 1.0) -> Color:
+	var amount := clampf(0.24 * strength, 0.08, 0.38)
+	var result := base.darkened(amount)
+	result.a = base.a
+	return result
+
+func depth_tone(base: Color, strength: float = 1.0) -> Color:
+	var amount := clampf(0.43 * strength, 0.20, 0.58)
+	var result := base.darkened(amount)
+	result.a = base.a
+	return result
+
+func extrusion_offset(quality_scale: float = 1.0, reduce_motion: bool = false) -> Vector2:
+	var quality := clampf(quality_scale, 0.35, 1.0)
+	var depth := lerpf(3.0, 7.0, quality)
+	if reduce_motion:
+		depth = minf(depth, 3.5)
+	return Vector2(depth * 0.22, depth)
+
+func depth_layers_for(quality_scale: float = 1.0, reduce_motion: bool = false) -> int:
+	if reduce_motion:
+		return 2
+	var quality := clampf(quality_scale, 0.35, 1.0)
+	if quality < 0.55:
+		return 2
+	if quality < 0.82:
+		return 3
+	return 4
+
 func contact_shadow(alpha: float = 0.22) -> Color:
 	return Color(0.01, 0.02, 0.04, clampf(alpha, 0.0, 0.55))
 
