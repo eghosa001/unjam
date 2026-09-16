@@ -4,10 +4,22 @@ func _initialize() -> void:
 	var failures: Array[String] = []
 
 	_check("res://scripts/game/rescue_rush_polished.gd", [
+		"rescue_piece_3d_button.gd",
 		"_active_escape_visuals",
 		"_escape_route_cells",
 		"_wait_for_escape_visuals",
 		"await _wait_for_escape_visuals()"
+	], failures)
+	_check("res://scripts/game/rescue_rush_premium.gd", [
+		"rescue_piece_3d_button.gd",
+		"RescuePiece3D.new()"
+	], failures)
+	_check("res://scripts/ui/rescue_piece_3d_button.gd", [
+		"SubViewport",
+		"SubViewport.UPDATE_ONCE",
+		"BoxMesh",
+		"TorusMesh",
+		"_build_arrow_symbol"
 	], failures)
 	_check_absent("res://scripts/game/rescue_rush_motion_final.gd", [
 		"_escape_visual_deadline_msec"
