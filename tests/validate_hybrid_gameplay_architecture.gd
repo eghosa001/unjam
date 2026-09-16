@@ -17,7 +17,8 @@ func _initialize() -> void:
 		"water_tube_3d_motion.gd",
 		"active_source_tubes",
 		"active_target_tubes",
-		"_transfer_amount",
+		"_build_transfer_plan",
+		"_commit_transfer_plan",
 		"pending_completion",
 		"visual_pour_rim_local",
 		"visual_receive_rim_local"
