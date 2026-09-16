@@ -47,8 +47,9 @@ func _draw() -> void:
 	var quality := _quality_scale()
 	var reduced_motion := MotionSystem.reduced()
 	var motion_t := 0.0 if reduced_motion else t
-	var sky_top := base_color.lerp(Color.WHITE, 0.58)
-	var sky_bottom := accent_color.lerp(Color("2a7dff"), 0.34).lightened(0.12)
+	var light_mode := base_color.get_luminance() > 0.58
+	var sky_top := base_color.lerp(Color.WHITE, 0.58 if light_mode else 0.28)
+	var sky_bottom := accent_color.lerp(Color("2a7dff"), 0.34).lightened(0.12 if light_mode else 0.04)
 	var horizon_glow := Color("fff3a6")
 	for band in range(18):
 		var ratio := float(band) / 17.0
@@ -100,6 +101,15 @@ func _draw() -> void:
 		var gy := ground_y - 10.0 - float((i * 17) % 36)
 		var leaf := Color("3ae276") if i % 2 == 0 else Color("84f06d")
 		draw_circle(Vector2(gx, gy), 22.0 + float(i % 3) * 8.0, Color(leaf, 0.48))
+
+	# Vignette changes with appearance mode: bright screens get a soft cyan frame,
+	# while darker screens get a deeper edge that preserves readability.
+	var edge := maxf(40.0, size.x * 0.055)
+	var edge_color := Color(0.05, 0.30, 0.48, 0.055) if light_mode else Color(0.0, 0.04, 0.13, 0.16)
+	var bottom_color := Color(0.03, 0.30, 0.22, 0.07) if light_mode else Color(0.0, 0.03, 0.10, 0.18)
+	draw_rect(Rect2(Vector2.ZERO, Vector2(edge, size.y)), edge_color, true)
+	draw_rect(Rect2(Vector2(size.x - edge, 0), Vector2(edge, size.y)), edge_color, true)
+	draw_rect(Rect2(Vector2(0, size.y - edge), Vector2(size.x, edge)), bottom_color, true)
 
 func _draw_glow(center: Vector2, radius: float, color: Color, quality: float, reduced_motion: bool) -> void:
 	var passes := _materials.glow_passes(quality, reduced_motion)
