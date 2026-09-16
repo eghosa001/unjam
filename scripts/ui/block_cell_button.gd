@@ -139,8 +139,6 @@ func _process(delta: float) -> void:
 
 func _draw() -> void:
 	var rect := Rect2(Vector2(1.5, 1.5), size - Vector2(3, 3))
-	# Empty cells are now brighter purple wells so the board belongs to the same
-	# cheerful toy world as the 3D environment rather than reading as a dark grid.
 	var board_fill := Color("4b3770")
 	if hover_amount > 0.01 and not occupied:
 		board_fill = board_fill.lightened(0.065 * hover_amount)
@@ -178,21 +176,38 @@ func _draw() -> void:
 		draw_arc(c, r, 0.0, TAU, 24, Color("ff7a96", clear_echo), 2.5, true)
 
 func _draw_block(rect: Rect2, fill: Color) -> void:
-	# Layered offset faces simulate a chunky 3D toy cube while keeping the drag
-	# implementation in the fast Control renderer.
-	var darker := fill.darkened(0.30)
-	var deepest := fill.darkened(0.43)
-	var shadow_rect := Rect2(rect.position + Vector2(0, 6), rect.size)
-	_draw_box(shadow_rect, Color(deepest, 0.78), 7, Color.TRANSPARENT, 0)
-	_draw_box(rect, fill, 7, fill.lightened(0.28), 2)
-	var top_face := Rect2(rect.position + Vector2(4, 4), Vector2(rect.size.x - 8, maxf(5.0, rect.size.y * 0.22)))
-	_draw_box(top_face, Color(fill.lightened(0.34), 0.72), 5, Color.TRANSPARENT, 0)
-	var left_face := Rect2(rect.position + Vector2(4, rect.size.y * 0.24), Vector2(maxf(4.0, rect.size.x * 0.10), rect.size.y * 0.58))
-	_draw_box(left_face, Color(fill.lightened(0.18), 0.46), 4, Color.TRANSPARENT, 0)
-	var bottom_face := Rect2(Vector2(rect.position.x + 5, rect.end.y - rect.size.y * 0.16), Vector2(rect.size.x - 10, rect.size.y * 0.12))
-	_draw_box(bottom_face, Color(darker, 0.76), 4, Color.TRANSPARENT, 0)
-	draw_line(rect.position + Vector2(7, 6), Vector2(rect.end.x - 7, rect.position.y + 6), Color(1, 1, 1, 0.58), 2.5, true)
-	draw_circle(rect.position + Vector2(rect.size.x * 0.28, rect.size.y * 0.28), maxf(1.5, rect.size.x * 0.035), Color(1,1,1,0.42))
+	_draw_extruded_cube(rect, fill)
+
+func _draw_extruded_cube(rect: Rect2, fill: Color) -> void:
+	# True geometric extrusion in the CanvasItem renderer: separate top/right
+	# polygons plus a beveled front face. It gives real depth without turning the
+	# authoritative 8x8 board into a costly 3D voxel simulation.
+	var depth := clampf(rect.size.x * 0.11, 4.0, 8.0)
+	var shadow_rect := Rect2(rect.position + Vector2(1.0, depth + 5.0), rect.size - Vector2(depth, depth))
+	_draw_box(shadow_rect, Color(fill.darkened(0.48), 0.48), 6, Color.TRANSPARENT, 0)
+
+	var front := Rect2(rect.position + Vector2(0.0, depth), rect.size - Vector2(depth, depth))
+	var top_face := PackedVector2Array([
+		front.position,
+		front.position + Vector2(depth, -depth),
+		Vector2(front.end.x + depth, front.position.y - depth),
+		Vector2(front.end.x, front.position.y)
+	])
+	var right_face := PackedVector2Array([
+		Vector2(front.end.x, front.position.y),
+		Vector2(front.end.x + depth, front.position.y - depth),
+		Vector2(front.end.x + depth, front.end.y - depth),
+		Vector2(front.end.x, front.end.y)
+	])
+	draw_colored_polygon(top_face, fill.lightened(0.34))
+	draw_colored_polygon(right_face, fill.darkened(0.25))
+	_draw_box(front, fill, 7, fill.lightened(0.24), 2)
+
+	var bevel := front.grow(-3.0)
+	_draw_box(bevel, Color(fill.lightened(0.08), 0.28), 5, Color(1, 1, 1, 0.10), 1)
+	var highlight_y := front.position.y + maxf(4.0, front.size.y * 0.10)
+	draw_line(Vector2(front.position.x + 7, highlight_y), Vector2(front.end.x - 7, highlight_y), Color(1, 1, 1, 0.55), 2.4, true)
+	draw_circle(front.position + Vector2(front.size.x * 0.28, front.size.y * 0.30), maxf(1.5, front.size.x * 0.035), Color(1, 1, 1, 0.40))
 
 func _draw_box(rect: Rect2, color: Color, radius: int, border: Color, border_width: int) -> void:
 	var style := StyleBoxFlat.new()
