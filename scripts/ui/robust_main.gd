@@ -9,6 +9,8 @@ var current_surface: String:
 		return _current_surface
 	set(value):
 		_current_surface = value
+		if has_method("_sync_persistent_surfaces_now"):
+			call("_sync_persistent_surfaces_now", value)
 		_queue_surface_changed()
 var active_game: Control
 var selected_game_id := "rescue_rush"

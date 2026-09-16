@@ -1,5 +1,13 @@
 extends "res://scripts/ui/premium_main.gd"
 
+func _sync_persistent_surfaces_now(surface: String) -> void:
+	var home := get_node_or_null("PremiumHome")
+	if home != null and home.has_method("_on_surface_changed"):
+		home.call("_on_surface_changed", surface)
+	var live := get_node_or_null("PremiumLive")
+	if live != null and live.has_method("_on_surface_changed"):
+		live.call("_on_surface_changed", surface)
+
 func build_home() -> void:
 	# Base navigation replaces/removes the outgoing surface immediately. Bring the
 	# persistent premium surfaces into their final visibility state before this
