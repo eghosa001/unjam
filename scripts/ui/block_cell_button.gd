@@ -139,10 +139,15 @@ func _process(delta: float) -> void:
 
 func _draw() -> void:
 	var rect := Rect2(Vector2(1.5, 1.5), size - Vector2(3, 3))
-	var board_fill := Color("20294b")
+	# Empty cells are now brighter purple wells so the board belongs to the same
+	# cheerful toy world as the 3D environment rather than reading as a dark grid.
+	var board_fill := Color("4b3770")
 	if hover_amount > 0.01 and not occupied:
-		board_fill = board_fill.lightened(0.035 * hover_amount)
-	_draw_box(rect, board_fill, 4, Color("111833"), 1)
+		board_fill = board_fill.lightened(0.065 * hover_amount)
+	_draw_box(Rect2(rect.position + Vector2(0, 3), rect.size), Color("31234d"), 6, Color.TRANSPARENT, 0)
+	_draw_box(rect, board_fill, 6, Color("8264aa"), 1)
+	var inner_well := rect.grow(-3.0)
+	_draw_box(inner_well, Color(0.23, 0.16, 0.37, 0.72), 5, Color(1,1,1,0.045), 1)
 	if occupied or preview or footprint_active:
 		var inset := rect.grow(-3.0)
 		var fill := accent
@@ -157,29 +162,37 @@ func _draw() -> void:
 		_draw_block(inset, fill)
 		if footprint_active:
 			var edge := Color(footprint_color.lightened(0.42), 0.88) if footprint_valid else Color("ff8ba3", 0.90)
-			_draw_box(inset.grow(1.5), Color.TRANSPARENT, 5, edge, 3)
+			_draw_box(inset.grow(1.5), Color.TRANSPARENT, 6, edge, 3)
 	if clear_phase > 0.001 and not occupied:
 		var clear_fill := Color(clear_color, clampf(clear_phase, 0.0, 1.0))
 		_draw_block(rect.grow(-3.0), clear_fill)
 		var flash_alpha := clampf(clear_phase * 0.42, 0.0, 0.42)
-		_draw_box(rect.grow(-6.0), Color(1, 1, 1, flash_alpha), 5, Color.TRANSPARENT, 0)
+		_draw_box(rect.grow(-6.0), Color(1, 1, 1, flash_alpha), 6, Color.TRANSPARENT, 0)
 	if impact > 0.001:
-		_draw_box(rect.grow(1.0 + impact * 3.0), Color.TRANSPARENT, 5, Color(accent.lightened(0.42), impact * 0.90), 3)
+		_draw_box(rect.grow(1.0 + impact * 3.0), Color.TRANSPARENT, 6, Color(accent.lightened(0.42), impact * 0.90), 3)
 	if clear_echo > 0.001:
 		var neon := Color("ff416c", clear_echo)
-		_draw_box(rect.grow(1.0 + clear_echo * 4.0), Color(neon, 0.08), 4, neon, 3)
+		_draw_box(rect.grow(1.0 + clear_echo * 4.0), Color(neon, 0.08), 6, neon, 3)
 		var c := rect.get_center()
 		var r := rect.size.x * (0.14 + (1.0 - clear_echo) * 0.46)
 		draw_arc(c, r, 0.0, TAU, 24, Color("ff7a96", clear_echo), 2.5, true)
 
 func _draw_block(rect: Rect2, fill: Color) -> void:
-	var darker := fill.darkened(0.26)
-	_draw_box(Rect2(rect.position + Vector2(0, 4), rect.size), darker, 5, Color.TRANSPARENT, 0)
-	_draw_box(rect, fill, 5, fill.lightened(0.24), 2)
-	draw_line(rect.position + Vector2(5, 5), Vector2(rect.end.x - 5, rect.position.y + 5), Color(fill.lightened(0.50), 0.96), 3.0, true)
-	draw_line(rect.position + Vector2(5, 5), Vector2(rect.position.x + 5, rect.end.y - 5), Color(fill.lightened(0.30), 0.78), 2.0, true)
-	draw_line(Vector2(rect.position.x + 5, rect.end.y - 5), rect.end - Vector2(5, 5), Color(darker, 0.92), 3.0, true)
-	draw_line(Vector2(rect.end.x - 5, rect.position.y + 5), rect.end - Vector2(5, 5), Color(darker, 0.78), 2.0, true)
+	# Layered offset faces simulate a chunky 3D toy cube while keeping the drag
+	# implementation in the fast Control renderer.
+	var darker := fill.darkened(0.30)
+	var deepest := fill.darkened(0.43)
+	var shadow_rect := Rect2(rect.position + Vector2(0, 6), rect.size)
+	_draw_box(shadow_rect, Color(deepest, 0.78), 7, Color.TRANSPARENT, 0)
+	_draw_box(rect, fill, 7, fill.lightened(0.28), 2)
+	var top_face := Rect2(rect.position + Vector2(4, 4), Vector2(rect.size.x - 8, maxf(5.0, rect.size.y * 0.22)))
+	_draw_box(top_face, Color(fill.lightened(0.34), 0.72), 5, Color.TRANSPARENT, 0)
+	var left_face := Rect2(rect.position + Vector2(4, rect.size.y * 0.24), Vector2(maxf(4.0, rect.size.x * 0.10), rect.size.y * 0.58))
+	_draw_box(left_face, Color(fill.lightened(0.18), 0.46), 4, Color.TRANSPARENT, 0)
+	var bottom_face := Rect2(Vector2(rect.position.x + 5, rect.end.y - rect.size.y * 0.16), Vector2(rect.size.x - 10, rect.size.y * 0.12))
+	_draw_box(bottom_face, Color(darker, 0.76), 4, Color.TRANSPARENT, 0)
+	draw_line(rect.position + Vector2(7, 6), Vector2(rect.end.x - 7, rect.position.y + 6), Color(1, 1, 1, 0.58), 2.5, true)
+	draw_circle(rect.position + Vector2(rect.size.x * 0.28, rect.size.y * 0.28), maxf(1.5, rect.size.x * 0.035), Color(1,1,1,0.42))
 
 func _draw_box(rect: Rect2, color: Color, radius: int, border: Color, border_width: int) -> void:
 	var style := StyleBoxFlat.new()
