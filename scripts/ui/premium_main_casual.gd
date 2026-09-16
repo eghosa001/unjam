@@ -88,6 +88,7 @@ func build_settings() -> void:
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	root.add_child(note)
 	PremiumVisuals.entrance(root, 0.018)
+	_add_surface_diorama(selected_game_id, "Settings3DDiorama")
 
 func _setting_button(title_text: String, detail_text: String, enabled: bool, accent: Color) -> Button:
 	var state := "ON" if enabled else "OFF"
