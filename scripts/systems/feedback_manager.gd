@@ -8,7 +8,7 @@ var _tone_cache: Dictionary = {}
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	set_process(true)
+	set_process(false)
 	if DisplayServer.get_name() == "headless":
 		return
 	player = AudioStreamPlayer.new()
@@ -41,10 +41,8 @@ func shutdown_audio() -> void:
 	music_stream = null
 	_tone_cache.clear()
 
-func _process(_delta: float) -> void:
-	var enabled := bool(SaveManager.data.get("music", true))
-	if enabled != last_music_enabled:
-		_sync_music()
+func apply_settings() -> void:
+	_sync_music()
 
 func _sync_music() -> void:
 	last_music_enabled = bool(SaveManager.data.get("music", true))
@@ -96,6 +94,9 @@ func complete(kind: String = "level") -> void:
 # Backward-compatible API used by existing scenes while they migrate to the
 # semantic methods above.
 func tap() -> void:
+	# Settings changes flow through this feedback event too, so synchronize the
+	# ambient-music preference without keeping an always-on frame poll alive.
+	apply_settings()
 	# Routine taps stay silent in the haptic channel. Continuous vibration on
 	# every button press made navigation and puzzle input feel harsh.
 	_play_tone(540.0, 0.045, 0.16)
@@ -140,7 +141,7 @@ func _tone_stream(frequency: float, duration: float, volume: float) -> AudioStre
 		var fade := 1.0 - float(i) / float(max(frames, 1))
 		var sample := sin(TAU * frequency * float(i) / float(rate)) * volume * fade
 		_write_mono(bytes, i, sample)
-	var stream := AudioStreamWAV.new()
+	var Stream := AudioStreamWAV.new()
 	stream.format = AudioStreamWAV.FORMAT_16_BITS
 	stream.mix_rate = rate
 	stream.stereo = false
@@ -180,28 +181,4 @@ func _build_premium_loop() -> AudioStreamWAV:
 		var pulse := 0.78 + 0.22 * sin(TAU * t / 4.0)
 		var base := (pad * edge + bass + pluck + shimmer) * pulse
 		var left := base + sin(TAU * 0.083 * t) * 0.012
-		var right := base * 0.985 + sin(TAU * 0.071 * t + 1.2) * 0.012 + sin(TAU * float(arp[(step + 2) % arp.size()]) * t) * pluck_env * 0.012
-		_write_stereo(bytes, i, left, right)
-	var stream := AudioStreamWAV.new()
-	stream.format = AudioStreamWAV.FORMAT_16_BITS
-	stream.mix_rate = rate
-	stream.stereo = true
-	stream.data = bytes
-	stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
-	stream.loop_begin = 0
-	stream.loop_end = frames
-	return stream
-
-func _write_mono(bytes: PackedByteArray, frame: int, sample: float) -> void:
-	var value := int(clamp(sample, -1.0, 1.0) * 32767.0)
-	bytes[frame * 2] = value & 0xff
-	bytes[frame * 2 + 1] = (value >> 8) & 0xff
-
-func _write_stereo(bytes: PackedByteArray, frame: int, left: float, right: float) -> void:
-	var l := int(clamp(left, -1.0, 1.0) * 32767.0)
-	var r := int(clamp(right, -1.0, 1.0) * 32767.0)
-	var o := frame * 4
-	bytes[o] = l & 0xff
-	bytes[o + 1] = (l >> 8) & 0xff
-	bytes[o + 2] = r & 0xff
-	bytes[o + 3] = (r >> 8) & 0xff
+		var r
