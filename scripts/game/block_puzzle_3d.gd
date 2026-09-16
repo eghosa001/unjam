@@ -3,6 +3,36 @@ extends "res://scripts/game/block_puzzle_ultra_motion.gd"
 # Bright 3D presentation layer. Core placement, scoring, drag and clear logic
 # remain inherited from the proven motion/gameplay stack.
 
+func _ready() -> void:
+	super._ready()
+	var viewport := get_viewport()
+	if viewport != null and not viewport.size_changed.is_connected(_queue_board_fit):
+		viewport.size_changed.connect(_queue_board_fit)
+
+func _queue_board_fit() -> void:
+	call_deferred("_fit_3d_board_layout")
+
+func _fit_3d_board_layout() -> void:
+	if board_grid == null or board_shell == null or board_grid.get_child_count() == 0:
+		return
+	var viewport_size := get_viewport_rect().size
+	var available_board_width := maxf(320.0, viewport_size.x - 104.0)
+	var available_board_height := maxf(320.0, viewport_size.y * 0.50)
+	var gap := float(board_grid.get_theme_constant("h_separation"))
+	var cell_size := clampf(floor(minf(
+		(available_board_width - 22.0 - gap * float(GRID_SIZE - 1)) / float(GRID_SIZE),
+		(available_board_height - 22.0 - gap * float(GRID_SIZE - 1)) / float(GRID_SIZE)
+	)), 44.0, PREMIUM_CELL_MAX)
+	for child in board_grid.get_children():
+		if child is Control:
+			(child as Control).custom_minimum_size = Vector2(cell_size, cell_size)
+	board_shell.custom_minimum_size = Vector2(
+		cell_size * GRID_SIZE + gap * float(GRID_SIZE - 1) + 18.0,
+		cell_size * GRID_SIZE + gap * float(GRID_SIZE - 1) + 18.0
+	)
+	if piece_row != null:
+		piece_row.custom_minimum_size.y = 150.0
+
 func build_ui() -> void:
 	var accent := Unjam3DTheme.PURPLE
 	var environment_3d := Unjam3DGameplayStage.new()
