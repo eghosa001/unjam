@@ -103,10 +103,6 @@ func _add_surface_chrome(content: Control, surface: String, game_id: String, _da
 	badge.add_child(label)
 
 func _animate_surface(content: Control) -> void:
-	if MotionSystem.reduced():
-		content.modulate.a = 1.0
-		return
-	var final_alpha := content.modulate.a
-	content.modulate.a = minf(final_alpha, 0.86)
-	var tween := content.create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(content, "modulate:a", final_alpha, 0.16)
+	# MotionDirector owns navigation transitions. This manager owns only skinning,
+	# background and chrome so two systems never fight over content.modulate.
+	content.modulate.a = 1.0
