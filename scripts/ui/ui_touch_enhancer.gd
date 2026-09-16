@@ -5,19 +5,29 @@ class_name UiTouchEnhancer
 # Keeping two independent drag handlers caused competing footprints and release
 # placement on mobile, which made otherwise-correct dragging feel jittery.
 var host: Control
-var scan_elapsed := 0.0
+var refresh_pending := false
 
 func _ready() -> void:
 	host = get_parent() as Control
-	set_process(true)
 	set_process_input(false)
-	call_deferred("_apply_enhancements")
+	get_tree().node_added.connect(_on_node_added)
+	_queue_enhancements()
 
-func _process(delta: float) -> void:
-	scan_elapsed += delta
-	if scan_elapsed >= 0.18:
-		scan_elapsed = 0.0
-		_apply_enhancements()
+func _on_node_added(node: Node) -> void:
+	if host == null or not is_instance_valid(host):
+		return
+	if node == host or host.is_ancestor_of(node):
+		_queue_enhancements()
+
+func _queue_enhancements() -> void:
+	if refresh_pending:
+		return
+	refresh_pending = true
+	call_deferred("_flush_enhancements")
+
+func _flush_enhancements() -> void:
+	refresh_pending = false
+	_apply_enhancements()
 
 func _apply_enhancements() -> void:
 	if host == null or not is_instance_valid(host):
