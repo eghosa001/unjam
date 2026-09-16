@@ -120,7 +120,7 @@ func build_home_launcher() -> void:
 
 	hero_art = GameShowcaseArt.new()
 	hero_art.name = "HomeShowcaseArt"
-	hero_art.custom_minimum_size = Vector2(0, 600)
+	hero_art.custom_minimum_size = Vector2(0, 500)
 	hero_art.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	hero_art.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	hero_art.configure(selected_game, accent, false)
@@ -134,7 +134,7 @@ func build_home_launcher() -> void:
 	hero_title = Label.new()
 	hero_title.text = MultiGameManager.display_name(selected_game).to_upper()
 	hero_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hero_title.add_theme_font_size_override("font_size", 46)
+	hero_title.add_theme_font_size_override("font_size", 42)
 	hero_title.add_theme_color_override("font_color", Color.WHITE)
 	hero_title.add_theme_color_override("font_shadow_color", Color(0.04, 0.10, 0.20, 0.40))
 	hero_title.add_theme_constant_override("shadow_offset_y", 3)
@@ -143,7 +143,7 @@ func build_home_launcher() -> void:
 	hero_subtitle.text = SUBTITLES[selected_game]
 	hero_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hero_subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	hero_subtitle.add_theme_font_size_override("font_size", 21)
+	hero_subtitle.add_theme_font_size_override("font_size", 19)
 	hero_subtitle.add_theme_color_override("font_color", Color("f6fdff"))
 	hero_copy.add_child(hero_subtitle)
 	hero_progress = Label.new()
@@ -152,7 +152,7 @@ func build_home_launcher() -> void:
 	hero_progress.add_theme_font_size_override("font_size", 17)
 	hero_progress.add_theme_color_override("font_color", Color("fff4a8"))
 	hero_copy.add_child(hero_progress)
-	primary_button = _button(_primary_text(selected_game), Vector2(0, 92), Color("31e575"), true)
+	primary_button = _button(_primary_text(selected_game), Vector2(0, 96), Color("31e575"), true)
 	primary_button.name = "HomePrimaryAction"
 	primary_button.add_theme_font_size_override("font_size", 27)
 	primary_button.pressed.connect(_play_selected)
