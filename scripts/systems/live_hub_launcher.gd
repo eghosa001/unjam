@@ -32,14 +32,10 @@ func _ready() -> void:
 	launcher.pressed.connect(open_hub)
 	layer.add_child(launcher)
 	PremiumVisuals.premium_button(launcher)
-	set_process(true)
-
-func _process(_delta: float) -> void:
-	if launcher == null:
-		return
-	# Premium navigation owns Live access. A floating global button made secondary
-	# screens feel like debug UI and could cover authored controls.
+	# Premium navigation owns Live access. Keep the retired floating launcher
+	# available for compatibility, but do not burn a frame callback just to hide it.
 	launcher.visible = false
+	set_process(false)
 
 func open_hub() -> void:
 	if hub_open:
