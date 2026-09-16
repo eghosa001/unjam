@@ -25,19 +25,19 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "9333fcc6ed9a7ad84bed56225969455637c3c279"
+          test "$(git rev-parse HEAD)" = "3d06abe58c077eeca5183917300957df99aa0e4d"
           curl -fsSL \
             -H "Authorization: Bearer ${GITHUB_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
-            https://api.github.com/repos/eghosa001/unjam/git/blobs/c1a0ed0b143431082f050374f33249e96f86ad3a \
+            https://api.github.com/repos/eghosa001/unjam/git/blobs/a8776f5a6958c842679e305689d0526d06efd7ce \
             | jq -r '.content' | tr -d '\n' | base64 -d > /tmp/visual-pass.patch.gz
           gzip -dc /tmp/visual-pass.patch.gz > /tmp/visual-pass.patch
-          echo 'a7802dd7cf53d525d9448ef6de882ca4f540a6c8e72717491627e34c56818146  /tmp/visual-pass.patch' | sha256sum -c -
+          echo '754e2b7d189d9ca87ed09e2cc2f2ad071cae3f0c2e850ad29c56378e6b5957d0  /tmp/visual-pass.patch' | sha256sum -c -
           git apply --check /tmp/visual-pass.patch
           git apply --index /tmp/visual-pass.patch
           changed="$(git diff --cached --name-only)"
           count="$(printf '%s\n' "$changed" | sed '/^$/d' | wc -l)"
-          test "$count" -eq 7
+          test "$count" -eq 6
           if printf '%s\n' "$changed" | grep -Eq '^\.github/|^addons/stagehand/|^project\.godot$|(^|/)\.uid$'; then
             echo 'Unexpected generated/QA file in premium visual pass' >&2
             printf '%s\n' "$changed" >&2
@@ -45,5 +45,5 @@ jobs:
           fi
           git config user.name 'AIGHEWI EGHOSA'
           git config user.email 'aighewieghosa111@gmail.com'
-          git commit -m 'visual: sharpen home selector and block puzzle hierarchy'
+          git commit -m 'visual: enlarge water and rescue gameplay focus'
           git push origin HEAD:main
