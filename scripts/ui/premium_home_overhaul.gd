@@ -12,9 +12,9 @@ var primary_button: Button
 var logo: UnjamLogo
 
 const ACCENTS := {
-	"rescue_rush": Color("2dd4b6"),
-	"water_sort": Color("5da9ff"),
-	"block_puzzle": Color("8b7cf6")
+	"rescue_rush": Color("39d8c2"),
+	"water_sort": Color("62b6ff"),
+	"block_puzzle": Color("9a86ff")
 }
 const SUBTITLES := {
 	"rescue_rush": "Clear the lane. Release the chain. Make the rescue.",
@@ -64,19 +64,19 @@ func _dark() -> bool:
 	return _theme_mode() == "dark"
 
 func _ink() -> Color:
-	return Color("f4f7fb") if _dark() else Color("213044")
+	return PremiumDesignSystem.ink(_dark())
 
 func _muted() -> Color:
-	return Color("b6c3d4") if _dark() else Color("6f7f92")
+	return PremiumDesignSystem.muted(_dark())
 
 func _surface() -> Color:
-	return Color("0b1220") if _dark() else Color("eef2f5")
+	return PremiumDesignSystem.canvas(_dark())
 
 func _card() -> Color:
-	return Color("141f31") if _dark() else Color("f8fafc")
+	return PremiumDesignSystem.surface(_dark())
 
 func _border() -> Color:
-	return Color("38506d") if _dark() else Color("c7d1dc")
+	return PremiumDesignSystem.border(_dark())
 
 func _box(color: Color, radius: int, border: Color = Color.TRANSPARENT, width: int = 0, shadow: int = 0) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
@@ -106,8 +106,8 @@ func _button(text_value: String, minimum: Vector2, accent: Color, strong: bool =
 	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	var normal := accent if strong else Color(_card(), 0.96)
 	var normal_border := accent.lightened(0.14) if strong else _border()
-	button.add_theme_stylebox_override("normal", _box(normal, 24, normal_border, 2, 8 if strong else 4))
-	button.add_theme_stylebox_override("hover", _box(normal.lightened(0.06), 24, accent, 2, 8))
+	button.add_theme_stylebox_override("normal", _box(normal, 24, normal_border, 2, 10 if strong else 5))
+	button.add_theme_stylebox_override("hover", _box(normal.lightened(0.06), 24, accent, 2, 10))
 	button.add_theme_stylebox_override("pressed", _box(normal.darkened(0.10), 24, accent.lightened(0.22), 2, 2))
 	button.add_theme_color_override("font_color", Color("061019") if strong and accent.get_luminance() > 0.55 else _ink())
 	return button
@@ -129,10 +129,10 @@ func build_home_launcher() -> void:
 
 	var outer := MarginContainer.new()
 	outer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	outer.add_theme_constant_override("margin_left", 42)
-	outer.add_theme_constant_override("margin_right", 42)
-	outer.add_theme_constant_override("margin_top", 28)
-	outer.add_theme_constant_override("margin_bottom", 122)
+	outer.add_theme_constant_override("margin_left", 34)
+	outer.add_theme_constant_override("margin_right", 34)
+	outer.add_theme_constant_override("margin_top", 22)
+	outer.add_theme_constant_override("margin_bottom", 102)
 	add_child(outer)
 	var root := VBoxContainer.new()
 	root.add_theme_constant_override("separation", 14)
@@ -160,7 +160,7 @@ func build_home_launcher() -> void:
 
 	var hero := PanelContainer.new()
 	hero.name = "HomeHero"
-	hero.custom_minimum_size = Vector2(0, 610)
+	hero.custom_minimum_size = Vector2(0, 520)
 	hero.add_theme_stylebox_override("panel", _box(Color(_card(), 0.96), 42, Color(accent, 0.48), 2, 16))
 	root.add_child(hero)
 	var hero_margin := MarginContainer.new()
@@ -174,7 +174,7 @@ func build_home_launcher() -> void:
 	hero_margin.add_child(hero_row)
 
 	hero_art = GameShowcaseArt.new()
-	hero_art.custom_minimum_size = Vector2(430, 540)
+	hero_art.custom_minimum_size = Vector2(360, 410)
 	hero_art.configure(selected_game, accent, _dark())
 	hero_row.add_child(hero_art)
 
@@ -190,7 +190,7 @@ func build_home_launcher() -> void:
 	hero_copy.add_child(eyebrow)
 	var headline := Label.new()
 	headline.text = "PLAY. RELAX.\nLEVEL UP."
-	headline.add_theme_font_size_override("font_size", 56)
+	headline.add_theme_font_size_override("font_size", 48)
 	headline.add_theme_color_override("font_color", _ink())
 	hero_copy.add_child(headline)
 	hero_title = Label.new()
@@ -209,7 +209,7 @@ func build_home_launcher() -> void:
 	hero_progress.add_theme_font_size_override("font_size", 21)
 	hero_progress.add_theme_color_override("font_color", Color("d9e5f4") if _dark() else Color("314158"))
 	hero_copy.add_child(hero_progress)
-	primary_button = _button(_primary_text(selected_game), Vector2(0, 96), accent, true)
+	primary_button = _button(_primary_text(selected_game), Vector2(0, 88), accent, true)
 	primary_button.name = "HomePrimaryAction"
 	primary_button.add_theme_font_size_override("font_size", 25)
 	primary_button.pressed.connect(_play_selected)
@@ -236,7 +236,7 @@ func build_home_launcher() -> void:
 	root.add_child(games)
 	for game_id in ["rescue_rush", "water_sort", "block_puzzle"]:
 		var tile := GameSelectTile.new()
-		tile.custom_minimum_size = Vector2(316, 220)
+		tile.custom_minimum_size = Vector2(304, 188)
 		tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		tile.configure(game_id, MultiGameManager.display_name(game_id).to_upper(), _current_level(game_id), ACCENTS[game_id], game_id == selected_game, _dark())
 		tile.chosen.connect(_select_game)
@@ -316,7 +316,7 @@ func _hero_progress_text(game_id: String) -> String:
 func _primary_text(game_id: String) -> String:
 	var main := get_parent()
 	if main != null and main.has_method("_checkpoint_for"):
-		var checkpoint = main.call("_checkpoint_for", game_id)
+		var checkpoint = main.call("_checkpoint_for", selected_game)
 		if checkpoint is Dictionary and not checkpoint.is_empty():
 			return "CONTINUE  •  LEVEL %d" % int(checkpoint.get("level", _current_level(game_id)))
 	return "PLAY NOW  •  LEVEL %d" % _current_level(game_id)

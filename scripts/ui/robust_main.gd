@@ -1,6 +1,15 @@
 extends "res://scripts/ui/main.gd"
 
-var current_surface := "home"
+signal surface_changed(surface: String)
+
+var _current_surface := "home"
+var _surface_emit_pending := false
+var current_surface: String:
+	get:
+		return _current_surface
+	set(value):
+		_current_surface = value
+		_queue_surface_changed()
 var active_game: Control
 var selected_game_id := "rescue_rush"
 var selected_multi_world := 1
@@ -8,6 +17,19 @@ var selected_multi_world := 1
 func _ready() -> void:
 	MultiGameManager.ensure_state()
 	super._ready()
+	_queue_surface_changed()
+
+func _queue_surface_changed() -> void:
+	if _surface_emit_pending:
+		return
+	_surface_emit_pending = true
+	call_deferred("_emit_surface_changed")
+
+func _emit_surface_changed() -> void:
+	_surface_emit_pending = false
+	if not is_inside_tree():
+		return
+	surface_changed.emit(_current_surface)
 
 func build_home() -> void:
 	current_surface = "home"

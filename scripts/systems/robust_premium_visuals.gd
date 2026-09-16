@@ -63,8 +63,10 @@ func _diamond(radius: float, color: Color) -> Polygon2D:
 func ambient_sparkles(count: int = 12) -> void:
 	if not is_instance_valid(overlay):
 		return
-	var scaled_count := mini(count, _ambient_count())
 	clear_ambient()
+	if _reduced_motion():
+		return
+	var scaled_count := mini(count, _ambient_count())
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 44321
 	for _i in range(scaled_count):
