@@ -54,6 +54,8 @@ func run() -> void:
 		var verifier_source := FileAccess.get_file_as_string(verifier_path)
 		expect_true("VERIFICATION_TIMEOUT_SECONDS" in verifier_source, "Purchase verification timeout constant is missing")
 		expect_true("request.timeout" in verifier_source, "Purchase verification HTTP request has no timeout")
+		expect_true("request.max_redirects = 0" in verifier_source, "Purchase verification may forward purchase tokens through redirects")
+		expect_true('parsed.get("product_id", "")' in verifier_source, "Purchase verification does not require an explicit matching product id")
 
 	expect_true(FileAccess.file_exists("res://tools/install_monetization_plugins.sh"), "Monetization plugin installer missing")
 	if FileAccess.file_exists("res://tools/install_monetization_plugins.sh"):
