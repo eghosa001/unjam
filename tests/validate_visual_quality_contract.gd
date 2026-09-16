@@ -7,7 +7,10 @@ func _run() -> void:
 	if not _validate_material_helpers(): return
 	if not _validate_backdrop_budget(): return
 	if not _validate_reduced_motion_source(): return
-	print("Visual quality contract validated: procedural depth, adaptive particle budgets, and reduced-motion backdrop behavior.")
+	if not _validate_vibrant_palette(): return
+	if not _validate_vibrant_home_source(): return
+	if not _validate_vibrant_tiles_source(): return
+	print("Visual quality contract validated: procedural depth, adaptive particle budgets, reduced-motion behavior, vibrant palette, and dense full-screen home surfaces.")
 	quit(0)
 
 func _validate_material_helpers() -> bool:
@@ -57,6 +60,47 @@ func _validate_reduced_motion_source() -> bool:
 		return _fail("Backdrop does not respect the shared reduced-motion preference")
 	if not source.contains("if MotionSystem.reduced():"):
 		return _fail("Backdrop keeps advancing decorative motion under reduced motion")
+	return true
+
+func _validate_vibrant_palette() -> bool:
+	var script := load("res://scripts/ui/premium_design_system.gd") as Script
+	if script == null:
+		return _fail("Premium design system is missing")
+	for method_name in ["vibrant_canvas", "vibrant_surface", "game_gradient"]:
+		if not script.has_method(method_name):
+			return _fail("Missing vibrant design helper: " + method_name)
+	var canvas: Color = script.call("vibrant_canvas", "rescue_rush")
+	if canvas.get_luminance() < 0.56:
+		return _fail("Vibrant canvas is still too dark")
+	var rescue: Array = script.call("game_gradient", "rescue_rush")
+	var water: Array = script.call("game_gradient", "water_sort")
+	var block: Array = script.call("game_gradient", "block_puzzle")
+	if rescue.size() < 2 or water.size() < 2 or block.size() < 2:
+		return _fail("Game gradients need at least two stops")
+	if rescue[0].is_equal_approx(water[0]) or water[0].is_equal_approx(block[0]):
+		return _fail("Each game needs a distinct saturated identity")
+	return true
+
+func _validate_vibrant_home_source() -> bool:
+	var file := FileAccess.open("res://scripts/ui/premium_home_casual.gd", FileAccess.READ)
+	if file == null:
+		return _fail("Premium home launcher source is missing")
+	var source := file.get_as_text()
+	for marker in ["VIBRANT_REFERENCE_TARGET", "HomeFeatureStrip", "HomeGameShelf", "vibrant_canvas", "game_gradient"]:
+		if not source.contains(marker):
+			return _fail("Home launcher has not adopted vibrant dense layout marker: " + marker)
+	if source.contains("margin_left\", 34") or source.contains("margin_right\", 34"):
+		return _fail("Home launcher still keeps the old wide side gutters")
+	return true
+
+func _validate_vibrant_tiles_source() -> bool:
+	var file := FileAccess.open("res://scripts/ui/game_select_tile.gd", FileAccess.READ)
+	if file == null:
+		return _fail("Game tile source is missing")
+	var source := file.get_as_text()
+	for marker in ["game_gradient", "vibrant_surface", "card_glow"]:
+		if not source.contains(marker):
+			return _fail("Game tiles are not using the vibrant card language: " + marker)
 	return true
 
 func _fail(message: String) -> bool:
