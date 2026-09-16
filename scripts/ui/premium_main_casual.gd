@@ -110,6 +110,40 @@ func _show_current_tutorial() -> void:
 	if shell != null and shell.has_method("show_tutorial"):
 		shell.call("show_tutorial", selected_game_id)
 
+func build_collection() -> void:
+	super.build_collection()
+	_add_surface_diorama("rescue_rush", "Collection3DDiorama")
+
+func build_level_select() -> void:
+	super.build_level_select()
+	_add_surface_diorama("rescue_rush", "Levels3DDiorama")
+
+func build_multi_level_select() -> void:
+	super.build_multi_level_select()
+	_add_surface_diorama(selected_game_id, "Levels3DDiorama")
+
+func _add_surface_diorama(game_id: String, node_name: String) -> void:
+	if content == null or not is_instance_valid(content):
+		return
+	var old := content.get_node_or_null(node_name)
+	if old != null:
+		old.queue_free()
+	var art := Unjam3DGameArt.new()
+	art.name = node_name
+	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	art.anchor_left = 1.0
+	art.anchor_top = 1.0
+	art.anchor_right = 1.0
+	art.anchor_bottom = 1.0
+	art.offset_left = -430.0
+	art.offset_top = -330.0
+	art.offset_right = -30.0
+	art.offset_bottom = -30.0
+	art.z_index = -20
+	art.modulate = Color(1, 1, 1, 0.58)
+	art.configure(game_id)
+	content.add_child(art)
+
 func _upgrade_level_browser(game_id: String) -> void:
 	# The level screen is styled once when it is built. This replaces the old
 	# always-running polling helper and keeps the 4-column chunky 3D layout.
