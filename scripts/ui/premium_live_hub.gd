@@ -16,12 +16,13 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	visible = false
-
-func _process(_delta: float) -> void:
 	var main := get_parent()
-	if main == null:
-		return
-	var surface := String(main.get("current_surface")) if main.get("current_surface") != null else "home"
+	if main != null and main.has_signal("surface_changed"):
+		main.surface_changed.connect(_on_surface_changed)
+	var initial_surface := String(main.get("current_surface")) if main != null and main.get("current_surface") != null else "home"
+	call_deferred("_on_surface_changed", initial_surface)
+
+func _on_surface_changed(surface: String) -> void:
 	visible = surface == "live"
 	mouse_filter = Control.MOUSE_FILTER_STOP if visible else Control.MOUSE_FILTER_IGNORE
 	if not visible:
