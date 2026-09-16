@@ -72,12 +72,22 @@ func _finish_escape_visual(node: Node) -> void:
 
 func _wait_for_escape_visuals() -> void:
 	while not _active_escape_visuals.is_empty():
+		# Android Back may detach the active game immediately while completion is
+		# waiting for an escape tween. Treat leaving the SceneTree as cancellation
+		# instead of trying to await another frame through a null tree.
+		if not is_inside_tree():
+			return
 		for node in _active_escape_visuals.duplicate():
 			if node == null or not is_instance_valid(node):
 				_active_escape_visuals.erase(node)
 		if _active_escape_visuals.is_empty():
 			return
-		await get_tree().process_frame
+		var tree := get_tree()
+		if tree == null:
+			return
+		await tree.process_frame
+		if not is_inside_tree():
+			return
 
 func _spawn_escape_visual(index: int, route: Array[Vector2i] = []) -> void:
 	if board_grid == null or index < 0 or index >= pieces.size():
@@ -313,46 +323,44 @@ func _rescue_exit_direction() -> Vector2i:
 			pos += direction_i
 		if not blocked:
 			return direction_i
-	return Vector2i.UP
+	return Vector2i.ZERO
 
 func _spawn_rescue_escape() -> void:
-	if board_grid == null:
+	if rescue_token == null or not is_instance_valid(rescue_token):
 		return
-	var child_index := rescue_pos.y * width + rescue_pos.x
-	if child_index < 0 or child_index >= board_grid.get_child_count():
-		return
-	var source := board_grid.get_child(child_index) as Control
-	if source == null:
-		return
-	var token := RescueToken.new()
-	token.custom_minimum_size = source.size
-	token.size = source.size
-	token.position = source.global_position - global_position
-	token.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	token.z_index = 700
-	token.configure(rescue_id, Color("ffd166"))
-	add_child(token)
-	token.pivot_offset = token.size * 0.5
-	_track_escape_visual(token)
-	if token.has_method("celebrate"):
-		token.call("celebrate")
-
 	var direction_i := _rescue_exit_direction()
+	if direction_i == Vector2i.ZERO:
+		return
 	var direction := Vector2(direction_i)
-	var route := _route_from(rescue_pos, direction_i)
-	var start := token.position
-	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(token, "scale", Vector2(1.24, 0.88), MotionSystem.duration(&"micro") * 0.82)
-	tween.tween_property(token, "scale", Vector2(0.92, 1.18), MotionSystem.duration(&"micro") * 0.68)
-	var inside_steps := maxi(1, route.size() - 2)
-	var step_time := maxf(0.035, MotionSystem.duration(&"travel") * 0.56 / float(inside_steps))
-	for route_index in range(1, route.size() - 1):
-		var route_cell: Vector2i = route[route_index]
-		var target := _board_cell_local_position(route_cell, token.position)
-		tween.tween_property(token, "position", target, step_time).set_trans(Tween.TRANS_LINEAR).set_ease(Tween.EASE_IN_OUT)
-	var exit_time := maxf(0.18, MotionSystem.duration(&"travel") * 0.78)
-	var end := _offscreen_target(start, direction)
-	tween.tween_property(token, "position", end, exit_time).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
-	tween.parallel().tween_property(token, "scale", Vector2(0.78, 0.78), exit_time)
-	tween.parallel().tween_property(token, "rotation", deg_to_rad(10.0 * (1.0 if direction.x + direction.y >= 0.0 else -1.0)), exit_time)
-	tween.finished.connect(_finish_escape_visual.bind(token))
+	var ghost: Control = _clone_rescue_visual()
+	if ghost == null:
+		return
+	add_child(ghost)
+	ghost.global_position = rescue_token.global_position
+	ghost.size = rescue_token.size
+	ghost.pivot_offset = ghost.size * 0.5
+	ghost.z_index = 650
+	ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_track_escape_visual(ghost)
+	rescue_token.visible = false
+	rescue_token.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var start := ghost.position
+	var center := ghost.global_position - global_position + ghost.size * 0.5
+	_spawn_speed_lines(ghost.global_position + ghost.size * 0.5, direction, Color("ffd166"))
+	PremiumVisuals.burst(center, Color("ffd166"), 18)
+	var tween := create_tween()
+	tween.tween_property(ghost, "scale", Vector2(1.16, 0.88), MotionSystem.duration(&"micro")).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	var lane_offset := 0.0
+	var final_target := _offscreen_target(start, direction, lane_offset)
+	var travel_time := maxf(0.22, MotionSystem.duration(&"travel") * 0.88)
+	tween.tween_property(ghost, "position", final_target, travel_time).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	tween.parallel().tween_property(ghost, "scale", Vector2(0.78, 0.78), travel_time)
+	tween.finished.connect(_finish_escape_visual.bind(ghost))
+
+func _clone_rescue_visual() -> Control:
+	if rescue_token == null or not is_instance_valid(rescue_token):
+		return null
+	var ghost := rescue_token.duplicate()
+	if ghost is Control:
+		return ghost as Control
+	return null
