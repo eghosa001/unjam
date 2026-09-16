@@ -57,10 +57,11 @@ func _validate_reduced_motion_source() -> bool:
 	if file == null:
 		return _fail("Premium backdrop source is missing")
 	var source := file.get_as_text()
-	if not source.contains("MotionSystem.reduced()"):
-		return _fail("Backdrop does not respect the shared reduced-motion preference")
-	if not source.contains("if MotionSystem.reduced():"):
-		return _fail("Backdrop keeps advancing decorative motion under reduced motion")
+	for marker in ["/root/MotionSystem", "has_method(\"reduced\")", "_reduced_motion()", "set_process(not reduced)"]:
+		if not source.contains(marker):
+			return _fail("Backdrop reduced-motion lookup is not isolated-test safe: " + marker)
+	if source.contains("MotionSystem.reduced()"):
+		return _fail("Backdrop still depends on a compile-time MotionSystem global")
 	return true
 
 func _validate_vibrant_palette() -> bool:
