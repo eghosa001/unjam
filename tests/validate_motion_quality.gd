@@ -4,6 +4,7 @@ func _initialize() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
+	if not _validate_shared_motion_system(): return
 	if not _validate_rescue_completion_buffer(): return
 	if not _validate_water_lip_geometry(): return
 	if not _validate_water_stream_layering(): return
@@ -11,8 +12,33 @@ func _run() -> void:
 	if not _validate_single_block_drag_owner(): return
 	if not _validate_gameplay_controls_keep_layout_size(): return
 	if not _validate_screen_geometry_static(): return
-	print("Motion quality validated: rescue completion buffer, visible bottle-rim pour, responsive continuous block drag, single drag owner, gameplay controls preserve layout size, screen roots never move/scale on interaction.")
+	print("Motion quality validated: shared motion preferences, rescue completion buffer, visible bottle-rim pour, responsive continuous block drag, single drag owner, gameplay controls preserve layout size, screen roots never move/scale on interaction.")
 	quit(0)
+
+func _validate_shared_motion_system() -> bool:
+	var script := load("res://scripts/ui/motion_system.gd") as Script
+	if script == null:
+		return _fail("Shared motion system is missing")
+	var motion: Node = script.new()
+	root.add_child(motion)
+	var normal_travel := float(motion.call("duration_for_flags", &"travel", false, false))
+	var fast_travel := float(motion.call("duration_for_flags", &"travel", false, true))
+	var reduced_travel := float(motion.call("duration_for_flags", &"travel", true, false))
+	motion.queue_free()
+	await process_frame
+	if normal_travel <= 0.0:
+		return _fail("Normal motion duration must stay positive")
+	if fast_travel >= normal_travel:
+		return _fail("Fast animation does not reduce travel duration")
+	if reduced_travel > fast_travel:
+		return _fail("Reduced motion should be no slower than fast animation")
+	var save_file := FileAccess.open("res://scripts/core/save_manager.gd", FileAccess.READ)
+	if save_file == null:
+		return _fail("Save manager is missing")
+	var save_source := save_file.get_as_text()
+	if not save_source.contains("\"reduce_motion\": false") or not save_source.contains("\"fast_animation\": false"):
+		return _fail("Motion accessibility preferences are not persisted in save defaults")
+	return true
 
 func _validate_rescue_completion_buffer() -> bool:
 	var file := FileAccess.open("res://scripts/game/rescue_rush_motion_final.gd", FileAccess.READ)
