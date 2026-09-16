@@ -7,13 +7,13 @@ func _initialize() -> void:
 		quit(1)
 		return
 	var scene_source := scene_file.get_as_text()
-	if not scene_source.contains("block_puzzle_3d_clear.gd"):
-		push_error("Block Puzzle scene is not using the clear-transition presentation layer")
+	if not scene_source.contains("block_puzzle_3d.gd") or scene_source.contains("block_puzzle_3d_clear.gd"):
+		push_error("Block Puzzle clear transaction is not consolidated into the active 3D layer")
 		quit(1)
 		return
-	var file := FileAccess.open("res://scripts/game/block_puzzle_3d_clear.gd", FileAccess.READ)
+	var file := FileAccess.open("res://scripts/game/block_puzzle_3d.gd", FileAccess.READ)
 	if file == null:
-		push_error("Block Puzzle clear-transition source is missing")
+		push_error("Block Puzzle 3D source is missing")
 		quit(1)
 		return
 	var source := file.get_as_text()
@@ -28,5 +28,5 @@ func _initialize() -> void:
 		push_error("Block Puzzle commits cleared cells before the clear animation finishes")
 		quit(1)
 		return
-	print("Block Puzzle clear ordering validated.")
+	print("Block Puzzle clear ordering validated in the active 3D layer.")
 	quit(0)
