@@ -13,7 +13,6 @@ const BILLING_RECONNECT_MAX_SECONDS := 30.0
 var billing_client: Node
 var admob_provider: Node
 var _billing_connected := false
-var _billing_registered := false
 var _billing_reconnect_attempt := 0
 var _billing_reconnect_scheduled := false
 var _purchase_requests: Dictionary = {}
@@ -66,7 +65,6 @@ func _on_billing_connected() -> void:
 	# Re-registering is intentional. StoreManager refreshes localized prices and
 	# reconciles Play-owned purchases on both initial startup and every reconnect.
 	StoreManager.register_provider(self)
-	_billing_registered = true
 
 func _on_billing_disconnected() -> void:
 	_billing_connected = false
@@ -135,6 +133,10 @@ func purchase(product_id: String, success: Callable, failed: Callable, pending: 
 	if not billing_ready():
 		if failed.is_valid():
 			failed.call(product_id, "Google Play Billing is not connected")
+		return false
+	if not _launch_product_id.is_empty():
+		if failed.is_valid():
+			failed.call(product_id, "Another purchase is already in progress")
 		return false
 	if _purchase_requests.has(product_id):
 		if failed.is_valid():
