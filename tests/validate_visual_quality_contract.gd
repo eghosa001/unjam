@@ -18,18 +18,16 @@ func _validate_material_helpers() -> bool:
 		return _fail("Procedural material helpers cannot instantiate")
 	var helper = script.new()
 	if not helper.has_method("vertical_shade") or not helper.has_method("particle_budget"):
-		helper.free()
 		return _fail("Procedural material helper API is incomplete")
 	var base := Color("4f8cff")
 	var top: Color = helper.call("vertical_shade", base, 0.0)
 	var bottom: Color = helper.call("vertical_shade", base, 1.0)
 	if top.get_luminance() <= bottom.get_luminance():
-		helper.free()
 		return _fail("Procedural vertical shading does not create a top-light/bottom-depth material")
 	var high := int(helper.call("particle_budget", 20, 1.0, false))
 	var low := int(helper.call("particle_budget", 20, 0.5, false))
 	var reduced := int(helper.call("particle_budget", 20, 1.0, true))
-	helper.free()
+	helper = null
 	if not (high > low and low >= reduced and reduced >= 0):
 		return _fail("Particle budget does not scale down with quality/reduced motion")
 	return true
