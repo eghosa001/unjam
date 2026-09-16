@@ -50,6 +50,8 @@ func _validate_active_surface_adoption() -> bool:
 	var required := [
 		"res://scripts/ui/game_select_tile.gd",
 		"res://scripts/ui/game_showcase_art.gd",
+		"res://scripts/ui/premium_piece_button.gd",
+		"res://scripts/ui/rescue_token.gd",
 		"res://scripts/ui/block_cell_button.gd",
 		"res://scripts/ui/block_piece_button.gd",
 		"res://scripts/ui/water_tube_reference_motion.gd"
