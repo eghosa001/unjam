@@ -81,6 +81,7 @@ func clear_ambient() -> void:
 		return
 	for child in overlay.get_children():
 		if child.has_meta("ambient"):
+			overlay.remove_child(child)
 			child.queue_free()
 
 func burst(global_pos: Vector2, color: Color = Color("2dd4b6"), count: int = 18) -> void:
