@@ -31,10 +31,10 @@ func _build() -> void:
 	outer.add_child(root)
 
 	var header := HBoxContainer.new()
-	header.custom_minimum_size = Vector2(0, 86)
+	header.custom_minimum_size = Vector2(0, 92)
 	header.add_theme_constant_override("separation", 12)
 	root.add_child(header)
-	var back := _button("←", Vector2(92, 78), Unjam3DTheme.WATER_DARK, true)
+	var back := _button("←", Vector2(92, 82), Unjam3DTheme.WATER_DARK, true)
 	back.add_theme_font_size_override("font_size", 34)
 	back.pressed.connect(_go_home)
 	header.add_child(back)
@@ -44,8 +44,8 @@ func _build() -> void:
 	var title := Label.new()
 	title.text = "CHOOSE A GAME"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 38)
-	Unjam3DTheme.label_3d(title, Color.WHITE, Unjam3DTheme.NAVY, 5)
+	title.add_theme_font_size_override("font_size", 40)
+	Unjam3DTheme.label_3d(title, Color.WHITE, Unjam3DTheme.NAVY, 6)
 	titles.add_child(title)
 	var subtitle := Label.new()
 	subtitle.text = "THREE PUZZLES  •  ONE JOURNEY"
@@ -53,22 +53,22 @@ func _build() -> void:
 	subtitle.add_theme_font_size_override("font_size", 16)
 	Unjam3DTheme.label_3d(subtitle, Color("e9fbff"), Unjam3DTheme.NAVY, 3)
 	titles.add_child(subtitle)
-	var settings := _button("⚙", Vector2(92, 78), Unjam3DTheme.WATER_DARK, true)
+	var settings := _button("⚙", Vector2(92, 82), Unjam3DTheme.WATER_DARK, true)
 	settings.add_theme_font_size_override("font_size", 30)
 	settings.pressed.connect(func(): get_parent().call("build_settings"))
 	header.add_child(settings)
 
 	var wallet := HBoxContainer.new()
 	wallet.alignment = BoxContainer.ALIGNMENT_CENTER
-	wallet.add_theme_constant_override("separation", 12)
+	wallet.add_theme_constant_override("separation", 18)
 	root.add_child(wallet)
 	var coins := Label.new()
-	coins.text = "●  %d COINS" % int(SaveManager.data.get("coins", 0))
+	coins.text = "●  %d" % int(SaveManager.data.get("coins", 0))
 	coins.add_theme_font_size_override("font_size", 18)
 	Unjam3DTheme.label_3d(coins, Unjam3DTheme.GOLD, Unjam3DTheme.NAVY, 3)
 	wallet.add_child(coins)
 	var stars := Label.new()
-	stars.text = "★  %d STARS" % _total_stars()
+	stars.text = "★  %d" % _total_stars()
 	stars.add_theme_font_size_override("font_size", 18)
 	Unjam3DTheme.label_3d(stars, Color.WHITE, Unjam3DTheme.NAVY, 3)
 	wallet.add_child(stars)
@@ -79,21 +79,21 @@ func _build() -> void:
 	root.add_child(scroll)
 	var stack := VBoxContainer.new()
 	stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	stack.add_theme_constant_override("separation", 16)
+	stack.add_theme_constant_override("separation", 17)
 	scroll.add_child(stack)
 	for game_id in ["rescue_rush", "water_sort", "block_puzzle"]:
 		_add_game_card(stack, game_id)
 
 	var quote := PanelContainer.new()
-	quote.custom_minimum_size = Vector2(0, 84)
-	quote.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("fff4d9"), 28, Color("ffd77d"), 2, 7))
+	quote.custom_minimum_size = Vector2(0, 92)
+	quote.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("d0c8a8"), 30, Color("f2e9bf"), 3, 8))
 	stack.add_child(quote)
 	var quote_label := Label.new()
-	quote_label.text = "Different puzzles. A brighter you. ♥"
+	quote_label.text = "Different puzzles.\nA brighter you.  ♥"
 	quote_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	quote_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	quote_label.add_theme_font_size_override("font_size", 20)
-	Unjam3DTheme.label_3d(quote_label, Unjam3DTheme.NAVY, Color.WHITE, 2)
+	Unjam3DTheme.label_3d(quote_label, Color("244279"), Color.WHITE, 2)
 	quote.add_child(quote_label)
 	_add_bottom_nav()
 
@@ -102,49 +102,93 @@ func _add_game_card(parent: VBoxContainer, game_id: String) -> void:
 	var dark := Unjam3DTheme.game_dark(game_id)
 	var progress := MultiGameManager.progress_for(game_id)
 	var highest := clampi(int(progress.get("highest_level", 1)), 1, MultiGameManager.CAMPAIGN_LEVELS)
+	var level_in_world := ((highest - 1) % 100) + 1
+
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(0, 330)
-	panel.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(accent, 36, accent.lightened(0.34), 4, 13))
+	panel.name = "GameCard3D_%s" % game_id
+	panel.custom_minimum_size = Vector2(0, 350)
+	panel.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(accent, 38, accent.lightened(0.36), 4, 14))
 	parent.add_child(panel)
 	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 18)
-	margin.add_theme_constant_override("margin_right", 18)
+	margin.add_theme_constant_override("margin_left", 20)
+	margin.add_theme_constant_override("margin_right", 16)
 	margin.add_theme_constant_override("margin_top", 14)
 	margin.add_theme_constant_override("margin_bottom", 14)
 	panel.add_child(margin)
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 18)
+	row.add_theme_constant_override("separation", 16)
 	margin.add_child(row)
+
 	var info := VBoxContainer.new()
-	info.custom_minimum_size = Vector2(390, 0)
+	info.custom_minimum_size = Vector2(430, 0)
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	info.alignment = BoxContainer.ALIGNMENT_CENTER
-	info.add_theme_constant_override("separation", 6)
+	info.add_theme_constant_override("separation", 7)
 	row.add_child(info)
 	var name := Label.new()
 	name.text = MultiGameManager.display_name(game_id).to_upper()
-	name.add_theme_font_size_override("font_size", 36)
-	Unjam3DTheme.label_3d(name, Color.WHITE, dark.darkened(0.36), 5)
+	name.add_theme_font_size_override("font_size", 41)
+	Unjam3DTheme.label_3d(name, Color.WHITE, dark.darkened(0.34), 6)
 	info.add_child(name)
 	var desc := Label.new()
-	desc.text = DESCRIPTIONS[game_id]
+	desc.text = _reference_card_copy(game_id)
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	desc.add_theme_font_size_override("font_size", 18)
-	Unjam3DTheme.label_3d(desc, Color.WHITE, dark.darkened(0.36), 3)
+	desc.add_theme_font_size_override("font_size", 19)
+	Unjam3DTheme.label_3d(desc, Color.WHITE, dark.darkened(0.34), 3)
 	info.add_child(desc)
-	var stats := Label.new()
-	stats.text = "LEVEL %d   •   ★ %d" % [highest, MultiGameManager.total_stars(game_id)]
-	stats.add_theme_font_size_override("font_size", 18)
-	Unjam3DTheme.label_3d(stats, Color("fff7c6"), dark.darkened(0.36), 3)
-	info.add_child(stats)
-	var play := _button("PLAY  ›", Vector2(0, 72), dark, true)
-	play.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var spacer := Control.new()
+	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	info.add_child(spacer)
+
+	var footer := HBoxContainer.new()
+	footer.custom_minimum_size = Vector2(0, 76)
+	footer.add_theme_constant_override("separation", 10)
+	info.add_child(footer)
+	var level_chip := PanelContainer.new()
+	level_chip.custom_minimum_size = Vector2(120, 62)
+	level_chip.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(dark, 22, accent.lightened(0.35), 2, 5))
+	footer.add_child(level_chip)
+	var level_label := Label.new()
+	level_label.text = "LEVEL %d" % highest
+	level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	level_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	level_label.add_theme_font_size_override("font_size", 16)
+	Unjam3DTheme.label_3d(level_label, Color.WHITE, dark.darkened(0.35), 2)
+	level_chip.add_child(level_label)
+
+	var progress_bar := ProgressBar.new()
+	progress_bar.name = "WorldProgress"
+	progress_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	progress_bar.custom_minimum_size = Vector2(160, 34)
+	progress_bar.max_value = 100.0
+	progress_bar.value = float(level_in_world)
+	progress_bar.show_percentage = false
+	progress_bar.add_theme_stylebox_override("background", Unjam3DTheme.panel_3d(dark.darkened(0.16), 16, Color(dark.lightened(0.18), 0.7), 1, 2))
+	progress_bar.add_theme_stylebox_override("fill", Unjam3DTheme.panel_3d(Color("42e58a") if game_id == "rescue_rush" else accent.lightened(0.22), 16, Color.WHITE, 1, 3))
+	footer.add_child(progress_bar)
+
+	var star_label := Label.new()
+	star_label.text = "★ %d" % MultiGameManager.total_stars(game_id)
+	star_label.custom_minimum_size = Vector2(92, 62)
+	star_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	star_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	star_label.add_theme_font_size_override("font_size", 18)
+	Unjam3DTheme.label_3d(star_label, Color("fff2a0"), dark.darkened(0.38), 3)
+	footer.add_child(star_label)
+	var play := _button("›", Vector2(68, 68), dark, true)
+	play.add_theme_font_size_override("font_size", 38)
 	play.pressed.connect(_play.bind(game_id))
-	info.add_child(play)
+	footer.add_child(play)
+
 	var art := Unjam3DGameArt.new()
-	art.custom_minimum_size = Vector2(330, 280)
+	art.custom_minimum_size = Vector2(360, 310)
 	art.configure(game_id)
 	row.add_child(art)
+
+func _reference_card_copy(game_id: String) -> String:
+	match game_id:
+		"water_sort": return "Sort the colors.\nTrain your mind.\nFind the perfect flow!"
+		"block_puzzle": return "Drag. Place. Clear.\nKeep the board tidy!"
+		_: return "Clear the lane.\nRescue the chick.\nMake the escape!"
 
 func _add_bottom_nav() -> void:
 	var nav := PanelContainer.new()
