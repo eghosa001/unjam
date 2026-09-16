@@ -1,13 +1,81 @@
 extends "res://scripts/game/game.gd"
 
+# Authoritative board state resolves first; visual ghosts are tracked separately.
+# Completion waits for the actual final escape tween instead of guessing with a timer.
+var _active_escape_visuals: Array[Node] = []
+
 func escape_piece(index: int, trigger_effect: bool) -> void:
 	if index < 0 or index >= pieces.size() or not bool(pieces[index].get("active", true)):
 		return
 	if trigger_effect:
-		_spawn_escape_visual(index)
+		var route := _escape_route_cells(index)
+		_spawn_escape_visual(index, route)
 	super.escape_piece(index, trigger_effect)
 
-func _spawn_escape_visual(index: int) -> void:
+func _escape_route_cells(index: int) -> Array[Vector2i]:
+	var route: Array[Vector2i] = []
+	if index < 0 or index >= pieces.size():
+		return route
+	var piece: Dictionary = pieces[index]
+	if not bool(piece.get("active", true)):
+		return route
+	var direction: Vector2i = DIRECTIONS.get(String(piece.get("direction", "right")), Vector2i.RIGHT)
+	var cursor := piece_position(piece)
+	route.append(cursor)
+	cursor += direction
+	while is_inside(cursor):
+		route.append(cursor)
+		cursor += direction
+	# Keep the first cell beyond the board in the command so the visual route has
+	# an explicit exit, not a frame-by-frame collision guess.
+	route.append(cursor)
+	return route
+
+func _route_from(start: Vector2i, direction: Vector2i) -> Array[Vector2i]:
+	var route: Array[Vector2i] = [start]
+	var cursor := start + direction
+	while is_inside(cursor):
+		route.append(cursor)
+		cursor += direction
+	route.append(cursor)
+	return route
+
+func _board_cell_local_position(pos: Vector2i, fallback: Vector2) -> Vector2:
+	if board_grid == null or not is_inside(pos):
+		return fallback
+	var child_index := pos.y * width + pos.x
+	if child_index < 0 or child_index >= board_grid.get_child_count():
+		return fallback
+	var cell := board_grid.get_child(child_index) as Control
+	if cell == null:
+		return fallback
+	return cell.global_position - global_position
+
+func _offscreen_target(start: Vector2, direction: Vector2, lane_offset: float = 0.0) -> Vector2:
+	var viewport_size := get_viewport_rect().size
+	var distance := maxf(viewport_size.x, viewport_size.y) + 420.0
+	var normal := Vector2(-direction.y, direction.x)
+	return start + direction * distance + normal * lane_offset
+
+func _track_escape_visual(node: Node) -> void:
+	if node != null and is_instance_valid(node):
+		_active_escape_visuals.append(node)
+
+func _finish_escape_visual(node: Node) -> void:
+	_active_escape_visuals.erase(node)
+	if node != null and is_instance_valid(node):
+		node.queue_free()
+
+func _wait_for_escape_visuals() -> void:
+	while not _active_escape_visuals.is_empty():
+		for node in _active_escape_visuals.duplicate():
+			if node == null or not is_instance_valid(node):
+				_active_escape_visuals.erase(node)
+		if _active_escape_visuals.is_empty():
+			return
+		await get_tree().process_frame
+
+func _spawn_escape_visual(index: int, route: Array[Vector2i] = []) -> void:
 	if board_grid == null or index < 0 or index >= pieces.size():
 		return
 	var piece: Dictionary = pieces[index]
@@ -18,6 +86,8 @@ func _spawn_escape_visual(index: int) -> void:
 	var cell := board_grid.get_child(grid_index) as Control
 	if cell == null:
 		return
+	if route.is_empty():
+		route = _escape_route_cells(index)
 	var ghost := PremiumPieceButton.new()
 	ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ghost.disabled = true
@@ -29,27 +99,36 @@ func _spawn_escape_visual(index: int) -> void:
 	add_child(ghost)
 	ghost.global_position = cell.global_position
 	ghost.pivot_offset = ghost.size * 0.5
+	_track_escape_visual(ghost)
+
 	var dir_i: Vector2i = DIRECTIONS.get(String(piece.get("direction", "right")), Vector2i.RIGHT)
 	var direction := Vector2(dir_i)
-	var normal := Vector2(-direction.y, direction.x)
 	var start_pos := ghost.position
-	var distance := maxf(get_viewport_rect().size.x, get_viewport_rect().size.y) + 380.0 + float(mini(chain_count, 8)) * 34.0
-	var target := start_pos + direction * distance + normal * sin(float(pos.x + pos.y)) * 18.0
 	var center: Vector2 = cell.get_global_rect().get_center() - global_position
 	PremiumVisuals.burst(center, world_accent(), 7 + mini(chain_count, 8))
 	_spawn_chain_popup(center, chain_count)
 	_spawn_speed_lines(cell.get_global_rect().get_center(), direction, world_accent())
-	var twist := deg_to_rad(8.0 if direction.x + direction.y > 0.0 else -8.0)
+
 	var tween := create_tween()
-	tween.tween_property(ghost, "position", start_pos - direction * 11.0, 0.055).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.parallel().tween_property(ghost, "scale", Vector2(0.94, 0.94), 0.055)
-	tween.tween_property(ghost, "position", start_pos + direction * 36.0, 0.075).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.parallel().tween_property(ghost, "scale", Vector2(1.10, 1.10), 0.075)
-	tween.tween_property(ghost, "position", target, 0.34).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
-	tween.parallel().tween_property(ghost, "rotation", twist, 0.34)
-	tween.parallel().tween_property(ghost, "scale", Vector2(0.76, 0.76), 0.34)
-	tween.parallel().tween_property(ghost, "modulate:a", 0.0, 0.34).set_delay(0.16)
-	tween.finished.connect(ghost.queue_free)
+	tween.tween_property(ghost, "position", start_pos - direction * 11.0, MotionSystem.duration(&"micro") * 0.55).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.parallel().tween_property(ghost, "scale", Vector2(0.94, 0.94), MotionSystem.duration(&"micro") * 0.55)
+	tween.tween_property(ghost, "position", start_pos + direction * 30.0, MotionSystem.duration(&"micro") * 0.72).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.parallel().tween_property(ghost, "scale", Vector2(1.10, 1.10), MotionSystem.duration(&"micro") * 0.72)
+
+	var inside_steps := maxi(1, route.size() - 2)
+	var step_time := maxf(0.035, MotionSystem.duration(&"travel") * 0.54 / float(inside_steps))
+	for route_index in range(1, route.size() - 1):
+		var route_cell: Vector2i = route[route_index]
+		var target := _board_cell_local_position(route_cell, ghost.position)
+		tween.tween_property(ghost, "position", target, step_time).set_trans(Tween.TRANS_LINEAR).set_ease(Tween.EASE_IN_OUT)
+
+	var lane_offset := sin(float(pos.x + pos.y)) * 18.0
+	var final_target := _offscreen_target(start_pos, direction, lane_offset)
+	var exit_time := maxf(0.16, MotionSystem.duration(&"travel") * 0.72)
+	tween.tween_property(ghost, "position", final_target, exit_time).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	tween.parallel().tween_property(ghost, "scale", Vector2(0.78, 0.78), exit_time)
+	tween.parallel().tween_property(ghost, "rotation", deg_to_rad(8.0 if direction.x + direction.y > 0.0 else -8.0), exit_time)
+	tween.finished.connect(_finish_escape_visual.bind(ghost))
 
 func _spawn_speed_lines(origin_global: Vector2, direction: Vector2, color: Color) -> void:
 	var origin := origin_global - global_position
@@ -161,11 +240,13 @@ func resolve_rescue() -> void:
 	chain_count += 1
 	FeedbackManager.rescue()
 	PremiumVisuals.burst(Vector2(540, 860), world_accent(), 28)
-	PremiumVisuals.screen_flash(world_accent(), 0.16)
-	await get_tree().create_timer(0.42).timeout
+	# Do not use a full-screen flash here. The local celebration keeps the finish
+	# readable without producing bright edge flashes during the transition.
+	render_board()
+	await _wait_for_escape_visuals()
 	complete_level()
 
-func _rescue_exit_direction() -> Vector2:
+func _rescue_exit_direction() -> Vector2i:
 	for direction_i in [Vector2i.UP, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT]:
 		var pos: Vector2i = rescue_pos + direction_i
 		var blocked := false
@@ -175,8 +256,8 @@ func _rescue_exit_direction() -> Vector2:
 				break
 			pos += direction_i
 		if not blocked:
-			return Vector2(direction_i)
-	return Vector2.UP
+			return direction_i
+	return Vector2i.UP
 
 func _spawn_rescue_escape() -> void:
 	if board_grid == null:
@@ -196,16 +277,26 @@ func _spawn_rescue_escape() -> void:
 	token.configure(rescue_id, Color("ffd166"))
 	add_child(token)
 	token.pivot_offset = token.size * 0.5
+	_track_escape_visual(token)
 	if token.has_method("celebrate"):
 		token.call("celebrate")
-	var dir := _rescue_exit_direction()
+
+	var direction_i := _rescue_exit_direction()
+	var direction := Vector2(direction_i)
+	var route := _route_from(rescue_pos, direction_i)
 	var start := token.position
-	var end := start + dir * 900.0
 	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(token, "scale", Vector2(1.24, 0.88), 0.10)
-	tween.tween_property(token, "scale", Vector2(0.92, 1.18), 0.08)
-	tween.tween_property(token, "position", end, 0.34).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
-	tween.parallel().tween_property(token, "scale", Vector2(0.78, 0.78), 0.34)
-	tween.parallel().tween_property(token, "rotation", deg_to_rad(10.0 * (1.0 if dir.x + dir.y >= 0.0 else -1.0)), 0.34)
-	tween.parallel().tween_property(token, "modulate:a", 0.0, 0.34).set_delay(0.16)
-	tween.finished.connect(token.queue_free)
+	tween.tween_property(token, "scale", Vector2(1.24, 0.88), MotionSystem.duration(&"micro") * 0.82)
+	tween.tween_property(token, "scale", Vector2(0.92, 1.18), MotionSystem.duration(&"micro") * 0.68)
+	var inside_steps := maxi(1, route.size() - 2)
+	var step_time := maxf(0.035, MotionSystem.duration(&"travel") * 0.56 / float(inside_steps))
+	for route_index in range(1, route.size() - 1):
+		var route_cell: Vector2i = route[route_index]
+		var target := _board_cell_local_position(route_cell, token.position)
+		tween.tween_property(token, "position", target, step_time).set_trans(Tween.TRANS_LINEAR).set_ease(Tween.EASE_IN_OUT)
+	var exit_time := maxf(0.18, MotionSystem.duration(&"travel") * 0.78)
+	var end := _offscreen_target(start, direction)
+	tween.tween_property(token, "position", end, exit_time).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	tween.parallel().tween_property(token, "scale", Vector2(0.78, 0.78), exit_time)
+	tween.parallel().tween_property(token, "rotation", deg_to_rad(10.0 * (1.0 if direction.x + direction.y >= 0.0 else -1.0)), exit_time)
+	tween.finished.connect(_finish_escape_visual.bind(token))
