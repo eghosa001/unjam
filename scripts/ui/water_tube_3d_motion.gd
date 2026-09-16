@@ -16,24 +16,46 @@ func configure(values: Array, selected: bool, index: int) -> void:
 	if viewport_3d != null:
 		_refresh_liquid_3d()
 		_request_3d_frame()
+	if is_inside_tree():
+		_sync_motion_processing()
 
 func _ready() -> void:
 	super._ready()
 	_build_3d_view()
 	_refresh_liquid_3d()
 	_request_3d_frame()
+	_sync_motion_processing()
 
 func begin_pour_out(amount: int) -> void:
+	set_process(true)
 	super.begin_pour_out(amount)
 	_refresh_liquid_3d()
 
 func begin_pour_in(color_index: int, amount: int) -> void:
+	set_process(true)
 	super.begin_pour_in(color_index, amount)
 	_refresh_liquid_3d()
 
 func set_pour_progress(value: float) -> void:
+	set_process(true)
 	super.set_pour_progress(value)
 	_refresh_liquid_3d()
+
+func play_invalid() -> void:
+	set_process(true)
+	super.play_invalid()
+
+func play_success() -> void:
+	set_process(true)
+	super.play_success()
+
+func _process(delta: float) -> void:
+	super._process(delta)
+	_sync_motion_processing()
+
+func _sync_motion_processing() -> void:
+	var needs_motion := is_selected or invalid_flash > 0.001 or success_flash > 0.001 or pour_mode != 0 or slosh > 0.001
+	set_process(needs_motion)
 
 func _build_3d_view() -> void:
 	if viewport_3d != null:
