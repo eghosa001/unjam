@@ -64,19 +64,22 @@ func select_tube(index: int) -> void:
 		return
 
 	var from_idx := selected
-	var amount := _transfer_amount(from_idx, index)
+	var transfer := _build_transfer_plan(tubes, from_idx, index)
+	if transfer.is_empty():
+		return
+	var amount := int(transfer.get("amount", 0))
 	if amount <= 0:
 		return
-	var source_values: Array = tubes[from_idx].duplicate()
-	var target_values: Array = tubes[index].duplicate()
+	var source_values: Array = transfer.get("source_before", []).duplicate()
+	var target_values: Array = transfer.get("target_before", []).duplicate()
 	var source_control := board.get_child(from_idx) as Control
 	var target_control := board.get_child(index) as Control
 	var from_rect := source_control.get_global_rect()
 	var to_rect := target_control.get_global_rect()
-	var color_index := clampi(int(tubes[from_idx].back()), 0, MotionTube.PALETTE.size() - 1)
+	var color_index := clampi(int(transfer.get("color", 0)), 0, MotionTube.PALETTE.size() - 1)
 
 	history.append({"tubes": tubes.duplicate(true), "moves": moves})
-	super.pour(from_idx, index)
+	_commit_transfer_plan(transfer)
 	moves += 1
 	selected = -1
 	status_label.text = "Pouring — keep going"
@@ -137,17 +140,57 @@ func _run_queued_action_if_ready() -> bool:
 		"quit": super._quit()
 	return true
 
-func _transfer_amount(from_idx: int, to_idx: int) -> int:
-	if not can_pour(from_idx, to_idx):
-		return 0
-	var color := int(tubes[from_idx].back())
-	var amount := 0
-	for i in range(tubes[from_idx].size() - 1, -1, -1):
-		if int(tubes[from_idx][i]) == color:
-			amount += 1
+func _build_transfer_plan(state: Array, from_idx: int, to_idx: int) -> Dictionary:
+	# Pure rules/state stage. Nothing in the live game is mutated here.
+	if from_idx < 0 or to_idx < 0 or from_idx >= state.size() or to_idx >= state.size() or from_idx == to_idx:
+		return {}
+	if not (state[from_idx] is Array) or not (state[to_idx] is Array):
+		return {}
+	var source: Array = (state[from_idx] as Array).duplicate()
+	var target: Array = (state[to_idx] as Array).duplicate()
+	if source.is_empty() or target.size() >= CAPACITY:
+		return {}
+	var color := int(source.back())
+	if not target.is_empty() and int(target.back()) != color:
+		return {}
+	var contiguous := 0
+	for i in range(source.size() - 1, -1, -1):
+		if int(source[i]) == color:
+			contiguous += 1
 		else:
 			break
-	return mini(amount, CAPACITY - tubes[to_idx].size())
+	var amount := mini(contiguous, CAPACITY - target.size())
+	if amount <= 0:
+		return {}
+	var source_after := source.duplicate()
+	var target_after := target.duplicate()
+	for _step in range(amount):
+		source_after.pop_back()
+		target_after.append(color)
+	return {
+		"from": from_idx,
+		"to": to_idx,
+		"color": color,
+		"amount": amount,
+		"source_before": source,
+		"target_before": target,
+		"source_after": source_after,
+		"target_after": target_after
+	}
+
+func _commit_transfer_plan(plan: Dictionary) -> void:
+	var from_idx := int(plan.get("from", -1))
+	var to_idx := int(plan.get("to", -1))
+	if from_idx < 0 or to_idx < 0 or from_idx >= tubes.size() or to_idx >= tubes.size():
+		return
+	var source_after: Array = plan.get("source_after", [])
+	var target_after: Array = plan.get("target_after", [])
+	tubes[from_idx] = source_after.duplicate()
+	tubes[to_idx] = target_after.duplicate()
+
+func _transfer_amount(from_idx: int, to_idx: int) -> int:
+	var plan := _build_transfer_plan(tubes, from_idx, to_idx)
+	return int(plan.get("amount", 0))
 
 func _game_local(global_point: Vector2) -> Vector2:
 	return get_global_transform_with_canvas().affine_inverse() * global_point
