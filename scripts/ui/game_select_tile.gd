@@ -8,9 +8,9 @@ const MATERIALS_SCRIPT = preload("res://scripts/ui/procedural_materials.gd")
 var game_id := "rescue_rush"
 var title := "RESCUE RUSH"
 var level := 1
-var accent := Color("2dd4b6")
+var accent := Color("19dba9")
 var selected := false
-var dark_mode := true
+var dark_mode := false
 var phase := 0.0
 var hover_amount := 0.0
 var press_amount := 0.0
@@ -68,92 +68,78 @@ func _process(delta: float) -> void:
 		queue_redraw()
 
 func _draw() -> void:
-	var rect := Rect2(Vector2(3, 3), size - Vector2(6, 6))
-	var surface := Color("101a2c") if dark_mode else Color("ffffff")
-	var ink := Color("f8fbff") if dark_mode else Color("122036")
-	var muted := Color("95a6be") if dark_mode else Color("607087")
-	var border := accent if selected else Color("34455d") if dark_mode else Color("c7d1df")
-	var lift := hover_amount * 3.0
+	var rect := Rect2(Vector2(4, 4), size - Vector2(8, 8))
+	var game_gradient: Array[Color] = PremiumDesignSystem.game_gradient(game_id)
+	var vibrant_surface: Color = PremiumDesignSystem.vibrant_surface(game_id)
+	var top_color: Color = game_gradient[0]
+	var bottom_color: Color = game_gradient[1]
+	var card_glow := 0.20 + hover_amount * 0.12 + (0.08 if selected else 0.0)
+	var lift := hover_amount * 4.0
 	var card_rect := Rect2(rect.position - Vector2(0, lift), rect.size)
 	var reduced := MotionSystem.reduced()
 	var depth_offset := _materials.extrusion_offset(1.0, reduced)
 	var layers := _materials.depth_layers_for(1.0, reduced)
-	var depth_color: Color = _materials.depth_tone(surface)
 	for layer in range(layers, 0, -1):
 		var factor := float(layer) / float(layers)
-		var layer_offset := depth_offset * factor
-		_draw_box(Rect2(card_rect.position + layer_offset, card_rect.size), Color(depth_color, 0.82 - factor * 0.12), 28, Color.TRANSPARENT, 0)
-	var shadow_rect := Rect2(card_rect.position + depth_offset + Vector2(0, 5), card_rect.size)
-	_draw_box(shadow_rect, Color(0, 0, 0, 0.25 if dark_mode else 0.13), 28, Color.TRANSPARENT, 0)
-	_draw_box(card_rect, surface, 28, Color(border, 0.90 if selected else 0.58), 2 if selected else 1)
-	var bevel: Color = _materials.bevel_light(surface, 0.82)
-	draw_line(card_rect.position + Vector2(24, 5), Vector2(card_rect.end.x - 24, card_rect.position.y + 5), Color(bevel, 0.45 if dark_mode else 0.68), 2.0, true)
-	var lower_bevel: Color = _materials.bevel_dark(surface, 0.85)
-	draw_line(Vector2(card_rect.position.x + 24, card_rect.end.y - 4), card_rect.end - Vector2(24, 4), Color(lower_bevel, 0.72), 2.0, true)
+		var layer_color := _materials.depth_tone(bottom_color, 0.92)
+		_draw_box(Rect2(card_rect.position + depth_offset * factor, card_rect.size), Color(layer_color, 0.90), 28, Color.TRANSPARENT, 0)
+	_draw_box(Rect2(card_rect.position + depth_offset + Vector2(0, 5), card_rect.size), Color(0.02, 0.11, 0.25, 0.22), 28, Color.TRANSPARENT, 0)
+	_draw_box(card_rect, bottom_color, 28, Color("ffffff", 0.78), 2)
+	var top_rect := Rect2(card_rect.position, Vector2(card_rect.size.x, card_rect.size.y * 0.55))
+	_draw_box(top_rect, Color(top_color, 0.94), 28, Color.TRANSPARENT, 0)
+	draw_rect(Rect2(card_rect.position + Vector2(0, card_rect.size.y * 0.42), Vector2(card_rect.size.x, card_rect.size.y * 0.32)), Color(vibrant_surface, 0.08), true)
+	draw_circle(card_rect.position + Vector2(card_rect.size.x * 0.82, card_rect.size.y * 0.18), 70.0, Color("ffffff", card_glow * 0.30))
+	draw_circle(card_rect.position + Vector2(card_rect.size.x * 0.12, card_rect.size.y * 0.85), 54.0, Color(game_gradient[2], card_glow * 0.26))
+	draw_line(card_rect.position + Vector2(22, 7), Vector2(card_rect.end.x - 22, card_rect.position.y + 7), Color("ffffff", 0.58), 3.0, true)
 
-	var glow_alpha := 0.12 if selected else hover_amount * 0.07
-	if glow_alpha > 0.001:
-		_draw_box(card_rect.grow(4), Color(accent, glow_alpha), 31, Color.TRANSPARENT, 0)
-
-	var icon_center := Vector2(58, size.y * 0.5 - lift)
+	var icon_center := Vector2(size.x * 0.5, 72 - lift)
 	_draw_game_icon(icon_center)
 
 	var font := ThemeDB.fallback_font
-	var title_color := accent.lightened(0.12) if selected else ink
-	draw_string(font, Vector2(108, 68 - lift), title, HORIZONTAL_ALIGNMENT_LEFT, -1, 26, title_color)
-	draw_string(font, Vector2(108, 104 - lift), "LEVEL %d" % level, HORIZONTAL_ALIGNMENT_LEFT, -1, 19, muted)
-	var mode_text := _mode_label()
-	draw_string(font, Vector2(108, 139 - lift), mode_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(accent, 0.82))
-
-	var chevron_x := size.x - 31.0
-	var chevron_y := size.y * 0.5 - lift
-	draw_line(Vector2(chevron_x - 8, chevron_y - 10), Vector2(chevron_x + 2, chevron_y), Color(ink, 0.62), 3.0, true)
-	draw_line(Vector2(chevron_x + 2, chevron_y), Vector2(chevron_x - 8, chevron_y + 10), Color(ink, 0.62), 3.0, true)
-
-	if selected and not reduced:
-		var sweep := fposmod(phase * 110.0, maxf(1.0, size.x - 80.0))
-		draw_rect(Rect2(Vector2(38 + sweep, size.y - 8 - lift), Vector2(42, 3)), Color(accent, 0.40), true)
+	var title_width := card_rect.size.x - 20.0
+	draw_string(font, Vector2(10, 148 - lift), title, HORIZONTAL_ALIGNMENT_CENTER, title_width, 24, Color.WHITE)
+	draw_string(font, Vector2(10, 178 - lift), "LEVEL %d" % level, HORIZONTAL_ALIGNMENT_CENTER, title_width, 17, Color("fff5a8"))
+	draw_string(font, Vector2(10, 205 - lift), _mode_label(), HORIZONTAL_ALIGNMENT_CENTER, title_width, 13, Color("f4fbff"))
+	if selected:
+		_draw_box(card_rect.grow(3), Color.TRANSPARENT, 31, Color("fff26e", 0.88), 3)
 
 func _mode_label() -> String:
 	match game_id:
-		"water_sort": return "SORT • POUR • RELAX"
+		"water_sort": return "POUR • SORT • RELAX"
 		"block_puzzle": return "DRAG • PLACE • CLEAR"
-		_: return "TAP • ESCAPE • RESCUE"
+		_: return "SLIDE • CLEAR • RESCUE"
 
 func _draw_game_icon(center: Vector2) -> void:
 	var pulse := 0.5 if MotionSystem.reduced() else 0.5 + 0.5 * sin(phase * 3.0)
-	var icon_rect := Rect2(center - Vector2(36, 36), Vector2(72, 72))
-	var icon_depth := _materials.extrusion_offset(0.78, MotionSystem.reduced())
-	_draw_box(Rect2(icon_rect.position + icon_depth, icon_rect.size), _materials.depth_tone(Color(accent, 0.42)), 22, Color.TRANSPARENT, 0)
-	_draw_box(icon_rect, Color(accent, 0.12 + pulse * 0.035), 22, Color(_materials.bevel_light(accent), 0.36), 1)
+	var icon_rect := Rect2(center - Vector2(42, 42), Vector2(84, 84))
+	var icon_depth := _materials.extrusion_offset(0.82, MotionSystem.reduced())
+	_draw_box(Rect2(icon_rect.position + icon_depth, icon_rect.size), _materials.depth_tone(Color(accent, 0.76)), 24, Color.TRANSPARENT, 0)
+	_draw_box(icon_rect, Color("ffffff", 0.18 + pulse * 0.04), 24, Color("ffffff", 0.54), 2)
 	match game_id:
 		"water_sort":
+			var liquids: Array[Color] = [Color("ffd43b"), Color("ff58b5"), Color("63f0ff")]
 			for i in range(3):
-				var x := center.x - 20 + i * 20
-				draw_line(Vector2(x - 6, center.y - 19), Vector2(x - 6, center.y + 18), Color("d9f2ff", 0.75), 3.0, true)
-				draw_line(Vector2(x + 6, center.y - 19), Vector2(x + 6, center.y + 18), Color("d9f2ff", 0.75), 3.0, true)
-				draw_arc(Vector2(x, center.y + 17), 6.0, 0, PI, 18, Color("d9f2ff", 0.75), 3.0, true)
-				draw_rect(Rect2(Vector2(x - 4, center.y + 1 + float(i) * 3), Vector2(8, 14 - float(i) * 3)), Color(accent.lightened(float(i) * 0.10), 0.95), true)
+				var x := center.x - 22 + i * 22
+				draw_line(Vector2(x - 6, center.y - 23), Vector2(x - 6, center.y + 22), Color("e8fbff"), 3.0, true)
+				draw_line(Vector2(x + 6, center.y - 23), Vector2(x + 6, center.y + 22), Color("e8fbff"), 3.0, true)
+				draw_arc(Vector2(x, center.y + 21), 6.0, 0, PI, 18, Color("e8fbff"), 3.0, true)
+				draw_rect(Rect2(Vector2(x - 4, center.y + 1 + float(i) * 3), Vector2(8, 18 - float(i) * 3)), liquids[i], true)
 		"block_puzzle":
+			var colors: Array[Color] = [Color("ffd33d"), Color("ff6c8e"), Color("a75cff")]
 			var cells := [Vector2i(0,0), Vector2i(1,0), Vector2i(1,1), Vector2i(2,1), Vector2i(2,2)]
-			for p in cells:
-				var r := Rect2(center + Vector2(float(p.x - 1) * 16 - 6, float(p.y - 1) * 16 - 6), Vector2(13, 13))
-				var d := _materials.extrusion_offset(0.55, MotionSystem.reduced())
-				_draw_box(Rect2(r.position + d, r.size), _materials.depth_tone(accent), 4, Color.TRANSPARENT, 0)
-				_draw_box(r, accent, 4, _materials.bevel_light(accent), 1)
+			for i in range(cells.size()):
+				var p: Vector2i = cells[i]
+				var r := Rect2(center + Vector2(float(p.x - 1) * 18 - 7, float(p.y - 1) * 18 - 7), Vector2(15, 15))
+				var col: Color = colors[i % colors.size()]
+				_draw_box(Rect2(r.position + Vector2(2, 5), r.size), _materials.depth_tone(col), 4, Color.TRANSPARENT, 0)
+				_draw_box(r, col, 4, Color("ffffff", 0.48), 1)
 		_:
-			var dir := Vector2.RIGHT
-			var tip := center + dir * 21
-			var n := Vector2(0, 1)
-			var points := PackedVector2Array([
-				center - dir * 18 + n * 7,
-				center + dir * 5 + n * 7,
-				center + dir * 5 + n * 15,
-				tip,
-				center + dir * 5 - n * 15,
-				center + dir * 5 - n * 7,
-				center - dir * 18 - n * 7
-			])
+			draw_circle(center, 24, Color("ffd84f"))
+			draw_circle(center + Vector2(-8, -5), 3.2, Color("253550"))
+			draw_circle(center + Vector2(8, -5), 3.2, Color("253550"))
+			draw_arc(center + Vector2(0, 4), 9, 0.2, PI - 0.2, 16, Color("253550"), 2.5, true)
+			var tip := center + Vector2(36, 0)
+			var points := PackedVector2Array([center + Vector2(18,-9), center + Vector2(18,9), tip])
 			draw_polygon(points, PackedColorArray([Color.WHITE]))
 
 func _draw_box(rect: Rect2, color: Color, radius: int, border: Color, border_width: int) -> void:
