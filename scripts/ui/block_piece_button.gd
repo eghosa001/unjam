@@ -31,6 +31,8 @@ func configure(value: Array, is_selected: bool, color := Color("4f7cff"), index:
 	target_scale = Vector2(1.08, 1.08) if selected else Vector2.ONE
 	_update_style()
 	queue_redraw()
+	if is_inside_tree():
+		_sync_processing()
 
 func _ready() -> void:
 	mouse_entered.connect(_set_hover.bind(true))
@@ -39,7 +41,11 @@ func _ready() -> void:
 	button_up.connect(_release)
 	resized.connect(_refresh_pivot)
 	_refresh_pivot()
-	set_process(true)
+	set_process(false)
+	_sync_processing()
+
+func _sync_processing() -> void:
+	set_process(selected or hover or dragging)
 
 func _refresh_pivot() -> void:
 	pivot_offset = size * 0.5
@@ -89,6 +95,7 @@ func _begin_drag_feedback() -> void:
 	if dragging:
 		return
 	dragging = true
+	_sync_processing()
 	var tween := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween.tween_property(self, "scale", Vector2(0.84, 0.84), 0.07)
 	tween.parallel().tween_property(self, "modulate", Color(1, 1, 1, 0.06), 0.07)
@@ -153,6 +160,7 @@ func _end_drag_feedback(hide_preview := true) -> void:
 	if not dragging:
 		return
 	dragging = false
+	_sync_processing()
 	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tween.tween_property(self, "modulate", Color.WHITE, 0.07)
 	tween.parallel().tween_property(self, "scale", target_scale * 1.10, 0.09)
@@ -352,6 +360,7 @@ func _finish_touch_drag(screen_position: Vector2) -> void:
 
 func _set_hover(value: bool) -> void:
 	hover = value
+	_sync_processing()
 	queue_redraw()
 
 func _update_style() -> void:
