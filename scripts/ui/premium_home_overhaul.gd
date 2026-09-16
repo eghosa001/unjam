@@ -1,11 +1,10 @@
 extends Control
 
-# Shared Home state/navigation only. Retired flat presentation code has been
-# removed; premium_home_casual.gd owns the active 3D presentation.
+# Shared Home state/navigation only. Retired presentation code has been removed;
+# premium_home_casual.gd owns the active 3D presentation.
 var selected_game := "rescue_rush"
 var built := false
 var last_theme := ""
-var footer_label: Label
 var primary_button: Button
 
 func _ready() -> void:
@@ -50,37 +49,11 @@ func _theme_mode() -> String:
 func build_home_launcher() -> void:
 	pass
 
-func _current_level(game_id: String) -> int:
-	return clampi(MultiGameManager.highest_level(game_id), 1, MultiGameManager.CAMPAIGN_LEVELS)
-
-func _hero_progress_text(game_id: String) -> String:
-	var level := _current_level(game_id)
-	var world := MultiGameManager.highest_unlocked_world(game_id)
-	var stars := MultiGameManager.total_stars(game_id)
-	return "LEVEL %d   •   WORLD %d   •   %d ★" % [level, world, stars]
-
-func _shared_progress_text() -> String:
-	var completed := 0
-	for game_id in MultiGameManager.GAME_IDS:
-		completed += int(MultiGameManager.progress_for(game_id).get("levels_completed", 0))
-	return "%d / 30,000 CLEARED" % completed
-
 func _total_stars() -> int:
 	var total := 0
 	for game_id in MultiGameManager.GAME_IDS:
 		total += MultiGameManager.total_stars(game_id)
 	return total
-
-func _play_selected() -> void:
-	var main := get_parent()
-	if main == null:
-		return
-	if main.has_method("_checkpoint_for"):
-		var checkpoint = main.call("_checkpoint_for", selected_game)
-		if checkpoint is Dictionary and not checkpoint.is_empty():
-			main.call("resume_game", selected_game)
-			return
-	main.call("open_game_campaign", selected_game)
 
 func _open_journey() -> void:
 	var main := get_parent()
