@@ -19,7 +19,7 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
-      - name: Apply verified visual patch
+      - name: Apply verified water rescue visual patch
         env:
           GITHUB_TOKEN: ${{ github.token }}
         shell: bash
@@ -29,17 +29,17 @@ jobs:
           curl -fsSL \
             -H "Authorization: Bearer ${GITHUB_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
-            https://api.github.com/repos/eghosa001/unjam/git/blobs/a8776f5a6958c842679e305689d0526d06efd7ce \
+            https://api.github.com/repos/eghosa001/unjam/git/blobs/6d3da942dbb466c750e9923702c50f200a4902ad \
             | jq -r '.content' | tr -d '\n' | base64 -d > /tmp/visual-pass.patch.gz
           gzip -dc /tmp/visual-pass.patch.gz > /tmp/visual-pass.patch
-          echo '754e2b7d189d9ca87ed09e2cc2f2ad071cae3f0c2e850ad29c56378e6b5957d0  /tmp/visual-pass.patch' | sha256sum -c -
+          echo '146cf79f63e2b64d5cc4bd7fedc1a3b8ab5e9273520c6fe605b7e86900454a53  /tmp/visual-pass.patch' | sha256sum -c -
           git apply --check /tmp/visual-pass.patch
           git apply --index /tmp/visual-pass.patch
           changed="$(git diff --cached --name-only)"
           count="$(printf '%s\n' "$changed" | sed '/^$/d' | wc -l)"
-          test "$count" -eq 6
+          test "$count" -eq 7
           if printf '%s\n' "$changed" | grep -Eq '^\.github/|^addons/stagehand/|^project\.godot$|(^|/)\.uid$'; then
-            echo 'Unexpected generated/QA file in premium visual pass' >&2
+            echo 'Unexpected generated/QA file in water rescue visual pass' >&2
             printf '%s\n' "$changed" >&2
             exit 1
           fi
