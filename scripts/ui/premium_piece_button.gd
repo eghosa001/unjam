@@ -1,6 +1,8 @@
 extends Button
 class_name PremiumPieceButton
 
+const MATERIALS_SCRIPT = preload("res://scripts/ui/procedural_materials.gd")
+
 var piece_type := "normal"
 var direction := "right"
 var accent := Color("4a8bd8")
@@ -9,6 +11,7 @@ var active_piece := true
 var phase := 0.0
 var hover_amount := 0.0
 var press_amount := 0.0
+var _materials = MATERIALS_SCRIPT.new()
 
 func configure(type_value: String, direction_value: String, base_color: Color) -> void:
 	piece_type = type_value
@@ -22,7 +25,7 @@ func configure(type_value: String, direction_value: String, base_color: Color) -
 	queue_redraw()
 
 func _ready() -> void:
-	set_process(true)
+	set_process(not MotionSystem.reduced())
 	mouse_entered.connect(func(): _set_hover(true))
 	mouse_exited.connect(func(): _set_hover(false))
 	button_down.connect(_press)
@@ -31,20 +34,29 @@ func _ready() -> void:
 	pivot_offset = size * 0.5
 
 func _set_hover(value: bool) -> void:
-	var tween := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(self, "hover_amount", 1.0 if value else 0.0, 0.12)
+	if MotionSystem.reduced():
+		hover_amount = 0.0
+		queue_redraw()
+		return
+	var tween := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tween.tween_property(self, "hover_amount", 1.0 if value else 0.0, MotionSystem.duration(&"settle"))
 
 func _press() -> void:
 	press_amount = 1.0
+	if MotionSystem.reduced():
+		return
 	var v := _dir_vec(direction)
-	var tween := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(self, "position", position + v * 7.0, 0.055)
-	tween.parallel().tween_property(self, "scale", Vector2(0.94, 0.94), 0.055)
+	var tween := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tween.tween_property(self, "position", position + v * 7.0, MotionSystem.duration(&"micro"))
+	tween.parallel().tween_property(self, "scale", Vector2(0.94, 0.94), MotionSystem.duration(&"micro"))
 
 func _release() -> void:
+	if MotionSystem.reduced():
+		scale = Vector2.ONE
+		return
 	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(self, "scale", Vector2(1.07, 1.07), 0.075)
-	tween.tween_property(self, "scale", Vector2.ONE, 0.14)
+	tween.tween_property(self, "scale", Vector2(1.07, 1.07), MotionSystem.duration(&"press"))
+	tween.tween_property(self, "scale", Vector2.ONE, MotionSystem.duration(&"settle"))
 
 func _process(delta: float) -> void:
 	phase += delta
@@ -56,7 +68,7 @@ func _process(delta: float) -> void:
 func _draw() -> void:
 	var rect: Rect2 = Rect2(Vector2(6, 6), size - Vector2(12, 12))
 	var center: Vector2 = size * 0.5
-	var pulse: float = 0.5 + 0.5 * sin(phase * 3.0)
+	var pulse: float = 0.5 if MotionSystem.reduced() else 0.5 + 0.5 * sin(phase * 3.0)
 	_draw_motion_trail(center, pulse)
 	_draw_shell(rect, center, pulse)
 	match piece_type:
@@ -69,7 +81,7 @@ func _draw() -> void:
 		_: _draw_arrow(center, direction, minf(size.x, size.y) * 0.23)
 
 func _draw_motion_trail(center: Vector2, pulse: float) -> void:
-	if piece_type == "blocker":
+	if piece_type == "blocker" or MotionSystem.reduced():
 		return
 	var v := _dir_vec(direction)
 	for i in range(3):
@@ -81,14 +93,23 @@ func _draw_motion_trail(center: Vector2, pulse: float) -> void:
 
 func _draw_shell(rect: Rect2, center: Vector2, pulse: float) -> void:
 	var radius: float = minf(rect.size.x, rect.size.y) * 0.22
+	var depth_offset := _materials.extrusion_offset(0.88, MotionSystem.reduced())
+	var layers := _materials.depth_layers_for(0.88, MotionSystem.reduced())
+	var depth_color: Color = _materials.depth_tone(accent)
+	for layer in range(layers, 0, -1):
+		var factor := float(layer) / float(layers)
+		draw_style_box(_rounded(Color(depth_color, 0.94), radius, Color.TRANSPARENT, 0), Rect2(rect.position + depth_offset * factor, rect.size))
 	var glow_alpha := 0.62 + hover_amount * 0.25 + pulse * 0.10
-	draw_style_box(_rounded(Color(accent, 0.98), radius, Color(glow, glow_alpha), 2 + int(hover_amount)), rect)
+	var bevel_light: Color = _materials.bevel_light(accent)
+	var bevel_dark: Color = _materials.bevel_dark(accent)
+	draw_style_box(_rounded(Color(accent, 0.98), radius, Color(bevel_light, glow_alpha), 2 + int(hover_amount)), rect)
 	var inner: Rect2 = rect.grow(-7)
-	draw_style_box(_rounded(Color(accent.darkened(0.16), 0.66), radius * 0.75, Color.WHITE, 0), inner)
+	draw_style_box(_rounded(Color(bevel_dark, 0.66), radius * 0.75, Color.WHITE, 0), inner)
 	var shine: Rect2 = Rect2(inner.position + Vector2(8, 7), Vector2(inner.size.x - 16, maxf(5.0, inner.size.y * 0.12)))
-	draw_rect(shine, Color(1, 1, 1, 0.12 + pulse * 0.07), true)
-	draw_circle(center + Vector2(0, rect.size.y * 0.34), rect.size.x * 0.23, Color(0, 0, 0, 0.12))
-	if hover_amount > 0.01:
+	draw_rect(shine, Color(bevel_light, 0.22 + pulse * 0.08), true)
+	draw_line(Vector2(inner.position.x + 8, inner.end.y - 5), Vector2(inner.end.x - 8, inner.end.y - 5), Color(bevel_dark, 0.82), 3.0, true)
+	draw_circle(center + Vector2(0, rect.size.y * 0.34) + depth_offset * 0.25, rect.size.x * 0.23, _materials.contact_shadow(0.12))
+	if hover_amount > 0.01 and not MotionSystem.reduced():
 		draw_arc(center, rect.size.x * 0.53, 0, TAU, 32, Color(glow, 0.18 + 0.14 * pulse), 3.0, true)
 
 func _rounded(color: Color, radius: float, border: Color, border_width: int) -> StyleBoxFlat:
@@ -109,7 +130,7 @@ func _rounded(color: Color, radius: float, border: Color, border_width: int) -> 
 func _draw_arrow(center: Vector2, dir: String, scale_value: float) -> void:
 	var v: Vector2 = _dir_vec(dir)
 	var n: Vector2 = Vector2(-v.y, v.x)
-	var breathing := 1.0 + sin(phase * 4.2) * 0.035
+	var breathing := 1.0 if MotionSystem.reduced() else 1.0 + sin(phase * 4.2) * 0.035
 	var tip: Vector2 = center + v * scale_value * breathing
 	var tail: Vector2 = center - v * scale_value * 0.75
 	var neck: Vector2 = center + v * scale_value * 0.15
@@ -124,8 +145,13 @@ func _draw_arrow(center: Vector2, dir: String, scale_value: float) -> void:
 		neck - n * half,
 		tail - n * half
 	])
+	var arrow_depth := _materials.extrusion_offset(0.50, MotionSystem.reduced()) * 0.45
+	var depth_points := PackedVector2Array()
+	for point in points:
+		depth_points.append(point + arrow_depth)
+	draw_polygon(depth_points, PackedColorArray([_materials.depth_tone(Color.WHITE, 0.55)]))
 	draw_polygon(points, PackedColorArray([Color.WHITE]))
-	draw_polyline(points + PackedVector2Array([points[0]]), Color(1,1,1,0.28), 2.0, true)
+	draw_polyline(points + PackedVector2Array([points[0]]), Color(_materials.bevel_light(Color.WHITE), 0.38), 2.0, true)
 
 func _draw_rotate(center: Vector2) -> void:
 	var radius: float = minf(size.x, size.y) * 0.20
@@ -156,7 +182,7 @@ func _draw_bomb(center: Vector2) -> void:
 	var r: float = minf(size.x, size.y) * 0.18
 	draw_circle(center + Vector2(0, 5), r, Color.WHITE)
 	draw_line(center + Vector2(r * 0.38, -r * 0.75), center + Vector2(r * 0.82, -r * 1.3), Color.WHITE, 6.0, true)
-	var spark := 1.0 + sin(phase * 9.0) * 0.22
+	var spark := 1.0 if MotionSystem.reduced() else 1.0 + sin(phase * 9.0) * 0.22
 	draw_circle(center + Vector2(r * 0.95, -r * 1.45), r * 0.18 * spark, glow)
 
 func _draw_linked(center: Vector2) -> void:
@@ -168,7 +194,10 @@ func _draw_linked(center: Vector2) -> void:
 func _draw_blocker(center: Vector2) -> void:
 	var w: float = minf(size.x, size.y) * 0.42
 	var rect := Rect2(center - Vector2(w, w) * 0.5, Vector2(w, w))
-	draw_style_box(_rounded(Color("303746"), w * 0.18, Color("697386"), 2), rect)
+	var blocker := Color("303746")
+	var depth := _materials.extrusion_offset(0.72, MotionSystem.reduced())
+	draw_style_box(_rounded(_materials.depth_tone(blocker), w * 0.18, Color.TRANSPARENT, 0), Rect2(rect.position + depth, rect.size))
+	draw_style_box(_rounded(blocker, w * 0.18, _materials.bevel_light(Color("697386")), 2), rect)
 	for sx in [-1, 1]:
 		for sy in [-1, 1]:
 			draw_circle(center + Vector2(sx, sy) * w * 0.28, w * 0.045, Color("b5c0d0"))
