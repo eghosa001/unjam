@@ -4,6 +4,8 @@ extends Control
 signal continue_requested
 signal secondary_requested
 
+const VIBRANT_REFERENCE_TARGET := "approved-colorful-reference"
+
 var accent := Color("5da9ff")
 var title_text := "LEVEL COMPLETE"
 var subtitle_text := ""
@@ -79,37 +81,35 @@ func _box(color: Color, radius: int, border: Color = Color.TRANSPARENT, width: i
 		s.border_width_bottom = width
 		s.border_color = border
 	if shadow > 0:
-		s.shadow_color = Color(0, 0, 0, 0.50)
+		s.shadow_color = Color(0, 0, 0, 0.28)
 		s.shadow_size = shadow
 		s.shadow_offset = Vector2(0, 10)
 	return s
 
 func _build() -> void:
-	var dim := ColorRect.new()
-	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	dim.color = Color(0.015, 0.025, 0.05, 0.93)
-	dim.mouse_filter = Control.MOUSE_FILTER_STOP
-	add_child(dim)
+	var backdrop := PremiumBackdrop.new()
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.configure(Color("7bdcff"), accent.lightened(0.16), 0)
+	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(backdrop)
 
-	var glow := ColorRect.new()
-	glow.set_anchors_preset(Control.PRESET_CENTER)
-	glow.position = Vector2(-360, -430)
-	glow.size = Vector2(720, 860)
-	glow.color = Color(accent, 0.055)
-	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(glow)
+	var wash := ColorRect.new()
+	wash.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	wash.color = Color(0.09, 0.22, 0.38, 0.20)
+	wash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(wash)
 
 	var card := PanelContainer.new()
 	card.name = "ResultCard"
 	card.set_anchors_preset(Control.PRESET_CENTER)
-	card.position = Vector2(-350, -470)
-	card.custom_minimum_size = Vector2(700, 940)
-	card.add_theme_stylebox_override("panel", _box(Color("0b1628"), 42, Color(accent, 0.72), 2, 24))
+	card.position = Vector2(-370, -490)
+	card.custom_minimum_size = Vector2(740, 980)
+	card.add_theme_stylebox_override("panel", _box(Color("fffaf0"), 46, Color(accent.lightened(0.18), 0.95), 4, 22))
 	add_child(card)
 	var margin := MarginContainer.new()
 	margin.name = "ResultMargin"
 	for side in ["margin_left", "margin_right"]:
-		margin.add_theme_constant_override(side, 44)
+		margin.add_theme_constant_override(side, 48)
 	margin.add_theme_constant_override("margin_top", 42)
 	margin.add_theme_constant_override("margin_bottom", 38)
 	card.add_child(margin)
@@ -119,40 +119,47 @@ func _build() -> void:
 	box.add_theme_constant_override("separation", 20)
 	margin.add_child(box)
 
+	var badge_panel := PanelContainer.new()
+	badge_panel.add_theme_stylebox_override("panel", _box(Color(accent, 0.16), 18, Color(accent, 0.42), 2))
+	box.add_child(badge_panel)
 	var badge := Label.new()
 	badge.text = badge_text
 	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	badge.add_theme_font_size_override("font_size", 15)
-	badge.add_theme_color_override("font_color", Color(accent, 0.92))
-	box.add_child(badge)
+	badge.add_theme_font_size_override("font_size", 17)
+	badge.add_theme_color_override("font_color", accent.darkened(0.42))
+	badge_panel.add_child(badge)
 
 	var title := Label.new()
 	title.text = title_text
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 42)
-	title.add_theme_color_override("font_color", Color("f7f9ff"))
+	title.add_theme_font_size_override("font_size", 48)
+	title.add_theme_color_override("font_color", Color("24345f"))
+	title.add_theme_color_override("font_shadow_color", Color(1,1,1,0.55))
+	title.add_theme_constant_override("shadow_offset_y", 2)
 	box.add_child(title)
 
 	var subtitle := Label.new()
 	subtitle.text = subtitle_text
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	subtitle.add_theme_font_size_override("font_size", 18)
-	subtitle.add_theme_color_override("font_color", Color("9fb0c7"))
+	subtitle.add_theme_font_size_override("font_size", 20)
+	subtitle.add_theme_color_override("font_color", Color("4c6480"))
 	box.add_child(subtitle)
 
 	var star_row := HBoxContainer.new()
 	star_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	star_row.add_theme_constant_override("separation", 16)
+	star_row.add_theme_constant_override("separation", 18)
 	box.add_child(star_row)
 	for i in range(3):
 		var star := Label.new()
 		star.text = "★" if i < stars else "☆"
-		star.custom_minimum_size = Vector2(100, 100)
+		star.custom_minimum_size = Vector2(108, 108)
 		star.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		star.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		star.add_theme_font_size_override("font_size", 72)
-		star.add_theme_color_override("font_color", Color("ffd166") if i < stars else Color("435168"))
+		star.add_theme_font_size_override("font_size", 78)
+		star.add_theme_color_override("font_color", Color("ffca28") if i < stars else Color("c8d4e5"))
+		star.add_theme_color_override("font_shadow_color", Color("d77d00", 0.25))
+		star.add_theme_constant_override("shadow_offset_y", 3)
 		star.scale = Vector2.ONE if _reduced_motion() else Vector2(0.10, 0.10)
 		star.modulate.a = 1.0 if _reduced_motion() else 0.0
 		star.pivot_offset = star.custom_minimum_size * 0.5
@@ -164,57 +171,49 @@ func _build() -> void:
 			tw.parallel().tween_property(star, "scale", Vector2(1.18, 1.18), _motion_duration(&"settle"))
 			tw.tween_property(star, "scale", Vector2.ONE, _motion_duration(&"press"))
 
-	var divider := ColorRect.new()
-	divider.custom_minimum_size = Vector2(0, 2)
-	divider.color = Color(accent, 0.22)
-	divider.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.add_child(divider)
-
+	var stats_panel := PanelContainer.new()
+	stats_panel.add_theme_stylebox_override("panel", _box(Color("eef8ff"), 24, Color("b9e4ff"), 2))
+	box.add_child(stats_panel)
 	var stats := Label.new()
 	stats.text = stats_text
 	stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	stats.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	stats.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	stats.add_theme_font_size_override("font_size", 22)
-	stats.add_theme_color_override("font_color", Color("d8e4f2"))
-	stats.custom_minimum_size = Vector2(0, 110)
-	box.add_child(stats)
+	stats.add_theme_font_size_override("font_size", 23)
+	stats.add_theme_color_override("font_color", Color("31506e"))
+	stats.custom_minimum_size = Vector2(0, 118)
+	stats_panel.add_child(stats)
 
 	_secondary_button = Button.new()
 	_secondary_button.name = "SecondaryAction"
 	_secondary_button.text = secondary_text
 	_secondary_button.visible = not secondary_text.is_empty()
 	_secondary_button.disabled = not secondary_enabled
-	_secondary_button.custom_minimum_size = Vector2(0, 78)
-	_secondary_button.add_theme_font_size_override("font_size", 21)
-	_secondary_button.add_theme_stylebox_override("normal", _box(Color("13233a"), 23, Color(accent, 0.72), 2, 5))
-	_secondary_button.add_theme_stylebox_override("hover", _box(Color("18304e"), 23, Color(accent, 0.96), 2, 7))
-	_secondary_button.add_theme_stylebox_override("pressed", _box(Color("0e1b2e"), 23, accent, 2, 2))
-	_secondary_button.add_theme_color_override("font_color", Color("e8f2ff"))
+	_secondary_button.custom_minimum_size = Vector2(0, 82)
+	_secondary_button.add_theme_font_size_override("font_size", 22)
+	PremiumDesignSystem.apply_button(_secondary_button, true, Color("7657d8"), "secondary", 24)
 	_secondary_button.pressed.connect(func() -> void: secondary_requested.emit())
 	box.add_child(_secondary_button)
 
 	var continue_button := Button.new()
 	continue_button.name = "PrimaryAction"
 	continue_button.text = button_text
-	continue_button.custom_minimum_size = Vector2(0, 92)
-	continue_button.add_theme_font_size_override("font_size", 24)
-	continue_button.add_theme_stylebox_override("normal", _box(accent, 26, accent.lightened(0.20), 2, 10))
-	continue_button.add_theme_stylebox_override("hover", _box(accent.lightened(0.08), 26, Color.WHITE, 2, 12))
-	continue_button.add_theme_stylebox_override("pressed", _box(accent.darkened(0.12), 26, Color.WHITE, 2, 3))
-	continue_button.add_theme_color_override("font_color", Color("061019") if accent.get_luminance() > 0.56 else Color.WHITE)
+	continue_button.custom_minimum_size = Vector2(0, 98)
+	continue_button.add_theme_font_size_override("font_size", 26)
+	PremiumDesignSystem.apply_button(continue_button, true, accent, "primary", 26)
 	continue_button.pressed.connect(func(): continue_requested.emit())
 	box.add_child(continue_button)
 
 	var hint := Label.new()
 	hint.text = "KEEP THE FLOW GOING"
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint.add_theme_font_size_override("font_size", 13)
-	hint.add_theme_color_override("font_color", Color("6f8098"))
+	hint.add_theme_font_size_override("font_size", 15)
+	hint.add_theme_color_override("font_color", Color("6e7891"))
 	box.add_child(hint)
 
 	card.modulate.a = 1.0 if _reduced_motion() else 0.0
 	card.scale = Vector2.ONE if _reduced_motion() else Vector2(0.90, 0.90)
-	card.pivot_offset = Vector2(350, 470)
+	card.pivot_offset = Vector2(370, 490)
 	if not _reduced_motion():
 		var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		tween.tween_property(card, "modulate:a", 1.0, _motion_duration(&"settle"))
