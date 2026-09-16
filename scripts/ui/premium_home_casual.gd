@@ -6,6 +6,7 @@ extends "res://scripts/ui/premium_home_overhaul.gd"
 
 func build_home_launcher() -> void:
 	for child in get_children():
+		remove_child(child)
 		child.queue_free()
 	last_theme = _theme_mode()
 	built = true
