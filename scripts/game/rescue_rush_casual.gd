@@ -5,10 +5,12 @@ func style_button(button: Button, accent: bool = false) -> void:
 
 func build_ui() -> void:
 	var world: int = int(level_data.get("world", 1))
-	var backdrop := Unjam3DBackdrop.new()
-	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	backdrop.configure(Unjam3DTheme.GREEN)
-	add_child(backdrop)
+	var environment_3d := Unjam3DGameplayStage.new()
+	environment_3d.name = "RescueRush3DEnvironment"
+	environment_3d.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	environment_3d.configure("rescue_rush", Unjam3DTheme.GREEN)
+	environment_3d.z_index = -100
+	add_child(environment_3d)
 	PremiumVisuals.set_accent(Unjam3DTheme.GREEN)
 
 	var outer := MarginContainer.new()
@@ -67,7 +69,7 @@ func build_ui() -> void:
 
 	var objective := PanelContainer.new()
 	objective.custom_minimum_size = Vector2(0, 66)
-	objective.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("f6fbff"), 25, Color("82dbff"), 2, 6))
+	objective.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color(0.96, 0.99, 1.0, 0.94), 25, Color("82dbff"), 2, 6))
 	root.add_child(objective)
 	var objective_label := Label.new()
 	objective_label.text = "💡  CLEAR THE LANE TO RESCUE THE CHICK!"
@@ -82,7 +84,8 @@ func build_ui() -> void:
 	holder.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(holder)
 	board_panel = PanelContainer.new()
-	board_panel.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("18334f"), 38, Color("7e8995"), 5, 14))
+	# Warm stone frame with pale rim reads more like a toy diorama than a dark app panel.
+	board_panel.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("566b6a"), 38, Color("c4e5d5"), 5, 16))
 	holder.add_child(board_panel)
 	var board_margin := _panel_margin(18, 18, 18, 18)
 	board_panel.add_child(board_margin)
