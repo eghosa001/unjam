@@ -1,8 +1,7 @@
 extends Control
 
-# Shared Live/Game-select state and navigation. The old flat renderer and its
-# GameShowcaseArt dependency have been removed; premium_live_hub_3d.gd owns the
-# active visual implementation.
+# Shared Live/Game-select state and navigation only. Retired presentation code
+# is gone; premium_live_hub_3d.gd owns the active visual implementation.
 const DESCRIPTIONS := {
 	"rescue_rush": "Clear the lane, trigger chain reactions and rescue the trapped character.",
 	"water_sort": "Sort every colour into clean tubes with the fewest possible pours.",
@@ -41,16 +40,6 @@ func _theme_mode() -> String:
 func _build() -> void:
 	pass
 
-func _best_game() -> String:
-	var winner := "rescue_rush"
-	var best := -1
-	for game_id in MultiGameManager.GAME_IDS:
-		var value := MultiGameManager.highest_level(game_id)
-		if value > best:
-			best = value
-			winner = game_id
-	return winner
-
 func _total_stars() -> int:
 	var total := 0
 	for game_id in MultiGameManager.GAME_IDS:
@@ -67,12 +56,3 @@ func _play(game_id: String) -> void:
 		main.call("resume_game", game_id)
 	else:
 		main.call("open_game_campaign", game_id)
-
-func _daily(game_id: String) -> void:
-	get_parent().call("start_game_daily", game_id)
-
-func _daily_for_best_game() -> void:
-	_daily(_best_game())
-
-func _levels_for_best_game() -> void:
-	get_parent().call("open_game_campaign", _best_game())
