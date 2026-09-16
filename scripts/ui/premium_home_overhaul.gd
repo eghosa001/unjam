@@ -11,17 +11,23 @@ func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	call_deferred("_sync")
-
-func _process(_delta: float) -> void:
 	var main := get_parent()
-	if main == null:
-		return
-	var surface := String(main.get("current_surface")) if main.get("current_surface") != null else "home"
+	if main != null and main.has_signal("surface_changed"):
+		main.surface_changed.connect(_on_surface_changed)
+	var initial_surface := String(main.get("current_surface")) if main != null and main.get("current_surface") != null else "home"
+	call_deferred("_on_surface_changed", initial_surface)
+
+func _on_surface_changed(surface: String) -> void:
 	visible = surface == "home"
 	mouse_filter = Control.MOUSE_FILTER_STOP if visible else Control.MOUSE_FILTER_IGNORE
 	if not visible:
 		return
+	var main := get_parent()
+	if main == null:
+		return
+	var current = main.get("selected_game_id")
+	if current != null and String(current) in MultiGameManager.GAME_IDS:
+		selected_game = String(current)
 	var mode := _theme_mode()
 	if not built or mode != last_theme:
 		_sync()
@@ -33,6 +39,7 @@ func _sync() -> void:
 	var surface := String(main.get("current_surface")) if main.get("current_surface") != null else "home"
 	if surface != "home":
 		visible = false
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
 		return
 	var current = main.get("selected_game_id")
 	if current != null and String(current) in MultiGameManager.GAME_IDS:
