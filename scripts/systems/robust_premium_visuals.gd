@@ -14,9 +14,14 @@ func _ready() -> void:
 	quality_scale = clampf(quality_scale, 0.45, 1.0)
 	ambient_sparkles(_ambient_count())
 
+func _reduced_motion() -> bool:
+	# Override the legacy base hook so inherited effects and the adaptive layer
+	# both use the canonical shared motion preference.
+	return MotionSystem.reduced()
+
 func _process(delta: float) -> void:
 	# Keep the global sparkle field completely static when Reduce Motion is on.
-	if not MotionSystem.reduced():
+	if not _reduced_motion():
 		super._process(delta)
 	sample_time += delta
 	if sample_time < 2.0:
@@ -46,7 +51,7 @@ func _set_quality(value: float) -> void:
 	high_fps_samples = 0
 
 func _ambient_count() -> int:
-	return _materials.particle_budget(14, quality_scale, MotionSystem.reduced())
+	return _materials.particle_budget(14, quality_scale, _reduced_motion())
 
 func set_accent(color: Color) -> void:
 	accent = color
@@ -82,7 +87,7 @@ func ambient_sparkles(count: int = 12) -> void:
 		overlay.add_child(dot)
 
 func burst(global_pos: Vector2, color: Color = Color("2dd4b6"), count: int = 18) -> void:
-	var scaled := _materials.particle_budget(count, quality_scale, MotionSystem.reduced())
+	var scaled := _materials.particle_budget(count, quality_scale, _reduced_motion())
 	if scaled <= 0:
 		return
 	super.burst(global_pos, color, maxi(2, scaled))
