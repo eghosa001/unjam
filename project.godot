@@ -57,4 +57,4 @@ purchase_verification_url=""
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/stagehand/plugin.cfg", "res://addons/admob/plugin.cfg")
+enabled=PackedStringArray("res://addons/admob/plugin.cfg")
