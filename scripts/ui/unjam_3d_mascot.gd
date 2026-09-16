@@ -14,7 +14,14 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stretch = true
 	_build_3d_scene()
-	set_process(true)
+	visibility_changed.connect(_sync_render_activity)
+	_sync_render_activity()
+
+func _sync_render_activity() -> void:
+	var active := is_visible_in_tree()
+	set_process(active)
+	if viewport_3d != null:
+		viewport_3d.render_target_update_mode = SubViewport.UPDATE_ALWAYS if active else SubViewport.UPDATE_DISABLED
 
 func _process(delta: float) -> void:
 	phase += delta
@@ -29,7 +36,7 @@ func _build_3d_scene() -> void:
 	viewport_3d.name = "MascotViewport3D"
 	viewport_3d.size = Vector2i(512, 512)
 	viewport_3d.transparent_bg = true
-	viewport_3d.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	viewport_3d.render_target_update_mode = SubViewport.UPDATE_DISABLED
 	add_child(viewport_3d)
 
 	stage = Node3D.new()
