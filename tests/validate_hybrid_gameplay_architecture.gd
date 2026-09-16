@@ -8,7 +8,10 @@ func _initialize() -> void:
 		"_active_escape_visuals",
 		"_escape_route_cells",
 		"_wait_for_escape_visuals",
-		"await _wait_for_escape_visuals()"
+		"await _wait_for_escape_visuals()",
+		"_speed_line_pool",
+		"_effect_label_pool",
+		"_acquire_speed_line"
 	], failures)
 	_check("res://scripts/game/rescue_rush_premium.gd", [
 		"rescue_piece_3d_button.gd",
@@ -40,6 +43,8 @@ func _initialize() -> void:
 		"CylinderMesh",
 		"TorusMesh",
 		"SubViewport.UPDATE_ONCE",
+		"Vector2i(168, 336)",
+		"liquid_materials_3d",
 		"_refresh_liquid_3d"
 	], failures)
 
@@ -57,6 +62,21 @@ func _initialize() -> void:
 		"_draw_extruded_cube",
 		"draw_colored_polygon"
 	], failures)
+
+	_check("res://scripts/ui/premium_main_casual.gd", [
+		"grid.columns = 4",
+		"_highest_level_for_game"
+	], failures)
+	_check("res://scripts/ui/ux_shell_premium.gd", [
+		"theme_mode := \"light\"",
+		"get_value(\"appearance\", \"theme\", \"light\")"
+	], failures)
+	_check_absent("res://scenes/Main.tscn", [
+		"level_browser_polish.gd",
+		"LevelBrowserPolish"
+	], failures)
+	if FileAccess.file_exists("res://scripts/ui/level_browser_polish.gd"):
+		failures.append("Obsolete level browser polling helper still exists")
 
 	if not failures.is_empty():
 		for failure in failures:
