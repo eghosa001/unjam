@@ -125,7 +125,7 @@ func _validate_shared_completion_overlay() -> bool:
 	overlay.configure_secondary("DOUBLE REWARD", true)
 	root.add_child(overlay)
 	await process_frame
-	var secondary := overlay.get_node_or_null("ResultCard/ResultMargin/ResultBox/SecondaryAction") as Button
+	var secondary := overlay.find_child("SecondaryAction", true, false) as Button
 	var ok := secondary != null and secondary.visible and secondary.text == "DOUBLE REWARD"
 	overlay.queue_free()
 	await process_frame
