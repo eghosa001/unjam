@@ -159,6 +159,7 @@ func _add_surface_diorama(game_id: String, node_name: String) -> void:
 		return
 	var old := content.get_node_or_null(node_name)
 	if old != null:
+		content.remove_child(old)
 		old.queue_free()
 	var art := Unjam3DGameArt.new()
 	art.name = node_name
