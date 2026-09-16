@@ -4,8 +4,7 @@ func _build_shell() -> void:
 	super._build_shell()
 	_compact_shell()
 
-func _process(delta: float) -> void:
-	super._process(delta)
+func _after_shell_sync() -> void:
 	_compact_shell()
 
 func _compact_shell() -> void:
