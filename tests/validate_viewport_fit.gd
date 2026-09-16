@@ -6,7 +6,8 @@ const VIEWPORTS := [
 	Vector2i(720, 1600),
 	Vector2i(1080, 1920),
 	Vector2i(1080, 2160),
-	Vector2i(1080, 2340)
+	Vector2i(1080, 2340),
+	Vector2i(1080, 2400)
 ]
 
 func _initialize() -> void:
@@ -23,7 +24,7 @@ func _run() -> void:
 	for viewport_size in VIEWPORTS:
 		if not await _validate_viewport(viewport_size):
 			return
-	print("Viewport-fit validation passed for 6 portrait sizes: home, settings, Rescue Rush, Water Sort and Block Puzzle stay inside the visible viewport.")
+	print("Viewport-fit validation passed for 7 portrait sizes: home, settings, Rescue Rush, Water Sort and Block Puzzle stay inside the visible viewport.")
 	quit(0)
 
 func _validate_viewport(viewport_size: Vector2) -> bool:
