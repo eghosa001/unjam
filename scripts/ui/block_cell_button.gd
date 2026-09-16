@@ -35,7 +35,7 @@ func configure(value: bool, preview_value: bool = false, color: Color = Color("4
 	queue_redraw()
 
 func _ready() -> void:
-	set_process(true)
+	set_process(false)
 	mouse_entered.connect(_hover.bind(true))
 	mouse_exited.connect(_hover.bind(false))
 	button_down.connect(_press)
@@ -46,7 +46,12 @@ func _ready() -> void:
 func _update_pivot() -> void:
 	pivot_offset = size * 0.5
 
+func _wake_animation() -> void:
+	if not is_processing():
+		set_process(true)
+
 func _hover(value: bool) -> void:
+	_wake_animation()
 	var tw := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tw.tween_property(self, "hover_amount", 1.0 if value else 0.0, 0.08)
 
@@ -60,6 +65,7 @@ func _release() -> void:
 	tw.tween_property(self, "scale", Vector2.ONE, 0.11)
 
 func _play_land() -> void:
+	_wake_animation()
 	impact = 1.0
 	scale = Vector2(0.66, 0.66)
 	var tw := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
@@ -78,6 +84,7 @@ func play_clear(delay: float = 0.0) -> void:
 	_play_clear()
 
 func _play_clear() -> void:
+	_wake_animation()
 	clear_echo = 1.0
 	clear_phase = 1.0
 	var tw := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
@@ -96,6 +103,7 @@ func set_drag_footprint(active: bool, valid: bool = false, color: Color = Color(
 	footprint_color = color
 	if active:
 		footprint_phase = 1.0
+	_wake_animation()
 	queue_redraw()
 
 func _game() -> Node:
@@ -129,13 +137,16 @@ func _drop_data(_at_position: Vector2, data: Variant) -> void:
 	game.place_piece_from_drag(int(data.get("piece_index", -1)), origin)
 
 func _process(delta: float) -> void:
-	var animating := impact > 0.001 or clear_echo > 0.001 or clear_phase > 0.001 or footprint_active or hover_amount > 0.001
 	impact = maxf(0.0, impact - delta * 5.5)
 	clear_echo = maxf(0.0, clear_echo - delta * 3.8)
 	clear_phase = maxf(0.0, clear_phase - delta * 3.2)
-	footprint_phase += delta * 6.0
+	if footprint_active:
+		footprint_phase += delta * 6.0
+	var animating := impact > 0.001 or clear_echo > 0.001 or clear_phase > 0.001 or footprint_active or hover_amount > 0.001
 	if animating:
 		queue_redraw()
+	else:
+		set_process(false)
 
 func _draw() -> void:
 	var rect := Rect2(Vector2(1.5, 1.5), size - Vector2(3, 3))
