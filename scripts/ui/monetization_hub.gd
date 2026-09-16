@@ -16,15 +16,20 @@ func _ready() -> void:
 	AdManager.rewarded_failed.connect(_on_rewarded_failed)
 	call_deferred("_build_ui")
 
+func _shop_button(text_value: String, role: String = "secondary", tint: Color = Color("62b6ff")) -> Button:
+	var button := Button.new()
+	button.text = text_value
+	button.custom_minimum_size = Vector2(0, 82)
+	button.add_theme_font_size_override("font_size", 20)
+	PremiumDesignSystem.apply_button(button, true, tint, role, 24)
+	return button
+
 func _build_ui() -> void:
 	if layer != null:
 		return
 	layer = CanvasLayer.new()
 	layer.layer = 500
 	add_child(layer)
-	# Home owns the visible Shop navigation entry. Keep this launcher node only
-	# as an internal compatibility target for rebuild code; it never competes
-	# with Home for layout or visibility ownership.
 	shop_button = Button.new()
 	shop_button.text = "SHOP"
 	shop_button.visible = false
@@ -36,26 +41,34 @@ func _build_ui() -> void:
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	overlay.visible = false
 	layer.add_child(overlay)
+
 	var shade := ColorRect.new()
-	shade.color = Color(0.015, 0.02, 0.055, 0.92)
+	shade.color = Color(0.015, 0.02, 0.055, 0.94)
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	overlay.add_child(shade)
+	var backdrop := PremiumBackdrop.new()
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.configure(Color("07111f"), Color("62b6ff"), 1)
+	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.add_child(backdrop)
+
 	var margin := MarginContainer.new()
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	margin.add_theme_constant_override("margin_left", 56)
-	margin.add_theme_constant_override("margin_right", 56)
-	margin.add_theme_constant_override("margin_top", 70)
-	margin.add_theme_constant_override("margin_bottom", 70)
+	margin.add_theme_constant_override("margin_left", 48)
+	margin.add_theme_constant_override("margin_right", 48)
+	margin.add_theme_constant_override("margin_top", 44)
+	margin.add_theme_constant_override("margin_bottom", 44)
 	overlay.add_child(margin)
 	var root := VBoxContainer.new()
 	root.add_theme_constant_override("separation", 16)
 	margin.add_child(root)
+
 	var header := HBoxContainer.new()
+	header.add_theme_constant_override("separation", 12)
 	root.add_child(header)
-	var close := Button.new()
-	close.text = "← BACK"
-	close.custom_minimum_size = Vector2(190, 72)
-	close.add_theme_font_size_override("font_size", 20)
+	var close := _shop_button("← BACK", "utility")
+	close.custom_minimum_size.x = 190
+	close.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	close.pressed.connect(_close_shop)
 	header.add_child(close)
 	var title := Label.new()
@@ -63,86 +76,101 @@ func _build_ui() -> void:
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 40)
-	title.add_theme_color_override("font_color", Color("f8fbff"))
+	title.add_theme_font_size_override("font_size", 42)
+	PremiumDesignSystem.apply_label(title, true, "title", Color("62b6ff"))
 	header.add_child(title)
+	var balance_panel := PanelContainer.new()
+	balance_panel.custom_minimum_size = Vector2(210, 72)
+	balance_panel.add_theme_stylebox_override("panel", PremiumDesignSystem.status_chip(PremiumDesignSystem.GOLD, true))
+	header.add_child(balance_panel)
 	balance_label = Label.new()
-	balance_label.custom_minimum_size = Vector2(210, 72)
 	balance_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	balance_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	balance_label.add_theme_font_size_override("font_size", 20)
-	balance_label.add_theme_color_override("font_color", Color("ffd166"))
-	header.add_child(balance_label)
+	balance_label.add_theme_color_override("font_color", PremiumDesignSystem.GOLD)
+	balance_panel.add_child(balance_label)
+
 	var reward_panel := PanelContainer.new()
-	reward_panel.add_theme_stylebox_override("panel", _box(Color("11294a"), 26, Color("49e1c0"), 2))
+	reward_panel.add_theme_stylebox_override("panel", PremiumDesignSystem.raised_box(Color("11294a"), 28, Color("49e1c0"), true, 9))
 	root.add_child(reward_panel)
+	var reward_margin := MarginContainer.new()
+	for side in ["left", "right", "top", "bottom"]:
+		reward_margin.add_theme_constant_override("margin_%s" % side, 18)
+	reward_panel.add_child(reward_margin)
 	var reward_row := HBoxContainer.new()
 	reward_row.add_theme_constant_override("separation", 18)
-	reward_panel.add_child(reward_row)
+	reward_margin.add_child(reward_row)
 	var reward_text := Label.new()
 	reward_text.text = "FREE COINS\nWatch an optional rewarded ad"
 	reward_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	reward_text.add_theme_font_size_override("font_size", 20)
+	PremiumDesignSystem.apply_label(reward_text, true, "body", Color("49e1c0"))
 	reward_row.add_child(reward_text)
-	var watch := Button.new()
-	watch.text = "WATCH AD  •  +50 COINS"
-	watch.custom_minimum_size = Vector2(360, 88)
-	watch.add_theme_font_size_override("font_size", 20)
+	var watch := _shop_button("WATCH AD  •  +50 COINS", "reward", PremiumDesignSystem.GOLD)
+	watch.custom_minimum_size.x = 360
 	watch.pressed.connect(_watch_rewarded.bind(watch))
 	reward_row.add_child(watch)
+
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(scroll)
 	var products := VBoxContainer.new()
 	products.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	products.add_theme_constant_override("separation", 12)
+	products.add_theme_constant_override("separation", 14)
 	scroll.add_child(products)
 	for product_id in StoreManager.PRODUCTS.keys():
 		_add_product(products, String(product_id))
+
 	var utility_row := HBoxContainer.new()
 	utility_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	utility_row.add_theme_constant_override("separation", 16)
+	utility_row.add_theme_constant_override("separation", 14)
 	root.add_child(utility_row)
-	var restore := Button.new()
-	restore.text = "RESTORE PURCHASES"
-	restore.custom_minimum_size = Vector2(300, 68)
+	var restore := _shop_button("RESTORE PURCHASES", "utility")
+	restore.custom_minimum_size.x = 300
 	restore.pressed.connect(_restore_purchases)
 	utility_row.add_child(restore)
-	var privacy := Button.new()
-	privacy.text = "PRIVACY OPTIONS"
-	privacy.custom_minimum_size = Vector2(300, 68)
+	var privacy := _shop_button("PRIVACY OPTIONS", "utility")
+	privacy.custom_minimum_size.x = 300
 	privacy.pressed.connect(PrivacyManager.show_privacy_options)
 	utility_row.add_child(privacy)
 	status_label = Label.new()
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status_label.add_theme_font_size_override("font_size", 17)
-	status_label.add_theme_color_override("font_color", Color("9eb2cc"))
+	status_label.add_theme_color_override("font_color", PremiumDesignSystem.muted(true))
 	root.add_child(status_label)
 	_refresh()
 
 func _add_product(parent: VBoxContainer, product_id: String) -> void:
 	var info: Dictionary = StoreManager.PRODUCTS[product_id]
 	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", _box(Color("101d38"), 22, Color("ffffff22"), 1))
+	panel.add_theme_stylebox_override("panel", PremiumDesignSystem.raised_box(Color("101d38"), 24, Color("62b6ff55"), true, 6))
 	parent.add_child(panel)
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 18)
+	margin.add_theme_constant_override("margin_right", 18)
+	margin.add_theme_constant_override("margin_top", 12)
+	margin.add_theme_constant_override("margin_bottom", 12)
+	panel.add_child(margin)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 18)
-	panel.add_child(row)
+	margin.add_child(row)
 	var text := Label.new()
 	text.text = "%s\n%s" % [String(info.get("title", product_id)), String(info.get("subtitle", ""))]
 	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	text.add_theme_font_size_override("font_size", 20)
+	PremiumDesignSystem.apply_label(text, true, "body", Color("62b6ff"))
 	row.add_child(text)
-	var buy := Button.new()
-	buy.custom_minimum_size = Vector2(280, 82)
-	buy.add_theme_font_size_override("font_size", 18)
+	var buy := _shop_button("", "primary", Color("62b6ff"))
+	buy.custom_minimum_size.x = 280
 	var purchased: Array = SaveManager.data.get("purchased_products", [])
 	if bool(info.get("non_consumable", false)) and product_id in purchased:
 		buy.text = "OWNED"
 		buy.disabled = true
+		PremiumDesignSystem.apply_button(buy, true, PremiumDesignSystem.SUCCESS, "success", 24)
 	elif StoreManager.is_purchase_pending(product_id):
 		buy.text = "PENDING"
 		buy.disabled = true
+		PremiumDesignSystem.apply_button(buy, true, Color("62b6ff"), "disabled", 24)
 	else:
 		buy.text = StoreManager.price_text(product_id)
 		buy.pressed.connect(_purchase.bind(product_id, buy))
@@ -153,6 +181,12 @@ func open_shop() -> void:
 		call_deferred("open_shop")
 		return
 	overlay.visible = true
+	if not MotionSystem.reduced():
+		overlay.modulate.a = 0.0
+		var tween := overlay.create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tween.tween_property(overlay, "modulate:a", 1.0, 0.22)
+	else:
+		overlay.modulate.a = 1.0
 	_refresh()
 	AnalyticsManager.track("shop_opened", {})
 
@@ -180,8 +214,6 @@ func _purchase(product_id: String, button: Button) -> void:
 		button.text = StoreManager.price_text(product_id)
 
 func _on_catalog_changed() -> void:
-	# Product details arrive asynchronously from Google Play. Rebuild an existing
-	# shop so localized prices replace the temporary availability text immediately.
 	if layer != null and is_instance_valid(layer):
 		call_deferred("_rebuild_shop")
 
@@ -231,9 +263,6 @@ func _rebuild_shop() -> void:
 func _on_node_added(node: Node) -> void:
 	if node == null or not node.has_signal("finished"):
 		return
-	# Active game scenes inherit through several presentation layers. Identifying
-	# them by the leaf script filename silently broke whenever a newer casual/
-	# motion subclass became active. Ask the game for its stable semantic id.
 	if not node.has_method("monetization_game_id"):
 		return
 	var game_id := String(node.call("monetization_game_id"))
@@ -253,18 +282,3 @@ func _restore_purchases() -> void:
 	status_label.text = "Checking Google Play purchases…"
 	if not StoreManager.restore_purchases():
 		status_label.text = "Restore purchases is available on a Google Play build."
-
-func _box(color: Color, radius: int, border: Color = Color.TRANSPARENT, border_width: int = 0) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = color
-	style.corner_radius_top_left = radius
-	style.corner_radius_top_right = radius
-	style.corner_radius_bottom_left = radius
-	style.corner_radius_bottom_right = radius
-	if border_width > 0:
-		style.border_width_left = border_width
-		style.border_width_right = border_width
-		style.border_width_top = border_width
-		style.border_width_bottom = border_width
-		style.border_color = border
-	return style
