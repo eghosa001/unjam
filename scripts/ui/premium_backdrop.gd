@@ -28,6 +28,8 @@ func apply_motion_preference() -> void:
 	queue_redraw()
 
 func _process(delta: float) -> void:
+	if MotionSystem.reduced():
+		return
 	t += delta
 	queue_redraw()
 
