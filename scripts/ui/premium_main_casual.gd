@@ -1,5 +1,28 @@
 extends "res://scripts/ui/premium_main.gd"
 
+func _page_root() -> VBoxContainer:
+	# Build directly on the final bright backdrop. The old PremiumBackdrop is no
+	# longer instantiated and then hidden by the surface manager.
+	clear_content()
+	var backdrop := Unjam3DBackdrop.new()
+	backdrop.name = "Unjam3DSurfaceBackdrop"
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.z_index = -100
+	backdrop.configure(_accent())
+	content.add_child(backdrop)
+	content.move_child(backdrop, 0)
+	var outer := MarginContainer.new()
+	outer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	outer.add_theme_constant_override("margin_left", 46)
+	outer.add_theme_constant_override("margin_right", 46)
+	outer.add_theme_constant_override("margin_top", 42)
+	outer.add_theme_constant_override("margin_bottom", 42)
+	content.add_child(outer)
+	var root := VBoxContainer.new()
+	root.add_theme_constant_override("separation", 18)
+	outer.add_child(root)
+	return root
+
 func build_settings() -> void:
 	current_surface = "settings"
 	_remove_active_game()
