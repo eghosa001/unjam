@@ -1,8 +1,7 @@
 extends "res://scripts/game/rescue_rush_premium.gd"
 
-# Final active Rescue Rush motion layer. Completion is held until every escape
-# ghost has visually cleared, preventing the result card from covering the last arrow.
-var _escape_visual_deadline_msec := 0
+# Final active Rescue Rush layout layer. Escape timing now lives in the polished
+# gameplay renderer, which tracks actual visual tweens instead of a time estimate.
 
 func render_board() -> void:
 	super.render_board()
@@ -27,24 +26,3 @@ func _fit_board_to_viewport() -> void:
 	var board_width := float(width * cell_size) + gap_x * float(maxi(0, width - 1)) + 40.0
 	var board_height := float(height * cell_size) + gap_y * float(maxi(0, height - 1)) + 40.0
 	board_panel.custom_minimum_size = Vector2(board_width, board_height)
-
-func escape_piece(index: int, trigger_effect: bool) -> void:
-	var was_active := index >= 0 and index < pieces.size() and bool(pieces[index].get("active", true))
-	super.escape_piece(index, trigger_effect)
-	if was_active and trigger_effect:
-		var escape_hold := MotionSystem.duration(&"travel") + MotionSystem.duration(&"settle") * 2.0
-		if MotionSystem.reduced():
-			escape_hold = MotionSystem.duration(&"settle")
-		_escape_visual_deadline_msec = maxi(_escape_visual_deadline_msec, Time.get_ticks_msec() + int(escape_hold * 1000.0))
-
-func resolve_rescue() -> void:
-	if not rescue_has_exit():
-		return
-	# Re-render after cascade state settles so inactive source arrows disappear
-	# while their moving ghosts complete their final travel.
-	render_board()
-	while Time.get_ticks_msec() < _escape_visual_deadline_msec:
-		await get_tree().process_frame
-	if not MotionSystem.reduced():
-		await get_tree().create_timer(MotionSystem.duration(&"micro") * 0.5).timeout
-	await super.resolve_rescue()
