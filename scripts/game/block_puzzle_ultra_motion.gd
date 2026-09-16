@@ -6,6 +6,12 @@ extends "res://scripts/game/block_puzzle_premium_layout.gd"
 const SmoothPieceButton = preload("res://scripts/ui/smooth_block_piece_button.gd")
 const PLACEMENT_HELP := "Release when the placement preview locks into place"
 
+func _ready() -> void:
+	super._ready()
+	# BlockPieceButton._gui_input() captures the touch until release. Disable the
+	# inherited scene-wide mirror so each drag updates the preview only once.
+	set_process_input(false)
+
 func build_ui() -> void:
 	super.build_ui()
 	_patch_game_first_layout()
