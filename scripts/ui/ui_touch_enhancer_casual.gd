@@ -1,7 +1,7 @@
 extends "res://scripts/ui/ui_touch_enhancer.gd"
 
 func _apply_button_size(button: Button) -> void:
-	if _is_block_cell_button(button) or _is_water_tube_widget(button):
+	if _is_block_cell_button(button) or _is_water_tube_widget(button) or _is_rescue_piece_button(button):
 		return
 	var label := button.text.strip_edges().to_upper()
 	var wanted := Vector2(maxf(button.custom_minimum_size.x, 116.0), maxf(button.custom_minimum_size.y, 76.0))
