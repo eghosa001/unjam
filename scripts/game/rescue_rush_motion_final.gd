@@ -1,7 +1,16 @@
 extends "res://scripts/game/rescue_rush_premium.gd"
 
-# Final active Rescue Rush layout layer. Escape timing now lives in the polished
-# gameplay renderer, which tracks actual visual tweens instead of a time estimate.
+# Final active Rescue Rush layout layer. Escape timing lives in the polished
+# gameplay renderer; this script is the single owner of responsive board sizing.
+
+func _ready() -> void:
+	super._ready()
+	var viewport := get_viewport()
+	if viewport != null and not viewport.size_changed.is_connected(_queue_board_fit):
+		viewport.size_changed.connect(_queue_board_fit)
+
+func _queue_board_fit() -> void:
+	call_deferred("_fit_board_to_viewport")
 
 func render_board() -> void:
 	super.render_board()
