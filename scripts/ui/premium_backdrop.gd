@@ -18,14 +18,20 @@ func configure(base: Color, accent: Color, motif_index: int) -> void:
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_to_group("reduced_motion_aware")
+	visibility_changed.connect(_sync_process_state)
 	apply_motion_preference()
 
 func apply_motion_preference() -> void:
 	var reduced := MotionSystem.reduced()
 	if reduced:
 		t = 0.0
-	set_process(not reduced)
-	queue_redraw()
+	_sync_process_state()
+
+func _sync_process_state() -> void:
+	var active := is_visible_in_tree() and not MotionSystem.reduced()
+	set_process(active)
+	if is_visible_in_tree():
+		queue_redraw()
 
 func _process(delta: float) -> void:
 	if MotionSystem.reduced():
