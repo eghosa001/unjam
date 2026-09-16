@@ -26,18 +26,39 @@ func _ready() -> void:
 	viewport_3d.name = "RescueCharacterViewport3D"
 	viewport_3d.size = Vector2i(320, 320)
 	viewport_3d.transparent_bg = true
-	viewport_3d.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	viewport_3d.render_target_update_mode = SubViewport.UPDATE_ONCE
 	add_child(viewport_3d)
 	_build_stage()
+	add_to_group("reduced_motion_aware")
+	visibility_changed.connect(_sync_render_lifecycle)
+	_sync_render_lifecycle()
+
+func apply_motion_preference() -> void:
+	_sync_render_lifecycle()
+
+func _sync_render_lifecycle() -> void:
+	if viewport_3d == null:
+		return
+	if not is_visible_in_tree():
+		set_process(false)
+		viewport_3d.render_target_update_mode = SubViewport.UPDATE_DISABLED
+		return
+	if MotionSystem.reduced():
+		set_process(false)
+		if character_root != null and is_instance_valid(character_root):
+			character_root.position.y = 0.0
+			character_root.rotation = Vector3.ZERO
+		viewport_3d.render_target_update_mode = SubViewport.UPDATE_ONCE
+		return
 	set_process(true)
+	viewport_3d.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 
 func _process(delta: float) -> void:
 	phase += delta
 	if character_root == null or celebrating:
 		return
 	if MotionSystem.reduced():
-		character_root.position.y = 0.0
-		character_root.rotation.y = 0.0
+		_sync_render_lifecycle()
 		return
 	character_root.position.y = sin(phase * 2.8) * 0.055
 	character_root.rotation.y = sin(phase * 1.25) * 0.08
@@ -46,8 +67,13 @@ func _process(delta: float) -> void:
 func celebrate() -> void:
 	if character_root == null or not is_instance_valid(character_root):
 		return
-	celebrating = true
 	FeedbackManager.complete()
+	if MotionSystem.reduced():
+		character_root.scale = Vector3.ONE
+		character_root.rotation_degrees = Vector3.ZERO
+		viewport_3d.render_target_update_mode = SubViewport.UPDATE_ONCE
+		return
+	celebrating = true
 	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tween.tween_property(character_root, "scale", Vector3(1.18, 0.84, 1.18), 0.09)
 	tween.tween_property(character_root, "scale", Vector3(0.92, 1.20, 0.92), 0.10)
@@ -55,7 +81,10 @@ func celebrate() -> void:
 	tween.tween_property(character_root, "scale", Vector3.ONE, 0.16)
 	tween.parallel().tween_property(character_root, "rotation_degrees:y", -18.0, 0.16)
 	tween.tween_property(character_root, "rotation_degrees:y", 0.0, 0.10)
-	tween.tween_callback(func(): celebrating = false)
+	tween.tween_callback(func():
+		celebrating = false
+		_sync_render_lifecycle()
+	)
 
 func _rebuild() -> void:
 	if stage != null and is_instance_valid(stage):
@@ -64,7 +93,10 @@ func _rebuild() -> void:
 		character_root = null
 		face_root = null
 	await get_tree().process_frame
+	if not is_inside_tree():
+		return
 	_build_stage()
+	_sync_render_lifecycle()
 
 func _build_stage() -> void:
 	if viewport_3d == null:
