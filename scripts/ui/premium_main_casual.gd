@@ -95,6 +95,7 @@ func _setting_button(title_text: String, detail_text: String, enabled: bool, acc
 func _toggle_reduced_motion() -> void:
 	SaveManager.data["reduced_motion"] = not bool(SaveManager.data.get("reduced_motion", false))
 	SaveManager.save()
+	PremiumVisuals.apply_motion_preference()
 	FeedbackManager.tap()
 	build_settings()
 
