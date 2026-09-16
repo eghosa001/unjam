@@ -52,4 +52,4 @@ func _animate_surface_in(target: Control) -> void:
 	var final_modulate := target.modulate
 	target.modulate = Color(final_modulate.r, final_modulate.g, final_modulate.b, final_modulate.a * 0.88)
 	var tween := target.create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	tween.tween_property(target, "modulate", final_modulate, 0.16)
+	tween.tween_property(target, "modulate", final_modulate, MotionSystem.duration(&"screen"))
