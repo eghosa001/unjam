@@ -77,12 +77,21 @@ func _draw() -> void:
 	var body := Rect2(outer.position + Vector2(0, neck_h * 0.40), Vector2(outer.size.x, outer.size.y - neck_h * 0.40))
 	var inner := Rect2(body.position + Vector2(7, 10), body.size - Vector2(14, 20))
 	var radius := minf(18.0, body.size.x * 0.30)
-	_draw_glass_shape(Rect2(body.position + Vector2(0, 8), body.size), _materials.contact_shadow(0.20), Color.TRANSPARENT, radius, 0.0)
+	var reduced := MotionSystem.reduced()
+	var depth_offset := _materials.extrusion_offset(0.70, reduced)
+	var glass_depth := _materials.depth_tone(Color(0.56, 0.82, 1.0, 0.17), 0.72)
+	_draw_glass_shape(Rect2(body.position + depth_offset, body.size), glass_depth, Color.TRANSPARENT, radius, 0.0)
+	_draw_glass_shape(Rect2(body.position + depth_offset + Vector2(0, 5), body.size), _materials.contact_shadow(0.18), Color.TRANSPARENT, radius, 0.0)
 	var outline := Color(1, 1, 1, 0.82)
 	if is_selected and pour_mode == 0: outline = Color("fff3b4")
 	if invalid_flash > 0.0: outline = Color("ff4d67")
 	if success_flash > 0.0: outline = Color("7ff0b0")
-	_draw_glass_shape(body, Color(1, 1, 1, 0.045), outline, radius, 3.0)
+	var front_glass := Color(1, 1, 1, 0.045)
+	_draw_glass_shape(body, front_glass, outline, radius, 3.0)
+	var bevel_light: Color = _materials.bevel_light(Color(0.72, 0.91, 1.0, 0.44), 0.72)
+	var bevel_dark: Color = _materials.bevel_dark(Color(0.54, 0.76, 0.94, 0.34), 0.78)
+	draw_line(Vector2(body.position.x + 4, body.position.y + 8), Vector2(body.end.x - 4, body.position.y + 8), bevel_light, 2.0, true)
+	draw_line(Vector2(body.position.x + 8, body.end.y - 6), Vector2(body.end.x - 8, body.end.y - 6), bevel_dark, 2.0, true)
 	var slot_h := inner.size.y / float(CAPACITY)
 	for slot in range(CAPACITY):
 		var fraction := _slot_fill(slot)
@@ -92,11 +101,15 @@ func _draw() -> void:
 		var r := Rect2(Vector2(inner.position.x, y + 1.0), Vector2(inner.size.x, slot_h + 1.0))
 		r.position.y += r.size.y * (1.0 - fraction)
 		r.size.y *= fraction
-		var wave_strength := 0.0 if MotionSystem.reduced() else 2.0 * slosh
+		var wave_strength := 0.0 if reduced else 2.0 * slosh
 		var wave := sin(pulse * 10.0 + float(slot) * 1.7) * wave_strength
 		r.position.y += wave
 		var lower_color := _materials.vertical_shade(liquid, 0.76)
 		var upper_color := _materials.vertical_shade(liquid, 0.20)
+		var liquid_depth: Color = _materials.depth_tone(liquid, 0.68)
+		var liquid_depth_offset := Vector2(0, minf(3.0, maxf(1.0, r.size.y * 0.10)))
+		if r.size.y > 4.0:
+			draw_rect(Rect2(r.position + liquid_depth_offset, r.size), Color(liquid_depth, liquid.a * 0.72), true)
 		if slot == 0:
 			var style := StyleBoxFlat.new()
 			style.bg_color = lower_color
@@ -110,13 +123,13 @@ func _draw() -> void:
 		var light_h := minf(7.0, r.size.y * 0.28)
 		if light_h > 1.0:
 			draw_rect(Rect2(r.position, Vector2(r.size.x, light_h)), Color(upper_color, 0.48), true)
-		draw_line(Vector2(r.position.x + 2, r.position.y + 2), Vector2(r.end.x - 2, r.position.y + 2 - wave * 0.3), upper_color.lightened(0.10), 2.0, true)
+		draw_line(Vector2(r.position.x + 2, r.position.y + 2), Vector2(r.end.x - 2, r.position.y + 2 - wave * 0.3), _materials.bevel_light(upper_color, 0.55), 2.0, true)
 	var lip_y := body.position.y + 3.0
 	draw_line(Vector2(body.position.x - 3, lip_y), Vector2(body.end.x + 3, lip_y), outline, 4.0, true)
 	var specular_alpha := 0.28
-	var specular_shift := 0.0 if MotionSystem.reduced() else sin(pulse * 0.85) * 2.0
+	var specular_shift := 0.0 if reduced else sin(pulse * 0.85) * 2.0
 	draw_line(Vector2(body.position.x + 9 + specular_shift, body.position.y + 18), Vector2(body.position.x + 9 + specular_shift, body.end.y - 24), _materials.glass_highlight(Color.WHITE, specular_alpha), 3.0, true)
 	draw_line(Vector2(body.end.x - 7, body.position.y + 23), Vector2(body.end.x - 7, body.size.y * 0.38 + body.position.y), Color(1, 1, 1, 0.13), 2.0, true)
 	if is_selected and pour_mode == 0:
-		var a := 0.35 if MotionSystem.reduced() else 0.35 + 0.12 * sin(pulse * 5.0)
+		var a := 0.35 if reduced else 0.35 + 0.12 * sin(pulse * 5.0)
 		draw_arc(body.get_center(), body.size.x * 0.68, 0, TAU, 42, Color(1.0, 0.88, 0.35, a), 4.0, true)
