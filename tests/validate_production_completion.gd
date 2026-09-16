@@ -8,7 +8,7 @@ func _run() -> void:
 	# Timing may live in an active parent while the leaf layer owns final layout/accessibility.
 	if not _source_has("res://scripts/game/block_puzzle_ultra_motion.gd", ["MotionSystem.duration", "FeedbackManager.drop()", "FeedbackManager.line_clear", "FeedbackManager.complete()"]): return
 	if not _source_has("res://scripts/game/rescue_rush_polished.gd", ["MotionSystem.duration", "FeedbackManager.rescue()"]): return
-	if not _source_has("res://scripts/game/rescue_rush_motion_final.gd", ["MotionSystem.reduced()"]): return
+	if not _source_has("res://scripts/game/rescue_rush_motion_final.gd", ["_reduced_motion_enabled", "/root/MotionSystem", 'call("reduced")']): return
 	if not _source_has("res://scripts/game/water_sort_reference_motion.gd", ["MotionSystem.duration", "FeedbackManager.pour_start()", "FeedbackManager.pour_land()"]): return
 	if not _source_has("res://scripts/ui/premium_main.gd", ["REDUCE MOTION", "FAST ANIMATION", "reduce_motion", "fast_animation"]): return
 	if not _source_has("res://scripts/ui/device_fit.gd", ["get_display_safe_area", "safe_margins"]): return
