@@ -45,7 +45,7 @@ func build_settings() -> void:
 	controls.add_child(fast_button)
 
 	var shell := get_node_or_null("UXShell")
-	var theme_name := "DARK"
+	var theme_name := "LIGHT"
 	if shell != null and shell.get("theme_mode") != null:
 		theme_name = String(shell.get("theme_mode")).to_upper()
 	var appearance := _button("APPEARANCE   •   %s" % theme_name, Vector2(0, 84), "secondary")
@@ -109,3 +109,38 @@ func _show_current_tutorial() -> void:
 	var shell := get_node_or_null("UXShell")
 	if shell != null and shell.has_method("show_tutorial"):
 		shell.call("show_tutorial", selected_game_id)
+
+func _upgrade_level_browser(game_id: String) -> void:
+	# The level screen is styled once when it is built. This replaces the old
+	# always-running polling helper and keeps the 4-column chunky 3D layout.
+	if content == null or not is_instance_valid(content):
+		return
+	var accent := Unjam3DTheme.game_accent(game_id)
+	var dark_accent := Unjam3DTheme.game_dark(game_id)
+	var current_level := _highest_level_for_game(game_id)
+	for grid in _collect_grids(content):
+		if grid.columns != 5:
+			continue
+		grid.columns = 4
+		grid.add_theme_constant_override("h_separation", 16)
+		grid.add_theme_constant_override("v_separation", 16)
+		for child in grid.get_children():
+			if not child is Button:
+				continue
+			var button := child as Button
+			button.custom_minimum_size = Vector2(maxf(button.custom_minimum_size.x, 218.0), maxf(button.custom_minimum_size.y, 120.0))
+			button.add_theme_font_size_override("font_size", maxi(20, button.get_theme_font_size("font_size")))
+			var first_line := button.text.get_slice("\n", 0).strip_edges()
+			var is_current := "CURRENT" in button.text.to_upper() or (first_line.is_valid_int() and int(first_line) == current_level and not button.disabled)
+			if button.disabled:
+				Unjam3DTheme.gloss_button(button, Color("9db6c8"), false, 22)
+				button.add_theme_color_override("font_color", Color("6d8597"))
+			elif is_current:
+				Unjam3DTheme.gloss_button(button, accent, true, 22)
+			else:
+				Unjam3DTheme.gloss_button(button, dark_accent, false, 22)
+
+func _highest_level_for_game(game_id: String) -> int:
+	if game_id == "rescue_rush":
+		return int(SaveManager.data.get("highest_level", 1))
+	return MultiGameManager.highest_level(game_id)
