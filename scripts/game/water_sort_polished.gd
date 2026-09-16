@@ -227,8 +227,9 @@ func complete_level() -> void:
 	else:
 		MultiGameManager.complete_level(GAME_ID, level_number, stars, 25 + color_count * 2)
 	status_label.text = "SORT COMPLETE"
+	# Local celebration only: avoid full-screen flashes that can expose bright
+	# edges during transitions on tall Android displays.
 	PremiumVisuals.burst(Vector2(540, 880), Color("5da9ff"), 28)
-	PremiumVisuals.screen_flash(Color("5da9ff"), 0.10)
 	AnalyticsManager.track("water_sort_completed", {"level": level_number, "moves": moves, "stars": stars, "daily": daily_mode})
 	await get_tree().create_timer(0.28).timeout
 	var result := PremiumResultOverlay.new()
