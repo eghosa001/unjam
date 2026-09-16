@@ -39,6 +39,7 @@ func _refresh(force: bool) -> void:
 		return
 	var accent := PremiumDesignSystem.accent_for_game(game_id)
 	_configure_background(content, game_id, dark, accent)
+	_densify_layout(content, surface)
 	_polish_tree(content, surface, game_id, dark, accent)
 	_add_surface_chrome(content, surface, game_id, dark, accent)
 	_animate_surface(content)
@@ -57,6 +58,44 @@ func _configure_background(root: Node, game_id: String, dark: bool, accent: Colo
 			canvas = canvas.darkened(0.18)
 		backdrop.call("configure", canvas, secondary, motif)
 	PremiumVisuals.set_accent(accent)
+
+func _densify_layout(content: Control, surface: String) -> void:
+	_reduce_large_margins(content)
+	if surface == "settings":
+		var box := _find_first_vbox(content)
+		if box != null:
+			box.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+			box.offset_left = 36
+			box.offset_right = -36
+			box.offset_top = 78
+			box.offset_bottom = -64
+			box.custom_minimum_size = Vector2.ZERO
+			box.alignment = BoxContainer.ALIGNMENT_CENTER
+			box.add_theme_constant_override("separation", 22)
+
+func _reduce_large_margins(node: Node) -> void:
+	if node is MarginContainer:
+		var margin := node as MarginContainer
+		if margin.get_theme_constant("margin_left") > 28:
+			margin.add_theme_constant_override("margin_left", 20)
+		if margin.get_theme_constant("margin_right") > 28:
+			margin.add_theme_constant_override("margin_right", 20)
+		if margin.get_theme_constant("margin_top") > 44:
+			margin.add_theme_constant_override("margin_top", 30)
+		if margin.get_theme_constant("margin_bottom") > 44:
+			margin.add_theme_constant_override("margin_bottom", 30)
+	for child in node.get_children():
+		_reduce_large_margins(child)
+
+func _find_first_vbox(node: Node) -> VBoxContainer:
+	for child in node.get_children():
+		if child is VBoxContainer:
+			return child as VBoxContainer
+	for child in node.get_children():
+		var found := _find_first_vbox(child)
+		if found != null:
+			return found
+	return null
 
 func _find_backdrop(node: Node) -> Node:
 	if _script_path(node).ends_with("premium_backdrop.gd"):
