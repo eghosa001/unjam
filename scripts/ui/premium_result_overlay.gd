@@ -47,6 +47,24 @@ func _ready() -> void:
 	z_index = 1000
 	_build()
 
+func _motion_service() -> Node:
+	return get_node_or_null("/root/MotionSystem")
+
+func _reduced_motion() -> bool:
+	var motion := _motion_service()
+	return bool(motion.call("reduced")) if motion != null and motion.has_method("reduced") else false
+
+func _motion_duration(kind: StringName) -> float:
+	var motion := _motion_service()
+	if motion != null and motion.has_method("duration"):
+		return float(motion.call("duration", kind))
+	match kind:
+		&"micro": return 0.07
+		&"press": return 0.10
+		&"settle": return 0.14
+		&"celebrate": return 0.34
+		_: return 0.16
+
 func _box(color: Color, radius: int, border: Color = Color.TRANSPARENT, width: int = 0, shadow: int = 0) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()
 	s.bg_color = color
@@ -135,16 +153,16 @@ func _build() -> void:
 		star.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		star.add_theme_font_size_override("font_size", 72)
 		star.add_theme_color_override("font_color", Color("ffd166") if i < stars else Color("435168"))
-		star.scale = Vector2.ONE if MotionSystem.reduced() else Vector2(0.10, 0.10)
-		star.modulate.a = 1.0 if MotionSystem.reduced() else 0.0
+		star.scale = Vector2.ONE if _reduced_motion() else Vector2(0.10, 0.10)
+		star.modulate.a = 1.0 if _reduced_motion() else 0.0
 		star.pivot_offset = star.custom_minimum_size * 0.5
 		star_row.add_child(star)
-		if not MotionSystem.reduced():
+		if not _reduced_motion():
 			var tw := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-			tw.tween_interval(MotionSystem.duration(&"press") + float(i) * MotionSystem.duration(&"settle"))
-			tw.tween_property(star, "modulate:a", 1.0, MotionSystem.duration(&"micro"))
-			tw.parallel().tween_property(star, "scale", Vector2(1.18, 1.18), MotionSystem.duration(&"settle"))
-			tw.tween_property(star, "scale", Vector2.ONE, MotionSystem.duration(&"press"))
+			tw.tween_interval(_motion_duration(&"press") + float(i) * _motion_duration(&"settle"))
+			tw.tween_property(star, "modulate:a", 1.0, _motion_duration(&"micro"))
+			tw.parallel().tween_property(star, "scale", Vector2(1.18, 1.18), _motion_duration(&"settle"))
+			tw.tween_property(star, "scale", Vector2.ONE, _motion_duration(&"press"))
 
 	var divider := ColorRect.new()
 	divider.custom_minimum_size = Vector2(0, 2)
@@ -194,11 +212,11 @@ func _build() -> void:
 	hint.add_theme_color_override("font_color", Color("6f8098"))
 	box.add_child(hint)
 
-	card.modulate.a = 1.0 if MotionSystem.reduced() else 0.0
-	card.scale = Vector2.ONE if MotionSystem.reduced() else Vector2(0.90, 0.90)
+	card.modulate.a = 1.0 if _reduced_motion() else 0.0
+	card.scale = Vector2.ONE if _reduced_motion() else Vector2(0.90, 0.90)
 	card.pivot_offset = Vector2(350, 470)
-	if not MotionSystem.reduced():
+	if not _reduced_motion():
 		var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		tween.tween_property(card, "modulate:a", 1.0, MotionSystem.duration(&"settle"))
-		tween.parallel().tween_property(card, "scale", Vector2(1.02, 1.02), MotionSystem.duration(&"celebrate"))
-		tween.tween_property(card, "scale", Vector2.ONE, MotionSystem.duration(&"press"))
+		tween.tween_property(card, "modulate:a", 1.0, _motion_duration(&"settle"))
+		tween.parallel().tween_property(card, "scale", Vector2(1.02, 1.02), _motion_duration(&"celebrate"))
+		tween.tween_property(card, "scale", Vector2.ONE, _motion_duration(&"press"))
