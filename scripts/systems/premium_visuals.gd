@@ -109,14 +109,25 @@ func burst(global_pos: Vector2, color: Color = Color("2dd4b6"), count: int = 18)
 func screen_flash(color: Color = Color("2dd4b6"), strength: float = 0.18) -> void:
 	if _reduced_motion() or not is_instance_valid(overlay):
 		return
-	var flash := ColorRect.new()
-	flash.color = Color(color.darkened(0.38), minf(strength, 0.12))
-	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	flash.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	overlay.add_child(flash)
-	var tween := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	tween.tween_property(flash, "modulate:a", 0.0, 0.14)
-	tween.tween_callback(flash.queue_free)
+	# Keep celebration energy away from the display edges. A centered radial
+	# pulse reads as impact without producing the harsh full-screen flash that
+	# was visible during navigation/results on bright mobile displays.
+	var viewport_rect := get_viewport().get_visible_rect()
+	var radius := minf(viewport_rect.size.x, viewport_rect.size.y) * 0.22
+	var points := PackedVector2Array()
+	for i in range(32):
+		var angle := TAU * float(i) / 32.0
+		points.append(Vector2(cos(angle), sin(angle)) * radius)
+	var pulse := Polygon2D.new()
+	pulse.polygon = points
+	pulse.color = Color(color.lightened(0.18), minf(strength, 0.09))
+	pulse.position = viewport_rect.position + viewport_rect.size * 0.5
+	pulse.scale = Vector2(0.72, 0.72)
+	overlay.add_child(pulse)
+	var tween := create_tween().set_parallel(true).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tween.tween_property(pulse, "scale", Vector2(1.18, 1.18), 0.18)
+	tween.tween_property(pulse, "modulate:a", 0.0, 0.18)
+	tween.chain().tween_callback(pulse.queue_free)
 
 func entrance(node: Control, delay: float = 0.0) -> void:
 	if not is_instance_valid(node):
