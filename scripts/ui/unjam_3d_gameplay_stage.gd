@@ -3,13 +3,13 @@ extends SubViewportContainer
 
 # Shared low-poly 3D environment behind all three interactive puzzle boards.
 # Gameplay stays in the existing fast 2D Control layer while this viewport gives
-# the screen real perspective, lighting, mesh depth and parallax at low cost.
+# the screen real perspective, lighting and mesh depth at low cost. The scenic
+# world is intentionally one-shot rendered; gameplay motion lives above it.
 var game_id := "rescue_rush"
 var accent := Unjam3DTheme.GREEN
 var viewport_3d: SubViewport
 var stage: Node3D
 var scenic_root: Node3D
-var phase := 0.0
 
 func configure(id: String, accent_value: Color = Color.TRANSPARENT) -> void:
 	game_id = id
@@ -23,19 +23,10 @@ func _ready() -> void:
 	viewport_3d = SubViewport.new()
 	viewport_3d.name = "GameplayViewport3D"
 	viewport_3d.size = Vector2i(540, 960)
-	viewport_3d.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	viewport_3d.render_target_update_mode = SubViewport.UPDATE_ONCE
 	viewport_3d.transparent_bg = false
 	add_child(viewport_3d)
 	_build_stage()
-	set_process(true)
-
-func _process(delta: float) -> void:
-	phase += delta
-	if scenic_root == null or MotionSystem.reduced():
-		return
-	# A tiny camera-world sway gives the background life without moving the UI.
-	scenic_root.rotation.y = sin(phase * 0.18) * 0.012
-	scenic_root.position.x = sin(phase * 0.24) * 0.045
 
 func _rebuild() -> void:
 	if stage != null and is_instance_valid(stage):
@@ -44,6 +35,8 @@ func _rebuild() -> void:
 		scenic_root = null
 	await get_tree().process_frame
 	_build_stage()
+	if viewport_3d != null:
+		viewport_3d.render_target_update_mode = SubViewport.UPDATE_ONCE
 
 func _build_stage() -> void:
 	if viewport_3d == null:
