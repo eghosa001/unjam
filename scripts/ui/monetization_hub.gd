@@ -8,6 +8,7 @@ var status_label: Label
 
 func _ready() -> void:
 	get_tree().node_added.connect(_on_node_added)
+	StoreManager.catalog_changed.connect(_on_catalog_changed)
 	StoreManager.purchase_pending.connect(_on_purchase_pending)
 	StoreManager.purchase_succeeded.connect(_on_purchase_succeeded)
 	StoreManager.purchase_failed.connect(_on_purchase_failed)
@@ -177,6 +178,12 @@ func _purchase(product_id: String, button: Button) -> void:
 	if not StoreManager.purchase(product_id):
 		button.disabled = false
 		button.text = StoreManager.price_text(product_id)
+
+func _on_catalog_changed() -> void:
+	# Product details arrive asynchronously from Google Play. Rebuild an existing
+	# shop so localized prices replace the temporary availability text immediately.
+	if layer != null and is_instance_valid(layer):
+		call_deferred("_rebuild_shop")
 
 func _on_purchase_pending(_product_id: String, reason: String) -> void:
 	status_label.text = reason + ". You can keep playing while Google Play completes it."
