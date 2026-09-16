@@ -180,9 +180,9 @@ func build_home_launcher() -> void:
 		return
 	hero.modulate.a = 0.82
 	games.modulate.a = 0.84
-	var tween := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(hero, "modulate:a", 1.0, 0.18)
-	tween.parallel().tween_property(games, "modulate:a", 1.0, 0.22)
+	var tween := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tween.tween_property(hero, "modulate:a", 1.0, MotionSystem.duration(&"screen"))
+	tween.parallel().tween_property(games, "modulate:a", 1.0, MotionSystem.duration(&"travel"))
 
 func _open_shop() -> void:
 	var hub := get_parent().get_node_or_null("MonetizationHub")
