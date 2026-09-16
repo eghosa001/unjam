@@ -17,14 +17,17 @@ func configure(base: Color, accent: Color, motif_index: int) -> void:
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	set_process(true)
+	add_to_group("reduced_motion_aware")
+	apply_motion_preference()
+
+func apply_motion_preference() -> void:
+	var reduced := MotionSystem.reduced()
+	if reduced:
+		t = 0.0
+	set_process(not reduced)
+	queue_redraw()
 
 func _process(delta: float) -> void:
-	# Reduced Motion keeps the backdrop visually rich but completely static.
-	# We keep processing enabled so changing the setting takes effect immediately
-	# without requiring a scene reload.
-	if MotionSystem.reduced():
-		return
 	t += delta
 	queue_redraw()
 
