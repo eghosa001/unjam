@@ -2,6 +2,7 @@ extends Button
 class_name BlockPieceButton
 
 const DragPreview = preload("res://scripts/ui/block_drag_preview.gd")
+const MATERIALS_SCRIPT = preload("res://scripts/ui/procedural_materials.gd")
 const TOUCH_LIFT := 132.0
 const TOUCH_SNAP_RADIUS := 112.0
 
@@ -16,6 +17,7 @@ var dragging := false
 var phase := 0.0
 var target_scale := Vector2.ONE
 var touch_preview: Control
+var _materials = MATERIALS_SCRIPT.new()
 
 func configure(value: Array, is_selected: bool, color := Color("4f7cff"), index: int = -1) -> void:
 	shape = value.duplicate(true)
@@ -45,11 +47,12 @@ func _refresh_pivot() -> void:
 	pivot_offset = size * 0.5
 
 func _process(delta: float) -> void:
-	phase += delta
+	if not MotionSystem.reduced():
+		phase += delta
 	if dragging:
 		queue_redraw()
 		return
-	var hover_scale := 1.05 if hover and not selected else 1.0
+	var hover_scale := 1.05 if hover and not selected and not MotionSystem.reduced() else 1.0
 	var desired := target_scale * hover_scale
 	scale = scale.lerp(desired, minf(1.0, delta * 13.0))
 	rotation = lerpf(rotation, 0.0, minf(1.0, delta * 14.0))
@@ -57,17 +60,20 @@ func _process(delta: float) -> void:
 		queue_redraw()
 
 func _press() -> void:
-	if used:
+	if used or MotionSystem.reduced():
 		return
 	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(self, "scale", target_scale * 1.16, 0.06)
+	tween.tween_property(self, "scale", target_scale * 1.16, MotionSystem.duration(&"micro"))
 
 func _release() -> void:
 	if dragging:
 		return
+	if MotionSystem.reduced():
+		scale = target_scale
+		return
 	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(self, "scale", target_scale * 0.98, 0.045)
-	tween.tween_property(self, "scale", target_scale, 0.12)
+	tween.tween_property(self, "scale", target_scale * 0.98, MotionSystem.duration(&"micro") * 0.65)
+	tween.tween_property(self, "scale", target_scale, MotionSystem.duration(&"settle"))
 
 func _drag_payload() -> Dictionary:
 	var drag_piece_index := piece_index if piece_index >= 0 else get_index()
@@ -89,9 +95,13 @@ func _begin_drag_feedback() -> void:
 	if dragging:
 		return
 	dragging = true
-	var tween := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(self, "scale", Vector2(0.84, 0.84), 0.07)
-	tween.parallel().tween_property(self, "modulate", Color(1, 1, 1, 0.06), 0.07)
+	if MotionSystem.reduced():
+		scale = Vector2(0.94, 0.94)
+		modulate = Color(1, 1, 1, 0.10)
+	else:
+		var tween := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		tween.tween_property(self, "scale", Vector2(0.84, 0.84), MotionSystem.duration(&"micro"))
+		tween.parallel().tween_property(self, "modulate", Color(1, 1, 1, 0.06), MotionSystem.duration(&"micro"))
 	if has_node("/root/FeedbackManager"):
 		FeedbackManager.tap()
 
@@ -137,13 +147,13 @@ func _hide_touch_preview(immediate := true) -> void:
 	if touch_preview == null or not is_instance_valid(touch_preview):
 		touch_preview = null
 		return
-	if immediate:
+	if immediate or MotionSystem.reduced():
 		touch_preview.queue_free()
 	else:
 		var preview := touch_preview
 		var tween := preview.create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
-		tween.tween_property(preview, "scale", preview.scale * 0.82, 0.08)
-		tween.parallel().tween_property(preview, "modulate:a", 0.0, 0.10)
+		tween.tween_property(preview, "scale", preview.scale * 0.82, MotionSystem.duration(&"micro"))
+		tween.parallel().tween_property(preview, "modulate:a", 0.0, MotionSystem.duration(&"press"))
 		tween.finished.connect(preview.queue_free)
 	touch_preview = null
 
@@ -153,10 +163,14 @@ func _end_drag_feedback(hide_preview := true) -> void:
 	if not dragging:
 		return
 	dragging = false
+	if MotionSystem.reduced():
+		modulate = Color.WHITE
+		scale = target_scale
+		return
 	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(self, "modulate", Color.WHITE, 0.07)
-	tween.parallel().tween_property(self, "scale", target_scale * 1.10, 0.09)
-	tween.tween_property(self, "scale", target_scale, 0.15)
+	tween.tween_property(self, "modulate", Color.WHITE, MotionSystem.duration(&"micro"))
+	tween.parallel().tween_property(self, "scale", target_scale * 1.10, MotionSystem.duration(&"press"))
+	tween.tween_property(self, "scale", target_scale, MotionSystem.duration(&"settle"))
 
 func _get_drag_data(_at_position: Vector2) -> Variant:
 	if used or shape.is_empty():
@@ -384,17 +398,24 @@ func _draw() -> void:
 		var rect := Rect2(origin + Vector2(point) * cell + Vector2(2, 2), Vector2(cell - 4, cell - 4))
 		_draw_block(rect, accent)
 	if selected:
-		var pulse := 0.55 + 0.45 * sin(phase * 7.0)
-		draw_arc(size * 0.5, maxf(total.x, total.y) * 0.60, 0.0, TAU, 32, Color(accent.lightened(0.38), 0.20 + pulse * 0.18), 3.0, true)
+		var pulse := 0.55 if MotionSystem.reduced() else 0.55 + 0.45 * sin(phase * 7.0)
+		draw_arc(size * 0.5, maxf(total.x, total.y) * 0.60, 0.0, TAU, 32, Color(_materials.bevel_light(accent), 0.20 + pulse * 0.18), 3.0, true)
 
 func _draw_block(rect: Rect2, fill: Color) -> void:
-	var dark := fill.darkened(0.28)
-	draw_style_box(_style(dark, Color.TRANSPARENT, 0, 6), Rect2(rect.position + Vector2(0, 5), rect.size))
-	draw_style_box(_style(fill, fill.lightened(0.24), 2, 6), rect)
-	draw_line(rect.position + Vector2(6, 5), Vector2(rect.end.x - 6, rect.position.y + 5), Color(fill.lightened(0.54), 0.98), 3.0, true)
-	draw_line(rect.position + Vector2(5, 7), Vector2(rect.position.x + 5, rect.end.y - 7), Color(fill.lightened(0.30), 0.80), 2.0, true)
-	draw_line(Vector2(rect.position.x + 6, rect.end.y - 5), rect.end - Vector2(6, 5), Color(dark, 0.95), 3.0, true)
-	draw_line(Vector2(rect.end.x - 5, rect.position.y + 7), rect.end - Vector2(5, 7), Color(dark, 0.82), 2.0, true)
+	var reduced := MotionSystem.reduced()
+	var depth_offset := _materials.extrusion_offset(0.88, reduced)
+	var layers := _materials.depth_layers_for(0.88, reduced)
+	var depth: Color = _materials.depth_tone(fill)
+	for layer in range(layers, 0, -1):
+		var factor := float(layer) / float(layers)
+		draw_style_box(_style(Color(depth, fill.a * (0.84 + factor * 0.10)), Color.TRANSPARENT, 0, 6), Rect2(rect.position + depth_offset * factor, rect.size))
+	var light: Color = _materials.bevel_light(fill)
+	var dark: Color = _materials.bevel_dark(fill)
+	draw_style_box(_style(fill, light, 2, 6), rect)
+	draw_line(rect.position + Vector2(6, 5), Vector2(rect.end.x - 6, rect.position.y + 5), Color(light, minf(0.98, fill.a)), 3.0, true)
+	draw_line(rect.position + Vector2(5, 7), Vector2(rect.position.x + 5, rect.end.y - 7), Color(light, fill.a * 0.80), 2.0, true)
+	draw_line(Vector2(rect.position.x + 6, rect.end.y - 5), rect.end - Vector2(6, 5), Color(dark, fill.a * 0.95), 3.0, true)
+	draw_line(Vector2(rect.end.x - 5, rect.position.y + 7), rect.end - Vector2(5, 7), Color(dark, fill.a * 0.82), 2.0, true)
 
 func _as_point(raw: Variant) -> Vector2i:
 	if raw is Vector2i:
