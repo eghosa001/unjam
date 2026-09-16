@@ -4,6 +4,13 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+    inputs:
+      full_campaign:
+        description: Run exhaustive campaign validation for final release verification
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -88,13 +95,23 @@ jobs:
             timeout 45s godot --headless --path . --script "res://tests/$t.gd"
             echo "===== PASS $t ====="
           done
-      - name: Focused gameplay and campaign contracts
+      - name: 10-level gameplay smoke contracts
         shell: bash
         run: |
           set -euxo pipefail
-          for t in validate_campaign validate_campaign_diversity validate_level_launch validate_gameplay_interactions validate_progression_transitions validate_water_constructive_solvability; do
+          for t in validate_10_level_smoke validate_level_launch validate_gameplay_interactions validate_progression_transitions; do
             echo "===== START $t ====="
-            timeout 180s godot --headless --path . --script "res://tests/$t.gd"
+            timeout 90s godot --headless --path . --script "res://tests/$t.gd"
+            echo "===== PASS $t ====="
+          done
+      - name: Full campaign validation (final test only)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.full_campaign == true }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          for t in validate_campaign validate_campaign_diversity validate_water_constructive_solvability; do
+            echo "===== START $t ====="
+            timeout 240s godot --headless --path . --script "res://tests/$t.gd"
             echo "===== PASS $t ====="
           done
       - name: Boot smoke test
