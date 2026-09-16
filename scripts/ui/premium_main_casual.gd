@@ -1,16 +1,24 @@
 extends "res://scripts/ui/premium_main.gd"
 
+func add_background() -> void:
+	# Base level builders call add_background() directly. Override it so every
+	# secondary surface uses the final bright backdrop without allocating the
+	# retired PremiumBackdrop first.
+	if content == null or not is_instance_valid(content):
+		return
+	var existing := content.get_node_or_null("Unjam3DSurfaceBackdrop") as Unjam3DBackdrop
+	if existing == null:
+		existing = Unjam3DBackdrop.new()
+		existing.name = "Unjam3DSurfaceBackdrop"
+		existing.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		existing.z_index = -100
+		content.add_child(existing)
+		content.move_child(existing, 0)
+	existing.configure(_accent())
+
 func _page_root() -> VBoxContainer:
-	# Build directly on the final bright backdrop. The old PremiumBackdrop is no
-	# longer instantiated and then hidden by the surface manager.
 	clear_content()
-	var backdrop := Unjam3DBackdrop.new()
-	backdrop.name = "Unjam3DSurfaceBackdrop"
-	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	backdrop.z_index = -100
-	backdrop.configure(_accent())
-	content.add_child(backdrop)
-	content.move_child(backdrop, 0)
+	add_background()
 	var outer := MarginContainer.new()
 	outer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	outer.add_theme_constant_override("margin_left", 46)
