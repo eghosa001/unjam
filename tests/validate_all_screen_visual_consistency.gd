@@ -5,7 +5,10 @@ func _initialize() -> void:
 	_check("res://scripts/ui/premium_design_system.gd", ["MIN_TOUCH_HEIGHT", "raised_box", "recessed_box", "gloss_button", "hud_box", "status_chip"], failures)
 	_check("res://scripts/ui/premium_home_casual.gd", ["PremiumUnjamLogo", "HomePrimaryAction", "THREE PUZZLES  •  ONE JOURNEY", "GameSelectTile", "MotionSystem.reduced"], failures)
 	_check("res://scripts/ui/game_select_tile.gd", ["_draw_game_scene", "_draw_water_scene", "_draw_block_scene", "_draw_rescue_scene", "Progress strip", "Tactile circular action button"], failures)
+	_check("res://scripts/ui/premium_main_casual.gd", ["SETTINGS", "HELP & PRIVACY", "CompactSettingsGrid", "PremiumDesignSystem.SUCCESS"], failures)
 	_check("res://scripts/ui/premium_surface_manager.gd", ["settings", "collection", "levels", "shop", "daily", "_polish_tree", "_add_surface_chrome"], failures)
+	_check("res://scripts/ui/premium_live_hub.gd", ["PremiumDesignSystem.apply_button", "PremiumDesignSystem.raised_box", "PremiumDesignSystem.recessed_box", "_add_bottom_nav"], failures)
+	_check("res://scripts/ui/monetization_hub.gd", ["UNJAM SHOP", "PremiumBackdrop", "PremiumDesignSystem.apply_button", "PremiumDesignSystem.raised_box", "MotionSystem.reduced"], failures)
 	_check("res://scripts/game/rescue_rush_casual.gd", ["RESCUE RUSH", "RescueStoneFrame", "RescueRecessedBoard", "RESTART", "hud_box"], failures)
 	_check("res://scripts/game/water_sort_casual.gd", ["POUR FROM THE BOTTLE MOUTH", "WaterGlassFrame", "GameplayStage", "RESTART", "hud_box"], failures)
 	_check("res://scripts/game/water_sort_ultra_motion.gd", ["_visual_mouth_local", "_control_point"], failures)
@@ -15,7 +18,7 @@ func _initialize() -> void:
 			push_error(failure)
 		quit(1)
 		return
-	print("All-screen premium visual consistency contract validated.")
+	print("All-screen premium visual consistency contract validated: home, selection, live, settings, collection, levels, shop, and all gameplay surfaces.")
 	quit(0)
 
 func _check(path: String, needles: Array[String], failures: Array[String]) -> void:
