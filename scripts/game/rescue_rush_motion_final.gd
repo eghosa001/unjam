@@ -23,7 +23,10 @@ func render_board() -> void:
 	_fit_board_to_viewport()
 
 func _animate_cell(cell: Control, x: int, y: int) -> void:
-	if _board_has_rendered:
+	# Subsequent state refreshes should never replay a whole-board pulse. Reduced
+	# Motion also skips the initial grid entrance entirely instead of animating 25+
+	# controls at a shortened duration.
+	if _board_has_rendered or MotionSystem.reduced():
 		cell.modulate.a = 1.0
 		cell.scale = Vector2.ONE
 		cell.pivot_offset = cell.custom_minimum_size * 0.5
