@@ -10,7 +10,8 @@ func _run() -> void:
 	if not _validate_vibrant_palette(): return
 	if not _validate_vibrant_home_source(): return
 	if not _validate_vibrant_tiles_source(): return
-	print("Visual quality contract validated: procedural depth, adaptive particle budgets, reduced-motion behavior, vibrant palette, and dense full-screen home surfaces.")
+	if not _validate_full_app_vibrant_adoption(): return
+	print("Visual quality contract validated: procedural depth, adaptive particle budgets, reduced-motion behavior, vibrant palette, dense launcher, and full-app vibrant surface adoption.")
 	quit(0)
 
 func _validate_material_helpers() -> bool:
@@ -101,6 +102,25 @@ func _validate_vibrant_tiles_source() -> bool:
 	for marker in ["game_gradient", "vibrant_surface", "card_glow"]:
 		if not source.contains(marker):
 			return _fail("Game tiles are not using the vibrant card language: " + marker)
+	return true
+
+func _validate_full_app_vibrant_adoption() -> bool:
+	var required := {
+		"res://scripts/game/rescue_rush_casual.gd": ["VIBRANT_REFERENCE_TARGET", "vibrant_canvas", "game_gradient"],
+		"res://scripts/game/water_sort_casual.gd": ["VIBRANT_REFERENCE_TARGET", "vibrant_canvas", "game_gradient"],
+		"res://scripts/game/block_puzzle_premium_layout.gd": ["VIBRANT_REFERENCE_TARGET", "vibrant_canvas", "game_gradient"],
+		"res://scripts/ui/main.gd": ["VIBRANT_REFERENCE_TARGET", "vibrant_surface", "PremiumDesignSystem"],
+		"res://scripts/ui/monetization_hub.gd": ["VIBRANT_REFERENCE_TARGET", "PremiumDesignSystem"],
+		"res://tests/capture_visual_audit.gd": ["tutorial-water", "tutorial-block", "result-overlay", "settings-light", "levels-block"]
+	}
+	for path in required.keys():
+		var file := FileAccess.open(String(path), FileAccess.READ)
+		if file == null:
+			return _fail("Required vibrant surface source is missing: " + String(path))
+		var source := file.get_as_text()
+		for marker in required[path]:
+			if not source.contains(String(marker)):
+				return _fail("Full-app vibrant rollout missing marker %s in %s" % [String(marker), String(path)])
 	return true
 
 func _fail(message: String) -> bool:
