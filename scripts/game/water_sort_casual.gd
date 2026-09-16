@@ -1,10 +1,12 @@
 extends "res://scripts/game/water_sort_ultra_motion.gd"
 
 func build_ui() -> void:
-	var bg := Unjam3DBackdrop.new()
-	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	bg.configure(Unjam3DTheme.WATER)
-	add_child(bg)
+	var environment_3d := Unjam3DGameplayStage.new()
+	environment_3d.name = "WaterSort3DEnvironment"
+	environment_3d.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	environment_3d.configure("water_sort", Unjam3DTheme.WATER)
+	environment_3d.z_index = -100
+	add_child(environment_3d)
 	PremiumVisuals.set_accent(Unjam3DTheme.WATER)
 
 	var outer := MarginContainer.new()
@@ -69,7 +71,7 @@ func build_ui() -> void:
 
 	var objective := PanelContainer.new()
 	objective.custom_minimum_size = Vector2(0, 64)
-	objective.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("f7fdff"), 24, Color("8be6ff"), 2, 6))
+	objective.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color(0.97, 0.995, 1.0, 0.94), 24, Color("8be6ff"), 2, 6))
 	root.add_child(objective)
 	var objective_label := Label.new()
 	objective_label.text = "💧  SORT THE COLOURS • BUILD THE PERFECT FLOW"
@@ -87,7 +89,7 @@ func build_ui() -> void:
 	stage.name = "GameplayStage"
 	stage.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	stage.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	stage.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color(0.90, 0.98, 1.0, 0.78), 38, Color("70ddff"), 3, 12))
+	stage.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color(0.88, 0.98, 1.0, 0.74), 38, Color("baf2ff"), 3, 14))
 	center.add_child(stage)
 	var stage_margin := MarginContainer.new()
 	for side in ["left", "right", "top", "bottom"]:
@@ -104,7 +106,7 @@ func build_ui() -> void:
 
 	var feedback := PanelContainer.new()
 	feedback.custom_minimum_size = Vector2(0, 72)
-	feedback.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("f2fbff"), 24, Color("91dfff"), 2, 5))
+	feedback.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color(0.95, 0.99, 1.0, 0.94), 24, Color("91dfff"), 2, 5))
 	root.add_child(feedback)
 	var feedback_row := HBoxContainer.new()
 	feedback_row.add_theme_constant_override("separation", 10)
