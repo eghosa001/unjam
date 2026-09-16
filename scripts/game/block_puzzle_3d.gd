@@ -5,10 +5,12 @@ extends "res://scripts/game/block_puzzle_ultra_motion.gd"
 
 func build_ui() -> void:
 	var accent := Unjam3DTheme.PURPLE
-	var background := Unjam3DBackdrop.new()
-	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	background.configure(accent)
-	add_child(background)
+	var environment_3d := Unjam3DGameplayStage.new()
+	environment_3d.name = "BlockPuzzle3DEnvironment"
+	environment_3d.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	environment_3d.configure("block_puzzle", accent)
+	environment_3d.z_index = -100
+	add_child(environment_3d)
 	PremiumVisuals.set_accent(accent)
 
 	var outer := MarginContainer.new()
@@ -69,7 +71,7 @@ func build_ui() -> void:
 
 	var objective := PanelContainer.new()
 	objective.custom_minimum_size = Vector2(0, 62)
-	objective.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("fff8ff"), 24, Color("e7a4ff"), 2, 6))
+	objective.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color(1.0, 0.97, 1.0, 0.94), 24, Color("e7a4ff"), 2, 6))
 	root.add_child(objective)
 	var objective_label := Label.new()
 	objective_label.text = "▦  DRAG • PLACE • CLEAR • KEEP THE BOARD TIDY"
@@ -88,7 +90,7 @@ func build_ui() -> void:
 	var cell_size := clampf(floor(minf((available_board_width - 24.0) / float(GRID_SIZE), (available_board_height - 24.0) / float(GRID_SIZE))), 44.0, PREMIUM_CELL_MAX)
 	board_shell = PanelContainer.new()
 	board_shell.custom_minimum_size = Vector2(cell_size * GRID_SIZE + 22, cell_size * GRID_SIZE + 22)
-	board_shell.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("55217d"), 30, Color("df77ff"), 4, 14))
+	board_shell.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("66338a"), 30, Color("f0bdff"), 4, 16))
 	center.add_child(board_shell)
 	var board_margin := MarginContainer.new()
 	for side in ["left", "right", "top", "bottom"]:
@@ -110,7 +112,7 @@ func build_ui() -> void:
 
 	var tray := PanelContainer.new()
 	tray.custom_minimum_size = Vector2(0, 190)
-	tray.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color(0.98, 0.94, 1.0, 0.95), 30, Color("dda0ff"), 3, 9))
+	tray.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color(0.98, 0.94, 1.0, 0.94), 30, Color("dda0ff"), 3, 9))
 	root.add_child(tray)
 	var tray_margin := MarginContainer.new()
 	tray_margin.add_theme_constant_override("margin_left", 18)
