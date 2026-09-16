@@ -60,8 +60,8 @@ func _calculate_safe_margins(logical_size: Vector2) -> Vector4:
 	var sy := logical_size.y / float(physical_size.y)
 	var left := maxf(0.0, float(safe_rect.position.x) * sx)
 	var top := maxf(0.0, float(safe_rect.position.y) * sy)
-	var right_px := max(0, physical_size.x - safe_rect.end.x)
-	var bottom_px := max(0, physical_size.y - safe_rect.end.y)
+	var right_px: int = maxi(0, physical_size.x - safe_rect.end.x)
+	var bottom_px: int = maxi(0, physical_size.y - safe_rect.end.y)
 	var right := float(right_px) * sx
 	var bottom := float(bottom_px) * sy
 
