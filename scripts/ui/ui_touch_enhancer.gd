@@ -47,6 +47,10 @@ func _apply_enhancements() -> void:
 			hint.custom_minimum_size = Vector2(0, 44)
 
 func _enlarge_buttons(node: Node) -> void:
+	# A nested surface with its own enhancer owns all sizing below that root.
+	# This keeps Main from re-sizing an active game scene a second time.
+	if node != host and node.get_node_or_null("UiTouchEnhancer") != null:
+		return
 	for child in node.get_children():
 		if child is Button:
 			_apply_button_size(child)
