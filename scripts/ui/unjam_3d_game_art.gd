@@ -33,8 +33,17 @@ func _finish_initial_render() -> void:
 	# The card can enter the tree before its ScrollContainer/layout is visible.
 	# Render a couple of real frames, then return to one-shot mode so previews
 	# stay cheap on mobile instead of becoming permanent 3D render loops.
-	await get_tree().process_frame
-	await get_tree().process_frame
+	# Navigation may detach/free this card while these frames are pending, so
+	# never await through a null SceneTree or touch a stale viewport afterward.
+	for _frame in range(2):
+		if not is_inside_tree():
+			return
+		var tree := get_tree()
+		if tree == null:
+			return
+		await tree.process_frame
+		if not is_inside_tree():
+			return
 	if viewport_3d != null and is_instance_valid(viewport_3d):
 		viewport_3d.render_target_update_mode = SubViewport.UPDATE_ONCE
 
