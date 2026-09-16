@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource path="res://scripts/ui/premium_main_casual.gd" type="Script" id="1"]
 [ext_resource path="res://scripts/ui/ui_touch_enhancer_casual.gd" type="Script" id="2"]
@@ -9,6 +9,7 @@
 [ext_resource path="res://scripts/ui/premium_surface_manager_static.gd" type="Script" id="7"]
 [ext_resource path="res://scripts/ui/level_browser_polish.gd" type="Script" id="8"]
 [ext_resource path="res://scripts/ui/motion_director.gd" type="Script" id="9"]
+[ext_resource path="res://scripts/ui/device_fit.gd" type="Script" id="10"]
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -36,6 +37,9 @@ script = ExtResource("8")
 
 [node name="MotionDirector" type="Node" parent="."]
 script = ExtResource("9")
+
+[node name="DeviceFit" type="Node" parent="."]
+script = ExtResource("10")
 
 [node name="PremiumHome" type="Control" parent="."]
 layout_mode = 1
