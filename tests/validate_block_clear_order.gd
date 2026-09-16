@@ -1,9 +1,19 @@
 extends SceneTree
 
 func _initialize() -> void:
-	var file := FileAccess.open("res://scripts/game/block_puzzle.gd", FileAccess.READ)
+	var scene_file := FileAccess.open("res://scenes/BlockPuzzle.tscn", FileAccess.READ)
+	if scene_file == null:
+		push_error("Block Puzzle scene is missing")
+		quit(1)
+		return
+	var scene_source := scene_file.get_as_text()
+	if not scene_source.contains("block_puzzle_3d_clear.gd"):
+		push_error("Block Puzzle scene is not using the clear-transition presentation layer")
+		quit(1)
+		return
+	var file := FileAccess.open("res://scripts/game/block_puzzle_3d_clear.gd", FileAccess.READ)
 	if file == null:
-		push_error("Block Puzzle source is missing")
+		push_error("Block Puzzle clear-transition source is missing")
 		quit(1)
 		return
 	var source := file.get_as_text()
