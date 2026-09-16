@@ -92,33 +92,50 @@ func _draw() -> void:
 		_draw_block(rect, accent, pulse)
 
 func _draw_block(rect: Rect2, color: Color, pulse: float) -> void:
-	var shadow := rect
-	shadow.position += Vector2(0, 13)
-	var shadow_style := StyleBoxFlat.new()
-	shadow_style.bg_color = Color(0.01, 0.02, 0.08, 0.50)
-	shadow_style.corner_radius_top_left = 16
-	shadow_style.corner_radius_top_right = 16
-	shadow_style.corner_radius_bottom_left = 16
-	shadow_style.corner_radius_bottom_right = 16
-	draw_style_box(shadow_style, shadow)
-	var style := StyleBoxFlat.new()
-	style.bg_color = color
-	style.corner_radius_top_left = 16
-	style.corner_radius_top_right = 16
-	style.corner_radius_bottom_left = 16
-	style.corner_radius_bottom_right = 16
+	_draw_extruded_cube(rect, color, pulse)
+
+func _draw_extruded_cube(rect: Rect2, color: Color, pulse: float) -> void:
+	var depth := clampf(rect.size.x * 0.12, 7.0, 12.0)
+	var shadow := Rect2(rect.position + Vector2(2.0, depth + 9.0), rect.size - Vector2(depth, depth))
+	draw_style_box(_style(Color(0.01, 0.02, 0.08, 0.46), 14), shadow)
+
+	var front := Rect2(rect.position + Vector2(0.0, depth), rect.size - Vector2(depth, depth))
+	var top_face := PackedVector2Array([
+		front.position,
+		front.position + Vector2(depth, -depth),
+		Vector2(front.end.x + depth, front.position.y - depth),
+		Vector2(front.end.x, front.position.y)
+	])
+	var right_face := PackedVector2Array([
+		Vector2(front.end.x, front.position.y),
+		Vector2(front.end.x + depth, front.position.y - depth),
+		Vector2(front.end.x + depth, front.end.y - depth),
+		Vector2(front.end.x, front.end.y)
+	])
+	var invalid_tint := Color("ff6f8e")
+	var face_color := color if board_valid else color.lerp(invalid_tint, 0.42)
+	draw_colored_polygon(top_face, face_color.lightened(0.40))
+	draw_colored_polygon(right_face, face_color.darkened(0.28))
+
+	var style := _style(face_color, 14)
 	style.border_width_left = 3
 	style.border_width_right = 3
 	style.border_width_top = 3
 	style.border_width_bottom = 3
-	style.border_color = color.lightened(0.34) if board_valid else Color("ff6f8e")
-	draw_style_box(style, rect)
-	var top_glow := Color(color.lightened(0.58), 0.90 + pulse * 0.08)
-	draw_line(rect.position + Vector2(10, 9), Vector2(rect.end.x - 10, rect.position.y + 9), top_glow, 5.0, true)
-	draw_line(rect.position + Vector2(9, 11), Vector2(rect.position.x + 9, rect.end.y - 11), Color(color.lightened(0.34), 0.78), 3.0, true)
-	draw_line(Vector2(rect.position.x + 10, rect.end.y - 9), rect.end - Vector2(10, 9), Color(color.darkened(0.26), 0.90), 5.0, true)
-	var shine := Rect2(rect.position + Vector2(rect.size.x * 0.18, rect.size.y * 0.16), Vector2(rect.size.x * 0.34, rect.size.y * 0.16))
-	draw_style_box(_style(Color(1, 1, 1, 0.10 + pulse * 0.08), 10), shine)
+	style.border_color = face_color.lightened(0.36) if board_valid else invalid_tint
+	draw_style_box(style, front)
+	var inset := front.grow(-4.0)
+	draw_style_box(_style(Color(face_color.lightened(0.12), 0.20), 11), inset)
+
+	var top_glow := Color(face_color.lightened(0.58), 0.86 + pulse * 0.10)
+	draw_line(front.position + Vector2(10, 9), Vector2(front.end.x - 10, front.position.y + 9), top_glow, 4.5, true)
+	draw_line(front.position + Vector2(9, 12), Vector2(front.position.x + 9, front.end.y - 11), Color(face_color.lightened(0.30), 0.70), 2.8, true)
+	var shine := Rect2(front.position + Vector2(front.size.x * 0.18, front.size.y * 0.18), Vector2(front.size.x * 0.32, front.size.y * 0.15))
+	draw_style_box(_style(Color(1, 1, 1, 0.10 + pulse * 0.08), 9), shine)
+
+	if not board_valid:
+		var warning_alpha := 0.30 + pulse * 0.24
+		draw_arc(front.get_center(), front.size.x * 0.62, 0.0, TAU, 30, Color(invalid_tint, warning_alpha), 4.0, true)
 
 func _as_point(raw: Variant) -> Vector2i:
 	if raw is Vector2i:
