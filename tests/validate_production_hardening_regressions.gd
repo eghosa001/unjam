@@ -26,10 +26,10 @@ func _source(path: String) -> String:
 
 func _validate_canonical_motion_key() -> bool:
 	# Only sources that actually drive time-varying motion belong here. One-shot
-	# 3D dioramas intentionally do not need a Reduced Motion branch.
+	# 3D dioramas and skinning-only surface managers intentionally do not need a
+	# Reduced Motion branch; MotionDirector remains the sole navigation animator.
 	for path in [
 		"res://scripts/ui/motion_director.gd",
-		"res://scripts/ui/premium_surface_manager_static.gd",
 		"res://scripts/ui/premium_home_casual.gd",
 		"res://scripts/systems/premium_visuals.gd"
 	]:
