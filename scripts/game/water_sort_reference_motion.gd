@@ -85,15 +85,24 @@ func select_tube(index: int) -> void:
 	status_label.text = "Pouring — keep going"
 	active_source_tubes[from_idx] = true
 	active_target_tubes[index] = true
-	var will_complete := is_complete()
-	if will_complete:
+	if is_complete():
 		pending_completion = true
 	render_board()
-	_play_premium_concurrent_pour(source_values, target_values, from_rect, to_rect, color_index, amount, from_idx, index, will_complete)
+	_play_premium_concurrent_pour(source_values, target_values, from_rect, to_rect, color_index, amount, from_idx, index)
 	_save_checkpoint()
 
 func _has_active_pours() -> bool:
 	return not active_source_tubes.is_empty() or not active_target_tubes.is_empty()
+
+func _complete_if_visuals_settled() -> void:
+	# A logical win can be reached while an older independent pour is still in
+	# flight. Only expose the result once every source/target animation has fully
+	# settled so no glass, stream or return tween survives behind the overlay.
+	if not pending_completion or completed or _has_active_pours():
+		return
+	pending_completion = false
+	FeedbackManager.complete("water")
+	complete_level()
 
 func undo_move() -> void:
 	if _has_active_pours():
@@ -198,7 +207,7 @@ func _game_local(global_point: Vector2) -> Vector2:
 func _control_point(control: Control, local_point: Vector2) -> Vector2:
 	return _game_local(control.get_global_transform_with_canvas() * local_point)
 
-func _play_premium_concurrent_pour(source_values: Array, target_values: Array, from_rect: Rect2, to_rect: Rect2, color_index: int, amount: int, source_index: int, target_index: int, will_complete: bool = false) -> void:
+func _play_premium_concurrent_pour(source_values: Array, target_values: Array, from_rect: Rect2, to_rect: Rect2, color_index: int, amount: int, source_index: int, target_index: int) -> void:
 	var liquid: Color = MotionTube.PALETTE[color_index]
 	var ghost := MotionTube.new()
 	ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -339,8 +348,4 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 
 	if _run_queued_action_if_ready():
 		return
-
-	if will_complete and pending_completion and not completed:
-		pending_completion = false
-		FeedbackManager.complete("water")
-		complete_level()
+	_complete_if_visuals_settled()
