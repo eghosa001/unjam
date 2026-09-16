@@ -89,7 +89,7 @@ func _make_status_bar(parent: VBoxContainer) -> void:
 	var cleared := 0
 	for game_id in MultiGameManager.GAME_IDS:
 		cleared += int(MultiGameManager.progress_for(game_id).get("levels_completed", 0))
-	var player_level := maxi(1, 1 + cleared / 10)
+	var player_level := maxi(1, 1 + int(cleared / 10))
 	bar.add_child(_make_badge("☺  LV %d" % player_level, Unjam3DTheme.WATER))
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
