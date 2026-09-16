@@ -37,6 +37,7 @@ AndroidMonetizationBridge="*res://scripts/systems/android_monetization_bridge.gd
 AnalyticsManager="*res://scripts/systems/analytics_manager.gd"
 DailyChallenge="*res://scripts/systems/robust_daily_challenge.gd"
 FeedbackManager="*res://scripts/systems/feedback_manager.gd"
+MotionSystem="*res://scripts/ui/motion_system.gd"
 PremiumVisuals="*res://scripts/systems/robust_premium_visuals.gd"
 RetentionManager="*res://scripts/systems/robust_retention_manager.gd"
 LiveHubLauncher="*res://scripts/systems/live_hub_launcher.gd"
