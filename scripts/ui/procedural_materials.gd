@@ -7,34 +7,36 @@ class_name ProceduralMaterials
 
 func vertical_shade(base: Color, vertical_t: float) -> Color:
 	var t := clampf(vertical_t, 0.0, 1.0)
-	var top := base.lightened(0.17)
-	var bottom := base.darkened(0.19)
+	var top := base.lightened(0.21)
+	var bottom := base.darkened(0.24)
 	return top.lerp(bottom, t)
 
 func bevel_light(base: Color, strength: float = 1.0) -> Color:
-	var amount := clampf(0.28 * strength, 0.08, 0.42)
+	var amount := clampf(0.34 * strength, 0.10, 0.48)
 	var result := base.lightened(amount)
 	result.a = base.a
 	return result
 
 func bevel_dark(base: Color, strength: float = 1.0) -> Color:
-	var amount := clampf(0.24 * strength, 0.08, 0.38)
+	var amount := clampf(0.30 * strength, 0.10, 0.44)
 	var result := base.darkened(amount)
 	result.a = base.a
 	return result
 
 func depth_tone(base: Color, strength: float = 1.0) -> Color:
-	var amount := clampf(0.43 * strength, 0.20, 0.58)
+	var amount := clampf(0.50 * strength, 0.24, 0.64)
 	var result := base.darkened(amount)
 	result.a = base.a
 	return result
 
 func extrusion_offset(quality_scale: float = 1.0, reduce_motion: bool = false) -> Vector2:
 	var quality := clampf(quality_scale, 0.35, 1.0)
-	var depth := lerpf(3.0, 7.0, quality)
+	# Strong enough to remain visible after the 1080x1920 scene is scaled to a
+	# phone, while still being a cheap layered-2D effect rather than true 3D.
+	var depth := lerpf(3.8, 9.0, quality)
 	if reduce_motion:
-		depth = minf(depth, 3.5)
-	return Vector2(depth * 0.22, depth)
+		depth = minf(depth, 4.0)
+	return Vector2(depth * 0.30, depth)
 
 func depth_layers_for(quality_scale: float = 1.0, reduce_motion: bool = false) -> int:
 	if reduce_motion:
@@ -46,17 +48,17 @@ func depth_layers_for(quality_scale: float = 1.0, reduce_motion: bool = false) -
 		return 3
 	return 4
 
-func contact_shadow(alpha: float = 0.22) -> Color:
-	return Color(0.01, 0.02, 0.04, clampf(alpha, 0.0, 0.55))
+func contact_shadow(alpha: float = 0.24) -> Color:
+	return Color(0.005, 0.012, 0.025, clampf(alpha, 0.0, 0.60))
 
 func glass_highlight(base: Color = Color.WHITE, alpha: float = 0.30) -> Color:
-	var highlight := base.lightened(0.28)
-	highlight.a = clampf(alpha, 0.0, 0.72)
+	var highlight := base.lightened(0.34)
+	highlight.a = clampf(alpha, 0.0, 0.76)
 	return highlight
 
 func specular(base: Color, alpha: float = 0.26) -> Color:
-	var highlight := base.lightened(0.48)
-	highlight.a = clampf(alpha, 0.0, 0.64)
+	var highlight := base.lightened(0.54)
+	highlight.a = clampf(alpha, 0.0, 0.68)
 	return highlight
 
 func particle_budget(base_count: int, quality_scale: float, reduce_motion: bool) -> int:
