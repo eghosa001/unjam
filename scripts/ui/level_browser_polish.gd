@@ -30,9 +30,8 @@ func _refresh() -> void:
 		return
 	last_content_id = current_id
 	var game_id := String(main.get("selected_game_id")) if main.get("selected_game_id") != null else "rescue_rush"
-	var accent := PremiumDesignSystem.accent_for_game(game_id)
-	var shell := main.get_node_or_null("UXShell")
-	var dark := shell == null or String(shell.get("theme_mode")) != "light"
+	var accent := Unjam3DTheme.game_accent(game_id)
+	var dark_accent := Unjam3DTheme.game_dark(game_id)
 	for grid in _find_grids(content):
 		if grid.columns != 5:
 			continue
@@ -42,11 +41,16 @@ func _refresh() -> void:
 		for child in grid.get_children():
 			if child is Button:
 				var button := child as Button
-				button.custom_minimum_size = Vector2(218, 116)
-				button.add_theme_font_size_override("font_size", 19)
-				PremiumDesignSystem.apply_button(button, dark, accent, "disabled" if button.disabled else "secondary", 20)
-				if not button.disabled and button.text.begins_with(str(_highest_level(main, game_id)) + "\n"):
-					PremiumDesignSystem.apply_button(button, dark, accent, "primary", 20)
+				button.custom_minimum_size = Vector2(218, 120)
+				button.add_theme_font_size_override("font_size", 20)
+				var is_current := not button.disabled and button.text.begins_with(str(_highest_level(main, game_id)) + "\n")
+				if button.disabled:
+					Unjam3DTheme.gloss_button(button, Color("9db6c8"), false, 22)
+					button.add_theme_color_override("font_color", Color("6d8597"))
+				elif is_current:
+					Unjam3DTheme.gloss_button(button, accent, true, 22)
+				else:
+					Unjam3DTheme.gloss_button(button, dark_accent, false, 22)
 
 func _highest_level(main: Node, game_id: String) -> int:
 	if game_id == "rescue_rush":
