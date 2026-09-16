@@ -63,15 +63,17 @@ func _run() -> void:
 		return _fail("Active surface manager still moves content root")
 	if not motion.contains("reduced_motion"):
 		return _fail("Reduced Motion preference is not wired into navigation motion")
-	if not visuals.contains("func reduced_motion_enabled") or not visuals.contains("if reduced_motion_enabled()"):
-		return _fail("Shared premium effects do not expose a Reduced Motion gate")
-	if not robust_visuals.contains("if not reduced_motion_enabled()"):
-		return _fail("Adaptive premium visuals still move ambient decoration in Reduced Motion")
-	if not backdrop.contains("reduced_motion") or not showcase.contains("reduced_motion"):
+	var visuals_has_gate := visuals.contains("func _reduced_motion") or visuals.contains("func reduced_motion_enabled")
+	var visuals_uses_gate := visuals.contains("if _reduced_motion()") or visuals.contains("if reduced_motion_enabled()")
+	if not visuals_has_gate or not visuals_uses_gate:
+		return _fail("Shared premium effects do not expose and use a Reduced Motion gate")
+	if not robust_visuals.contains("_reduced_motion()") and not robust_visuals.contains("reduced_motion_enabled()"):
+		return _fail("Adaptive premium visuals still ignore Reduced Motion")
+	if not backdrop.contains("reduced_motion") or not backdrop.contains("set_process(not reduced)") or not showcase.contains("reduced_motion") or not showcase.contains("set_process(not reduced)"):
 		return _fail("Continuous decorative animation ignores Reduced Motion")
 	if not home.contains("reduced_motion") or not surface.contains("reduced_motion"):
 		return _fail("Home or secondary-surface entrance animation ignores Reduced Motion")
-	if not settings.contains("apply_reduced_motion"):
+	if not settings.contains("PremiumVisuals.apply_motion_preference()"):
 		return _fail("Reduced Motion setting is not applied immediately")
 
 	var retired_paths := [
