@@ -1,10 +1,13 @@
 extends "res://scripts/ui/water_tube_reference_button.gd"
 
+const MATERIALS_SCRIPT = preload("res://scripts/ui/procedural_materials.gd")
+
 var pour_mode := 0
 var pour_color := 0
 var pour_amount := 0
 var pour_progress := 0.0
 var slosh := 0.0
+var _materials = MATERIALS_SCRIPT.new()
 
 func begin_pour_out(amount: int) -> void:
 	pour_mode = -1
@@ -62,7 +65,8 @@ func _slot_color(slot: int) -> int:
 
 func _process(delta: float) -> void:
 	super._process(delta)
-	slosh = maxf(0.0, slosh - delta * 1.5)
+	var slosh_decay := 3.8 if MotionSystem.reduced() else 1.5
+	slosh = maxf(0.0, slosh - delta * slosh_decay)
 	if pour_mode != 0 or slosh > 0.001:
 		queue_redraw()
 
@@ -73,7 +77,7 @@ func _draw() -> void:
 	var body := Rect2(outer.position + Vector2(0, neck_h * 0.40), Vector2(outer.size.x, outer.size.y - neck_h * 0.40))
 	var inner := Rect2(body.position + Vector2(7, 10), body.size - Vector2(14, 20))
 	var radius := minf(18.0, body.size.x * 0.30)
-	_draw_glass_shape(Rect2(body.position + Vector2(0, 8), body.size), Color(0, 0, 0, 0.20), Color.TRANSPARENT, radius, 0.0)
+	_draw_glass_shape(Rect2(body.position + Vector2(0, 8), body.size), _materials.contact_shadow(0.20), Color.TRANSPARENT, radius, 0.0)
 	var outline := Color(1, 1, 1, 0.82)
 	if is_selected and pour_mode == 0: outline = Color("fff3b4")
 	if invalid_flash > 0.0: outline = Color("ff4d67")
@@ -88,21 +92,31 @@ func _draw() -> void:
 		var r := Rect2(Vector2(inner.position.x, y + 1.0), Vector2(inner.size.x, slot_h + 1.0))
 		r.position.y += r.size.y * (1.0 - fraction)
 		r.size.y *= fraction
-		var wave := sin(pulse * 10.0 + float(slot) * 1.7) * 2.0 * slosh
+		var wave_strength := 0.0 if MotionSystem.reduced() else 2.0 * slosh
+		var wave := sin(pulse * 10.0 + float(slot) * 1.7) * wave_strength
 		r.position.y += wave
+		var lower_color := _materials.vertical_shade(liquid, 0.76)
+		var upper_color := _materials.vertical_shade(liquid, 0.20)
 		if slot == 0:
 			var style := StyleBoxFlat.new()
-			style.bg_color = liquid
+			style.bg_color = lower_color
 			style.corner_radius_bottom_left = int(radius * 0.52)
 			style.corner_radius_bottom_right = int(radius * 0.52)
 			draw_style_box(style, r)
 		else:
-			draw_rect(r, liquid, true)
-		draw_line(Vector2(r.position.x + 2, r.position.y + 2), Vector2(r.end.x - 2, r.position.y + 2 - wave * 0.3), liquid.lightened(0.28), 2.0, true)
+			draw_rect(r, lower_color, true)
+		# A translucent top-light strip creates a cheap vertical material ramp
+		# without requiring shaders and stays crisp under GL Compatibility.
+		var light_h := minf(7.0, r.size.y * 0.28)
+		if light_h > 1.0:
+			draw_rect(Rect2(r.position, Vector2(r.size.x, light_h)), Color(upper_color, 0.48), true)
+		draw_line(Vector2(r.position.x + 2, r.position.y + 2), Vector2(r.end.x - 2, r.position.y + 2 - wave * 0.3), upper_color.lightened(0.10), 2.0, true)
 	var lip_y := body.position.y + 3.0
 	draw_line(Vector2(body.position.x - 3, lip_y), Vector2(body.end.x + 3, lip_y), outline, 4.0, true)
-	draw_line(Vector2(body.position.x + 9, body.position.y + 18), Vector2(body.position.x + 9, body.end.y - 24), Color(1, 1, 1, 0.28), 3.0, true)
+	var specular_alpha := 0.28
+	var specular_shift := 0.0 if MotionSystem.reduced() else sin(pulse * 0.85) * 2.0
+	draw_line(Vector2(body.position.x + 9 + specular_shift, body.position.y + 18), Vector2(body.position.x + 9 + specular_shift, body.end.y - 24), _materials.glass_highlight(Color.WHITE, specular_alpha), 3.0, true)
 	draw_line(Vector2(body.end.x - 7, body.position.y + 23), Vector2(body.end.x - 7, body.size.y * 0.38 + body.position.y), Color(1, 1, 1, 0.13), 2.0, true)
 	if is_selected and pour_mode == 0:
-		var a := 0.35 + 0.12 * sin(pulse * 5.0)
+		var a := 0.35 if MotionSystem.reduced() else 0.35 + 0.12 * sin(pulse * 5.0)
 		draw_arc(body.get_center(), body.size.x * 0.68, 0, TAU, 42, Color(1.0, 0.88, 0.35, a), 4.0, true)
