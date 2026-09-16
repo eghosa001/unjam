@@ -1,5 +1,18 @@
 extends "res://scripts/ui/premium_main.gd"
 
+func build_home() -> void:
+	# Base navigation replaces/removes the outgoing surface immediately. Bring the
+	# persistent premium surfaces into their final visibility state before this
+	# call returns so Settings/Collection/Game -> Home cannot expose a blank frame
+	# while robust_main's surface_changed signal is waiting for its deferred emit.
+	super.build_home()
+	var live := get_node_or_null("PremiumLive")
+	if live != null and live.has_method("_on_surface_changed"):
+		live.call("_on_surface_changed", "home")
+	var home := get_node_or_null("PremiumHome")
+	if home != null and home.has_method("_on_surface_changed"):
+		home.call("_on_surface_changed", "home")
+
 func add_background() -> void:
 	# Base level builders call add_background() directly. Override it so every
 	# secondary surface uses the final bright backdrop without allocating the
