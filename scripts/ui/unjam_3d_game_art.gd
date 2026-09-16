@@ -1,14 +1,14 @@
 class_name Unjam3DGameArt
 extends SubViewportContainer
 
-# Lightweight real 3D preview used on Home and Choose-a-Game cards. Each game
-# gets its own tiny toy-diorama built with primitive meshes and glossy materials.
+# Lightweight real 3D preview used on Choose-a-Game cards. Each card is a
+# one-shot rendered toy diorama: true lighting/depth without three permanent
+# 3D render loops running behind a scroll view.
 var game_id := "rescue_rush"
 var accent := Unjam3DTheme.GREEN
 var viewport_3d: SubViewport
 var stage: Node3D
 var display_root: Node3D
-var phase := 0.0
 
 func configure(id: String) -> void:
 	game_id = id
@@ -23,16 +23,9 @@ func _ready() -> void:
 	viewport_3d.name = "GamePreviewViewport3D"
 	viewport_3d.size = Vector2i(480, 360)
 	viewport_3d.transparent_bg = true
-	viewport_3d.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	viewport_3d.render_target_update_mode = SubViewport.UPDATE_ONCE
 	add_child(viewport_3d)
 	_build_stage()
-	set_process(true)
-
-func _process(delta: float) -> void:
-	phase += delta
-	if display_root != null:
-		display_root.rotation.y = sin(phase * 0.48) * 0.045
-		display_root.position.y = sin(phase * 1.4) * 0.035
 
 func _rebuild_stage() -> void:
 	if stage != null and is_instance_valid(stage):
@@ -41,6 +34,7 @@ func _rebuild_stage() -> void:
 		display_root = null
 	await get_tree().process_frame
 	_build_stage()
+	viewport_3d.render_target_update_mode = SubViewport.UPDATE_ONCE
 
 func _build_stage() -> void:
 	if viewport_3d == null:
@@ -98,13 +92,11 @@ func _build_rescue_rush() -> void:
 	_add_arrow_tile(Vector3(0.56, 0.34, 1.08), Color("20d86b"), 180.0)
 	_add_arrow_tile(Vector3(-1.74, 0.34, -0.04), Color("c63cff"), -90.0)
 
-	# Rescue character sits in the center of the puzzle board.
 	_add_sphere(display_root, 0.46, Vector3(-0.58, 0.57, -0.02), Color("ffd83d"), Vector3(1.0, 0.96, 1.0))
 	_add_sphere(display_root, 0.06, Vector3(-0.72, 0.68, 0.40), Color("17304a"), Vector3.ONE)
 	_add_sphere(display_root, 0.06, Vector3(-0.44, 0.68, 0.40), Color("17304a"), Vector3.ONE)
 	_add_sphere(display_root, 0.09, Vector3(-0.58, 0.51, 0.43), Color("ff795f"), Vector3(1.35, 0.35, 0.30))
 
-	# Open exit gate gives the preview the same clear-lane story as gameplay.
 	_add_box(display_root, Vector3(0.18, 0.95, 0.18), Vector3(2.78, 0.28, -0.72), Color("fff3d1"), 0.0, 0.34)
 	_add_box(display_root, Vector3(0.18, 0.95, 0.18), Vector3(2.78, 0.28, 0.72), Color("fff3d1"), 0.0, 0.34)
 	_add_box(display_root, Vector3(0.18, 0.18, 1.62), Vector3(2.78, 0.72, 0), Color("ffd83d"), 0.0, 0.30)
@@ -131,7 +123,6 @@ func _build_water_sort() -> void:
 		var x := -1.72 + float(i) * 1.15
 		_add_tube(Vector3(x, 1.22, 0.15), colors[i], float(fill_levels[i]))
 
-	# A tilted source tube and visible stream make this read as Water Sort at a glance.
 	var pour_root := Node3D.new()
 	pour_root.position = Vector3(-0.72, 2.84, -0.40)
 	pour_root.rotation_degrees = Vector3(0, 0, -58)
@@ -169,7 +160,6 @@ func _build_block_puzzle() -> void:
 		var pos := Vector3(-1.72 + float(cell.x) * 1.14, y, -1.16 + float(cell.y) * 1.08)
 		_add_block_cube(pos, c)
 
-	# Three-piece tray in front of the board.
 	_add_block_cube(Vector3(-1.25, 0.33, 2.34), Color("19b9ff"), 0.72)
 	_add_block_cube(Vector3(-0.50, 0.33, 2.34), Color("19b9ff"), 0.72)
 	_add_block_cube(Vector3(0.58, 0.33, 2.34), Color("ffd83d"), 0.72)
