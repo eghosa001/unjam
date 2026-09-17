@@ -141,6 +141,14 @@ func _on_verified(product_id: String, token: String, valid: bool, reason: String
 	var processed: Array = SaveManager.data.get("processed_purchase_tokens", [])
 	var fingerprint := _token_fingerprint(token)
 	if not token.is_empty() and token != "desktop-test" and (fingerprint in processed or token in processed):
+		# Migrate the legacy raw-token ledger before taking the duplicate fast path.
+		# This keeps reconciliation idempotent without retaining a reusable Play token.
+		if token in processed:
+			processed.erase(token)
+			if fingerprint not in processed:
+				processed.append(fingerprint)
+			SaveManager.data.processed_purchase_tokens = processed
+			SaveManager.save()
 		# A crash can happen after local persistence but before Play receives the
 		# consume/acknowledge call. Always retry finalization during reconciliation.
 		_finalize_verified_purchase(token, non_consumable)
