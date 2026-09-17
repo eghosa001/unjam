@@ -1,0 +1,84 @@
+name: Release Candidate AAB
+
+on:
+  push:
+    branches:
+      - release-aab-unjamgam-temp
+
+permissions:
+  contents: read
+
+jobs:
+  build-release-mode-aab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Setup Godot 4.7.2
+        uses: solarlabyrinth/action-setup-godot@v3
+        with:
+          version: 4.7.2-stable
+          export-templates: true
+      - name: Install Android API 36
+        shell: bash
+        run: |
+          set -euxo pipefail
+          ANDROID_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          test -n "$ANDROID_ROOT"
+          SDKMANAGER=$(find "$ANDROID_ROOT/cmdline-tools" -name sdkmanager -type f | sort | tail -1)
+          test -x "$SDKMANAGER"
+          set +o pipefail
+          yes | "$SDKMANAGER" --sdk_root="$ANDROID_ROOT" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+          SDK_STATUS=${PIPESTATUS[1]}
+          set -o pipefail
+          test "$SDK_STATUS" -eq 0
+          echo "ANDROID_HOME=$ANDROID_ROOT" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_ROOT" >> "$GITHUB_ENV"
+      - name: Install monetization plugins
+        shell: bash
+        run: |
+          set -euxo pipefail
+          chmod +x tools/install_monetization_plugins.sh
+          tools/install_monetization_plugins.sh
+      - name: Import project
+        shell: bash
+        run: |
+          set -o pipefail
+          godot --headless --path . --editor --quit 2>&1 | tee import-release-candidate.log
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" import-release-candidate.log; then exit 1; fi
+      - name: Prepare disposable release signing key
+        shell: bash
+        run: |
+          set -euxo pipefail
+          KEYSTORE="$RUNNER_TEMP/unjam-temp-release.keystore"
+          keytool -genkeypair -v -keystore "$KEYSTORE" -storepass unjam-ci-temp -alias temp-release -keypass unjam-ci-temp -keyalg RSA -keysize 2048 -validity 30 -dname "CN=UNJAM Temporary CI Release,O=UNJAM,C=NG"
+          echo "GODOT_ANDROID_KEYSTORE_RELEASE_PATH=$KEYSTORE" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_RELEASE_USER=temp-release" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=unjam-ci-temp" >> "$GITHUB_ENV"
+      - name: Export release-mode AAB
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p build/android
+          godot --headless --verbose --path . --install-android-build-template --export-release Android build/android/unjam-release-temp-signed.aab 2>&1 | tee android-release-candidate.log
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" android-release-candidate.log; then exit 1; fi
+          test -s build/android/unjam-release-temp-signed.aab
+          jarsigner -verify -verbose -certs build/android/unjam-release-temp-signed.aab > build/android/temp-signature-verify.txt
+          unzip -t build/android/unjam-release-temp-signed.aab > build/android/aab-zip-test.txt
+          sha256sum build/android/unjam-release-temp-signed.aab > build/android/temp-aab.sha256
+      - name: Upload release-mode AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: unjam-release-mode-aab-temp-signed
+          path: |
+            build/android/unjam-release-temp-signed.aab
+            build/android/temp-signature-verify.txt
+            build/android/aab-zip-test.txt
+            build/android/temp-aab.sha256
+          if-no-files-found: error
+          retention-days: 2
