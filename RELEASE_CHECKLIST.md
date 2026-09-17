@@ -16,6 +16,8 @@ Configured in code/CI:
 - [x] Poing Godot AdMob 5.1.0 and its Godot 4.7.2 Android native package are pinned in the CI installer.
 - [x] GodotGooglePlayBilling 3.3.0 is pinned in the CI installer.
 - [x] Play Billing connection, localized product-price query, purchase, restore, consume, and acknowledge paths are implemented.
+- [x] Local purchase-token history stores SHA-256 fingerprints rather than reusable raw Play purchase tokens.
+- [x] Resetting gameplay progress preserves Play-owned non-consumable entitlements and local duplicate-grant history.
 - [x] `docs/app-ads.txt` contains the AdMob publisher record.
 - [x] Privacy policy source exists at `docs/privacy.html`.
 
@@ -24,6 +26,7 @@ Still account-side / external:
 - [ ] Publish `app-ads.txt` at the **root hostname** of the developer website used in the Play listing (for example `https://example.com/app-ads.txt`). Keeping it only inside this repository is not enough for AdMob crawling.
 - [ ] Publish the privacy policy at the configured public URL and confirm it is reachable without login.
 - [ ] Set an HTTPS `purchase_verification_url` backed by Google Play Developer API verification. Production purchases intentionally fail closed until this exists.
+- [ ] Make the purchase-verification backend idempotent by Google Play transaction/purchase token. In particular, `unjam_starter_pack` must not grant its 1,000 coins again after reinstall, app-data clear, restore on another device, retry, or duplicate callback; the server must be the durable source of truth for whether a non-consumable grant was already applied.
 - [ ] Create `unjam_remove_ads`, `unjam_starter_pack`, `unjam_coins_500`, `unjam_coins_1500`, and `unjam_coins_4000` as one-time products in Play Console.
 - [ ] Configure the matching product prices in Play Console.
 - [ ] Complete Play Console Data Safety based on the exact production SDK set.
@@ -33,6 +36,7 @@ Still account-side / external:
 - [ ] Link the published Google Play listing back to the AdMob app and wait for AdMob app-readiness/app-ads verification.
 - [ ] Keep release keystore path, alias and passwords only in CI/Play secrets; never commit them.
 - [ ] Upload the AAB to Play Internal Testing and test purchase success, cancel, pending, restore, refund, repeat consumable purchase, offline behavior, rewarded-ad success/failure, and consent flows with license testers.
+- [ ] Explicitly test reinstall/app-data-clear and second-device restore so the backend proves that non-consumable entitlements restore without duplicating one-time coin grants.
 - [ ] Increment `version/code` for every Play upload.
 
 ## Code-side release gates
@@ -42,7 +46,7 @@ Still account-side / external:
 - Difficulty stays intentionally variable within each 25-level chapter, while later worlds raise the baseline difficulty. Every 25th level is a milestone and every 100th is a boss.
 - Save data is sanitized, backed up and written through a temporary file before replacement.
 - Release builds do not emit the development analytics event stream.
-- CI must pass project import, all validation suites, boot smoke, Android API 36 APK export and Android API 36 AAB export on the exact release commit.
+- CI must pass project import, all validation suites, boot smoke, rendered visual audit, Android API 36 APK export and Android API 36 AAB export on the exact release commit.
 
 ## Google Play store listing assets
 
@@ -62,4 +66,4 @@ Do not change a truthful declaration merely to bypass review. If a genuinely use
 
 ## Production decision
 
-Do not submit to Production until the exact release commit is green in CI, the final AAB passes Internal Testing, the previous organization-only declaration issue is resolved accurately, the privacy/Data Safety/ads declarations match the shipped build, the purchase-verification backend is live, and app-ads.txt is reachable at the root hostname of the developer website.
+Do not submit to Production until the exact release commit is green in CI, the final AAB passes Internal Testing, the previous organization-only declaration issue is resolved accurately, the privacy/Data Safety/ads declarations match the shipped build, the purchase-verification backend is live and idempotent across reinstall/device restore, and app-ads.txt is reachable at the root hostname of the developer website.
