@@ -3,6 +3,14 @@ extends Node
 signal premium_reward(reward: Dictionary)
 
 const SAVE_PATH := "user://unjam_save.json"
+const RESET_PRESERVED_KEYS := [
+	"remove_ads",
+	"starter_pack_purchased",
+	"purchased_products",
+	"processed_purchase_tokens",
+	"lifetime_purchased_coins"
+]
+
 const DEFAULT_DATA := {
 	"highest_level": 1,
 	"stars": {},
@@ -142,5 +150,14 @@ func complete_daily(date_key: String, reward: int = 100) -> bool:
 	if data.daily_completed.size() > 45: data.daily_completed = data.daily_completed.slice(data.daily_completed.size() - 45)
 	data.coins = int(data.coins) + reward; save(); return true
 func reset_progress() -> void:
-	data = DEFAULT_DATA.duplicate(true); save()
+	# Reset gameplay progression without erasing Play-owned entitlements or the
+	# local transaction ledger used to prevent duplicate non-consumable grants.
+	var preserved: Dictionary = {}
+	for key in RESET_PRESERVED_KEYS:
+		var value = data.get(key, DEFAULT_DATA.get(key))
+		preserved[key] = value.duplicate(true) if value is Array or value is Dictionary else value
+	data = DEFAULT_DATA.duplicate(true)
+	for key in RESET_PRESERVED_KEYS:
+		data[key] = preserved[key]
+	save()
 	if get_node_or_null("/root/RetentionManager") != null: RetentionManager.ensure_state()
