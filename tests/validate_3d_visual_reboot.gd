@@ -11,7 +11,7 @@ func _initialize() -> void:
 	_check("res://scripts/ui/premium_home_casual.gd", ["UNJAM", "build_home_launcher", "_make_sign_stack", "_make_motto", "_make_bottom_nav", "_open_game_selector", "Unjam3DBackdrop", "Unjam3DMascot"], failures)
 	_check("res://scripts/ui/premium_live_hub_3d.gd", ["CHOOSE A GAME", "Unjam3DGameArt", "_add_game_card"], failures)
 	_check("res://scripts/ui/premium_main_casual.gd", ["Settings3DDiorama", "Collection3DDiorama", "Levels3DDiorama", "Unjam3DGameArt.new()", "func _level_column_count"], failures)
-	_check("res://scripts/ui/monetization_hub_3d.gd", ["UNJAM SHOP", "Unjam3DBackdrop", "POWER UP YOUR JOURNEY"], failures)
+	_check("res://scripts/ui/monetization_hub_3d.gd", ["UNJAM SHOP", "Unjam3DBackdrop", "COIN PACKS", "Use coins for hints, extra tubes and collection upgrades"], failures)
 	_check("res://scripts/ui/retention_hub_3d.gd", ["_apply_3d_retention_skin", "Unjam3DBackdrop"], failures)
 	_check("res://scripts/ui/premium_result_overlay.gd", ["ResultCard3D", "ONE MOVE CLOSER", "Unjam3DTheme"], failures)
 	_check("res://scripts/ui/ux_shell_casual.gd", ["_restyle_3d_shell", "Unjam3DTheme"], failures)
@@ -19,16 +19,18 @@ func _initialize() -> void:
 	_check("res://scripts/ui/premium_piece_button.gd", ["chunky toy depth", "Unjam3DTheme.GOLD"], failures)
 
 	_check("res://scripts/game/rescue_rush_casual.gd", ["Unjam3DGameplayStage", "rescue_rush", "CLEAR THE LANE", "RESTART"], failures)
+	_check("res://scripts/game/rescue_rush_assisted.gd", ["extends \"res://scripts/game/rescue_rush_casual.gd\"", "can_show_hint", "show_hint"], failures)
 	_check("res://scripts/game/rescue_rush_motion_final.gd", ["viewport.size_changed.connect(_queue_board_fit)", "_fit_board_to_viewport"], failures)
 	_check("res://scripts/game/water_sort_casual.gd", ["Unjam3DGameplayStage", "water_sort", "SORT • POUR • SOLVE", "RESTART"], failures)
+	_check("res://scripts/game/water_sort_assisted.gd", ["extends \"res://scripts/game/water_sort_casual.gd\"", "EXTRA_TUBE_COST := 75", "level_config"], failures)
 	_check("res://scripts/game/water_sort_ultra_motion.gd", ["viewport.size_changed.connect(_queue_tube_layout)", "_apply_tube_layout"], failures)
 	_check("res://scripts/game/block_puzzle_3d.gd", ["Unjam3DGameplayStage", "block_puzzle", "DRAG • PLACE • CLEAR", "board_shell", "viewport.size_changed.connect(_queue_board_fit)", "_fit_3d_board_layout"], failures)
 
 	_check("res://scenes/Main.tscn", ["premium_live_hub_3d.gd", "monetization_hub_3d.gd", "PremiumHome", "PremiumLive", "MotionDirector"], failures)
 	_check_absent("res://scenes/Main.tscn", ["level_browser_polish.gd", "LevelBrowserPolish"], failures)
-	_check("res://scenes/Game.tscn", ["rescue_rush_casual.gd"], failures)
+	_check("res://scenes/Game.tscn", ["rescue_rush_assisted.gd", "ui_touch_enhancer_casual.gd"], failures)
 	_check_absent("res://scenes/Game.tscn", ["rescue_layout_polish.gd", "RescueLayoutPolish", "rescue_result_guard.gd"], failures)
-	_check("res://scenes/WaterSort.tscn", ["water_sort_casual.gd", "ui_touch_enhancer_casual.gd"], failures)
+	_check("res://scenes/WaterSort.tscn", ["water_sort_assisted.gd", "ui_touch_enhancer_casual.gd"], failures)
 	_check_absent("res://scenes/WaterSort.tscn", ["water_stage_polish.gd", "WaterStagePolish"], failures)
 	_check("res://scenes/BlockPuzzle.tscn", ["block_puzzle_final_polish.gd", "ui_touch_enhancer_casual.gd"], failures)
 	_check_absent("res://scenes/BlockPuzzle.tscn", ["puzzle_casual_polish.gd", "PuzzleCasualPolish"], failures)
@@ -57,7 +59,7 @@ func _initialize() -> void:
 			push_error(failure)
 		quit(1)
 		return
-	print("3D visual reboot contract validated: bright hybrid 3D surfaces, single-owner gameplay layouts and retired flat/duplicate paths removed.")
+	print("3D visual reboot contract validated: bright hybrid 3D surfaces, assisted gameplay wrappers, single-owner gameplay layouts and retired flat/duplicate paths removed.")
 	quit(0)
 
 func _read(path: String) -> String:

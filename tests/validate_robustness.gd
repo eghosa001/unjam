@@ -34,6 +34,7 @@ func _run() -> void:
 		errors.append("Required production autoload missing")
 		_finish(errors)
 		return
+	var original_processed_tokens: Array = (save_manager.data.get("processed_purchase_tokens", []) as Array).duplicate(true)
 	for level_number in [11, 25, 100, 101, 999, 2500, 5000, 7500, 9999, 10000]:
 		var level: Dictionary = Generator.generate(level_number)
 		if not Solver.has_solution(level, 6000):
@@ -48,7 +49,16 @@ func _run() -> void:
 	if int(save_manager.data.perfect_clears) != 1: errors.append("Replay incorrectly increments unique perfect count")
 	if int(first.get("base_coins", -1)) != 75: errors.append("First-clear reward accounting is incorrect")
 	if int(second.get("base_coins", -1)) != 0: errors.append("Replay reward duplication protection failed")
-	if int(save_manager.data.get("save_version", 0)) < 3: errors.append("Robust save version is missing")
+	if int(save_manager.data.get("save_version", 0)) < 10: errors.append("Robust save version 10 purchase-token migration is missing")
+	var legacy_token := "qa-legacy-raw-token-at-save-boundary"
+	var fingerprint := legacy_token.sha256_text()
+	save_manager.data.processed_purchase_tokens = [legacy_token, fingerprint.to_upper()]
+	save_manager.call("_sanitize")
+	var sanitized_tokens: Array = save_manager.data.get("processed_purchase_tokens", [])
+	if legacy_token in sanitized_tokens: errors.append("Raw Play purchase token survived save sanitization")
+	if sanitized_tokens.count(fingerprint) != 1: errors.append("Purchase-token sanitization did not deduplicate to one SHA-256 fingerprint")
+	save_manager.data.processed_purchase_tokens = original_processed_tokens
+	save_manager.save()
 	ads.completed_since_interstitial = 0
 	ads.set_ads_enabled(true)
 	for i in range(ads.interstitial_interval): ads.note_level_completed()
@@ -64,5 +74,5 @@ func _finish(errors: Array[String]) -> void:
 		printerr("Production robustness validation failed with %d issue(s)." % errors.size())
 		quit(1)
 		return
-	print("Production robustness validated: solvability, daily challenge, save accounting, ad pacing, retention invariants and production cleanup.")
+	print("Production robustness validated: solvability, daily challenge, save accounting, token privacy, ad pacing, retention invariants and production cleanup.")
 	quit(0)

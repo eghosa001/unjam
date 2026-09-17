@@ -23,6 +23,7 @@ func run() -> void:
 	var original_purchased: Array = (save.data.get("purchased_products", []) as Array).duplicate(true)
 	var original_tokens: Array = (save.data.get("processed_purchase_tokens", []) as Array).duplicate(true)
 	var original_remove := bool(save.data.get("remove_ads", false))
+	var original_coins := int(save.data.get("coins", 0))
 
 	# Use a deliberately unreachable local HTTPS endpoint so verification is
 	# asynchronous and then fails. The critical contract is that Restore must not
@@ -57,6 +58,20 @@ func run() -> void:
 		expect_true(int(restore_events[0]) == 0, "Failed verification was incorrectly counted as a restored entitlement")
 	expect_true(not bool(save.data.get("remove_ads", false)), "Failed restore verification granted Remove Ads")
 
+	# Older builds could persist the raw Play purchase token. A duplicate verified
+	# transaction must migrate that bearer-like credential to its SHA-256 fingerprint
+	# without granting the product again.
+	var legacy_token := "qa-legacy-raw-purchase-token"
+	var legacy_fingerprint := legacy_token.sha256_text()
+	save.data.processed_purchase_tokens = [legacy_token]
+	save.data.coins = original_coins
+	save.save()
+	store.call("_on_verified", store.PRODUCT_COINS_SMALL, legacy_token, true, "verified")
+	var migrated_tokens: Array = save.data.get("processed_purchase_tokens", [])
+	expect_true(legacy_token not in migrated_tokens, "Legacy raw purchase token remained persisted after duplicate verification")
+	expect_true(legacy_fingerprint in migrated_tokens, "Legacy raw purchase token was not replaced by its SHA-256 fingerprint")
+	expect_true(int(save.data.get("coins", 0)) == original_coins, "Legacy token migration re-granted a consumable purchase")
+
 	# Main's Shop must listen for the settled restore result so the UI cannot stay
 	# permanently on 'Checking Google Play purchases…'.
 	var main := (load("res://scenes/Main.tscn") as PackedScene).instantiate() as Control
@@ -84,6 +99,7 @@ func run() -> void:
 	save.data.purchased_products = original_purchased
 	save.data.processed_purchase_tokens = original_tokens
 	save.data.remove_ads = original_remove
+	save.data.coins = original_coins
 	save.save()
 	_finish()
 

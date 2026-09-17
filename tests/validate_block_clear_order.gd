@@ -7,10 +7,22 @@ func _initialize() -> void:
 		quit(1)
 		return
 	var scene_source := scene_file.get_as_text()
-	if not scene_source.contains("block_puzzle_3d.gd") or scene_source.contains("block_puzzle_3d_clear.gd"):
-		push_error("Block Puzzle clear transaction is not consolidated into the active 3D layer")
+	if not scene_source.contains("block_puzzle_final_polish.gd") or scene_source.contains("block_puzzle_3d_clear.gd"):
+		push_error("Block Puzzle active scene is not using the final polish wrapper or still references the retired clear layer")
 		quit(1)
 		return
+
+	var polish_file := FileAccess.open("res://scripts/game/block_puzzle_final_polish.gd", FileAccess.READ)
+	if polish_file == null:
+		push_error("Block Puzzle final polish source is missing")
+		quit(1)
+		return
+	var polish_source := polish_file.get_as_text()
+	if not polish_source.contains('extends "res://scripts/game/block_puzzle_3d.gd"'):
+		push_error("Block Puzzle final polish wrapper no longer inherits the active 3D gameplay layer")
+		quit(1)
+		return
+
 	var file := FileAccess.open("res://scripts/game/block_puzzle_3d.gd", FileAccess.READ)
 	if file == null:
 		push_error("Block Puzzle 3D source is missing")
@@ -28,5 +40,5 @@ func _initialize() -> void:
 		push_error("Block Puzzle commits cleared cells before the clear animation finishes")
 		quit(1)
 		return
-	print("Block Puzzle clear ordering validated in the active 3D layer.")
+	print("Block Puzzle clear ordering validated through the final-polish wrapper and active 3D layer.")
 	quit(0)

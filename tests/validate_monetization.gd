@@ -30,6 +30,17 @@ func run() -> void:
 	var original_remove := bool(save_manager.data.get("remove_ads", false))
 	var original_rewarded := int(save_manager.data.get("rewarded_ads_watched", 0))
 	var original_hints := int(save_manager.data.get("hints_used", 0))
+	var original_starter := bool(save_manager.data.get("starter_pack_purchased", false))
+	var original_lifetime_purchased := int(save_manager.data.get("lifetime_purchased_coins", 0))
+	var original_purchased: Array = (save_manager.data.get("purchased_products", []) as Array).duplicate(true)
+	var original_tokens: Array = (save_manager.data.get("processed_purchase_tokens", []) as Array).duplicate(true)
+	var original_decorations: Array = (save_manager.data.get("decorations", []) as Array).duplicate(true)
+	var original_sound := bool(save_manager.data.get("sound", true))
+	var original_vibration := bool(save_manager.data.get("vibration", true))
+	var original_music := bool(save_manager.data.get("music", true))
+	var original_reduce_motion := bool(save_manager.data.get("reduce_motion", false))
+	var original_fast_animation := bool(save_manager.data.get("fast_animation", false))
+	var original_privacy_status := String(save_manager.data.get("privacy_consent_status", "unknown"))
 
 	expect_true(store_manager.PRODUCTS.has(store_manager.PRODUCT_REMOVE_ADS), "remove ads product missing")
 	expect_true(store_manager.PRODUCTS.has(store_manager.PRODUCT_STARTER_PACK), "starter pack missing")
@@ -102,13 +113,58 @@ func run() -> void:
 		if String(multi_game.difficulty_for_level(n)) == "hard": late_hard += 1
 	expect_true(late_hard > early_hard, "Late-game baseline difficulty is not higher than early-game baseline")
 
+	# "Reset Progress" must reset gameplay only. Because purchased and earned
+	# coins share one wallet, destroying the wallet can destroy paid value. Keep
+	# wallet value, permanent decorations, user preferences, consent state, ad
+	# history and Play-owned purchase records while level progression resets.
+	var qa_token_fingerprint := "qa-reset-purchase-token".sha256_text()
+	save_manager.data.coins = 777
+	save_manager.data.decorations = ["qa_permanent_decoration"]
+	save_manager.data.sound = false
+	save_manager.data.vibration = false
+	save_manager.data.music = false
+	save_manager.data.reduce_motion = true
+	save_manager.data.fast_animation = true
+	save_manager.data.privacy_consent_status = "not_required"
+	save_manager.data.rewarded_ads_watched = 12
+	save_manager.data.remove_ads = true
+	save_manager.data.starter_pack_purchased = true
+	save_manager.data.purchased_products = [store_manager.PRODUCT_REMOVE_ADS, store_manager.PRODUCT_STARTER_PACK]
+	save_manager.data.processed_purchase_tokens = [qa_token_fingerprint]
+	save_manager.data.lifetime_purchased_coins = 4321
+	save_manager.call("reset_progress")
+	expect_true(int(save_manager.data.get("coins", -1)) == 777, "Reset Progress erased the wallet, which can contain paid coins")
+	expect_true("qa_permanent_decoration" in (save_manager.data.get("decorations", []) as Array), "Reset Progress erased permanent decorations")
+	expect_true(not bool(save_manager.data.get("sound", true)), "Reset Progress erased the sound preference")
+	expect_true(not bool(save_manager.data.get("vibration", true)), "Reset Progress erased the vibration preference")
+	expect_true(not bool(save_manager.data.get("music", true)), "Reset Progress erased the music preference")
+	expect_true(bool(save_manager.data.get("reduce_motion", false)), "Reset Progress erased the reduced-motion preference")
+	expect_true(bool(save_manager.data.get("fast_animation", false)), "Reset Progress erased the fast-animation preference")
+	expect_true(String(save_manager.data.get("privacy_consent_status", "unknown")) == "not_required", "Reset Progress erased the privacy consent state")
+	expect_true(int(save_manager.data.get("rewarded_ads_watched", 0)) == 12, "Reset Progress erased rewarded-ad accounting")
+	expect_true(bool(save_manager.data.get("remove_ads", false)), "Reset Progress erased the Remove Ads entitlement")
+	expect_true(bool(save_manager.data.get("starter_pack_purchased", false)), "Reset Progress erased the Starter Pack entitlement")
+	expect_true(store_manager.PRODUCT_REMOVE_ADS in (save_manager.data.get("purchased_products", []) as Array), "Reset Progress erased the purchased Remove Ads record")
+	expect_true(store_manager.PRODUCT_STARTER_PACK in (save_manager.data.get("purchased_products", []) as Array), "Reset Progress erased the purchased Starter Pack record")
+	expect_true(qa_token_fingerprint in (save_manager.data.get("processed_purchase_tokens", []) as Array), "Reset Progress erased processed purchase-token fingerprints")
+	expect_true(int(save_manager.data.get("lifetime_purchased_coins", 0)) == 4321, "Reset Progress erased lifetime purchased-coin accounting")
+
 	# Restore persistent QA state.
 	save_manager.data.coins = original_coins
 	save_manager.data.remove_ads = original_remove
 	save_manager.data.rewarded_ads_watched = original_rewarded
 	save_manager.data.hints_used = original_hints
-	save_manager.data.purchased_products = []
-	save_manager.data.processed_purchase_tokens = []
+	save_manager.data.starter_pack_purchased = original_starter
+	save_manager.data.lifetime_purchased_coins = original_lifetime_purchased
+	save_manager.data.purchased_products = original_purchased
+	save_manager.data.processed_purchase_tokens = original_tokens
+	save_manager.data.decorations = original_decorations
+	save_manager.data.sound = original_sound
+	save_manager.data.vibration = original_vibration
+	save_manager.data.music = original_music
+	save_manager.data.reduce_motion = original_reduce_motion
+	save_manager.data.fast_animation = original_fast_animation
+	save_manager.data.privacy_consent_status = original_privacy_status
 	ad_manager.ads_enabled = not original_remove
 	save_manager.save()
 
