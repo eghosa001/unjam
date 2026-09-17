@@ -9,6 +9,10 @@ var _attached_games := {}
 
 func _ready() -> void:
 	get_tree().node_added.connect(_on_node_added)
+	var economy := _economy()
+	var balance_callback := Callable(self, "_on_balance_changed")
+	if economy != null and economy.has_signal("balance_changed") and not economy.is_connected("balance_changed", balance_callback):
+		economy.connect("balance_changed", balance_callback)
 	call_deferred("_scan_existing")
 
 func _save() -> Node:
@@ -167,11 +171,36 @@ func _attach_game(game: Node) -> void:
 		var callback: Callable = connection.get("callable", Callable())
 		if callback.is_valid() and button.pressed.is_connected(callback):
 			button.pressed.disconnect(callback)
-	button.text = "✦  HINT • %d" % HINT_COST if "✦" in button.text else "HINT • %d" % HINT_COST
-	button.tooltip_text = "Costs %d coins. Balance: %d. If you are short, Shop or an optional rewarded ad can help." % [HINT_COST, coin_balance()]
+	if not button.has_meta("unjam_hint_prefix"):
+		var prefix := ""
+		if "✦" in button.text:
+			prefix = "✦  "
+		elif "💡" in button.text:
+			prefix = "💡  "
+		button.set_meta("unjam_hint_prefix", prefix)
+	button.custom_minimum_size.y = maxf(button.custom_minimum_size.y, 116.0)
 	button.pressed.connect(request_hint_for_game.bind(game))
-	_attached_games[id] = true
+	_attached_games[id] = game
+	_refresh_hint_button(game, button)
 	game.tree_exited.connect(func() -> void: _attached_games.erase(id), CONNECT_ONE_SHOT)
+
+func _refresh_hint_button(game: Node, button: Button = null) -> void:
+	if game == null or not is_instance_valid(game):
+		return
+	var target := button if button != null else _find_hint_button(game)
+	if target == null:
+		return
+	var prefix := String(target.get_meta("unjam_hint_prefix", ""))
+	target.text = "%sHINT • %d\n◈ %d" % [prefix, HINT_COST, coin_balance()]
+	target.tooltip_text = "Costs %d coins. Balance: %d. If you are short, Shop or an optional rewarded ad can help." % [HINT_COST, coin_balance()]
+
+func _on_balance_changed(_new_balance: int, _delta: int, _reason: String) -> void:
+	for id in _attached_games.keys().duplicate():
+		var game = _attached_games.get(id)
+		if game == null or not is_instance_valid(game):
+			_attached_games.erase(id)
+			continue
+		_refresh_hint_button(game)
 
 func _find_hint_button(node: Node) -> Button:
 	for child in node.get_children():
