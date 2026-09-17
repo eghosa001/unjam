@@ -2,7 +2,9 @@ extends "res://scripts/ui/premium_home_overhaul.gd"
 
 # Reference-composed Home: fantasy waterfall world, oversized colorful branding,
 # explorer sign stack, a real-time 3D mascot, one dominant PLAY action, stone
-# motto and a chunky four-item bottom navigation bar.
+# motto and a chunky five-item bottom navigation bar.
+
+var home_coin_button: Button
 
 func build_home_launcher() -> void:
 	for child in get_children():
@@ -12,6 +14,8 @@ func build_home_launcher() -> void:
 	built = true
 	visible = true
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	if not EconomyManager.balance_changed.is_connected(_on_economy_balance_changed):
+		EconomyManager.balance_changed.connect(_on_economy_balance_changed)
 
 	var dark_mode := _theme_mode() == "dark"
 	var viewport_size := get_viewport_rect().size
@@ -77,7 +81,8 @@ func _make_status_bar(parent: VBoxContainer) -> void:
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bar.add_child(spacer)
-	bar.add_child(_make_badge("●  %s  +" % _compact_number(int(SaveManager.data.get("coins", 0))), Unjam3DTheme.ORANGE))
+	home_coin_button = _make_shop_badge()
+	bar.add_child(home_coin_button)
 	bar.add_child(_make_badge("★  %s  +" % _compact_number(_total_stars()), Unjam3DTheme.GOLD))
 
 func _make_badge(text_value: String, fill: Color) -> PanelContainer:
@@ -95,6 +100,22 @@ func _make_badge(text_value: String, fill: Color) -> PanelContainer:
 	Unjam3DTheme.label_3d(label, Color.WHITE, fill.darkened(0.46), 3)
 	badge.add_child(label)
 	return badge
+
+func _make_shop_badge() -> Button:
+	var viewport_size := get_viewport_rect().size
+	var button := Button.new()
+	button.name = "HomeCoinShopButton"
+	button.text = "●  %s  +" % _compact_number(EconomyManager.balance())
+	button.tooltip_text = "Coins • Open Shop"
+	button.custom_minimum_size = Vector2(136.0 if viewport_size.x < 600.0 else (178.0 if viewport_size.x < 800.0 else 190.0), 54.0 if viewport_size.y < 1100.0 else 68.0)
+	button.add_theme_font_size_override("font_size", 16 if viewport_size.x < 600.0 else 21)
+	Unjam3DTheme.gloss_button(button, Unjam3DTheme.ORANGE, true, 27, _theme_mode() == "dark")
+	button.pressed.connect(_open_shop)
+	return button
+
+func _on_economy_balance_changed(new_balance: int, _delta: int, _reason: String) -> void:
+	if home_coin_button != null and is_instance_valid(home_coin_button):
+		home_coin_button.text = "●  %s  +" % _compact_number(new_balance)
 
 func _make_brand_logo(parent: VBoxContainer) -> void:
 	var viewport_size := get_viewport_rect().size
@@ -246,26 +267,40 @@ func _make_bottom_nav() -> void:
 	add_child(nav)
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override("separation", 8)
+	row.add_theme_constant_override("separation", 6)
 	nav.add_child(row)
 	var entries: Array = [
-		["⌂\nHOME", Callable()],
-		["★\nLEVELS", Callable(self, "_open_journey")],
-		["♥\nCOLLECTION", func(): get_parent().call("build_collection")],
-		["⚙\nSETTINGS", func(): get_parent().call("build_settings")]
+		["⌂\nHOME", Callable(), "HomeNavButton"],
+		["★\nLEVELS", Callable(self, "_open_journey"), "HomeLevelsNavButton"],
+		["●\nSHOP", Callable(self, "_open_shop"), "HomeShopNavButton"],
+		["♥\nCOLLECTION", func(): get_parent().call("build_collection"), "HomeCollectionNavButton"],
+		["⚙\nSETTINGS", func(): get_parent().call("build_settings"), "HomeSettingsNavButton"]
 	]
+	var narrow := get_viewport_rect().size.x < 600.0
 	for i in range(entries.size()):
 		var entry: Array = entries[i]
 		var button := Button.new()
+		button.name = String(entry[2])
 		button.text = String(entry[0])
 		button.custom_minimum_size = Vector2(0, 78)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.add_theme_font_size_override("font_size", 16)
-		Unjam3DTheme.gloss_button(button, Unjam3DTheme.WATER if i == 0 else Color("0d6dc2"), i == 0, 22, _theme_mode() == "dark")
+		button.add_theme_font_size_override("font_size", 13 if narrow else 15)
+		var selected := i == 0
+		var fill := Unjam3DTheme.ORANGE if String(entry[2]) == "HomeShopNavButton" else (Unjam3DTheme.WATER if selected else Color("0d6dc2"))
+		Unjam3DTheme.gloss_button(button, fill, selected or String(entry[2]) == "HomeShopNavButton", 22, _theme_mode() == "dark")
 		var callback: Callable = entry[1]
 		if callback.is_valid():
 			button.pressed.connect(callback)
 		row.add_child(button)
+
+func _open_shop() -> void:
+	var main := get_parent()
+	if main == null:
+		return
+	var hub := main.get_node_or_null("MonetizationHub")
+	if hub != null and hub.has_method("open_shop"):
+		FeedbackManager.tap()
+		hub.call("open_shop")
 
 func _open_game_selector() -> void:
 	var main := get_parent()
