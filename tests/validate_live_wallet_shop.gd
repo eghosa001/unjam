@@ -34,7 +34,9 @@ func run() -> void:
 
 	var live := main.get_node_or_null("PremiumLive")
 	expect_true(live != null and live.visible, "Choose Game live surface did not open")
-	var wallet: Button = live.find_child("LiveCoinShopButton", true, false) as Button if live != null else null
+	var wallet: Button = null
+	if live != null:
+		wallet = live.find_child("LiveCoinShopButton", true, false) as Button
 	expect_true(wallet != null and wallet.visible, "Choose Game has no visible coin Shop action")
 	if wallet != null:
 		expect_true("125" in wallet.text, "Choose Game wallet does not show current balance")
