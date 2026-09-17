@@ -26,7 +26,7 @@ textures/vram_compression/import_etc2_astc=true
 environment/defaults/default_clear_color=Color(0.255, 0.725, 1, 1)
 
 [autoload]
-SaveManager="*res://scripts/core/robust_save_manager.gd"
+SaveManager="*res://scripts/core/economy_save_manager.gd"
 EconomyManager="*res://scripts/systems/economy_manager.gd"
 HintManager="*res://scripts/systems/hint_manager.gd"
 LevelManager="*res://scripts/core/level_manager.gd"
