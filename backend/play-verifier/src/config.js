@@ -1,4 +1,4 @@
-export const PACKAGE_NAME = process.env.UNJAM_PACKAGE_NAME || 'com.eghosa.unjam';
+export const PACKAGE_NAME = process.env.UNJAM_PACKAGE_NAME || 'com.eghosa.unjamgam';
 export const PRODUCTS = Object.freeze({
   unjam_remove_ads: { nonConsumable: true },
   unjam_starter_pack: { nonConsumable: true },
