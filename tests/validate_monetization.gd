@@ -30,6 +30,10 @@ func run() -> void:
 	var original_remove := bool(save_manager.data.get("remove_ads", false))
 	var original_rewarded := int(save_manager.data.get("rewarded_ads_watched", 0))
 	var original_hints := int(save_manager.data.get("hints_used", 0))
+	var original_starter := bool(save_manager.data.get("starter_pack_purchased", false))
+	var original_lifetime_purchased := int(save_manager.data.get("lifetime_purchased_coins", 0))
+	var original_purchased: Array = (save_manager.data.get("purchased_products", []) as Array).duplicate(true)
+	var original_tokens: Array = (save_manager.data.get("processed_purchase_tokens", []) as Array).duplicate(true)
 
 	expect_true(store_manager.PRODUCTS.has(store_manager.PRODUCT_REMOVE_ADS), "remove ads product missing")
 	expect_true(store_manager.PRODUCTS.has(store_manager.PRODUCT_STARTER_PACK), "starter pack missing")
@@ -102,13 +106,32 @@ func run() -> void:
 		if String(multi_game.difficulty_for_level(n)) == "hard": late_hard += 1
 	expect_true(late_hard > early_hard, "Late-game baseline difficulty is not higher than early-game baseline")
 
+	# "Reset Progress" must reset gameplay only. Play-owned non-consumable
+	# entitlements and transaction fingerprints must survive so a restored Starter
+	# Pack cannot be granted a second time after a local progress reset.
+	var qa_token_fingerprint := "qa-reset-purchase-token".sha256_text()
+	save_manager.data.remove_ads = true
+	save_manager.data.starter_pack_purchased = true
+	save_manager.data.purchased_products = [store_manager.PRODUCT_REMOVE_ADS, store_manager.PRODUCT_STARTER_PACK]
+	save_manager.data.processed_purchase_tokens = [qa_token_fingerprint]
+	save_manager.data.lifetime_purchased_coins = 4321
+	save_manager.call("reset_progress")
+	expect_true(bool(save_manager.data.get("remove_ads", false)), "Reset Progress erased the Remove Ads entitlement")
+	expect_true(bool(save_manager.data.get("starter_pack_purchased", false)), "Reset Progress erased the Starter Pack entitlement")
+	expect_true(store_manager.PRODUCT_REMOVE_ADS in (save_manager.data.get("purchased_products", []) as Array), "Reset Progress erased the purchased Remove Ads record")
+	expect_true(store_manager.PRODUCT_STARTER_PACK in (save_manager.data.get("purchased_products", []) as Array), "Reset Progress erased the purchased Starter Pack record")
+	expect_true(qa_token_fingerprint in (save_manager.data.get("processed_purchase_tokens", []) as Array), "Reset Progress erased processed purchase-token fingerprints")
+	expect_true(int(save_manager.data.get("lifetime_purchased_coins", 0)) == 4321, "Reset Progress erased lifetime purchased-coin accounting")
+
 	# Restore persistent QA state.
 	save_manager.data.coins = original_coins
 	save_manager.data.remove_ads = original_remove
 	save_manager.data.rewarded_ads_watched = original_rewarded
 	save_manager.data.hints_used = original_hints
-	save_manager.data.purchased_products = []
-	save_manager.data.processed_purchase_tokens = []
+	save_manager.data.starter_pack_purchased = original_starter
+	save_manager.data.lifetime_purchased_coins = original_lifetime_purchased
+	save_manager.data.purchased_products = original_purchased
+	save_manager.data.processed_purchase_tokens = original_tokens
 	ad_manager.ads_enabled = not original_remove
 	save_manager.save()
 
