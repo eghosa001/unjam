@@ -19,6 +19,8 @@ func _ready() -> void:
 	var main := get_parent()
 	if main != null and main.has_signal("surface_changed"):
 		main.surface_changed.connect(_on_surface_changed)
+	if not EconomyManager.balance_changed.is_connected(_on_economy_balance_changed):
+		EconomyManager.balance_changed.connect(_on_economy_balance_changed)
 	var initial_surface := String(main.get("current_surface")) if main != null and main.get("current_surface") != null else "home"
 	call_deferred("_on_surface_changed", initial_surface)
 
@@ -28,7 +30,6 @@ func _on_surface_changed(surface: String) -> void:
 	if not visible:
 		return
 	_refresh_progress_on_entry()
-
 
 func _refresh_progress_on_entry() -> void:
 	# Progress can change while this persistent selector is hidden behind gameplay.
@@ -44,6 +45,18 @@ func _theme_mode() -> String:
 # Implemented by premium_live_hub_3d.gd.
 func _build() -> void:
 	pass
+
+func _set_wallet_balance(_new_balance: int) -> void:
+	pass
+
+func _on_economy_balance_changed(new_balance: int, _delta: int, _reason: String) -> void:
+	if visible:
+		_set_wallet_balance(new_balance)
+
+func _open_shop() -> void:
+	var hub := get_parent().get_node_or_null("MonetizationHub")
+	if hub != null and hub.has_method("open_shop"):
+		hub.call("open_shop")
 
 func _total_stars() -> int:
 	var total := 0
