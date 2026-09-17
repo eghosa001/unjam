@@ -88,6 +88,16 @@ jobs:
             timeout 45s godot --headless --path . --script "res://tests/$t.gd"
             echo "===== PASS $t ====="
           done
+      - name: Fast flat-board 3D-effects architecture and idle-cost contracts
+        shell: bash
+        run: |
+          set -euxo pipefail
+          for t in validate_flat_gameplay_surfaces validate_hybrid_gameplay_architecture validate_3d_world_isolation validate_gameplay_stage_budget validate_rescue_piece_idle_cost validate_rescue_token_render_lifecycle validate_water_tubes_sleep_idle validate_block_cells_sleep_idle validate_transition_ownership; do
+            echo "===== START $t ====="
+            timeout 45s godot --headless --path . --script "res://tests/$t.gd"
+            echo "===== PASS $t ====="
+          done
+
       - name: Focused gameplay and campaign contracts
         shell: bash
         run: |
