@@ -1,6 +1,7 @@
 extends "res://scripts/game/water_sort_casual.gd"
 
 const WaterSolver = preload("res://scripts/core/water_sort_solver.gd")
+const EXTRA_TUBE_COST := 75
 
 var extra_tube_used := false
 
@@ -41,10 +42,11 @@ func build_ui() -> void:
 			existing.add_theme_font_size_override("font_size", 17)
 	var add_tube := Button.new()
 	add_tube.name = "AddTubeAction"
-	add_tube.text = "+\nTUBE"
+	add_tube.text = "+\nTUBE • %d" % EXTRA_TUBE_COST
 	add_tube.custom_minimum_size = Vector2(0, 116)
 	add_tube.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	add_tube.add_theme_font_size_override("font_size", 17)
+	add_tube.tooltip_text = "Adds one empty tube for this attempt. Costs %d coins." % EXTRA_TUBE_COST
 	Unjam3DTheme.gloss_button(add_tube, Unjam3DTheme.WATER, true, 24)
 	add_tube.pressed.connect(add_extra_tube)
 	actions.add_child(add_tube)
@@ -54,25 +56,42 @@ func load_level() -> void:
 	super.load_level()
 	_refresh_extra_tube_button()
 
-func add_extra_tube() -> void:
+func add_extra_tube() -> bool:
 	if completed:
-		return
+		return false
 	if extra_tube_used:
 		status_label.text = "Extra tube already used on this attempt"
 		FeedbackManager.blocked()
-		return
+		return false
 	if has_method("_has_active_pours") and bool(call("_has_active_pours")):
 		status_label.text = "Finish active pours before adding a tube"
-		return
+		return false
+	if not EconomyManager.spend(EXTRA_TUBE_COST, "extra_tube", {"game": GAME_ID, "level": level_number}):
+		status_label.text = "Need %d coins for an extra tube" % EXTRA_TUBE_COST
+		FeedbackManager.blocked()
+		_show_tube_recovery()
+		_refresh_extra_tube_button()
+		return false
 	history.append({"tubes": tubes.duplicate(true), "moves": moves})
 	tubes.append([])
 	extra_tube_used = true
 	selected = -1
-	status_label.text = "Extra empty tube added"
+	status_label.text = "Extra empty tube added • -%d coins" % EXTRA_TUBE_COST
 	FeedbackManager.tap()
 	render_board()
 	_refresh_extra_tube_button()
 	_save_checkpoint()
+	return true
+
+func _show_tube_recovery() -> bool:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return false
+	var prompt := scene.get_node_or_null("InsufficientCoinsPrompt")
+	if prompt == null or not prompt.has_method("show_for"):
+		return false
+	prompt.call("show_for", "EXTRA TUBE", EXTRA_TUBE_COST, Callable(self, "add_extra_tube"))
+	return true
 
 func show_hint() -> void:
 	if completed or pending_completion:
@@ -120,4 +139,5 @@ func _refresh_extra_tube_button() -> void:
 	if button == null:
 		return
 	button.disabled = extra_tube_used
-	button.text = "✓\nTUBE" if extra_tube_used else "+\nTUBE"
+	button.text = "✓\nTUBE" if extra_tube_used else "+\nTUBE • %d" % EXTRA_TUBE_COST
+	button.tooltip_text = "Already used this attempt" if extra_tube_used else "Costs %d coins • Balance %d" % [EXTRA_TUBE_COST, EconomyManager.balance()]
