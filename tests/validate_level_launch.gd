@@ -73,12 +73,15 @@ func _validate_water(main: Control) -> bool:
 	if board == null or not board is GridContainer:
 		_fail("Water Sort board was not initialized")
 		return false
-	if board.get_child_count() < 6:
-		_fail("Water Sort rendered too few tubes: %d" % board.get_child_count())
-		return false
 	var tubes = game.get("tubes")
 	if not tubes is Array or tubes.is_empty():
 		_fail("Water Sort Level 1 generated no tube data")
+		return false
+	if tubes.size() < 5:
+		_fail("Water Sort Level 1 generated too few tubes: %d" % tubes.size())
+		return false
+	if board.get_child_count() != tubes.size():
+		_fail("Water Sort rendered %d tubes for %d generated tubes" % [board.get_child_count(), tubes.size()])
 		return false
 	return true
 
