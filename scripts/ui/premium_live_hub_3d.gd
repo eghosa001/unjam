@@ -25,7 +25,6 @@ func _build() -> void:
 	var outer := MarginContainer.new()
 	outer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var viewport_size := get_viewport_rect().size
-	var narrow := viewport_size.x < 900.0
 	outer.add_theme_constant_override("margin_left", 20 if viewport_size.x < 600.0 else 34)
 	outer.add_theme_constant_override("margin_right", 20 if viewport_size.x < 600.0 else 34)
 	outer.add_theme_constant_override("margin_top", 28)
@@ -111,7 +110,8 @@ func _add_game_card(parent: VBoxContainer, game_id: String) -> void:
 
 	var viewport_size := get_viewport_rect().size
 	var compact := viewport_size.x < 900.0
-	var card_height := (570.0 if viewport_size.y >= 1200.0 else 500.0) if compact else clampf(viewport_size.y * 0.11 + 237.0, 340.0, 700.0)
+	var layout_height := size.y if size.y > 0.0 else viewport_size.y
+	var card_height := (570.0 if layout_height >= 1200.0 else 500.0) if compact else clampf(layout_height * 0.17 + 132.0, 340.0, 700.0)
 	var panel := PanelContainer.new()
 	panel.name = "GameCard3D_%s" % game_id
 	panel.custom_minimum_size = Vector2(0, card_height)
