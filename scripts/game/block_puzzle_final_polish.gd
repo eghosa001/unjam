@@ -19,6 +19,11 @@ func _ready() -> void:
 	# while narrow devices remain width-limited by the same viewport calculation.
 	_fit_3d_board_layout()
 
+func apply_theme_mode(dark: bool) -> void:
+	var environment := get_node_or_null("BlockPuzzle3DEnvironment") as Unjam3DGameplayStage
+	if environment != null:
+		environment.set_dark_mode(dark)
+
 func _fit_3d_board_layout() -> void:
 	if board_grid == null or board_shell == null or board_grid.get_child_count() == 0:
 		return
