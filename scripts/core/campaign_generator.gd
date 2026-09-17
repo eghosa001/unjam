@@ -91,9 +91,8 @@ static func generate(level_number: int) -> Dictionary:
 	}
 
 static func _generate_onboarding(n: int) -> Dictionary:
-	# Levels 1–12 stay mechanically simple: no gates, bombs or filler maze.
-	# Level 10 retains milestone metadata for the campaign cadence while using
-	# the same readable teaching geometry as its neighbours.
+	# The first ten levels teach the interaction but now alternate easy breathing
+	# rooms with meaningful medium puzzles so the opening does not feel trivial.
 	var size := 5 if n <= 4 else 6
 	var center := Vector2i(int(size / 2), int(size / 2))
 	var target_dir_index := posmod(n - 1, 4)
@@ -105,19 +104,36 @@ static func _generate_onboarding(n: int) -> Dictionary:
 			continue
 		var sealed := center + DIR_VECTORS[i]
 		pieces.append(_piece(sealed.x, sealed.y, "blocker", DIR_NAMES[i]))
+
+	var opening_rhythm := ["easy", "easy", "medium", "easy", "medium", "medium", "easy", "medium", "medium", "hard"]
+	var milestone := "milestone" if n % 10 == 0 else ""
+	var difficulty := String(opening_rhythm[n - 1]) if n <= 10 else "medium"
+	if milestone != "":
+		difficulty = "hard"
 	var lane := _ray_cells(center, target_dir, size)
-	var needed := 1 if n <= 3 else (2 if n <= 8 else mini(3, lane.size()))
-	for i in range(mini(needed, lane.size())):
+	var needed := 1
+	if difficulty == "medium":
+		needed = 2 if n <= 5 else 3
+	elif difficulty == "hard":
+		needed = mini(3, lane.size())
+	elif n >= 4:
+		needed = 2
+	needed = mini(needed, lane.size())
+	for i in range(needed):
 		var pos := lane[i]
 		pieces.append(_piece(pos.x, pos.y, "normal", _perpendicular_direction(target_name, n + i)))
-	var milestone := "milestone" if n % 10 == 0 else ""
-	var difficulty := "hard" if milestone != "" else "easy"
-	var difficulty_score := 11 if milestone != "" else 3 + int(n / 3)
+
+	# Medium opening levels get a few safe, solvable side-lane movers. Later
+	# special mechanics remain reserved for the post-onboarding campaign.
+	if difficulty == "medium" and n >= 5:
+		_add_fillers(pieces, size, center, target_dir, n + 300, 2 + int(n / 3))
+
+	var difficulty_score := 11 if difficulty == "hard" else (7 + int(n / 4) if difficulty == "medium" else 3 + int(n / 4))
 	return {
 		"id": n, "width": size, "height": size, "world": 1, "phase": 1,
 		"campaign_tier": 0, "difficulty": difficulty, "difficulty_label": difficulty, "difficulty_score": difficulty_score,
 		"milestone": milestone, "target_exit": target_name, "estimated_required_moves": needed,
-		"par_moves": needed + 2, "rescue_id": RESCUES[(n * 7 + 1) % RESCUES.size()],
+		"par_moves": needed + 2 + (1 if difficulty == "medium" else 0), "rescue_id": RESCUES[(n * 7 + 1) % RESCUES.size()],
 		"rescue": [center.x, center.y], "pieces": pieces
 	}
 

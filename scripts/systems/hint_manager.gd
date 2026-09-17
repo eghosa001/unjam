@@ -9,10 +9,17 @@ var _attached_games := {}
 
 func _ready() -> void:
 	get_tree().node_added.connect(_on_node_added)
+	var economy := _economy()
+	var balance_callback := Callable(self, "_on_balance_changed")
+	if economy != null and economy.has_signal("balance_changed") and not economy.is_connected("balance_changed", balance_callback):
+		economy.connect("balance_changed", balance_callback)
 	call_deferred("_scan_existing")
 
 func _save() -> Node:
 	return get_node_or_null("/root/SaveManager")
+
+func _economy() -> Node:
+	return get_node_or_null("/root/EconomyManager")
 
 func _ads() -> Node:
 	return get_node_or_null("/root/AdManager")
@@ -21,10 +28,16 @@ func _analytics() -> Node:
 	return get_node_or_null("/root/AnalyticsManager")
 
 func coin_balance() -> int:
+	var economy := _economy()
+	if economy != null:
+		return maxi(0, int(economy.call("balance")))
 	var save := _save()
 	return maxi(0, int(save.data.get("coins", 0))) if save != null else 0
 
 func can_afford_hint() -> bool:
+	var economy := _economy()
+	if economy != null:
+		return bool(economy.call("can_afford", HINT_COST))
 	return coin_balance() >= HINT_COST
 
 func request_hint(placement: String, reveal_hint: Callable, unavailable: Callable = Callable()) -> bool:
@@ -33,9 +46,24 @@ func request_hint(placement: String, reveal_hint: Callable, unavailable: Callabl
 	var save := _save()
 	if save == null:
 		return false
-	if bool(save.call("spend_coins", HINT_COST)):
+	var economy := _economy()
+	var paid := false
+	if economy != null:
+		paid = bool(economy.call("spend", HINT_COST, "hint_%s" % placement, {"placement": placement}))
+	else:
+		paid = bool(save.call("spend_coins", HINT_COST))
+	if paid:
 		_grant(placement, "coins", reveal_hint)
 		return true
+
+	# In the actual Main scene, show a player-controlled recovery choice instead
+	# of silently forcing an ad. Headless/unit contexts without the prompt keep
+	# the legacy optional rewarded fallback so existing monetization contracts and
+	# non-Main test harnesses remain valid.
+	if _show_recovery_prompt(placement, reveal_hint):
+		_track("hint_recovery_prompt", {"placement": placement, "cost": HINT_COST, "balance": coin_balance()})
+		return true
+
 	var ads := _ads()
 	var reward_placement := "hint_%s" % placement
 	var accepted := false
@@ -59,10 +87,10 @@ func request_hint_for_game(game: Node) -> bool:
 	var placement := _game_id(game)
 	var unavailable := Callable(self, "_show_unavailable_on_game").bind(game)
 	if not _can_deliver_hint(game, placement):
-		var reason := "Finish the current move before using a hint."
+		var reason := "No verified useful hint is available from this position. Undo or Retry first."
 		unavailable.call(reason)
 		hint_unavailable.emit(placement, reason)
-		_track("hint_unavailable", {"placement": placement, "balance": coin_balance(), "reason": "game_busy"})
+		_track("hint_unavailable", {"placement": placement, "balance": coin_balance(), "reason": "no_verified_move"})
 		return false
 	return request_hint(placement, Callable(game, "show_hint"), unavailable)
 
@@ -77,9 +105,31 @@ func _can_deliver_hint(game: Node, placement: String) -> bool:
 			var targets = game.get("active_target_tubes")
 			return sources is Dictionary and targets is Dictionary and sources.is_empty() and targets.is_empty()
 		"block_puzzle":
-			return not bool(game.get("completed"))
+			if bool(game.get("completed")):
+				return false
+			if game.has_method("_best_hint_placement"):
+				var best = game.call("_best_hint_placement")
+				if best is Dictionary:
+					var best_dict: Dictionary = best
+					return not best_dict.is_empty()
+				return false
+			return true
 		_:
 			return not bool(game.get("board_locked")) and not bool(game.get("rescued"))
+
+func _show_recovery_prompt(placement: String, reveal_hint: Callable) -> bool:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return false
+	var prompt := scene.get_node_or_null("InsufficientCoinsPrompt")
+	if prompt == null or not prompt.has_method("show_for"):
+		return false
+	var retry := Callable(self, "_retry_hint").bind(placement, reveal_hint)
+	prompt.call("show_for", "%s HINT" % placement.replace("_", " ").to_upper(), HINT_COST, retry)
+	return true
+
+func _retry_hint(placement: String, reveal_hint: Callable) -> bool:
+	return request_hint(placement, reveal_hint)
 
 func _grant(placement: String, source: String, reveal_hint: Callable) -> void:
 	reveal_hint.call()
@@ -121,11 +171,36 @@ func _attach_game(game: Node) -> void:
 		var callback: Callable = connection.get("callable", Callable())
 		if callback.is_valid() and button.pressed.is_connected(callback):
 			button.pressed.disconnect(callback)
-	button.text = "✦  HINT • %d" % HINT_COST if "✦" in button.text else "HINT • %d" % HINT_COST
-	button.tooltip_text = "Costs %d coins. If you are short, an optional rewarded ad can unlock the hint." % HINT_COST
+	if not button.has_meta("unjam_hint_prefix"):
+		var prefix := ""
+		if "✦" in button.text:
+			prefix = "✦  "
+		elif "💡" in button.text:
+			prefix = "💡  "
+		button.set_meta("unjam_hint_prefix", prefix)
+	button.custom_minimum_size.y = maxf(button.custom_minimum_size.y, 116.0)
 	button.pressed.connect(request_hint_for_game.bind(game))
-	_attached_games[id] = true
+	_attached_games[id] = game
+	_refresh_hint_button(game, button)
 	game.tree_exited.connect(func() -> void: _attached_games.erase(id), CONNECT_ONE_SHOT)
+
+func _refresh_hint_button(game: Node, button: Button = null) -> void:
+	if game == null or not is_instance_valid(game):
+		return
+	var target := button if button != null else _find_hint_button(game)
+	if target == null:
+		return
+	var prefix := String(target.get_meta("unjam_hint_prefix", ""))
+	target.text = "%sHINT • %d\n◈ %d" % [prefix, HINT_COST, coin_balance()]
+	target.tooltip_text = "Costs %d coins. Balance: %d. If you are short, Shop or an optional rewarded ad can help." % [HINT_COST, coin_balance()]
+
+func _on_balance_changed(_new_balance: int, _delta: int, _reason: String) -> void:
+	for id in _attached_games.keys().duplicate():
+		var game = _attached_games.get(id)
+		if game == null or not is_instance_valid(game):
+			_attached_games.erase(id)
+			continue
+		_refresh_hint_button(game)
 
 func _find_hint_button(node: Node) -> Button:
 	for child in node.get_children():

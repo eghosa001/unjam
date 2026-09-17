@@ -38,6 +38,9 @@ func _validate_canonical_motion_key() -> bool:
 			return _fail("%s does not use MotionSystem.reduced()" % path)
 		if source.contains('SaveManager.data.get("reduced_motion"'):
 			return _fail("%s still reads legacy reduced_motion directly" % path)
+	var static_surface := _source("res://scripts/ui/premium_surface_manager_static.gd")
+	if not static_surface.contains("func _animate_surface") or static_surface.contains("create_tween"):
+		return _fail("Static surface manager must defer navigation motion to MotionDirector")
 	var settings := _source("res://scripts/ui/premium_main_casual.gd")
 	if settings.contains('SaveManager.data["reduced_motion"]'):
 		return _fail("Settings still writes duplicate reduced_motion key")

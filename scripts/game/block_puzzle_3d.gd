@@ -81,6 +81,15 @@ func build_ui() -> void:
 	Unjam3DTheme.gloss_button(retry, Unjam3DTheme.PURPLE_DARK, true, 24)
 	retry.pressed.connect(restart_level)
 	header.add_child(retry)
+	var hint := Button.new()
+	hint.name = "HintAction"
+	hint.text = "HINT"
+	hint.custom_minimum_size = Vector2(174, 78)
+	hint.add_theme_font_size_override("font_size", 17)
+	Unjam3DTheme.gloss_button(hint, Unjam3DTheme.PURPLE, true, 22)
+	# HintManager owns cost deduction, solver gating, rewarded recovery and the
+	# live wallet label. Leaving this button unbound here prevents a free hint path.
+	header.add_child(hint)
 
 	var score_card := PanelContainer.new()
 	score_card.custom_minimum_size = Vector2(0, 92)

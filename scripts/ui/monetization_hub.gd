@@ -12,8 +12,11 @@ func _ready() -> void:
 	StoreManager.purchase_pending.connect(_on_purchase_pending)
 	StoreManager.purchase_succeeded.connect(_on_purchase_succeeded)
 	StoreManager.purchase_failed.connect(_on_purchase_failed)
+	StoreManager.restore_completed.connect(_on_restore_completed)
 	AdManager.rewarded_completed.connect(_on_rewarded_completed)
 	AdManager.rewarded_failed.connect(_on_rewarded_failed)
+	if not EconomyManager.balance_changed.is_connected(_on_balance_changed):
+		EconomyManager.balance_changed.connect(_on_balance_changed)
 	call_deferred("_build_ui")
 
 func _build_ui() -> void:
@@ -162,19 +165,25 @@ func _close_shop() -> void:
 
 func _refresh() -> void:
 	if balance_label != null:
-		balance_label.text = "%d COINS" % int(SaveManager.data.get("coins", 0))
+		balance_label.text = "%d COINS" % EconomyManager.balance()
+
+func _on_balance_changed(_new_balance: int, _delta: int, _reason: String) -> void:
+	_refresh()
 
 func _watch_rewarded(button: Button) -> void:
 	button.disabled = true
-	status_label.text = "Loading rewarded ad…"
+	if status_label != null:
+		status_label.text = "Loading rewarded ad…"
 	if not AdManager.reward_coins("shop_coins", 50):
 		button.disabled = false
-		status_label.text = "Rewarded ad is not available right now."
+		if status_label != null:
+			status_label.text = "Rewarded ad is not available right now."
 
 func _purchase(product_id: String, button: Button) -> void:
 	button.disabled = true
 	button.text = "PROCESSING…"
-	status_label.text = "Opening Google Play…"
+	if status_label != null:
+		status_label.text = "Opening Google Play…"
 	if not StoreManager.purchase(product_id):
 		button.disabled = false
 		button.text = StoreManager.price_text(product_id)
@@ -186,30 +195,34 @@ func _on_catalog_changed() -> void:
 		call_deferred("_rebuild_shop")
 
 func _on_purchase_pending(_product_id: String, reason: String) -> void:
-	status_label.text = reason + ". You can keep playing while Google Play completes it."
-	call_deferred("_rebuild_shop")
+	call_deferred("_rebuild_shop", reason + ". You can keep playing while Google Play completes it.")
 
 func _on_purchase_succeeded(_product_id: String) -> void:
-	status_label.text = "Purchase confirmed. Thank you!"
 	_refresh()
-	call_deferred("_rebuild_shop")
+	call_deferred("_rebuild_shop", "Purchase confirmed. Thank you!")
 
 func _on_purchase_failed(_product_id: String, reason: String) -> void:
-	status_label.text = reason
-	call_deferred("_rebuild_shop")
+	call_deferred("_rebuild_shop", reason)
+
+func _on_restore_completed(count: int) -> void:
+	var message := "No verified purchases to restore."
+	if count == 1:
+		message = "1 purchase restored."
+	elif count > 1:
+		message = "%d purchases restored." % count
+	_refresh()
+	call_deferred("_rebuild_shop", message)
 
 func _on_rewarded_completed(placement: String) -> void:
 	if placement == "shop_coins":
-		status_label.text = "+50 coins added"
 		_refresh()
-		call_deferred("_rebuild_shop")
+		call_deferred("_rebuild_shop", "+50 coins added")
 
 func _on_rewarded_failed(placement: String, reason: String) -> void:
 	if placement == "shop_coins":
-		status_label.text = reason
-		call_deferred("_rebuild_shop")
+		call_deferred("_rebuild_shop", reason)
 
-func _rebuild_shop() -> void:
+func _rebuild_shop(status_text: String = "") -> void:
 	if overlay == null:
 		return
 	var was_open := overlay.visible
@@ -227,6 +240,8 @@ func _rebuild_shop() -> void:
 	_build_ui()
 	if was_open:
 		overlay.visible = true
+	if status_label != null and not status_text.is_empty():
+		status_label.text = status_text
 
 func _on_node_added(node: Node) -> void:
 	if node == null or not node.has_signal("finished"):
@@ -250,9 +265,10 @@ func _on_puzzle_finished(_level_number: int, game_id: String) -> void:
 		AdManager.show_interstitial()
 
 func _restore_purchases() -> void:
-	status_label.text = "Checking Google Play purchases…"
-	if not StoreManager.restore_purchases():
-		status_label.text = "Restore purchases is available on a Google Play build."
+	if status_label != null:
+		status_label.text = "Checking Google Play purchases…"
+	if not StoreManager.restore_purchases() and status_label != null:
+		status_label.text = "Restore request could not start right now."
 
 func _box(color: Color, radius: int, border: Color = Color.TRANSPARENT, border_width: int = 0) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()

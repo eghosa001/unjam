@@ -1,20 +1,62 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-<defs>
-  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-    <stop stop-color="#172642"/>
-    <stop offset="1" stop-color="#293653"/>
-  </linearGradient>
-  <linearGradient id="mark" x1="0" y1="0" x2="1" y2="1">
-    <stop stop-color="#2dd4b6"/>
-    <stop offset=".5" stop-color="#5da9ff"/>
-    <stop offset="1" stop-color="#8b7cf6"/>
-  </linearGradient>
-</defs>
-<rect width="512" height="512" rx="116" fill="url(#bg)"/>
-<circle cx="256" cy="256" r="150" fill="#101a2b" stroke="#405673" stroke-width="10"/>
-<path d="M166 199v85c0 50 30 82 90 82s90-32 90-82v-85h-50v83c0 25-12 37-40 37s-40-12-40-37v-83z" fill="url(#mark)"/>
-<path d="M132 256h51M329 256h51" stroke="#ffd166" stroke-width="21" stroke-linecap="round"/>
-<circle cx="132" cy="256" r="14" fill="#2dd4b6"/>
-<circle cx="380" cy="256" r="14" fill="#8b7cf6"/>
-<circle cx="256" cy="256" r="171" fill="none" stroke="#ffffff" stroke-opacity=".055" stroke-width="2"/>
+  <!-- Full-square master. Google Play applies its own rounded mask and outer shadow. -->
+  <defs>
+    <linearGradient id="bg" x1="64" y1="32" x2="456" y2="486" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0D3B8F"/>
+      <stop offset="0.48" stop-color="#1467D8"/>
+      <stop offset="1" stop-color="#6A35C8"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientTransform="translate(256 208) rotate(90) scale(230)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7CEFFF" stop-opacity="0.34"/>
+      <stop offset="0.62" stop-color="#5DA9FF" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#12285A" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="rim" x1="140" y1="124" x2="365" y2="393" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8FDFF"/>
+      <stop offset="0.22" stop-color="#A8F7FF"/>
+      <stop offset="0.56" stop-color="#43D8D0"/>
+      <stop offset="1" stop-color="#6D63F2"/>
+    </linearGradient>
+    <linearGradient id="inner" x1="190" y1="150" x2="334" y2="353" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1AE8C6"/>
+      <stop offset="0.5" stop-color="#42B8FF"/>
+      <stop offset="1" stop-color="#9264FF"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="302" y1="213" x2="399" y2="296" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF3A3"/>
+      <stop offset="0.5" stop-color="#FFD25F"/>
+      <stop offset="1" stop-color="#F59D33"/>
+    </linearGradient>
+    <linearGradient id="cube" x1="150" y1="309" x2="221" y2="383" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#CBA8FF"/>
+      <stop offset="1" stop-color="#7C4EE4"/>
+    </linearGradient>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="12"/></filter>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <rect width="512" height="512" fill="url(#glow)"/>
+  <circle cx="86" cy="84" r="102" fill="#21D4C6" opacity="0.10"/>
+  <circle cx="449" cy="420" r="154" fill="#B56BFF" opacity="0.14"/>
+  <circle cx="422" cy="82" r="76" fill="#3DE7FF" opacity="0.10"/>
+  <ellipse cx="256" cy="366" rx="142" ry="36" fill="#051532" opacity="0.34" filter="url(#soft)"/>
+  <circle cx="256" cy="256" r="166" fill="#081C43" opacity="0.70" stroke="#9EEFFF" stroke-opacity="0.22" stroke-width="3"/>
+  <circle cx="256" cy="256" r="147" fill="#0B2B63" opacity="0.72" stroke="#FFFFFF" stroke-opacity="0.10" stroke-width="2"/>
+  <path d="M160 160H217V282C217 317 231 332 256 332C281 332 295 317 295 282V160H352V286C352 351 314 391 256 391C198 391 160 351 160 286V160Z" fill="#061A3A" opacity="0.72" transform="translate(0 10)"/>
+  <path d="M158 151H219V279C219 312 231 326 256 326C281 326 293 312 293 279V151H354V286C354 348 315 383 256 383C197 383 158 348 158 286V151Z" fill="url(#rim)"/>
+  <path d="M179 172H211V282C211 323 228 344 256 344C284 344 301 323 301 282V172H333V282C333 332 304 362 256 362C208 362 179 332 179 282V172Z" fill="url(#inner)"/>
+  <path d="M180 167H210" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" opacity="0.70"/>
+  <path d="M302 167H332" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" opacity="0.54"/>
+  <path d="M286 230H350V204L405 256L350 308V282H286Z" fill="#9C6322" opacity="0.34" transform="translate(0 7)"/>
+  <path d="M286 224H350V198L405 250L350 302V276H286Z" fill="url(#gold)"/>
+  <path d="M306 238H357" stroke="#FFF7C8" stroke-width="8" stroke-linecap="round" opacity="0.66"/>
+  <path d="M244 92C244 92 213 130 213 155C213 180 232 198 256 198C280 198 299 180 299 155C299 130 268 92 268 92L256 78L244 92Z" fill="#0A4477" opacity="0.45" transform="translate(0 7)"/>
+  <path d="M244 86C244 86 215 121 215 151C215 174 233 192 256 192C279 192 297 174 297 151C297 121 268 86 268 86L256 72L244 86Z" fill="#66EBFF"/>
+  <path d="M236 132C242 112 252 102 259 93" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" opacity="0.72"/>
+  <g transform="translate(0 4)">
+    <path d="M145 319L184 295L223 319L184 343L145 319Z" fill="#E2CAFF"/>
+    <path d="M145 319L184 343V390L145 366V319Z" fill="url(#cube)"/>
+    <path d="M223 319L184 343V390L223 366V319Z" fill="#5937B8"/>
+    <path d="M158 322L184 307L210 322" fill="none" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity="0.60"/>
+  </g>
+  <path d="M121 150C169 97 237 76 304 91" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" opacity="0.08"/>
 </svg>

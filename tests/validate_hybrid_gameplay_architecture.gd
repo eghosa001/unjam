@@ -70,7 +70,7 @@ func _initialize() -> void:
 	], failures)
 
 	_check("res://scripts/ui/premium_main_casual.gd", [
-		"grid.columns = 4",
+		"func _level_column_count",
 		"_highest_level_for_game"
 	], failures)
 	_check("res://scripts/ui/ux_shell_premium.gd", [

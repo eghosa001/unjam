@@ -19,6 +19,7 @@ func restart_level() -> void:
 		add_child(enhancer)
 
 func build_ui() -> void:
+	clip_contents = true
 	var world: int = int(level_data.get("world", 1))
 	var environment_3d := Unjam3DGameplayStage.new()
 	environment_3d.name = "RescueRush3DEnvironment"
@@ -117,21 +118,21 @@ func build_ui() -> void:
 	root.add_child(actions)
 	var undo := Button.new()
 	undo.text = "↶\nUNDO"
-	undo.custom_minimum_size = Vector2(220, 92)
+	undo.custom_minimum_size = Vector2(220, 116)
 	undo.add_theme_font_size_override("font_size", 19)
 	style_button(undo)
 	undo.pressed.connect(undo_move)
 	actions.add_child(undo)
 	var hint := Button.new()
 	hint.text = "💡\nHINT"
-	hint.custom_minimum_size = Vector2(220, 92)
+	hint.custom_minimum_size = Vector2(220, 116)
 	hint.add_theme_font_size_override("font_size", 19)
 	style_button(hint, true)
 	hint.pressed.connect(show_hint)
 	actions.add_child(hint)
 	var restart := Button.new()
 	restart.text = "↻\nRESTART"
-	restart.custom_minimum_size = Vector2(220, 92)
+	restart.custom_minimum_size = Vector2(220, 116)
 	restart.add_theme_font_size_override("font_size", 19)
 	style_button(restart)
 	restart.pressed.connect(restart_level)
@@ -146,3 +147,8 @@ func build_ui() -> void:
 	Unjam3DTheme.label_3d(hint_label, Color.WHITE, Unjam3DTheme.NAVY, 3)
 	root.add_child(hint_label)
 	PremiumVisuals.entrance(root, 0.008)
+
+func apply_theme_mode(dark: bool) -> void:
+	var environment := get_node_or_null("RescueRush3DEnvironment") as Unjam3DGameplayStage
+	if environment != null:
+		environment.set_dark_mode(dark)

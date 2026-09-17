@@ -1,6 +1,7 @@
 extends "res://scripts/game/water_sort_ultra_motion.gd"
 
 func build_ui() -> void:
+	clip_contents = true
 	var environment_3d := Unjam3DGameplayStage.new()
 	environment_3d.name = "WaterSort3DEnvironment"
 	environment_3d.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -87,8 +88,8 @@ func build_ui() -> void:
 	root.add_child(center)
 	var stage := PanelContainer.new()
 	stage.name = "GameplayStage"
-	stage.custom_minimum_size = Vector2(0, 1080)
-	stage.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	stage.custom_minimum_size = Vector2(0, 520)
+	stage.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	stage.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	stage.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color(0.88, 0.98, 1.0, 0.74), 38, Color("baf2ff"), 3, 14))
 	center.add_child(stage)
@@ -134,23 +135,28 @@ func build_ui() -> void:
 	root.add_child(actions)
 	var undo := Button.new()
 	undo.text = "↶\nUNDO"
-	undo.custom_minimum_size = Vector2(220, 92)
+	undo.custom_minimum_size = Vector2(220, 116)
 	undo.add_theme_font_size_override("font_size", 19)
 	Unjam3DTheme.gloss_button(undo, Unjam3DTheme.WATER_DARK, true, 24)
 	undo.pressed.connect(undo_move)
 	actions.add_child(undo)
 	var hint := Button.new()
 	hint.text = "💡\nHINT"
-	hint.custom_minimum_size = Vector2(220, 92)
+	hint.custom_minimum_size = Vector2(220, 116)
 	hint.add_theme_font_size_override("font_size", 19)
 	Unjam3DTheme.gloss_button(hint, Unjam3DTheme.ORANGE, true, 24)
 	hint.pressed.connect(show_hint)
 	actions.add_child(hint)
 	var restart := Button.new()
 	restart.text = "↻\nRESTART"
-	restart.custom_minimum_size = Vector2(220, 92)
+	restart.custom_minimum_size = Vector2(220, 116)
 	restart.add_theme_font_size_override("font_size", 19)
 	Unjam3DTheme.gloss_button(restart, Unjam3DTheme.WATER_DARK, true, 24)
 	restart.pressed.connect(restart_level)
 	actions.add_child(restart)
 	PremiumVisuals.entrance(root, 0.008)
+
+func apply_theme_mode(dark: bool) -> void:
+	var environment := get_node_or_null("WaterSort3DEnvironment") as Unjam3DGameplayStage
+	if environment != null:
+		environment.set_dark_mode(dark)

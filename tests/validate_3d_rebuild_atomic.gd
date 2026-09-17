@@ -42,12 +42,12 @@ func _run() -> void:
 	var piece = load("res://scripts/ui/rescue_piece_3d_button.gd").new()
 	root.add_child(piece)
 	await process_frame
-	var old_piece = piece.piece_root_3d
+	var old_child_count: int = int(piece.get_child_count())
 	piece.configure("arrow", "right", Color("19b9ff"))
-	if piece.piece_root_3d == null or piece.piece_root_3d == old_piece:
-		failures.append("Rescue piece 3D rebuild did not replace its visual root immediately")
-	if old_piece != null and old_piece.get_parent() != null:
-		failures.append("Rescue piece 3D rebuild leaves duplicate geometry parented for a frame")
+	if piece.piece_type != "arrow" or piece.direction != "right" or piece.accent != Color("19b9ff"):
+		failures.append("Flat Rescue piece did not apply its new visual state immediately")
+	if piece.get_child_count() != old_child_count:
+		failures.append("Flat Rescue piece configure created duplicate child geometry")
 
 	for node in [art, gameplay, token, piece]:
 		if is_instance_valid(node):

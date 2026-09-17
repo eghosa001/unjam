@@ -108,8 +108,14 @@ func _grant_reward(placement: String, callback: Callable) -> void:
 	rewarded_completed.emit(placement)
 	AnalyticsManager.track("rewarded_completed", {"placement": placement})
 
-func reward_coins(placement: String = "shop_coins", amount: int = DEFAULT_REWARDED_COINS) -> bool:
-	return show_rewarded(placement, func() -> void: SaveManager.add_coins(amount))
+func reward_coins(placement: String = "shop_coins", amount: int = DEFAULT_REWARDED_COINS, on_granted: Callable = Callable(), on_failed: Callable = Callable()) -> bool:
+	if amount <= 0:
+		return false
+	var grant_callback := func() -> void:
+		EconomyManager.grant(amount, "rewarded_ad", {"placement": placement})
+		if on_granted.is_valid():
+			on_granted.call()
+	return show_rewarded(placement, grant_callback, on_failed)
 
 func note_level_completed() -> void:
 	completed_since_interstitial += 1

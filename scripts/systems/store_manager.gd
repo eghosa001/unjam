@@ -32,6 +32,9 @@ var purchase_in_progress := false
 var active_purchase_product := ""
 var pending_products: Dictionary = {}
 var _purchase_serial := 0
+var _restore_batch_active := false
+var _restore_pending: Dictionary = {}
+var _restore_success_count := 0
 
 func register_provider(value: Node) -> void:
 	provider = value
@@ -118,6 +121,7 @@ func confirm_purchase(product_id: String, purchase_token: String = "") -> void:
 	if not PRODUCTS.has(product_id):
 		_clear_purchase_busy(product_id)
 		pending_products.erase(product_id)
+		_settle_restore(product_id, purchase_token, false)
 		return
 	pending_products.erase(product_id)
 	PurchaseVerifier.verify(product_id, purchase_token, func(valid: bool, reason: String): _on_verified(product_id, purchase_token, valid, reason))
@@ -128,6 +132,7 @@ func _on_verified(product_id: String, token: String, valid: bool, reason: String
 		_clear_purchase_busy(product_id)
 		purchase_failed.emit(product_id, reason)
 		AnalyticsManager.track("purchase_verification_failed", {"product": product_id})
+		_settle_restore(product_id, token, false)
 		return
 
 	var info: Dictionary = PRODUCTS[product_id]
@@ -141,6 +146,7 @@ func _on_verified(product_id: String, token: String, valid: bool, reason: String
 		_finalize_verified_purchase(token, non_consumable)
 		_clear_purchase_busy(product_id)
 		purchase_succeeded.emit(product_id)
+		_settle_restore(product_id, token, true)
 		return
 
 	var purchased: Array = SaveManager.data.get("purchased_products", [])
@@ -148,6 +154,7 @@ func _on_verified(product_id: String, token: String, valid: bool, reason: String
 		_finalize_verified_purchase(token, non_consumable)
 		_clear_purchase_busy(product_id)
 		purchase_succeeded.emit(product_id)
+		_settle_restore(product_id, token, true)
 		return
 
 	if product_id == PRODUCT_REMOVE_ADS:
@@ -155,9 +162,9 @@ func _on_verified(product_id: String, token: String, valid: bool, reason: String
 	elif product_id == PRODUCT_STARTER_PACK:
 		AdManager.set_remove_ads_purchased(true)
 		SaveManager.data.starter_pack_purchased = true
-		SaveManager.add_coins(coins)
+		EconomyManager.grant(coins, "purchase", {"product": product_id})
 	elif coins > 0:
-		SaveManager.add_coins(coins)
+		EconomyManager.grant(coins, "purchase", {"product": product_id})
 		SaveManager.data.lifetime_purchased_coins = int(SaveManager.data.get("lifetime_purchased_coins", 0)) + coins
 
 	if non_consumable and product_id not in purchased:
@@ -173,15 +180,24 @@ func _on_verified(product_id: String, token: String, valid: bool, reason: String
 	_clear_purchase_busy(product_id)
 	purchase_succeeded.emit(product_id)
 	AnalyticsManager.track("purchase_succeeded", {"product": product_id, "coins": coins})
+	_settle_restore(product_id, token, true)
 
 func _finalize_verified_purchase(token: String, non_consumable: bool) -> void:
 	if provider_ready() and provider.has_method("finalize_purchase") and not token.is_empty():
 		provider.call("finalize_purchase", token, not non_consumable)
 
 func restore_purchases() -> bool:
+	if _restore_batch_active:
+		return false
 	if not provider_ready() or not provider.has_method("restore_purchases"):
 		return false
-	return provider.call("restore_purchases", Callable(self, "_on_restore_result")) != false
+	_restore_batch_active = true
+	_restore_pending.clear()
+	_restore_success_count = 0
+	var accepted = provider.call("restore_purchases", Callable(self, "_on_restore_result"))
+	if accepted == false:
+		_restore_batch_active = false
+	return accepted != false
 
 func _purchase_product_ids(purchase: Dictionary) -> Array:
 	var product_ids = purchase.get("product_ids", [])
@@ -192,7 +208,10 @@ func _purchase_product_ids(purchase: Dictionary) -> Array:
 	return legacy_products if legacy_products is Array else []
 
 func _on_restore_result(purchases: Array) -> void:
-	var restored := 0
+	_restore_batch_active = true
+	_restore_pending.clear()
+	_restore_success_count = 0
+	var candidates: Array[Dictionary] = []
 	for purchase_value in purchases:
 		if not purchase_value is Dictionary:
 			continue
@@ -200,10 +219,41 @@ func _on_restore_result(purchases: Array) -> void:
 		if int(purchase.get("purchase_state", PURCHASE_STATE_PURCHASED)) != PURCHASE_STATE_PURCHASED:
 			continue
 		var token := String(purchase.get("purchase_token", ""))
-		for product_id in _purchase_product_ids(purchase):
-			if PRODUCTS.has(product_id) and bool(PRODUCTS[product_id].get("non_consumable", false)):
-				confirm_purchase(String(product_id), token)
-				restored += 1
+		for product_value in _purchase_product_ids(purchase):
+			var product_id := String(product_value)
+			if not PRODUCTS.has(product_id) or not bool(PRODUCTS[product_id].get("non_consumable", false)):
+				continue
+			var key := _restore_key(product_id, token)
+			if _restore_pending.has(key):
+				continue
+			_restore_pending[key] = true
+			candidates.append({"product_id": product_id, "token": token})
+	if candidates.is_empty():
+		_finish_restore_batch()
+		return
+	for candidate in candidates:
+		confirm_purchase(String(candidate.get("product_id", "")), String(candidate.get("token", "")))
+
+func _restore_key(product_id: String, token: String) -> String:
+	return "%s:%s" % [product_id, _token_fingerprint(token)]
+
+func _settle_restore(product_id: String, token: String, succeeded: bool) -> void:
+	if not _restore_batch_active:
+		return
+	var key := _restore_key(product_id, token)
+	if not _restore_pending.has(key):
+		return
+	_restore_pending.erase(key)
+	if succeeded:
+		_restore_success_count += 1
+	if _restore_pending.is_empty():
+		_finish_restore_batch()
+
+func _finish_restore_batch() -> void:
+	var restored := _restore_success_count
+	_restore_pending.clear()
+	_restore_success_count = 0
+	_restore_batch_active = false
 	restore_completed.emit(restored)
 
 func reconcile_purchases() -> void:

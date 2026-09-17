@@ -1,14 +1,15 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource path="res://scripts/ui/premium_main_casual.gd" type="Script" id="1"]
 [ext_resource path="res://scripts/ui/ui_touch_enhancer_casual.gd" type="Script" id="2"]
 [ext_resource path="res://scripts/ui/monetization_hub_3d.gd" type="Script" id="3"]
 [ext_resource path="res://scripts/ui/ux_shell_casual.gd" type="Script" id="4"]
-[ext_resource path="res://scripts/ui/premium_home_casual.gd" type="Script" id="5"]
+[ext_resource path="res://scripts/ui/premium_home_direct_levels.gd" type="Script" id="5"]
 [ext_resource path="res://scripts/ui/premium_live_hub_3d.gd" type="Script" id="6"]
 [ext_resource path="res://scripts/ui/premium_surface_manager_static.gd" type="Script" id="7"]
 [ext_resource path="res://scripts/ui/motion_director.gd" type="Script" id="9"]
 [ext_resource path="res://scripts/ui/device_fit.gd" type="Script" id="10"]
+[ext_resource path="res://scripts/ui/insufficient_coins_prompt.gd" type="Script" id="11"]
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -24,6 +25,9 @@ script = ExtResource("2")
 
 [node name="MonetizationHub" type="Node" parent="."]
 script = ExtResource("3")
+
+[node name="InsufficientCoinsPrompt" type="Node" parent="."]
+script = ExtResource("11")
 
 [node name="UXShell" type="Node" parent="."]
 script = ExtResource("4")

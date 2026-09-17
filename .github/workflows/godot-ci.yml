@@ -83,7 +83,7 @@ jobs:
         shell: bash
         run: |
           set -euxo pipefail
-          for t in validate_motion_quality validate_monetization validate_admob_production validate_billing_production validate_premium_ux validate_visual_quality_contract validate_production_completion validate_uiux_regressions validate_viewport_fit validate_retention validate_robustness validate_production_hardening_regressions; do
+          for t in validate_motion_quality validate_transition_ownership validate_edge_safe_effects validate_gameplay_stage_budget validate_rescue_token_render_lifecycle validate_water_tubes_sleep_idle validate_block_cells_sleep_idle validate_block_single_touch_owner validate_reported_polish_regressions validate_assist_difficulty_pass validate_difficulty_curves validate_coin_economy validate_coin_grants validate_external_coin_sync validate_progression_coin_sync validate_monetization validate_admob_production validate_billing_production validate_premium_ux validate_visual_quality_contract validate_production_completion validate_uiux_regressions validate_viewport_fit validate_navigation_surface_coverage validate_retention validate_robustness validate_production_hardening_regressions; do
             echo "===== START $t ====="
             timeout 45s godot --headless --path . --script "res://tests/$t.gd"
             echo "===== PASS $t ====="
@@ -102,7 +102,7 @@ jobs:
         shell: bash
         run: |
           set -euxo pipefail
-          for t in validate_campaign validate_campaign_diversity validate_level_launch validate_gameplay_interactions validate_progression_transitions validate_water_constructive_solvability; do
+          for t in validate_campaign validate_campaign_diversity validate_level_launch validate_gameplay_interactions validate_progression_transitions validate_home_direct_levels_runtime validate_rescue_hint_exec validate_water_assist_runtime validate_block_hint_exec_runtime validate_assist_economy_runtime validate_shop_navigation_runtime validate_shop_catalog_ui validate_insufficient_coins_prompt validate_restore_purchase_flow validate_live_wallet_shop validate_secondary_wallet_shop validate_gameplay_wallet_ui validate_water_constructive_solvability; do
             echo "===== START $t ====="
             timeout 180s godot --headless --path . --script "res://tests/$t.gd"
             echo "===== PASS $t ====="

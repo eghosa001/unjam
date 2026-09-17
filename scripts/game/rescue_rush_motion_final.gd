@@ -2,6 +2,9 @@ extends "res://scripts/game/rescue_rush_premium.gd"
 
 # Final active Rescue Rush layout layer. Escape timing lives in the polished
 # gameplay renderer; this script is the single owner of responsive board sizing.
+const BOARD_HEIGHT_RATIO := 0.60
+const MAX_CELL_SIZE := 168.0
+
 var _board_has_rendered := false
 
 func _ready() -> void:
@@ -48,10 +51,10 @@ func _fit_board_to_viewport() -> void:
 	var gap_x := float(board_grid.get_theme_constant("h_separation"))
 	var gap_y := float(board_grid.get_theme_constant("v_separation"))
 	var max_board_width := minf(maxf(320.0, viewport_size.x - 80.0), 920.0)
-	var max_board_height := minf(maxf(360.0, viewport_size.y * 0.52), 1040.0)
+	var max_board_height := minf(maxf(360.0, viewport_size.y * BOARD_HEIGHT_RATIO), 1120.0)
 	var calculated_width: float = floorf((max_board_width - 40.0 - gap_x * float(maxi(0, width - 1))) / float(width))
 	var calculated_height: float = floorf((max_board_height - 40.0 - gap_y * float(maxi(0, height - 1))) / float(height))
-	var cell_size := int(clampf(minf(calculated_width, calculated_height), 54.0, 156.0))
+	var cell_size := int(clampf(minf(calculated_width, calculated_height), 54.0, MAX_CELL_SIZE))
 	for child in board_grid.get_children():
 		if child is Control:
 			(child as Control).custom_minimum_size = Vector2(cell_size, cell_size)

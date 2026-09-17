@@ -19,6 +19,8 @@ func _ready() -> void:
 	var main := get_parent()
 	if main != null and main.has_signal("surface_changed"):
 		main.surface_changed.connect(_on_surface_changed)
+	if not EconomyManager.balance_changed.is_connected(_on_economy_balance_changed):
+		EconomyManager.balance_changed.connect(_on_economy_balance_changed)
 	var initial_surface := String(main.get("current_surface")) if main != null and main.get("current_surface") != null else "home"
 	call_deferred("_on_surface_changed", initial_surface)
 
@@ -27,9 +29,13 @@ func _on_surface_changed(surface: String) -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP if visible else Control.MOUSE_FILTER_IGNORE
 	if not visible:
 		return
-	var mode := _theme_mode()
-	if not built or mode != last_theme:
-		_build()
+	_refresh_progress_on_entry()
+
+func _refresh_progress_on_entry() -> void:
+	# Progress can change while this persistent selector is hidden behind gameplay.
+	# Rebuilding only on entry keeps it event-driven and guarantees fresh cards.
+	_build()
+	_ensure_wallet_shop_action()
 
 func _theme_mode() -> String:
 	var shell := get_parent().get_node_or_null("UXShell")
@@ -40,6 +46,52 @@ func _theme_mode() -> String:
 # Implemented by premium_live_hub_3d.gd.
 func _build() -> void:
 	pass
+
+func _ensure_wallet_shop_action() -> void:
+	var existing := find_child("LiveCoinShopButton", true, false) as Button
+	if existing != null:
+		_set_wallet_balance(EconomyManager.balance())
+		return
+	var coin_label := _find_coin_label(self)
+	if coin_label == null or coin_label.get_parent() == null:
+		return
+	var parent := coin_label.get_parent()
+	var index := coin_label.get_index()
+	parent.remove_child(coin_label)
+	coin_label.queue_free()
+	var button := Button.new()
+	button.name = "LiveCoinShopButton"
+	button.text = "●  %d  +" % EconomyManager.balance()
+	button.tooltip_text = "Coins • Open Shop"
+	button.custom_minimum_size = Vector2(180, 58)
+	button.add_theme_font_size_override("font_size", 18)
+	Unjam3DTheme.gloss_button(button, Unjam3DTheme.ORANGE, true, 24, _theme_mode() == "dark")
+	button.pressed.connect(_open_shop)
+	parent.add_child(button)
+	parent.move_child(button, index)
+
+func _find_coin_label(node: Node) -> Label:
+	for child in node.get_children():
+		if child is Label and String((child as Label).text).begins_with("●"):
+			return child as Label
+		var nested := _find_coin_label(child)
+		if nested != null:
+			return nested
+	return null
+
+func _set_wallet_balance(new_balance: int) -> void:
+	var button := find_child("LiveCoinShopButton", true, false) as Button
+	if button != null:
+		button.text = "●  %d  +" % new_balance
+
+func _on_economy_balance_changed(new_balance: int, _delta: int, _reason: String) -> void:
+	if visible:
+		_set_wallet_balance(new_balance)
+
+func _open_shop() -> void:
+	var hub := get_parent().get_node_or_null("MonetizationHub")
+	if hub != null and hub.has_method("open_shop"):
+		hub.call("open_shop")
 
 func _total_stars() -> int:
 	var total := 0
