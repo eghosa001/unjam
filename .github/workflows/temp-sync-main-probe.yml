@@ -1,7 +1,7 @@
 name: Temporary Main Sync Probe
 
 on:
-  pull_request_target:
+  pull_request:
     types: [opened, reopened, synchronize]
     branches:
       - visual-reboot-3d-build-final2
@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   probe:
-    if: github.event.pull_request.head.ref == 'main' && github.event.pull_request.head.repo.full_name == github.repository
+    if: startsWith(github.event.pull_request.head.ref, 'sync-main-probe-child') && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout feature branch with history
