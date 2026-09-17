@@ -1,1 +1,1 @@
-Temporary trigger for the tested main-to-feature merge resolver, workflow-safe retry. Remove after synchronization.
+Temporary trigger for the verified Block campaign-diversity fix.
