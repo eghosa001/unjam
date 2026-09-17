@@ -34,37 +34,38 @@ func _build() -> void:
 	overlay.add_child(center)
 	var panel := PanelContainer.new()
 	panel.name = "InsufficientCoinsCard"
-	panel.custom_minimum_size = Vector2(620, 520)
+	var visible_size := get_viewport().get_visible_rect().size
+	panel.custom_minimum_size = Vector2(minf(620.0, maxf(300.0, visible_size.x - 48.0)), minf(520.0, maxf(420.0, visible_size.y - 80.0)))
 	panel.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("f8fbff"), 38, Color("ffd46a"), 4, 12))
 	center.add_child(panel)
 	var margin := MarginContainer.new()
 	for side in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_%s" % side, 30)
+		margin.add_theme_constant_override("margin_%s" % side, 24 if visible_size.x < 600.0 else 30)
 	panel.add_child(margin)
 	var box := VBoxContainer.new()
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
-	box.add_theme_constant_override("separation", 18)
+	box.add_theme_constant_override("separation", 14 if visible_size.y < 900.0 else 18)
 	margin.add_child(box)
 
 	var title := Label.new()
 	title.text = "MORE COINS NEEDED"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 34)
+	title.add_theme_font_size_override("font_size", 28 if visible_size.x < 600.0 else 34)
 	Unjam3DTheme.label_3d(title, Unjam3DTheme.ORANGE, Unjam3DTheme.NAVY, 5)
 	box.add_child(title)
 	detail_label = Label.new()
 	detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	detail_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	detail_label.add_theme_font_size_override("font_size", 20)
+	detail_label.add_theme_font_size_override("font_size", 18 if visible_size.x < 600.0 else 20)
 	Unjam3DTheme.label_3d(detail_label, Unjam3DTheme.NAVY, Color.WHITE, 2)
 	box.add_child(detail_label)
 
 	var shop := Button.new()
 	shop.name = "InsufficientCoinsShopButton"
 	shop.text = "OPEN SHOP"
-	shop.custom_minimum_size = Vector2(0, 92)
+	shop.custom_minimum_size = Vector2(0, 82 if visible_size.y < 900.0 else 92)
 	shop.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	shop.add_theme_font_size_override("font_size", 23)
+	shop.add_theme_font_size_override("font_size", 21 if visible_size.x < 600.0 else 23)
 	Unjam3DTheme.gloss_button(shop, Unjam3DTheme.ORANGE, true, 30)
 	shop.pressed.connect(_open_shop)
 	box.add_child(shop)
@@ -72,16 +73,16 @@ func _build() -> void:
 	reward_button = Button.new()
 	reward_button.name = "InsufficientCoinsRewardButton"
 	reward_button.text = "▶  WATCH AD  •  +50 COINS"
-	reward_button.custom_minimum_size = Vector2(0, 92)
+	reward_button.custom_minimum_size = Vector2(0, 82 if visible_size.y < 900.0 else 92)
 	reward_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	reward_button.add_theme_font_size_override("font_size", 21)
+	reward_button.add_theme_font_size_override("font_size", 18 if visible_size.x < 600.0 else 21)
 	Unjam3DTheme.gloss_button(reward_button, Color("24ba68"), true, 30)
 	reward_button.pressed.connect(_watch_rewarded)
 	box.add_child(reward_button)
 
 	var close := Button.new()
 	close.text = "NOT NOW"
-	close.custom_minimum_size = Vector2(0, 72)
+	close.custom_minimum_size = Vector2(0, 66 if visible_size.y < 900.0 else 72)
 	close.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	Unjam3DTheme.gloss_button(close, Unjam3DTheme.WATER_DARK, false, 26)
 	close.pressed.connect(_close)
@@ -139,7 +140,7 @@ func _on_reward_granted() -> void:
 		reward_button.text = "▶  WATCH AD  •  +50 COINS"
 	if EconomyManager.can_afford(_cost) and _retry.is_valid():
 		var result = _retry.call()
-		if not result is bool or bool(result):
+		if not (result is bool) or bool(result):
 			_close()
 			return
 	_refresh_detail("+50 coins added.")
