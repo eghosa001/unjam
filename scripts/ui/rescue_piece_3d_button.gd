@@ -4,12 +4,12 @@ class_name RescuePiece3DButton
 # Legacy class name retained so Rescue Rush gameplay and escape-animation code do
 # not need to change. The active piece is intentionally a flat board tile now:
 # PremiumPieceButton provides bevel, shadow, gloss and press depth entirely in
-# CanvasItem drawing, with no Camera3D, perspective projection or SubViewport.
+# CanvasItem drawing, with no perspective scene renderer behind each tile.
 # This keeps puzzle geometry straight-on while preserving a chunky 3D effect.
 
 func _ready() -> void:
 	super._ready()
-	# The flat Rescue tile has no animated 3D viewport to maintain. Keep the
+	# The flat Rescue tile has no animated scene viewport to maintain. Keep the
 	# inherited decorative pulse asleep while idle; press/release tweens still run
 	# independently and the tile redraws whenever configure() changes its state.
 	set_process(false)
