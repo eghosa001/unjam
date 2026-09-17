@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-EXPECTED_PACKAGE = 'package/unique_name="com.eghosa.unjam"'
+EXPECTED_PACKAGE = 'package/unique_name="com.eghosa.unjamgam"'
 EXPECTED_VERSION_CODE = 'version/code=1'
 EXPECTED_VERSION_NAME = 'version/name="1.0.0"'
 EXPECTED_BACKEND_EXCLUSION = 'backend/*'
@@ -72,7 +72,7 @@ def main() -> int:
         return 1
 
     print('Release contract validation passed.')
-    print('Package: com.eghosa.unjam')
+    print('Package: com.eghosa.unjamgam')
     print('Fresh-app default release: versionCode 1 / versionName 1.0.0')
     print('Upload certificate fingerprint is supplied at release time by UNJAM_ANDROID_UPLOAD_SHA1.')
     return 0
