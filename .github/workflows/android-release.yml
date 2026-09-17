@@ -4,13 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       version_name:
-        description: Human-readable version (for example 1.0.1)
+        description: Human-readable version (for example 1.0.0)
         required: true
-        default: 1.0.1
+        default: 1.0.0
       version_code:
         description: Monotonically increasing Google Play version code
         required: true
-        default: 2
+        default: 1
 
 permissions:
   contents: read
@@ -25,7 +25,7 @@ jobs:
     timeout-minutes: 45
     env:
       EXPECTED_PACKAGE: com.eghosa.unjam
-      EXPECTED_UPLOAD_SHA1: 8C:B6:B3:07:8E:AB:45:31:A3:03:D6:36:FA:05:C8:E6:4D:6E:7A:B9
+      EXPECTED_UPLOAD_SHA1: ${{ secrets.UNJAM_ANDROID_UPLOAD_SHA1 }}
     steps:
       - uses: actions/checkout@v4
       - name: Validate release contract
@@ -45,9 +45,11 @@ jobs:
           test -n "$KEYSTORE_B64"
           test -n "$KEY_ALIAS"
           test -n "$KEY_PASSWORD"
+          test -n "$EXPECTED_UPLOAD_SHA1"
+          [[ "$EXPECTED_UPLOAD_SHA1" =~ ^([0-9A-Fa-f]{2}:){19}[0-9A-Fa-f]{2}$ ]]
           [[ "$VERIFY_URL" == https://* ]]
           [[ "${{ inputs.version_code }}" =~ ^[1-9][0-9]*$ ]]
-          test "${{ inputs.version_code }}" -ge 2
+          test "${{ inputs.version_code }}" -ge 1
           test "${{ inputs.version_code }}" -le 2100000000
           test -n "${{ inputs.version_name }}"
       - name: Setup JDK 17
@@ -98,6 +100,7 @@ jobs:
 
           keytool -list -keystore "$KEYSTORE" -storepass "$KEY_PASSWORD" -alias "$KEY_ALIAS" >/dev/null
           ACTUAL_UPLOAD_SHA1="$(keytool -list -v -keystore "$KEYSTORE" -storepass "$KEY_PASSWORD" -alias "$KEY_ALIAS" | sed -n 's/^[[:space:]]*SHA1: //p' | head -n 1 | tr '[:lower:]' '[:upper:]' | tr -d '\r')"
+          EXPECTED_UPLOAD_SHA1="$(printf '%s' "$EXPECTED_UPLOAD_SHA1" | tr '[:lower:]' '[:upper:]')"
           if [[ "$ACTUAL_UPLOAD_SHA1" != "$EXPECTED_UPLOAD_SHA1" ]]; then
             echo "Upload certificate mismatch. Expected $EXPECTED_UPLOAD_SHA1 but found $ACTUAL_UPLOAD_SHA1" >&2
             exit 1
@@ -163,6 +166,7 @@ jobs:
           jarsigner -verify -verbose -certs "$AAB" | tee build/android/jarsigner-verify.log
           unzip -t "$AAB" | tee build/android/aab-zip-test.log
           BUNDLE_SHA1="$(keytool -printcert -jarfile "$AAB" | sed -n 's/^[[:space:]]*SHA1: //p' | head -n 1 | tr '[:lower:]' '[:upper:]' | tr -d '\r')"
+          EXPECTED_UPLOAD_SHA1="$(printf '%s' "$EXPECTED_UPLOAD_SHA1" | tr '[:lower:]' '[:upper:]')"
           if [[ "$BUNDLE_SHA1" != "$EXPECTED_UPLOAD_SHA1" ]]; then
             echo "Built AAB certificate mismatch. Expected $EXPECTED_UPLOAD_SHA1 but found $BUNDLE_SHA1" >&2
             exit 1
