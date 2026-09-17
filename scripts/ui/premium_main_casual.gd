@@ -1,4 +1,5 @@
 extends "res://scripts/ui/premium_main.gd"
+
 func _sync_persistent_surfaces_now(surface: String) -> void:
 	var home := get_node_or_null("PremiumHome")
 	if home != null and home.has_method("_on_surface_changed"):
@@ -6,7 +7,12 @@ func _sync_persistent_surfaces_now(surface: String) -> void:
 	var live := get_node_or_null("PremiumLive")
 	if live != null and live.has_method("_on_surface_changed"):
 		live.call("_on_surface_changed", surface)
+
 func build_home() -> void:
+	# Base navigation replaces/removes the outgoing surface immediately. Bring the
+	# persistent premium surfaces into their final visibility state before this
+	# call returns so Settings/Collection/Game -> Home cannot expose a blank frame
+	# while robust_main's surface_changed signal is waiting for its deferred emit.
 	super.build_home()
 	var live := get_node_or_null("PremiumLive")
 	if live != null and live.has_method("_on_surface_changed"):
@@ -14,7 +20,11 @@ func build_home() -> void:
 	var home := get_node_or_null("PremiumHome")
 	if home != null and home.has_method("_on_surface_changed"):
 		home.call("_on_surface_changed", "home")
+
 func add_background() -> void:
+	# Base level builders call add_background() directly. Override it so every
+	# secondary surface uses the final bright backdrop without allocating the
+	# retired PremiumBackdrop first.
 	if content == null or not is_instance_valid(content):
 		return
 	content.clip_contents = true
@@ -27,6 +37,7 @@ func add_background() -> void:
 		content.add_child(existing)
 		content.move_child(existing, 0)
 	existing.configure(_accent(), _dark())
+
 func _page_root() -> VBoxContainer:
 	clear_content()
 	add_background()
@@ -43,6 +54,7 @@ func _page_root() -> VBoxContainer:
 	root.add_theme_constant_override("separation", 18)
 	outer.add_child(root)
 	return root
+
 func build_settings() -> void:
 	current_surface = "settings"
 	_remove_active_game()
@@ -124,6 +136,7 @@ func build_settings() -> void:
 	root.add_child(note)
 	PremiumVisuals.entrance(root, 0.018)
 	_add_surface_diorama(selected_game_id, "Settings3DDiorama")
+
 func _setting_button(title_text: String, detail_text: String, enabled: bool, accent: Color) -> Button:
 	var state := "ON" if enabled else "OFF"
 	var role := "success" if enabled else "toggle_off"
@@ -133,6 +146,7 @@ func _setting_button(title_text: String, detail_text: String, enabled: bool, acc
 	button.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	button.add_theme_font_size_override("font_size", 19)
 	return button
+
 func _toggle_reduced_motion() -> void:
 	var enabled := not bool(SaveManager.data.get("reduce_motion", false))
 	SaveManager.data["reduce_motion"] = enabled
@@ -140,10 +154,12 @@ func _toggle_reduced_motion() -> void:
 	PremiumVisuals.apply_motion_preference()
 	FeedbackManager.tap()
 	build_settings()
+
 func _show_current_tutorial() -> void:
 	var shell := get_node_or_null("UXShell")
 	if shell != null and shell.has_method("show_tutorial"):
 		shell.call("show_tutorial", selected_game_id)
+
 func build_collection() -> void:
 	current_surface = "collection"
 	_remove_active_game()
@@ -237,7 +253,7 @@ func build_collection() -> void:
 	stack.add_child(shop)
 	for item in [["tree", "CANOPY TREE", 100, "SHADE"], ["bench", "GARDEN BENCH", 150, "REST"], ["fountain", "CRYSTAL FOUNTAIN", 250, "SPARKLE"]]:
 		var id := String(item[0])
-		var owned := id in SaveManager.data.get("decorations", [])
+		var owned: bool = id in SaveManager.data.get("decorations", [])
 		var state_text := "OWNED" if owned else "%d COINS" % int(item[2])
 		var button := _button("%s\n%s  •  %s" % [String(item[1]), String(item[3]), state_text], Vector2(0, 122), "success" if owned else "secondary", "rescue_rush")
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -246,6 +262,7 @@ func build_collection() -> void:
 		shop.add_child(button)
 	PremiumVisuals.entrance(stack, 0.018)
 	_add_surface_diorama("rescue_rush", "Collection3DDiorama")
+
 func _journey_metric(title_text: String, value: int, accent: Color) -> PanelContainer:
 	var chip := PanelContainer.new()
 	chip.custom_minimum_size = Vector2(0, 82)
@@ -261,6 +278,7 @@ func _journey_metric(title_text: String, value: int, accent: Color) -> PanelCont
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(title)
 	return chip
+
 func _collection_game_card(game_id: String) -> PanelContainer:
 	var accent := Unjam3DTheme.game_accent(game_id)
 	var progress := MultiGameManager.progress_for(game_id)
@@ -286,16 +304,19 @@ func _collection_game_card(game_id: String) -> PanelContainer:
 	open.pressed.connect(open_game_campaign.bind(game_id))
 	box.add_child(open)
 	return card
+
 func build_level_select() -> void:
 	super.build_level_select()
 	_inject_game_tabs("rescue_rush")
 	_upgrade_level_browser("rescue_rush")
 	_add_surface_diorama("rescue_rush", "Levels3DDiorama")
+
 func build_multi_level_select() -> void:
 	super.build_multi_level_select()
 	_inject_game_tabs(selected_game_id)
 	_upgrade_level_browser(selected_game_id)
 	_add_surface_diorama(selected_game_id, "Levels3DDiorama")
+
 func _inject_game_tabs(active_game_id: String) -> void:
 	var root := _find_page_root()
 	if root == null:
@@ -311,13 +332,14 @@ func _inject_game_tabs(active_game_id: String) -> void:
 	root.add_child(tabs)
 	root.move_child(tabs, mini(1, root.get_child_count() - 1))
 	for game_id in MultiGameManager.GAME_IDS:
-		var current := game_id == active_game_id
+		var current: bool = game_id == active_game_id
 		var button := _button(MultiGameManager.display_name(game_id), Vector2(0, 84), "primary" if current else "secondary", game_id)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.add_theme_font_size_override("font_size", 18 if get_viewport_rect().size.x >= 700.0 else 15)
 		button.disabled = current
 		button.pressed.connect(open_game_campaign.bind(game_id))
 		tabs.add_child(button)
+
 func _find_page_root() -> VBoxContainer:
 	if content == null:
 		return null
@@ -327,12 +349,14 @@ func _find_page_root() -> VBoxContainer:
 				if inner is VBoxContainer:
 					return inner as VBoxContainer
 	return null
+
 func _level_column_count(usable_width: float) -> int:
 	if usable_width >= 900.0:
 		return 4
 	if usable_width >= 610.0:
 		return 3
 	return 2
+
 func _upgrade_level_browser(game_id: String) -> void:
 	if content == null or not is_instance_valid(content):
 		return
@@ -364,6 +388,7 @@ func _upgrade_level_browser(game_id: String) -> void:
 				Unjam3DTheme.gloss_button(button, accent, true, 22, _dark())
 			else:
 				Unjam3DTheme.gloss_button(button, dark_accent, false, 22, _dark())
+
 func _add_surface_diorama(game_id: String, node_name: String) -> void:
 	if content == null or not is_instance_valid(content):
 		return
@@ -389,6 +414,7 @@ func _add_surface_diorama(game_id: String, node_name: String) -> void:
 	art.modulate = Color(1, 1, 1, 0.42 if _dark() else 0.58)
 	art.configure(game_id)
 	content.add_child(art)
+
 func _highest_level_for_game(game_id: String) -> int:
 	if game_id == "rescue_rush":
 		return int(SaveManager.data.get("highest_level", 1))
