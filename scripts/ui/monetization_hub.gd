@@ -14,6 +14,8 @@ func _ready() -> void:
 	StoreManager.purchase_failed.connect(_on_purchase_failed)
 	AdManager.rewarded_completed.connect(_on_rewarded_completed)
 	AdManager.rewarded_failed.connect(_on_rewarded_failed)
+	if not EconomyManager.balance_changed.is_connected(_on_balance_changed):
+		EconomyManager.balance_changed.connect(_on_balance_changed)
 	call_deferred("_build_ui")
 
 func _build_ui() -> void:
@@ -162,7 +164,10 @@ func _close_shop() -> void:
 
 func _refresh() -> void:
 	if balance_label != null:
-		balance_label.text = "%d COINS" % int(SaveManager.data.get("coins", 0))
+		balance_label.text = "%d COINS" % EconomyManager.balance()
+
+func _on_balance_changed(_new_balance: int, _delta: int, _reason: String) -> void:
+	_refresh()
 
 func _watch_rewarded(button: Button) -> void:
 	button.disabled = true
