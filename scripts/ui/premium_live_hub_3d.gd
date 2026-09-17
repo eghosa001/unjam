@@ -111,9 +111,10 @@ func _add_game_card(parent: VBoxContainer, game_id: String) -> void:
 
 	var viewport_size := get_viewport_rect().size
 	var compact := viewport_size.x < 900.0
+	var card_height := (570.0 if viewport_size.y >= 1200.0 else 500.0) if compact else clampf(viewport_size.y * 0.217, 340.0, 520.0)
 	var panel := PanelContainer.new()
 	panel.name = "GameCard3D_%s" % game_id
-	panel.custom_minimum_size = Vector2(0, (570 if viewport_size.y >= 1200.0 else 500) if compact else (382 if viewport_size.y >= 1400.0 else 340))
+	panel.custom_minimum_size = Vector2(0, card_height)
 	panel.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(accent.darkened(0.42) if _theme_mode() == "dark" else accent.lightened(0.025), 38, accent.lightened(0.42), 4, 18))
 	parent.add_child(panel)
 	var margin := MarginContainer.new()
