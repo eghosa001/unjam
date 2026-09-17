@@ -159,6 +159,18 @@ func _add_reward_panel(parent: VBoxContainer) -> void:
 	watch.pressed.connect(_watch_rewarded.bind(watch))
 	reward_row.add_child(watch)
 
+func _is_owned_product(product_id: String, info: Dictionary) -> bool:
+	if not bool(info.get("non_consumable", false)):
+		return false
+	var purchased: Array = SaveManager.data.get("purchased_products", [])
+	if product_id in purchased:
+		return true
+	if product_id == StoreManager.PRODUCT_REMOVE_ADS:
+		return bool(SaveManager.data.get("remove_ads", false))
+	if product_id == StoreManager.PRODUCT_STARTER_PACK:
+		return bool(SaveManager.data.get("starter_pack_purchased", false))
+	return false
+
 func _add_product(parent: VBoxContainer, product_id: String) -> void:
 	var info: Dictionary = StoreManager.PRODUCTS[product_id]
 	var panel := PanelContainer.new()
@@ -181,8 +193,7 @@ func _add_product(parent: VBoxContainer, product_id: String) -> void:
 	buy.name = "Buy_%s" % product_id
 	buy.custom_minimum_size = Vector2(250, 82)
 	buy.add_theme_font_size_override("font_size", 18)
-	var purchased: Array = SaveManager.data.get("purchased_products", [])
-	if bool(info.get("non_consumable", false)) and product_id in purchased:
+	if _is_owned_product(product_id, info):
 		buy.text = "OWNED"
 		buy.disabled = true
 	elif StoreManager.is_purchase_pending(product_id):
