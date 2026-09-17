@@ -3,32 +3,40 @@ extends SceneTree
 func _initialize() -> void:
 	var failures: Array[String] = []
 
-	# Rescue Rush gameplay must read as a flat board. Depth is provided by the
-	# 2D bevel/gloss/shadow renderer, not perspective Camera3D/SubViewport tiles.
+	# Rescue Rush keeps its proven gameplay/escape interfaces, but the renderer
+	# behind that interface must be a straight-on CanvasItem tile with 3D effects.
 	_check("res://scripts/game/rescue_rush_premium.gd", [
-		"premium_piece_button.gd",
-		"PremiumPieceButton.new()",
-		"board_grid = GridContainer.new()"
-	], failures)
-	_check_absent("res://scripts/game/rescue_rush_premium.gd", [
 		"rescue_piece_3d_button.gd",
 		"RescuePiece3D.new()",
-		"Camera3D",
-		"SubViewport"
+		"board_grid = GridContainer.new()"
 	], failures)
 	_check("res://scripts/game/rescue_rush_polished.gd", [
-		"premium_piece_button.gd",
-		"PremiumPieceButton.new()"
-	], failures)
-	_check_absent("res://scripts/game/rescue_rush_polished.gd", [
 		"rescue_piece_3d_button.gd",
 		"RescueEscapePiece3D.new()",
+		"_wait_for_escape_visuals()"
+	], failures)
+	_check("res://scripts/ui/rescue_piece_3d_button.gd", [
+		"premium_piece_button.gd",
+		"super._ready()",
+		"set_process(false)"
+	], failures)
+	_check_absent("res://scripts/ui/rescue_piece_3d_button.gd", [
 		"Camera3D",
-		"SubViewport"
+		"SubViewport",
+		"Node3D",
+		"BoxMesh",
+		"TorusMesh",
+		"StandardMaterial3D"
+	], failures)
+	_check("res://scripts/ui/premium_piece_button.gd", [
+		"_draw_shell",
+		"Lower bevel",
+		"gloss_rect",
+		"shadow_rect"
 	], failures)
 
 	# Water Sort and Block Puzzle keep their gameplay geometry on flat Controls/
-	# grids. Their 3D-looking bottles/cubes and background depth remain allowed.
+	# grids. Their dimensional bottles/cubes and scenic background depth remain.
 	_check("res://scripts/game/water_sort_casual.gd", [
 		"stage := PanelContainer.new()",
 		"board = GridContainer.new()"
@@ -73,4 +81,4 @@ func _check_absent(path: String, needles: Array[String], failures: Array[String]
 		return
 	for needle in needles:
 		if text.contains(needle):
-			failures.append("Perspective gameplay path '%s' still present in %s" % [needle, path])
+			failures.append("Perspective gameplay renderer '%s' still present in %s" % [needle, path])
