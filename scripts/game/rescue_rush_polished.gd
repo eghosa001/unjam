@@ -326,41 +326,55 @@ func _rescue_exit_direction() -> Vector2i:
 	return Vector2i.ZERO
 
 func _spawn_rescue_escape() -> void:
-	if rescue_token == null or not is_instance_valid(rescue_token):
+	var rescue_visual := _current_rescue_visual()
+	if rescue_visual == null:
 		return
 	var direction_i := _rescue_exit_direction()
 	if direction_i == Vector2i.ZERO:
 		return
 	var direction := Vector2(direction_i)
-	var ghost: Control = _clone_rescue_visual()
+	var ghost: Control = _clone_rescue_visual(rescue_visual)
 	if ghost == null:
 		return
 	add_child(ghost)
-	ghost.global_position = rescue_token.global_position
-	ghost.size = rescue_token.size
+	ghost.global_position = rescue_visual.global_position
+	ghost.size = rescue_visual.size
 	ghost.pivot_offset = ghost.size * 0.5
 	ghost.z_index = 650
 	ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_track_escape_visual(ghost)
-	rescue_token.visible = false
-	rescue_token.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rescue_visual.visible = false
+	rescue_visual.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var start := ghost.position
 	var center := ghost.global_position - global_position + ghost.size * 0.5
 	_spawn_speed_lines(ghost.global_position + ghost.size * 0.5, direction, Color("ffd166"))
 	PremiumVisuals.burst(center, Color("ffd166"), 18)
 	var tween := create_tween()
 	tween.tween_property(ghost, "scale", Vector2(1.16, 0.88), MotionSystem.duration(&"micro")).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	var lane_offset := 0.0
-	var final_target := _offscreen_target(start, direction, lane_offset)
+	var final_target := _offscreen_target(start, direction)
 	var travel_time := maxf(0.22, MotionSystem.duration(&"travel") * 0.88)
 	tween.tween_property(ghost, "position", final_target, travel_time).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
 	tween.parallel().tween_property(ghost, "scale", Vector2(0.78, 0.78), travel_time)
 	tween.finished.connect(_finish_escape_visual.bind(ghost))
 
-func _clone_rescue_visual() -> Control:
-	if rescue_token == null or not is_instance_valid(rescue_token):
+func _current_rescue_visual() -> Control:
+	if board_grid == null or not is_inside(rescue_pos):
 		return null
-	var ghost := rescue_token.duplicate()
+	var child_index := rescue_pos.y * width + rescue_pos.x
+	if child_index < 0 or child_index >= board_grid.get_child_count():
+		return null
+	var slot := board_grid.get_child(child_index)
+	if slot == null or slot.get_child_count() == 0:
+		return null
+	var visual := slot.get_child(0)
+	if visual is Control:
+		return visual as Control
+	return null
+
+func _clone_rescue_visual(source: Control) -> Control:
+	if source == null or not is_instance_valid(source):
+		return null
+	var ghost := source.duplicate()
 	if ghost is Control:
 		return ghost as Control
 	return null
