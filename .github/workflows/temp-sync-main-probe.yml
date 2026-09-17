@@ -1,4 +1,4 @@
-name: Temporary Main Sync Probe
+name: Temporary Resolve Main Into Feature
 
 on:
   pull_request:
@@ -7,10 +7,10 @@ on:
       - visual-reboot-3d-build-final2
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  probe:
+  resolve:
     if: startsWith(github.event.pull_request.head.ref, 'sync-main-probe-child') && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
     steps:
@@ -20,34 +20,100 @@ jobs:
           ref: visual-reboot-3d-build-final2
           fetch-depth: 0
 
-      - name: Reproduce main merge and capture state
+      - name: Merge main with tested conflict resolutions
         shell: bash
         run: |
-          set -u
-          git config user.name "UNJAM Sync Probe"
-          git config user.email "sync-probe@users.noreply.github.com"
+          set -euo pipefail
+          git config user.name "UNJAM Integration"
+          git config user.email "unjam-integration@users.noreply.github.com"
           git fetch origin main
+
           set +e
           git merge --no-commit --no-ff origin/main
           MERGE_STATUS=$?
           set -e
-          mkdir -p sync_state
-          printf '%s\n' "$MERGE_STATUS" > sync_state/merge_status.txt
-          git status --porcelain=v1 > sync_state/status.txt
-          git diff --name-only --diff-filter=U > sync_state/conflicts.txt
-          git diff --cached --name-status > sync_state/staged.txt
-          git ls-files -s > sync_state/index.txt
-          git rev-parse HEAD > sync_state/feature_head.txt
-          git rev-parse origin/main > sync_state/main_head.txt
+          if [ "$MERGE_STATUS" -eq 0 ]; then
+            echo "Expected the known seven-way conflict set, but merge completed without conflicts. Refusing to guess."
+            exit 1
+          fi
 
-      - name: Upload conflicted merge working tree
-        uses: actions/upload-artifact@v4
-        with:
-          name: unjam-main-sync-state
-          path: |
-            .
-            !.git/**
-            !.godot/**
-            !build/**
-          include-hidden-files: true
-          retention-days: 1
+          ACTUAL_CONFLICTS="$(git diff --name-only --diff-filter=U | sort)"
+          EXPECTED_CONFLICTS="$(printf '%s\n' \
+            scripts/game/rescue_rush_motion_final.gd \
+            scripts/game/water_sort_casual.gd \
+            scripts/game/water_sort_ultra_motion.gd \
+            scripts/ui/premium_home_casual.gd \
+            scripts/ui/premium_live_hub_3d.gd \
+            scripts/ui/unjam_3d_gameplay_stage.gd \
+            tests/validate_production_completion.gd | sort)"
+          if [ "$ACTUAL_CONFLICTS" != "$EXPECTED_CONFLICTS" ]; then
+            echo "Conflict set changed; refusing automatic resolution."
+            echo "Expected:"
+            printf '%s\n' "$EXPECTED_CONFLICTS"
+            echo "Actual:"
+            printf '%s\n' "$ACTUAL_CONFLICTS"
+            exit 1
+          fi
+
+          while IFS= read -r path; do
+            git checkout --ours -- "$path"
+            git add "$path"
+          done <<< "$ACTUAL_CONFLICTS"
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace(path: str, old: str, new: str) -> None:
+              p = Path(path)
+              text = p.read_text()
+              if old not in text:
+                  raise SystemExit(f"expected integration hunk missing: {path}")
+              p.write_text(text.replace(old, new, 1))
+
+          replace(
+              "scripts/ui/smooth_block_piece_button.gd",
+              "\tif dragging:\n\t\treturn\n\tdragging = true\n\tmodulate = Color(1, 1, 1, 0)\n",
+              "\tif dragging:\n\t\treturn\n\tdragging = true\n\t_sync_processing()\n\tmodulate = Color(1, 1, 1, 0)\n",
+          )
+          replace(
+              "scripts/game/block_puzzle_final_polish.gd",
+              "\tif piece_row != null:\n\t\tpiece_row.custom_minimum_size.y = 150.0\n",
+              "\tif piece_row != null:\n\t\tpiece_row.custom_minimum_size.y = 150.0 if viewport_size.y < 1100.0 else 180.0\n",
+          )
+          replace(
+              "scripts/ui/premium_home_casual.gd",
+              "var hero_height := 210.0 if viewport_size.y < 1100.0 else (320.0 if viewport_size.y < 1400.0 else 500.0)",
+              "var hero_height := 210.0 if viewport_size.y < 1100.0 else (320.0 if viewport_size.y < 1400.0 else 460.0)",
+          )
+          replace(
+              "scripts/game/water_sort_ultra_motion.gd",
+              "\tif stage != null:\n\t\tvar content_height := tube_size.y * float(row_count) + row_gap * float(maxi(row_count - 1, 0)) + 42.0\n\t\tstage.custom_minimum_size.y = minf(available_height, content_height)\n",
+              "\tif stage != null:\n\t\tvar content_height := tube_size.y * float(row_count) + row_gap * float(maxi(row_count - 1, 0)) + 42.0\n\t\tvar tall_screen_floor := 1080.0 if get_viewport_rect().size.y >= 1800.0 else 0.0\n\t\tstage.custom_minimum_size.y = minf(available_height, maxf(content_height, tall_screen_floor))\n",
+          )
+          replace(
+              "tests/validate_3d_rebuild_atomic.gd",
+              "\tvar old_piece = piece.piece_root_3d\n\tpiece.configure(\"arrow\", \"right\", Color(\"19b9ff\"))\n\tif piece.piece_root_3d == null or piece.piece_root_3d == old_piece:\n\t\tfailures.append(\"Rescue piece 3D rebuild did not replace its visual root immediately\")\n\tif old_piece != null and old_piece.get_parent() != null:\n\t\tfailures.append(\"Rescue piece 3D rebuild leaves duplicate geometry parented for a frame\")\n",
+              "\tvar old_child_count: int = int(piece.get_child_count())\n\tpiece.configure(\"arrow\", \"right\", Color(\"19b9ff\"))\n\tif piece.piece_type != \"arrow\" or piece.direction != \"right\" or piece.accent != Color(\"19b9ff\"):\n\t\tfailures.append(\"Flat Rescue piece did not apply its new visual state immediately\")\n\tif piece.get_child_count() != old_child_count:\n\t\tfailures.append(\"Flat Rescue piece configure created duplicate child geometry\")\n",
+          )
+          PY
+
+          git rm .github/workflows/temp-sync-main-probe.yml
+          git add \
+            scripts/ui/smooth_block_piece_button.gd \
+            scripts/game/block_puzzle_final_polish.gd \
+            scripts/ui/premium_home_casual.gd \
+            scripts/game/water_sort_ultra_motion.gd \
+            tests/validate_3d_rebuild_atomic.gd
+
+          if [ -n "$(git diff --name-only --diff-filter=U)" ]; then
+            echo "Unresolved merge paths remain."
+            git diff --name-only --diff-filter=U
+            exit 1
+          fi
+          git diff --cached --check
+          git status --short
+          git commit -m "merge: reconcile main with store economy branch"
+          PARENTS="$(git rev-list --parents -n 1 HEAD)"
+          echo "$PARENTS"
+          test "$(wc -w <<< "$PARENTS")" -eq 3
+          git push origin HEAD:visual-reboot-3d-build-final2
