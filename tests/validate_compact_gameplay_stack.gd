@@ -1,9 +1,13 @@
 extends SceneTree
 
+const TALL_VIEWPORT := Vector2i(1080, 1920)
+const MAX_TRAILING_ACTION_GAP := 180.0
+
 func _initialize() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
+	root.size = TALL_VIEWPORT
 	var failures: Array[String] = []
 	await _check_scene("res://scenes/WaterSort.tscn", "GameplayStageHolder", failures)
 	await _check_scene("res://scenes/Game.tscn", "GameplayBoardHolder", failures)
@@ -30,13 +34,20 @@ func _check_scene(path: String, holder_name: String, failures: Array[String]) ->
 		scene.queue_free()
 		await process_frame
 		return
-	if holder.size_flags_vertical == Control.SIZE_EXPAND_FILL:
-		failures.append("%s still expands the gameplay holder vertically" % path)
+	if holder.size_flags_vertical != Control.SIZE_EXPAND_FILL:
+		failures.append("%s gameplay holder does not absorb tall-screen surplus height" % path)
 	if holder.get_child_count() == 0 or not (holder.get_child(0) is Control):
 		failures.append("%s holder has no visual gameplay child" % path)
 	else:
 		var visual := holder.get_child(0) as Control
-		if visual.position.y > 24.0:
-			failures.append("%s gameplay visual floats %.1fpx below its holder top" % [path, visual.position.y])
+		if visual.get_global_rect().end.y > holder.get_global_rect().end.y + 1.0:
+			failures.append("%s gameplay visual spills below its holder" % path)
+	var actions := scene.find_child("CompactGameActions", true, false) as Control
+	if actions == null:
+		failures.append("%s missing CompactGameActions" % path)
+	else:
+		var trailing_gap := root.get_visible_rect().size.y - actions.get_global_rect().end.y
+		if trailing_gap > MAX_TRAILING_ACTION_GAP:
+			failures.append("%s leaves %.1fpx unused below gameplay actions on a tall phone" % [path, trailing_gap])
 	scene.queue_free()
 	await process_frame

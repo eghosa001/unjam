@@ -84,7 +84,7 @@ func build_ui() -> void:
 
 	var center := CenterContainer.new()
 	center.name = "GameplayStageHolder"
-	center.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(center)
 	var stage := PanelContainer.new()
 	stage.name = "GameplayStage"
