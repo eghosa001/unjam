@@ -11,6 +11,11 @@ func _active_count(pieces: Array) -> int:
 	return count
 
 func _run() -> void:
+	var save_manager := root.get_node_or_null("SaveManager")
+	if save_manager != null:
+		var save_data: Dictionary = save_manager.get("data")
+		save_data["active_run"] = {}
+		save_manager.set("data", save_data)
 	var scene := load("res://scenes/Game.tscn") as PackedScene
 	if scene == null:
 		push_error("Rescue scene failed to load")
