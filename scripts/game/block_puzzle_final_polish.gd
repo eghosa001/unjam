@@ -6,10 +6,39 @@ extends "res://scripts/game/block_puzzle_3d.gd"
 const TENSION_THRESHOLD := 0.72
 const TENSION_RELEASE_THRESHOLD := 0.60
 const CLEAR_STREAK_WINDOW := 3.0
+const FINAL_CELL_MAX := 108.0
 
 var _clear_streak := 0
 var _clear_streak_generation := 0
 var _tension_active := false
+
+func _ready() -> void:
+	super._ready()
+	# The 3D base intentionally used a conservative 90 px cap. The final portrait
+	# composition can safely use more of the available width on 1080-class phones,
+	# while narrow devices remain width-limited by the same viewport calculation.
+	_fit_3d_board_layout()
+
+func _fit_3d_board_layout() -> void:
+	if board_grid == null or board_shell == null or board_grid.get_child_count() == 0:
+		return
+	var viewport_size := get_viewport_rect().size
+	var available_board_width := maxf(320.0, viewport_size.x - 72.0)
+	var available_board_height := maxf(320.0, viewport_size.y * 0.54)
+	var gap := float(board_grid.get_theme_constant("h_separation"))
+	var cell_size := clampf(floor(minf(
+		(available_board_width - 22.0 - gap * float(GRID_SIZE - 1)) / float(GRID_SIZE),
+		(available_board_height - 22.0 - gap * float(GRID_SIZE - 1)) / float(GRID_SIZE)
+	)), 44.0, FINAL_CELL_MAX)
+	for child in board_grid.get_children():
+		if child is Control:
+			(child as Control).custom_minimum_size = Vector2(cell_size, cell_size)
+	board_shell.custom_minimum_size = Vector2(
+		cell_size * GRID_SIZE + gap * float(GRID_SIZE - 1) + 18.0,
+		cell_size * GRID_SIZE + gap * float(GRID_SIZE - 1) + 18.0
+	)
+	if piece_row != null:
+		piece_row.custom_minimum_size.y = 150.0
 
 func load_level() -> void:
 	_clear_streak = 0
