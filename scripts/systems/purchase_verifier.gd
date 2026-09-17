@@ -4,7 +4,7 @@ signal verification_completed(product_id: String, token: String, result: Diction
 signal commit_completed(product_id: String, token: String, committed: bool, reason: String)
 
 const VERIFICATION_TIMEOUT_SECONDS := 20.0
-const PACKAGE_NAME := "com.eghosa.unjam"
+const PACKAGE_NAME := "com.eghosa.unjamgam"
 
 func verify(product_id: String, token: String, claim_id: String, callback: Callable) -> void:
 	if OS.get_name() != "Android" and bool(ProjectSettings.get_setting("monetization/test_mode", false)):

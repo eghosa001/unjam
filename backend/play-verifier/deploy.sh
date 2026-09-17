@@ -33,6 +33,6 @@ gcloud run deploy "$SERVICE" \
   --concurrency=40 \
   --cpu=1 \
   --memory=256Mi \
-  --set-env-vars="UNJAM_PACKAGE_NAME=com.eghosa.unjam,UNJAM_LEDGER_COLLECTION=play_purchase_claims"
+  --set-env-vars="UNJAM_PACKAGE_NAME=com.eghosa.unjamgam,UNJAM_LEDGER_COLLECTION=play_purchase_claims"
 
 gcloud run services describe "$SERVICE" --region="$REGION" --format='value(status.url)'

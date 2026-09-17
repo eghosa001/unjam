@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      EXPECTED_PACKAGE: com.eghosa.unjam
+      EXPECTED_PACKAGE: com.eghosa.unjamgam
       EXPECTED_UPLOAD_SHA1: ${{ secrets.UNJAM_ANDROID_UPLOAD_SHA1 }}
     steps:
       - uses: actions/checkout@v4
@@ -133,9 +133,9 @@ jobs:
 
           cfg = Path('export_presets.cfg')
           out = cfg.read_text()
-          expected_package = 'package/unique_name="com.eghosa.unjam"'
+          expected_package = 'package/unique_name="com.eghosa.unjamgam"'
           if expected_package not in out:
-              raise SystemExit('Refusing release: package identity changed from com.eghosa.unjam')
+              raise SystemExit('Refusing release: package identity changed from com.eghosa.unjamgam')
           out = re.sub(r'version/code=\d+', f'version/code={os.environ["VERSION_CODE"]}', out)
           out = re.sub(r'version/name="[^"]*"', f'version/name="{os.environ["VERSION_NAME"]}"', out)
           cfg.write_text(out)
