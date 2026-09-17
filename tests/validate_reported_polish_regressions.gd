@@ -14,7 +14,7 @@ func _init() -> void:
 	_require_source("res://scripts/game/water_sort_ultra_motion.gd", ["_available_tube_height", "row_count"], "Water Sort height-aware tube sizing", errors)
 	_require_source("res://scripts/game/rescue_rush_casual.gd", ["func apply_theme_mode"], "Rescue Rush immediate dark theme", errors)
 	_require_source("res://scripts/game/water_sort_casual.gd", ["func apply_theme_mode"], "Water Sort immediate dark theme", errors)
-	_require_source("res://scripts/game/block_puzzle_3d.gd", ["func apply_theme_mode"], "Block Puzzle immediate dark theme", errors)
+	_require_source("res://scripts/game/block_puzzle_final_polish.gd", ["func apply_theme_mode", "BlockPuzzle3DEnvironment"], "Block Puzzle immediate dark theme", errors)
 
 	if not errors.is_empty():
 		for error in errors:
