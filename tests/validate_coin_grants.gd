@@ -39,9 +39,9 @@ func run() -> void:
 	# Verified consumable purchase grants through shared wallet exactly once per token.
 	save_manager.data.coins = 0
 	save_manager.data.processed_purchase_tokens = []
-	store.call("_on_verified", store.PRODUCT_COINS_SMALL, "qa-token-small", true, "qa")
+	store.call("_on_verified", store.PRODUCT_COINS_SMALL, "qa-token-small", "qa-claim-small", {"valid": true, "grant": true, "entitlement": false, "claim_state": "issued", "reason": "qa"})
 	expect_true(int(save_manager.data.get("coins", -1)) == 500, "500-coin pack grant incorrect")
-	store.call("_on_verified", store.PRODUCT_COINS_SMALL, "qa-token-small", true, "qa-repeat")
+	store.call("_on_verified", store.PRODUCT_COINS_SMALL, "qa-token-small", "qa-claim-small", {"valid": true, "grant": true, "entitlement": false, "claim_state": "issued", "reason": "qa-repeat"})
 	expect_true(int(save_manager.data.get("coins", -1)) == 500, "Processed purchase token granted coins twice")
 
 	# Starter pack remains one-time Remove Ads + 1,000 coins.
@@ -51,12 +51,24 @@ func run() -> void:
 	save_manager.data.purchased_products = []
 	save_manager.data.processed_purchase_tokens = []
 	ads.ads_enabled = true
-	store.call("_on_verified", store.PRODUCT_STARTER_PACK, "qa-token-starter", true, "qa")
+	store.call("_on_verified", store.PRODUCT_STARTER_PACK, "qa-token-starter", "qa-claim-starter", {"valid": true, "grant": true, "entitlement": true, "claim_state": "issued", "reason": "qa"})
 	expect_true(int(save_manager.data.get("coins", -1)) == 1000, "Starter Pack did not grant 1,000 coins")
 	expect_true(bool(save_manager.data.get("remove_ads", false)), "Starter Pack did not unlock Remove Ads")
 	expect_true(not ads.ads_enabled, "Starter Pack did not disable interstitial ads")
-	store.call("_on_verified", store.PRODUCT_STARTER_PACK, "qa-token-starter", true, "qa-repeat")
+	store.call("_on_verified", store.PRODUCT_STARTER_PACK, "qa-token-starter", "qa-claim-starter", {"valid": true, "grant": true, "entitlement": true, "claim_state": "issued", "reason": "qa-repeat"})
 	expect_true(int(save_manager.data.get("coins", -1)) == 1000, "Starter Pack granted twice for same token")
+
+	# A server-committed Starter Pack restored on a fresh install restores the
+	# durable Remove Ads entitlement but never issues the 1,000 coins again.
+	save_manager.data.remove_ads = false
+	save_manager.data.starter_pack_purchased = false
+	save_manager.data.purchased_products = []
+	save_manager.data.processed_purchase_tokens = []
+	ads.ads_enabled = true
+	store.call("_on_verified", store.PRODUCT_STARTER_PACK, "qa-token-starter", "qa-new-install-claim", {"valid": true, "grant": false, "entitlement": true, "claim_state": "committed", "reason": "already claimed"})
+	expect_true(int(save_manager.data.get("coins", -1)) == 1000, "Restored Starter Pack re-granted coins")
+	expect_true(bool(save_manager.data.get("remove_ads", false)), "Restored Starter Pack did not restore Remove Ads")
+	expect_true(bool(save_manager.data.get("starter_pack_purchased", false)), "Restored Starter Pack entitlement was not persisted")
 	expect_true("purchase" in reasons, "Verified coin purchase bypassed EconomyManager reason tracking")
 
 	if economy.transaction_recorded.is_connected(callback):
