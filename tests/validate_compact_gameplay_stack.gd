@@ -1,8 +1,12 @@
 extends SceneTree
 
 const TALL_VIEWPORT := Vector2i(1080, 1920)
+const SELECTOR_VIEWPORTS := [
+	Vector2i(1080, 1920),
+	Vector2i(1440, 3200)
+]
 const MAX_TRAILING_ACTION_GAP := 180.0
-const MAX_SELECTOR_TRAILING_GAP := 200.0
+const MIN_SELECTOR_TRAILING_GAP := 32.0
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -12,7 +16,8 @@ func _run() -> void:
 	var failures: Array[String] = []
 	await _check_scene("res://scenes/WaterSort.tscn", "GameplayStageHolder", failures)
 	await _check_scene("res://scenes/Game.tscn", "GameplayBoardHolder", failures)
-	await _check_selector(failures)
+	for viewport_size in SELECTOR_VIEWPORTS:
+		await _check_selector(viewport_size, failures)
 	if failures.is_empty():
 		print("PASS compact gameplay stack")
 		quit(0)
@@ -55,7 +60,8 @@ func _check_scene(path: String, holder_name: String, failures: Array[String]) ->
 	scene.queue_free()
 	await process_frame
 
-func _check_selector(failures: Array[String]) -> void:
+func _check_selector(viewport_size: Vector2i, failures: Array[String]) -> void:
+	root.size = viewport_size
 	var packed := load("res://scenes/Main.tscn") as PackedScene
 	if packed == null:
 		failures.append("Could not load Main.tscn")
@@ -71,13 +77,17 @@ func _check_selector(failures: Array[String]) -> void:
 	var quote_label := _find_label(main, "Different puzzles.")
 	var home_button := _find_button(main, "HOME")
 	if quote_label == null or home_button == null:
-		failures.append("Game selector final content or bottom navigation is missing")
+		failures.append("Game selector final content or bottom navigation is missing at %s" % str(viewport_size))
 	else:
 		var quote := quote_label.get_parent() as Control
 		var nav := home_button.get_parent().get_parent() as Control
 		var gap := nav.get_global_rect().position.y - quote.get_global_rect().end.y
-		if gap > MAX_SELECTOR_TRAILING_GAP:
-			failures.append("Game selector leaves %.1fpx unused before bottom navigation" % gap)
+		var max_gap := maxf(140.0, float(viewport_size.y) * 0.075)
+		print("SELECTOR_COMPOSITION %s gap=%.1f max=%.1f" % [str(viewport_size), gap, max_gap])
+		if gap < MIN_SELECTOR_TRAILING_GAP:
+			failures.append("Game selector content crowds/overlaps bottom navigation at %s: %.1fpx gap" % [str(viewport_size), gap])
+		elif gap > max_gap:
+			failures.append("Game selector leaves %.1fpx unused before bottom navigation at %s (max %.1fpx)" % [gap, str(viewport_size), max_gap])
 	main.queue_free()
 	await process_frame
 
