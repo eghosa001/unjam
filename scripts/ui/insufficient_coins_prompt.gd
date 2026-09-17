@@ -126,12 +126,9 @@ func _watch_rewarded() -> void:
 	_reward_busy = true
 	reward_button.disabled = true
 	reward_button.text = "LOADING…"
-	var accepted := AdManager.reward_coins("assist_coin_recovery", 50, Callable(self, "_on_reward_granted"))
-	if not accepted:
-		_reward_busy = false
-		reward_button.disabled = false
-		reward_button.text = "▶  WATCH AD  •  +50 COINS"
-		_refresh_detail("Rewarded ad is unavailable right now. Shop is still available.")
+	var accepted := AdManager.reward_coins("assist_coin_recovery", 50, Callable(self, "_on_reward_granted"), Callable(self, "_on_reward_failed"))
+	if not accepted and _reward_busy:
+		_on_reward_failed("Rewarded ad is unavailable right now")
 
 func _on_reward_granted() -> void:
 	_reward_busy = false
@@ -144,6 +141,13 @@ func _on_reward_granted() -> void:
 			_close()
 			return
 	_refresh_detail("+50 coins added.")
+
+func _on_reward_failed(reason: String = "Rewarded ad failed") -> void:
+	_reward_busy = false
+	if reward_button != null:
+		reward_button.disabled = false
+		reward_button.text = "▶  WATCH AD  •  +50 COINS"
+	_refresh_detail("%s. Shop is still available." % reason)
 
 func _close() -> void:
 	if overlay != null:
