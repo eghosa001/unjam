@@ -12,7 +12,7 @@ func _make_hero(parent: VBoxContainer) -> void:
 	var viewport_size := get_viewport_rect().size
 	var bounded_height := hero.custom_minimum_size.y
 	if viewport_size.y >= 1400.0:
-		bounded_height = clampf(viewport_size.y * 0.25, 420.0, 520.0)
+		bounded_height = clampf(viewport_size.y * 0.27, 500.0, 540.0)
 
 	var hero_index := hero.get_index()
 	parent.remove_child(hero)
