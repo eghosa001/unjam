@@ -1,0 +1,182 @@
+name: UNJAM One-Time Signed V1 Build
+
+on:
+  push:
+    branches: [signed-release-v1-build]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: unjam-one-time-signed-v1
+  cancel-in-progress: false
+
+jobs:
+  release-aab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      EXPECTED_PACKAGE: com.eghosa.unjam
+      EXPECTED_UPLOAD_SHA1: ${{ secrets.UNJAM_ANDROID_UPLOAD_SHA1 }}
+      VERSION_NAME: 1.0.0
+      VERSION_CODE: 1
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate release contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/validate_release_contract.py
+      - name: Require production secrets
+        env:
+          KEYSTORE_B64: ${{ secrets.UNJAM_ANDROID_KEYSTORE_BASE64 }}
+          KEY_ALIAS: ${{ secrets.UNJAM_ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.UNJAM_ANDROID_KEY_PASSWORD }}
+          VERIFY_URL: ${{ secrets.UNJAM_PURCHASE_VERIFICATION_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          missing=0
+          for pair in \
+            "UNJAM_ANDROID_KEYSTORE_BASE64:$KEYSTORE_B64" \
+            "UNJAM_ANDROID_KEY_ALIAS:$KEY_ALIAS" \
+            "UNJAM_ANDROID_KEY_PASSWORD:$KEY_PASSWORD" \
+            "UNJAM_ANDROID_UPLOAD_SHA1:$EXPECTED_UPLOAD_SHA1" \
+            "UNJAM_PURCHASE_VERIFICATION_URL:$VERIFY_URL"; do
+            name="${pair%%:*}"
+            value="${pair#*:}"
+            if [ -z "$value" ]; then
+              echo "Missing required release secret: $name" >&2
+              missing=1
+            fi
+          done
+          test "$missing" -eq 0
+          [[ "$EXPECTED_UPLOAD_SHA1" =~ ^([0-9A-Fa-f]{2}:){19}[0-9A-Fa-f]{2}$ ]]
+          [[ "$VERIFY_URL" == https://*/verify ]]
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate purchase verifier backend
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/validate_purchase_claim_protocol.py
+          cd backend/play-verifier
+          npm install --omit=dev --no-audit --no-fund
+          npm test
+          node --check src/server.js
+          node --check src/google_play.js
+          node --check src/firestore_ledger.js
+      - name: Setup JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Setup Godot 4.7.2
+        uses: solarlabyrinth/action-setup-godot@v3
+        with:
+          version: 4.7.2-stable
+          export-templates: true
+      - name: Install Android API 36
+        shell: bash
+        run: |
+          set -euo pipefail
+          ANDROID_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          test -n "$ANDROID_ROOT"
+          SDKMANAGER=$(find "$ANDROID_ROOT/cmdline-tools" -name sdkmanager -type f | sort | tail -1)
+          test -x "$SDKMANAGER"
+          set +o pipefail
+          yes | "$SDKMANAGER" --sdk_root="$ANDROID_ROOT" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+          SDK_STATUS=${PIPESTATUS[1]}
+          set -o pipefail
+          test "$SDK_STATUS" -eq 0
+          echo "ANDROID_HOME=$ANDROID_ROOT" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_ROOT" >> "$GITHUB_ENV"
+      - name: Install monetization plugins
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x tools/install_monetization_plugins.sh
+          tools/install_monetization_plugins.sh
+      - name: Configure production verification and signing
+        env:
+          KEYSTORE_B64: ${{ secrets.UNJAM_ANDROID_KEYSTORE_BASE64 }}
+          KEY_ALIAS: ${{ secrets.UNJAM_ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.UNJAM_ANDROID_KEY_PASSWORD }}
+          VERIFY_URL: ${{ secrets.UNJAM_PURCHASE_VERIFICATION_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          KEYSTORE="$RUNNER_TEMP/unjam-release.keystore"
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$KEYSTORE"
+          chmod 600 "$KEYSTORE"
+          keytool -list -keystore "$KEYSTORE" -storepass "$KEY_PASSWORD" -alias "$KEY_ALIAS" >/dev/null
+          ACTUAL_UPLOAD_SHA1="$(keytool -list -v -keystore "$KEYSTORE" -storepass "$KEY_PASSWORD" -alias "$KEY_ALIAS" | sed -n 's/^[[:space:]]*SHA1: //p' | head -n 1 | tr '[:lower:]' '[:upper:]' | tr -d '\r')"
+          EXPECTED_UPLOAD_SHA1="$(printf '%s' "$EXPECTED_UPLOAD_SHA1" | tr '[:lower:]' '[:upper:]')"
+          if [[ "$ACTUAL_UPLOAD_SHA1" != "$EXPECTED_UPLOAD_SHA1" ]]; then
+            echo "Upload certificate fingerprint does not match UNJAM_ANDROID_UPLOAD_SHA1" >&2
+            exit 1
+          fi
+          python3 - <<'PY'
+          import os, re
+          from pathlib import Path
+          p = Path('project.godot')
+          text = p.read_text()
+          url = os.environ['VERIFY_URL']
+          text = re.sub(r'purchase_verification_url="[^"]*"', f'purchase_verification_url="{url}"', text)
+          p.write_text(text)
+          cfg = Path('export_presets.cfg')
+          out = cfg.read_text()
+          expected = 'package/unique_name="com.eghosa.unjam"'
+          if expected not in out:
+              raise SystemExit('Refusing release: package identity changed')
+          out = re.sub(r'version/code=\d+', f'version/code={os.environ["VERSION_CODE"]}', out)
+          out = re.sub(r'version/name="[^"]*"', f'version/name="{os.environ["VERSION_NAME"]}"', out)
+          cfg.write_text(out)
+          PY
+          echo "GODOT_ANDROID_KEYSTORE_RELEASE_PATH=$KEYSTORE" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_RELEASE_USER=$KEY_ALIAS" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
+      - name: Import and run focused release gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path . --editor --quit
+          for t in validate_motion_quality validate_premium_ux validate_visual_quality_contract validate_uiux_regressions validate_viewport_fit validate_compact_gameplay_stack validate_home_tall_screen_composition; do
+            timeout 60s godot --headless --path . --script "res://tests/$t.gd"
+          done
+      - name: Export release AAB
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p build/android
+          godot --headless --verbose --path . --install-android-build-template --export-release Android build/android/unjam-release.aab 2>&1 | tee android-release-export.log
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" android-release-export.log; then exit 1; fi
+          test -s build/android/unjam-release.aab
+      - name: Verify signed release AAB
+        shell: bash
+        run: |
+          set -euo pipefail
+          AAB=build/android/unjam-release.aab
+          jarsigner -verify -verbose -certs "$AAB" | tee build/android/jarsigner-verify.log
+          unzip -t "$AAB" | tee build/android/aab-zip-test.log
+          BUNDLE_SHA1="$(keytool -printcert -jarfile "$AAB" | sed -n 's/^[[:space:]]*SHA1: //p' | head -n 1 | tr '[:lower:]' '[:upper:]' | tr -d '\r')"
+          EXPECTED_UPLOAD_SHA1="$(printf '%s' "$EXPECTED_UPLOAD_SHA1" | tr '[:lower:]' '[:upper:]')"
+          if [[ "$BUNDLE_SHA1" != "$EXPECTED_UPLOAD_SHA1" ]]; then
+            echo "Built AAB certificate fingerprint does not match expected upload certificate" >&2
+            exit 1
+          fi
+          sha256sum "$AAB" | tee build/android/unjam-release.aab.sha256
+          echo "Signed AAB verification passed for $EXPECTED_PACKAGE version $VERSION_NAME ($VERSION_CODE)."
+      - name: Upload signed release AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: unjam-release-aab-1.0.0-1
+          path: |
+            build/android/unjam-release.aab
+            build/android/unjam-release.aab.sha256
+            build/android/jarsigner-verify.log
+            build/android/aab-zip-test.log
+          if-no-files-found: error
+          retention-days: 14
