@@ -27,6 +27,7 @@ environment/defaults/default_clear_color=Color(0.255, 0.725, 1, 1)
 
 [autoload]
 SaveManager="*res://scripts/core/robust_save_manager.gd"
+EconomyManager="*res://scripts/systems/economy_manager.gd"
 HintManager="*res://scripts/systems/hint_manager.gd"
 LevelManager="*res://scripts/core/level_manager.gd"
 MultiGameManager="*res://scripts/core/multi_game_manager.gd"
