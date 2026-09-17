@@ -172,14 +172,14 @@ func _can_place_on(state: Array, shape: Array, origin: Vector2i) -> bool:
 
 func _empty_pocket_penalty(state: Array) -> int:
 	var penalty := 0
-	var dirs := [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]
+	var dirs: Array[Vector2i] = [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]
 	for y in range(GRID_SIZE):
 		for x in range(GRID_SIZE):
 			if bool(state[y][x]):
 				continue
 			var blocked := 0
-			for dir in dirs:
-				var p := Vector2i(x, y) + dir
+			for dir: Vector2i in dirs:
+				var p: Vector2i = Vector2i(x, y) + dir
 				if p.x < 0 or p.y < 0 or p.x >= GRID_SIZE or p.y >= GRID_SIZE or bool(state[p.y][p.x]):
 					blocked += 1
 			if blocked >= 3:
