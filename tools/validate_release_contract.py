@@ -3,9 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 
 EXPECTED_PACKAGE = 'package/unique_name="com.eghosa.unjam"'
-EXPECTED_VERSION_CODE = 'version/code=2'
-EXPECTED_VERSION_NAME = 'version/name="1.0.1"'
-EXPECTED_UPLOAD_SHA1 = '8C:B6:B3:07:8E:AB:45:31:A3:03:D6:36:FA:05:C8:E6:4D:6E:7A:B9'
+EXPECTED_VERSION_CODE = 'version/code=1'
+EXPECTED_VERSION_NAME = 'version/name="1.0.0"'
+EXPECTED_UPLOAD_SECRET = 'secrets.UNJAM_ANDROID_UPLOAD_SHA1'
 
 REQUIRED_RELEASE_TESTS = (
     'validate_campaign',
@@ -35,9 +35,10 @@ def main() -> int:
     errors: list[str] = []
 
     for token in (
-        'default: 2',
+        'default: 1',
+        'default: 1.0.0',
         'EXPECTED_UPLOAD_SHA1',
-        EXPECTED_UPLOAD_SHA1,
+        EXPECTED_UPLOAD_SECRET,
         '--export-release Android build/android/unjam-release.aab',
         'jarsigner -verify',
         'keytool -printcert -jarfile',
@@ -57,7 +58,7 @@ def main() -> int:
 
     for token in (EXPECTED_PACKAGE, EXPECTED_VERSION_CODE, EXPECTED_VERSION_NAME):
         if token not in preset:
-            errors.append(f'export preset does not preserve update contract: {token}')
+            errors.append(f'export preset does not preserve fresh-app contract: {token}')
 
     if errors:
         print('Release contract validation failed:')
@@ -67,8 +68,8 @@ def main() -> int:
 
     print('Release contract validation passed.')
     print('Package: com.eghosa.unjam')
-    print('Default release: versionCode 2 / versionName 1.0.1')
-    print(f'Expected upload certificate SHA-1: {EXPECTED_UPLOAD_SHA1}')
+    print('Fresh-app default release: versionCode 1 / versionName 1.0.0')
+    print('Upload certificate fingerprint is supplied at release time by UNJAM_ANDROID_UPLOAD_SHA1.')
     return 0
 
 

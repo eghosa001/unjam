@@ -2,6 +2,22 @@
 
 The repository is hardened to fail closed until production services are configured.
 
+## Fresh Google Play app reset
+
+This repository is now prepared to start the replacement Play listing at **versionName 1.0.0 / versionCode 1** with a **new upload key**.
+
+- [ ] Create the replacement app in Play Console.
+- [ ] Keep `com.eghosa.unjam` only if Google Play accepts that package for the replacement app. A deleted app with zero lifetime installs can have its package name reused; a deleted app with any lifetime install cannot.
+- [ ] Enable Play App Signing for the replacement app and let Google manage the app-signing key unless there is a specific reason to supply your own.
+- [ ] Generate a new RSA upload keystore and keep at least two secure backups outside the repository.
+- [ ] Add the new keystore and credentials to GitHub Actions secrets: `UNJAM_ANDROID_KEYSTORE_BASE64`, `UNJAM_ANDROID_KEY_ALIAS`, and `UNJAM_ANDROID_KEY_PASSWORD`.
+- [ ] Add the new upload certificate SHA-1 to GitHub Actions secret `UNJAM_ANDROID_UPLOAD_SHA1`.
+- [ ] Add the production HTTPS purchase-verification endpoint to GitHub Actions secret `UNJAM_PURCHASE_VERIFICATION_URL`.
+- [ ] Run the `Android Production Release` workflow with `version_name=1.0.0` and `version_code=1`; download the verified release AAB and upload that AAB to the new Play listing.
+- [ ] After the first accepted Play upload, every subsequent upload must use a higher `versionCode`.
+
+Do not reuse the deleted app's old private upload key merely because it still exists. The replacement release workflow validates the new certificate fingerprint supplied through `UNJAM_ANDROID_UPLOAD_SHA1` and will reject a keystore whose SHA-1 does not match that secret.
+
 ## Monetization status
 
 Configured in code/CI:
@@ -27,17 +43,17 @@ Still account-side / external:
 - [ ] Publish the privacy policy at the configured public URL and confirm it is reachable without login.
 - [ ] Set an HTTPS `purchase_verification_url` backed by Google Play Developer API verification. Production purchases intentionally fail closed until this exists.
 - [ ] Make the purchase-verification backend idempotent by Google Play transaction/purchase token. In particular, `unjam_starter_pack` must not grant its 1,000 coins again after reinstall, app-data clear, restore on another device, retry, or duplicate callback; the server must be the durable source of truth for whether a non-consumable grant was already applied.
-- [ ] Create `unjam_remove_ads`, `unjam_starter_pack`, `unjam_coins_500`, `unjam_coins_1500`, and `unjam_coins_4000` as one-time products in Play Console.
-- [ ] Configure the matching product prices in Play Console.
+- [ ] Create `unjam_remove_ads`, `unjam_starter_pack`, `unjam_coins_500`, `unjam_coins_1500`, and `unjam_coins_4000` as one-time products in the **new** Play Console app.
+- [ ] Configure the matching product prices in the new Play Console app.
 - [ ] Complete Play Console Data Safety based on the exact production SDK set.
 - [ ] Set **Contains ads = Yes**.
 - [ ] Complete Target audience and IARC accurately.
 - [ ] Add the developer website URL to the Play store listing so AdMob can discover app-ads.txt.
-- [ ] Link the published Google Play listing back to the AdMob app and wait for AdMob app-readiness/app-ads verification.
+- [ ] Link the replacement Google Play listing to the AdMob app and wait for AdMob app-readiness/app-ads verification.
 - [ ] Keep release keystore path, alias and passwords only in CI/Play secrets; never commit them.
 - [ ] Upload the AAB to Play Internal Testing and test purchase success, cancel, pending, restore, refund, repeat consumable purchase, offline behavior, rewarded-ad success/failure, and consent flows with license testers.
 - [ ] Explicitly test reinstall/app-data-clear and second-device restore so the backend proves that non-consumable entitlements restore without duplicating one-time coin grants.
-- [ ] Increment `version/code` for every Play upload.
+- [ ] If this developer account is subject to Google's new-personal-account production-access rule, complete the required closed test before applying for production.
 
 ## Code-side release gates
 
@@ -60,10 +76,10 @@ Current asset pack requirements verified against Google Play guidance:
 
 ## Play Console organization-only rejection check
 
-Before the next submission, review every Play Console declaration that could classify the app as requiring an organization account. UNJAM is a casual puzzle collection, so declarations for regulated financial services, health services, government affiliation or other organization-only categories must only be selected if the shipped app actually provides those features.
+Before the replacement submission, review every Play Console declaration that could classify the app as requiring an organization account. UNJAM is a casual puzzle collection, so declarations for regulated financial services, health services, government affiliation or other organization-only categories must only be selected if the shipped app actually provides those features.
 
 Do not change a truthful declaration merely to bypass review. If a genuinely used feature requires an organization account, the correct fix is to publish from an eligible organization developer account.
 
 ## Production decision
 
-Do not submit to Production until the exact release commit is green in CI, the final AAB passes Internal Testing, the previous organization-only declaration issue is resolved accurately, the privacy/Data Safety/ads declarations match the shipped build, the purchase-verification backend is live and idempotent across reinstall/device restore, and app-ads.txt is reachable at the root hostname of the developer website.
+Do not submit to Production until the exact release commit is green in CI, the final AAB passes Internal Testing, the organization-only declaration issue is resolved accurately, the privacy/Data Safety/ads declarations match the shipped build, the purchase-verification backend is live and idempotent across reinstall/device restore, and app-ads.txt is reachable at the root hostname of the developer website.
