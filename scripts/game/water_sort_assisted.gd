@@ -117,11 +117,15 @@ func show_hint() -> void:
 		return
 	SaveManager.record_hint()
 	FeedbackManager.tap()
-	hint_label.text = "Best move: tube %d → tube %d" % [move.x + 1, move.y + 1]
+	var guidance := "Best move: tube %d → tube %d" % [move.x + 1, move.y + 1]
+	hint_label.text = guidance
 	# Use the normal interaction path so history, concurrent pour animation,
 	# checkpoints and completion timing remain owned by the active game layer.
+	# Normal tube taps clear stale hints; restore this fresh guidance after the
+	# automated taps so the player can still see what the Hint just executed.
 	select_tube(move.x)
 	select_tube(move.y)
+	hint_label.text = guidance
 
 func _best_water_move() -> Vector2i:
 	return WaterSolver.best_move(tubes, 40000)
