@@ -34,6 +34,18 @@ func run() -> void:
 	expect_true(spent and int(save.data.coins) == 125, "Direct SaveManager spend failed")
 	expect_true(String(transactions.back().get("reason", "")) == "external_spend", "Direct SaveManager spend did not notify EconomyManager")
 
+	# The legacy persistence API must not allow a negative or zero transaction to
+	# become an accidental mint/spend path outside EconomyManager validation.
+	var before_invalid := int(save.data.coins)
+	var transaction_count := transactions.size()
+	save.add_coins(-50)
+	save.add_coins(0)
+	var invalid_negative_spend := bool(save.spend_coins(-25))
+	var invalid_zero_spend := bool(save.spend_coins(0))
+	expect_true(int(save.data.coins) == before_invalid, "Invalid legacy coin mutation changed balance")
+	expect_true(not invalid_negative_spend and not invalid_zero_spend, "Invalid legacy spend was accepted")
+	expect_true(transactions.size() == transaction_count, "Invalid legacy coin mutation emitted a transaction")
+
 	# Daily completion mutates the persistent reward state internally; it must
 	# still surface exactly one semantic wallet transaction to live UI listeners.
 	save.data.daily_completed = []
