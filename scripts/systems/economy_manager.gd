@@ -39,6 +39,11 @@ func notify_external_change(previous_balance: int, reason: String, metadata: Dic
 		_emit_transaction(delta, reason, metadata)
 	return current
 
+func record_external_delta(delta: int, reason: String, metadata: Dictionary = {}) -> int:
+	if delta != 0 and not reason.strip_edges().is_empty():
+		_emit_transaction(delta, reason, metadata)
+	return balance()
+
 func _emit_transaction(delta: int, reason: String, metadata: Dictionary) -> void:
 	var current := balance()
 	var transaction := {
