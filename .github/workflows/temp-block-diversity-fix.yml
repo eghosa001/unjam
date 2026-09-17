@@ -1,0 +1,47 @@
+name: Temporary Block Diversity Fix
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - visual-reboot-3d-build-final2
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.event.pull_request.head.ref == 'sync-main-probe-child-1' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: visual-reboot-3d-build-final2
+          fetch-depth: 0
+
+      - name: Apply verified campaign-diversity fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "UNJAM Integration"
+          git config user.email "unjam-integration@users.noreply.github.com"
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/game/block_puzzle_polished.gd')
+          text = path.read_text()
+          old = '\tvar d := difficulty()\n\tvar tier := campaign_tier()\n'
+          new = ('\t# Goal pacing follows the canonical campaign rhythm. Presentation/gameplay\n'
+                 '\t# subclasses may override difficulty() for local pressure without collapsing\n'
+                 '\t# score/line/par variety across the 10,000-level campaign.\n'
+                 '\tvar d := MultiGameManager.difficulty_for_level(level_number)\n'
+                 '\tvar tier := campaign_tier()\n')
+          if text.count(old) != 1:
+              raise SystemExit(f'Expected exactly one target hunk, found {text.count(old)}')
+          path.write_text(text.replace(old, new, 1))
+          PY
+          git diff --check
+          git diff -- scripts/game/block_puzzle_polished.gd
+          git add scripts/game/block_puzzle_polished.gd
+          git commit -m "fix: preserve block campaign goal diversity"
+          git push origin HEAD:visual-reboot-3d-build-final2
