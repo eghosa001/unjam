@@ -89,7 +89,7 @@ func build_ui() -> void:
 	var stage := PanelContainer.new()
 	stage.name = "GameplayStage"
 	stage.custom_minimum_size = Vector2(0, 520)
-	stage.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	stage.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	stage.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	stage.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color(0.88, 0.98, 1.0, 0.74), 38, Color("baf2ff"), 3, 14))
 	center.add_child(stage)

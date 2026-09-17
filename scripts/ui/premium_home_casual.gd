@@ -43,25 +43,44 @@ func build_home_launcher() -> void:
 	_make_brand_logo(root)
 	_make_hero(root)
 
+	var aspect_ratio := viewport_size.y / maxf(1.0, viewport_size.x)
+	var upper_balance_height := maxf(0.0, aspect_ratio - 1.9) * 760.0
+	if upper_balance_height > 0.0:
+		var upper_balance_spacer := Control.new()
+		upper_balance_spacer.name = "HomeUpperBalanceSpacer"
+		upper_balance_spacer.custom_minimum_size = Vector2(0, upper_balance_height)
+		root.add_child(upper_balance_spacer)
+
+	var action_cluster := VBoxContainer.new()
+	action_cluster.name = "HomeActionCluster"
+	action_cluster.size_flags_vertical = Control.SIZE_FILL
+	action_cluster.alignment = BoxContainer.ALIGNMENT_CENTER
+	action_cluster.add_theme_constant_override("separation", 7 if short_phone else 11)
+	root.add_child(action_cluster)
+
 	primary_button = Button.new()
 	primary_button.name = "HomePrimaryAction"
 	primary_button.text = "▶   PLAY"
 	var tall_screen := viewport_size.y >= 1400.0
-	primary_button.custom_minimum_size = Vector2(0, 138 if tall_screen else (88 if short_phone else 108))
+	primary_button.custom_minimum_size = Vector2(0, 118 if tall_screen else (88 if short_phone else 108))
 	primary_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	primary_button.add_theme_font_size_override("font_size", 34 if short_phone else 42)
 	Unjam3DTheme.gloss_button(primary_button, Unjam3DTheme.GREEN, true, 44, dark_mode)
 	primary_button.pressed.connect(_open_game_selector)
-	root.add_child(primary_button)
+	action_cluster.add_child(primary_button)
 
 	var play_hint := Label.new()
 	play_hint.text = "PICK YOUR PUZZLE   •   START PLAYING"
 	play_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	play_hint.add_theme_font_size_override("font_size", 16 if short_phone else 19)
 	Unjam3DTheme.label_3d(play_hint, Color.WHITE, Unjam3DTheme.NAVY, 3)
-	root.add_child(play_hint)
+	action_cluster.add_child(play_hint)
 
-	_make_game_strip(root)
+	_make_game_strip(action_cluster)
+	var lower_balance_spacer := Control.new()
+	lower_balance_spacer.name = "HomeLowerBalanceSpacer"
+	lower_balance_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	root.add_child(lower_balance_spacer)
 	_make_motto(root)
 	_make_bottom_nav()
 	_animate_entry(root)
@@ -168,11 +187,10 @@ func _make_tagline(parent: VBoxContainer) -> void:
 
 func _make_hero(parent: VBoxContainer) -> void:
 	var viewport_size := get_viewport_rect().size
-	var hero_height := 210.0 if viewport_size.y < 1100.0 else (320.0 if viewport_size.y < 1400.0 else 460.0)
+	var hero_height := 210.0 if viewport_size.y < 1100.0 else (300.0 if viewport_size.y < 1400.0 else 360.0)
 	var hero := PanelContainer.new()
 	hero.name = "HomeHero3D"
 	hero.custom_minimum_size = Vector2(0, hero_height)
-	hero.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	hero.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color(0.06, 0.13, 0.24, 0.52) if _theme_mode() == "dark" else Color(0.82, 0.97, 1.0, 0.09), 42, Color(1, 1, 1, 0.38), 2, 8))
 	parent.add_child(hero)
 	var margin := MarginContainer.new()
@@ -214,7 +232,7 @@ func _make_game_strip(parent: VBoxContainer) -> void:
 	var strip := HBoxContainer.new()
 	strip.name = "HomeGameStrip"
 	var viewport_height := get_viewport_rect().size.y
-	strip.custom_minimum_size = Vector2(0, 70 if viewport_height < 1100.0 else (112 if viewport_height >= 1400.0 else 92))
+	strip.custom_minimum_size = Vector2(0, 70 if viewport_height < 1100.0 else (104 if viewport_height >= 1400.0 else 92))
 	strip.alignment = BoxContainer.ALIGNMENT_CENTER
 	strip.add_theme_constant_override("separation", 12)
 	parent.add_child(strip)
