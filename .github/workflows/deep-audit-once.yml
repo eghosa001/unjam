@@ -35,7 +35,8 @@ jobs:
       - name: Run audit-only validators
         shell: bash
         run: |
-          set -euxo pipefail
+          set -uo pipefail
+          failures=0
           for t in \
             validate_3d_initial_render_prime \
             validate_3d_rebuild_atomic \
@@ -77,6 +78,12 @@ jobs:
             validate_water_sort_type_safety \
             validate_water_tube_3d_layering; do
             echo "===== START $t ====="
-            timeout 90s godot --headless --path . --script "res://tests/$t.gd"
-            echo "===== PASS $t ====="
+            if timeout 90s godot --headless --path . --script "res://tests/$t.gd"; then
+              echo "===== PASS $t ====="
+            else
+              echo "===== FAIL $t ====="
+              failures=$((failures + 1))
+            fi
           done
+          echo "Deep audit failures: $failures"
+          test "$failures" -eq 0
