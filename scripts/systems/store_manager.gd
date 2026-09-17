@@ -155,9 +155,9 @@ func _on_verified(product_id: String, token: String, valid: bool, reason: String
 	elif product_id == PRODUCT_STARTER_PACK:
 		AdManager.set_remove_ads_purchased(true)
 		SaveManager.data.starter_pack_purchased = true
-		SaveManager.add_coins(coins)
+		EconomyManager.grant(coins, "purchase", {"product": product_id})
 	elif coins > 0:
-		SaveManager.add_coins(coins)
+		EconomyManager.grant(coins, "purchase", {"product": product_id})
 		SaveManager.data.lifetime_purchased_coins = int(SaveManager.data.get("lifetime_purchased_coins", 0)) + coins
 
 	if non_consumable and product_id not in purchased:
