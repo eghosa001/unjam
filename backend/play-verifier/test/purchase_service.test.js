@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createPurchaseService } from '../src/purchase_service.js';
 
-const PACKAGE = 'com.eghosa.unjam';
+const PACKAGE = 'com.eghosa.unjamgam';
 const REMOVE_ADS = 'unjam_remove_ads';
 const COINS = 'unjam_coins_500';
 
