@@ -27,6 +27,7 @@ jobs:
           git config user.name "UNJAM Integration"
           git config user.email "unjam-integration@users.noreply.github.com"
           git fetch origin main
+          cp .github/workflows/godot-ci.yml /tmp/feature-godot-ci.yml
 
           set +e
           git merge --no-commit --no-ff origin/main
@@ -97,8 +98,12 @@ jobs:
           )
           PY
 
-          git rm .github/workflows/temp-sync-main-probe.yml
+          # Actions' job token cannot update workflow files. Keep workflow paths
+          # identical to parent 1 here; the authenticated GitHub connector applies
+          # the already-tested merged CI file and removes this resolver afterward.
+          cp /tmp/feature-godot-ci.yml .github/workflows/godot-ci.yml
           git add \
+            .github/workflows/godot-ci.yml \
             scripts/ui/smooth_block_piece_button.gd \
             scripts/game/block_puzzle_final_polish.gd \
             scripts/ui/premium_home_casual.gd \
