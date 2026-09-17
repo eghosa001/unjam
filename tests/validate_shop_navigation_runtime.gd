@@ -33,8 +33,11 @@ func run() -> void:
 		home.call("build_home_launcher")
 		await _frames(2)
 
-	var shop_nav := home.find_child("HomeShopNavButton", true, false) as Button if home != null else null
-	var coin_shop := home.find_child("HomeCoinShopButton", true, false) as Button if home != null else null
+	var shop_nav: Button = null
+	var coin_shop: Button = null
+	if home != null:
+		shop_nav = home.find_child("HomeShopNavButton", true, false) as Button
+		coin_shop = home.find_child("HomeCoinShopButton", true, false) as Button
 	expect_true(shop_nav != null and shop_nav.visible, "Home bottom navigation has no visible Shop entry")
 	expect_true(coin_shop != null and coin_shop.visible, "Home coin balance is not a Shop action")
 	if coin_shop != null:
@@ -44,7 +47,8 @@ func run() -> void:
 		shop_nav.emit_signal("pressed")
 		await _frames(2)
 		var overlay = hub.get("overlay")
-		expect_true(overlay is Control and (overlay as Control).visible, "Home Shop navigation did not open Shop overlay")
+		var shop_open := overlay is Control and overlay.visible
+		expect_true(shop_open, "Home Shop navigation did not open Shop overlay")
 		if hub.has_method("_close_shop"):
 			hub.call("_close_shop")
 
@@ -52,7 +56,8 @@ func run() -> void:
 		coin_shop.emit_signal("pressed")
 		await _frames(2)
 		var overlay = hub.get("overlay")
-		expect_true(overlay is Control and (overlay as Control).visible, "Coin balance action did not open Shop overlay")
+		var shop_open := overlay is Control and overlay.visible
+		expect_true(shop_open, "Coin balance action did not open Shop overlay")
 		if hub.has_method("_close_shop"):
 			hub.call("_close_shop")
 
