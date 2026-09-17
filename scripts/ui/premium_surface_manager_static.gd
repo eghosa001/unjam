@@ -85,15 +85,81 @@ func _game_id_from_accent(accent: Color) -> String:
 		return "block_puzzle"
 	return "rescue_rush"
 
-func _add_surface_chrome(content: Control, _surface: String, _game_id: String, _dark: bool, _accent: Color) -> void:
-	# Secondary screens already own their header/back navigation. Adding another
-	# badge here duplicates that information and can overlap the native header.
-	# Remove any older injected chrome atomically, then leave header ownership to
-	# the screen itself while this manager continues to provide backdrop/skinning.
+func _add_surface_chrome(content: Control, surface: String, _game_id: String, dark: bool, _accent: Color) -> void:
+	# Secondary screens already own their header/back navigation. Keep that single
+	# ownership model, but make the shared wallet actionable inside the native
+	# Collection/Levels header instead of drawing another overlay or badge.
 	var existing := content.get_node_or_null("PremiumSurfaceChrome")
 	if existing != null:
 		content.remove_child(existing)
 		existing.queue_free()
+	_ensure_secondary_wallet(content, surface, dark)
+
+func _ensure_secondary_wallet(content: Control, surface: String, dark: bool) -> void:
+	if surface not in ["collection", "levels"]:
+		return
+	var header := _find_secondary_header(content)
+	if header == null:
+		return
+	var wallet := header.get_node_or_null("SecondaryCoinShopButton") as Button
+	if wallet == null:
+		if surface == "collection":
+			_remove_collection_coin_snapshot(header)
+		wallet = Button.new()
+		wallet.name = "SecondaryCoinShopButton"
+		var viewport_width := get_viewport().get_visible_rect().size.x
+		wallet.custom_minimum_size = Vector2(142 if viewport_width < 600.0 else 178, 70)
+		wallet.add_theme_font_size_override("font_size", 16 if viewport_width < 600.0 else 19)
+		wallet.tooltip_text = "Coins • Open Shop"
+		Unjam3DTheme.gloss_button(wallet, Unjam3DTheme.ORANGE, true, 23, dark)
+		wallet.pressed.connect(_open_shop)
+		header.add_child(wallet)
+	_set_secondary_wallet_balance(EconomyManager.balance())
+	if not EconomyManager.balance_changed.is_connected(_on_economy_balance_changed):
+		EconomyManager.balance_changed.connect(_on_economy_balance_changed)
+
+func _find_secondary_header(node: Node) -> HBoxContainer:
+	if node is HBoxContainer:
+		var row := node as HBoxContainer
+		for child in row.get_children():
+			if child is Button:
+				var text := (child as Button).text.strip_edges()
+				if text in ["←", "‹", "← BACK"]:
+					return row
+	for child in node.get_children():
+		var found := _find_secondary_header(child)
+		if found != null:
+			return found
+	return null
+
+func _remove_collection_coin_snapshot(header: HBoxContainer) -> void:
+	for child in header.get_children():
+		if child is Label and (child as Label).text.strip_edges().begins_with("◈"):
+			header.remove_child(child)
+			child.queue_free()
+			return
+
+func _set_secondary_wallet_balance(new_balance: int) -> void:
+	var main := get_parent()
+	if main == null:
+		return
+	var content = main.get("content")
+	if content == null or not is_instance_valid(content):
+		return
+	var wallet := (content as Node).find_child("SecondaryCoinShopButton", true, false) as Button
+	if wallet != null:
+		wallet.text = "◈  %d  +" % new_balance
+
+func _on_economy_balance_changed(new_balance: int, _delta: int, _reason: String) -> void:
+	_set_secondary_wallet_balance(new_balance)
+
+func _open_shop() -> void:
+	var main := get_parent()
+	if main == null:
+		return
+	var hub := main.get_node_or_null("MonetizationHub")
+	if hub != null and hub.has_method("open_shop"):
+		hub.call("open_shop")
 
 func _animate_surface(content: Control) -> void:
 	# MotionDirector owns navigation transitions. This manager owns only skinning,
