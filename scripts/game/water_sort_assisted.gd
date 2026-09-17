@@ -95,6 +95,14 @@ func _show_tube_recovery() -> bool:
 	prompt.call("show_for", "EXTRA TUBE", EXTRA_TUBE_COST, Callable(self, "add_extra_tube"))
 	return true
 
+func can_show_hint() -> bool:
+	if completed or pending_completion:
+		return false
+	if has_method("_has_active_pours") and bool(call("_has_active_pours")):
+		return false
+	var move := _best_water_move()
+	return move.x >= 0 and move.y >= 0
+
 func show_hint() -> void:
 	if completed or pending_completion:
 		return
