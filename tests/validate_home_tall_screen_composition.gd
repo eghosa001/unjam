@@ -5,6 +5,7 @@ const VIEWPORTS := [
 	Vector2i(1440, 3200)
 ]
 const MAX_HERO_HEIGHT := 560.0
+const MIN_HERO_WIDTH := 800.0
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -37,10 +38,12 @@ func _validate_viewport(viewport_size: Vector2i) -> bool:
 		return _fail("HomeHero3D missing at %s" % str(viewport_size))
 	if play == null:
 		return _fail("HomePrimaryAction missing at %s" % str(viewport_size))
+	if hero.size.x < MIN_HERO_WIDTH:
+		return _fail("Home hero is too narrow at %s: %.1fpx wide (min %.1fpx), size=%s" % [str(viewport_size), hero.size.x, MIN_HERO_WIDTH, str(hero.size)])
 	if hero.size.y > MAX_HERO_HEIGHT:
-		return _fail("Home hero is too tall at %s: %.1fpx (max %.1fpx)" % [str(viewport_size), hero.size.y, MAX_HERO_HEIGHT])
-	if hero.size.y < 340.0:
-		return _fail("Home hero became too small at %s: %.1fpx" % [str(viewport_size), hero.size.y])
+		return _fail("Home hero is too tall at %s: %.1fpx (max %.1fpx), size=%s" % [str(viewport_size), hero.size.y, MAX_HERO_HEIGHT, str(hero.size)])
+	if hero.size.y < 500.0:
+		return _fail("Home hero became too small at %s: %.1fpx, size=%s" % [str(viewport_size), hero.size.y, str(hero.size)])
 	var hero_rect := hero.get_global_rect()
 	var play_rect := play.get_global_rect()
 	if hero_rect.intersects(play_rect):
@@ -48,6 +51,7 @@ func _validate_viewport(viewport_size: Vector2i) -> bool:
 	var hero_to_play_gap := play_rect.position.y - hero_rect.end.y
 	if hero_to_play_gap > float(viewport_size.y) * 0.18:
 		return _fail("Home hero-to-PLAY gap is excessive at %s: %.1fpx" % [str(viewport_size), hero_to_play_gap])
+	print("HOME_COMPOSITION %s hero=%s gap=%.1f" % [str(viewport_size), str(hero.size), hero_to_play_gap])
 
 	main.queue_free()
 	await process_frame
