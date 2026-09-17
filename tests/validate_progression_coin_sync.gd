@@ -48,6 +48,17 @@ func run() -> void:
 	expect_true(int(save.data.coins) == before_level + 25, "Water Sort first-clear base reward changed unexpectedly")
 	expect_true(String(transactions.back().get("reason", "")) == "level_reward", "Multi-game level reward did not notify shared economy")
 
+	# Caller-supplied negative rewards must never reduce the shared wallet. The
+	# completion itself may still be recorded; only the coin component is clamped.
+	var before_invalid := int(save.data.coins)
+	var transaction_count := transactions.size()
+	var negative_daily_ok := bool(multi.complete_daily("block_puzzle", -100))
+	expect_true(negative_daily_ok, "Negative-reward daily completion was not recorded")
+	expect_true(int(save.data.coins) == before_invalid, "Negative multi-game daily reward reduced the wallet")
+	multi.complete_level("block_puzzle", 9878, 2, -25)
+	expect_true(int(save.data.coins) == before_invalid, "Negative multi-game level reward reduced the wallet")
+	expect_true(transactions.size() == transaction_count, "Clamped negative multi-game reward emitted a coin transaction")
+
 	# Force one daily task claim without depending on which seeded task appears.
 	var tasks: Array = multi.daily_tasks("block_puzzle")
 	expect_true(not tasks.is_empty(), "Daily task fixture missing")
