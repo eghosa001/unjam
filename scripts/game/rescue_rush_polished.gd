@@ -1,5 +1,7 @@
 extends "res://scripts/game/game.gd"
 
+const RescueEscapePiece3D = preload("res://scripts/ui/rescue_piece_3d_button.gd")
+
 # Authoritative board state resolves first; visual ghosts are tracked separately.
 # Completion waits for the actual final escape tween instead of guessing with a timer.
 var _active_escape_visuals: Array[Node] = []
@@ -102,7 +104,7 @@ func _spawn_escape_visual(index: int, route: Array[Vector2i] = []) -> void:
 		return
 	if route.is_empty():
 		route = _escape_route_cells(index)
-	var ghost := PremiumPieceButton.new()
+	var ghost := RescueEscapePiece3D.new()
 	ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ghost.disabled = true
 	ghost.size = cell.size
