@@ -42,14 +42,15 @@ func build_ui() -> void:
 			existing.add_theme_font_size_override("font_size", 17)
 	var add_tube := Button.new()
 	add_tube.name = "AddTubeAction"
-	add_tube.text = "+\nTUBE • %d" % EXTRA_TUBE_COST
 	add_tube.custom_minimum_size = Vector2(0, 116)
 	add_tube.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	add_tube.add_theme_font_size_override("font_size", 17)
-	add_tube.tooltip_text = "Adds one empty tube for this attempt. Costs %d coins." % EXTRA_TUBE_COST
+	add_tube.add_theme_font_size_override("font_size", 16)
 	Unjam3DTheme.gloss_button(add_tube, Unjam3DTheme.WATER, true, 24)
 	add_tube.pressed.connect(add_extra_tube)
 	actions.add_child(add_tube)
+	if not EconomyManager.balance_changed.is_connected(_on_economy_balance_changed):
+		EconomyManager.balance_changed.connect(_on_economy_balance_changed)
+	_refresh_extra_tube_button()
 
 func load_level() -> void:
 	extra_tube_used = false
@@ -144,10 +145,14 @@ func _restore_checkpoint() -> void:
 		return
 	extra_tube_used = bool(checkpoint.get("extra_tube_used", false))
 
+func _on_economy_balance_changed(_new_balance: int, _delta: int, _reason: String) -> void:
+	_refresh_extra_tube_button()
+
 func _refresh_extra_tube_button() -> void:
 	var button := find_child("AddTubeAction", true, false) as Button
 	if button == null:
 		return
+	var balance := EconomyManager.balance()
 	button.disabled = extra_tube_used
-	button.text = "✓\nTUBE" if extra_tube_used else "+\nTUBE • %d" % EXTRA_TUBE_COST
-	button.tooltip_text = "Already used this attempt" if extra_tube_used else "Costs %d coins • Balance %d" % [EXTRA_TUBE_COST, EconomyManager.balance()]
+	button.text = "✓  TUBE USED\n◈ %d" % balance if extra_tube_used else "+  TUBE • %d\n◈ %d" % [EXTRA_TUBE_COST, balance]
+	button.tooltip_text = "Already used this attempt • Balance %d" % balance if extra_tube_used else "Costs %d coins • Balance %d" % [EXTRA_TUBE_COST, balance]
