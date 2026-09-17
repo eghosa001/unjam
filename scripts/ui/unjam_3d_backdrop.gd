@@ -2,9 +2,11 @@ class_name Unjam3DBackdrop
 extends Control
 
 var accent: Color = Unjam3DTheme.GREEN
+var dark_mode := false
 
-func configure(value: Color) -> void:
+func configure(value: Color, use_dark_mode: bool = false) -> void:
 	accent = value
+	dark_mode = use_dark_mode
 	queue_redraw()
 
 func _ready() -> void:
@@ -22,6 +24,11 @@ func _draw() -> void:
 	_draw_distant_world(w, h)
 	_draw_water_world(w, h)
 	_draw_foreground(w, h)
+	if dark_mode:
+		# Keep the same cheerful geometry while shifting the environment into a
+		# night palette. Accent colors remain visible through the translucent veil.
+		draw_rect(Rect2(0, 0, w, h), Color(0.015, 0.045, 0.105, 0.58))
+		draw_rect(Rect2(0, 0, w, h * 0.42), Color(0.055, 0.075, 0.18, 0.18))
 
 func _draw_sky(w: float, h: float) -> void:
 	# More bands than before keeps the large mobile background smooth without a shader.

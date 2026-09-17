@@ -10,10 +10,18 @@ var accent := Unjam3DTheme.GREEN
 var viewport_3d: SubViewport
 var stage: Node3D
 var scenic_root: Node3D
+var dark_mode := false
 
 func configure(id: String, accent_value: Color = Color.TRANSPARENT) -> void:
 	game_id = id
 	accent = Unjam3DTheme.game_accent(id) if accent_value.a <= 0.001 else accent_value
+	if is_inside_tree() and viewport_3d != null:
+		call_deferred("_rebuild")
+
+func set_dark_mode(value: bool) -> void:
+	if dark_mode == value:
+		return
+	dark_mode = value
 	if is_inside_tree() and viewport_3d != null:
 		call_deferred("_rebuild")
 
@@ -30,14 +38,16 @@ func _ready() -> void:
 	_build_stage()
 
 func _rebuild() -> void:
+	if not is_inside_tree() or viewport_3d == null:
+		return
 	if stage != null and is_instance_valid(stage):
+		if stage.get_parent() == viewport_3d:
+			viewport_3d.remove_child(stage)
 		stage.queue_free()
 		stage = null
 		scenic_root = null
-	await get_tree().process_frame
 	_build_stage()
-	if viewport_3d != null:
-		viewport_3d.render_target_update_mode = SubViewport.UPDATE_ONCE
+	viewport_3d.render_target_update_mode = SubViewport.UPDATE_ONCE
 
 func _build_stage() -> void:
 	if viewport_3d == null:
@@ -49,24 +59,27 @@ func _build_stage() -> void:
 	var world_environment := WorldEnvironment.new()
 	var environment := Environment.new()
 	environment.background_mode = Environment.BG_COLOR
-	environment.background_color = Color("46c0ff") if game_id != "block_puzzle" else Color("8e5be8")
+	if dark_mode:
+		environment.background_color = Color("10182f") if game_id != "block_puzzle" else Color("241638")
+	else:
+		environment.background_color = Color("46c0ff") if game_id != "block_puzzle" else Color("a56cff")
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment.ambient_light_color = Color("e4faff") if game_id != "block_puzzle" else Color("f2dcff")
-	environment.ambient_light_energy = 1.18
+	environment.ambient_light_color = (accent.lightened(0.20) if dark_mode else (Color("e4faff") if game_id != "block_puzzle" else Color("fff0ff")))
+	environment.ambient_light_energy = (0.62 if dark_mode else (1.32 if game_id == "block_puzzle" else 1.18))
 	world_environment.environment = environment
 	stage.add_child(world_environment)
 
 	var key := DirectionalLight3D.new()
 	key.rotation_degrees = Vector3(-48, -32, 0)
 	key.light_color = Color("fff0c5")
-	key.light_energy = 1.50
+	key.light_energy = (0.92 if dark_mode else (1.68 if game_id == "block_puzzle" else 1.50))
 	key.shadow_enabled = true
 	stage.add_child(key)
 
 	var rim := DirectionalLight3D.new()
 	rim.rotation_degrees = Vector3(-18, 142, 12)
 	rim.light_color = accent.lightened(0.55)
-	rim.light_energy = 0.72
+	rim.light_energy = 0.52 if dark_mode else 0.72
 	stage.add_child(rim)
 
 	var camera := Camera3D.new()
@@ -117,9 +130,9 @@ func _build_water_world() -> void:
 
 func _build_block_world() -> void:
 	# Block Puzzle gets a candy-colored floating-island world instead of a dark board.
-	_add_box(scenic_root, Vector3(22, 0.30, 16), Vector3(0, -1.74, 0), Color("6341be"), 0.04, 0.32)
-	_add_cylinder(scenic_root, 4.0, 4.5, 0.64, Vector3(0, -0.98, 0.8), Color("7c57c9"), 0.08, 0.48)
-	_add_cylinder(scenic_root, 3.72, 3.95, 0.15, Vector3(0, -0.56, 0.8), Color("d78aff"), 0.02, 0.34)
+	_add_box(scenic_root, Vector3(22, 0.30, 16), Vector3(0, -1.74, 0), Color("7652d4"), 0.03, 0.28)
+	_add_cylinder(scenic_root, 4.0, 4.5, 0.64, Vector3(0, -0.98, 0.8), Color("8159d1"), 0.06, 0.38)
+	_add_cylinder(scenic_root, 3.72, 3.95, 0.15, Vector3(0, -0.56, 0.8), Color("f0a2ff"), 0.02, 0.24)
 	var colors := [Color("ffd83d"), Color("ff8d1f"), Color("ff4ca5"), Color("20d86b"), Color("19b9ff"), Color("c63cff")]
 	var positions := [Vector3(-5.3,0.0,-3.2), Vector3(5.0,0.0,-2.6), Vector3(-5.2,0.0,1.1), Vector3(5.1,0.0,1.8), Vector3(-4.6,0.0,5.2), Vector3(4.5,0.0,5.3)]
 	for i in range(positions.size()):

@@ -3,6 +3,36 @@ class_name SmoothBlockPieceButton
 
 const SmoothDragPreview = preload("res://scripts/ui/smooth_block_drag_preview.gd")
 
+func _clear_single_touch_preview() -> void:
+	if touch_preview != null and is_instance_valid(touch_preview):
+		touch_preview.queue_free()
+	touch_preview = null
+
+func _begin_drag_feedback() -> void:
+	if dragging:
+		return
+	dragging = true
+	_sync_processing()
+	# The floating preview is the only rendered copy during a drag. Hiding the
+	# tray source completely prevents the doubled-brick look on Android.
+	modulate = Color(1, 1, 1, 0)
+	var tween := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(self, "scale", Vector2(0.84, 0.84), 0.07)
+	if has_node("/root/FeedbackManager"):
+		FeedbackManager.tap()
+
+func _get_drag_data(_at_position: Vector2) -> Variant:
+	# Touch owns its own lifted preview. Returning no native drag payload while a
+	# touch gesture is active prevents Godot from rendering a second copy.
+	if touch_drag_started:
+		return null
+	if used or shape.is_empty():
+		return null
+	_clear_single_touch_preview()
+	_begin_drag_feedback()
+	set_drag_preview(_make_drag_preview())
+	return _drag_payload()
+
 func _shape_centroid_grid() -> Vector2:
 	if shape.is_empty():
 		return Vector2.ZERO
@@ -51,6 +81,7 @@ func _show_touch_preview(screen_position: Vector2) -> void:
 	if game == null:
 		return
 	if touch_preview == null or not is_instance_valid(touch_preview):
+		_clear_single_touch_preview()
 		touch_preview = SmoothDragPreview.new()
 		touch_preview.configure(shape, accent)
 		touch_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE

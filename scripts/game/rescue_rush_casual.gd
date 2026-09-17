@@ -3,7 +3,23 @@ extends "res://scripts/game/rescue_rush_motion_final.gd"
 func style_button(button: Button, accent: bool = false) -> void:
 	Unjam3DTheme.gloss_button(button, Unjam3DTheme.ORANGE if accent else Unjam3DTheme.WATER_DARK, true, 24)
 
+
+func restart_level() -> void:
+	# The scene-owned touch enhancer must survive retries. Detach it while the
+	# inherited restart retires runtime UI, and remove those runtime controls
+	# immediately so old/new screen trees never overlap in the same frame.
+	var enhancer := get_node_or_null("UiTouchEnhancer")
+	if enhancer != null and enhancer.get_parent() == self:
+		remove_child(enhancer)
+	for child in get_children():
+		remove_child(child)
+		child.queue_free()
+	super.restart_level()
+	if enhancer != null and is_instance_valid(enhancer):
+		add_child(enhancer)
+
 func build_ui() -> void:
+	clip_contents = true
 	var world: int = int(level_data.get("world", 1))
 	var environment_3d := Unjam3DGameplayStage.new()
 	environment_3d.name = "RescueRush3DEnvironment"
@@ -53,7 +69,7 @@ func build_ui() -> void:
 
 	var status_panel := PanelContainer.new()
 	status_panel.name = "CompactStatusStrip"
-	status_panel.custom_minimum_size = Vector2(0, 104)
+	status_panel.custom_minimum_size = Vector2(0, 94)
 	status_panel.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("0760ad"), 30, Color("55cfff"), 3, 10))
 	root.add_child(status_panel)
 	var status := HBoxContainer.new()
@@ -68,24 +84,24 @@ func build_ui() -> void:
 		status.add_child(label)
 
 	var objective := PanelContainer.new()
-	objective.custom_minimum_size = Vector2(0, 66)
+	objective.custom_minimum_size = Vector2(0, 56)
 	objective.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color(0.96, 0.99, 1.0, 0.94), 25, Color("82dbff"), 2, 6))
 	root.add_child(objective)
 	var objective_label := Label.new()
-	objective_label.text = "💡  CLEAR THE LANE TO RESCUE THE CHICK!"
+	objective_label.text = "🐥  CLEAR THE LANE • FREE THE CHICK"
 	objective_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	objective_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	objective_label.add_theme_font_size_override("font_size", 18)
+	objective_label.add_theme_font_size_override("font_size", 20)
 	Unjam3DTheme.label_3d(objective_label, Unjam3DTheme.NAVY, Color.WHITE, 2)
 	objective.add_child(objective_label)
 
 	var holder := CenterContainer.new()
 	holder.name = "GameplayBoardHolder"
-	holder.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	holder.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	root.add_child(holder)
 	board_panel = PanelContainer.new()
 	# Warm stone frame with pale rim reads more like a toy diorama than a dark app panel.
-	board_panel.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("566b6a"), 38, Color("c4e5d5"), 5, 16))
+	board_panel.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("566b6a"), 38, Color("d7f3e4"), 5, 20))
 	holder.add_child(board_panel)
 	var board_margin := _panel_margin(18, 18, 18, 18)
 	board_panel.add_child(board_margin)
@@ -102,21 +118,21 @@ func build_ui() -> void:
 	root.add_child(actions)
 	var undo := Button.new()
 	undo.text = "↶\nUNDO"
-	undo.custom_minimum_size = Vector2(220, 92)
+	undo.custom_minimum_size = Vector2(220, 116)
 	undo.add_theme_font_size_override("font_size", 19)
 	style_button(undo)
 	undo.pressed.connect(undo_move)
 	actions.add_child(undo)
 	var hint := Button.new()
 	hint.text = "💡\nHINT"
-	hint.custom_minimum_size = Vector2(220, 92)
+	hint.custom_minimum_size = Vector2(220, 116)
 	hint.add_theme_font_size_override("font_size", 19)
 	style_button(hint, true)
 	hint.pressed.connect(show_hint)
 	actions.add_child(hint)
 	var restart := Button.new()
 	restart.text = "↻\nRESTART"
-	restart.custom_minimum_size = Vector2(220, 92)
+	restart.custom_minimum_size = Vector2(220, 116)
 	restart.add_theme_font_size_override("font_size", 19)
 	style_button(restart)
 	restart.pressed.connect(restart_level)
@@ -131,3 +147,8 @@ func build_ui() -> void:
 	Unjam3DTheme.label_3d(hint_label, Color.WHITE, Unjam3DTheme.NAVY, 3)
 	root.add_child(hint_label)
 	PremiumVisuals.entrance(root, 0.008)
+
+func apply_theme_mode(dark: bool) -> void:
+	var environment := get_node_or_null("RescueRush3DEnvironment") as Unjam3DGameplayStage
+	if environment != null:
+		environment.set_dark_mode(dark)

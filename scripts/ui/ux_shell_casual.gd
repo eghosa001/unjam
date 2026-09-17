@@ -18,6 +18,17 @@ func _after_shell_sync() -> void:
 func _apply_theme() -> void:
 	super._apply_theme()
 	_restyle_3d_shell()
+	apply_theme_mode(theme_mode == "dark")
+
+func apply_theme_mode(dark: bool) -> void:
+	var main := _main()
+	if main == null:
+		return
+	var game: Node = main.get("active_game") as Node
+	if game == null or not is_instance_valid(game):
+		game = main.get_node_or_null("ActiveGame")
+	if game != null and game.has_method("apply_theme_mode"):
+		game.call("apply_theme_mode", dark)
 
 func _compact_shell() -> void:
 	if help_button != null:
@@ -40,13 +51,13 @@ func _compact_shell() -> void:
 
 func _restyle_3d_shell() -> void:
 	if help_button != null:
-		Unjam3DTheme.gloss_button(help_button, Unjam3DTheme.WATER_DARK, true, 28)
+		Unjam3DTheme.gloss_button(help_button, Unjam3DTheme.WATER_DARK, true, 28, theme_mode == "dark")
 	if tutorial_layer == null or tutorial_panel == null:
 		return
 	var dim := tutorial_layer.get_node_or_null("TutorialDim") as ColorRect
 	if dim != null:
 		dim.color = Color(0.01, 0.18, 0.34, 0.72)
-	tutorial_panel.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("f8fdff"), 40, Color("66d4ff"), 4, 20))
+	tutorial_panel.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("142743") if theme_mode == "dark" else Color("f8fdff"), 40, Color("66d4ff"), 4, 20))
 	if tutorial_title != null:
 		Unjam3DTheme.label_3d(tutorial_title, Unjam3DTheme.NAVY, Color.WHITE, 3)
 	if tutorial_body != null:

@@ -27,9 +27,13 @@ func _on_surface_changed(surface: String) -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP if visible else Control.MOUSE_FILTER_IGNORE
 	if not visible:
 		return
-	var mode := _theme_mode()
-	if not built or mode != last_theme:
-		_build()
+	_refresh_progress_on_entry()
+
+
+func _refresh_progress_on_entry() -> void:
+	# Progress can change while this persistent selector is hidden behind gameplay.
+	# Rebuilding only on entry keeps it event-driven and guarantees fresh cards.
+	_build()
 
 func _theme_mode() -> String:
 	var shell := get_parent().get_node_or_null("UXShell")
