@@ -35,6 +35,7 @@ func _refresh_progress_on_entry() -> void:
 	# Progress can change while this persistent selector is hidden behind gameplay.
 	# Rebuilding only on entry keeps it event-driven and guarantees fresh cards.
 	_build()
+	_ensure_wallet_shop_action()
 
 func _theme_mode() -> String:
 	var shell := get_parent().get_node_or_null("UXShell")
@@ -46,8 +47,42 @@ func _theme_mode() -> String:
 func _build() -> void:
 	pass
 
-func _set_wallet_balance(_new_balance: int) -> void:
-	pass
+func _ensure_wallet_shop_action() -> void:
+	var existing := find_child("LiveCoinShopButton", true, false) as Button
+	if existing != null:
+		_set_wallet_balance(EconomyManager.balance())
+		return
+	var coin_label := _find_coin_label(self)
+	if coin_label == null or coin_label.get_parent() == null:
+		return
+	var parent := coin_label.get_parent()
+	var index := coin_label.get_index()
+	parent.remove_child(coin_label)
+	coin_label.queue_free()
+	var button := Button.new()
+	button.name = "LiveCoinShopButton"
+	button.text = "●  %d  +" % EconomyManager.balance()
+	button.tooltip_text = "Coins • Open Shop"
+	button.custom_minimum_size = Vector2(180, 58)
+	button.add_theme_font_size_override("font_size", 18)
+	Unjam3DTheme.gloss_button(button, Unjam3DTheme.ORANGE, true, 24, _theme_mode() == "dark")
+	button.pressed.connect(_open_shop)
+	parent.add_child(button)
+	parent.move_child(button, index)
+
+func _find_coin_label(node: Node) -> Label:
+	for child in node.get_children():
+		if child is Label and String((child as Label).text).begins_with("●"):
+			return child as Label
+		var nested := _find_coin_label(child)
+		if nested != null:
+			return nested
+	return null
+
+func _set_wallet_balance(new_balance: int) -> void:
+	var button := find_child("LiveCoinShopButton", true, false) as Button
+	if button != null:
+		button.text = "●  %d  +" % new_balance
 
 func _on_economy_balance_changed(new_balance: int, _delta: int, _reason: String) -> void:
 	if visible:
