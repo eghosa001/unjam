@@ -98,7 +98,10 @@ func level_config() -> Dictionary:
 	if not daily_mode and level_number <= 10:
 		return {"target_score": 105 + level_number * 4, "target_lines": 1, "par": 15}
 	var world: int = int(MultiGameManager.world_for_level(level_number))
-	var d := difficulty()
+	# Goal pacing follows the canonical campaign rhythm. Presentation/gameplay
+	# subclasses may override difficulty() for local pressure without collapsing
+	# score/line/par variety across the 10,000-level campaign.
+	var d := MultiGameManager.difficulty_for_level(level_number)
 	var tier := campaign_tier()
 	var base := 70 + mini(170, world * 4) + tier * 18
 	var lines := 2 + int(world / 10) + int(tier / 2)
