@@ -1,15 +1,33 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="432" height="432" viewBox="0 0 432 432">
-<defs>
-  <linearGradient id="mark" x1="0" y1="0" x2="1" y2="1">
-    <stop stop-color="#2dd4b6"/>
-    <stop offset=".5" stop-color="#5da9ff"/>
-    <stop offset="1" stop-color="#8b7cf6"/>
-  </linearGradient>
-</defs>
-<circle cx="216" cy="216" r="116" fill="#101a2b" stroke="#405673" stroke-width="8"/>
-<path d="M146 172v66c0 39 23 64 70 64s70-25 70-64v-66h-39v65c0 19-9 29-31 29s-31-10-31-29v-65z" fill="url(#mark)"/>
-<path d="M119 216h40M273 216h40" stroke="#ffd166" stroke-width="17" stroke-linecap="round"/>
-<circle cx="119" cy="216" r="11" fill="#2dd4b6"/>
-<circle cx="313" cy="216" r="11" fill="#8b7cf6"/>
-<circle cx="216" cy="216" r="132" fill="none" stroke="#ffffff" stroke-opacity=".055" stroke-width="2"/>
+  <defs>
+    <linearGradient id="rim" x1="118" y1="105" x2="310" y2="334" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8FDFF"/>
+      <stop offset="0.22" stop-color="#A8F7FF"/>
+      <stop offset="0.56" stop-color="#43D8D0"/>
+      <stop offset="1" stop-color="#6D63F2"/>
+    </linearGradient>
+    <linearGradient id="inner" x1="160" y1="126" x2="280" y2="300" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1AE8C6"/>
+      <stop offset="0.5" stop-color="#42B8FF"/>
+      <stop offset="1" stop-color="#9264FF"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="255" y1="180" x2="342" y2="252" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF3A3"/>
+      <stop offset="0.5" stop-color="#FFD25F"/>
+      <stop offset="1" stop-color="#F59D33"/>
+    </linearGradient>
+  </defs>
+  <circle cx="216" cy="216" r="139" fill="#081C43" opacity="0.82" stroke="#A6F2FF" stroke-opacity="0.22" stroke-width="3"/>
+  <circle cx="216" cy="216" r="123" fill="#0B2B63" opacity="0.78" stroke="#FFFFFF" stroke-opacity="0.10" stroke-width="2"/>
+  <path d="M134 128H185V235C185 263 195 275 216 275C237 275 247 263 247 235V128H298V241C298 293 265 323 216 323C167 323 134 293 134 241V128Z" fill="url(#rim)"/>
+  <path d="M152 146H179V237C179 271 193 289 216 289C239 289 253 271 253 237V146H280V237C280 279 256 304 216 304C176 304 152 279 152 237V146Z" fill="url(#inner)"/>
+  <path d="M242 190H296V168L342 211L296 254V232H242Z" fill="url(#gold)"/>
+  <path d="M259 202H302" stroke="#FFF7C8" stroke-width="7" stroke-linecap="round" opacity="0.68"/>
+  <path d="M206 77C206 77 182 107 182 131C182 150 197 165 216 165C235 165 250 150 250 131C250 107 226 77 226 77L216 65L206 77Z" fill="#66EBFF"/>
+  <path d="M199 116C204 100 212 92 218 84" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round" opacity="0.72"/>
+  <g>
+    <path d="M122 270L154 250L186 270L154 290L122 270Z" fill="#E2CAFF"/>
+    <path d="M122 270L154 290V329L122 309V270Z" fill="#9568F2"/>
+    <path d="M186 270L154 290V329L186 309V270Z" fill="#5937B8"/>
+  </g>
 </svg>
