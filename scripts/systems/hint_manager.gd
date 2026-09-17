@@ -83,10 +83,10 @@ func request_hint_for_game(game: Node) -> bool:
 	var placement := _game_id(game)
 	var unavailable := Callable(self, "_show_unavailable_on_game").bind(game)
 	if not _can_deliver_hint(game, placement):
-		var reason := "Finish the current move before using a hint."
+		var reason := "No verified useful hint is available from this position. Undo or Retry first."
 		unavailable.call(reason)
 		hint_unavailable.emit(placement, reason)
-		_track("hint_unavailable", {"placement": placement, "balance": coin_balance(), "reason": "game_busy"})
+		_track("hint_unavailable", {"placement": placement, "balance": coin_balance(), "reason": "no_verified_move"})
 		return false
 	return request_hint(placement, Callable(game, "show_hint"), unavailable)
 
@@ -101,7 +101,12 @@ func _can_deliver_hint(game: Node, placement: String) -> bool:
 			var targets = game.get("active_target_tubes")
 			return sources is Dictionary and targets is Dictionary and sources.is_empty() and targets.is_empty()
 		"block_puzzle":
-			return not bool(game.get("completed"))
+			if bool(game.get("completed")):
+				return false
+			if game.has_method("_best_hint_placement"):
+				var best = game.call("_best_hint_placement")
+				return best is Dictionary and not (best as Dictionary).is_empty()
+			return true
 		_:
 			return not bool(game.get("board_locked")) and not bool(game.get("rescued"))
 
