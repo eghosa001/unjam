@@ -15,14 +15,18 @@ func _initialize() -> void:
 	], failures)
 	_check("res://scripts/game/rescue_rush_premium.gd", [
 		"rescue_piece_3d_button.gd",
-		"RescuePiece3D.new()"
+		"RescuePiece3D.new()",
+		"board_grid = GridContainer.new()"
 	], failures)
 	_check("res://scripts/ui/rescue_piece_3d_button.gd", [
+		"premium_piece_button.gd",
+		"set_process(false)"
+	], failures)
+	_check_absent("res://scripts/ui/rescue_piece_3d_button.gd", [
 		"SubViewport",
-		"SubViewport.UPDATE_ONCE",
+		"Camera3D",
 		"BoxMesh",
-		"TorusMesh",
-		"_build_arrow_symbol"
+		"TorusMesh"
 	], failures)
 	_check_absent("res://scripts/game/rescue_rush_motion_final.gd", [
 		"_escape_visual_deadline_msec"
