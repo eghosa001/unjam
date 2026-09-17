@@ -5,6 +5,8 @@ func _initialize() -> void:
 
 func _run() -> void:
 	var multi := root.get_node_or_null("MultiGameManager")
+	var save_manager := root.get_node_or_null("SaveManager")
+	var original_coins := int(save_manager.data.get("coins", 0)) if save_manager != null else 0
 	if multi != null:
 		multi.call("clear_checkpoint", "water_sort")
 	var scene := load("res://scenes/WaterSort.tscn") as PackedScene
@@ -18,16 +20,24 @@ func _run() -> void:
 	await process_frame
 	await process_frame
 	var initial_tubes: int = (game.get("tubes") as Array).size()
-	game.call("add_extra_tube")
+	if save_manager != null:
+		save_manager.data.coins = int(game.EXTRA_TUBE_COST)
+		save_manager.save()
+	var first_result = game.call("add_extra_tube")
 	await process_frame
-	if (game.get("tubes") as Array).size() != initial_tubes + 1 or not bool(game.get("extra_tube_used")):
-		push_error("Extra Tube did not append exactly one empty bottle")
+	if first_result != true or (game.get("tubes") as Array).size() != initial_tubes + 1 or not bool(game.get("extra_tube_used")):
+		push_error("Paid Extra Tube did not append exactly one empty bottle")
 		game.queue_free()
 		quit(1)
 		return
-	game.call("add_extra_tube")
+	if save_manager != null and int(save_manager.data.get("coins", -1)) != 0:
+		push_error("Extra Tube did not charge exactly its configured coin cost")
+		game.queue_free()
+		quit(1)
+		return
+	var second_result = game.call("add_extra_tube")
 	await process_frame
-	if (game.get("tubes") as Array).size() != initial_tubes + 1:
+	if second_result != false or (game.get("tubes") as Array).size() != initial_tubes + 1:
 		push_error("Extra Tube can be used more than once per attempt")
 		game.queue_free()
 		quit(1)
@@ -50,4 +60,7 @@ func _run() -> void:
 	print("WATER_ASSIST_RUNTIME_OK tubes=%d->%d move=%s" % [initial_tubes, initial_tubes + 1, str(move)])
 	game.queue_free()
 	await process_frame
+	if save_manager != null:
+		save_manager.data.coins = original_coins
+		save_manager.save()
 	quit(0)
