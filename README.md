@@ -51,20 +51,22 @@ The workflow also runs the complete grouped validator set, captures rendered UI 
 
 ## Android / Google Play
 
-`export_presets.cfg` currently uses:
+This repository is reset for a **fresh Google Play app listing**. `export_presets.cfg` currently uses:
 
 - package id: `com.eghosa.unjam`
 - package name: `UNJAM`
-- version: `1.0.1` / version code `2`
+- version: `1.0.0` / version code `1`
 - minimum SDK: 24
 - target SDK: 36
 - ARM64 (`arm64-v8a`)
 - immersive portrait presentation
 - AAB as the production export format
 
-A **debug APK is for installation/testing only**. Google Play deployment must use a release AAB signed with the owner's private upload key. Do not commit the keystore, alias password or store password to this repository.
+The package ID is intentionally unchanged while the deleted Play app is checked for package-name reuse. If Google Play refuses `com.eghosa.unjam`, change the package ID in the repository before creating production billing products or linking AdMob to the replacement listing.
 
-Before public rollout, complete `RELEASE_CHECKLIST.md`, including real AdMob/Play Billing configuration, privacy/data-safety declarations, store listing assets and upload-key signing.
+A **debug APK is for installation/testing only**. Google Play deployment must use a release AAB signed with the owner's private upload key. For the new listing, use a newly generated upload key and store its SHA-1 in the GitHub Actions secret `UNJAM_ANDROID_UPLOAD_SHA1`. Store the keystore itself and its credentials only in protected secrets; never commit them.
+
+Before public rollout, complete `RELEASE_CHECKLIST.md`, including Play App Signing, the new upload-key secrets, real AdMob/Play Billing configuration, purchase verification, privacy/data-safety declarations, store listing assets and testing requirements.
 
 ## Project structure
 
