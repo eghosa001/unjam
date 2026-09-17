@@ -44,7 +44,7 @@ func build_home_launcher() -> void:
 	_make_hero(root)
 
 	var aspect_ratio := viewport_size.y / maxf(1.0, viewport_size.x)
-	var upper_balance_height := maxf(0.0, aspect_ratio - 1.9) * 500.0
+	var upper_balance_height := maxf(0.0, aspect_ratio - 1.9) * 720.0
 	if upper_balance_height > 0.0:
 		var upper_balance_spacer := Control.new()
 		upper_balance_spacer.name = "HomeUpperBalanceSpacer"
