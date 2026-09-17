@@ -45,7 +45,7 @@ func build_home_launcher() -> void:
 
 	var action_cluster := VBoxContainer.new()
 	action_cluster.name = "HomeActionCluster"
-	action_cluster.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	action_cluster.size_flags_vertical = Control.SIZE_FILL
 	action_cluster.alignment = BoxContainer.ALIGNMENT_CENTER
 	action_cluster.add_theme_constant_override("separation", 7 if short_phone else 11)
 	root.add_child(action_cluster)
@@ -69,6 +69,10 @@ func build_home_launcher() -> void:
 	action_cluster.add_child(play_hint)
 
 	_make_game_strip(action_cluster)
+	var lower_balance_spacer := Control.new()
+	lower_balance_spacer.name = "HomeLowerBalanceSpacer"
+	lower_balance_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	root.add_child(lower_balance_spacer)
 	_make_motto(root)
 	_make_bottom_nav()
 	_animate_entry(root)
