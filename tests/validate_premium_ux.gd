@@ -6,13 +6,14 @@ func _initialize() -> void:
 	_check_source("res://scripts/game/block_puzzle_polished.gd", ["active_touch_piece", "register_touch_drag", "_finish_touch_drag"], failures)
 	_check_source("res://scripts/ui/water_tube_reference_button.gd", ["PALETTE", "Tube lip", "play_invalid", "play_success"], failures)
 	_check_source("res://scripts/ui/premium_home_casual.gd", ["Unjam3DBackdrop", "Unjam3DMascot", "_make_sign_stack", "_make_motto", "HomePrimaryAction", "_open_game_selector"], failures)
+	_check_source("res://scripts/ui/premium_home_direct_levels.gd", ["extends \"res://scripts/ui/premium_home_casual.gd\"", "_make_game_strip", "_open_game_levels"], failures)
 	_check_source("res://scripts/ui/premium_live_hub_3d.gd", ["CHOOSE A GAME", "Unjam3DGameArt", "_add_game_card"], failures)
 	_check_source("res://scripts/ui/unjam_3d_mascot.gd", ["extends SubViewportContainer", "Camera3D", "SphereMesh", "DirectionalLight3D"], failures)
 	_check_source("res://scripts/ui/unjam_3d_game_art.gd", ["extends SubViewportContainer", "_build_rescue_rush", "_build_water_sort", "_build_block_puzzle"], failures)
 	_check_source("res://scripts/ui/unjam_3d_backdrop.gd", ["_draw_floating_island", "_draw_water_world", "_draw_foreground"], failures)
 	_check_source("res://scripts/systems/premium_visuals.gd", ["tactile_success", "tactile_invalid", "transition_cover"], failures)
 	_check_source("res://scripts/ui/motion_director.gd", ["create_tween", "TRANS", "EASE"], failures)
-	_check_source("res://scenes/Main.tscn", ["premium_home_casual.gd", "premium_live_hub_3d.gd", "PremiumHome", "PremiumLive"], failures)
+	_check_source("res://scenes/Main.tscn", ["premium_home_direct_levels.gd", "premium_live_hub_3d.gd", "PremiumHome", "PremiumLive"], failures)
 
 	for retired in [
 		"res://scripts/ui/game_select_tile.gd",

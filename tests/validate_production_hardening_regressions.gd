@@ -29,7 +29,6 @@ func _validate_canonical_motion_key() -> bool:
 	# 3D dioramas intentionally do not need a Reduced Motion branch.
 	for path in [
 		"res://scripts/ui/motion_director.gd",
-		"res://scripts/ui/premium_surface_manager_static.gd",
 		"res://scripts/ui/premium_home_casual.gd",
 		"res://scripts/systems/premium_visuals.gd"
 	]:
@@ -38,6 +37,9 @@ func _validate_canonical_motion_key() -> bool:
 			return _fail("%s does not use MotionSystem.reduced()" % path)
 		if source.contains('SaveManager.data.get("reduced_motion"'):
 			return _fail("%s still reads legacy reduced_motion directly" % path)
+	var static_surface := _source("res://scripts/ui/premium_surface_manager_static.gd")
+	if not static_surface.contains("func _animate_surface") or static_surface.contains("create_tween"):
+		return _fail("Static surface manager must defer navigation motion to MotionDirector")
 	var settings := _source("res://scripts/ui/premium_main_casual.gd")
 	if settings.contains('SaveManager.data["reduced_motion"]'):
 		return _fail("Settings still writes duplicate reduced_motion key")
@@ -125,7 +127,7 @@ func _validate_shared_completion_overlay() -> bool:
 	overlay.configure_secondary("DOUBLE REWARD", true)
 	root.add_child(overlay)
 	await process_frame
-	var secondary := overlay.get_node_or_null("ResultCard/ResultMargin/ResultBox/SecondaryAction") as Button
+	var secondary := overlay.find_child("SecondaryAction", true, false) as Button
 	var ok := secondary != null and secondary.visible and secondary.text == "DOUBLE REWARD"
 	overlay.queue_free()
 	await process_frame
