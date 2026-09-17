@@ -4,6 +4,9 @@ func _initialize() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
+	var multi := root.get_node_or_null("MultiGameManager")
+	if multi != null:
+		multi.call("clear_checkpoint", "water_sort")
 	var scene := load("res://scenes/WaterSort.tscn") as PackedScene
 	if scene == null:
 		push_error("Water Sort scene failed to load")
