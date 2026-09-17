@@ -26,8 +26,8 @@ func _initialize() -> void:
 
 	_check("res://scenes/Main.tscn", ["premium_live_hub_3d.gd", "monetization_hub_3d.gd", "PremiumHome", "PremiumLive", "MotionDirector"], failures)
 	_check_absent("res://scenes/Main.tscn", ["level_browser_polish.gd", "LevelBrowserPolish"], failures)
-	_check("res://scenes/Game.tscn", ["rescue_rush_casual.gd", "rescue_result_guard.gd"], failures)
-	_check_absent("res://scenes/Game.tscn", ["rescue_layout_polish.gd", "RescueLayoutPolish"], failures)
+	_check("res://scenes/Game.tscn", ["rescue_rush_casual.gd"], failures)
+	_check_absent("res://scenes/Game.tscn", ["rescue_layout_polish.gd", "RescueLayoutPolish", "rescue_result_guard.gd"], failures)
 	_check("res://scenes/WaterSort.tscn", ["water_sort_casual.gd", "ui_touch_enhancer_casual.gd"], failures)
 	_check_absent("res://scenes/WaterSort.tscn", ["water_stage_polish.gd", "WaterStagePolish"], failures)
 	_check("res://scenes/BlockPuzzle.tscn", ["block_puzzle_final_polish.gd", "ui_touch_enhancer_casual.gd"], failures)
