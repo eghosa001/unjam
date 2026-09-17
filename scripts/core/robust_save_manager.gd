@@ -3,7 +3,7 @@ extends "res://scripts/core/save_manager.gd"
 const ROBUST_SAVE_PATH := "user://unjam_save.json"
 const BACKUP_PATH := "user://unjam_save.backup.json"
 const TEMP_PATH := "user://unjam_save.tmp.json"
-const SAVE_VERSION := 10
+const SAVE_VERSION := 11
 
 func _ready() -> void:
 	load_save()
@@ -72,10 +72,13 @@ func _sanitize() -> void:
 		data[key] = bool(data.get(key, DEFAULT_DATA.get(key, false)))
 	if not data.get("stars", {}) is Dictionary:
 		data.stars = {}
+	if not data.get("purchase_claim_ids", {}) is Dictionary:
+		data.purchase_claim_ids = {}
 	for key in ["rescued", "decorations", "daily_completed", "milestone_chests", "world_badges", "achievements", "purchased_products", "processed_purchase_tokens"]:
 		if not data.get(key, []) is Array:
 			data[key] = []
 	_sanitize_purchase_tokens()
+	_sanitize_purchase_claim_ids()
 	var clean_stars: Dictionary = {}
 	var completed_count := 0
 	var perfect_count := 0
@@ -124,6 +127,24 @@ func _sanitize_purchase_tokens() -> void:
 		if fingerprint not in cleaned:
 			cleaned.append(fingerprint)
 	data.processed_purchase_tokens = cleaned
+
+func _sanitize_purchase_claim_ids() -> void:
+	# Claim IDs are not credentials, but keep this client-side retry map bounded
+	# and keyed only by one-way purchase-token fingerprints.
+	var cleaned: Dictionary = {}
+	var claims = data.get("purchase_claim_ids", {})
+	if claims is Dictionary:
+		for value_key in claims:
+			var fingerprint := String(value_key).strip_edges().to_lower()
+			var claim_id := String(claims[value_key]).strip_edges()
+			if not _looks_like_sha256(fingerprint):
+				continue
+			if claim_id.length() < 8 or claim_id.length() > 128:
+				continue
+			cleaned[fingerprint] = claim_id
+			if cleaned.size() >= 1024:
+				break
+	data.purchase_claim_ids = cleaned
 
 func _looks_like_sha256(value: String) -> bool:
 	if value.length() != 64:

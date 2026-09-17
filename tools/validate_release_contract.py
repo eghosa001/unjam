@@ -5,6 +5,7 @@ from pathlib import Path
 EXPECTED_PACKAGE = 'package/unique_name="com.eghosa.unjam"'
 EXPECTED_VERSION_CODE = 'version/code=1'
 EXPECTED_VERSION_NAME = 'version/name="1.0.0"'
+EXPECTED_BACKEND_EXCLUSION = 'backend/*'
 EXPECTED_UPLOAD_SECRET = 'secrets.UNJAM_ANDROID_UPLOAD_SHA1'
 
 REQUIRED_RELEASE_TESTS = (
@@ -44,6 +45,10 @@ def main() -> int:
         'keytool -printcert -jarfile',
         'unzip -t',
         'sha256sum',
+        'validate_purchase_claim_protocol.py',
+        'backend/play-verifier',
+        'npm test',
+        'https://*/verify',
     ):
         if token not in workflow:
             errors.append(f'missing release workflow contract token: {token}')
@@ -56,7 +61,7 @@ def main() -> int:
         if test_name in workflow:
             errors.append(f'obsolete release test still referenced: {test_name}')
 
-    for token in (EXPECTED_PACKAGE, EXPECTED_VERSION_CODE, EXPECTED_VERSION_NAME):
+    for token in (EXPECTED_PACKAGE, EXPECTED_VERSION_CODE, EXPECTED_VERSION_NAME, EXPECTED_BACKEND_EXCLUSION):
         if token not in preset:
             errors.append(f'export preset does not preserve fresh-app contract: {token}')
 

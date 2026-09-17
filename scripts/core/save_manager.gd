@@ -22,6 +22,7 @@ const RESET_PRESERVED_KEYS := [
 	"starter_pack_purchased",
 	"purchased_products",
 	"processed_purchase_tokens",
+	"purchase_claim_ids",
 	"lifetime_purchased_coins"
 ]
 
@@ -48,6 +49,7 @@ const DEFAULT_DATA := {
 	"rewarded_ads_watched": 0,
 	"lifetime_purchased_coins": 0,
 	"processed_purchase_tokens": [],
+	"purchase_claim_ids": {},
 	"privacy_consent_status": "unknown",
 	"total_levels_completed": 0,
 	"total_rescues": 0,

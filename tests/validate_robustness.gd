@@ -35,6 +35,7 @@ func _run() -> void:
 		_finish(errors)
 		return
 	var original_processed_tokens: Array = (save_manager.data.get("processed_purchase_tokens", []) as Array).duplicate(true)
+	var original_claim_ids: Dictionary = (save_manager.data.get("purchase_claim_ids", {}) as Dictionary).duplicate(true)
 	for level_number in [11, 25, 100, 101, 999, 2500, 5000, 7500, 9999, 10000]:
 		var level: Dictionary = Generator.generate(level_number)
 		if not Solver.has_solution(level, 6000):
@@ -49,15 +50,24 @@ func _run() -> void:
 	if int(save_manager.data.perfect_clears) != 1: errors.append("Replay incorrectly increments unique perfect count")
 	if int(first.get("base_coins", -1)) != 75: errors.append("First-clear reward accounting is incorrect")
 	if int(second.get("base_coins", -1)) != 0: errors.append("Replay reward duplication protection failed")
-	if int(save_manager.data.get("save_version", 0)) < 10: errors.append("Robust save version 10 purchase-token migration is missing")
+	if int(save_manager.data.get("save_version", 0)) < 11: errors.append("Robust save version 11 purchase-claim migration is missing")
 	var legacy_token := "qa-legacy-raw-token-at-save-boundary"
 	var fingerprint := legacy_token.sha256_text()
 	save_manager.data.processed_purchase_tokens = [legacy_token, fingerprint.to_upper()]
 	save_manager.call("_sanitize")
 	var sanitized_tokens: Array = save_manager.data.get("processed_purchase_tokens", [])
+	var valid_claim_key := "qa-claim-token".sha256_text()
+	save_manager.data.purchase_claim_ids = {}
+	save_manager.data.purchase_claim_ids[valid_claim_key] = "qa-claim-id-1234"
+	save_manager.data.purchase_claim_ids["not-a-hash"] = "bad"
+	save_manager.call("_sanitize")
+	var sanitized_claims: Dictionary = save_manager.data.get("purchase_claim_ids", {})
+	if String(sanitized_claims.get(valid_claim_key, "")) != "qa-claim-id-1234": errors.append("Valid purchase claim id was removed by save sanitization")
+	if sanitized_claims.has("not-a-hash"): errors.append("Invalid purchase claim fingerprint survived save sanitization")
 	if legacy_token in sanitized_tokens: errors.append("Raw Play purchase token survived save sanitization")
 	if sanitized_tokens.count(fingerprint) != 1: errors.append("Purchase-token sanitization did not deduplicate to one SHA-256 fingerprint")
 	save_manager.data.processed_purchase_tokens = original_processed_tokens
+	save_manager.data.purchase_claim_ids = original_claim_ids
 	save_manager.save()
 	ads.completed_since_interstitial = 0
 	ads.set_ads_enabled(true)

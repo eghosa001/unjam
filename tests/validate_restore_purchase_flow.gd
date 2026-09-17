@@ -66,7 +66,7 @@ func run() -> void:
 	save.data.processed_purchase_tokens = [legacy_token]
 	save.data.coins = original_coins
 	save.save()
-	store.call("_on_verified", store.PRODUCT_COINS_SMALL, legacy_token, true, "verified")
+	store.call("_on_verified", store.PRODUCT_COINS_SMALL, legacy_token, "qa-legacy-claim", {"valid": true, "grant": true, "entitlement": false, "claim_state": "issued", "reason": "verified"})
 	var migrated_tokens: Array = save.data.get("processed_purchase_tokens", [])
 	expect_true(legacy_token not in migrated_tokens, "Legacy raw purchase token remained persisted after duplicate verification")
 	expect_true(legacy_fingerprint in migrated_tokens, "Legacy raw purchase token was not replaced by its SHA-256 fingerprint")

@@ -41,7 +41,7 @@ Product IDs currently expected by the app:
 
 The Android bridge uses Google Play Billing 3.3.0 integration and supports connection, localized product detail queries, purchase callbacks, restore, consumption and acknowledgement.
 
-Purchases intentionally fail closed on Android until `monetization/purchase_verification_url` is a real HTTPS endpoint that verifies Google Play purchase tokens server-side.
+Purchases intentionally fail closed on Android until `monetization/purchase_verification_url` is the deployed Cloud Run `/verify` endpoint. The verifier source is `backend/play-verifier/`; it validates Google Play `ProductPurchaseV2` status and uses Firestore as a SHA-256 token-fingerprint claim ledger. Raw Play purchase tokens are not persisted by the backend.
 
 ## Plugin versions
 
@@ -61,6 +61,6 @@ The install entrypoint is `tools/install_monetization_plugins.sh`.
 4. Set Play Console `Contains ads` accurately.
 5. Complete Data Safety and target-audience declarations based on the actual shipped SDKs and audience.
 6. Create the five product IDs above in Play Console if in-app purchases will ship.
-7. Configure and test the HTTPS purchase-verification backend before enabling purchases.
+7. Deploy `backend/play-verifier/` to a dedicated Google Cloud project, grant its runtime service account Purchases API access to the replacement UNJAM app in Play Console, and set `UNJAM_PURCHASE_VERIFICATION_URL=https://<cloud-run-host>/verify`.
 8. Use Play license testers and Google test ads during development; do not click live ads during testing.
 9. Require a green exact-commit CI run plus Internal testing before Production.
