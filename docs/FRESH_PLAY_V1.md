@@ -12,11 +12,24 @@ This repository is configured for a replacement Google Play listing starting at 
    - `UNJAM_ANDROID_KEY_ALIAS`: the alias inside the keystore.
    - `UNJAM_ANDROID_KEY_PASSWORD`: the keystore/key password used by the release workflow.
    - `UNJAM_ANDROID_UPLOAD_SHA1`: SHA-1 fingerprint of the new upload certificate, colon-delimited.
-   - `UNJAM_PURCHASE_VERIFICATION_URL`: HTTPS endpoint used by the app to verify Google Play purchases server-side.
+   - `UNJAM_PURCHASE_VERIFICATION_URL`: the deployed Cloud Run verifier endpoint, exactly `https://<cloud-run-host>/verify`.
 5. In the replacement Play app, create the one-time products used by UNJAM: `unjam_remove_ads`, `unjam_starter_pack`, `unjam_coins_500`, `unjam_coins_1500`, and `unjam_coins_4000`.
 6. Complete the Play Console app-content declarations truthfully for a casual puzzle game, including ads, Data Safety, target audience and content rating.
 7. Run the GitHub Actions workflow `Android Production Release` with `version_name=1.0.0` and `version_code=1` only after all secrets above are configured.
 8. Upload the resulting verified release AAB to Internal Testing first. After the first accepted upload, never reuse version code 1 for a different bundle.
+
+## Purchase verifier backend
+
+UNJAM does not require player accounts or Supabase. The production purchase verifier lives in `backend/play-verifier/` and is designed for Google Cloud Run + Firestore.
+
+From that directory, after creating/selecting a dedicated Google Cloud project and enabling billing for Cloud Run deployment:
+
+```bash
+export GOOGLE_CLOUD_PROJECT=your-unjam-project-id
+bash deploy.sh
+```
+
+The script prints the Cloud Run service URL. The Play Console owner/admin must then grant the generated runtime service account access to the replacement UNJAM app with Purchases API permission. Confirm `GET /healthz` returns `{"ok":true}`, then save `<service-url>/verify` as the `UNJAM_PURCHASE_VERIFICATION_URL` GitHub Actions secret. Never commit a service-account JSON key.
 
 ## New upload key commands
 
