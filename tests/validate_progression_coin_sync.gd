@@ -26,10 +26,14 @@ func run() -> void:
 		transactions.append(transaction.duplicate(true))
 	economy.transaction_recorded.connect(callback)
 
-	# Start from deterministic multi-game state.
+	# Start from deterministic multi-game and retention state. In particular,
+	# keep win_streak away from the 3/5/10/15/25 bonus thresholds so the base
+	# level-reward assertion cannot be polluted by an unrelated streak reward.
 	save.data.coins = 0
 	save.data.game_progress = {}
 	save.data.daily_tasks = {}
+	save.data.win_streak = 0
+	save.data.best_win_streak = 0
 	multi.ensure_state()
 	save.save()
 
