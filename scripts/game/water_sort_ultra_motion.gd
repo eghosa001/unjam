@@ -60,7 +60,8 @@ func _apply_tube_layout() -> void:
 	var stage := find_child("GameplayStage", true, false) as PanelContainer
 	if stage != null:
 		var content_height := tube_size.y * float(row_count) + row_gap * float(maxi(row_count - 1, 0)) + 42.0
-		stage.custom_minimum_size.y = minf(available_height, content_height)
+		var tall_screen_floor := 1080.0 if get_viewport_rect().size.y >= 1800.0 else 0.0
+		stage.custom_minimum_size.y = minf(available_height, maxf(content_height, tall_screen_floor))
 
 func _tube_size_for_count(tube_count: int) -> Vector2:
 	if tube_count <= 6:

@@ -212,7 +212,7 @@ func _fit_3d_board_layout() -> void:
 		cell_size * GRID_SIZE + gap * float(GRID_SIZE - 1) + 18.0
 	)
 	if piece_row != null:
-		piece_row.custom_minimum_size.y = 150.0
+		piece_row.custom_minimum_size.y = 150.0 if viewport_size.y < 1100.0 else 180.0
 
 func load_level() -> void:
 	_clear_streak = 0

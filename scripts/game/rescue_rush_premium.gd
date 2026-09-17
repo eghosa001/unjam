@@ -1,5 +1,7 @@
 extends "res://scripts/game/rescue_rush_polished.gd"
 
+const RescuePiece3D = preload("res://scripts/ui/rescue_piece_3d_button.gd")
+
 # Presentation-only overhaul for Rescue Rush. Gameplay, level data, cascades,
 # checkpoints, scoring and completion remain inherited from the polished game.
 
@@ -339,7 +341,7 @@ func render_board() -> void:
 				rescue_pulse.tween_property(slot, "modulate", Color.WHITE, 0.46).set_trans(Tween.TRANS_CUBIC)
 			elif piece_index >= 0:
 				var piece: Dictionary = pieces[piece_index]
-				var button := PremiumPieceButton.new()
+				var button := RescuePiece3D.new()
 				button.custom_minimum_size = Vector2(cell_size, cell_size)
 				button.tooltip_text = String(piece.get("type", "normal")).capitalize()
 				button.configure(String(piece.get("type", "normal")), String(piece.get("direction", "right")), _piece_visual_color(piece))

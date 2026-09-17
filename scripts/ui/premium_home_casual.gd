@@ -168,7 +168,7 @@ func _make_tagline(parent: VBoxContainer) -> void:
 
 func _make_hero(parent: VBoxContainer) -> void:
 	var viewport_size := get_viewport_rect().size
-	var hero_height := 210.0 if viewport_size.y < 1100.0 else (320.0 if viewport_size.y < 1400.0 else 500.0)
+	var hero_height := 210.0 if viewport_size.y < 1100.0 else (320.0 if viewport_size.y < 1400.0 else 460.0)
 	var hero := PanelContainer.new()
 	hero.name = "HomeHero3D"
 	hero.custom_minimum_size = Vector2(0, hero_height)

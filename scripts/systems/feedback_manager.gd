@@ -8,7 +8,7 @@ var _tone_cache: Dictionary = {}
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	set_process(true)
+	set_process(false)
 	if DisplayServer.get_name() == "headless":
 		return
 	player = AudioStreamPlayer.new()
@@ -41,10 +41,8 @@ func shutdown_audio() -> void:
 	music_stream = null
 	_tone_cache.clear()
 
-func _process(_delta: float) -> void:
-	var enabled := bool(SaveManager.data.get("music", true))
-	if enabled != last_music_enabled:
-		_sync_music()
+func apply_settings() -> void:
+	_sync_music()
 
 func _sync_music() -> void:
 	last_music_enabled = bool(SaveManager.data.get("music", true))
@@ -96,6 +94,9 @@ func complete(kind: String = "level") -> void:
 # Backward-compatible API used by existing scenes while they migrate to the
 # semantic methods above.
 func tap() -> void:
+	# Settings changes flow through this feedback event too, so synchronize the
+	# ambient-music preference without keeping an always-on frame poll alive.
+	apply_settings()
 	# Routine taps stay silent in the haptic channel. Continuous vibration on
 	# every button press made navigation and puzzle input feel harsh.
 	_play_tone(540.0, 0.045, 0.16)
