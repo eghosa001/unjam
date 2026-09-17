@@ -134,6 +134,9 @@ func _make_hero(parent: VBoxContainer) -> void:
 	var hero := PanelContainer.new()
 	hero.name = "HomeHero3D"
 	hero.custom_minimum_size = Vector2(0, 440)
+	# Keep the compact minimum for short phones, but let the 3D hero consume
+	# surplus vertical space on tall displays instead of leaving the mascot undersized.
+	hero.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	hero.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color(0.82, 0.97, 1.0, 0.09), 42, Color(1, 1, 1, 0.38), 2, 8))
 	parent.add_child(hero)
 	var margin := MarginContainer.new()
