@@ -4,6 +4,20 @@ signal premium_reward(reward: Dictionary)
 
 const SAVE_PATH := "user://unjam_save.json"
 const RESET_PRESERVED_KEYS := [
+	# Coins from gameplay and Play purchases share one wallet, so a gameplay reset
+	# must never destroy that balance. Decorations are sold as permanent unlocks.
+	"coins",
+	"decorations",
+	# Resetting progression must not silently rewrite accessibility/preferences or
+	# force the privacy flow back to an unknown local state.
+	"sound",
+	"vibration",
+	"music",
+	"reduce_motion",
+	"fast_animation",
+	"privacy_consent_status",
+	# Monetization history and Play-owned state survive gameplay resets.
+	"rewarded_ads_watched",
 	"remove_ads",
 	"starter_pack_purchased",
 	"purchased_products",
@@ -150,8 +164,9 @@ func complete_daily(date_key: String, reward: int = 100) -> bool:
 	if data.daily_completed.size() > 45: data.daily_completed = data.daily_completed.slice(data.daily_completed.size() - 45)
 	data.coins = int(data.coins) + reward; save(); return true
 func reset_progress() -> void:
-	# Reset gameplay progression without erasing Play-owned entitlements or the
-	# local transaction ledger used to prevent duplicate non-consumable grants.
+	# Reset gameplay progression only. Preserve the shared wallet, permanent
+	# unlocks, user preferences/privacy state, monetization history and Play-owned
+	# entitlements/transaction ledger.
 	var preserved: Dictionary = {}
 	for key in RESET_PRESERVED_KEYS:
 		var value = data.get(key, DEFAULT_DATA.get(key))
