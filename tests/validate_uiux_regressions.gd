@@ -12,6 +12,7 @@ func _run() -> void:
 	var water_ui := _read("res://scripts/game/water_sort_casual.gd")
 	var block_drag := _read("res://scripts/ui/smooth_block_piece_button.gd")
 	var block_ui := _read("res://scripts/game/block_puzzle_3d.gd")
+	var block_polish := _read("res://scripts/game/block_puzzle_final_polish.gd")
 	var block_preview := _read("res://scripts/ui/smooth_block_drag_preview.gd")
 	var home := _read("res://scripts/ui/premium_home_casual.gd")
 	var settings := _read("res://scripts/ui/premium_main_casual.gd")
@@ -30,7 +31,7 @@ func _run() -> void:
 	var visuals := _read("res://scripts/systems/premium_visuals.gd")
 	var project_text := _read("res://project.godot")
 
-	if rescue_layout.is_empty() or water_layout.is_empty() or block_ui.is_empty():
+	if rescue_layout.is_empty() or water_layout.is_empty() or block_ui.is_empty() or block_polish.is_empty():
 		return _fail("Active gameplay layout sources are missing")
 	if not rescue_layout.contains("size_changed.connect(_queue_board_fit)") or not rescue_layout.contains("_fit_board_to_viewport") or rescue_layout.contains("node_added.connect"):
 		return _fail("Rescue Rush must have one event-driven layout owner")
@@ -106,8 +107,8 @@ func _run() -> void:
 
 	if not water_ui.contains("GameplayStage") or not water_scene.contains("water_sort_casual.gd"):
 		return _fail("Water Sort is not using the gameplay-first stage")
-	if not block_scene.contains("block_puzzle_3d.gd"):
-		return _fail("Block Puzzle is not using the 3D gameplay presentation")
+	if not block_scene.contains("block_puzzle_final_polish.gd") or not block_polish.contains('extends "res://scripts/game/block_puzzle_3d.gd"'):
+		return _fail("Block Puzzle final polish must preserve the 3D gameplay presentation chain")
 	if not rescue_ui.contains("GameplayBoardHolder") or not rescue_scene.contains("rescue_rush_casual.gd"):
 		return _fail("Rescue Rush is not using the gameplay-first presentation")
 
