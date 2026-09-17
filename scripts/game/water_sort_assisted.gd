@@ -72,7 +72,9 @@ func add_extra_tube() -> bool:
 		_show_tube_recovery()
 		_refresh_extra_tube_button()
 		return false
-	history.append({"tubes": tubes.duplicate(true), "moves": moves})
+	# A paid assist is not an undoable puzzle move. Keeping the extra tube out of
+	# move history prevents Undo from destroying a purchased tube while the
+	# one-use-per-attempt guard remains consumed.
 	tubes.append([])
 	extra_tube_used = true
 	selected = -1
