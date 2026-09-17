@@ -105,7 +105,10 @@ func _can_deliver_hint(game: Node, placement: String) -> bool:
 				return false
 			if game.has_method("_best_hint_placement"):
 				var best = game.call("_best_hint_placement")
-				return best is Dictionary and not (best as Dictionary).is_empty()
+				if best is Dictionary:
+					var best_dict: Dictionary = best
+					return not best_dict.is_empty()
+				return false
 			return true
 		_:
 			return not bool(game.get("board_locked")) and not bool(game.get("rescued"))
