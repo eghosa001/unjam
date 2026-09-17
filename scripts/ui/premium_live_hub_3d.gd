@@ -111,7 +111,7 @@ func _add_game_card(parent: VBoxContainer, game_id: String) -> void:
 
 	var viewport_size := get_viewport_rect().size
 	var compact := viewport_size.x < 900.0
-	var card_height := (570.0 if viewport_size.y >= 1200.0 else 500.0) if compact else clampf(viewport_size.y * 0.217, 340.0, 520.0)
+	var card_height := (570.0 if viewport_size.y >= 1200.0 else 500.0) if compact else clampf(viewport_size.y * 0.11 + 237.0, 340.0, 700.0)
 	var panel := PanelContainer.new()
 	panel.name = "GameCard3D_%s" % game_id
 	panel.custom_minimum_size = Vector2(0, card_height)
