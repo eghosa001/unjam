@@ -1,5 +1,11 @@
 extends "res://scripts/game/rescue_rush_casual.gd"
 
+func can_show_hint() -> bool:
+	if board_locked or rescued:
+		return false
+	var index: int = PuzzleSolver.first_solution_move(level_data, pieces, 20000)
+	return index >= 0 and index < pieces.size()
+
 # Hints are actions, not vague advice. PuzzleSolver returns the first move on a
 # verified solution path, so activating Hint removes the correct arrow/key/etc.
 func show_hint() -> void:
@@ -22,6 +28,6 @@ func show_hint() -> void:
 		"bomb": action_name = "bomb"
 		"rotate": action_name = "rotate tile"
 		"linked": action_name = "linked arrow"
-		hint_label.text = "Best move: %s at row %d, column %d." % [action_name, int(piece.get("y", 0)) + 1, int(piece.get("x", 0)) + 1]
+	hint_label.text = "Best move: %s at row %d, column %d." % [action_name, int(piece.get("y", 0)) + 1, int(piece.get("x", 0)) + 1]
 	_save_checkpoint()
 	await try_move(index)
