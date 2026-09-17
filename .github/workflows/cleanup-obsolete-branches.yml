@@ -1,0 +1,84 @@
+name: One-time obsolete branch cleanup
+
+on:
+  push:
+    branches: [gh-pages]
+    paths:
+      - '.github/workflows/cleanup-obsolete-branches.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Delete obsolete development branches
+        shell: bash
+        run: |
+          set -euo pipefail
+          branches=(
+            'audit-hardening-2026-09-17'
+            'backup/pre-3d-visual-reboot-2026-09-16'
+            'chatgpt/all-branches-integration'
+            'chatgpt/fresh-release-build'
+            'chatgpt/fresh-release-build-2'
+            'chatgpt/production-quality-overhaul'
+            'chatgpt/production-readiness'
+            'chatgpt/qa-100-level-fixes'
+            'feature/google-play-payments'
+            'feature/premium-3d-overhaul'
+            'feature/premium-visual-overhaul'
+            'final-apk-build'
+            'final-build-fix'
+            'fix/premium-gameplay-polish-20260915'
+            'fix/ui-ux-four-regressions'
+            'flat-board-3d-effects'
+            'flat-gameplay-surfaces'
+            'fresh-play-v1-reset'
+            'monetization-final'
+            'monetization-tested'
+            'premium-3d-ux-overhaul-20260916'
+            'production-hardening-20260916'
+            'release/build-v2-1.0.1'
+            'release/v2-update-compatibility-20260916'
+            'release-aab-build'
+            'server-idempotent-purchase-verifier'
+            'sync-main-probe-child-1'
+            'tmp-do-not-use-ignore'
+            'tmp-fix-audio-stage'
+            'tmp-fix-audio-stage2'
+            'tmp-no'
+            'tmp-should-not-create'
+            'tmp-test-ignore'
+            'verification-f03117a'
+            'visual-production-polish'
+            'visual-reboot-3d'
+            'visual-reboot-3d-active'
+            'visual-reboot-3d-active2'
+            'visual-reboot-3d-actual'
+            'visual-reboot-3d-actual2'
+            'visual-reboot-3d-build'
+            'visual-reboot-3d-build-final'
+            'visual-reboot-3d-build-final2'
+            'visual-reboot-3d-final'
+            'visual-reboot-3d-impl'
+            'visual-reboot-3d-tests'
+            'visual-reboot-3d-work'
+            'visual-reboot-3d-work2'
+          )
+
+          for branch in "${branches[@]}"; do
+            if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+              echo "Deleting $branch"
+              git push origin --delete "$branch"
+            else
+              echo "Already absent: $branch"
+            fi
+          done
+
+          echo 'Remaining branches:'
+          git ls-remote --heads origin | sed 's#.*refs/heads/##' | sort
