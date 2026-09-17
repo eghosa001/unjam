@@ -28,30 +28,20 @@ func _test_water(main: Control) -> bool:
 	var game = main.get("active_game")
 	if game == null or not is_instance_valid(game): return _fail("Water Sort interaction test could not launch")
 	var before: Array = game.get("tubes").duplicate(true)
+	var before_moves := int(game.get("moves"))
 	game.call("show_hint")
 	if String(game.get("hint_label").text).is_empty(): return _fail("Water Sort hint produced no guidance")
-	var moved := false
-	for a in range(before.size()):
-		for b in range(before.size()):
-			if a != b and bool(game.call("can_pour", a, b)):
-				# Model the real UI as two distinct taps. The premium pour sequence is
-				# asynchronous, so wait for the live move counter and animation state
-				# instead of assuming a fixed number of frames.
-				game.call("select_tube", a)
-				await _frames(2)
-				var before_moves := int(game.get("moves"))
-				game.call("select_tube", b)
-				moved = await _wait_for_water_move(game, before_moves)
-				break
-		if moved: break
-	if not moved or int(game.get("moves")) != 1: return _fail("Water Sort could not execute a legal move")
-	if _manager().call("checkpoint", "water_sort").is_empty(): return _fail("Water Sort move did not save a checkpoint")
+	# Water hints intentionally execute the solver-selected pour through the same
+	# interaction path as two player taps. Wait for that pour to settle before
+	# validating checkpoint/undo so the contract matches live gameplay.
+	if not await _wait_for_water_move(game, before_moves):
+		return _fail("Water Sort Hint did not execute a verified move")
+	if int(game.get("moves")) != before_moves + 1:
+		return _fail("Water Sort Hint executed an unexpected number of moves")
+	if _manager().call("checkpoint", "water_sort").is_empty(): return _fail("Water Sort Hint move did not save a checkpoint")
 	game.call("undo_move")
-	if game.has_method("_has_active_pours") and bool(game.call("_has_active_pours")):
-		if not String(game.get("status_label").text).contains("queued"):
-			return _fail("Water Sort active-pour undo was not visibly queued")
 	if not await _wait_for_water_undo(game, before):
-		return _fail("Water Sort queued undo did not restore state after active pour settled")
+		return _fail("Water Sort undo did not restore the pre-Hint state")
 	game.call("restart_level")
 	await _frames(2)
 	if int(game.get("moves")) != 0: return _fail("Water Sort retry did not reset moves")
@@ -61,7 +51,8 @@ func _wait_for_water_move(game: Node, previous_moves: int, max_frames: int = 240
 	for _i in range(max_frames):
 		if not is_instance_valid(game):
 			return false
-		if int(game.get("moves")) > previous_moves and not bool(game.get("animating")):
+		var active := bool(game.call("_has_active_pours")) if game.has_method("_has_active_pours") else bool(game.get("animating"))
+		if int(game.get("moves")) > previous_moves and not active:
 			return true
 		await process_frame
 	return false
@@ -82,29 +73,33 @@ func _test_block(main: Control) -> bool:
 	await _frames(4)
 	var game = main.get("active_game")
 	if game == null or not is_instance_valid(game): return _fail("Block Puzzle interaction test could not launch")
+	var before: Array = game.get("cells").duplicate(true)
+	var before_placements := int(game.get("placements"))
 	game.call("show_hint")
 	if String(game.get("hint_label").text).is_empty(): return _fail("Block Puzzle hint produced no guidance")
-	var before: Array = game.get("cells").duplicate(true)
-	var placed := false
-	for pi in range(game.get("pieces").size()):
-		var shape: Array = game.get("pieces")[pi]
-		for y in range(8):
-			for x in range(8):
-				if bool(game.call("can_place", shape, Vector2i(x, y))):
-					game.call("select_piece", pi)
-					game.call("place_selected", Vector2i(x, y))
-					placed = true
-					break
-			if placed: break
-		if placed: break
-	if not placed or int(game.get("placements")) != 1: return _fail("Block Puzzle could not place a legal piece")
-	if _manager().call("checkpoint", "block_puzzle").is_empty(): return _fail("Block Puzzle placement did not save a checkpoint")
+	# Block hints intentionally execute the solver-selected placement. Wait for
+	# any premium line-clear transaction to finish before validating undo.
+	if not await _wait_for_block_hint(game, before_placements):
+		return _fail("Block Puzzle Hint did not execute a verified placement")
+	if int(game.get("placements")) != before_placements + 1:
+		return _fail("Block Puzzle Hint executed an unexpected number of placements")
+	if _manager().call("checkpoint", "block_puzzle").is_empty(): return _fail("Block Puzzle Hint placement did not save a checkpoint")
 	game.call("undo_move")
-	if int(game.get("placements")) != 0 or game.get("cells") != before: return _fail("Block Puzzle undo did not restore state")
+	if int(game.get("placements")) != before_placements or game.get("cells") != before: return _fail("Block Puzzle undo did not restore the pre-Hint state")
 	game.call("restart_level")
 	await _frames(2)
 	if int(game.get("placements")) != 0 or int(game.get("score")) != 0: return _fail("Block Puzzle retry did not reset state")
 	return true
+
+func _wait_for_block_hint(game: Node, previous_placements: int, max_frames: int = 240) -> bool:
+	for _i in range(max_frames):
+		if not is_instance_valid(game):
+			return false
+		var clearing := bool(game.get("_clear_transition_active"))
+		if int(game.get("placements")) > previous_placements and not clearing:
+			return true
+		await process_frame
+	return false
 
 func _frames(count: int) -> void:
 	for _i in range(count): await process_frame
