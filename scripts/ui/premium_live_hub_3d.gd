@@ -5,7 +5,7 @@ func _button(text_value: String, minimum: Vector2, accent: Color, strong := fals
 	button.text = text_value
 	button.custom_minimum_size = minimum
 	button.add_theme_font_size_override("font_size", 21)
-	Unjam3DTheme.gloss_button(button, accent, strong, 26)
+	Unjam3DTheme.gloss_button(button, accent, strong, 26, _theme_mode() == "dark")
 	return button
 
 func _build() -> void:
@@ -15,15 +15,19 @@ func _build() -> void:
 	built = true
 	last_theme = _theme_mode()
 
+	clip_contents = true
+	var dark_mode := _theme_mode() == "dark"
 	var bg := Unjam3DBackdrop.new()
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	bg.configure(Unjam3DTheme.WATER)
+	bg.configure(Unjam3DTheme.WATER, dark_mode)
 	add_child(bg)
 
 	var outer := MarginContainer.new()
 	outer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	outer.add_theme_constant_override("margin_left", 34)
-	outer.add_theme_constant_override("margin_right", 34)
+	var viewport_size := get_viewport_rect().size
+	var narrow := viewport_size.x < 900.0
+	outer.add_theme_constant_override("margin_left", 20 if viewport_size.x < 600.0 else 34)
+	outer.add_theme_constant_override("margin_right", 20 if viewport_size.x < 600.0 else 34)
 	outer.add_theme_constant_override("margin_top", 28)
 	outer.add_theme_constant_override("margin_bottom", 118)
 	add_child(outer)
@@ -87,7 +91,7 @@ func _build() -> void:
 
 	var quote := PanelContainer.new()
 	quote.custom_minimum_size = Vector2(0, 92)
-	quote.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("d0c8a8"), 30, Color("f2e9bf"), 3, 8))
+	quote.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("26334a") if dark_mode else Color("d0c8a8"), 30, Color("f2e9bf"), 3, 8))
 	stack.add_child(quote)
 	var quote_label := Label.new()
 	quote_label.text = "Different puzzles.\nA brighter you.  ♥"
@@ -105,10 +109,12 @@ func _add_game_card(parent: VBoxContainer, game_id: String) -> void:
 	var highest := clampi(int(progress.get("highest_level", 1)), 1, MultiGameManager.CAMPAIGN_LEVELS)
 	var level_in_world := ((highest - 1) % 100) + 1
 
+	var viewport_size := get_viewport_rect().size
+	var compact := viewport_size.x < 900.0
 	var panel := PanelContainer.new()
 	panel.name = "GameCard3D_%s" % game_id
-	panel.custom_minimum_size = Vector2(0, 350)
-	panel.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(accent, 38, accent.lightened(0.36), 4, 14))
+	panel.custom_minimum_size = Vector2(0, (570 if viewport_size.y >= 1200.0 else 500) if compact else (382 if viewport_size.y >= 1400.0 else 340))
+	panel.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(accent.darkened(0.42) if _theme_mode() == "dark" else accent.lightened(0.025), 38, accent.lightened(0.42), 4, 18))
 	parent.add_child(panel)
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 20)
@@ -116,36 +122,47 @@ func _add_game_card(parent: VBoxContainer, game_id: String) -> void:
 	margin.add_theme_constant_override("margin_top", 14)
 	margin.add_theme_constant_override("margin_bottom", 14)
 	panel.add_child(margin)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 16)
+	var row: BoxContainer = VBoxContainer.new() if compact else HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12 if compact else 16)
 	margin.add_child(row)
 
 	var info := VBoxContainer.new()
-	info.custom_minimum_size = Vector2(430, 0)
+	info.custom_minimum_size = Vector2(0 if compact else 430, 0)
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	info.add_theme_constant_override("separation", 7)
 	row.add_child(info)
 	var name := Label.new()
 	name.text = MultiGameManager.display_name(game_id).to_upper()
-	name.add_theme_font_size_override("font_size", 41)
+	name.add_theme_font_size_override("font_size", 34 if compact else 44)
 	Unjam3DTheme.label_3d(name, Color.WHITE, dark.darkened(0.34), 6)
 	info.add_child(name)
 	var desc := Label.new()
 	desc.text = _reference_card_copy(game_id)
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	desc.add_theme_font_size_override("font_size", 19)
+	desc.add_theme_font_size_override("font_size", 18 if compact else 23)
 	Unjam3DTheme.label_3d(desc, Color.WHITE, dark.darkened(0.34), 3)
 	info.add_child(desc)
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	info.add_child(spacer)
 
-	var footer := HBoxContainer.new()
-	footer.custom_minimum_size = Vector2(0, 76)
-	footer.add_theme_constant_override("separation", 10)
+	var footer: Container
+	if compact:
+		var grid_footer := GridContainer.new()
+		grid_footer.columns = 2
+		grid_footer.custom_minimum_size = Vector2(0, 126)
+		grid_footer.add_theme_constant_override("h_separation", 8)
+		grid_footer.add_theme_constant_override("v_separation", 8)
+		footer = grid_footer
+	else:
+		var row_footer := HBoxContainer.new()
+		row_footer.custom_minimum_size = Vector2(0, 76)
+		row_footer.add_theme_constant_override("separation", 10)
+		footer = row_footer
 	info.add_child(footer)
 	var level_chip := PanelContainer.new()
-	level_chip.custom_minimum_size = Vector2(120, 62)
+	level_chip.custom_minimum_size = Vector2(0 if compact else 120, 56 if compact else 62)
+	level_chip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	level_chip.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(dark, 22, accent.lightened(0.35), 2, 5))
 	footer.add_child(level_chip)
 	var level_label := Label.new()
@@ -159,7 +176,7 @@ func _add_game_card(parent: VBoxContainer, game_id: String) -> void:
 	var progress_bar := ProgressBar.new()
 	progress_bar.name = "WorldProgress"
 	progress_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	progress_bar.custom_minimum_size = Vector2(160, 34)
+	progress_bar.custom_minimum_size = Vector2(0 if compact else 160, 34)
 	progress_bar.max_value = 100.0
 	progress_bar.value = float(level_in_world)
 	progress_bar.show_percentage = false
@@ -169,21 +186,36 @@ func _add_game_card(parent: VBoxContainer, game_id: String) -> void:
 
 	var star_label := Label.new()
 	star_label.text = "★ %d" % MultiGameManager.total_stars(game_id)
-	star_label.custom_minimum_size = Vector2(92, 62)
+	star_label.custom_minimum_size = Vector2(0 if compact else 92, 56 if compact else 62)
+	star_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	star_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	star_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	star_label.add_theme_font_size_override("font_size", 18)
 	Unjam3DTheme.label_3d(star_label, Color("fff2a0"), dark.darkened(0.38), 3)
 	footer.add_child(star_label)
-	var play := _button("›", Vector2(68, 68), dark, true)
-	play.add_theme_font_size_override("font_size", 38)
+	var play := _button("PLAY  ›", Vector2(0 if compact else 124, 60 if compact else 68), dark, true)
+	play.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	play.add_theme_font_size_override("font_size", 22)
 	play.pressed.connect(_play.bind(game_id))
 	footer.add_child(play)
 
+	var art_shell := PanelContainer.new()
+	art_shell.name = "GameArtShell_%s" % game_id
+	art_shell.custom_minimum_size = Vector2(0 if compact else 370, 205 if compact else 312)
+	art_shell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	art_shell.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color(1, 1, 1, 0.16), 30, Color(1, 1, 1, 0.48), 2, 10))
+	row.add_child(art_shell)
+	var art_margin := MarginContainer.new()
+	art_margin.add_theme_constant_override("margin_left", 8)
+	art_margin.add_theme_constant_override("margin_right", 8)
+	art_margin.add_theme_constant_override("margin_top", 6)
+	art_margin.add_theme_constant_override("margin_bottom", 6)
+	art_shell.add_child(art_margin)
 	var art := Unjam3DGameArt.new()
-	art.custom_minimum_size = Vector2(360, 310)
+	art.custom_minimum_size = Vector2(0 if compact else 340, 190 if compact else 294)
+	art.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	art.configure(game_id)
-	row.add_child(art)
+	art_margin.add_child(art)
 
 func _reference_card_copy(game_id: String) -> String:
 	match game_id:
@@ -198,7 +230,7 @@ func _add_bottom_nav() -> void:
 	nav.offset_right = -28
 	nav.offset_top = -108
 	nav.offset_bottom = -16
-	nav.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("0756a8"), 30, Color("56c8ff"), 3, 10))
+	nav.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("071a35") if _theme_mode() == "dark" else Color("0756a8"), 30, Color("56c8ff"), 3, 10))
 	add_child(nav)
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
