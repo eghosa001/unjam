@@ -49,10 +49,9 @@ func _spawn_clear_feedback(indices: Array[int], line_count: int) -> void:
 		if line_count < 2:
 			FeedbackManager.combo(_clear_streak)
 
-	_reset_clear_streak_after_window(generation)
+	get_tree().create_timer(CLEAR_STREAK_WINDOW).timeout.connect(_expire_clear_streak.bind(generation))
 
-func _reset_clear_streak_after_window(generation: int) -> void:
-	await get_tree().create_timer(CLEAR_STREAK_WINDOW).timeout
+func _expire_clear_streak(generation: int) -> void:
 	if generation == _clear_streak_generation:
 		_clear_streak = 0
 
@@ -73,7 +72,7 @@ func _refresh_tension_feedback() -> void:
 func _board_occupancy() -> float:
 	var occupied := 0
 	for row in cells:
-		if not row is Array:
+		if not (row is Array):
 			continue
 		for value in row:
 			if bool(value):
