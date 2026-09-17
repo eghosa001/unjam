@@ -46,8 +46,8 @@ func run() -> void:
 	if shop_nav != null and hub != null:
 		shop_nav.emit_signal("pressed")
 		await _frames(2)
-		var overlay = hub.get("overlay")
-		var shop_open := overlay is Control and overlay.visible
+		var overlay: Variant = hub.get("overlay")
+		var shop_open: bool = overlay is Control and (overlay as Control).visible
 		expect_true(shop_open, "Home Shop navigation did not open Shop overlay")
 		if hub.has_method("_close_shop"):
 			hub.call("_close_shop")
@@ -55,8 +55,8 @@ func run() -> void:
 	if coin_shop != null and hub != null:
 		coin_shop.emit_signal("pressed")
 		await _frames(2)
-		var overlay = hub.get("overlay")
-		var shop_open := overlay is Control and overlay.visible
+		var overlay: Variant = hub.get("overlay")
+		var shop_open: bool = overlay is Control and (overlay as Control).visible
 		expect_true(shop_open, "Coin balance action did not open Shop overlay")
 		if hub.has_method("_close_shop"):
 			hub.call("_close_shop")

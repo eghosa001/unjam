@@ -67,7 +67,7 @@ func run() -> void:
 		first["progress"] = int(first.get("target", 1))
 		first["claimed"] = false
 		tasks[0] = first
-		var task_key := multi.date_key() + ":block_puzzle"
+		var task_key: String = String(multi.date_key()) + ":block_puzzle"
 		var store: Dictionary = save.data.get("daily_tasks", {})
 		store[task_key] = tasks
 		save.data.daily_tasks = store

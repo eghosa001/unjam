@@ -21,7 +21,7 @@ func run() -> void:
 		_finish()
 		return
 
-	var original := save_manager.data.duplicate(true)
+	var original: Dictionary = save_manager.data.duplicate(true)
 	var reasons: Array[String] = []
 	var callback := func(transaction: Dictionary) -> void:
 		reasons.append(String(transaction.get("reason", "")))

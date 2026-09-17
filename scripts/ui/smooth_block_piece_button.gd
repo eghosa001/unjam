@@ -17,7 +17,6 @@ func _begin_drag_feedback() -> void:
 	if dragging:
 		return
 	dragging = true
-	_sync_processing()
 	modulate = Color(1, 1, 1, 0)
 	var tween := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween.tween_property(self, "scale", Vector2(0.84, 0.84), 0.07)

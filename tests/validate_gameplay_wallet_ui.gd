@@ -18,6 +18,7 @@ func run() -> void:
 		_finish()
 		return
 	var original_coins := int(save.data.get("coins", 0))
+	var original_runs: Dictionary = save.data.get("multi_active_runs", {}).duplicate(true)
 
 	var cases: Array = [
 		["rescue_rush", "res://scenes/Game.tscn"],
@@ -28,6 +29,9 @@ func run() -> void:
 		var case: Array = case_value
 		var game_id := String(case[0])
 		var scene_path := String(case[1])
+		var isolated_runs: Dictionary = save.data.get("multi_active_runs", {}).duplicate(true)
+		isolated_runs.erase(game_id)
+		save.data["multi_active_runs"] = isolated_runs
 		save.data.coins = 160
 		save.save()
 		var packed := load(scene_path) as PackedScene
@@ -58,6 +62,7 @@ func run() -> void:
 		await _frames(2)
 
 	save.data.coins = original_coins
+	save.data["multi_active_runs"] = original_runs
 	save.save()
 	_finish()
 

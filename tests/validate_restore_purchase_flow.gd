@@ -66,7 +66,7 @@ func run() -> void:
 	var hub := main.get_node_or_null("MonetizationHub")
 	expect_true(hub != null, "MonetizationHub missing from Main")
 	if hub != null:
-		var connections := store.restore_completed.get_connections()
+		var connections: Array = store.restore_completed.get_connections()
 		var connected := false
 		for entry in connections:
 			var callback: Callable = entry.get("callable", Callable())

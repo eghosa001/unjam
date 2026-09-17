@@ -23,6 +23,8 @@ func run() -> void:
 		_finish()
 		return
 	var original_coins := int(save_manager.data.get("coins", 0))
+	var original_runs: Dictionary = save_manager.data.get("multi_active_runs", {}).duplicate(true)
+	var original_test_mode := bool(ProjectSettings.get_setting("monetization/test_mode", false))
 	var transactions: Array = []
 	var callback := func(transaction: Dictionary) -> void:
 		transactions.append(transaction.duplicate(true))
@@ -48,7 +50,12 @@ func run() -> void:
 	expect_true(not blocked_ok and not bool(blocked.granted), "Unaffordable hint executed without coins/ad recovery")
 	expect_true(int(save_manager.data.get("coins", -1)) == 0, "Unaffordable hint changed wallet")
 
-	# Water Sort Extra Tube is a paid one-use assist.
+	# Water Sort Extra Tube is a paid one-use assist. Start from a fresh run so a
+	# checkpoint left by another test cannot make the assist look pre-consumed.
+	var isolated_runs: Dictionary = save_manager.data.get("multi_active_runs", {}).duplicate(true)
+	isolated_runs.erase("water_sort")
+	save_manager.data["multi_active_runs"] = isolated_runs
+	save_manager.save()
 	var packed := load("res://scenes/WaterSort.tscn") as PackedScene
 	var game = packed.instantiate()
 	game.level_number = 1
@@ -70,6 +77,8 @@ func run() -> void:
 	if economy.transaction_recorded.is_connected(callback):
 		economy.transaction_recorded.disconnect(callback)
 	save_manager.data.coins = original_coins
+	save_manager.data["multi_active_runs"] = original_runs
+	ProjectSettings.set_setting("monetization/test_mode", original_test_mode)
 	save_manager.save()
 	_finish()
 
