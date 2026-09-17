@@ -1,5 +1,38 @@
 extends "res://scripts/ui/premium_home_casual.gd"
 
+# Keep the premium mascot hero visually bounded on tall phones while allowing
+# its surrounding stage slot to absorb surplus vertical space. This preserves
+# the full-screen composition without turning the hero card into a giant empty
+# panel above PLAY.
+func _make_hero(parent: VBoxContainer) -> void:
+	super._make_hero(parent)
+	var hero := parent.get_node_or_null("HomeHero3D") as Control
+	if hero == null:
+		return
+	var viewport_size := get_viewport_rect().size
+	var bounded_height := hero.custom_minimum_size.y
+	if viewport_size.y >= 1400.0:
+		bounded_height = clampf(viewport_size.y * 0.25, 420.0, 520.0)
+
+	var hero_index := hero.get_index()
+	parent.remove_child(hero)
+	var stage_slot := CenterContainer.new()
+	stage_slot.name = "HomeHeroStageSlot"
+	stage_slot.custom_minimum_size = Vector2(0, bounded_height)
+	stage_slot.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	stage_slot.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	parent.add_child(stage_slot)
+	parent.move_child(stage_slot, hero_index)
+
+	hero.custom_minimum_size = Vector2(0, bounded_height)
+	hero.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hero.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	stage_slot.add_child(hero)
+
+	var mascot := hero.find_child("HomeMascot3D", true, false) as Control
+	if mascot != null:
+		mascot.custom_minimum_size.y = maxf(190.0, bounded_height - 40.0)
+
 # Home keeps the large PLAY route for players who want the three-game selector,
 # while each game card is itself a direct shortcut to that game's level browser.
 func _make_game_strip(parent: VBoxContainer) -> void:
