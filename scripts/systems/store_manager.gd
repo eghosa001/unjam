@@ -66,6 +66,26 @@ func release_configuration_issues() -> Array[String]:
 func _token_fingerprint(token: String) -> String:
 	return token.sha256_text() if not token.is_empty() else ""
 
+func _claim_id_for_token(token: String) -> String:
+	if token == "desktop-test":
+		return "desktop-test-claim"
+	var fingerprint := _token_fingerprint(token)
+	if fingerprint.is_empty():
+		return ""
+	var claims_value = SaveManager.data.get("purchase_claim_ids", {})
+	var claims: Dictionary = claims_value if claims_value is Dictionary else {}
+	if claims.has(fingerprint):
+		var existing := String(claims[fingerprint])
+		if existing.length() >= 8 and existing.length() <= 128:
+			return existing
+	var claim_id := Crypto.new().generate_random_bytes(16).hex_encode()
+	if claim_id.is_empty():
+		claim_id = "%s-%s" % [str(Time.get_ticks_usec()), str(randi())]
+	claims[fingerprint] = claim_id
+	SaveManager.data.purchase_claim_ids = claims
+	SaveManager.save()
+	return claim_id
+
 func set_localized_prices(prices: Dictionary) -> void:
 	localized_prices = prices.duplicate(true)
 	catalog_changed.emit()
@@ -111,7 +131,7 @@ func purchase(product_id: String) -> bool:
 			_clear_purchase_busy(product_id)
 		return accepted != false
 	if bool(ProjectSettings.get_setting("monetization/test_mode", false)) and OS.get_name() != "Android":
-		PurchaseVerifier.verify(product_id, "desktop-test", func(valid: bool, reason: String): _on_verified(product_id, "desktop-test", valid, reason))
+		confirm_purchase(product_id, "desktop-test")
 		return true
 	_clear_purchase_busy(product_id)
 	purchase_failed.emit(product_id, "Google Play Billing provider unavailable")
@@ -124,10 +144,13 @@ func confirm_purchase(product_id: String, purchase_token: String = "") -> void:
 		_settle_restore(product_id, purchase_token, false)
 		return
 	pending_products.erase(product_id)
-	PurchaseVerifier.verify(product_id, purchase_token, func(valid: bool, reason: String): _on_verified(product_id, purchase_token, valid, reason))
+	var claim_id := _claim_id_for_token(purchase_token)
+	PurchaseVerifier.verify(product_id, purchase_token, claim_id, func(result: Dictionary): _on_verified(product_id, purchase_token, claim_id, result))
 
-func _on_verified(product_id: String, token: String, valid: bool, reason: String) -> void:
+func _on_verified(product_id: String, token: String, claim_id: String, result: Dictionary) -> void:
 	pending_products.erase(product_id)
+	var valid := bool(result.get("valid", false))
+	var reason := String(result.get("reason", "Verification failed"))
 	if not valid:
 		_clear_purchase_busy(product_id)
 		purchase_failed.emit(product_id, reason)
@@ -138,57 +161,86 @@ func _on_verified(product_id: String, token: String, valid: bool, reason: String
 	var info: Dictionary = PRODUCTS[product_id]
 	var coins := int(info.get("coins", 0))
 	var non_consumable := bool(info.get("non_consumable", false))
+	var grant := bool(result.get("grant", false))
+	var entitlement := non_consumable and bool(result.get("entitlement", false))
+	var claim_state := String(result.get("claim_state", ""))
 	var processed: Array = SaveManager.data.get("processed_purchase_tokens", [])
 	var fingerprint := _token_fingerprint(token)
-	if not token.is_empty() and token != "desktop-test" and (fingerprint in processed or token in processed):
-		# Migrate the legacy raw-token ledger before taking the duplicate fast path.
-		# This keeps reconciliation idempotent without retaining a reusable Play token.
-		if token in processed:
-			processed.erase(token)
-			if fingerprint not in processed:
-				processed.append(fingerprint)
-			SaveManager.data.processed_purchase_tokens = processed
-			SaveManager.save()
-		# A crash can happen after local persistence but before Play receives the
-		# consume/acknowledge call. Always retry finalization during reconciliation.
-		_finalize_verified_purchase(token, non_consumable)
-		_clear_purchase_busy(product_id)
-		purchase_succeeded.emit(product_id)
-		_settle_restore(product_id, token, true)
-		return
+	var locally_processed := (not fingerprint.is_empty() and fingerprint in processed) or token in processed
 
-	var purchased: Array = SaveManager.data.get("purchased_products", [])
-	if non_consumable and product_id in purchased:
-		_finalize_verified_purchase(token, non_consumable)
-		_clear_purchase_busy(product_id)
-		purchase_succeeded.emit(product_id)
-		_settle_restore(product_id, token, true)
-		return
-
-	if product_id == PRODUCT_REMOVE_ADS:
-		AdManager.set_remove_ads_purchased(true)
-	elif product_id == PRODUCT_STARTER_PACK:
-		AdManager.set_remove_ads_purchased(true)
-		SaveManager.data.starter_pack_purchased = true
-		EconomyManager.grant(coins, "purchase", {"product": product_id})
-	elif coins > 0:
-		EconomyManager.grant(coins, "purchase", {"product": product_id})
-		SaveManager.data.lifetime_purchased_coins = int(SaveManager.data.get("lifetime_purchased_coins", 0)) + coins
-
-	if non_consumable and product_id not in purchased:
-		purchased.append(product_id)
-	if not token.is_empty() and token != "desktop-test" and fingerprint not in processed:
-		processed.append(fingerprint)
+	# Migrate any pre-v10 raw local token without retaining the reusable credential.
 	if token in processed:
 		processed.erase(token)
+		if not fingerprint.is_empty() and fingerprint not in processed:
+			processed.append(fingerprint)
+
+	var purchased: Array = SaveManager.data.get("purchased_products", [])
+	var already_entitled := non_consumable and product_id in purchased
+	if entitlement:
+		if product_id == PRODUCT_REMOVE_ADS:
+			AdManager.set_remove_ads_purchased(true)
+		elif product_id == PRODUCT_STARTER_PACK:
+			AdManager.set_remove_ads_purchased(true)
+			SaveManager.data.starter_pack_purchased = true
+		if product_id not in purchased:
+			purchased.append(product_id)
+
+	var granted_coins := 0
+	if grant and not locally_processed and not already_entitled:
+		if product_id == PRODUCT_STARTER_PACK and coins > 0:
+			EconomyManager.grant(coins, "purchase", {"product": product_id})
+			granted_coins = coins
+		elif not non_consumable and coins > 0:
+			EconomyManager.grant(coins, "purchase", {"product": product_id})
+			SaveManager.data.lifetime_purchased_coins = int(SaveManager.data.get("lifetime_purchased_coins", 0)) + coins
+			granted_coins = coins
+
+	if grant and not token.is_empty() and token != "desktop-test" and not fingerprint.is_empty() and fingerprint not in processed:
+		processed.append(fingerprint)
 	SaveManager.data.purchased_products = purchased
 	SaveManager.data.processed_purchase_tokens = processed
 	SaveManager.save()
-	_finalize_verified_purchase(token, non_consumable)
+
+	# A new/same server claim is committed only after the local reward/entitlement
+	# has been persisted. Play consume/acknowledge happens after this commit.
+	if grant:
+		PurchaseVerifier.commit(product_id, token, claim_id, func(committed: bool, commit_reason: String): _on_claim_committed(product_id, token, non_consumable, granted_coins, committed, commit_reason))
+		return
+
+	# Server-side duplicates never regrant currency. A committed claim can safely
+	# be finalized again; an issued claim owned by another install is left alone.
+	if claim_state == "committed":
+		_finalize_verified_purchase(token, non_consumable)
+		_clear_purchase_busy(product_id)
+		purchase_succeeded.emit(product_id)
+		AnalyticsManager.track("purchase_restored_without_regrant", {"product": product_id})
+		_settle_restore(product_id, token, true)
+		return
+
 	_clear_purchase_busy(product_id)
-	purchase_succeeded.emit(product_id)
-	AnalyticsManager.track("purchase_succeeded", {"product": product_id, "coins": coins})
+	if non_consumable and entitlement:
+		purchase_succeeded.emit(product_id)
+		_settle_restore(product_id, token, true)
+	else:
+		purchase_pending.emit(product_id, "This purchase reward is already claimed or awaiting finalization")
+		_settle_restore(product_id, token, false)
+
+func _on_claim_committed(product_id: String, token: String, non_consumable: bool, granted_coins: int, committed: bool, reason: String) -> void:
+	if committed:
+		_finalize_verified_purchase(token, non_consumable)
+		_clear_purchase_busy(product_id)
+		purchase_succeeded.emit(product_id)
+		AnalyticsManager.track("purchase_succeeded", {"product": product_id, "coins": granted_coins})
+		_settle_restore(product_id, token, true)
+		return
+
+	# The reward is already safely persisted locally. Do not roll it back and do
+	# not consume/acknowledge the Play purchase until the server commit succeeds.
+	_clear_purchase_busy(product_id)
+	purchase_pending.emit(product_id, "Reward saved; purchase finalization will retry")
+	AnalyticsManager.track("purchase_commit_pending", {"product": product_id, "reason": reason})
 	_settle_restore(product_id, token, true)
+	call_deferred("reconcile_purchases")
 
 func _finalize_verified_purchase(token: String, non_consumable: bool) -> void:
 	if provider_ready() and provider.has_method("finalize_purchase") and not token.is_empty():
