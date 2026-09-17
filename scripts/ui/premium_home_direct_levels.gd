@@ -16,8 +16,9 @@ func _make_hero(parent: VBoxContainer) -> void:
 
 	var hero_index := hero.get_index()
 	parent.remove_child(hero)
-	var stage_slot := CenterContainer.new()
+	var stage_slot := VBoxContainer.new()
 	stage_slot.name = "HomeHeroStageSlot"
+	stage_slot.alignment = BoxContainer.ALIGNMENT_CENTER
 	stage_slot.custom_minimum_size = Vector2(0, bounded_height)
 	stage_slot.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	stage_slot.size_flags_vertical = Control.SIZE_EXPAND_FILL
