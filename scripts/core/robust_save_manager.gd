@@ -3,7 +3,7 @@ extends "res://scripts/core/save_manager.gd"
 const ROBUST_SAVE_PATH := "user://unjam_save.json"
 const BACKUP_PATH := "user://unjam_save.backup.json"
 const TEMP_PATH := "user://unjam_save.tmp.json"
-const SAVE_VERSION := 9
+const SAVE_VERSION := 10
 
 func _ready() -> void:
 	load_save()
@@ -75,6 +75,7 @@ func _sanitize() -> void:
 	for key in ["rescued", "decorations", "daily_completed", "milestone_chests", "world_badges", "achievements", "purchased_products", "processed_purchase_tokens"]:
 		if not data.get(key, []) is Array:
 			data[key] = []
+	_sanitize_purchase_tokens()
 	var clean_stars: Dictionary = {}
 	var completed_count := 0
 	var perfect_count := 0
@@ -109,6 +110,28 @@ func _sanitize() -> void:
 			data.world_badges.append(world)
 	data.perfect_streak = clampi(int(data.get("perfect_streak", 0)), 0, 10000)
 	data.best_perfect_streak = max(int(data.perfect_streak), int(data.get("best_perfect_streak", 0)))
+
+func _sanitize_purchase_tokens() -> void:
+	# Builds before save v10 could store raw Google Play purchase tokens. Keep
+	# only one-way SHA-256 fingerprints locally so the duplicate-grant ledger does
+	# not retain a reusable billing credential.
+	var cleaned: Array = []
+	for value in data.get("processed_purchase_tokens", []):
+		var token := String(value).strip_edges()
+		if token.is_empty() or token == "desktop-test":
+			continue
+		var fingerprint := token.to_lower() if _looks_like_sha256(token) else token.sha256_text()
+		if fingerprint not in cleaned:
+			cleaned.append(fingerprint)
+	data.processed_purchase_tokens = cleaned
+
+func _looks_like_sha256(value: String) -> bool:
+	if value.length() != 64:
+		return false
+	for index in range(value.length()):
+		if "0123456789abcdef".find(value.substr(index, 1).to_lower()) < 0:
+			return false
+	return true
 
 func save() -> void:
 	data["save_version"] = SAVE_VERSION
