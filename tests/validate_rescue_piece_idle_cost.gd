@@ -4,13 +4,15 @@ func _initialize() -> void:
 	var touch_file := FileAccess.open("res://scripts/ui/ui_touch_enhancer_casual.gd", FileAccess.READ)
 	var base_touch_file := FileAccess.open("res://scripts/ui/ui_touch_enhancer.gd", FileAccess.READ)
 	var piece_file := FileAccess.open("res://scripts/ui/rescue_piece_3d_button.gd", FileAccess.READ)
-	if touch_file == null or base_touch_file == null or piece_file == null:
+	var rescue_file := FileAccess.open("res://scripts/game/rescue_rush_premium.gd", FileAccess.READ)
+	if touch_file == null or base_touch_file == null or piece_file == null or rescue_file == null:
 		push_error("Rescue touch/performance source is missing")
 		quit(1)
 		return
 	var touch_source := touch_file.get_as_text()
 	var base_touch_source := base_touch_file.get_as_text()
 	var piece_source := piece_file.get_as_text()
+	var rescue_source := rescue_file.get_as_text()
 	if not touch_source.contains("_is_rescue_piece_button(button)"):
 		push_error("Casual touch enhancer can still resize Rescue Rush board pieces")
 		quit(1)
@@ -19,13 +21,22 @@ func _initialize() -> void:
 		push_error("Rescue Rush board pieces are not classified as gameplay geometry")
 		quit(1)
 		return
+	if not rescue_source.contains("RescuePiece3D.new()"):
+		push_error("Rescue Rush no longer routes active pieces through the protected board-piece renderer")
+		quit(1)
+		return
+	if not piece_source.contains("premium_piece_button.gd"):
+		push_error("Rescue Rush pieces lost the flat bevel/gloss renderer")
+		quit(1)
+		return
 	if not piece_source.contains("set_process(false)"):
-		push_error("3D Rescue Rush pieces still process every frame while idle")
+		push_error("Flat Rescue Rush pieces still redraw continuously while idle")
 		quit(1)
 		return
-	if not piece_source.contains("SubViewport.UPDATE_ONCE"):
-		push_error("3D Rescue Rush pieces lost one-shot viewport rendering")
-		quit(1)
-		return
-	print("Rescue Rush 3D pieces keep gameplay sizing and sleep while idle.")
+	for forbidden in ["SubViewport", "Camera3D", "Node3D", "BoxMesh", "TorusMesh"]:
+		if piece_source.contains(forbidden):
+			push_error("Flat Rescue Rush piece still allocates perspective 3D resource: " + forbidden)
+			quit(1)
+			return
+	print("Rescue Rush flat pieces keep gameplay sizing and sleep without per-tile perspective rendering.")
 	quit(0)
