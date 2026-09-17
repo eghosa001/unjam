@@ -26,7 +26,8 @@ func _make_game_strip(parent: VBoxContainer) -> void:
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.add_theme_font_size_override("font_size", 15 if viewport_size.x < 600.0 else 18)
 		button.tooltip_text = "Open %s levels" % MultiGameManager.display_name(game_id)
-		Unjam3DTheme.gloss_button(button, accent, true, 24, _theme_mode() == "dark")
+		var button_accent := accent.darkened(0.18) if _theme_mode() == "dark" else accent
+		Unjam3DTheme.gloss_button(button, button_accent, true, 24)
 		button.pressed.connect(_open_game_levels.bind(game_id))
 		strip.add_child(button)
 
