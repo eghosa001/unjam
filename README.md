@@ -20,8 +20,8 @@ Each game has its own progression, stars and a deterministic 10,000-level campai
 - Save recovery/sanitization
 - Hints, undo/restart where appropriate and result overlays
 - Ad, purchase, privacy and analytics abstraction layers
-- Automated level, gameplay, monetization, robustness and first-100 progression validation
-- GitHub Actions import, test, boot and Android export gates
+- Automated campaign, gameplay, economy, monetization, robustness, motion, 3D/idle-cost and viewport validation
+- GitHub Actions import, test, rendered visual-audit, boot and Android export gates
 
 ## Run locally
 
@@ -31,23 +31,23 @@ The compatibility renderer is intentionally used for broader Android device supp
 
 ## Validation
 
-CI currently runs:
+CI is defined in `.github/workflows/godot-ci.yml`. Representative local checks are:
 
 ```bash
 godot --headless --path . --editor --quit
-godot --headless --path . --script res://tests/validate_levels.gd
-godot --headless --path . --script res://tests/validate_campaign.gd
-godot --headless --path . --script res://tests/validate_retention.gd
-godot --headless --path . --script res://tests/validate_robustness.gd
-godot --headless --path . --script res://tests/validate_level_launch.gd
-godot --headless --path . --script res://tests/validate_gameplay_interactions.gd
-godot --headless --path . --script res://tests/validate_first_100_progression.gd
-godot --headless --path . --script res://tests/validate_campaign_1000.gd
+godot --headless --path . --script res://tests/validate_motion_quality.gd
+godot --headless --path . --script res://tests/validate_transition_ownership.gd
+godot --headless --path . --script res://tests/validate_difficulty_curves.gd
 godot --headless --path . --script res://tests/validate_monetization.gd
+godot --headless --path . --script res://tests/validate_robustness.gd
+godot --headless --path . --script res://tests/validate_campaign.gd
+godot --headless --path . --script res://tests/validate_gameplay_interactions.gd
+godot --headless --path . --script res://tests/validate_restore_purchase_flow.gd
+godot --headless --path . --script res://tests/validate_viewport_fit.gd
 godot --headless --path . --quit-after 5
 ```
 
-The workflow also performs Android API 36 APK and AAB export smoke tests.
+The workflow also runs the complete grouped validator set, captures rendered UI screenshots, and performs Android API 36 APK and AAB export smoke tests.
 
 ## Android / Google Play
 
@@ -55,7 +55,7 @@ The workflow also performs Android API 36 APK and AAB export smoke tests.
 
 - package id: `com.eghosa.unjam`
 - package name: `UNJAM`
-- version: `1.0.0` / version code `1`
+- version: `1.0.1` / version code `2`
 - minimum SDK: 24
 - target SDK: 36
 - ARM64 (`arm64-v8a`)
