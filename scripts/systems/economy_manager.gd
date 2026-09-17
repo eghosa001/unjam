@@ -12,7 +12,12 @@ func can_afford(amount: int) -> bool:
 func spend(amount: int, reason: String, metadata: Dictionary = {}) -> bool:
 	if amount <= 0 or reason.strip_edges().is_empty():
 		return false
-	if not SaveManager.spend_coins(amount):
+	var spent := false
+	if SaveManager.has_method("economy_spend_coins"):
+		spent = bool(SaveManager.call("economy_spend_coins", amount))
+	else:
+		spent = bool(SaveManager.spend_coins(amount))
+	if not spent:
 		return false
 	_emit_transaction(-amount, reason, metadata)
 	return true
@@ -20,7 +25,10 @@ func spend(amount: int, reason: String, metadata: Dictionary = {}) -> bool:
 func grant(amount: int, reason: String, metadata: Dictionary = {}) -> int:
 	if amount <= 0 or reason.strip_edges().is_empty():
 		return balance()
-	SaveManager.add_coins(amount)
+	if SaveManager.has_method("economy_add_coins"):
+		SaveManager.call("economy_add_coins", amount)
+	else:
+		SaveManager.add_coins(amount)
 	_emit_transaction(amount, reason, metadata)
 	return balance()
 
