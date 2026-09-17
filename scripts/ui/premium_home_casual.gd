@@ -43,6 +43,14 @@ func build_home_launcher() -> void:
 	_make_brand_logo(root)
 	_make_hero(root)
 
+	var aspect_ratio := viewport_size.y / maxf(1.0, viewport_size.x)
+	var upper_balance_height := maxf(0.0, aspect_ratio - 1.9) * 500.0
+	if upper_balance_height > 0.0:
+		var upper_balance_spacer := Control.new()
+		upper_balance_spacer.name = "HomeUpperBalanceSpacer"
+		upper_balance_spacer.custom_minimum_size = Vector2(0, upper_balance_height)
+		root.add_child(upper_balance_spacer)
+
 	var action_cluster := VBoxContainer.new()
 	action_cluster.name = "HomeActionCluster"
 	action_cluster.size_flags_vertical = Control.SIZE_FILL
