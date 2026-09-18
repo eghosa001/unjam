@@ -7,7 +7,8 @@ func _run() -> void:
 	if not _validate_material_helpers(): return
 	if not _validate_backdrop_budget(): return
 	if not _validate_reduced_motion_source(): return
-	print("Visual quality contract validated: procedural depth, adaptive particle budgets, and reduced-motion backdrop behavior.")
+	if not _validate_crisp_bold_typography(): return
+	print("Visual quality contract validated: procedural depth, adaptive particle budgets, reduced motion, and crisp bold typography.")
 	quit(0)
 
 func _validate_material_helpers() -> bool:
@@ -46,6 +47,36 @@ func _validate_backdrop_budget() -> bool:
 	backdrop.free()
 	if high < 16 or low >= high or reduced >= high:
 		return _fail("Backdrop decorative work is not materially reduced for low quality/accessibility")
+	return true
+
+func _validate_crisp_bold_typography() -> bool:
+	var label := Label.new()
+	label.add_theme_font_size_override("font_size", 24)
+	Unjam3DTheme.label_3d(label, Color.WHITE, Color("06203a"), 9)
+	if label.get_theme_constant("outline_size") > 1:
+		label.free()
+		return _fail("3D labels still use blurry multi-pixel outlines")
+	if abs(label.get_theme_constant("shadow_offset_y")) > 1:
+		label.free()
+		return _fail("3D labels still use blurry displaced shadows")
+	var label_font := label.get_theme_font("font")
+	if not label_font is FontVariation or (label_font as FontVariation).variation_embolden < 0.45:
+		label.free()
+		return _fail("3D labels are not using a real emboldened font variation")
+	label.free()
+
+	var button := Button.new()
+	button.custom_minimum_size = Vector2(200, 64)
+	button.add_theme_font_size_override("font_size", 18)
+	Unjam3DTheme.gloss_button(button, Unjam3DTheme.WATER, true, 20, true)
+	if button.get_theme_constant("outline_size") > 1:
+		button.free()
+		return _fail("Premium buttons still use blurry multi-pixel text outlines")
+	var button_font := button.get_theme_font("font")
+	if not button_font is FontVariation or (button_font as FontVariation).variation_embolden < 0.45:
+		button.free()
+		return _fail("Premium buttons are not emboldened")
+	button.free()
 	return true
 
 func _validate_reduced_motion_source() -> bool:
