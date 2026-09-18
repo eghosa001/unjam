@@ -37,7 +37,7 @@ func _run() -> void:
 		failures.append("Each Collection upgrade must add +10 to the daily garden gift")
 
 	save.data["garden_last_gift_date"] = "2000-01-01"
-	var gift := economy.claim_garden_gift()
+	var gift: int = int(economy.call("claim_garden_gift"))
 	if gift != 10 or int(save.data.get("coins", 0)) != 510:
 		failures.append("Daily garden gift did not grant its real wallet reward")
 	if economy.claim_garden_gift() != 0 or int(save.data.get("coins", 0)) != 510:
