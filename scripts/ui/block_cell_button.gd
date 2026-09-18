@@ -186,12 +186,33 @@ func _draw() -> void:
 		_draw_box(rect.grow(-6.0), Color(1, 1, 1, flash_alpha), 6, Color.TRANSPARENT, 0)
 	if impact > 0.001:
 		_draw_box(rect.grow(1.0 + impact * 3.0), Color.TRANSPARENT, 6, Color(accent.lightened(0.42), impact * 0.90), 3)
+	_draw_special_overlay(rect)
 	if clear_echo > 0.001:
 		var neon := Color("ff416c", clear_echo)
 		_draw_box(rect.grow(1.0 + clear_echo * 4.0), Color(neon, 0.08), 6, neon, 3)
 		var c := rect.get_center()
 		var r := rect.size.x * (0.14 + (1.0 - clear_echo) * 0.46)
 		draw_arc(c, r, 0.0, TAU, 24, Color("ff7a96", clear_echo), 2.5, true)
+
+func _draw_special_overlay(rect: Rect2) -> void:
+	if special_kind.is_empty() or special_layers <= 0:
+		return
+	var inset := rect.grow(-5.0)
+	if special_kind == "crate":
+		_draw_box(inset, Color("915a35", 0.88), 5, Color("e6b77e"), 2)
+		draw_line(inset.position + Vector2(5, 5), inset.end - Vector2(5, 5), Color("f5d2a4"), 3.0, true)
+		draw_line(Vector2(inset.end.x - 5, inset.position.y + 5), Vector2(inset.position.x + 5, inset.end.y - 5), Color("f5d2a4"), 3.0, true)
+	elif special_kind == "ice":
+		_draw_box(inset, Color("9de6ff", 0.24), 6, Color("d9f7ff", 0.92), 3)
+		draw_line(inset.position + Vector2(7, inset.size.y * 0.28), inset.position + Vector2(inset.size.x * 0.72, 7), Color(1, 1, 1, 0.82), 2.0, true)
+	elif special_kind == "target":
+		var center := inset.get_center()
+		draw_arc(center, inset.size.x * 0.27, 0.0, TAU, 28, Color("ffd85a", 0.96), 3.5, true)
+		draw_circle(center, 3.0, Color("fff4b1"))
+	elif special_kind == "preserve":
+		_draw_box(inset, Color(0.24, 0.95, 0.74, 0.10), 6, Color("67f0c2", 0.94), 3)
+		var center := inset.get_center()
+		draw_arc(center, inset.size.x * 0.22, PI, TAU, 18, Color("b6ffe8", 0.92), 3.0, true)
 
 func _draw_block(rect: Rect2, fill: Color) -> void:
 	_draw_extruded_cube(rect, fill)
