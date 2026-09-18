@@ -216,7 +216,7 @@ func _fit_3d_board_layout() -> void:
 	if header != null:
 		header.custom_minimum_size.y = 60.0 if compact else 78.0
 		header.add_theme_constant_override("separation", 6 if compact_width else 12)
-	for spec in [["BackAction", 58.0, 54.0, 28], ["RetryAction", 58.0, 54.0, 28], ["HintAction", 96.0, 54.0, 14]]:
+	for spec in [["BackAction", 58.0, 54.0, 28], ["RetryAction", 58.0, 54.0, 28], ["HintAction", 104.0, 56.0, 18]]:
 		var button := find_child(String(spec[0]), true, false) as Button
 		if button == null:
 			continue
@@ -232,21 +232,21 @@ func _fit_3d_board_layout() -> void:
 	if score_label != null:
 		score_label.add_theme_font_size_override("font_size", 31 if compact else 39)
 	if goal_label != null:
-		goal_label.add_theme_font_size_override("font_size", 15 if compact_width else (17 if viewport_size.x < 900.0 else 20))
+		goal_label.add_theme_font_size_override("font_size", 18 if compact_width else (20 if viewport_size.x < 900.0 else 22))
 
 	var objective_card := find_child("BlockObjectiveCard", true, false) as PanelContainer
 	if objective_card != null:
 		objective_card.custom_minimum_size.y = 42.0 if compact_height else 52.0
 	var objective_label := find_child("BlockObjectiveLabel", true, false) as Label
 	if objective_label != null:
-		objective_label.add_theme_font_size_override("font_size", 16 if compact_width else 21)
+		objective_label.add_theme_font_size_override("font_size", 18 if compact_width else 22)
 
 	var tray := find_child("BlockTray", true, false) as PanelContainer
 	if tray != null:
 		tray.custom_minimum_size.y = 150.0 if viewport_size.y < 1050.0 else (174.0 if viewport_size.y < 1400.0 else 218.0)
 	var tray_title := find_child("BlockTrayTitle", true, false) as Label
 	if tray_title != null:
-		tray_title.add_theme_font_size_override("font_size", 15 if compact_width else 20)
+		tray_title.add_theme_font_size_override("font_size", 18 if compact_width else 21)
 	if piece_row != null:
 		piece_row.add_theme_constant_override("separation", 8 if compact_width else 18)
 		piece_row.custom_minimum_size.y = 112.0 if viewport_size.y < 1050.0 else (136.0 if viewport_size.y < 1400.0 else 180.0)
@@ -257,12 +257,12 @@ func _fit_3d_board_layout() -> void:
 		boosters.add_theme_constant_override("separation", 4 if compact_width else 8)
 		for child in boosters.get_children():
 			if child is Button:
-				(child as Button).add_theme_font_size_override("font_size", 11 if compact_width else 13)
+				(child as Button).add_theme_font_size_override("font_size", 15 if compact_width else 17)
 	if status_label != null:
-		status_label.add_theme_font_size_override("font_size", 16 if compact_width else 21)
+		status_label.add_theme_font_size_override("font_size", 18 if compact_width else 22)
 		status_label.custom_minimum_size.y = 26.0 if compact_height else 32.0
 	if hint_label != null:
-		hint_label.add_theme_font_size_override("font_size", 13 if compact_width else 16)
+		hint_label.add_theme_font_size_override("font_size", 16 if compact_width else 18)
 		hint_label.custom_minimum_size.y = 24.0 if compact_height else 28.0
 
 	var side_margin := 16.0 if compact_width else 28.0
