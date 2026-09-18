@@ -38,7 +38,9 @@ static func find_optimal(profile: Dictionary, plan: Dictionary, max_nodes: int =
 	if proof_shapes.is_empty():
 		return {"solved": false, "optimal_verified": false, "nodes": 0}
 	var total_nodes := 0
-	for limit in range(1, proof_shapes.size() + 1):
+	var initial_state := _initial_state(profile, plan)
+	var lower_bound := _optimistic_line_move_lower_bound(initial_state, profile, plan)
+	for limit in range(maxi(1, lower_bound), proof_shapes.size() + 1):
 		var state := _initial_state(profile, plan)
 		var context := {
 			"nodes": 0,
@@ -179,6 +181,8 @@ static func _dfs(state: Dictionary, depth_left: int, path: Array[Dictionary], co
 		return false
 
 	var plan: Dictionary = context["plan"]
+	if _optimistic_line_move_lower_bound(state, profile, plan) > depth_left:
+		return false
 	var tray := _current_tray(state, plan)
 	if tray.is_empty():
 		return false
@@ -415,6 +419,108 @@ static func _clear_data(board: int) -> Dictionary:
 			cols.append(x)
 			clear_mask |= col_mask
 	return {"mask": clear_mask, "count": rows.size() + cols.size(), "rows": rows, "cols": cols}
+
+static func _optimistic_line_move_lower_bound(state: Dictionary, profile: Dictionary, plan: Dictionary) -> int:
+	var remaining_lines := maxi(0, int(profile.get("target_lines", 0)) - int(state.get("lines", 0)))
+	if remaining_lines <= 0:
+		return 0
+	var missing_cells := _minimum_missing_cells_for_lines(int(state.get("board", 0)), remaining_lines)
+	if missing_cells <= 0:
+		return 0
+	var proof_shapes: Array = plan.get("proof_shapes", [])
+	if proof_shapes.is_empty():
+		return 0
+	# Find the first move count whose remaining fixed trays could optimistically
+	# contribute enough cells. This ignores geometry and clears, so it can only
+	# underestimate the true distance and is safe for optimality pruning.
+	for moves in range(1, proof_shapes.size() + 1):
+		if _max_placeable_cells(state, plan, moves) >= missing_cells:
+			return moves
+	return proof_shapes.size() + 1
+
+static func _minimum_missing_cells_for_lines(board: int, needed_lines: int) -> int:
+	if needed_lines <= 0:
+		return 0
+	var row_missing: Array[int] = []
+	var col_missing: Array[int] = []
+	for y in range(8):
+		var filled := 0
+		for x in range(8):
+			if (board & (1 << (y * 8 + x))) != 0:
+				filled += 1
+		row_missing.append(8 - filled)
+	for x in range(8):
+		var filled := 0
+		for y in range(8):
+			if (board & (1 << (y * 8 + x))) != 0:
+				filled += 1
+		col_missing.append(8 - filled)
+	if needed_lines == 1:
+		var best := 8
+		for value in row_missing:
+			best = mini(best, value)
+		for value in col_missing:
+			best = mini(best, value)
+		return best
+	if needed_lines == 2:
+		var best_pair := 16
+		for a in range(8):
+			for b in range(a + 1, 8):
+				best_pair = mini(best_pair, row_missing[a] + row_missing[b])
+				best_pair = mini(best_pair, col_missing[a] + col_missing[b])
+		for row in range(8):
+			for col in range(8):
+				var intersection_missing := 1 if (board & (1 << (row * 8 + col))) == 0 else 0
+				best_pair = mini(best_pair, row_missing[row] + col_missing[col] - intersection_missing)
+		return best_pair
+	# Optimistic union bound for larger goals: r chosen rows/columns occupy at
+	# least 8r-floor(r^2/4) distinct cells before considering existing blocks.
+	var occupied := _count_bits64(board)
+	var r := mini(16, needed_lines)
+	var minimum_union := mini(64, 8 * r - int(floor(float(r * r) / 4.0)))
+	return maxi(0, minimum_union - occupied)
+
+static func _max_placeable_cells(state: Dictionary, plan: Dictionary, move_count: int) -> int:
+	if move_count <= 0:
+		return 0
+	var trays: Array = plan.get("trays", [])
+	var tray_index := int(state.get("tray_index", 0))
+	var used_mask := int(state.get("used_mask", 0))
+	var moves_left := move_count
+	var total := 0
+	while moves_left > 0 and tray_index < trays.size():
+		var tray: Array = trays[tray_index]
+		var sizes: Array[int] = []
+		for slot in range(tray.size()):
+			if tray_index == int(state.get("tray_index", 0)) and (used_mask & (1 << slot)) != 0:
+				continue
+			var shape_index := int(tray[slot])
+			if shape_index >= 0 and shape_index < Generator.SHAPES.size():
+				sizes.append((Generator.SHAPES[shape_index] as Array).size())
+		if sizes.is_empty():
+			tray_index += 1
+			used_mask = 0
+			continue
+		sizes.sort()
+		sizes.reverse()
+		if moves_left < sizes.size():
+			for i in range(moves_left):
+				total += sizes[i]
+			return total
+		for size_value in sizes:
+			total += size_value
+		moves_left -= sizes.size()
+		tray_index += 1
+		used_mask = 0
+	return total
+
+static func _count_bits64(value: int) -> int:
+	var count := 0
+	var bits := value
+	while bits != 0:
+		bits &= bits - 1
+		count += 1
+	return count
 
 static func _state_key(state: Dictionary, profile: Dictionary) -> String:
 	var layers: Dictionary = state["special_layers"]
