@@ -182,6 +182,10 @@ func _construct_progression_candidate(
 					var target: Array = state[target_index]
 					if target.size() + amount > CAPACITY:
 						continue
+					if target.is_empty() and amount == source.size():
+						# Moving a whole uniform bottle into an empty bottle only
+						# renames the workspace and adds no puzzle information.
+						continue
 					# The added run must be distinct from the old target top so the
 					# inverse pour later transfers exactly this recorded chunk.
 					if not target.is_empty() and int(target.back()) == color:
