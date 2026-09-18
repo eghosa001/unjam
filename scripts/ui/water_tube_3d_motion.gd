@@ -91,30 +91,30 @@ func _build_3d_view() -> void:
 	environment.background_color = Color(0, 0, 0, 0)
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	environment.ambient_light_color = Color("dff8ff")
-	environment.ambient_light_energy = 1.15
+	environment.ambient_light_energy = 0.82
 	world_environment.environment = environment
 	stage_3d.add_child(world_environment)
 
 	var key := DirectionalLight3D.new()
 	key.rotation_degrees = Vector3(-42, -36, 0)
 	key.light_color = Color("fff8e8")
-	key.light_energy = 1.45
+	key.light_energy = 1.70
 	key.shadow_enabled = false
 	stage_3d.add_child(key)
 	var rim_light := DirectionalLight3D.new()
 	rim_light.rotation_degrees = Vector3(-20, 145, 8)
 	rim_light.light_color = Color("70dcff")
-	rim_light.light_energy = 0.82
+	rim_light.light_energy = 1.10
 	stage_3d.add_child(rim_light)
 	var fill_light := OmniLight3D.new()
 	fill_light.position = Vector3(-2.2, 2.8, 4.1)
 	fill_light.light_color = Color("b6f2ff")
-	fill_light.light_energy = 0.48
+	fill_light.light_energy = 0.30
 	fill_light.omni_range = 9.0
 	stage_3d.add_child(fill_light)
 
 	camera_3d = Camera3D.new()
-	camera_3d.position = Vector3(3.05, 0.90, 6.65)
+	camera_3d.position = Vector3(2.30, 0.72, 7.15)
 	camera_3d.fov = 31.0
 	stage_3d.add_child(camera_3d)
 	camera_3d.look_at(Vector3(0, 0.08, 0), Vector3.UP)
@@ -129,13 +129,13 @@ func _build_glass_3d() -> void:
 	glass_mesh.top_radius = 0.62
 	glass_mesh.bottom_radius = 0.54
 	glass_mesh.height = 3.32
-	glass_mesh.radial_segments = 16
+	glass_mesh.radial_segments = 24
 	glass_mesh.cap_top = false
 	glass_mesh.cap_bottom = true
 	var glass := MeshInstance3D.new()
 	glass.name = "OpenTopGlass"
 	glass.mesh = glass_mesh
-	glass.material_override = _material_3d(Color(0.78, 0.96, 1.0, 0.20), 0.0, 0.08)
+	glass.material_override = _material_3d(Color(0.82, 0.97, 1.0, 0.11), 0.0, 0.045)
 	stage_3d.add_child(glass)
 
 	var rim_mesh := TorusMesh.new()
@@ -147,7 +147,7 @@ func _build_glass_3d() -> void:
 	rim.name = "OpenGlassRim"
 	rim.mesh = rim_mesh
 	rim.position.y = 1.66
-	rim.material_override = _material_3d(Color(0.88, 0.99, 1.0, 0.72), 0.0, 0.10)
+	rim.material_override = _material_3d(Color(0.92, 0.995, 1.0, 0.90), 0.0, 0.045)
 	stage_3d.add_child(rim)
 
 	var base_mesh := TorusMesh.new()
@@ -158,7 +158,7 @@ func _build_glass_3d() -> void:
 	var base_rim := MeshInstance3D.new()
 	base_rim.mesh = base_mesh
 	base_rim.position.y = -1.61
-	base_rim.material_override = _material_3d(Color(0.74, 0.94, 1.0, 0.38), 0.0, 0.12)
+	base_rim.material_override = _material_3d(Color(0.80, 0.96, 1.0, 0.56), 0.0, 0.065)
 	stage_3d.add_child(base_rim)
 
 	var highlight_mesh := BoxMesh.new()
@@ -166,7 +166,7 @@ func _build_glass_3d() -> void:
 	var highlight := MeshInstance3D.new()
 	highlight.mesh = highlight_mesh
 	highlight.position = Vector3(-0.34, 0.05, 0.51)
-	highlight.material_override = _material_3d(Color(1, 1, 1, 0.52), 0.0, 0.06)
+	highlight.material_override = _material_3d(Color(1, 1, 1, 0.72), 0.0, 0.035)
 	stage_3d.add_child(highlight)
 
 func _build_liquid_materials_3d() -> void:
@@ -174,7 +174,7 @@ func _build_liquid_materials_3d() -> void:
 	# longer allocates new StandardMaterial3D resources every animation frame.
 	liquid_materials_3d.clear()
 	for color in PALETTE:
-		liquid_materials_3d.append(_material_3d(color, 0.02, 0.20))
+		liquid_materials_3d.append(_material_3d(color.lightened(0.025), 0.0, 0.10))
 
 func _build_liquid_segments_3d() -> void:
 	liquid_root_3d = Node3D.new()
@@ -183,10 +183,10 @@ func _build_liquid_segments_3d() -> void:
 	liquid_segments_3d.clear()
 	for slot in range(CAPACITY):
 		var mesh := CylinderMesh.new()
-		mesh.top_radius = 0.46
-		mesh.bottom_radius = 0.46
+		mesh.top_radius = 0.49
+		mesh.bottom_radius = 0.49
 		mesh.height = 0.60
-		mesh.radial_segments = 14
+		mesh.radial_segments = 20
 		mesh.cap_top = true
 		mesh.cap_bottom = true
 		var segment := MeshInstance3D.new()
@@ -223,12 +223,16 @@ func _material_3d(color: Color, metallic_value: float, roughness_value: float) -
 	var material := StandardMaterial3D.new()
 	material.albedo_color = color
 	material.metallic = metallic_value
-	material.roughness = clampf(roughness_value, 0.05, 0.30)
+	material.roughness = clampf(roughness_value, 0.025, 0.24)
 	material.clearcoat_enabled = true
-	material.clearcoat = 0.76 if color.a < 0.995 else 0.62
-	material.clearcoat_roughness = 0.06 if color.a < 0.995 else 0.10
+	material.clearcoat = 0.92 if color.a < 0.995 else 0.78
+	material.clearcoat_roughness = 0.035 if color.a < 0.995 else 0.075
 	if color.a < 0.995:
 		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	else:
+		material.emission_enabled = true
+		material.emission = color.darkened(0.72)
+		material.emission_energy_multiplier = 0.22
 	return material
 
 func _request_3d_frame() -> void:
