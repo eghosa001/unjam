@@ -30,10 +30,12 @@ def main() -> int:
     workflow_path = root / '.github' / 'workflows' / 'android-release.yml'
     preset_path = root / 'export_presets.cfg'
     project_path = root / 'project.godot'
+    live_checker_path = root / 'tools' / 'check_live_monetization.py'
 
     workflow = workflow_path.read_text(encoding='utf-8')
     preset = preset_path.read_text(encoding='utf-8')
     project = project_path.read_text(encoding='utf-8')
+    live_checker = live_checker_path.read_text(encoding='utf-8')
 
     errors: list[str] = []
 
@@ -53,7 +55,6 @@ def main() -> int:
         'https://*/verify',
         'UNJAM_DEVELOPER_WEBSITE_URL',
         'check_live_monetization.py',
-        '/readiness',
     ):
         if token not in workflow:
             errors.append(f'missing release workflow contract token: {token}')
@@ -85,6 +86,10 @@ def main() -> int:
     ):
         if token not in project:
             errors.append(f'project.godot missing monetization contract token: {token}')
+
+    for token in ('/healthz', '/readiness', 'google_play', 'firestore'):
+        if token not in live_checker:
+            errors.append(f'live monetization checker missing dependency contract token: {token}')
 
     if errors:
         print('Release contract validation failed:')
