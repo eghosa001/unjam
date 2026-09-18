@@ -180,7 +180,10 @@ jobs:
           grep -F "com.google.android.gms.ads.APPLICATION_ID" build/android/apk-manifest.txt
           grep -F "ca-app-pub-7517898921176341~1892369383" build/android/apk-manifest.txt
           grep -F "com.android.vending.BILLING" build/android/apk-permissions.txt
-          grep -F "com.android.vending.billingclient.version" build/android/apk-manifest.txt
+          grep -F "com.google.android.play.billingclient.version" build/android/apk-manifest.txt
+          grep -F '"9.1.0"' build/android/apk-manifest.txt
+          grep -F "org.godotengine.plugin.v2.GodotGooglePlayBilling" build/android/apk-manifest.txt
+          grep -F "com.android.billingclient.api.ProxyBillingActivity" build/android/apk-manifest.txt
       - name: Upload Android debug APK
         uses: actions/upload-artifact@v4
         with:
