@@ -69,8 +69,7 @@ static func canonical_signature(profile: Dictionary, plan: Dictionary) -> String
 			values.append(str(int(value)))
 		trays.append(",".join(values))
 	var specials := JSON.stringify(plan.get("special_plan", {}))
-	return ("%s#%s#%s#%s" % [
-		str(int(profile.get("level_id", 0))),
+	return ("%s#%s#%s" % [
 		"/".join(board),
 		"/".join(trays),
 		specials
