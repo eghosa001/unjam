@@ -368,6 +368,9 @@ func try_move(index: int) -> void:
 	await get_tree().create_timer(0.07).timeout
 	await _resolve_cascades(legal_before)
 	await resolve_rescue()
+	if not rescued and objective_type == "perfect_rescue" and moves >= action_budget:
+		await _fail_and_restart("Action budget missed — rescue reset.")
+		return
 	if not rescued:
 		render_board()
 		_save_checkpoint()
@@ -569,6 +572,17 @@ func complete_level() -> void:
 		RetentionManager.record_level_complete(level_number, stars, moves, par_moves, chain_count, rescue_id, hints_used_this_level)
 	AdManager.note_level_completed()
 	AnalyticsManager.level_completed(level_number, moves, stars)
+	AnalyticsManager.track("rescue_level_difficulty", {
+		"level": level_number,
+		"difficulty_score": int(level_data.get("difficulty_score", 0)),
+		"objective": objective_type,
+		"moves": moves,
+		"mistakes": mistakes_this_level,
+		"hints": hints_used_this_level,
+		"undos": undos_used_this_level,
+		"best_chain": best_chain,
+		"stars": stars,
+	})
 	show_result(stars)
 
 func reward_summary() -> String:
