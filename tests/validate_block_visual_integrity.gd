@@ -26,8 +26,9 @@ func _validate_source_contracts() -> bool:
 	var piece_source := _read("res://scripts/ui/block_piece_button.gd")
 	if cell_source.is_empty() or motion_source.is_empty() or piece_source.is_empty():
 		return _fail("Block Puzzle visual sources are missing")
-	var footprint_start := cell_source.find("if footprint_active:")
-	var footprint_end := cell_source.find("if clear_phase", footprint_start)
+	var draw_start := cell_source.find("func _draw()")
+	var footprint_start := cell_source.find("\n\tif footprint_active:", draw_start)
+	var footprint_end := cell_source.find("\n\tif clear_phase", footprint_start)
 	if footprint_start < 0 or footprint_end < 0:
 		return _fail("Block Puzzle footprint rendering contract is missing")
 	var footprint_block := cell_source.substr(footprint_start, footprint_end - footprint_start)
