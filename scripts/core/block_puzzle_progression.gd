@@ -4,6 +4,7 @@ extends RefCounted
 const MAX_LEVEL := 10000
 const BOARD_SIZE := 8
 const WORLD_SIZE := 500
+const WORLD_COUNT := 20
 const CHAPTER_SIZE := 50
 const GENERATOR_VERSION := 1
 
