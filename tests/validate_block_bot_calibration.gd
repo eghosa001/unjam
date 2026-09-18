@@ -3,6 +3,7 @@ extends SceneTree
 const Progression = preload("res://scripts/core/block_puzzle_progression.gd")
 const LevelPack = preload("res://scripts/core/block_puzzle_level_pack.gd")
 const Auditor = preload("res://scripts/core/block_puzzle_campaign_auditor.gd")
+const Generator = preload("res://scripts/core/block_puzzle_campaign_generator.gd")
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -16,7 +17,12 @@ func _run() -> void:
 	var late_count := 0
 	for level in levels:
 		var profile := _profile(level)
-		var plan := LevelPack.plan_for_level(level, profile)
+		var plan := _accepted_plan(level, profile)
+		if plan.is_empty():
+			return _fail("No quality-gate candidate was found for sampled level %d" % level)
+		var quality := Auditor.quality_gate(profile, plan)
+		if not bool(quality.get("accepted", false)):
+			return _fail("Sampled level %d failed structural quality: %s" % [level, str(quality.get("reasons", []))])
 		var report := Auditor.audit_plan(profile, plan)
 		if not bool(report.get("valid", false)):
 			return _fail("Block bot audit invalid at level %d" % level)
@@ -37,6 +43,20 @@ func _run() -> void:
 		return _fail("Late-game multi-bot difficulty did not exceed the early-game sample")
 	print("BLOCK_BOT_CALIBRATION_OK")
 	quit(0)
+
+func _accepted_plan(level: int, profile: Dictionary) -> Dictionary:
+	if LevelPack.has_production_pack():
+		return LevelPack.plan_for_level(level, profile)
+	for attempt in range(8):
+		var candidate_profile := profile.duplicate(true)
+		if attempt > 0 and level != Progression.MAX_LEVEL:
+			candidate_profile["seed"] = int(profile.get("seed", level * 104729)) + attempt * 1000003
+		var candidate := Generator.generate(candidate_profile)
+		if candidate.is_empty():
+			continue
+		if bool(Auditor.quality_gate(candidate_profile, candidate).get("accepted", false)):
+			return candidate
+	return {}
 
 func _profile(level: int) -> Dictionary:
 	var p := Progression.profile(level)
