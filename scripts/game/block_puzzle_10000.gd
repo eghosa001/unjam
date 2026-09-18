@@ -307,7 +307,7 @@ func deterministic_tray_signature(level: int, batch: int) -> String:
 	var parts: PackedStringArray = []
 	for raw_index in (trays[tray_index] as Array):
 		parts.append(str(int(raw_index)))
-	return ",".join(parts)
+	return "|".join(parts)
 
 func _profile() -> Dictionary:
 	if campaign_profile.is_empty() or int(campaign_profile.get("level_id", -1)) != level_number:
