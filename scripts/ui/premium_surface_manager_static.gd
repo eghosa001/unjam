@@ -33,8 +33,8 @@ func _polish_tree(node: Node, surface: String, dark: bool, accent: Color) -> voi
 		return
 	if node is Button and not _is_gameplay_widget(node):
 		var button := node as Button
-		button.custom_minimum_size.y = maxf(button.custom_minimum_size.y, 94.0)
-		button.add_theme_font_size_override("font_size", maxi(25, button.get_theme_font_size("font_size")))
+		button.custom_minimum_size.y = maxf(button.custom_minimum_size.y, 96.0)
+		button.add_theme_font_size_override("font_size", maxi(28, button.get_theme_font_size("font_size")))
 		var role := _role_for_surface_button(button, surface)
 		var button_accent := _button_accent(role, accent)
 		Unjam3DTheme.gloss_button(button, button_accent, role in ["primary", "reward", "success"], 24 if not _looks_like_level_button(button, surface) else 20, dark)
@@ -51,16 +51,18 @@ func _polish_tree(node: Node, surface: String, dark: bool, accent: Color) -> voi
 			base_font_size = int(label.get_meta("unjam_surface_base_font_size"))
 		elif base_font_size > 0:
 			label.set_meta("unjam_surface_base_font_size", base_font_size)
-		if base_font_size > 0:
-			label.add_theme_font_size_override("font_size", base_font_size + (6 if base_font_size >= 28 else 4))
 		var font_size := base_font_size
+		if base_font_size > 0:
+			font_size = maxi(22, base_font_size + (6 if base_font_size >= 28 else 4))
+			label.add_theme_font_size_override("font_size", font_size)
 		var text := label.text.strip_edges().to_upper()
 		var color := Unjam3DTheme.text_primary(dark)
 		if "COIN" in text or "★" in text or "PRESTIGE" in text:
 			color = Color("d88700")
 		elif font_size >= 28 or text.begins_with("WORLD "):
 			color = accent.lightened(0.28) if dark else Unjam3DTheme.game_dark(_game_id_from_accent(accent))
-		Unjam3DTheme.label_3d(label, color, Color(1, 1, 1, 0.85), 2 if font_size < 24 else 3)
+		var outline := Color("05182c") if dark else Color(1, 1, 1, 0.96)
+		Unjam3DTheme.label_3d(label, color, outline, 2 if font_size < 28 else 3)
 	elif node is ProgressBar:
 		var progress := node as ProgressBar
 		progress.add_theme_stylebox_override("background", Unjam3DTheme.panel_3d(Color("17304c") if dark else Color("d7efff"), 12, Color(accent, 0.55) if dark else Color("84d5ff"), 2, 2))
@@ -108,8 +110,8 @@ func _ensure_secondary_wallet(content: Control, surface: String, dark: bool) -> 
 		wallet = Button.new()
 		wallet.name = "SecondaryCoinShopButton"
 		var viewport_width := get_viewport().get_visible_rect().size.x
-		wallet.custom_minimum_size = Vector2(164 if viewport_width < 600.0 else 190, 84)
-		wallet.add_theme_font_size_override("font_size", 20 if viewport_width < 600.0 else 23)
+		wallet.custom_minimum_size = Vector2(176 if viewport_width < 600.0 else 206, 94)
+		wallet.add_theme_font_size_override("font_size", 25 if viewport_width < 600.0 else 27)
 		wallet.tooltip_text = "Coins • Open Shop"
 		Unjam3DTheme.gloss_button(wallet, Unjam3DTheme.ORANGE, true, 23, dark)
 		wallet.pressed.connect(_open_shop)
