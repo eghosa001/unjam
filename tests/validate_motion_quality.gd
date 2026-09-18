@@ -62,24 +62,22 @@ func _validate_rescue_completion_tracking() -> bool:
 	return true
 
 func _validate_water_lip_geometry() -> bool:
-	var script := load("res://scripts/game/water_sort_ultra_motion.gd") as Script
-	if script == null:
-		return _fail("Water Sort ultra motion script is missing")
-	var water: Node = script.new()
-	var bottle := Control.new()
-	bottle.size = Vector2(154, 316)
-	bottle.rotation = 1.0
-	var right_mouth: Vector2 = water.call("_visual_mouth_local", bottle)
-	bottle.rotation = -1.0
-	var left_mouth: Vector2 = water.call("_visual_mouth_local", bottle)
-	bottle.rotation = 0.0
-	var center_mouth: Vector2 = water.call("_visual_mouth_local", bottle)
-	water.free()
-	bottle.free()
-	if right_mouth.x <= center_mouth.x or left_mouth.x >= center_mouth.x:
-		return _fail("Water Sort stream is not anchored to the downhill bottle rim")
-	if center_mouth.y > 45.0:
-		return _fail("Water Sort receiver mouth probe is too low in the bottle")
+	var tube_file := FileAccess.open("res://scripts/ui/water_tube_3d_motion.gd", FileAccess.READ)
+	var layout_file := FileAccess.open("res://scripts/game/water_sort_ultra_motion.gd", FileAccess.READ)
+	var motion_file := FileAccess.open("res://scripts/game/water_sort_reference_motion.gd", FileAccess.READ)
+	if tube_file == null or layout_file == null or motion_file == null:
+		return _fail("Water Sort 3D rim geometry sources are missing")
+	var tube_source := tube_file.get_as_text()
+	var layout_source := layout_file.get_as_text()
+	var motion_source := motion_file.get_as_text()
+	for needle in ["camera_3d.unproject_position", "func visual_pour_rim_local", "func visual_receive_rim_local", "_project_rim_point"]:
+		if not tube_source.contains(needle):
+			return _fail("Water Sort does not project its actual 3D bottle rim: " + needle)
+	if layout_source.contains("func _visual_mouth_local"):
+		return _fail("Water Sort adaptive layout still overrides the real 3D rim with legacy 2D mouth geometry")
+	for needle in ["_source_rim_local", "_receiver_rim_local", "_position_for_tilted_rim"]:
+		if not motion_source.contains(needle):
+			return _fail("Water Sort stream does not preserve projected rim geometry: " + needle)
 	return true
 
 func _validate_water_stream_layering() -> bool:
@@ -87,10 +85,12 @@ func _validate_water_stream_layering() -> bool:
 	if file == null:
 		return _fail("Water Sort reference motion script is missing")
 	var source := file.get_as_text()
-	if not source.contains("visual_pour_rim_local") or not source.contains("exit_point"):
-		return _fail("Water Sort pour no longer visibly exits from the bottle rim")
-	if not source.contains("stream.z_index = 670"):
-		return _fail("Water Sort stream can render behind the translucent bottle and look centre-originated")
+	if not source.contains("visual_pour_rim_local") or not source.contains("_liquid_arc_points") or not source.contains("POUR_ARC_SAMPLES"):
+		return _fail("Water Sort pour no longer uses the curved source-rim trajectory")
+	if source.contains("PackedVector2Array([source_mouth, exit_point, receiver_mouth])"):
+		return _fail("Water Sort reverted to the legacy kinked three-point stream")
+	if not source.contains("stream.z_index = 670") or not source.contains("Line2D.LINE_JOINT_ROUND"):
+		return _fail("Water Sort stream layering or smooth curved joints regressed")
 	return true
 
 func _validate_water_premium_contract() -> bool:
