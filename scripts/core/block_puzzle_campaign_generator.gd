@@ -385,6 +385,12 @@ static func _build_special_plan(
 		preserve_candidates.append(idx)
 	_shuffle_ints(preserve_candidates, rng)
 
+	var repeated_cells: Array[int] = []
+	for idx in cleared_cells:
+		if int(cleared_counts.get(idx, 0)) >= 2:
+			repeated_cells.append(idx)
+	_shuffle_ints(repeated_cells, rng)
+
 	var specials: Array[Dictionary] = []
 	var target_rows: Array[int] = []
 	var target_cols: Array[int] = []
@@ -407,15 +413,18 @@ static func _build_special_plan(
 			_add_specials(specials, crate_candidates, "crate", target_count, 1)
 		"ice":
 			_add_specials(specials, cleared_cells, "ice", target_count, 1)
+		"locks":
+			_add_specials(specials, cleared_cells, "lock", target_count, 1)
+		"steel":
+			if repeated_cells.is_empty():
+				_add_specials(specials, cleared_cells, "steel", target_count, 1)
+			else:
+				_add_specials(specials, repeated_cells, "steel", target_count, 2)
 		"layered_obstacle":
-			var repeated: Array[int] = []
-			for idx in cleared_cells:
-				if int(cleared_counts.get(idx, 0)) >= 2:
-					repeated.append(idx)
-			if repeated.is_empty():
+			if repeated_cells.is_empty():
 				_add_specials(specials, cleared_cells, "ice", target_count, 1)
 			else:
-				_add_specials(specials, repeated, "ice", target_count, 2)
+				_add_specials(specials, repeated_cells, "ice", target_count, 2)
 		"preserve_cells":
 			_add_specials(specials, preserve_candidates, "preserve", mini(3, target_count), 1)
 		"dual_objective":
@@ -426,11 +435,12 @@ static func _build_special_plan(
 			_add_specials(specials, preserve_candidates, "preserve", mini(2, target_count), 1)
 			target_rows = cleared_rows.slice(0, mini(1, cleared_rows.size()))
 		"advanced_conditional":
-			_add_specials(specials, cleared_cells, "ice", target_count, 1)
+			var durable_source := repeated_cells if not repeated_cells.is_empty() else cleared_cells
+			_add_specials(specials, durable_source, "steel", mini(3, target_count), 2 if not repeated_cells.is_empty() else 1)
 			_add_specials(specials, preserve_candidates, "preserve", mini(2, target_count), 1)
-			target_rows = cleared_rows.slice(0, mini(1, cleared_rows.size()))
-			target_cols = cleared_cols.slice(0, mini(1, cleared_cols.size()))
 			required_double_clears = mini(1, double_events)
+			if level == 10000:
+				target_rows = cleared_rows.slice(0, mini(1, cleared_rows.size()))
 
 	return {
 		"family": family,
