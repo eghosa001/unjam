@@ -46,6 +46,11 @@ var campaign_profile: Dictionary = {}
 var campaign_plan: Dictionary = {}
 var campaign_move_limit := -1
 var campaign_failed := false
+var campaign_special_cells: Dictionary = {}
+var target_rows_pending: Array[int] = []
+var target_cols_pending: Array[int] = []
+var required_double_clears := 0
+var double_clear_progress := 0
 
 func block_progression_band(level: int = level_number) -> String:
 	# Preserve the public band contract used by existing tests/UI while the
@@ -100,6 +105,7 @@ func load_level() -> void:
 		campaign_plan = CampaignGenerator.generate(generation_profile)
 		if campaign_plan.is_empty():
 			push_error("Block Puzzle campaign generator produced no proof for level %d" % level_number)
+	_reset_objective_state()
 	var proof_moves := int((campaign_plan.get("metadata", {}) as Dictionary).get("proof_moves", 0))
 	campaign_move_limit = int(campaign_profile.get("move_limit", -1))
 	if campaign_move_limit > 0 and proof_moves > 0:
@@ -162,7 +168,8 @@ func render() -> void:
 	var move_text := ""
 	if campaign_move_limit > 0:
 		move_text = "  •  MOVES %d/%d" % [placements, campaign_move_limit]
-	goal_label.text = "LINES %d/%d  •  TARGET %d%s" % [lines_cleared, target_lines, target_score, move_text]
+	goal_label.text = "LINES %d/%d  •  TARGET %d%s%s" % [lines_cleared, target_lines, target_score, move_text, _objective_status_text()]
+	_render_special_cells()
 	if campaign_failed:
 		hint_label.text = "This attempt is blocked. Undo a mistake or restart the same deterministic puzzle."
 	elif milestone != "normal":
@@ -172,6 +179,37 @@ func render() -> void:
 			score_value,
 			int(campaign_profile.get("planning_horizon", 1))
 		]
+
+func can_place(shape: Array, origin: Vector2i) -> bool:
+	if not super.can_place(shape, origin):
+		return false
+	if daily_mode:
+		return true
+	for raw in shape:
+		var point := _as_point(raw)
+		if point.x < 0 or point.y < 0:
+			continue
+		var idx := (origin.y + point.y) * GRID_SIZE + origin.x + point.x
+		var special: Dictionary = campaign_special_cells.get(str(idx), {})
+		if String(special.get("kind", "")) == "preserve" and int(special.get("layers", 0)) > 0:
+			return false
+	return true
+
+func reached_goal() -> bool:
+	if not super.reached_goal():
+		return false
+	if daily_mode:
+		return true
+	if not target_rows_pending.is_empty() or not target_cols_pending.is_empty():
+		return false
+	if double_clear_progress < required_double_clears:
+		return false
+	for raw in campaign_special_cells.values():
+		var special: Dictionary = raw
+		var kind := String(special.get("kind", ""))
+		if kind in ["crate", "ice", "target"] and int(special.get("layers", 0)) > 0:
+			return false
+	return true
 
 func place_selected(origin: Vector2i) -> void:
 	if daily_mode:
@@ -200,7 +238,11 @@ func place_selected(origin: Vector2i) -> void:
 		"lines": lines_cleared,
 		"placements": placements,
 		"batch": piece_batch,
-		"rng_state": rng.state
+		"rng_state": rng.state,
+		"campaign_special_cells": campaign_special_cells.duplicate(true),
+		"target_rows_pending": target_rows_pending.duplicate(),
+		"target_cols_pending": target_cols_pending.duplicate(),
+		"double_clear_progress": double_clear_progress
 	})
 	if history.size() > 5:
 		history.pop_front()
@@ -233,6 +275,7 @@ func place_selected(origin: Vector2i) -> void:
 		if not is_inside_tree():
 			return
 		_commit_line_clear(clear_plan)
+		_apply_objective_clear(clear_plan)
 		_clear_transition_active = false
 		lines_cleared += cleared
 		score += cleared * 120 + maxi(0, cleared - 1) * 80
@@ -261,10 +304,28 @@ func undo_move() -> void:
 	if daily_mode:
 		super.undo_move()
 		return
+	if history.is_empty() or completed or _clear_transition_active:
+		return
+	var state: Dictionary = history.pop_back()
+	cells = _normalize_cells(state.get("cells", []))
+	cell_colors = _normalize_cell_colors(state.get("cell_colors", []))
+	pieces = _normalize_pieces(state.get("pieces", []))
+	piece_colors = _normalize_piece_colors(state.get("piece_colors", []), pieces.size())
+	selected_piece = int(state.get("selected", -1))
+	score = int(state.get("score", 0))
+	lines_cleared = int(state.get("lines", 0))
+	placements = int(state.get("placements", 0))
+	piece_batch = int(state.get("batch", 0))
+	rng.state = int(state.get("rng_state", rng.state))
+	campaign_special_cells = (state.get("campaign_special_cells", campaign_special_cells) as Dictionary).duplicate(true)
+	target_rows_pending = _to_int_array(state.get("target_rows_pending", target_rows_pending))
+	target_cols_pending = _to_int_array(state.get("target_cols_pending", target_cols_pending))
+	double_clear_progress = int(state.get("double_clear_progress", double_clear_progress))
 	campaign_failed = false
 	status_label.text = ""
-	super.undo_move()
+	SaveManager.record_undo()
 	render()
+	_save_checkpoint()
 
 func restart_level() -> void:
 	campaign_failed = false
@@ -281,7 +342,8 @@ func complete_level() -> void:
 			"milestone": String(_profile().get("milestone", "normal")),
 			"move_limited": campaign_move_limit > 0,
 			"proof_moves": int((campaign_plan.get("metadata", {}) as Dictionary).get("proof_moves", 0)),
-			"constructive_verified": bool((campaign_plan.get("metadata", {}) as Dictionary).get("verified_constructive", false))
+			"constructive_verified": bool((campaign_plan.get("metadata", {}) as Dictionary).get("verified_constructive", false)),
+			"objective_family": String((campaign_plan.get("special_plan", {}) as Dictionary).get("family", "score"))
 		})
 	super.complete_level()
 
@@ -325,6 +387,109 @@ func _apply_campaign_plan_board() -> void:
 		for x in range(GRID_SIZE):
 			cells[y][x] = bool(row[x])
 			cell_colors[y][x] = COLOR_PALETTE[posmod(x * 7 + y * 11 + level_number, COLOR_PALETTE.size())] if bool(row[x]) else Color.TRANSPARENT
+
+func _reset_objective_state() -> void:
+	campaign_special_cells.clear()
+	target_rows_pending.clear()
+	target_cols_pending.clear()
+	required_double_clears = 0
+	double_clear_progress = 0
+	if daily_mode:
+		return
+	var objective_plan: Dictionary = campaign_plan.get("special_plan", {})
+	for raw in (objective_plan.get("specials", []) as Array):
+		var special: Dictionary = raw
+		var idx := int(special.get("index", -1))
+		if idx < 0 or idx >= GRID_SIZE * GRID_SIZE:
+			continue
+		campaign_special_cells[str(idx)] = {
+			"kind": String(special.get("kind", "")),
+			"layers": maxi(1, int(special.get("layers", 1)))
+		}
+	target_rows_pending = _to_int_array(objective_plan.get("target_rows", []))
+	target_cols_pending = _to_int_array(objective_plan.get("target_cols", []))
+	required_double_clears = maxi(0, int(objective_plan.get("required_double_clears", 0)))
+
+func _apply_objective_clear(clear_plan: Dictionary) -> void:
+	for raw in (clear_plan.get("rows", []) as Array):
+		target_rows_pending.erase(int(raw))
+	for raw in (clear_plan.get("cols", []) as Array):
+		target_cols_pending.erase(int(raw))
+	if int(clear_plan.get("line_count", 0)) >= 2:
+		double_clear_progress += 1
+	for raw in (clear_plan.get("indices", []) as Array):
+		var key := str(int(raw))
+		if not campaign_special_cells.has(key):
+			continue
+		var special: Dictionary = campaign_special_cells[key]
+		var kind := String(special.get("kind", ""))
+		if kind not in ["crate", "ice", "target"]:
+			continue
+		var layers := maxi(0, int(special.get("layers", 0)) - 1)
+		if layers <= 0:
+			campaign_special_cells.erase(key)
+		else:
+			special["layers"] = layers
+			campaign_special_cells[key] = special
+
+func _render_special_cells() -> void:
+	for i in range(cell_buttons.size()):
+		var cell = cell_buttons[i]
+		if cell == null or not is_instance_valid(cell) or not cell.has_method("set_special"):
+			continue
+		var special: Dictionary = campaign_special_cells.get(str(i), {})
+		cell.call("set_special", String(special.get("kind", "")), int(special.get("layers", 0)))
+
+func _objective_status_text() -> String:
+	if daily_mode:
+		return ""
+	var active := 0
+	for raw in campaign_special_cells.values():
+		var special: Dictionary = raw
+		if String(special.get("kind", "")) in ["crate", "ice", "target"] and int(special.get("layers", 0)) > 0:
+			active += 1
+	var extra := target_rows_pending.size() + target_cols_pending.size() + maxi(0, required_double_clears - double_clear_progress)
+	if active + extra <= 0:
+		return ""
+	return "  •  GOALS %d" % (active + extra)
+
+func _to_int_array(raw: Variant) -> Array[int]:
+	var out: Array[int] = []
+	if raw is Array:
+		for value in raw:
+			out.append(int(value))
+	return out
+
+func _save_checkpoint() -> void:
+	super._save_checkpoint()
+	if daily_mode or completed:
+		return
+	var checkpoint := MultiGameManager.checkpoint(GAME_ID)
+	if checkpoint.is_empty():
+		return
+	checkpoint["campaign_special_cells"] = campaign_special_cells.duplicate(true)
+	checkpoint["target_rows_pending"] = target_rows_pending.duplicate()
+	checkpoint["target_cols_pending"] = target_cols_pending.duplicate()
+	checkpoint["required_double_clears"] = required_double_clears
+	checkpoint["double_clear_progress"] = double_clear_progress
+	checkpoint["campaign_failed"] = campaign_failed
+	MultiGameManager.save_checkpoint(GAME_ID, checkpoint)
+
+func _restore_checkpoint() -> void:
+	super._restore_checkpoint()
+	if daily_mode:
+		return
+	var checkpoint := MultiGameManager.checkpoint(GAME_ID)
+	if checkpoint.is_empty() or int(checkpoint.get("level", -1)) != level_number:
+		return
+	var saved_specials = checkpoint.get("campaign_special_cells", null)
+	if saved_specials is Dictionary:
+		campaign_special_cells = (saved_specials as Dictionary).duplicate(true)
+	target_rows_pending = _to_int_array(checkpoint.get("target_rows_pending", target_rows_pending))
+	target_cols_pending = _to_int_array(checkpoint.get("target_cols_pending", target_cols_pending))
+	required_double_clears = maxi(0, int(checkpoint.get("required_double_clears", required_double_clears)))
+	double_clear_progress = maxi(0, int(checkpoint.get("double_clear_progress", double_clear_progress)))
+	campaign_failed = bool(checkpoint.get("campaign_failed", false))
 
 func _fail_campaign(reason: String) -> void:
 	campaign_failed = true
