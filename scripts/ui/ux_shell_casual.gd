@@ -52,7 +52,7 @@ func _compact_shell() -> void:
 		if blocker != null and blocker.visible and blocker.is_visible_in_tree():
 			var blocker_rect: Rect2 = blocker.get_global_rect()
 			desired.y = minf(desired.y, maxf(24.0, blocker_rect.position.y - 92.0))
-		help_button.position = desired
+		help_button.global_position = desired
 		help_button.add_theme_font_size_override("font_size", 32)
 		help_button.tooltip_text = "How to play"
 	if theme_button != null:
@@ -114,15 +114,11 @@ func _gameplay_help_blocker() -> Control:
 	var main := _main()
 	if main == null:
 		return null
-	var game: Node = main.get("active_game") as Node
-	if game == null or not is_instance_valid(game):
-		game = main.get_node_or_null("ActiveGame")
-	if game == null:
-		return null
-	# Pick the first control that begins the bottom gameplay stack. This keeps
-	# the floating help affordance out of instructions, tray pieces and status text.
+	# Search the live Main tree directly. During scene entry the ActiveGame
+	# property is assigned after child _ready() has built its controls, while the
+	# named controls are already present and safe to locate.
 	for name in ["BlockTray", "CompactGameFeedback", "CompactGameActions", "CompactProgressStrip"]:
-		var blocker := _find_named_control(game, [name])
+		var blocker := main.find_child(name, true, false) as Control
 		if blocker != null and blocker.visible and blocker.is_visible_in_tree():
 			return blocker
 	return null
