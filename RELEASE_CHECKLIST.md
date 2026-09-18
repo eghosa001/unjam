@@ -7,7 +7,7 @@ The repository is hardened to fail closed until production services are configur
 This repository is now prepared to start the replacement Play listing at **versionName 1.0.0 / versionCode 1** with a **new upload key**.
 
 - [ ] Create the replacement app in Play Console.
-- [ ] Keep `com.eghosa.unjam` only if Google Play accepts that package for the replacement app. A deleted app with zero lifetime installs can have its package name reused; a deleted app with any lifetime install cannot.
+- [ ] Use the production package `com.eghosa.unjamgam` consistently in Google Play, AdMob, billing verification, and release builds.
 - [ ] Enable Play App Signing for the replacement app and let Google manage the app-signing key unless there is a specific reason to supply your own.
 - [ ] Generate a new RSA upload keystore and keep at least two secure backups outside the repository.
 - [ ] Add the new keystore and credentials to GitHub Actions secrets: `UNJAM_ANDROID_KEYSTORE_BASE64`, `UNJAM_ANDROID_KEY_ALIAS`, and `UNJAM_ANDROID_KEY_PASSWORD`.
@@ -34,7 +34,7 @@ Configured in code/CI:
 - [x] Play Billing connection, localized product-price query, purchase, restore, consume, and acknowledge paths are implemented.
 - [x] Local purchase-token history stores SHA-256 fingerprints rather than reusable raw Play purchase tokens.
 - [x] Resetting gameplay progress preserves Play-owned non-consumable entitlements and local duplicate-grant history.
-- [x] `docs/app-ads.txt` contains the AdMob publisher record.
+- [x] `app-ads.txt` at repository root and `docs/app-ads.txt` contain the AdMob publisher record.
 - [x] Privacy policy source exists at `docs/privacy.html`.
 
 Still account-side / external:
