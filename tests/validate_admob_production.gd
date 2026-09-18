@@ -21,6 +21,11 @@ func run() -> void:
 	expect_true(String(ProjectSettings.get_setting("monetization/admob_rewarded_unit_id", "")) == EXPECTED_REWARDED, "production rewarded ad unit ID missing")
 	expect_true(String(ProjectSettings.get_setting("monetization/admob_interstitial_unit_id", "")) == EXPECTED_INTERSTITIAL, "production interstitial ad unit ID missing")
 
+	var export_source := FileAccess.get_file_as_string("res://export_presets.cfg")
+	expect_true('permissions/internet=true' in export_source, "Android INTERNET permission missing from export preset")
+	expect_true('permissions/access_network_state=true' in export_source, "Android ACCESS_NETWORK_STATE permission missing from export preset")
+	expect_true('com.google.android.gms.permission.AD_ID' in export_source, "Android AD_ID permission missing from export preset")
+
 	var config_script := load("res://scripts/systems/admob_config.gd")
 	expect_true(config_script != null, "AdMob config helper missing")
 	if config_script != null:
