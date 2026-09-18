@@ -13,9 +13,15 @@ static func generate(level_number: int) -> Dictionary:
 	var profile: Dictionary = Progression.profile(n)
 	for attempt in range(6):
 		var candidate := _build_candidate(profile, n * 104729 + attempt * 7919)
-		if Solver.has_solution(candidate, 6000):
+		var solution: Array[int] = Solver.find_solution(candidate, [], 6000)
+		if not solution.is_empty():
 			candidate["solver_verified"] = true
 			candidate["generation_attempt"] = attempt + 1
+			candidate["optimal_moves"] = solution.size()
+			candidate["estimated_required_moves"] = solution.size()
+			candidate["par_moves"] = solution.size() + 2
+			if String(candidate.get("objective", "")) == Progression.OBJECTIVE_PERFECT_RESCUE:
+				candidate["action_budget"] = maxi(solution.size(), int(candidate.get("action_budget", solution.size())))
 			candidate["structural_signature"] = Progression.canonical_signature(candidate)
 			return candidate
 	var fallback := _build_fallback(profile)
@@ -44,7 +50,14 @@ static func _build_candidate(profile: Dictionary, seed_value: int) -> Dictionary
 		if _inside(sealed, size):
 			pieces.append(_piece(sealed.x, sealed.y, "blocker", DIR_NAMES[i]))
 
-	var mechanics: Array = profile.get("mechanics", [])
+	var mechanics: Array = profile.get("mechanics", []).duplicate()
+	var objective := String(profile.get("objective", Progression.OBJECTIVE_RESCUE_ROUTE))
+	if objective in [Progression.OBJECTIVE_KEY_RESCUE, Progression.OBJECTIVE_GATE_RUN] and "gate" not in mechanics:
+		_mechanic_required(mechanics, "gate")
+	if objective == Progression.OBJECTIVE_BOMB_ROUTE and "bomb" not in mechanics:
+		_mechanic_required(mechanics, "bomb")
+	if objective == Progression.OBJECTIVE_CHAIN_RESCUE and "linked" not in mechanics:
+		_mechanic_required(mechanics, "linked")
 	var lane := _ray_cells(rescue_pos, target_dir, size)
 	var gate_ids: Array[String] = []
 	var gate_slots := 0
@@ -174,6 +187,17 @@ static func _build_fallback(profile: Dictionary) -> Dictionary:
 	level["par_moves"] = maxi(3, known_solution.size())
 	level["action_budget"] = maxi(int(profile.get("action_budget", known_solution.size())), known_solution.size())
 	return level
+
+static func _mechanic_required(mechanics: Array, mechanic: String) -> void:
+	if mechanic in mechanics:
+		return
+	if mechanics.size() >= 3:
+		var replace_index := mechanics.find("rotate")
+		if replace_index < 0:
+			replace_index = 0
+		mechanics[replace_index] = mechanic
+	else:
+		mechanics.append(mechanic)
 
 static func _add_reverse_piece(pieces: Array[Dictionary], size: int, rescue_pos: Vector2i, seed_value: int, type: String, metadata: Dictionary) -> int:
 	var rng := RandomNumberGenerator.new()
