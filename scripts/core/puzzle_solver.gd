@@ -70,19 +70,38 @@ static func _find_known_solution(level: Dictionary, source: Array, rescue: Vecto
 	if not raw is Array or (raw as Array).is_empty():
 		return _empty_int_path()
 	var pieces: Array = source.duplicate(true)
-	var path: Array[int] = []
+	var pending: Array[int] = []
 	for raw_index in raw:
 		var index := int(raw_index)
 		if index < 0 or index >= pieces.size():
 			return _empty_int_path()
-		if not bool(pieces[index].get("active", true)):
-			continue
-		if not _path_clear(pieces, index, rescue, width, height):
-			return _empty_int_path()
-		pieces = _apply_move(pieces, index, rescue, width, height)
-		path.append(index)
-		if _goal_satisfied(level, pieces, rescue, width, height, path.size()):
-			return path
+		pending.append(index)
+	var path: Array[int] = []
+	# Reverse construction provides a dependency proof, but late-game special
+	# mechanics can temporarily make the next authored index illegal. Keep the
+	# proof bounded and deterministic: choose the earliest currently legal proof
+	# move, then restart the scan. This is O(n²) for <=54 pieces and avoids the
+	# exponential BFS fallback while still simulating every move before accepting
+	# the proof as solved.
+	while not pending.is_empty():
+		var progressed := false
+		for pending_position in range(pending.size()):
+			var index := pending[pending_position]
+			if not bool(pieces[index].get("active", true)):
+				pending.remove_at(pending_position)
+				progressed = true
+				break
+			if not _path_clear(pieces, index, rescue, width, height):
+				continue
+			pieces = _apply_move(pieces, index, rescue, width, height)
+			path.append(index)
+			pending.remove_at(pending_position)
+			progressed = true
+			if _goal_satisfied(level, pieces, rescue, width, height, path.size()):
+				return path
+			break
+		if not progressed:
+			break
 	if _goal_satisfied(level, pieces, rescue, width, height, path.size()):
 		return path
 	return _empty_int_path()
