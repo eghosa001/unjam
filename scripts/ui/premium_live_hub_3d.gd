@@ -191,13 +191,13 @@ func _add_game_card(parent: VBoxContainer, game_id: String) -> void:
 	var name := Label.new()
 	name.text = MultiGameManager.display_name(game_id).to_upper()
 	name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	name.add_theme_font_size_override("font_size", 30 if narrow else (34 if compact else 44))
+	name.add_theme_font_size_override("font_size", 23 if short else (30 if narrow else (34 if compact else 44)))
 	Unjam3DTheme.label_3d(name, Color.WHITE, dark.darkened(0.34), 5 if compact else 6)
 	info.add_child(name)
 	var desc := Label.new()
-	desc.text = _reference_card_copy(game_id)
+	desc.text = _compact_card_copy(game_id) if short else _reference_card_copy(game_id)
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	desc.add_theme_font_size_override("font_size", 18 if narrow else (20 if compact else 23))
+	desc.add_theme_font_size_override("font_size", 14 if short else (18 if narrow else (20 if compact else 23)))
 	Unjam3DTheme.label_3d(desc, Color.WHITE, dark.darkened(0.34), 3)
 	info.add_child(desc)
 	var spacer := Control.new()
@@ -208,7 +208,7 @@ func _add_game_card(parent: VBoxContainer, game_id: String) -> void:
 	if compact:
 		var grid_footer := GridContainer.new()
 		grid_footer.columns = 2
-		grid_footer.custom_minimum_size = Vector2(0, 92 if short else 108)
+		grid_footer.custom_minimum_size = Vector2(0, 118 if short else 108)
 		grid_footer.add_theme_constant_override("h_separation", 6)
 		grid_footer.add_theme_constant_override("v_separation", 6)
 		footer = grid_footer
@@ -218,7 +218,7 @@ func _add_game_card(parent: VBoxContainer, game_id: String) -> void:
 		row_footer.add_theme_constant_override("separation", 8)
 		footer = row_footer
 	info.add_child(footer)
-	var footer_height := 54.0 if short else (62.0 if compact else 70.0)
+	var footer_height := 42.0 if short else (62.0 if compact else 70.0)
 	var level_chip := PanelContainer.new()
 	level_chip.custom_minimum_size = Vector2(0 if compact else 112, footer_height)
 	level_chip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -230,7 +230,7 @@ func _add_game_card(parent: VBoxContainer, game_id: String) -> void:
 	level_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	level_label.clip_text = true
 	level_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	level_label.add_theme_font_size_override("font_size", 17 if narrow else 20)
+	level_label.add_theme_font_size_override("font_size", 14 if short else (17 if narrow else 20))
 	Unjam3DTheme.label_3d(level_label, Color.WHITE, dark.darkened(0.35), 2)
 	level_chip.add_child(level_label)
 
@@ -253,19 +253,21 @@ func _add_game_card(parent: VBoxContainer, game_id: String) -> void:
 	star_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	star_label.clip_text = true
 	star_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	star_label.add_theme_font_size_override("font_size", 18 if narrow else 21)
+	star_label.add_theme_font_size_override("font_size", 14 if short else (18 if narrow else 21))
 	Unjam3DTheme.label_3d(star_label, Color("fff2a0"), dark.darkened(0.38), 3)
 	footer.add_child(star_label)
 	var play := _button("PLAY  ›", Vector2(0 if compact else 118, footer_height), dark, true)
 	play.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	play.add_theme_font_size_override("font_size", 22 if narrow else 25)
+	play.add_theme_font_size_override("font_size", 17 if short else (22 if narrow else 25))
 	play.pressed.connect(_play.bind(game_id))
 	footer.add_child(play)
 
 	var art_shell := PanelContainer.new()
 	art_shell.name = "GameArtShell_%s" % game_id
-	var art_height := 112.0 if short else (148.0 if medium_height else 178.0)
-	art_shell.custom_minimum_size = Vector2(0 if compact else 350, art_height if compact else minf(card_height - 28.0, 300.0))
+	var art_height := 0.0 if short else (148.0 if medium_height else 178.0)
+	art_shell.custom_minimum_size = Vector2(132.0 if short else (0 if compact else 350), art_height if compact else minf(card_height - 28.0, 300.0))
+	if short:
+		art_shell.size_flags_stretch_ratio = 0.85
 	art_shell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	art_shell.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	art_shell.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color(1, 1, 1, 0.16), 22 if compact else 30, Color(1, 1, 1, 0.48), 2, 7 if compact else 10))
@@ -277,11 +279,17 @@ func _add_game_card(parent: VBoxContainer, game_id: String) -> void:
 	art_margin.add_theme_constant_override("margin_bottom", 4)
 	art_shell.add_child(art_margin)
 	var art := Unjam3DGameArt.new()
-	art.custom_minimum_size = Vector2(0 if compact else 330, maxf(96.0, art_shell.custom_minimum_size.y - 12.0))
+	art.custom_minimum_size = Vector2(112.0 if short else (0 if compact else 330), 0.0 if short else maxf(96.0, art_shell.custom_minimum_size.y - 12.0))
 	art.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	art.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	art.configure(game_id)
 	art_margin.add_child(art)
+
+func _compact_card_copy(game_id: String) -> String:
+	match game_id:
+		"water_sort": return "SORT COLORS • FIND THE FLOW"
+		"block_puzzle": return "DRAG • PLACE • CLEAR"
+		_: return "CLEAR THE LANE • RESCUE"
 
 func _reference_card_copy(game_id: String) -> String:
 	match game_id:
