@@ -34,130 +34,49 @@ static func find_solution(profile: Dictionary, plan: Dictionary, max_nodes: int 
 	}
 
 static func find_optimal(profile: Dictionary, plan: Dictionary, max_nodes: int = 350000) -> Dictionary:
-	var proof_replay := validate_known_solution(profile, plan)
-	if not bool(proof_replay.get("solved", false)):
-		return {"solved": false, "optimal_verified": false, "nodes": 0, "reason": "invalid_proof"}
-	var upper_bound := maxi(1, int(proof_replay.get("moves", 0)))
+	var proof_shapes: Array = plan.get("proof_shapes", [])
+	if proof_shapes.is_empty():
+		return {"solved": false, "optimal_verified": false, "nodes": 0}
+	var total_nodes := 0
 	var initial_state := _initial_state(profile, plan)
-	if initial_state.is_empty():
-		return {"solved": false, "optimal_verified": false, "nodes": 0, "reason": "invalid_state"}
-
-	var start_h := maxi(
+	var lower_bound := maxi(
 		_optimistic_line_move_lower_bound(initial_state, profile, plan),
 		_initial_geometry_line_lower_bound(initial_state, profile, plan)
 	)
-	if start_h > upper_bound:
-		return {"solved": false, "optimal_verified": false, "nodes": 0, "reason": "lower_bound_exceeds_proof"}
-
-	# Uniform-cost A* over exact states. The heuristic is admissible: it ignores
-	# collisions, special-objective pressure and most geometry, so it can only
-	# underestimate moves remaining. Therefore the first goal popped at the
-	# lowest f=g+h is an optimal solution.
-	var buckets: Array = []
-	for _i in range(upper_bound + 1):
-		buckets.append([])
-	var nodes: Array[Dictionary] = []
-	nodes.append({
-		"state": initial_state,
-		"parent": -1,
-		"move": {},
-		"g": 0,
-	})
-	(buckets[start_h] as Array).append(0)
-	var seen_depth := {_state_key(initial_state, profile): 0}
-	var visited := 0
-
-	for priority in range(start_h, upper_bound + 1):
-		var bucket: Array = buckets[priority]
-		var cursor := 0
-		while cursor < bucket.size():
-			var node_index := int(bucket[cursor])
-			cursor += 1
-			var node: Dictionary = nodes[node_index]
-			var state: Dictionary = node["state"]
-			var g := int(node["g"])
-			visited += 1
-			if visited > maxi(1, max_nodes):
-				return {
-					"solved": false,
-					"optimal_verified": false,
-					"optimal_moves": -1,
-					"nodes": visited,
-					"cutoff": true,
-					"uses_64_bit_board": true,
-				}
-			if _goal(state, profile):
-				var path := _reconstruct_optimal_path(nodes, node_index)
-				return {
-					"solved": true,
-					"optimal_verified": true,
-					"optimal_moves": path.size(),
-					"path": path,
-					"nodes": visited,
-					"cutoff": false,
-					"uses_64_bit_board": true,
-				}
-			if g >= upper_bound:
-				continue
-
-			var tray := _current_tray(state, plan)
-			if tray.is_empty():
-				continue
-			var context := {
-				"profile": profile,
-				"plan": plan,
-				"proof_shapes": plan.get("proof_shapes", []),
-				"proof_origins": plan.get("proof_origins", []),
+	for limit in range(maxi(1, lower_bound), proof_shapes.size() + 1):
+		var state := _initial_state(profile, plan)
+		var context := {
+			"nodes": 0,
+			"max_nodes": maxi(1, max_nodes - total_nodes),
+			"cutoff": false,
+			"memo": {},
+			"profile": profile,
+			"plan": plan,
+			"proof_shapes": plan.get("proof_shapes", []),
+			"proof_origins": plan.get("proof_origins", []),
+		}
+		var path: Array[Dictionary] = []
+		var solved := _dfs(state, limit, path, context)
+		total_nodes += int(context["nodes"])
+		if solved:
+			return {
+				"solved": true,
+				"optimal_verified": not bool(context["cutoff"]),
+				"optimal_moves": path.size(),
+				"path": path.duplicate(true),
+				"nodes": total_nodes,
+				"uses_64_bit_board": true,
 			}
-			for candidate in _ordered_candidates(state, tray, context):
-				var next := _apply_move(
-					state,
-					int(candidate["shape"]),
-					int(candidate["slot"]),
-					int(candidate["origin"]),
-					profile,
-					plan
-				)
-				if next.is_empty():
-					continue
-				var next_g := g + 1
-				var next_h := _optimistic_line_move_lower_bound(next, profile, plan)
-				var next_f := next_g + next_h
-				if next_f > upper_bound:
-					continue
-				var key := _state_key(next, profile)
-				if seen_depth.has(key) and int(seen_depth[key]) <= next_g:
-					continue
-				seen_depth[key] = next_g
-				var child_index := nodes.size()
-				nodes.append({
-					"state": next,
-					"parent": node_index,
-					"move": candidate.duplicate(true),
-					"g": next_g,
-				})
-				(buckets[next_f] as Array).append(child_index)
-
-	return {
-		"solved": false,
-		"optimal_verified": false,
-		"optimal_moves": -1,
-		"nodes": visited,
-		"cutoff": false,
-		"uses_64_bit_board": true,
-	}
-
-static func _reconstruct_optimal_path(nodes: Array[Dictionary], goal_index: int) -> Array[Dictionary]:
-	var reverse_path: Array[Dictionary] = []
-	var index := goal_index
-	while index >= 0:
-		var node: Dictionary = nodes[index]
-		var move: Dictionary = node.get("move", {})
-		if not move.is_empty():
-			reverse_path.append(move.duplicate(true))
-		index = int(node.get("parent", -1))
-	reverse_path.reverse()
-	return reverse_path
+		if bool(context["cutoff"]) or total_nodes >= max_nodes:
+			return {
+				"solved": false,
+				"optimal_verified": false,
+				"optimal_moves": -1,
+				"nodes": total_nodes,
+				"cutoff": true,
+				"uses_64_bit_board": true,
+			}
+	return {"solved": false, "optimal_verified": false, "optimal_moves": -1, "nodes": total_nodes}
 
 static func validate_known_solution(profile: Dictionary, plan: Dictionary) -> Dictionary:
 	var state := _initial_state(profile, plan)
