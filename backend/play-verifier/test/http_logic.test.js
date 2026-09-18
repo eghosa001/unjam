@@ -8,6 +8,21 @@ test('health endpoint is public and minimal', async () => {
   assert.deepEqual(result.body, { ok: true });
 });
 
+test('readiness route fails closed when dependencies are unavailable', async () => {
+  const service = { async readiness() { return { ok: false, dependencies: { firestore: true, google_play: false } }; } };
+  const result = await routeRequest({ method: 'GET', path: '/readiness', body: null }, service);
+  assert.equal(result.status, 503);
+  assert.equal(result.body.ok, false);
+  assert.equal(result.body.dependencies.google_play, false);
+});
+
+test('readiness route succeeds only when dependencies are ready', async () => {
+  const service = { async readiness() { return { ok: true, dependencies: { firestore: true, google_play: true } }; } };
+  const result = await routeRequest({ method: 'GET', path: '/readiness', body: null }, service);
+  assert.equal(result.status, 200);
+  assert.equal(result.body.ok, true);
+});
+
 test('verify route delegates to purchase service', async () => {
   const service = { async verify(body) { return { valid: true, echoed: body.product_id }; } };
   const result = await routeRequest({ method: 'POST', path: '/verify', body: { product_id: 'unjam_remove_ads' } }, service);
