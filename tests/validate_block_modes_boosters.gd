@@ -2,13 +2,22 @@ extends SceneTree
 
 const Generator = preload("res://scripts/core/block_puzzle_campaign_generator.gd")
 
+var save_manager: Node
+var economy_manager: Node
+
 func _initialize() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
-	var original_data: Dictionary = SaveManager.data.duplicate(true)
-	SaveManager.data["coins"] = 1000
-	SaveManager.save()
+	save_manager = root.get_node_or_null("SaveManager")
+	economy_manager = root.get_node_or_null("EconomyManager")
+	if save_manager == null or economy_manager == null:
+		return _fail("Required economy/save autoloads are unavailable")
+	var original_data: Dictionary = (save_manager.get("data") as Dictionary).duplicate(true)
+	var working_data: Dictionary = save_manager.get("data")
+	working_data["coins"] = 1000
+	save_manager.set("data", working_data)
+	save_manager.call("save")
 
 	if not await _validate_boosters():
 		_restore(original_data)
@@ -34,9 +43,9 @@ func _validate_boosters() -> bool:
 		game.queue_free()
 		return _fail("Block Puzzle does not expose all four boosters")
 
-	var before := EconomyManager.balance()
+	var before := int(economy_manager.call("balance"))
 	game.call("_use_booster", "shuffle")
-	if EconomyManager.balance() != before - int(game.BOOSTER_COSTS["shuffle"]):
+	if int(economy_manager.call("balance")) != before - int(game.BOOSTER_COSTS["shuffle"]):
 		game.queue_free()
 		return _fail("Shuffle booster did not charge the configured coin cost")
 	if game.pieces.size() != 3 or (game.pieces[0] as Array).size() != 1:
@@ -56,9 +65,9 @@ func _validate_boosters() -> bool:
 	game.piece_colors = [Color.WHITE, Color.WHITE, Color.WHITE]
 	game.selected_piece = 0
 	var before_rotation := String(game.call("_shape_signature", game.pieces[0]))
-	before = EconomyManager.balance()
+	before = int(economy_manager.call("balance"))
 	game.call("_use_booster", "rotate")
-	if EconomyManager.balance() != before - int(game.BOOSTER_COSTS["rotate"]):
+	if int(economy_manager.call("balance")) != before - int(game.BOOSTER_COSTS["rotate"]):
 		game.queue_free()
 		return _fail("Rotate booster did not charge its coin cost")
 	if String(game.call("_shape_signature", game.pieces[0])) == before_rotation:
@@ -67,9 +76,9 @@ func _validate_boosters() -> bool:
 
 	game.cells[0][0] = true
 	game.cell_colors[0][0] = Color.WHITE
-	before = EconomyManager.balance()
+	before = int(economy_manager.call("balance"))
 	game.call("_use_booster", "hammer")
-	if EconomyManager.balance() != before - int(game.BOOSTER_COSTS["hammer"]):
+	if int(economy_manager.call("balance")) != before - int(game.BOOSTER_COSTS["hammer"]):
 		game.queue_free()
 		return _fail("Hammer booster did not charge its coin cost")
 	if bool(game.cells[0][0]):
@@ -89,9 +98,9 @@ func _validate_boosters() -> bool:
 	if int(game.placements) != before_placements + 1 or game.history.is_empty():
 		game.queue_free()
 		return _fail("Undo fixture could not create a reversible move")
-	before = EconomyManager.balance()
+	before = int(economy_manager.call("balance"))
 	game.call("_use_booster", "undo")
-	if EconomyManager.balance() != before - int(game.BOOSTER_COSTS["undo"]):
+	if int(economy_manager.call("balance")) != before - int(game.BOOSTER_COSTS["undo"]):
 		game.queue_free()
 		return _fail("Undo booster did not charge its coin cost")
 	if int(game.placements) != before_placements:
@@ -164,8 +173,10 @@ func _validate_launcher() -> bool:
 	return true
 
 func _restore(data: Dictionary) -> void:
-	SaveManager.data = data
-	SaveManager.save()
+	if save_manager == null:
+		return
+	save_manager.set("data", data)
+	save_manager.call("save")
 
 func _frames(count: int) -> void:
 	for _i in range(count):
