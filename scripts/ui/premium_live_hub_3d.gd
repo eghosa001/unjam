@@ -22,7 +22,7 @@ func _build() -> void:
 	var viewport_size := get_viewport_rect().size
 	var narrow := viewport_size.x < 600.0
 	var phone_width := viewport_size.x <= 1120.0
-	var compact := viewport_size.x < 900.0
+	var compact := viewport_size.x <= 1120.0
 	var short := viewport_size.y < 1100.0
 	var medium_height := viewport_size.y < 1500.0
 	var nav_height := 88.0 if short else (96.0 if medium_height else 104.0)
@@ -152,7 +152,7 @@ func _add_game_card(parent: VBoxContainer, game_id: String) -> void:
 
 	var viewport_size := get_viewport_rect().size
 	var narrow := viewport_size.x < 600.0
-	var compact := viewport_size.x < 900.0
+	var compact := viewport_size.x <= 1120.0
 	var short := viewport_size.y < 1100.0
 	var medium_height := viewport_size.y < 1500.0
 	var card_height := 382.0 if short else (448.0 if medium_height else 500.0)
