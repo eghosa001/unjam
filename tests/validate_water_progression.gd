@@ -59,6 +59,35 @@ func _run() -> void:
 	if Progression.canonical_signature(canonical_a) != Progression.canonical_signature(canonical_b):
 		return _fail("Color-renamed duplicate boards are not canonicalized")
 
+	var original_save := SaveManager.data.duplicate(true)
+	SaveManager.data["game_progress"] = {
+		"water_sort": {
+			"highest_level": 1451,
+			"stars": {},
+			"levels_completed": 1450,
+			"perfect_clears": 0,
+			"perfect_streak": 0,
+			"best_perfect_streak": 0,
+			"daily_streak": 0,
+			"daily_best_streak": 0,
+			"milestone_chests": [],
+			"world_badges": ["1","2","3","4","5","6","7","8","9","10","11","12","13","14"],
+			"daily_completed": [],
+			"achievements": []
+		}
+	}
+	MultiGameManager.ensure_state()
+	var migrated := MultiGameManager.progress_for("water_sort")
+	var migrated_badges: Array = migrated.get("world_badges", [])
+	var migration_ok := (
+		int(migrated.get("highest_level", 0)) == 1451
+		and int(migrated.get("world_badge_span_version", 0)) == 2
+		and migrated_badges == ["1", "2"]
+	)
+	SaveManager.data = original_save
+	if not migration_ok:
+		return _fail("Legacy Water Sort 100-level world badges did not migrate cleanly to 500-level worlds")
+
 	var scores: Array[int] = []
 	for level in range(1001, 1101):
 		scores.append(int(Progression.profile(level).target_difficulty))
