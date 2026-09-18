@@ -3,45 +3,6 @@ extends "res://scripts/game/block_puzzle_final_polish.gd"
 const Progression = preload("res://scripts/core/block_puzzle_progression.gd")
 const CampaignGenerator = preload("res://scripts/core/block_puzzle_campaign_generator.gd")
 
-# Fixed-orientation campaign library. The first five shapes remain flexible;
-# higher tiers progressively unlock space-demanding polyominoes.
-const CAMPAIGN_SHAPES := [
-	[Vector2i(0,0)],
-	[Vector2i(0,0), Vector2i(1,0)],
-	[Vector2i(0,0), Vector2i(0,1)],
-	[Vector2i(0,0), Vector2i(1,0), Vector2i(2,0)],
-	[Vector2i(0,0), Vector2i(0,1), Vector2i(0,2)],
-	[Vector2i(0,0), Vector2i(1,0), Vector2i(0,1), Vector2i(1,1)],
-	[Vector2i(0,0), Vector2i(1,0), Vector2i(0,1)],
-	[Vector2i(0,0), Vector2i(1,0), Vector2i(1,1)],
-	[Vector2i(0,0), Vector2i(0,1), Vector2i(1,1)],
-	[Vector2i(1,0), Vector2i(0,1), Vector2i(1,1)],
-	[Vector2i(0,0), Vector2i(1,0), Vector2i(2,0), Vector2i(3,0)],
-	[Vector2i(0,0), Vector2i(0,1), Vector2i(0,2), Vector2i(0,3)],
-	[Vector2i(0,0), Vector2i(1,0), Vector2i(2,0), Vector2i(1,1)],
-	[Vector2i(0,0), Vector2i(1,0), Vector2i(2,0), Vector2i(0,1), Vector2i(1,1), Vector2i(2,1)],
-	[Vector2i(0,0), Vector2i(1,0), Vector2i(0,1), Vector2i(1,1), Vector2i(0,2), Vector2i(1,2)],
-	[Vector2i(1,0), Vector2i(2,0), Vector2i(0,1), Vector2i(1,1)],
-	[Vector2i(0,0), Vector2i(1,0), Vector2i(1,1), Vector2i(2,1)],
-	[Vector2i(0,0), Vector2i(0,1), Vector2i(0,2), Vector2i(1,2)],
-	[Vector2i(0,0), Vector2i(1,0), Vector2i(2,0), Vector2i(3,0), Vector2i(4,0)],
-	[Vector2i(0,0), Vector2i(0,1), Vector2i(0,2), Vector2i(0,3), Vector2i(0,4)],
-	[Vector2i(0,0), Vector2i(1,0), Vector2i(2,0), Vector2i(0,1), Vector2i(1,1), Vector2i(2,1), Vector2i(0,2), Vector2i(1,2), Vector2i(2,2)],
-	[Vector2i(1,0), Vector2i(0,1), Vector2i(1,1), Vector2i(2,1), Vector2i(1,2)],
-	[Vector2i(0,0), Vector2i(2,0), Vector2i(0,1), Vector2i(1,1), Vector2i(2,1)],
-	[Vector2i(0,0), Vector2i(1,0), Vector2i(2,0), Vector2i(1,1), Vector2i(1,2)],
-	[Vector2i(0,0), Vector2i(0,1), Vector2i(0,2), Vector2i(0,3), Vector2i(1,3)],
-]
-
-const TIER_POOLS := {
-	1: [0, 1, 2, 3, 4],
-	2: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-	3: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-	4: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17],
-	5: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 23, 24],
-	6: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24],
-}
-
 var campaign_profile: Dictionary = {}
 var campaign_plan: Dictionary = {}
 var campaign_move_limit := -1
@@ -151,8 +112,8 @@ func refill_pieces() -> void:
 	var color_rng := RandomNumberGenerator.new()
 	color_rng.seed = int(_profile().get("seed", level_number * 104729)) + piece_batch * 99991
 	for raw_index in tray:
-		var shape_index := clampi(int(raw_index), 0, CAMPAIGN_SHAPES.size() - 1)
-		pieces.append(CAMPAIGN_SHAPES[shape_index].duplicate())
+		var shape_index := clampi(int(raw_index), 0, CampaignGenerator.SHAPES.size() - 1)
+		pieces.append(CampaignGenerator.SHAPES[shape_index].duplicate())
 		piece_colors.append(COLOR_PALETTE[color_rng.randi_range(0, COLOR_PALETTE.size() - 1)])
 	selected_piece = -1
 
