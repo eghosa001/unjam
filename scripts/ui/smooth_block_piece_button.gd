@@ -21,8 +21,9 @@ func _begin_drag_feedback() -> void:
 	modulate = Color(1, 1, 1, 0)
 	var tween := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween.tween_property(self, "scale", Vector2(0.84, 0.84), 0.07)
-	if has_node("/root/FeedbackManager"):
-		FeedbackManager.tap()
+	var feedback := get_node_or_null("/root/FeedbackManager")
+	if feedback != null and feedback.has_method("tap"):
+		feedback.call("tap")
 
 func _get_drag_data(_at_position: Vector2) -> Variant:
 	if touch_drag_started:
