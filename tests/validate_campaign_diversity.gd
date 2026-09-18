@@ -100,7 +100,7 @@ func _run() -> void:
 			continue
 		var level: Dictionary = CampaignGeneratorScript.generate(n)
 		var board_width := int(level.get("width", 0))
-		if (n <= 4 and board_width != 5) or (n > 4 and (board_width < 6 or board_width > 8)):
+		if board_width < 7 or board_width > 8:
 			errors.append("Rescue %d invalid board size" % n)
 		var occupied := {}
 		for raw in level.get("pieces", []):
