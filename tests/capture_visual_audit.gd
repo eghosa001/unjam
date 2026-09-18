@@ -18,6 +18,9 @@ func _run() -> void:
 	current_scene = main
 	await _settle(8)
 
+	var shell := main.get_node_or_null("UXShell")
+	await _set_theme(shell, "dark")
+
 	main.call("build_home")
 	await _capture("01-home-dark")
 
@@ -44,24 +47,29 @@ func _run() -> void:
 
 	main.call("build_collection")
 	await _capture("05-collection-dark")
+	root.size = Vector2i(540, 960)
+	await _settle(8)
+	main.call("build_collection")
+	await _capture("05b-collection-540x960-dark")
+	root.size = Vector2i(1080, 1920)
+	await _settle(8)
 
 	main.call("build_settings")
 	await _capture("06-settings-dark")
+	root.size = Vector2i(540, 960)
+	await _settle(8)
+	main.call("build_settings")
+	await _capture("06b-settings-540x960-dark")
+	root.size = Vector2i(1080, 1920)
+	await _settle(8)
 
-	var shell := main.get_node_or_null("UXShell")
-	if shell != null:
-		shell.set("theme_mode", "light")
-		if shell.has_method("_apply_theme"):
-			shell.call("_apply_theme")
+	await _set_theme(shell, "light")
 	main.call("build_home")
 	await _capture("07-home-light")
 	main.call("build_settings")
 	await _capture("08-settings-light")
 
-	if shell != null:
-		shell.set("theme_mode", "dark")
-		if shell.has_method("_apply_theme"):
-			shell.call("_apply_theme")
+	await _set_theme(shell, "dark")
 
 	main.call("start_level", 1)
 	await _settle(8)
@@ -84,24 +92,23 @@ func _run() -> void:
 	main.call("build_multi_level_select")
 	await _capture("12-levels-block-dark")
 
-	if shell != null:
-		shell.set("theme_mode", "light")
-		if shell.has_method("_apply_theme"):
-			shell.call("_apply_theme")
+	await _set_theme(shell, "light")
 	main.call("build_collection")
 	await _capture("13-collection-light")
 	main.set("current_surface", "live")
 	await _capture("14-live-light")
 
-	if shell != null:
-		shell.set("theme_mode", "dark")
-		if shell.has_method("_apply_theme"):
-			shell.call("_apply_theme")
+	await _set_theme(shell, "dark")
 	main.call("start_level", 1)
 	await _settle(8)
 	if shell != null and shell.has_method("show_tutorial"):
 		shell.call("show_tutorial", "rescue_rush")
 	await _capture("15-tutorial-rescue-dark")
+	root.size = Vector2i(540, 960)
+	await _settle(8)
+	await _capture("15b-tutorial-540x960-dark")
+	root.size = Vector2i(1080, 1920)
+	await _settle(8)
 	_hide_tutorial(shell)
 
 	var result := PremiumResultOverlay.new()
@@ -118,6 +125,23 @@ func _run() -> void:
 	result.queue_free()
 	await _settle(3)
 
+	root.size = Vector2i(540, 960)
+	await _settle(6)
+	var compact_result := PremiumResultOverlay.new()
+	compact_result.configure(
+		"LEVEL COMPLETE",
+		"Clean play. Strong route. Keep the streak moving.",
+		"7 MOVES   •   PERFECT ≤ 8\n1 RESCUE SECURED",
+		3,
+		Color("2dd4b6"),
+		"NEXT PUZZLE"
+	)
+	main.add_child(compact_result)
+	await _capture("16b-result-540x960-dark")
+	compact_result.queue_free()
+	root.size = Vector2i(1080, 1920)
+	await _settle(3)
+
 	print("Visual audit captures written to %s" % OUT_DIR)
 	# The visual runner synthesizes music through FeedbackManager. Release the
 	# generated stream/player before SceneTree quits so leak diagnostics remain
@@ -127,6 +151,14 @@ func _run() -> void:
 		feedback.call("shutdown_audio")
 	await _settle(3)
 	quit(0)
+
+func _set_theme(shell: Node, mode: String) -> void:
+	if shell == null:
+		return
+	shell.set("theme_mode", mode)
+	if shell.has_method("_apply_theme"):
+		shell.call("_apply_theme")
+	await _settle(4)
 
 func _hide_tutorial(shell: Node) -> void:
 	if shell == null:
