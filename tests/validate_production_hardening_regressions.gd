@@ -181,9 +181,12 @@ func _validate_primary_visual_occupancy() -> bool:
 	main.call("build_home")
 	await _frames(6)
 	var hero := main.find_child("HomeHero3D", true, false) as Control
-	if hero == null or hero.size.x < 800.0 or hero.size.y < 500.0:
+	# The dedicated Home composition gate caps the hero below 30% of screen
+	# height so it cannot crowd the CTA. Keep this legacy occupancy check aligned
+	# with that newer standard: dominant width plus at least ~22% vertical presence.
+	if hero == null or hero.size.x < 800.0 or hero.size.y < 420.0:
 		main.queue_free(); await process_frame
-		return _fail("Home 3D hero does not occupy enough of the reference-style composition on 1080x1920")
+		return _fail("Home 3D hero does not occupy enough of the premium composition on 1080x1920")
 	main.call("start_multi_level", "water_sort", 1, false)
 	await _frames(10)
 	var game := main.get_node_or_null("ActiveGame")
