@@ -601,7 +601,8 @@ func reward_summary() -> String:
 
 func show_result(stars: int) -> void:
 	var base_reward: int = 100 if daily_mode else int(completion_rewards.get("base_coins", 0))
-	var bonus_reward: int = 0 if daily_mode else int(completion_rewards.get("bonus_coins", 0))
+	var collection_bonus: int = EconomyManager.collection_daily_bonus() if daily_mode else 0
+	var bonus_reward: int = collection_bonus if daily_mode else int(completion_rewards.get("bonus_coins", 0))
 	var summary := reward_summary()
 	var subtitle := "Rescue secured. The path is clear."
 	if not summary.is_empty():
