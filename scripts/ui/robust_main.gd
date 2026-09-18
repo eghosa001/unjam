@@ -305,6 +305,9 @@ func start_game_daily(game_id: String) -> void:
 		start_multi_level(game_id, MultiGameManager.daily_level(game_id), true)
 
 func start_multi_level(game_id: String, level_number: int, daily: bool = false) -> void:
+	start_multi_level_mode(game_id, level_number, daily, "campaign")
+
+func start_multi_level_mode(game_id: String, level_number: int, daily: bool = false, mode: String = "campaign") -> void:
 	selected_game_id = game_id
 	current_surface = "game"
 	_remove_active_game()
@@ -320,13 +323,20 @@ func start_multi_level(game_id: String, level_number: int, daily: bool = false) 
 	game_scene.name = "ActiveGame"
 	game_scene.level_number = level_number
 	game_scene.daily_mode = daily
+	if game_id == "block_puzzle":
+		game_scene.set("play_mode", mode)
 	game_scene.finished.connect(_on_multi_finished.bind(game_id))
 	game_scene.quit_requested.connect(_on_multi_quit.bind(game_id))
 	add_child(game_scene)
 	game_scene.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	game_scene.z_index = 100
 	active_game = game_scene
-	AnalyticsManager.track("game_scene_opened", {"game": game_id, "level": level_number, "daily": daily})
+	AnalyticsManager.track("game_scene_opened", {"game": game_id, "level": level_number, "daily": daily, "mode": mode})
+
+func start_block_mode(mode: String) -> void:
+	var safe_mode := mode if mode in ["endless", "zen", "extreme"] else "campaign"
+	var level := clampi(MultiGameManager.highest_level("block_puzzle"), 1, MultiGameManager.CAMPAIGN_LEVELS)
+	start_multi_level_mode("block_puzzle", level, false, safe_mode)
 
 func _spawn_rescue(level_number: int, daily: bool, custom_data: Dictionary) -> void:
 	current_surface = "game"
@@ -419,4 +429,7 @@ func resume_game(game_id: String) -> void:
 			custom = (checkpoint.get("level_data", {}) as Dictionary).duplicate(true)
 		_spawn_rescue(int(checkpoint.get("level", 1)), bool(checkpoint.get("daily", false)), custom)
 	else:
-		start_multi_level(game_id, int(checkpoint.get("level", 1)), bool(checkpoint.get("daily", false)))
+		var mode := "campaign"
+		if game_id == "block_puzzle":
+			mode = String(checkpoint.get("play_mode", "campaign"))
+		start_multi_level_mode(game_id, int(checkpoint.get("level", 1)), bool(checkpoint.get("daily", false)), mode)
