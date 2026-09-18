@@ -73,7 +73,8 @@ func build_settings() -> void:
 	controls.columns = 2
 	controls.add_theme_constant_override("h_separation", 14)
 	controls.add_theme_constant_override("v_separation", 18)
-	controls.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	controls.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	controls.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	root.add_child(controls)
 	var setting_rows: Array = [
 		["sound", "SOUND", "Effects", true],
@@ -107,11 +108,10 @@ func build_settings() -> void:
 		call_deferred("build_settings")
 	)
 	controls.add_child(appearance)
-	var accessibility := _button("ACCESSIBILITY   •   LARGE TOUCH TARGETS", Vector2(0, 112 if get_viewport_rect().size.y >= 1400.0 else 84), "secondary")
-	accessibility.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	accessibility.add_theme_font_size_override("font_size", 18)
-	accessibility.disabled = true
-	controls.add_child(accessibility)
+	var accessibility_note := _label("ACCESSIBILITY  •  LARGE TOUCH TARGETS ARE ENABLED THROUGHOUT GAMEPLAY", 16, "muted", accent)
+	accessibility_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	accessibility_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	root.add_child(accessibility_note)
 	var help_card := _card(root, Vector2(0, 132), false)
 	var help_margin := _pad(help_card, 18)
 	var help_box := VBoxContainer.new()
@@ -140,7 +140,7 @@ func build_settings() -> void:
 func _setting_button(title_text: String, detail_text: String, enabled: bool, accent: Color) -> Button:
 	var state := "ON" if enabled else "OFF"
 	var role := "success" if enabled else "toggle_off"
-	var button_height := 116 if get_viewport_rect().size.y >= 1400.0 else 96
+	var button_height := 104 if get_viewport_rect().size.y >= 1400.0 else 88
 	var button := _button("%s   •   %s\n%s" % [title_text, state, detail_text], Vector2(0, button_height), role)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -326,7 +326,8 @@ func build_collection() -> void:
 	var games_title := _label("YOUR THREE GAMES", 24, "title", accent)
 	stack.add_child(games_title)
 	var game_grid := GridContainer.new()
-	game_grid.columns = 3 if get_viewport_rect().size.x >= 900.0 else (2 if get_viewport_rect().size.x >= 640.0 else 1)
+	game_grid.columns = 2 if get_viewport_rect().size.x >= 720.0 else 1
+	game_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	game_grid.add_theme_constant_override("h_separation", 14)
 	game_grid.add_theme_constant_override("v_separation", 14)
 	stack.add_child(game_grid)
@@ -355,7 +356,7 @@ func build_collection() -> void:
 	var friends := _label(_friend_roster_text(rescued), 20, "body", accent)
 	friends.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	garden_box.add_child(friends)
-	var garden_status := _label(_garden_status_text(), 17, "muted", accent)
+	var garden_status := _label(_garden_status_text(), 18, "muted", accent)
 	garden_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	garden_box.add_child(garden_status)
 	var progress := ProgressBar.new()
@@ -375,7 +376,7 @@ func build_collection() -> void:
 	value_box.add_child(_label("PERMANENT COLLECTION PERKS  •  %d / 6" % owned_count, 23, "title", PremiumDesignSystem.GOLD))
 	var value_copy := _label(
 		"Every owned upgrade adds +5 coins to EVERY Daily Game. Your garden also creates a once-per-day gift; a complete 6/6 garden adds an extra +20 gift bonus.",
-		16,
+		18,
 		"body",
 		accent
 	)
@@ -409,7 +410,8 @@ func build_collection() -> void:
 	var shop_title := _label("GARDEN UPGRADES  •  PERMANENT", 23, "title", accent)
 	stack.add_child(shop_title)
 	var shop := GridContainer.new()
-	shop.columns = 3 if get_viewport_rect().size.x >= 900.0 else 1
+	shop.columns = 2 if get_viewport_rect().size.x >= 720.0 else 1
+	shop.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	shop.add_theme_constant_override("h_separation", 14)
 	shop.add_theme_constant_override("v_separation", 14)
 	stack.add_child(shop)
@@ -594,7 +596,7 @@ func _upgrade_level_browser(game_id: String) -> void:
 				continue
 			var button := child as Button
 			button.custom_minimum_size = Vector2(maxf(132.0, button_width), 126.0)
-			button.add_theme_font_size_override("font_size", 20 if columns >= 3 else 18)
+			button.add_theme_font_size_override("font_size", 21 if columns >= 3 else 19)
 			var first_line := button.text.get_slice("\n", 0).strip_edges()
 			var is_current := "CURRENT" in button.text.to_upper() or (first_line.is_valid_int() and int(first_line) == current_level and not button.disabled)
 			if button.disabled:
@@ -602,6 +604,11 @@ func _upgrade_level_browser(game_id: String) -> void:
 				button.add_theme_color_override("font_color", Color("a8b5c6") if _dark() else Color("6d8597"))
 			elif is_current:
 				Unjam3DTheme.gloss_button(button, accent, true, 22, _dark())
+			elif first_line.is_valid_int() and (int(first_line) % 10 == 0 or "BOSS" in button.text.to_upper() or "MILE" in button.text.to_upper()):
+				Unjam3DTheme.gloss_button(button, Unjam3DTheme.GOLD, true, 22, _dark())
+				button.add_theme_color_override("font_color", Unjam3DTheme.NAVY)
+				button.add_theme_color_override("font_hover_color", Unjam3DTheme.NAVY)
+				button.add_theme_color_override("font_pressed_color", Unjam3DTheme.NAVY)
 			else:
 				Unjam3DTheme.gloss_button(button, dark_accent, false, 22, _dark())
 
