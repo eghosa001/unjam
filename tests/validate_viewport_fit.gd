@@ -28,6 +28,7 @@ func _run() -> void:
 	var water_assisted := _read("res://scripts/game/water_sort_assisted.gd")
 	var water_motion := _read("res://scripts/game/water_sort_reference_motion.gd")
 	var water_fit := _read("res://scripts/game/water_sort_ultra_motion.gd")
+	var water_tube_3d := _read("res://scripts/ui/water_tube_3d_motion.gd")
 	var rescue_motion := _read("res://scripts/game/rescue_rush_polished.gd")
 	var block_scene := _read("res://scenes/BlockPuzzle.tscn")
 	var block_polish := _read("res://scripts/game/block_puzzle_final_polish.gd")
@@ -46,8 +47,8 @@ func _run() -> void:
 		return _fail("Water Sort pour animation must resolve source and receiver at the visible bottle rims")
 	if not water_motion.contains("pending_completion") or not water_motion.contains("_complete_if_visuals_settled"):
 		return _fail("Water Sort result must wait for every active pour visual to settle")
-	if not water_fit.contains("_visual_mouth_local") or not water_fit.contains("max_width_from_screen"):
-		return _fail("Water Sort must keep lip geometry and viewport-derived tube sizing")
+	if water_fit.contains("_visual_mouth_local") or not water_fit.contains("max_width_from_screen") or not water_tube_3d.contains("_project_rim_point") or not water_tube_3d.contains("camera_3d.unproject_position"):
+		return _fail("Water Sort must keep projected 3D lip geometry and viewport-derived tube sizing")
 
 	# Rescue Rush must not show a result while an escaping arrow/token ghost is
 	# still on screen.
