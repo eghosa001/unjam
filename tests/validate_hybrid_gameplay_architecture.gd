@@ -49,7 +49,7 @@ func _initialize() -> void:
 		"CylinderMesh",
 		"TorusMesh",
 		"SubViewport.UPDATE_ONCE",
-		"Vector2i(168, 336)",
+		"Vector2i(192, 384)",
 		"liquid_materials_3d",
 		"_refresh_liquid_3d"
 	], failures)
