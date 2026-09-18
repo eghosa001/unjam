@@ -38,12 +38,10 @@ func _compact_shell() -> void:
 		help_button.size = Vector2(80, 80)
 		var viewport_size := get_viewport().get_visible_rect().size
 		var desired := Vector2(24, maxf(24.0, viewport_size.y - 104.0))
-		var footer: Control = _gameplay_footer()
-		if footer != null and footer.visible and footer.is_visible_in_tree():
-			var proposed := Rect2(desired, Vector2(80, 80))
-			var footer_rect: Rect2 = footer.get_global_rect()
-			if proposed.intersects(footer_rect):
-				desired.y = maxf(24.0, footer_rect.position.y - 92.0)
+		var blocker: Control = _gameplay_help_blocker()
+		if blocker != null and blocker.visible and blocker.is_visible_in_tree():
+			var blocker_rect: Rect2 = blocker.get_global_rect()
+			desired.y = minf(desired.y, maxf(24.0, blocker_rect.position.y - 92.0))
 		help_button.position = desired
 		help_button.add_theme_font_size_override("font_size", 32)
 		help_button.tooltip_text = "How to play"
@@ -102,7 +100,7 @@ func _restyle_tutorial_children(node: Node) -> void:
 			Unjam3DTheme.label_3d(label, Color("eaf6ff") if dark else Unjam3DTheme.NAVY, Color("071426") if dark else Color.WHITE, 2)
 		_restyle_tutorial_children(child)
 
-func _gameplay_footer() -> Control:
+func _gameplay_help_blocker() -> Control:
 	var main := _main()
 	if main == null:
 		return null
@@ -111,7 +109,13 @@ func _gameplay_footer() -> Control:
 		game = main.get_node_or_null("ActiveGame")
 	if game == null:
 		return null
-	return _find_named_control(game, ["CompactGameActions", "CompactProgressStrip"])
+	# Pick the first control that begins the bottom gameplay stack. This keeps
+	# the floating help affordance out of instructions, tray pieces and status text.
+	for name in ["BlockTray", "CompactGameFeedback", "CompactGameActions", "CompactProgressStrip"]:
+		var blocker := _find_named_control(game, [name])
+		if blocker != null and blocker.visible and blocker.is_visible_in_tree():
+			return blocker
+	return null
 
 func _find_named_control(node: Node, names: Array[String]) -> Control:
 	if node is Control and String(node.name) in names:
