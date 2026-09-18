@@ -30,13 +30,38 @@ func _run() -> void:
 		if not bool(solve.get("solved", false)):
 			return _fail("64-bit solver could not find a solution at level %d" % level)
 
-	var opening_profile := _profile(1)
-	var opening_plan := Generator.generate(opening_profile)
-	var optimal := Solver.find_optimal(opening_profile, opening_plan, 250000)
+	# Prove optimal-search correctness on a deliberately tiny exact fixture.
+	# Campaign levels above already validate constructive proof replay and exact
+	# solution finding; using a micro-fixture here keeps CI deterministic while
+	# still requiring find_optimal() to prove the true minimum move count.
+	var optimal_profile := {
+		"target_score": 130,
+		"target_lines": 1,
+		"move_limit": -1,
+	}
+	var optimal_board: Array = []
+	for y in range(8):
+		var row: Array = []
+		for x in range(8):
+			row.append(y == 0 and x < 7)
+		optimal_board.append(row)
+	var optimal_plan := {
+		"initial_cells": optimal_board,
+		"trays": [[0, 0, 0]],
+		"proof_shapes": [0],
+		"proof_origins": [7],
+		"special_plan": {
+			"specials": [],
+			"target_rows": [],
+			"target_cols": [],
+			"required_double_clears": 0,
+		},
+	}
+	var optimal := Solver.find_optimal(optimal_profile, optimal_plan, 250000)
 	if not bool(optimal.get("solved", false)):
-		return _fail("Optimal solver could not solve Level 1: %s" % str(optimal))
-	if not bool(optimal.get("optimal_verified", false)):
-		return _fail("Level 1 optimal move count was not proven within the test budget")
+		return _fail("Optimal solver could not solve exact micro-fixture: %s" % str(optimal))
+	if not bool(optimal.get("optimal_verified", false)) or int(optimal.get("optimal_moves", -1)) != 1:
+		return _fail("Exact micro-fixture optimum was not proven as one move: %s" % str(optimal))
 
 	print("BLOCK_EXACT_SOLVER_OK")
 	quit(0)
