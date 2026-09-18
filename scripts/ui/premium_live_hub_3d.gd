@@ -50,10 +50,10 @@ func _build() -> void:
 
 	var header := HBoxContainer.new()
 	header.name = "GameSelectorHeader"
-	header.custom_minimum_size = Vector2(0, 88 if short else (96 if medium_height else 106))
+	header.custom_minimum_size = Vector2(0, 72 if short else (92 if medium_height else 104))
 	header.add_theme_constant_override("separation", 6 if narrow else (8 if phone_width else 12))
 	root.add_child(header)
-	var side_button_size := Vector2(72, 84) if short else (Vector2(76, 90) if phone_width else Vector2(92, 96))
+	var side_button_size := Vector2(64, 68) if short else (Vector2(76, 88) if phone_width else Vector2(92, 96))
 	var back := _button("←", side_button_size, Unjam3DTheme.WATER_DARK, true)
 	back.name = "GameSelectorBack"
 	back.add_theme_font_size_override("font_size", 27 if short else (31 if medium_height else 34))
@@ -98,7 +98,7 @@ func _build() -> void:
 
 	var wallet := HBoxContainer.new()
 	wallet.name = "GameSelectorWallet"
-	wallet.custom_minimum_size.y = 46.0 if short else 54.0
+	wallet.custom_minimum_size.y = 38.0 if short else 54.0
 	wallet.alignment = BoxContainer.ALIGNMENT_CENTER
 	wallet.add_theme_constant_override("separation", 12 if narrow else 18)
 	root.add_child(wallet)
@@ -139,8 +139,12 @@ func _build() -> void:
 	quote_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	quote_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	quote_label.add_theme_font_size_override("font_size", 18 if narrow else (21 if compact else 23))
-	Unjam3DTheme.label_3d(quote_label, Color("244279"), Color.WHITE, 2)
+	Unjam3DTheme.label_3d(quote_label, Color("f3f8ff") if dark_mode else Color("244279"), Color("06172c") if dark_mode else Color.WHITE, 1)
 	quote.add_child(quote_label)
+	var safe_tail := Control.new()
+	safe_tail.name = "GameSelectorSafeTail"
+	safe_tail.custom_minimum_size = Vector2(0, 12 if short else 18)
+	stack.add_child(safe_tail)
 	_add_bottom_nav(nav_height, nav_bottom, nav_side)
 
 func _add_game_card(parent: VBoxContainer, game_id: String) -> void:
@@ -155,7 +159,7 @@ func _add_game_card(parent: VBoxContainer, game_id: String) -> void:
 	var compact := viewport_size.x <= 1120.0
 	var short := viewport_size.y < 1100.0
 	var medium_height := viewport_size.y < 1500.0
-	var card_height := 382.0 if short else (448.0 if medium_height else 500.0)
+	var card_height := 226.0 if short else (420.0 if medium_height else 486.0)
 	if not compact:
 		card_height = clampf(viewport_size.y * 0.22, 330.0, 500.0)
 	var panel := PanelContainer.new()
@@ -170,12 +174,16 @@ func _add_game_card(parent: VBoxContainer, game_id: String) -> void:
 	margin.add_theme_constant_override("margin_top", 9 if short else 12)
 	margin.add_theme_constant_override("margin_bottom", 9 if short else 12)
 	panel.add_child(margin)
-	var row: BoxContainer = VBoxContainer.new() if compact else HBoxContainer.new()
+	# Very short phones use a side-by-side card so all three choices are visible
+	# without the fixed navigation visually cutting through the third card.
+	var row: BoxContainer = HBoxContainer.new() if short else (VBoxContainer.new() if compact else HBoxContainer.new())
 	row.add_theme_constant_override("separation", 7 if short else (10 if compact else 16))
 	margin.add_child(row)
 
 	var info := VBoxContainer.new()
 	info.custom_minimum_size = Vector2(0 if compact else 400, 0)
+	if short:
+		info.size_flags_stretch_ratio = 2.25
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	info.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	info.add_theme_constant_override("separation", 3 if short else 6)
