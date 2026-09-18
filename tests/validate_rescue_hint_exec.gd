@@ -29,16 +29,27 @@ func _run() -> void:
 	var before: int = _active_count(game.get("pieces") as Array)
 	var before_moves: int = int(game.get("moves"))
 	game.call("show_hint")
+	await process_frame
+	game.call("show_hint")
+	await process_frame
+	var staged_count: int = _active_count(game.get("pieces") as Array)
+	var staged_moves: int = int(game.get("moves"))
+	if staged_count != before or staged_moves != before_moves:
+		push_error("Rescue Hint 1/2 must guide without auto-playing")
+		game.queue_free()
+		quit(1)
+		return
+	game.call("show_hint")
 	for _i in range(40):
 		await process_frame
 	var after: int = _active_count(game.get("pieces") as Array)
 	var after_moves: int = int(game.get("moves"))
 	if after >= before or after_moves != before_moves + 1:
-		push_error("Rescue hint did not execute the solver-selected move: active %d->%d, moves %d->%d" % [before, after, before_moves, after_moves])
+		push_error("Rescue Hint 3 did not execute the solver-selected move: active %d->%d, moves %d->%d" % [before, after, before_moves, after_moves])
 		game.queue_free()
 		quit(1)
 		return
-	print("RESCUE_HINT_EXEC_OK active=%d->%d moves=%d->%d" % [before, after, before_moves, after_moves])
+	print("RESCUE_HINT_STAGES_OK active=%d->%d moves=%d->%d" % [before, after, before_moves, after_moves])
 	game.queue_free()
 	await process_frame
 	quit(0)
