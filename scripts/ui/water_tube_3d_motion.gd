@@ -9,6 +9,7 @@ var viewport_3d: SubViewport
 var stage_3d: Node3D
 var camera_3d: Camera3D
 var liquid_root_3d: Node3D
+var liquid_meniscus_3d: MeshInstance3D
 var liquid_segments_3d: Array[MeshInstance3D] = []
 var liquid_materials_3d: Array[StandardMaterial3D] = []
 
@@ -76,7 +77,7 @@ func _build_3d_view() -> void:
 	viewport_3d.name = "TubeViewport3D"
 	# Slightly above the on-screen tube resolution, but far below the old
 	# 220x420 buffer. Idle tubes still render only once.
-	viewport_3d.size = Vector2i(168, 336)
+	viewport_3d.size = Vector2i(192, 384)
 	viewport_3d.transparent_bg = true
 	viewport_3d.render_target_update_mode = SubViewport.UPDATE_ONCE
 	viewport_container.add_child(viewport_3d)
@@ -123,6 +124,7 @@ func _build_3d_view() -> void:
 	_build_glass_3d()
 	_build_liquid_materials_3d()
 	_build_liquid_segments_3d()
+	_build_liquid_meniscus_3d()
 
 func _build_glass_3d() -> void:
 	var glass_mesh := CylinderMesh.new()
@@ -169,6 +171,28 @@ func _build_glass_3d() -> void:
 	highlight.material_override = _material_3d(Color(1, 1, 1, 0.72), 0.0, 0.035)
 	stage_3d.add_child(highlight)
 
+	var secondary_highlight_mesh := BoxMesh.new()
+	secondary_highlight_mesh.size = Vector3(0.035, 1.62, 0.035)
+	var secondary_highlight := MeshInstance3D.new()
+	secondary_highlight.name = "GlassSecondaryHighlight"
+	secondary_highlight.mesh = secondary_highlight_mesh
+	secondary_highlight.position = Vector3(0.31, 0.34, 0.50)
+	secondary_highlight.material_override = _material_3d(Color(1, 1, 1, 0.38), 0.0, 0.03)
+	stage_3d.add_child(secondary_highlight)
+
+	var shadow_mesh := CylinderMesh.new()
+	shadow_mesh.top_radius = 0.72
+	shadow_mesh.bottom_radius = 0.72
+	shadow_mesh.height = 0.025
+	shadow_mesh.radial_segments = 24
+	var contact_shadow := MeshInstance3D.new()
+	contact_shadow.name = "TubeContactShadow"
+	contact_shadow.mesh = shadow_mesh
+	contact_shadow.position = Vector3(0.10, -1.77, -0.08)
+	contact_shadow.scale = Vector3(1.0, 1.0, 0.52)
+	contact_shadow.material_override = _material_3d(Color(0.02, 0.15, 0.28, 0.20), 0.0, 0.18)
+	stage_3d.add_child(contact_shadow)
+
 func _build_liquid_materials_3d() -> void:
 	# Cache palette materials once. Pour progress changes mesh height only; it no
 	# longer allocates new StandardMaterial3D resources every animation frame.
@@ -196,11 +220,27 @@ func _build_liquid_segments_3d() -> void:
 		liquid_root_3d.add_child(segment)
 		liquid_segments_3d.append(segment)
 
+func _build_liquid_meniscus_3d() -> void:
+	var mesh := SphereMesh.new()
+	mesh.radius = 0.49
+	mesh.height = 0.16
+	mesh.radial_segments = 24
+	mesh.rings = 8
+	liquid_meniscus_3d = MeshInstance3D.new()
+	liquid_meniscus_3d.name = "LiquidMeniscus3D"
+	liquid_meniscus_3d.mesh = mesh
+	liquid_meniscus_3d.scale = Vector3(1.0, 0.34, 1.0)
+	liquid_meniscus_3d.visible = false
+	liquid_root_3d.add_child(liquid_meniscus_3d)
+
 func _refresh_liquid_3d() -> void:
 	if viewport_3d == null or liquid_segments_3d.size() != CAPACITY:
 		return
 	var slot_height := 0.63
 	var liquid_bottom := -1.43
+	var top_slot := -1
+	var top_height := 0.0
+	var top_color := 0
 	for slot in range(CAPACITY):
 		var segment := liquid_segments_3d[slot]
 		var fraction := _slot_fill(slot)
@@ -217,6 +257,16 @@ func _refresh_liquid_3d() -> void:
 		var color_index := clampi(_slot_color(slot), 0, PALETTE.size() - 1)
 		if color_index < liquid_materials_3d.size():
 			segment.material_override = liquid_materials_3d[color_index]
+		top_slot = slot
+		top_height = height
+		top_color = color_index
+	if liquid_meniscus_3d != null:
+		liquid_meniscus_3d.visible = top_slot >= 0
+		if top_slot >= 0:
+			var top_bottom := liquid_bottom + float(top_slot) * slot_height
+			liquid_meniscus_3d.position = Vector3(0, top_bottom + top_height - 0.01, 0)
+			if top_color < liquid_materials_3d.size():
+				liquid_meniscus_3d.material_override = liquid_materials_3d[top_color]
 	_request_3d_frame()
 
 func _material_3d(color: Color, metallic_value: float, roughness_value: float) -> StandardMaterial3D:
