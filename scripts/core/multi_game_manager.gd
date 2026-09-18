@@ -102,8 +102,14 @@ func last_level_in_game_world(id:String,w:int)->int:
 func highest_unlocked_game_world(id:String)->int:return world_for_game_level(id,highest_level(id))
 func difficulty_for_game(id:String,n:int)->String:return String(WaterSortProgression.profile(n).get("difficulty_label","normal-hard")) if id=="water_sort" else (String(BlockPuzzleProgression.profile(n).get("difficulty_class","normal")) if id=="block_puzzle" else difficulty_for_level(n))
 func world_name(id:String,w:int)->String:
- var themes={"rescue_rush":["Garden Escape","Locks & Keys","Chain Reaction","Blast Lab","Linked Zone","Chaos Rescue","Portal Works","Crystal Circuit","Neon Factory","Rescue Nexus"],"water_sort":["Color Springs","Glass Garden","Prism Bay","Liquid Lab","Neon Pour","Spectrum Works","Crystal Flow","Chromatic Vault","Aurora Mix","Master Distillery"],"block_puzzle":["Starter Grid","Brick Yard","Shape Works","Line Factory","Pattern City","Block Forge","Grid Nexus","Combo Circuit","Master Matrix","Infinite Board"]}
- var set:Array=themes[id];var base:=String(set[(w-1)%set.size()]);var chapter:=int((w-1)/set.size())+1;return "%s %d"%[base,chapter] if chapter>1 else base
+ var themes={
+  "rescue_rush":["Garden Escape","Locks & Keys","Chain Reaction","Blast Lab","Linked Zone","Chaos Rescue","Portal Works","Crystal Circuit","Neon Factory","Rescue Nexus"],
+  "water_sort":["Color Springs","Glass Garden","Prism Bay","Liquid Lab","Neon Pour","Spectrum Works","Crystal Flow","Chromatic Vault","Aurora Mix","Master Distillery"],
+  "block_puzzle":["Starter Grid","Brick Yard","Shape Works","Line Factory","Pattern City","Block Forge","Grid Nexus","Combo Circuit","Crate Quarter","Ice Foundry","Lockworks","Steel District","Constraint Core","Vector Vault","Pressure Matrix","Expert Grid","Grandmaster Forge","Master Nexus","Final Matrix","Infinite Board"]
+ }
+ var set:Array=themes[id]
+ if id=="block_puzzle":return String(set[clampi(w,1,set.size())-1])
+ var base:=String(set[(w-1)%set.size()]);var chapter:=int((w-1)/set.size())+1;return "%s %d"%[base,chapter] if chapter>1 else base
 func difficulty_for_level(n:int)->String:
  if n%100==0:return "boss"
  if n%25==0:return "milestone"
