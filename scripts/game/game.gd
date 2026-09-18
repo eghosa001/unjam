@@ -529,6 +529,16 @@ func _objective_satisfied() -> bool:
 		_:
 			return true
 
+func objective_instruction() -> String:
+	match objective_type:
+		"full_escape": return "Clear every movable arrow, then free the rescue"
+		"key_rescue": return "Release every required key, then open the rescue lane"
+		"gate_run": return "Open every gate and free the rescue"
+		"bomb_route": return "Resolve the bomb route and free the rescue"
+		"chain_rescue": return "Resolve the linked chain and free the rescue"
+		"perfect_rescue": return "Free the rescue within %d actions" % action_budget
+		_: return "Open a clear lane and free the rescue"
+
 func _active_type_count(type_name: String) -> int:
 	var count := 0
 	for piece in pieces:
