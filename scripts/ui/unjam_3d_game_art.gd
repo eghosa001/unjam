@@ -72,7 +72,7 @@ func _build_stage() -> void:
 	environment.background_color = Unjam3DTheme.game_dark(game_id)
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	environment.ambient_light_color = accent.lightened(0.70)
-	environment.ambient_light_energy = 1.10
+	environment.ambient_light_energy = 1.02
 	world_environment.environment = environment
 	stage.add_child(world_environment)
 
@@ -85,8 +85,14 @@ func _build_stage() -> void:
 	var rim := DirectionalLight3D.new()
 	rim.rotation_degrees = Vector3(-22, 146, 12)
 	rim.light_color = accent.lightened(0.45)
-	rim.light_energy = 0.85
+	rim.light_energy = 0.92
 	stage.add_child(rim)
+	var fill := OmniLight3D.new()
+	fill.position = Vector3(-3.2, 3.4, 4.1)
+	fill.light_color = Color("9beaff")
+	fill.light_energy = 0.62
+	fill.omni_range = 12.0
+	stage.add_child(fill)
 
 	var camera := Camera3D.new()
 	camera.position = Vector3(4.9, 5.0, 7.3)
@@ -196,7 +202,10 @@ func _material(color: Color, metallic_value: float = 0.0, roughness_value: float
 	var material := StandardMaterial3D.new()
 	material.albedo_color = color
 	material.metallic = metallic_value
-	material.roughness = roughness_value
+	material.roughness = clampf(roughness_value, 0.12, 0.42)
+	material.clearcoat_enabled = true
+	material.clearcoat = 0.62 if color.a >= 0.90 else 0.38
+	material.clearcoat_roughness = 0.13 if color.a >= 0.90 else 0.08
 	if color.a < 0.995:
 		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	return material
