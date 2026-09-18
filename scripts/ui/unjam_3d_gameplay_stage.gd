@@ -79,8 +79,15 @@ func _build_stage() -> void:
 	var rim := DirectionalLight3D.new()
 	rim.rotation_degrees = Vector3(-18, 142, 12)
 	rim.light_color = accent.lightened(0.55)
-	rim.light_energy = 0.52 if dark_mode else 0.72
+	rim.light_energy = 0.58 if dark_mode else 0.82
 	stage.add_child(rim)
+
+	var fill := OmniLight3D.new()
+	fill.position = Vector3(-4.2, 3.8, 5.6)
+	fill.light_color = Color("a7ecff") if game_id != "block_puzzle" else Color("f2bdff")
+	fill.light_energy = 0.44 if dark_mode else 0.58
+	fill.omni_range = 14.0
+	stage.add_child(fill)
 
 	var camera := Camera3D.new()
 	camera.position = Vector3(0.0, 5.6, 11.8)
@@ -184,7 +191,10 @@ func _material(color: Color, metallic_value: float = 0.0, roughness_value: float
 	var material := StandardMaterial3D.new()
 	material.albedo_color = color
 	material.metallic = metallic_value
-	material.roughness = roughness_value
+	material.roughness = clampf(roughness_value, 0.12, 0.58)
+	material.clearcoat_enabled = true
+	material.clearcoat = 0.52 if color.a >= 0.90 else 0.30
+	material.clearcoat_roughness = 0.16 if color.a >= 0.90 else 0.10
 	if color.a < 0.995:
 		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	return material
