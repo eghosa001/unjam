@@ -312,7 +312,7 @@ func _assert_help_clear_of_bottom_ui(main: Control, label: String) -> bool:
 	for name in ["BlockTray", "CompactGameFeedback", "CompactGameActions", "CompactProgressStrip"]:
 		var blocker := game.find_child(name, true, false) as Control
 		if blocker != null and blocker.visible and blocker.is_visible_in_tree() and help_rect.intersects(blocker.get_global_rect()):
-			return _fail("%s help control overlaps %s" % [label, name])
+			return _fail("%s help %s overlaps %s %s" % [label, str(help_rect), name, str(blocker.get_global_rect())])
 	return true
 
 func _hide_tutorial(main: Control) -> void:
