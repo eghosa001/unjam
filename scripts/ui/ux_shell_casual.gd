@@ -1,5 +1,7 @@
 extends "res://scripts/ui/ux_shell_premium.gd"
 
+var _cached_help_blocker: Control
+
 func _main() -> Node:
 	var parent := get_parent()
 	if parent != null:
@@ -15,7 +17,12 @@ func _build_shell() -> void:
 
 func _on_casual_layout_node_added(node: Node) -> void:
 	if node is Control and String(node.name) in ["BlockTray", "CompactGameFeedback", "CompactGameActions", "CompactProgressStrip"]:
-		call_deferred("_compact_shell")
+		_cached_help_blocker = node as Control
+		call_deferred("_layout_help_button")
+
+func _process(_delta: float) -> void:
+	if help_button != null and help_button.visible:
+		_layout_help_button()
 
 func _after_shell_sync() -> void:
 	_compact_shell()
@@ -38,25 +45,28 @@ func apply_theme_mode(dark: bool) -> void:
 
 func _compact_shell() -> void:
 	_layout_tutorial_panel()
-	if help_button != null:
-		help_button.text = "?"
-		# The base shell anchors this control to the bottom-left. Switch to an
-		# absolute top-left anchor before using viewport coordinates so collision
-		# avoidance math matches the actual rendered rectangle.
-		help_button.set_anchors_preset(Control.PRESET_TOP_LEFT)
-		help_button.custom_minimum_size = Vector2(80, 80)
-		help_button.size = Vector2(80, 80)
-		var viewport_size := get_viewport().get_visible_rect().size
-		var desired := Vector2(24, maxf(24.0, viewport_size.y - 104.0))
-		var blocker: Control = _gameplay_help_blocker()
-		if blocker != null and blocker.visible and blocker.is_visible_in_tree():
-			var blocker_rect: Rect2 = blocker.get_global_rect()
-			desired.y = minf(desired.y, maxf(24.0, blocker_rect.position.y - 92.0))
-		help_button.global_position = desired
-		help_button.add_theme_font_size_override("font_size", 32)
-		help_button.tooltip_text = "How to play"
+	_layout_help_button()
 	if theme_button != null:
 		theme_button.visible = false
+
+func _layout_help_button() -> void:
+	if help_button == null:
+		return
+	help_button.text = "?"
+	# The base shell anchors this control to the bottom-left. Switch to an
+	# absolute top-left anchor before using viewport/global coordinates.
+	help_button.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	help_button.custom_minimum_size = Vector2(80, 80)
+	help_button.size = Vector2(80, 88)
+	var viewport_size := get_viewport().get_visible_rect().size
+	var desired := Vector2(24, maxf(24.0, viewport_size.y - 114.0))
+	var blocker: Control = _gameplay_help_blocker()
+	if blocker != null:
+		var blocker_rect: Rect2 = blocker.get_global_rect()
+		desired.y = minf(desired.y, maxf(24.0, blocker_rect.position.y - help_button.size.y - 16.0))
+	help_button.global_position = desired
+	help_button.add_theme_font_size_override("font_size", 32)
+	help_button.tooltip_text = "How to play"
 
 func _layout_tutorial_panel() -> void:
 	if tutorial_panel == null or not is_instance_valid(tutorial_panel):
@@ -111,16 +121,17 @@ func _restyle_tutorial_children(node: Node) -> void:
 		_restyle_tutorial_children(child)
 
 func _gameplay_help_blocker() -> Control:
+	if _cached_help_blocker != null and is_instance_valid(_cached_help_blocker) 		and _cached_help_blocker.visible and _cached_help_blocker.is_visible_in_tree():
+		return _cached_help_blocker
 	var main := _main()
 	if main == null:
 		return null
-	# Search the live Main tree directly. During scene entry the ActiveGame
-	# property is assigned after child _ready() has built its controls, while the
-	# named controls are already present and safe to locate.
 	for name in ["BlockTray", "CompactGameFeedback", "CompactGameActions", "CompactProgressStrip"]:
 		var blocker := main.find_child(name, true, false) as Control
 		if blocker != null and blocker.visible and blocker.is_visible_in_tree():
+			_cached_help_blocker = blocker
 			return blocker
+	_cached_help_blocker = null
 	return null
 
 func _find_named_control(node: Node, names: Array[String]) -> Control:
