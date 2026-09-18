@@ -82,7 +82,7 @@ func build_ui() -> void:
 	Unjam3DTheme.label_3d(objective_label, Unjam3DTheme.NAVY, Color.WHITE, 2)
 	objective.add_child(objective_label)
 
-	var center := MarginContainer.new()
+	var center := CenterContainer.new()
 	center.name = "GameplayStageHolder"
 	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -90,13 +90,13 @@ func build_ui() -> void:
 	var stage := PanelContainer.new()
 	stage.name = "GameplayStage"
 	stage.custom_minimum_size = Vector2(0, 520)
-	stage.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	stage.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	stage.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	stage.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color(0.80, 0.95, 1.0, 0.82), 38, Color("89e4ff"), 3, 16))
+	stage.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color(0.68, 0.91, 0.98, 0.90), 38, Color("b9f1ff"), 4, 18))
 	center.add_child(stage)
 	var stage_margin := MarginContainer.new()
 	for side in ["left", "right", "top", "bottom"]:
-		stage_margin.add_theme_constant_override("margin_%s" % side, 18)
+		stage_margin.add_theme_constant_override("margin_%s" % side, 14)
 	stage.add_child(stage_margin)
 	var stage_center := CenterContainer.new()
 	stage_center.size_flags_vertical = Control.SIZE_EXPAND_FILL
