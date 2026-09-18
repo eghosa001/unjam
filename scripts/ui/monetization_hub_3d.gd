@@ -65,7 +65,7 @@ func _build_ui() -> void:
 	balance_label.custom_minimum_size = Vector2(170 if narrow else 220, 74 if narrow else 78)
 	balance_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	balance_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	balance_label.add_theme_font_size_override("font_size", 16 if narrow else 19)
+	balance_label.add_theme_font_size_override("font_size", 22 if narrow else 24)
 	Unjam3DTheme.label_3d(balance_label, Unjam3DTheme.GOLD, Unjam3DTheme.NAVY, 3)
 	header.add_child(balance_label)
 
@@ -111,7 +111,7 @@ func _build_ui() -> void:
 	utility_row.add_child(privacy)
 	status_label = Label.new()
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	status_label.add_theme_font_size_override("font_size", 16 if narrow else 17)
+	status_label.add_theme_font_size_override("font_size", 21 if narrow else 22)
 	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	Unjam3DTheme.label_3d(status_label, Color.WHITE, Unjam3DTheme.NAVY, 3)
 	root.add_child(status_label)
@@ -128,7 +128,7 @@ func _add_section_title(parent: VBoxContainer, title_text: String, subtitle_text
 	box.add_child(title)
 	var subtitle := Label.new()
 	subtitle.text = subtitle_text
-	subtitle.add_theme_font_size_override("font_size", 15)
+	subtitle.add_theme_font_size_override("font_size", 20)
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	Unjam3DTheme.label_3d(subtitle, Color("d9efff"), Unjam3DTheme.NAVY, 2)
 	box.add_child(subtitle)
@@ -146,7 +146,7 @@ func _add_reward_panel(parent: VBoxContainer) -> void:
 	reward_text.text = "WATCH & EARN\nGet 50 coins for an optional rewarded ad"
 	reward_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	reward_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	reward_text.add_theme_font_size_override("font_size", 19)
+	reward_text.add_theme_font_size_override("font_size", 22)
 	reward_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	Unjam3DTheme.label_3d(reward_text, Color.WHITE, Color("08723a"), 3)
 	reward_row.add_child(reward_text)
@@ -185,7 +185,7 @@ func _add_product(parent: VBoxContainer, product_id: String) -> void:
 	text.text = "%s\n%s" % [String(info.get("title", product_id)), String(info.get("subtitle", ""))]
 	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	text.add_theme_font_size_override("font_size", 19)
+	text.add_theme_font_size_override("font_size", 22)
 	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	Unjam3DTheme.label_3d(text, Unjam3DTheme.NAVY, Color.WHITE, 2)
 	row.add_child(text)
