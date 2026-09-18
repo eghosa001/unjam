@@ -67,6 +67,14 @@ func difficulty() -> String:
 func level_config() -> Dictionary:
 	if daily_mode:
 		return super.level_config()
+	# Preserve the deliberately fast onboarding contract already proven by the
+	# production tests: the first ten levels teach, then campaign math takes over.
+	if level_number <= 10:
+		var scores := [100, 130, 165, 190, 220, 255, 285, 315, 350, 390]
+		var lines := [2, 2, 3, 3, 3, 4, 4, 4, 5, 5]
+		var pars := [18, 18, 20, 20, 21, 22, 22, 23, 24, 24]
+		var i := clampi(level_number - 1, 0, 9)
+		return {"target_score": scores[i], "target_lines": lines[i], "par": pars[i]}
 	var p := _profile()
 	return {
 		"target_score": int(p.get("target_score", 100)),
@@ -97,6 +105,8 @@ func load_level() -> void:
 		render()
 		_save_checkpoint()
 	else:
+		if (campaign_move_limit > 0 and placements >= campaign_move_limit and not reached_goal()) or not any_move_available():
+			campaign_failed = true
 		render()
 
 func refill_pieces() -> void:
@@ -271,6 +281,7 @@ func deterministic_tray_signature(level: int, batch: int) -> String:
 	var old_batch := piece_batch
 	var old_pieces := pieces.duplicate(true)
 	var old_colors := piece_colors.duplicate(true)
+	var old_selected := selected_piece
 	level_number = clampi(level, 1, Progression.MAX_LEVEL)
 	campaign_profile = Progression.profile(level_number)
 	piece_batch = maxi(0, batch - 1)
@@ -288,6 +299,7 @@ func deterministic_tray_signature(level: int, batch: int) -> String:
 	piece_batch = old_batch
 	pieces = old_pieces
 	piece_colors = old_colors
+	selected_piece = old_selected
 	return signature
 
 func _profile() -> Dictionary:
