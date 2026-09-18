@@ -16,6 +16,12 @@ func _initialize() -> void:
 		var metadata: Dictionary = plan.get("metadata", {})
 		if int(metadata.get("level_id", level)) != level:
 			return _fail("Packed Block Puzzle level %d metadata is mismatched" % level)
+		if int(metadata.get("solution_moves", 0)) <= 0:
+			return _fail("Packed Block Puzzle level %d has no solver solution length" % level)
+		if String(metadata.get("level_hash", "")).is_empty():
+			return _fail("Packed Block Puzzle level %d has no canonical hash" % level)
+		if int(metadata.get("three_star_limit", 0)) < int(metadata.get("solution_moves", 0)):
+			return _fail("Packed Block Puzzle level %d star limit is below its verified solution" % level)
 	print("BLOCK_PACK_RUNTIME_OK")
 	quit(0)
 
