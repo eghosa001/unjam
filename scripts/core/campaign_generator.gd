@@ -116,6 +116,9 @@ static func _build_candidate(profile: Dictionary, seed_value: int) -> Dictionary
 	var known_solution: Array[int] = movable_order.duplicate()
 	known_solution.reverse()
 	var level := _base_level(profile, size, world, target_name, rescue_pos, pieces, known_solution)
+	level["mechanics"] = mechanics.duplicate()
+	level["human_review_required"] = String(profile.get("level_role", "")) == "world_boss"
+	level["finale_review_required"] = n == Progression.TOTAL_LEVELS
 	level["generation_seed"] = seed_value
 	level["actual_piece_count"] = pieces.size()
 	level["initial_frontier"] = _initial_frontier(level)
