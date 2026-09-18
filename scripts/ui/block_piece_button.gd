@@ -18,6 +18,11 @@ var target_scale := Vector2.ONE
 var touch_preview: Control
 
 func configure(value: Array, is_selected: bool, color := Color("4f7cff"), index: int = -1) -> void:
+	# A tray slot can be reconfigured during refill/shuffle/placement. Any touch
+	# ghost belongs to the old visual and must be removed before the new brick is
+	# drawn, otherwise both remain visible for a frame and look duplicated.
+	if touch_drag_started or (touch_preview != null and is_instance_valid(touch_preview)):
+		dispose_visuals()
 	shape = _sanitize_shape(value)
 	selected = is_selected
 	used = shape.is_empty()
