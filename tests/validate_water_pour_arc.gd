@@ -53,6 +53,18 @@ func _run() -> void:
 	ghost.configure([0, 1, 2, 3], false, -1)
 	game.add_child(ghost)
 	await process_frame
+	var projected_receive: Vector2 = ghost.call("visual_receive_rim_local")
+	var projected_left: Vector2 = ghost.call("visual_pour_rim_local", -1.0)
+	var projected_right: Vector2 = ghost.call("visual_pour_rim_local", 1.0)
+	if not (projected_left.x < projected_receive.x and projected_receive.x < projected_right.x):
+		ghost.queue_free()
+		game.queue_free()
+		return _fail("3D Water Sort rim projection does not expose distinct left/center/right mouth anchors")
+	for projected in [projected_left, projected_receive, projected_right]:
+		if projected.x < 0.0 or projected.x > ghost.size.x or projected.y < 0.0 or projected.y > ghost.size.y:
+			ghost.queue_free()
+			game.queue_free()
+			return _fail("Projected 3D Water Sort rim anchor falls outside the rendered tube control")
 	var direction := 1.0
 	var final_rotation := deg_to_rad(70.0)
 	var local_rim: Vector2 = game.call("_source_rim_local", ghost, direction)
