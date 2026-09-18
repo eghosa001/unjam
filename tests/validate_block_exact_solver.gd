@@ -34,7 +34,7 @@ func _run() -> void:
 	var opening_plan := Generator.generate(opening_profile)
 	var optimal := Solver.find_optimal(opening_profile, opening_plan, 250000)
 	if not bool(optimal.get("solved", false)):
-		return _fail("Optimal solver could not solve Level 1")
+		return _fail("Optimal solver could not solve Level 1: %s" % str(optimal))
 	if not bool(optimal.get("optimal_verified", false)):
 		return _fail("Level 1 optimal move count was not proven within the test budget")
 
