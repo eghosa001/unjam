@@ -46,6 +46,9 @@ func _run() -> void:
 		if tubes.is_empty() or solution.is_empty():
 			game.queue_free()
 			return _fail("Water Sort level %d has no constructive solution proof" % level)
+		if expected_empties == 1 and level >= 9000 and solution.size() < 8:
+			game.queue_free()
+			return _fail("Water Sort late one-empty level %d is too shallow: %d proof moves" % [level, solution.size()])
 		if solution.size() > int(cfg.get("par", 0)):
 			game.queue_free()
 			return _fail("Water Sort level %d known solution %d exceeds par %d" % [level, solution.size(), int(cfg.get("par", 0))])
