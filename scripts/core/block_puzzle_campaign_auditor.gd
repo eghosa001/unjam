@@ -55,6 +55,75 @@ static func audit_plan(profile: Dictionary, plan: Dictionary) -> Dictionary:
 		"proof_moves": proof_moves,
 	}
 
+static func quality_gate(profile: Dictionary, plan: Dictionary) -> Dictionary:
+	if plan.is_empty():
+		return {"accepted": false, "reasons": ["empty_plan"]}
+	var metadata: Dictionary = plan.get("metadata", {})
+	var events: Array = plan.get("proof_events", [])
+	var shapes: Array = plan.get("proof_shapes", [])
+	var level := int(profile.get("level_id", 1))
+	var milestone := String(profile.get("milestone", "normal"))
+	var boss_like := milestone in ["boss", "world_finale", "mastery", "finale"]
+	var proof_moves := maxi(0, int(metadata.get("proof_moves", shapes.size())))
+	var horizon := maxi(1, int(profile.get("planning_horizon", 1)))
+
+	var shape_counts := {}
+	for raw in shapes:
+		var index := int(raw)
+		shape_counts[index] = int(shape_counts.get(index, 0)) + 1
+	var unique_shapes := shape_counts.size()
+	var dominant_count := 0
+	for value in shape_counts.values():
+		dominant_count = maxi(dominant_count, int(value))
+	var dominant_ratio := float(dominant_count) / float(maxi(1, proof_moves))
+
+	var forced_moves := 0
+	var low_branch_moves := 0
+	var branch_total := 0.0
+	for raw in events:
+		var event: Dictionary = raw
+		var legal := maxi(1, int(event.get("legal_count", 1)))
+		branch_total += float(legal)
+		if legal <= 1:
+			forced_moves += 1
+		if legal <= 3:
+			low_branch_moves += 1
+	var event_count := maxi(1, events.size())
+	var forced_ratio := float(forced_moves) / float(event_count)
+	var low_branch_ratio := float(low_branch_moves) / float(event_count)
+	var average_choices := branch_total / float(event_count)
+
+	var reasons: Array[String] = []
+	# Tutorial levels intentionally have short, legible proofs. The structural
+	# filters become progressively stricter once the player has learned the board.
+	if level > 100 and proof_moves < maxi(5, horizon):
+		reasons.append("too_shallow")
+	if level > 500 and proof_moves >= 6 and unique_shapes < 2:
+		reasons.append("too_repetitive")
+	if level > 1500 and proof_moves >= 9 and unique_shapes < 3:
+		reasons.append("piece_variety_low")
+	if level > 250 and dominant_ratio > (0.82 if boss_like else 0.72):
+		reasons.append("single_piece_dominates")
+	if not boss_like and level > 250 and forced_ratio > 0.70:
+		reasons.append("overly_forced")
+	if not boss_like and level > 1000 and low_branch_ratio > 0.88:
+		reasons.append("too_many_low_branch_moves")
+	if not boss_like and level > 1000 and average_choices < 2.0:
+		reasons.append("branching_too_low")
+
+	return {
+		"accepted": reasons.is_empty(),
+		"reasons": reasons,
+		"proof_moves": proof_moves,
+		"planning_horizon": horizon,
+		"unique_shapes": unique_shapes,
+		"dominant_shape_ratio": dominant_ratio,
+		"forced_ratio": forced_ratio,
+		"low_branch_ratio": low_branch_ratio,
+		"average_legal_choices": average_choices,
+		"boss_exception": boss_like,
+	}
+
 static func canonical_signature(profile: Dictionary, plan: Dictionary) -> String:
 	var board := PackedStringArray()
 	for row_value in (plan.get("initial_cells", []) as Array):
