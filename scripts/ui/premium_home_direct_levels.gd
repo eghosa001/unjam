@@ -171,7 +171,7 @@ func _make_brand_logo(parent: VBoxContainer) -> void:
 	var strap := Label.new()
 	strap.text = "PLAY  •  RELAX  •  MASTER THREE PUZZLE WORLDS"
 	strap.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	strap.add_theme_font_size_override("font_size", 17 if compact else 20)
+	strap.add_theme_font_size_override("font_size", 22 if compact else 24)
 	Unjam3DTheme.label_3d(strap, Color.WHITE, Unjam3DTheme.NAVY, 3)
 	box.add_child(strap)
 
@@ -214,7 +214,7 @@ func _make_hero(parent: VBoxContainer) -> void:
 	overlay_margin.add_child(overlay)
 	var eyebrow := Label.new()
 	eyebrow.text = "CURRENT JOURNEY"
-	eyebrow.add_theme_font_size_override("font_size", 16)
+	eyebrow.add_theme_font_size_override("font_size", 22)
 	Unjam3DTheme.label_3d(eyebrow, Unjam3DTheme.GOLD, Unjam3DTheme.NAVY, 3)
 	overlay.add_child(eyebrow)
 
@@ -222,7 +222,7 @@ func _make_hero(parent: VBoxContainer) -> void:
 	var level := _home_current_level(selected_game)
 	var world := MultiGameManager.world_for_game_level(selected_game, level)
 	current.text = "%s\nLEVEL %d  •  WORLD %d" % [MultiGameManager.display_name(selected_game).to_upper(), level, world]
-	current.add_theme_font_size_override("font_size", 28 if viewport_size.x < 700.0 else 34)
+	current.add_theme_font_size_override("font_size", 32 if viewport_size.x < 700.0 else 38)
 	Unjam3DTheme.label_3d(current, Color.WHITE, Unjam3DTheme.NAVY, 5)
 	overlay.add_child(current)
 
@@ -232,7 +232,7 @@ func _make_hero(parent: VBoxContainer) -> void:
 
 	var caption := Label.new()
 	caption.text = "ONE TAP BACK INTO THE ACTION"
-	caption.add_theme_font_size_override("font_size", 16 if viewport_size.x < 700.0 else 19)
+	caption.add_theme_font_size_override("font_size", 22 if viewport_size.x < 700.0 else 24)
 	Unjam3DTheme.label_3d(caption, Color("e8f8ff"), Unjam3DTheme.NAVY, 3)
 	overlay.add_child(caption)
 
@@ -280,7 +280,7 @@ func _make_motto(parent: VBoxContainer) -> void:
 	label.text = "SMALL PUZZLES  •  BIG MOMENTS  •  BRIGHTER DAYS"
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 18)
+	label.add_theme_font_size_override("font_size", 22)
 	Unjam3DTheme.label_3d(label, Color("f2f8ff") if _theme_mode() == "dark" else Unjam3DTheme.NAVY, Color("071a35") if _theme_mode() == "dark" else Color.WHITE, 2)
 	plaque.add_child(label)
 
