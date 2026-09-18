@@ -76,6 +76,7 @@ func _check_selector(viewport_size: Vector2i, failures: Array[String]) -> void:
 	if main.has_signal("surface_changed"):
 		main.emit_signal("surface_changed", "live")
 	await _frames(4)
+	var logical_size := root.get_visible_rect().size
 	var live := main.get_node_or_null("PremiumLive") as Control
 	var header := main.find_child("GameSelectorHeader", true, false) as Control
 	var scroll := main.find_child("GameSelectorScroll", true, false) as ScrollContainer
@@ -84,7 +85,7 @@ func _check_selector(viewport_size: Vector2i, failures: Array[String]) -> void:
 	if live == null or header == null or scroll == null or nav == null or title == null:
 		failures.append("Game selector responsive structure is incomplete at %s" % str(viewport_size))
 	else:
-		var screen := Rect2(Vector2.ZERO, root.get_visible_rect().size)
+		var screen := Rect2(Vector2.ZERO, logical_size)
 		for control in [live, header, scroll, nav]:
 			var rect: Rect2 = (control as Control).get_global_rect()
 			if not _inside(rect, screen):
@@ -106,7 +107,7 @@ func _check_selector(viewport_size: Vector2i, failures: Array[String]) -> void:
 				continue
 			if not card.get_global_rect().encloses(art.get_global_rect()):
 				failures.append("Game selector %s artwork escapes its card at %s" % [game_id, str(viewport_size)])
-		print("SELECTOR_COMPOSITION %s header=%s scroll=%s nav=%s" % [str(viewport_size), str(header_rect), str(scroll_rect), str(nav_rect)])
+		print("SELECTOR_COMPOSITION physical=%s logical=%s header=%s scroll=%s nav=%s" % [str(viewport_size), str(logical_size), str(header_rect), str(scroll_rect), str(nav_rect)])
 	main.queue_free()
 	await process_frame
 
