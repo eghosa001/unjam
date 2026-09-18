@@ -110,11 +110,17 @@ func _run() -> void:
 				human_review.append({
 					"level": level,
 					"world": int(profile.get("world", world)),
+					"chapter": int(profile.get("chapter_in_world", 1)),
 					"milestone": String(profile.get("milestone", "")),
 					"difficulty": int(profile.get("difficulty_score", 0)),
+					"planning_horizon": int(profile.get("planning_horizon", 1)),
 					"proof_moves": int(metadata.get("proof_moves", 0)),
+					"optimal_moves": int(metadata.get("optimal_moves", -1)),
 					"bot_success_rate": float(audit.get("bot_success_rate", -1.0)),
 					"calibrated_difficulty": int(audit.get("calibrated_difficulty", -1)),
+					"opening_board": encoded.get("b", ""),
+					"trays": encoded.get("t", []),
+					"special_plan": encoded.get("sp", {}),
 					"signature": signature
 				})
 			levels[str(level)] = encoded
