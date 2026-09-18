@@ -148,7 +148,7 @@ func build_ui() -> void:
 	var available_board_height := maxf(260.0, viewport_size.y * (0.40 if viewport_size.y < 1100.0 else 0.50))
 	var cell_size := clampf(floor(minf((available_board_width - 46.0) / float(GRID_SIZE), (available_board_height - 46.0) / float(GRID_SIZE))), 30.0, PREMIUM_CELL_MAX)
 	board_shell = PanelContainer.new()
-	board_shell.custom_minimum_size = Vector2(cell_size * GRID_SIZE + 22, cell_size * GRID_SIZE + 22)
+	board_shell.custom_minimum_size = Vector2(cell_size * GRID_SIZE + 46, cell_size * GRID_SIZE + 46)
 	board_shell.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("5a2d86"), 30, Color("f5c8ff"), 4, 22))
 	center.add_child(board_shell)
 	var board_margin := MarginContainer.new()
