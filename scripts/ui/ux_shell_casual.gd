@@ -34,18 +34,18 @@ func _compact_shell() -> void:
 	_layout_tutorial_panel()
 	if help_button != null:
 		help_button.text = "?"
-		help_button.custom_minimum_size = Vector2(72, 72)
-		help_button.size = Vector2(72, 72)
+		help_button.custom_minimum_size = Vector2(80, 80)
+		help_button.size = Vector2(80, 80)
 		var viewport_size := get_viewport().get_visible_rect().size
-		var desired := Vector2(24, maxf(24.0, viewport_size.y - 96.0))
+		var desired := Vector2(24, maxf(24.0, viewport_size.y - 104.0))
 		var footer: Control = _gameplay_footer()
 		if footer != null and footer.visible and footer.is_visible_in_tree():
-			var proposed := Rect2(desired, Vector2(72, 72))
+			var proposed := Rect2(desired, Vector2(80, 80))
 			var footer_rect: Rect2 = footer.get_global_rect()
 			if proposed.intersects(footer_rect):
-				desired.y = maxf(24.0, footer_rect.position.y - 84.0)
+				desired.y = maxf(24.0, footer_rect.position.y - 92.0)
 		help_button.position = desired
-		help_button.add_theme_font_size_override("font_size", 28)
+		help_button.add_theme_font_size_override("font_size", 32)
 		help_button.tooltip_text = "How to play"
 	if theme_button != null:
 		theme_button.visible = false
@@ -61,14 +61,14 @@ func _layout_tutorial_panel() -> void:
 	tutorial_panel.size = panel_size
 	tutorial_panel.position = (viewport_size - panel_size) * 0.5
 	if tutorial_title != null:
-		tutorial_title.add_theme_font_size_override("font_size", 31 if viewport_size.x < 620.0 else 40)
+		tutorial_title.add_theme_font_size_override("font_size", 36 if viewport_size.x < 620.0 else 42)
 	if tutorial_body != null:
-		tutorial_body.add_theme_font_size_override("font_size", 21 if viewport_size.x < 620.0 else 28)
+		tutorial_body.add_theme_font_size_override("font_size", 24 if viewport_size.x < 620.0 else 29)
 	var tabs := tutorial_panel.find_child("TutorialTabs", true, false) as HBoxContainer
 	if tabs != null:
 		for child in tabs.get_children():
 			if child is Button:
-				(child as Button).add_theme_font_size_override("font_size", 13 if viewport_size.x < 620.0 else 16)
+				(child as Button).add_theme_font_size_override("font_size", 22 if viewport_size.x < 620.0 else 24)
 
 func _restyle_3d_shell() -> void:
 	if help_button != null:
