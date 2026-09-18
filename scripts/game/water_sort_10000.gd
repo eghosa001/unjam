@@ -198,6 +198,7 @@ func _construct_progression_candidate(
 			target_tube.append(donor_color)
 		state[donor] = source
 		state[target_index] = target_tube
+		# One normal forward pour will move the whole contiguous run back.
 		inverse_moves.append(Vector2i(target_index, donor))
 		successful += 1
 
