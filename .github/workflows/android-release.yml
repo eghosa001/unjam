@@ -186,6 +186,44 @@ jobs:
           godot --headless --verbose --path . --install-android-build-template --export-release Android build/android/unjam-release.aab 2>&1 | tee android-release-export.log
           if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" android-release-export.log; then exit 1; fi
           test -s build/android/unjam-release.aab
+      - name: Verify 16 KB native page compatibility
+        shell: bash
+        run: |
+          set -euo pipefail
+          AAB=build/android/unjam-release.aab
+          NATIVE_DIR="$RUNNER_TEMP/unjam-native-libs"
+          rm -rf "$NATIVE_DIR"
+          mkdir -p "$NATIVE_DIR"
+          unzip -q "$AAB" 'base/lib/*/*.so' -d "$NATIVE_DIR" || true
+          python3 - <<'PY'
+          import pathlib
+          import re
+          import subprocess
+
+          root = pathlib.Path(__import__('os').environ['RUNNER_TEMP']) / 'unjam-native-libs'
+          libs = sorted(root.rglob('*.so'))
+          if not libs:
+              raise SystemExit('No native libraries found in AAB for 16 KB alignment verification')
+          failures = []
+          for lib in libs:
+              out = subprocess.check_output(['readelf', '-lW', str(lib)], text=True, errors='replace')
+              aligns = []
+              for line in out.splitlines():
+                  if re.match(r'^\s*LOAD\s', line):
+                      token = line.split()[-1]
+                      try:
+                          aligns.append(int(token, 16))
+                      except ValueError:
+                          pass
+              if not aligns:
+                  failures.append(f'{lib}: no LOAD segments parsed')
+                  continue
+              if min(aligns) < 0x4000:
+                  failures.append(f'{lib}: LOAD alignment {min(aligns):#x} < 0x4000')
+          if failures:
+              raise SystemExit('16 KB native page compatibility failed:\n' + '\n'.join(failures))
+          print(f'16KB_NATIVE_OK: verified {len(libs)} native libraries')
+          PY
       - name: Verify signed release AAB
         shell: bash
         run: |
