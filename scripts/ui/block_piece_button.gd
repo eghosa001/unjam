@@ -18,7 +18,7 @@ var target_scale := Vector2.ONE
 var touch_preview: Control
 
 func configure(value: Array, is_selected: bool, color := Color("4f7cff"), index: int = -1) -> void:
-	shape = value.duplicate(true)
+	shape = _sanitize_shape(value)
 	selected = is_selected
 	used = shape.is_empty()
 	accent = color
@@ -27,6 +27,7 @@ func configure(value: Array, is_selected: bool, color := Color("4f7cff"), index:
 	focus_mode = Control.FOCUS_NONE
 	disabled = used
 	flat = true
+	clip_contents = false
 	mouse_default_cursor_shape = Control.CURSOR_DRAG if not used else Control.CURSOR_ARROW
 	target_scale = Vector2(1.08, 1.08) if selected else Vector2.ONE
 	_update_style()
@@ -79,6 +80,17 @@ func _drag_payload() -> Dictionary:
 	var drag_piece_index := piece_index if piece_index >= 0 else get_index()
 	return {"kind": "block_piece", "piece_index": drag_piece_index, "shape": shape.duplicate(true), "accent": accent}
 
+func _board_cell_visual_size(game: Node) -> float:
+	if game == null:
+		return 0.0
+	var cells := _cell_buttons(game)
+	if cells.is_empty():
+		return 0.0
+	var first := cells[0] as Control
+	if first == null or not is_instance_valid(first):
+		return 0.0
+	return minf(first.size.x, first.size.y)
+
 func _make_drag_preview() -> Control:
 	var wrapper := Control.new()
 	wrapper.custom_minimum_size = Vector2(380, 380)
@@ -87,7 +99,7 @@ func _make_drag_preview() -> Control:
 	wrapper.position = Vector2(-190, -315)
 	var preview := DragPreview.new()
 	preview.position = Vector2(10, 10)
-	preview.configure(shape, accent)
+	preview.configure(shape, accent, _board_cell_visual_size(_game()))
 	wrapper.add_child(preview)
 	return wrapper
 
@@ -108,7 +120,7 @@ func _show_touch_preview(screen_position: Vector2) -> void:
 		return
 	if touch_preview == null or not is_instance_valid(touch_preview):
 		touch_preview = DragPreview.new()
-		touch_preview.configure(shape, accent)
+		touch_preview.configure(shape, accent, _board_cell_visual_size(game))
 		touch_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		touch_preview.z_index = 950
 		var layer = game.get("effects_layer")
@@ -144,15 +156,21 @@ func _hide_touch_preview(immediate := true) -> void:
 	if touch_preview == null or not is_instance_valid(touch_preview):
 		touch_preview = null
 		return
+	var preview := touch_preview
+	touch_preview = null
 	if immediate:
-		touch_preview.queue_free()
+		# Floating previews live in the game effects layer, not under the tray button.
+		# Detach synchronously so a tray refresh can never leave one drawable frame
+		# of the old piece behind beside the newly rendered piece.
+		var parent := preview.get_parent()
+		if parent != null:
+			parent.remove_child(preview)
+		preview.queue_free()
 	else:
-		var preview := touch_preview
 		var tween := preview.create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
 		tween.tween_property(preview, "scale", preview.scale * 0.82, 0.08)
 		tween.parallel().tween_property(preview, "modulate:a", 0.0, 0.10)
 		tween.finished.connect(preview.queue_free)
-	touch_preview = null
 
 func _end_drag_feedback(hide_preview := true) -> void:
 	if hide_preview:
@@ -213,8 +231,27 @@ func _gui_input(event: InputEvent) -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_DRAG_END:
 		_clear_touch_footprint()
-		_hide_touch_preview()
+		_hide_touch_preview(true)
 		_end_drag_feedback(false)
+
+func dispose_visuals() -> void:
+	# Called by the tray owner before a control is replaced/reconfigured. Keep
+	# external preview nodes and board-footprint highlights from becoming orphans.
+	_clear_touch_footprint()
+	var game := _game()
+	if game != null and game.has_method("clear_touch_drag"):
+		game.call("clear_touch_drag", self)
+	touch_drag_started = false
+	dragging = false
+	_hide_touch_preview(true)
+	modulate = Color.WHITE
+	scale = Vector2.ONE
+	rotation = 0.0
+
+func _exit_tree() -> void:
+	# touch_preview is parented to effects_layer, so normal child cleanup would
+	# not remove it when this tray button leaves the tree.
+	_hide_touch_preview(true)
 
 func _game() -> Node:
 	var node: Node = self
@@ -397,13 +434,56 @@ func _draw() -> void:
 		draw_arc(size * 0.5, maxf(total.x, total.y) * 0.60, 0.0, TAU, 32, Color(accent.lightened(0.38), 0.20 + pulse * 0.18), 3.0, true)
 
 func _draw_block(rect: Rect2, fill: Color) -> void:
-	var dark := fill.darkened(0.28)
-	draw_style_box(_style(dark, Color.TRANSPARENT, 0, 6), Rect2(rect.position + Vector2(0, 5), rect.size))
-	draw_style_box(_style(fill, fill.lightened(0.24), 2, 6), rect)
-	draw_line(rect.position + Vector2(6, 5), Vector2(rect.end.x - 6, rect.position.y + 5), Color(fill.lightened(0.54), 0.98), 3.0, true)
-	draw_line(rect.position + Vector2(5, 7), Vector2(rect.position.x + 5, rect.end.y - 7), Color(fill.lightened(0.30), 0.80), 2.0, true)
-	draw_line(Vector2(rect.position.x + 6, rect.end.y - 5), rect.end - Vector2(6, 5), Color(dark, 0.95), 3.0, true)
-	draw_line(Vector2(rect.end.x - 5, rect.position.y + 7), rect.end - Vector2(5, 7), Color(dark, 0.82), 2.0, true)
+	# Use real top/right extrusion instead of a second full-size dark rectangle.
+	# The old offset shadow could read as a duplicate brick in the piece tray.
+	var depth := clampf(rect.size.x * 0.10, 3.0, 7.0)
+	var front := Rect2(rect.position + Vector2(0.0, depth), rect.size - Vector2(depth, depth))
+	var bottom_shadow := Rect2(
+		Vector2(front.position.x + 3.0, front.end.y + 1.0),
+		Vector2(maxf(2.0, front.size.x - 4.0), maxf(3.0, depth * 0.65))
+	)
+	draw_style_box(_style(Color(fill.darkened(0.52), 0.42), Color.TRANSPARENT, 0, 4), bottom_shadow)
+	var top_face := PackedVector2Array([
+		front.position,
+		front.position + Vector2(depth, -depth),
+		Vector2(front.end.x + depth, front.position.y - depth),
+		Vector2(front.end.x, front.position.y)
+	])
+	var right_face := PackedVector2Array([
+		Vector2(front.end.x, front.position.y),
+		Vector2(front.end.x + depth, front.position.y - depth),
+		Vector2(front.end.x + depth, front.end.y - depth),
+		Vector2(front.end.x, front.end.y)
+	])
+	draw_colored_polygon(top_face, fill.lightened(0.34))
+	draw_colored_polygon(right_face, fill.darkened(0.24))
+	draw_style_box(_style(fill, fill.lightened(0.28), 2, 6), front)
+	var inner := front.grow(-3.0)
+	draw_style_box(_style(Color(fill.lightened(0.10), 0.20), Color(1, 1, 1, 0.08), 1, 4), inner)
+	draw_line(front.position + Vector2(6, 5), Vector2(front.end.x - 6, front.position.y + 5), Color(fill.lightened(0.54), 0.92), 2.4, true)
+
+func _sanitize_shape(value: Array) -> Array:
+	var unique := {}
+	var points: Array[Vector2i] = []
+	var min_x := 999
+	var min_y := 999
+	for raw in value:
+		var point := _as_point(raw)
+		if point.x < 0 or point.y < 0:
+			continue
+		var key := "%d:%d" % [point.x, point.y]
+		if unique.has(key):
+			continue
+		unique[key] = true
+		points.append(point)
+		min_x = mini(min_x, point.x)
+		min_y = mini(min_y, point.y)
+	if points.is_empty():
+		return []
+	var normalized: Array = []
+	for point in points:
+		normalized.append(Vector2i(point.x - min_x, point.y - min_y))
+	return normalized
 
 func _as_point(raw: Variant) -> Vector2i:
 	if raw is Vector2i:
