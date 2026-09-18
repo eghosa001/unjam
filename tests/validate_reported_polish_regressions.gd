@@ -41,8 +41,8 @@ func _validate_opening_rhythm(errors: Array[String]) -> void:
 			first_score = score
 		if level_number == 10:
 			last_score = score
-	if last_score <= first_score:
-		errors.append("Rescue Rush opening difficulty should rise across levels 1..10")
+	if last_score < first_score:
+		errors.append("Rescue Rush opening difficulty must not regress across levels 1..10")
 
 func _require_source(path: String, needles: Array[String], label: String, errors: Array[String]) -> void:
 	var file := FileAccess.open(path, FileAccess.READ)
