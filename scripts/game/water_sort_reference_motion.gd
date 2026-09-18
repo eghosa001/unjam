@@ -7,6 +7,8 @@ var active_target_tubes: Dictionary = {}
 var pending_completion := false
 var _queued_action := ""
 
+const POUR_ARC_SAMPLES := 14
+
 func render_board() -> void:
 	if board == null:
 		return
@@ -212,6 +214,46 @@ func _game_local(global_point: Vector2) -> Vector2:
 func _control_point(control: Control, local_point: Vector2) -> Vector2:
 	return _game_local(control.get_global_transform_with_canvas() * local_point)
 
+func _source_rim_local(control: Control, direction: float) -> Vector2:
+	if control.has_method("visual_pour_rim_local"):
+		return Vector2(control.call("visual_pour_rim_local", direction))
+	return Vector2(control.size.x * (0.82 if direction >= 0.0 else 0.18), control.size.y * 0.10)
+
+func _receiver_rim_local(control: Control) -> Vector2:
+	if control.has_method("visual_receive_rim_local"):
+		return Vector2(control.call("visual_receive_rim_local"))
+	return Vector2(control.size.x * 0.5, control.size.y * 0.10)
+
+func _position_for_tilted_rim(control: Control, local_rim: Vector2, desired_rim: Vector2, final_rotation: float) -> Vector2:
+	var relative := local_rim - control.pivot_offset
+	var scaled := Vector2(relative.x * control.scale.x, relative.y * control.scale.y)
+	var rotated := scaled.rotated(final_rotation)
+	return desired_rim - control.pivot_offset - rotated
+
+func _liquid_arc_points(source_mouth: Vector2, receiver_mouth: Vector2, direction: float) -> PackedVector2Array:
+	var dir := 1.0 if direction >= 0.0 else -1.0
+	var receiver_entry := receiver_mouth + Vector2(0.0, 8.0)
+	var horizontal := absf(receiver_entry.x - source_mouth.x)
+	var vertical_drop := maxf(0.0, receiver_entry.y - source_mouth.y)
+	var launch := clampf(horizontal * 0.42, 26.0, 72.0)
+	var lift := clampf(16.0 + horizontal * 0.10, 18.0, 42.0)
+	var settle := clampf(22.0 + vertical_drop * 0.30, 28.0, 66.0)
+	var p0 := source_mouth
+	var p1 := source_mouth + Vector2(dir * launch, -lift)
+	var p2 := receiver_entry + Vector2(-dir * clampf(horizontal * 0.20, 16.0, 38.0), -settle)
+	var p3 := receiver_entry
+	var points := PackedVector2Array()
+	for i in range(POUR_ARC_SAMPLES + 1):
+		var t := float(i) / float(POUR_ARC_SAMPLES)
+		var one_minus := 1.0 - t
+		points.append(
+			p0 * (one_minus * one_minus * one_minus)
+			+ p1 * (3.0 * one_minus * one_minus * t)
+			+ p2 * (3.0 * one_minus * t * t)
+			+ p3 * (t * t * t)
+		)
+	return points
+
 func _play_premium_concurrent_pour(source_values: Array, target_values: Array, from_rect: Rect2, to_rect: Rect2, color_index: int, amount: int, source_index: int, target_index: int) -> void:
 	var liquid: Color = MotionTube.PALETTE[color_index]
 	var ghost := MotionTube.new()
@@ -248,8 +290,18 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 	if not is_instance_valid(ghost) or not is_instance_valid(receiver):
 		return
 
-	var target_lip := _control_point(receiver, Vector2(receiver.size.x * 0.5, 34.0))
-	var desired := target_lip - ghost.pivot_offset + Vector2(direction * 13.0, -lift_distance)
+	var receiver_local := _receiver_rim_local(receiver)
+	var target_lip := _control_point(receiver, receiver_local)
+	var tilt_degrees := 34.0 if MotionSystem.reduced() else 70.0
+	var final_rotation := deg_to_rad(tilt_degrees * direction)
+	var source_local_at_pour := _source_rim_local(ghost, direction)
+	# Keep the pouring lip visibly above and to the source side of the receiving
+	# bottle. The old placement aligned the tilted source lip almost directly on
+	# top of the receiver, leaving no vertical drop for a convincing liquid arc.
+	var rim_side_gap := clampf(ghost.size.x * 0.46, 48.0, 78.0)
+	var rim_height_gap := clampf(ghost.size.y * 0.28, 76.0, 116.0)
+	var desired_source_rim := target_lip + Vector2(-direction * rim_side_gap, -rim_height_gap)
+	var desired := _position_for_tilted_rim(ghost, source_local_at_pour, desired_source_rim, final_rotation)
 	var travel_time := MotionSystem.duration(&"travel")
 	var travel := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	travel.tween_property(ghost, "position", desired, travel_time)
@@ -257,10 +309,9 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 	if not is_instance_valid(ghost) or not is_instance_valid(receiver):
 		return
 
-	var tilt_degrees := 34.0 if MotionSystem.reduced() else 70.0
 	var tip_time := MotionSystem.duration(&"settle") * 0.78
 	var tip := create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	tip.tween_property(ghost, "rotation", deg_to_rad(tilt_degrees * direction), tip_time)
+	tip.tween_property(ghost, "rotation", final_rotation, tip_time)
 	await tip.finished
 	if not is_instance_valid(ghost) or not is_instance_valid(receiver):
 		return
@@ -272,6 +323,7 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 	stream.default_color = Color(liquid, 0.96)
 	stream.begin_cap_mode = Line2D.LINE_CAP_ROUND
 	stream.end_cap_mode = Line2D.LINE_CAP_ROUND
+	stream.antialiased = true
 	stream.z_index = 670
 	add_child(stream)
 	var shine := Line2D.new()
@@ -279,6 +331,7 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 	shine.default_color = Color(liquid.lightened(0.42), 0.90)
 	shine.begin_cap_mode = Line2D.LINE_CAP_ROUND
 	shine.end_cap_mode = Line2D.LINE_CAP_ROUND
+	shine.antialiased = true
 	shine.z_index = 671
 	add_child(shine)
 
@@ -289,18 +342,15 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 			return
 		ghost.call("set_pour_progress", v)
 		receiver.call("set_pour_progress", v)
-		var source_local := Vector2(ghost.size.x * 0.5, 30.0)
-		if ghost.has_method("visual_pour_rim_local"):
-			source_local = Vector2(ghost.call("visual_pour_rim_local", direction))
-		var receiver_local := Vector2(receiver.size.x * 0.5, 34.0)
-		if receiver.has_method("visual_receive_rim_local"):
-			receiver_local = Vector2(receiver.call("visual_receive_rim_local"))
+		var source_local := _source_rim_local(ghost, direction)
+		var current_receiver_local := _receiver_rim_local(receiver)
 		var source_mouth := _control_point(ghost, source_local)
-		var exit_point := _control_point(ghost, source_local + Vector2(direction * 34.0, 20.0))
-		var receiver_mouth := _control_point(receiver, receiver_local)
-		# The short outward segment makes the liquid visibly leave the downhill
-		# glass lip before falling toward the receiver.
-		stream.points = PackedVector2Array([source_mouth, exit_point, receiver_mouth])
+		var receiver_mouth := _control_point(receiver, current_receiver_local)
+		# Sample a real cubic liquid trajectory every frame. Both endpoints follow
+		# the transformed glass geometry, so the stream starts exactly at the
+		# downhill source rim and finishes just inside the receiving mouth even
+		# while the source is tilted or the receiver subtly compresses.
+		stream.points = _liquid_arc_points(source_mouth, receiver_mouth, direction)
 		shine.points = stream.points
 	flow.tween_method(update_flow, 0.0, 1.0, pour_time)
 	flow.parallel().tween_property(stream, "width", 13.5, pour_time * 0.55)
