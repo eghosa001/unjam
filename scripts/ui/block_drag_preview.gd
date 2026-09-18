@@ -8,10 +8,12 @@ var target_position := Vector2.ZERO
 var target_scale := Vector2.ONE
 var board_valid := true
 var has_target := false
+var board_cell_size := 0.0
 
-func configure(value: Array, color := Color("8b7cf6")) -> void:
+func configure(value: Array, color := Color("8b7cf6"), cell_size_override: float = 0.0) -> void:
 	shape = value.duplicate(true)
 	accent = color
+	board_cell_size = maxf(0.0, cell_size_override)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	custom_minimum_size = Vector2(360, 360)
 	size = Vector2(360, 360)
@@ -60,13 +62,21 @@ func shape_centroid_local() -> Vector2:
 		max_y = maxi(max_y, point.y)
 	if points.is_empty():
 		return size * 0.5
-	var cell := minf(88.0, minf(292.0 / float(max_x + 1), 292.0 / float(max_y + 1)))
+	var cell := _display_cell_size(max_x, max_y)
 	var total := Vector2(float(max_x + 1) * cell, float(max_y + 1) * cell)
 	var origin := (size - total) * 0.5
 	var centroid := Vector2.ZERO
 	for point in points:
 		centroid += origin + Vector2(point) * cell + Vector2.ONE * cell * 0.5
 	return centroid / float(points.size())
+
+func _display_cell_size(max_x: int, max_y: int) -> float:
+	var fit := minf(88.0, minf(292.0 / float(max_x + 1), 292.0 / float(max_y + 1)))
+	if board_cell_size <= 0.0:
+		return fit
+	# Match the live board cell so the dragged piece does not appear to become a
+	# second, larger copy when it crosses from the tray onto a compact board.
+	return clampf(minf(board_cell_size, fit), 24.0, 108.0)
 
 func _draw() -> void:
 	if shape.is_empty():
@@ -95,11 +105,15 @@ func _draw_block(rect: Rect2, color: Color, pulse: float) -> void:
 	_draw_extruded_cube(rect, color, pulse)
 
 func _draw_extruded_cube(rect: Rect2, color: Color, pulse: float) -> void:
-	var depth := clampf(rect.size.x * 0.12, 7.0, 12.0)
-	var shadow := Rect2(rect.position + Vector2(2.0, depth + 9.0), rect.size - Vector2(depth, depth))
-	draw_style_box(_style(Color(0.01, 0.02, 0.08, 0.46), 14), shadow)
-
+	var depth := clampf(rect.size.x * 0.12, 3.0, 10.0)
 	var front := Rect2(rect.position + Vector2(0.0, depth), rect.size - Vector2(depth, depth))
+	# A narrow contact shadow reads as depth without looking like a second brick.
+	var shadow := Rect2(
+		Vector2(front.position.x + 4.0, front.end.y + 2.0),
+		Vector2(maxf(2.0, front.size.x - 8.0), maxf(3.0, depth * 0.70))
+	)
+	draw_style_box(_style(Color(0.01, 0.02, 0.08, 0.38), 8), shadow)
+
 	var top_face := PackedVector2Array([
 		front.position,
 		front.position + Vector2(depth, -depth),
