@@ -131,7 +131,7 @@ func _make_status_bar(parent: VBoxContainer) -> void:
 	var compact := viewport_size.x < 700.0
 	var bar := HBoxContainer.new()
 	bar.name = "HomeStatusBar"
-	bar.custom_minimum_size = Vector2(0, 68 if viewport_size.y < 1250.0 else 78)
+	bar.custom_minimum_size = Vector2(0, 52 if viewport_size.y < 1100.0 else (64 if viewport_size.y < 1450.0 else 76))
 	bar.add_theme_constant_override("separation", 8)
 	parent.add_child(bar)
 
@@ -140,7 +140,7 @@ func _make_status_bar(parent: VBoxContainer) -> void:
 		cleared += int(MultiGameManager.progress_for(game_id).get("levels_completed", 0))
 	var player_level := maxi(1, 1 + int(cleared / 10))
 	var profile := _make_badge("☺  LV %d" % player_level, Unjam3DTheme.WATER_DARK)
-	profile.custom_minimum_size.x = 142 if compact else 176
+	profile.custom_minimum_size.x = 118 if viewport_size.y < 1100.0 else (142 if compact else 176)
 	bar.add_child(profile)
 
 	var spacer := Control.new()
@@ -148,19 +148,20 @@ func _make_status_bar(parent: VBoxContainer) -> void:
 	bar.add_child(spacer)
 
 	home_coin_button = _make_shop_badge()
-	home_coin_button.custom_minimum_size.x = 150 if compact else 184
+	home_coin_button.custom_minimum_size.x = 124 if viewport_size.y < 1100.0 else (150 if compact else 184)
 	bar.add_child(home_coin_button)
 
 	var stars := _make_badge("★  %s" % _compact_number(_total_stars()), Unjam3DTheme.GOLD)
-	stars.custom_minimum_size.x = 142 if compact else 176
+	stars.custom_minimum_size.x = 118 if viewport_size.y < 1100.0 else (142 if compact else 176)
 	bar.add_child(stars)
 
 func _make_brand_logo(parent: VBoxContainer) -> void:
 	var viewport_size := get_viewport_rect().size
-	var compact := viewport_size.y < 1250.0
+	var short_phone := viewport_size.y < 1100.0
+	var compact := viewport_size.y < 1450.0
 	var box := VBoxContainer.new()
 	box.name = "HomeBrandLockup"
-	box.custom_minimum_size = Vector2(0, 106 if compact else 132)
+	box.custom_minimum_size = Vector2(0, 72 if short_phone else (102 if compact else 128))
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
 	box.add_theme_constant_override("separation", -2)
 	parent.add_child(box)
@@ -168,20 +169,20 @@ func _make_brand_logo(parent: VBoxContainer) -> void:
 	var logo := Label.new()
 	logo.text = "UNJAM"
 	logo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	logo.add_theme_font_size_override("font_size", 70 if compact else 84)
+	logo.add_theme_font_size_override("font_size", 50 if short_phone else (66 if compact else 82))
 	Unjam3DTheme.label_3d(logo, Color("fff4d5"), Color("064d93"), 9)
 	box.add_child(logo)
 
 	var strap := Label.new()
 	strap.text = "PLAY  •  RELAX  •  MASTER THREE PUZZLE WORLDS"
 	strap.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	strap.add_theme_font_size_override("font_size", 17 if compact else 20)
+	strap.add_theme_font_size_override("font_size", 13 if short_phone else (16 if compact else 20))
 	Unjam3DTheme.label_3d(strap, Color.WHITE, Unjam3DTheme.NAVY, 3)
 	box.add_child(strap)
 
 func _make_hero(parent: VBoxContainer) -> void:
 	var viewport_size := get_viewport_rect().size
-	var hero_height := 330.0 if viewport_size.y < 1250.0 else clampf(viewport_size.y * 0.23, 390.0, 460.0)
+	var hero_height := 190.0 if viewport_size.y < 1100.0 else (310.0 if viewport_size.y < 1450.0 else clampf(viewport_size.y * 0.22, 400.0, 450.0))
 	var hero := PanelContainer.new()
 	hero.name = "HomeHero3D"
 	hero.custom_minimum_size = Vector2(0, hero_height)
@@ -200,17 +201,18 @@ func _make_hero(parent: VBoxContainer) -> void:
 
 	var mascot := Unjam3DMascot.new()
 	mascot.name = "HomeMascot3D"
-	mascot.custom_minimum_size = Vector2(maxf(680.0, viewport_size.x - 96.0), maxf(270.0, hero_height - 28.0))
+	mascot.custom_minimum_size = Vector2(maxf(430.0, viewport_size.x - 72.0), maxf(170.0, hero_height - 20.0))
 	mascot.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	hero.add_child(mascot)
 
 	var overlay_margin := MarginContainer.new()
 	overlay_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	overlay_margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	overlay_margin.add_theme_constant_override("margin_left", 24)
-	overlay_margin.add_theme_constant_override("margin_right", 24)
-	overlay_margin.add_theme_constant_override("margin_top", 20)
-	overlay_margin.add_theme_constant_override("margin_bottom", 20)
+	var hero_margin := 12 if viewport_size.y < 1100.0 else 20
+	overlay_margin.add_theme_constant_override("margin_left", hero_margin)
+	overlay_margin.add_theme_constant_override("margin_right", hero_margin)
+	overlay_margin.add_theme_constant_override("margin_top", 10 if viewport_size.y < 1100.0 else 18)
+	overlay_margin.add_theme_constant_override("margin_bottom", 10 if viewport_size.y < 1100.0 else 18)
 	hero.add_child(overlay_margin)
 
 	var overlay := VBoxContainer.new()
@@ -218,7 +220,7 @@ func _make_hero(parent: VBoxContainer) -> void:
 	overlay_margin.add_child(overlay)
 	var eyebrow := Label.new()
 	eyebrow.text = "CURRENT JOURNEY"
-	eyebrow.add_theme_font_size_override("font_size", 16)
+	eyebrow.add_theme_font_size_override("font_size", 13 if viewport_size.y < 1100.0 else 16)
 	Unjam3DTheme.label_3d(eyebrow, Unjam3DTheme.GOLD, Unjam3DTheme.NAVY, 3)
 	overlay.add_child(eyebrow)
 
