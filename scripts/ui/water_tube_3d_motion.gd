@@ -104,8 +104,14 @@ func _build_3d_view() -> void:
 	var rim_light := DirectionalLight3D.new()
 	rim_light.rotation_degrees = Vector3(-20, 145, 8)
 	rim_light.light_color = Color("70dcff")
-	rim_light.light_energy = 0.72
+	rim_light.light_energy = 0.82
 	stage_3d.add_child(rim_light)
+	var fill_light := OmniLight3D.new()
+	fill_light.position = Vector3(-2.2, 2.8, 4.1)
+	fill_light.light_color = Color("b6f2ff")
+	fill_light.light_energy = 0.48
+	fill_light.omni_range = 9.0
+	stage_3d.add_child(fill_light)
 
 	camera_3d = Camera3D.new()
 	camera_3d.position = Vector3(3.05, 0.90, 6.65)
@@ -217,7 +223,10 @@ func _material_3d(color: Color, metallic_value: float, roughness_value: float) -
 	var material := StandardMaterial3D.new()
 	material.albedo_color = color
 	material.metallic = metallic_value
-	material.roughness = roughness_value
+	material.roughness = clampf(roughness_value, 0.05, 0.30)
+	material.clearcoat_enabled = true
+	material.clearcoat = 0.76 if color.a < 0.995 else 0.62
+	material.clearcoat_roughness = 0.06 if color.a < 0.995 else 0.10
 	if color.a < 0.995:
 		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	return material
