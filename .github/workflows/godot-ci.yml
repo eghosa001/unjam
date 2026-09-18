@@ -163,6 +163,22 @@ jobs:
           if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" android-apk-export.log; then exit 1; fi
           test -s build/android/unjam-debug.apk
           cp "$RUNNER_TEMP/export_presets.aab.cfg" export_presets.cfg
+      - name: Verify packaged AdMob manifest contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=build/android/unjam-debug.apk
+          AAPT="$(find "$ANDROID_SDK_ROOT/build-tools" -type f -name aapt | sort | tail -1)"
+          test -x "$AAPT"
+          "$AAPT" dump badging "$APK" | tee build/android/apk-badging.txt
+          "$AAPT" dump permissions "$APK" | tee build/android/apk-permissions.txt
+          "$AAPT" dump xmltree "$APK" AndroidManifest.xml | tee build/android/apk-manifest.txt
+          grep -F "package: name='com.eghosa.unjamgam'" build/android/apk-badging.txt
+          grep -F "android.permission.INTERNET" build/android/apk-permissions.txt
+          grep -F "android.permission.ACCESS_NETWORK_STATE" build/android/apk-permissions.txt
+          grep -F "com.google.android.gms.permission.AD_ID" build/android/apk-permissions.txt
+          grep -F "com.google.android.gms.ads.APPLICATION_ID" build/android/apk-manifest.txt
+          grep -F "ca-app-pub-7517898921176341~1892369383" build/android/apk-manifest.txt
       - name: Upload Android debug APK
         uses: actions/upload-artifact@v4
         with:
