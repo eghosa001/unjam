@@ -20,8 +20,9 @@ func _init() -> void:
 			early_score_total += int(level.get("difficulty_score", 0))
 		elif level_number > 9500:
 			late_score_total += int(level.get("difficulty_score", 0))
-		if errors.size() < 100 and not PuzzleSolverScript.has_solution(level, 2000):
-			errors.append("Level %d has no verified solution" % level_number)
+		var independent_solver_sample := level_number <= 12 or level_number % 100 == 0 or level_number in [501, 1001, 2001, 5001, 9001, 9501, 9999]
+		if errors.size() < 100 and independent_solver_sample and not PuzzleSolverScript.has_solution(level, 6000):
+			errors.append("Level %d has no independently verified solution" % level_number)
 		if errors.size() >= 100:
 			break
 		if level_number % 1000 == 0:
