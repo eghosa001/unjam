@@ -3,7 +3,7 @@ extends "res://scripts/core/save_manager.gd"
 const ROBUST_SAVE_PATH := "user://unjam_save.json"
 const BACKUP_PATH := "user://unjam_save.backup.json"
 const TEMP_PATH := "user://unjam_save.tmp.json"
-const SAVE_VERSION := 11
+const SAVE_VERSION := 12
 
 func _ready() -> void:
 	load_save()
@@ -66,6 +66,8 @@ func _sanitize() -> void:
 	data.achievement_points = max(0, int(data.get("achievement_points", 0)))
 	data.rewarded_ads_watched = max(0, int(data.get("rewarded_ads_watched", 0)))
 	data.lifetime_purchased_coins = max(0, int(data.get("lifetime_purchased_coins", 0)))
+	data.garden_last_gift_date = String(data.get("garden_last_gift_date", ""))
+	data.garden_gifts_claimed = max(0, int(data.get("garden_gifts_claimed", 0)))
 	var consent := String(data.get("privacy_consent_status", "unknown"))
 	data.privacy_consent_status = consent if consent in ["unknown", "required", "obtained", "not_required"] else "unknown"
 	for key in ["sound", "vibration", "music", "reduce_motion", "fast_animation", "remove_ads", "starter_pack_purchased"]:

@@ -23,7 +23,9 @@ const RESET_PRESERVED_KEYS := [
 	"purchased_products",
 	"processed_purchase_tokens",
 	"purchase_claim_ids",
-	"lifetime_purchased_coins"
+	"lifetime_purchased_coins",
+	"garden_last_gift_date",
+	"garden_gifts_claimed"
 ]
 
 const DEFAULT_DATA := {
@@ -37,6 +39,8 @@ const DEFAULT_DATA := {
 	"reduce_motion": false,
 	"fast_animation": false,
 	"decorations": [],
+	"garden_last_gift_date": "",
+	"garden_gifts_claimed": 0,
 	"daily_last_date": "",
 	"daily_streak": 0,
 	"daily_best_streak": 0,

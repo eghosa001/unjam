@@ -292,6 +292,7 @@ func _add_bottom_nav(nav_height: float = 92.0, nav_bottom: float = 16.0, nav_sid
 	var entries: Array = [
 		["⌂\nHOME", Callable(self, "_go_home")],
 		["●\nGAMES", Callable()],
+		["☀\nDAILY", func(): get_parent().call("build_daily_games")],
 		["★\nCOLLECTION", func(): get_parent().call("build_collection")],
 		["⚙\nSETTINGS", func(): get_parent().call("build_settings")]
 	]

@@ -160,6 +160,128 @@ func _show_current_tutorial() -> void:
 	if shell != null and shell.has_method("show_tutorial"):
 		shell.call("show_tutorial", selected_game_id)
 
+func build_daily_games() -> void:
+	current_surface = "daily"
+	_remove_active_game()
+	var root := _page_root()
+	var bonus := EconomyManager.collection_daily_bonus()
+	_page_header(
+		root,
+		"DAILY GAMES",
+		"Three fresh challenges every day",
+		"+%d COLLECTION BONUS" % bonus if bonus > 0 else "3 CHALLENGES",
+		PremiumDesignSystem.GOLD
+	)
+
+	var intro := _card(root, Vector2(0, 118), true)
+	var intro_margin := _pad(intro, 18)
+	var intro_box := VBoxContainer.new()
+	intro_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	intro_box.add_theme_constant_override("separation", 5)
+	intro_margin.add_child(intro_box)
+	var intro_title := _label("TODAY  •  %s" % DailyChallenge.date_key(), 22, "title", _accent())
+	intro_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	intro_box.add_child(intro_title)
+	var intro_copy := _label(
+		"Complete each puzzle once today. Collection upgrades permanently increase every Daily Game reward.",
+		16,
+		"muted",
+		_accent()
+	)
+	intro_copy.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	intro_copy.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	intro_box.add_child(intro_copy)
+
+	var scroll := ScrollContainer.new()
+	scroll.name = "DailyGamesScroll"
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	root.add_child(scroll)
+	var stack := VBoxContainer.new()
+	stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	stack.add_theme_constant_override("separation", 16)
+	scroll.add_child(stack)
+
+	var grid := GridContainer.new()
+	grid.name = "DailyGamesGrid"
+	grid.columns = 3 if get_viewport_rect().size.x >= 900.0 else 1
+	grid.add_theme_constant_override("h_separation", 14)
+	grid.add_theme_constant_override("v_separation", 14)
+	stack.add_child(grid)
+	for game_id in MultiGameManager.GAME_IDS:
+		grid.add_child(_daily_game_card(game_id, bonus))
+
+	var collection_cta := _button(
+		"COLLECTION PERKS  •  +%d PER DAILY GAME  •  GARDEN GIFT +%d" % [
+			bonus,
+			EconomyManager.garden_gift_amount()
+		],
+		Vector2(0, 82),
+		"secondary",
+		"rescue_rush"
+	)
+	collection_cta.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	collection_cta.pressed.connect(build_collection)
+	stack.add_child(collection_cta)
+	PremiumVisuals.entrance(stack, 0.018)
+	_add_surface_diorama("rescue_rush", "DailyGames3DDiorama")
+
+func _daily_game_card(game_id: String, collection_bonus: int) -> PanelContainer:
+	var accent := Unjam3DTheme.game_accent(game_id)
+	var done := _daily_done(game_id)
+	var card := PanelContainer.new()
+	card.custom_minimum_size = Vector2(0, 250)
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	PremiumDesignSystem.apply_panel(card, _dark(), accent, true, 28)
+	var margin := _pad(card, 18)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 8)
+	margin.add_child(box)
+
+	var title := _label(MultiGameManager.display_name(game_id).to_upper(), 24, "title", accent)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(title)
+
+	var challenge_text := "Fresh generated rescue"
+	if game_id != "rescue_rush":
+		challenge_text = "Daily level %d" % MultiGameManager.daily_level(game_id)
+	var challenge := _label(challenge_text, 16, "body", accent)
+	challenge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(challenge)
+
+	var reward_text := "+%d COINS" % (100 + collection_bonus)
+	if game_id != "rescue_rush":
+		reward_text = "+%d–%d COINS" % [125 + collection_bonus, 175 + collection_bonus]
+	var reward := _label(reward_text, 18, "accent", PremiumDesignSystem.GOLD)
+	reward.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(reward)
+
+	var perk := _label(
+		"Includes +%d permanent Collection bonus" % collection_bonus if collection_bonus > 0 else "Collection upgrades can boost this reward",
+		14,
+		"muted",
+		accent
+	)
+	perk.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	perk.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(perk)
+
+	var play := _button("COMPLETED TODAY" if done else "PLAY DAILY", Vector2(0, 68), "success" if done else "primary", game_id)
+	play.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	play.disabled = done
+	if not done:
+		play.pressed.connect(start_game_daily.bind(game_id))
+	box.add_child(play)
+	return card
+
+func _claim_collection_gift() -> void:
+	var amount := EconomyManager.claim_garden_gift()
+	if amount <= 0:
+		return
+	FeedbackManager.effect()
+	PremiumVisuals.burst(Vector2(get_viewport_rect().size.x * 0.5, get_viewport_rect().size.y * 0.45), PremiumDesignSystem.GOLD, 22)
+	build_collection()
+
 func build_collection() -> void:
 	current_surface = "collection"
 	_remove_active_game()
@@ -237,25 +359,82 @@ func build_collection() -> void:
 	garden_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	garden_box.add_child(garden_status)
 	var progress := ProgressBar.new()
-	progress.max_value = 3.0
+	progress.max_value = 6.0
 	progress.value = float(SaveManager.data.get("decorations", []).size())
 	progress.show_percentage = false
 	progress.custom_minimum_size = Vector2(0, 22)
 	progress.add_theme_stylebox_override("background", PremiumDesignSystem.box(PremiumDesignSystem.surface_3(_dark()), 10, Color.TRANSPARENT, 0, 0, _dark()))
 	progress.add_theme_stylebox_override("fill", PremiumDesignSystem.box(accent, 10, accent.lightened(0.12), 1, 0, _dark()))
 	garden_box.add_child(progress)
-	var shop_title := _label("GARDEN UPGRADES", 23, "title", accent)
+	var value_card := _card(stack, Vector2(0, 210), true, "rescue_rush")
+	var value_margin := _pad(value_card, 20)
+	var value_box := VBoxContainer.new()
+	value_box.add_theme_constant_override("separation", 8)
+	value_margin.add_child(value_box)
+	var owned_count := EconomyManager.collection_owned_count()
+	value_box.add_child(_label("PERMANENT COLLECTION PERKS  •  %d / 6" % owned_count, 23, "title", PremiumDesignSystem.GOLD))
+	var value_copy := _label(
+		"Every owned upgrade adds +5 coins to EVERY Daily Game. Your garden also creates a once-per-day gift; a complete 6/6 garden adds an extra +20 gift bonus.",
+		16,
+		"body",
+		accent
+	)
+	value_copy.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	value_box.add_child(value_copy)
+	var current_value := _label(
+		"CURRENT VALUE  •  +%d EACH DAILY GAME  •  +%d DAILY GARDEN GIFT" % [
+			EconomyManager.collection_daily_bonus(),
+			EconomyManager.garden_gift_amount()
+		],
+		18,
+		"accent",
+		PremiumDesignSystem.GOLD
+	)
+	current_value.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	value_box.add_child(current_value)
+	var gift := _button(
+		"NO GIFT YET  •  BUY AN UPGRADE" if owned_count <= 0 else (
+			"GARDEN GIFT CLAIMED TODAY" if EconomyManager.garden_gift_claimed_today()
+			else "CLAIM DAILY GARDEN GIFT  •  +%d COINS" % EconomyManager.garden_gift_amount()
+		),
+		Vector2(0, 64),
+		"success" if EconomyManager.can_claim_garden_gift() else "secondary",
+		"rescue_rush"
+	)
+	gift.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	gift.disabled = not EconomyManager.can_claim_garden_gift()
+	gift.pressed.connect(_claim_collection_gift)
+	value_box.add_child(gift)
+
+	var shop_title := _label("GARDEN UPGRADES  •  PERMANENT", 23, "title", accent)
 	stack.add_child(shop_title)
 	var shop := GridContainer.new()
 	shop.columns = 3 if get_viewport_rect().size.x >= 900.0 else 1
 	shop.add_theme_constant_override("h_separation", 14)
 	shop.add_theme_constant_override("v_separation", 14)
 	stack.add_child(shop)
-	for item in [["tree", "CANOPY TREE", 100, "SHADE"], ["bench", "GARDEN BENCH", 150, "REST"], ["fountain", "CRYSTAL FOUNTAIN", 250, "SPARKLE"]]:
+	var collection_items := [
+		["tree", "CANOPY TREE", 100, "SHADE"],
+		["bench", "GARDEN BENCH", 150, "REST"],
+		["fountain", "CRYSTAL FOUNTAIN", 250, "SPARKLE"],
+		["lanterns", "LANTERN PATH", 350, "GLOW"],
+		["cottage", "RESCUE COTTAGE", 500, "HOME"],
+		["rainbow_bridge", "RAINBOW BRIDGE", 750, "WONDER"]
+	]
+	for item in collection_items:
 		var id := String(item[0])
 		var owned: bool = id in SaveManager.data.get("decorations", [])
 		var state_text := "OWNED" if owned else "%d COINS" % int(item[2])
-		var button := _button("%s\n%s  •  %s" % [String(item[1]), String(item[3]), state_text], Vector2(0, 122), "success" if owned else "secondary", "rescue_rush")
+		var button := _button(
+			"%s\n%s  •  %s\nPERMANENT +5 DAILY  •  +10 GIFT" % [
+				String(item[1]),
+				String(item[3]),
+				state_text
+			],
+			Vector2(0, 148),
+			"success" if owned else "secondary",
+			"rescue_rush"
+		)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.disabled = owned
 		button.pressed.connect(_buy_decoration.bind(id, int(item[2])))

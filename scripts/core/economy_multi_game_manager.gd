@@ -17,14 +17,20 @@ func claim_daily_task(id: String, task_id: String) -> bool:
 
 func complete_daily(id: String, reward := 100) -> bool:
 	var safe_reward := maxi(0, int(reward))
+	var economy := _economy()
+	var bonus := int(economy.call("collection_daily_bonus")) if economy != null and economy.has_method("collection_daily_bonus") else 0
+	# Rescue Rush delegates to EconomySaveManager.complete_daily(), which adds
+	# the collection bonus there. Add it here only for Water Sort / Block Puzzle.
+	var effective_reward := safe_reward if id == "rescue_rush" else safe_reward + bonus
 	var previous := int(SaveManager.data.get("coins", 0))
-	var completed := super.complete_daily(id, safe_reward)
-	# Rescue Rush delegates to SaveManager.complete_daily(), whose economy-aware
-	# wrapper already emits the semantic transaction.
-	if completed and id != "rescue_rush":
-		var economy := _economy()
-		if economy != null:
-			economy.call("notify_external_change", previous, "daily_reward", {"game": id, "reward": safe_reward})
+	var completed := super.complete_daily(id, effective_reward)
+	if completed and id != "rescue_rush" and economy != null:
+		economy.call("notify_external_change", previous, "daily_reward", {
+			"game": id,
+			"reward": effective_reward,
+			"base_reward": safe_reward,
+			"collection_bonus": bonus
+		})
 	return completed
 
 func complete_level(id: String, n: int, stars: int, coin_reward := 25) -> Dictionary:

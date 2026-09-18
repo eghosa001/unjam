@@ -77,6 +77,7 @@ func build_home_launcher() -> void:
 	action_cluster.add_child(play_hint)
 
 	_make_game_strip(action_cluster)
+	_make_daily_games_action(action_cluster)
 	var lower_balance_spacer := Control.new()
 	lower_balance_spacer.name = "HomeLowerBalanceSpacer"
 	lower_balance_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -255,6 +256,30 @@ func _make_game_strip(parent: VBoxContainer) -> void:
 		label.add_theme_font_size_override("font_size", 15 if viewport_height < 1100.0 else 18)
 		Unjam3DTheme.label_3d(label, Color.WHITE, accent.darkened(0.48), 3)
 		card.add_child(label)
+
+func _make_daily_games_action(parent: VBoxContainer) -> void:
+	var completed := 0
+	for game_id in MultiGameManager.GAME_IDS:
+		if get_parent().has_method("_daily_done") and bool(get_parent().call("_daily_done", game_id)):
+			completed += 1
+	var bonus := EconomyManager.collection_daily_bonus()
+	var daily := Button.new()
+	daily.name = "HomeDailyGamesButton"
+	daily.text = "☀  DAILY GAMES   •   %d/3 COMPLETE" % completed
+	if bonus > 0:
+		daily.text += "   •   +%d COLLECTION BONUS" % bonus
+	daily.tooltip_text = "Play today's Rescue Rush, Water Sort and Block Puzzle challenges"
+	daily.custom_minimum_size = Vector2(0, 58 if get_viewport_rect().size.y < 1100.0 else 70)
+	daily.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	daily.add_theme_font_size_override("font_size", 15 if get_viewport_rect().size.x < 600.0 else 18)
+	Unjam3DTheme.gloss_button(daily, Unjam3DTheme.GOLD, true, 24, _theme_mode() == "dark")
+	daily.pressed.connect(func() -> void:
+		FeedbackManager.tap()
+		var main := get_parent()
+		if main != null and main.has_method("build_daily_games"):
+			main.call("build_daily_games")
+	)
+	parent.add_child(daily)
 
 func _make_motto(parent: VBoxContainer) -> void:
 	var viewport_size := get_viewport_rect().size
