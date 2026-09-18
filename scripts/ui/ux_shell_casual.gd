@@ -59,7 +59,7 @@ func _layout_tutorial_panel() -> void:
 	var panel_size := Vector2(panel_width, panel_height)
 	tutorial_panel.custom_minimum_size = panel_size
 	tutorial_panel.size = panel_size
-	tutorial_panel.position = -panel_size * 0.5
+	tutorial_panel.position = (viewport_size - panel_size) * 0.5
 	if tutorial_title != null:
 		tutorial_title.add_theme_font_size_override("font_size", 31 if viewport_size.x < 620.0 else 40)
 	if tutorial_body != null:
