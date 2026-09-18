@@ -6,8 +6,9 @@ signal quit_requested
 const GAME_ID := "water_sort"
 const CAPACITY := 4
 const LIQUID_PALETTE := [
-	Color("ff5f7a"), Color("3fa9f5"), Color("ffd166"), Color("45d6a4"),
-	Color("9b6cff"), Color("ff9d57"), Color("39d7cf"), Color("f472b6")
+	Color("6c35bd"), Color("19a9e8"), Color("f4cf25"), Color("20c8b2"),
+	Color("e65b72"), Color("f19b2c"), Color("ef7bb0"), Color("2d60c8"),
+	Color("43a047"), Color("8d6e63"), Color("9ccc2e"), Color("455a64")
 ]
 
 var level_number := 1
