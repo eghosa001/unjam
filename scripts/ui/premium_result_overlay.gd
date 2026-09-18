@@ -194,6 +194,11 @@ func _build() -> void:
 func _celebrate() -> void:
 	if not is_inside_tree():
 		return
+	var visuals := get_tree().root.get_node_or_null("PremiumVisuals")
+	if visuals == null:
+		return
 	var center := get_viewport_rect().size * 0.5
-	PremiumVisuals.screen_flash(accent, 0.08)
-	PremiumVisuals.burst(center + Vector2(0, -110), accent, 26)
+	if visuals.has_method("screen_flash"):
+		visuals.call("screen_flash", accent, 0.08)
+	if visuals.has_method("burst"):
+		visuals.call("burst", center + Vector2(0, -110), accent, 26)
