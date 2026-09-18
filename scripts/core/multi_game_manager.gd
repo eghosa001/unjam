@@ -1,5 +1,7 @@
 extends Node
 
+const WaterSortProgression = preload("res://scripts/core/water_sort_progression.gd")
+
 const CAMPAIGN_LEVELS := 10000
 const LEVELS_PER_WORLD := 100
 const WORLD_COUNT := 100
@@ -59,6 +61,16 @@ func world_for_level(n:int)->int:return clampi(int((maxi(1,n)-1)/LEVELS_PER_WORL
 func first_level_in_world(w:int)->int:return (clampi(w,1,WORLD_COUNT)-1)*LEVELS_PER_WORLD+1
 func last_level_in_world(w:int)->int:return mini(first_level_in_world(w)+LEVELS_PER_WORLD-1,CAMPAIGN_LEVELS)
 func highest_unlocked_world(id:String)->int:return world_for_level(highest_level(id))
+func world_count_for(id:String)->int:return WaterSortProgression.WORLD_COUNT if id=="water_sort" else WORLD_COUNT
+func world_for_game_level(id:String,n:int)->int:return int(WaterSortProgression.profile(n).get("world",1)) if id=="water_sort" else world_for_level(n)
+func first_level_in_game_world(id:String,w:int)->int:
+ if id=="water_sort":return (clampi(w,1,WaterSortProgression.WORLD_COUNT)-1)*WaterSortProgression.WORLD_SIZE+1
+ return first_level_in_world(w)
+func last_level_in_game_world(id:String,w:int)->int:
+ if id=="water_sort":return mini(first_level_in_game_world(id,w)+WaterSortProgression.WORLD_SIZE-1,CAMPAIGN_LEVELS)
+ return last_level_in_world(w)
+func highest_unlocked_game_world(id:String)->int:return world_for_game_level(id,highest_level(id))
+func difficulty_for_game(id:String,n:int)->String:return String(WaterSortProgression.profile(n).get("difficulty_label","normal-hard")) if id=="water_sort" else difficulty_for_level(n)
 func world_name(id:String,w:int)->String:
  var themes={"rescue_rush":["Garden Escape","Locks & Keys","Chain Reaction","Blast Lab","Linked Zone","Chaos Rescue","Portal Works","Crystal Circuit","Neon Factory","Rescue Nexus"],"water_sort":["Color Springs","Glass Garden","Prism Bay","Liquid Lab","Neon Pour","Spectrum Works","Crystal Flow","Chromatic Vault","Aurora Mix","Master Distillery"],"block_puzzle":["Starter Grid","Brick Yard","Shape Works","Line Factory","Pattern City","Block Forge","Grid Nexus","Combo Circuit","Master Matrix","Infinite Board"]}
  var set:Array=themes[id];var base:=String(set[(w-1)%set.size()]);var chapter:=int((w-1)/set.size())+1;return "%s %d"%[base,chapter] if chapter>1 else base
@@ -159,8 +171,9 @@ func complete_level(id:String,n:int,stars:int,coin_reward:=25)->Dictionary:
  if stars==3 and previous<3:g["perfect_clears"]=int(g.get("perfect_clears",0))+1;g["perfect_streak"]=int(g.get("perfect_streak",0))+1;g["best_perfect_streak"]=maxi(int(g.get("best_perfect_streak",0)),int(g.get("perfect_streak",0)))
  elif first:g["perfect_streak"]=0
  if first and n%10==0:var c:Array=g.get("milestone_chests",[]);c.append(key);g["milestone_chests"]=c;rewards.milestone=true;SaveManager.data["coins"]=int(SaveManager.data.get("coins",0))+100
- if first and n%100==0:var wk:=str(int(n/100));var b:Array=g.get("world_badges",[]);b.append(wk);g["world_badges"]=b;rewards.world_badge=true;SaveManager.data["coins"]=int(SaveManager.data.get("coins",0))+250;SaveManager.data["prestige_points"]=int(SaveManager.data.get("prestige_points",0))+5
- all[id]=g;SaveManager.data["game_progress"]=all;_advance_tasks(id,stars);SaveManager.save();var difficulty:=difficulty_for_level(n);RetentionManager.record_level_complete(n,stars,0,0,0,"",-1,id,difficulty);AnalyticsManager.track("multi_game_level_complete",{"game":id,"level":n,"stars":stars,"difficulty":difficulty});return rewards
+ var badge_span:=WaterSortProgression.WORLD_SIZE if id=="water_sort" else LEVELS_PER_WORLD
+ if first and n%badge_span==0:var wk:=str(int(n/badge_span));var b:Array=g.get("world_badges",[]);b.append(wk);g["world_badges"]=b;rewards.world_badge=true;SaveManager.data["coins"]=int(SaveManager.data.get("coins",0))+250;SaveManager.data["prestige_points"]=int(SaveManager.data.get("prestige_points",0))+5
+ all[id]=g;SaveManager.data["game_progress"]=all;_advance_tasks(id,stars);SaveManager.save();var difficulty:=difficulty_for_game(id,n);RetentionManager.record_level_complete(n,stars,0,0,0,"",-1,id,difficulty);AnalyticsManager.track("multi_game_level_complete",{"game":id,"level":n,"stars":stars,"difficulty":difficulty});return rewards
 func save_checkpoint(id:String,data:Dictionary)->void:
  ensure_state();var runs:Dictionary=SaveManager.data.get("multi_active_runs",{});var payload:=data.duplicate(true);payload["game"]=id;payload["saved_at"]=int(Time.get_unix_time_from_system());runs[id]=payload;SaveManager.data["multi_active_runs"]=runs;SaveManager.save()
 func checkpoint(id:String)->Dictionary:
