@@ -4,6 +4,8 @@ const Progression = preload("res://scripts/core/block_puzzle_progression.gd")
 const CampaignGenerator = preload("res://scripts/core/block_puzzle_campaign_generator.gd")
 const LevelPack = preload("res://scripts/core/block_puzzle_level_pack.gd")
 
+const VALID_MODES := ["campaign", "endless", "zen", "extreme"]
+
 const BOOSTER_COSTS := {
 	"undo": 20,
 	"hammer": 45,
@@ -11,6 +13,7 @@ const BOOSTER_COSTS := {
 	"rotate": 30,
 }
 
+var play_mode := "campaign"
 var campaign_profile: Dictionary = {}
 var campaign_plan: Dictionary = {}
 var campaign_move_limit := -1
@@ -75,6 +78,10 @@ func block_progression_band(level: int = level_number) -> String:
 func difficulty() -> String:
 	if daily_mode:
 		return super.difficulty()
+	if play_mode == "zen":
+		return "easy"
+	if play_mode == "extreme":
+		return "hard"
 	var p := _profile()
 	var score_value := int(p.get("difficulty_score", 50))
 	if score_value < 35: return "easy"
@@ -84,6 +91,8 @@ func difficulty() -> String:
 func level_config() -> Dictionary:
 	if daily_mode:
 		return super.level_config()
+	if play_mode in ["endless", "zen"]:
+		return {"target_score": 999999999, "target_lines": 999999, "par": 999999}
 	var target_score_value := int(_profile().get("target_score", 100))
 	var target_lines_value := int(_profile().get("target_lines", 2))
 	var par_value := int(_profile().get("par", 18))
@@ -103,31 +112,43 @@ func level_config() -> Dictionary:
 	return {"target_score": target_score_value, "target_lines": target_lines_value, "par": par_value}
 
 func load_level() -> void:
-	campaign_profile = Progression.profile(level_number)
+	play_mode = play_mode if play_mode in VALID_MODES else "campaign"
+	campaign_profile = _mode_profile()
 	campaign_plan = {}
 	campaign_failed = false
 	booster_uses = {"undo": 0, "hammer": 0, "shuffle": 0, "rotate": 0}
-	if not daily_mode:
+
+	if not daily_mode and play_mode in ["campaign", "extreme"]:
 		var generation_profile := campaign_profile.duplicate(true)
-		if level_number <= 10:
+		if play_mode == "campaign" and level_number <= 10:
 			var opening := level_config()
 			generation_profile["target_score"] = int(opening.get("target_score", 100))
 			generation_profile["target_lines"] = int(opening.get("target_lines", 2))
-		campaign_plan = LevelPack.plan_for_level(level_number, generation_profile)
+		if play_mode == "campaign":
+			campaign_plan = LevelPack.plan_for_level(level_number, generation_profile)
+		else:
+			campaign_plan = CampaignGenerator.generate(generation_profile)
 		if campaign_plan.is_empty():
-			push_error("Block Puzzle campaign generator produced no proof for level %d" % level_number)
+			push_error("Block Puzzle %s generator produced no proof for level %d" % [play_mode, level_number])
+
 	_reset_objective_state()
 	var proof_moves := int((campaign_plan.get("metadata", {}) as Dictionary).get("proof_moves", 0))
-	campaign_move_limit = int(campaign_profile.get("move_limit", -1))
-	if campaign_move_limit > 0 and proof_moves > 0:
-		var margin := 3 if level_number <= 5000 else (2 if level_number < 9000 else 1)
-		campaign_move_limit = maxi(campaign_move_limit, proof_moves + margin)
+	campaign_move_limit = -1
+	if play_mode == "campaign":
+		campaign_move_limit = int(campaign_profile.get("move_limit", -1))
+		if campaign_move_limit > 0 and proof_moves > 0:
+			var margin := 3 if level_number <= 5000 else (2 if level_number < 9000 else 1)
+			campaign_move_limit = maxi(campaign_move_limit, proof_moves + margin)
+	elif play_mode == "extreme" and proof_moves > 0:
+		campaign_move_limit = proof_moves + (2 if level_number < 7500 else 1)
 
 	var checkpoint := MultiGameManager.checkpoint(GAME_ID)
+	var checkpoint_mode := String(checkpoint.get("play_mode", "campaign"))
 	var restoring := (
 		not checkpoint.is_empty()
 		and int(checkpoint.get("level", -1)) == level_number
 		and bool(checkpoint.get("daily", false)) == daily_mode
+		and (daily_mode or checkpoint_mode == play_mode)
 	)
 
 	super.load_level()
@@ -135,19 +156,25 @@ func load_level() -> void:
 		return
 
 	if not restoring:
-		_apply_campaign_plan_board()
+		if play_mode in ["campaign", "extreme"]:
+			_apply_campaign_plan_board()
+		else:
+			_apply_free_mode_board()
 		piece_batch = 0
 		refill_pieces()
 		render()
 		_save_checkpoint()
 	else:
-		if (campaign_move_limit > 0 and placements >= campaign_move_limit and not reached_goal()) or not any_move_available():
+		if play_mode in ["campaign", "extreme"] and ((campaign_move_limit > 0 and placements >= campaign_move_limit and not reached_goal()) or not any_move_available()):
 			campaign_failed = true
 		render()
 
 func refill_pieces() -> void:
 	if daily_mode:
 		super.refill_pieces()
+		return
+	if play_mode in ["endless", "zen"]:
+		_refill_free_mode()
 		return
 
 	pieces.clear()
@@ -171,26 +198,37 @@ func render() -> void:
 	super.render()
 	if daily_mode or campaign_profile.is_empty():
 		return
-	var world := int(campaign_profile.get("world", 1))
-	var local_level := int(campaign_profile.get("level_in_world", level_number))
-	var score_value := int(campaign_profile.get("difficulty_score", 0))
-	var milestone := String(campaign_profile.get("milestone", "normal"))
-	title_label.text = "WORLD %d  •  %d" % [world, local_level]
-	var move_text := ""
-	if campaign_move_limit > 0:
-		move_text = "  •  MOVES %d/%d" % [placements, campaign_move_limit]
-	goal_label.text = "LINES %d/%d  •  TARGET %d%s%s" % [lines_cleared, target_lines, target_score, move_text, _objective_status_text()]
-	_render_special_cells()
-	_refresh_booster_buttons()
-	if campaign_failed:
-		hint_label.text = "This attempt is blocked. Undo a mistake or restart the same deterministic puzzle."
-	elif milestone != "normal":
-		hint_label.text = "%s  •  DIFFICULTY %d/100" % [milestone.replace("_", " ").to_upper(), score_value]
+	if play_mode == "endless":
+		title_label.text = "ENDLESS"
+		goal_label.text = "SCORE %d  •  LINES %d" % [score, lines_cleared]
+		hint_label.text = "SURVIVE AS LONG AS POSSIBLE  •  NO TARGET"
+	elif play_mode == "zen":
+		title_label.text = "ZEN"
+		goal_label.text = "SCORE %d  •  LINES %d" % [score, lines_cleared]
+		hint_label.text = "NO MOVE LIMIT  •  NO GAME OVER"
 	else:
-		hint_label.text = "DIFFICULTY %d/100  •  PLAN %d+ MOVES AHEAD" % [
-			score_value,
-			int(campaign_profile.get("planning_horizon", 1))
-		]
+		var world := int(campaign_profile.get("world", 1))
+		var local_level := int(campaign_profile.get("level_in_world", level_number))
+		var score_value := int(campaign_profile.get("difficulty_score", 0))
+		var milestone := String(campaign_profile.get("milestone", "normal"))
+		title_label.text = ("EXTREME  •  %d" % level_number) if play_mode == "extreme" else "WORLD %d  •  %d" % [world, local_level]
+		var move_text := ""
+		if campaign_move_limit > 0:
+			move_text = "  •  MOVES %d/%d" % [placements, campaign_move_limit]
+		goal_label.text = "LINES %d/%d  •  TARGET %d%s%s" % [lines_cleared, target_lines, target_score, move_text, _objective_status_text()]
+		_render_special_cells()
+		if campaign_failed:
+			hint_label.text = "This attempt is blocked. Undo a mistake or restart the same deterministic puzzle."
+		elif play_mode == "extreme":
+			hint_label.text = "EXTREME  •  DIFFICULTY %d/100  •  NO MERCY" % score_value
+		elif milestone != "normal":
+			hint_label.text = "%s  •  DIFFICULTY %d/100" % [milestone.replace("_", " ").to_upper(), score_value]
+		else:
+			hint_label.text = "DIFFICULTY %d/100  •  PLAN %d+ MOVES AHEAD" % [
+				score_value,
+				int(campaign_profile.get("planning_horizon", 1))
+			]
+	_refresh_booster_buttons()
 
 func can_place(shape: Array, origin: Vector2i) -> bool:
 	if not super.can_place(shape, origin):
@@ -208,6 +246,8 @@ func can_place(shape: Array, origin: Vector2i) -> bool:
 	return true
 
 func reached_goal() -> bool:
+	if play_mode in ["endless", "zen"] and not daily_mode:
+		return false
 	if not super.reached_goal():
 		return false
 	if daily_mode:
@@ -305,6 +345,13 @@ func place_selected(origin: Vector2i) -> void:
 		refill_pieces()
 
 	if not any_move_available():
+		if play_mode == "zen":
+			_reset_zen_board()
+			return
+		if play_mode == "endless":
+			_record_mode_best()
+			_fail_campaign("ENDLESS RUN OVER • SCORE %d" % score)
+			return
 		_fail_campaign("NO LEGAL MOVES")
 		return
 
@@ -541,6 +588,11 @@ func restart_level() -> void:
 	super.restart_level()
 
 func complete_level() -> void:
+	if not daily_mode and play_mode == "extreme":
+		_complete_extreme_mode()
+		return
+	if not daily_mode and play_mode in ["endless", "zen"]:
+		return
 	if not daily_mode:
 		AnalyticsManager.track("block_puzzle_campaign_profile", {
 			"level": level_number,
@@ -552,7 +604,8 @@ func complete_level() -> void:
 			"move_limited": campaign_move_limit > 0,
 			"proof_moves": int((campaign_plan.get("metadata", {}) as Dictionary).get("proof_moves", 0)),
 			"constructive_verified": bool((campaign_plan.get("metadata", {}) as Dictionary).get("verified_constructive", false)),
-			"objective_family": String((campaign_plan.get("special_plan", {}) as Dictionary).get("family", "score"))
+			"objective_family": String((campaign_plan.get("special_plan", {}) as Dictionary).get("family", "score")),
+			"play_mode": play_mode
 		})
 	super.complete_level()
 
@@ -582,8 +635,132 @@ func deterministic_tray_signature(level: int, batch: int) -> String:
 
 func _profile() -> Dictionary:
 	if campaign_profile.is_empty() or int(campaign_profile.get("level_id", -1)) != level_number:
-		campaign_profile = Progression.profile(level_number)
+		campaign_profile = _mode_profile()
 	return campaign_profile
+
+func _mode_profile() -> Dictionary:
+	var profile := Progression.profile(level_number)
+	if play_mode != "extreme":
+		return profile
+	profile = profile.duplicate(true)
+	profile["difficulty_score"] = mini(100, int(profile.get("difficulty_score", 50)) + 10)
+	profile["piece_tier"] = 6
+	profile["planning_horizon"] = mini(14, int(profile.get("planning_horizon", 1)) + 3)
+	profile["initial_occupancy"] = minf(0.40, float(profile.get("initial_occupancy", 0.0)) + 0.08)
+	profile["target_lines"] = mini(16, int(profile.get("target_lines", 2)) + 2)
+	profile["target_score"] = int(profile.get("target_score", 100)) + 420
+	profile["objective"] = "advanced_conditional"
+	profile["move_limited"] = true
+	profile["milestone"] = "extreme"
+	profile["seed"] = int(profile.get("seed", level_number * 104729)) + 700000001
+	return profile
+
+func _refill_free_mode() -> void:
+	pieces.clear()
+	piece_colors.clear()
+	piece_batch += 1
+	var random := RandomNumberGenerator.new()
+	var salt := 300000007 if play_mode == "endless" else 500000009
+	random.seed = level_number * 104729 + piece_batch * 99991 + salt
+	var tier := 6 if play_mode == "endless" else 4
+	var pool: Array = (CampaignGenerator.TIER_POOLS.get(tier, CampaignGenerator.TIER_POOLS[1]) as Array)
+	for i in range(3):
+		var shape_index := int(pool[random.randi_range(0, pool.size() - 1)])
+		if play_mode == "zen" and i == 0:
+			shape_index = random.randi_range(0, 4)
+		pieces.append(CampaignGenerator.SHAPES[shape_index].duplicate())
+		piece_colors.append(COLOR_PALETTE[random.randi_range(0, COLOR_PALETTE.size() - 1)])
+	selected_piece = -1
+	if not any_move_available():
+		pieces[0] = CampaignGenerator.SHAPES[0].duplicate()
+
+func _apply_free_mode_board() -> void:
+	if play_mode == "zen":
+		return
+	var random := RandomNumberGenerator.new()
+	random.seed = level_number * 65537 + 170141
+	var candidates: Array[int] = []
+	for idx in range(GRID_SIZE * GRID_SIZE):
+		candidates.append(idx)
+	for i in range(candidates.size() - 1, 0, -1):
+		var j := random.randi_range(0, i)
+		var tmp := candidates[i]
+		candidates[i] = candidates[j]
+		candidates[j] = tmp
+	var target := 8
+	for i in range(target):
+		var idx := candidates[i]
+		var y := int(idx / GRID_SIZE)
+		var x := idx % GRID_SIZE
+		cells[y][x] = true
+		cell_colors[y][x] = COLOR_PALETTE[random.randi_range(0, COLOR_PALETTE.size() - 1)]
+
+func _reset_zen_board() -> void:
+	for y in range(GRID_SIZE):
+		for x in range(GRID_SIZE):
+			cells[y][x] = false
+			cell_colors[y][x] = Color.TRANSPARENT
+	campaign_special_cells.clear()
+	target_rows_pending.clear()
+	target_cols_pending.clear()
+	campaign_failed = false
+	piece_batch += 1
+	refill_pieces()
+	selected_piece = -1
+	status_label.text = "Fresh space"
+	render()
+	_save_checkpoint()
+
+func _complete_extreme_mode() -> void:
+	if completed:
+		return
+	completed = true
+	MultiGameManager.clear_checkpoint(GAME_ID)
+	_record_mode_best()
+	FeedbackManager.complete()
+	status_label.text = "EXTREME MASTERED"
+	AnalyticsManager.track("block_puzzle_extreme_completed", {
+		"level": level_number,
+		"score": score,
+		"lines": lines_cleared,
+		"placements": placements
+	})
+	var result := PremiumResultOverlay.new()
+	result.configure(
+		"EXTREME COMPLETE",
+		"You cleared the expert variant without changing campaign progression.",
+		"SCORE %d   •   %d LINES\n%d PLACEMENTS   •   LIMIT %d" % [score, lines_cleared, placements, campaign_move_limit],
+		3 if placements <= par_placements else 2,
+		Color("ff5f72"),
+		"BACK TO LEVELS"
+	)
+	add_child(result)
+	result.continue_requested.connect(func() -> void:
+		finished.emit(-1)
+		queue_free()
+	)
+
+func _record_mode_best() -> void:
+	if play_mode == "campaign" or daily_mode:
+		return
+	var stats = SaveManager.data.get("block_mode_stats", {})
+	if not stats is Dictionary:
+		stats = {}
+	var mode_stats = (stats as Dictionary).get(play_mode, {})
+	if not mode_stats is Dictionary:
+		mode_stats = {}
+	mode_stats["best_score"] = maxi(int((mode_stats as Dictionary).get("best_score", 0)), score)
+	mode_stats["best_lines"] = maxi(int((mode_stats as Dictionary).get("best_lines", 0)), lines_cleared)
+	mode_stats["runs"] = int((mode_stats as Dictionary).get("runs", 0)) + 1
+	if play_mode == "extreme":
+		mode_stats["best_level"] = maxi(int((mode_stats as Dictionary).get("best_level", 0)), level_number)
+	(stats as Dictionary)[play_mode] = mode_stats
+	SaveManager.data["block_mode_stats"] = stats
+	SaveManager.save()
+
+func _quit() -> void:
+	_record_mode_best()
+	super._quit()
 
 func _apply_campaign_plan_board() -> void:
 	var initial: Array = campaign_plan.get("initial_cells", [])
@@ -698,16 +875,18 @@ func _save_checkpoint() -> void:
 	checkpoint["required_double_clears"] = required_double_clears
 	checkpoint["double_clear_progress"] = double_clear_progress
 	checkpoint["campaign_failed"] = campaign_failed
+	checkpoint["play_mode"] = play_mode
 	checkpoint["booster_uses"] = booster_uses.duplicate(true)
 	MultiGameManager.save_checkpoint(GAME_ID, checkpoint)
 
 func _restore_checkpoint() -> void:
-	super._restore_checkpoint()
-	if daily_mode:
-		return
 	var checkpoint := MultiGameManager.checkpoint(GAME_ID)
 	if checkpoint.is_empty() or int(checkpoint.get("level", -1)) != level_number:
 		return
+	if not daily_mode and String(checkpoint.get("play_mode", "campaign")) != play_mode:
+		return
+	super._restore_checkpoint()
+	checkpoint = MultiGameManager.checkpoint(GAME_ID)
 	var saved_specials = checkpoint.get("campaign_special_cells", null)
 	if saved_specials is Dictionary:
 		campaign_special_cells = (saved_specials as Dictionary).duplicate(true)
@@ -730,7 +909,8 @@ func _fail_campaign(reason: String) -> void:
 		"reason": reason,
 		"placements": placements,
 		"difficulty_score": int(_profile().get("difficulty_score", 0)),
-		"batch": piece_batch
+		"batch": piece_batch,
+		"play_mode": play_mode
 	})
 	render()
 	_save_checkpoint()
