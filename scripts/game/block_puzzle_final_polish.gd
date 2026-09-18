@@ -15,11 +15,36 @@ var _tension_active := false
 func _ready() -> void:
 	super._ready()
 	_fit_3d_board_layout()
+	_style_premium_surface(false)
 
 func apply_theme_mode(dark: bool) -> void:
 	var environment := get_node_or_null("BlockPuzzle3DEnvironment") as Unjam3DGameplayStage
 	if environment != null:
 		environment.set_dark_mode(dark)
+	_style_premium_surface(dark)
+
+func _style_premium_surface(dark: bool) -> void:
+	var score_card := find_child("BlockScoreCard", true, false) as PanelContainer
+	if score_card != null:
+		score_card.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("54207f") if dark else Color("8f35dd"), 30, Color("f2c6ff"), 3, 16))
+	var objective := find_child("BlockObjectiveCard", true, false) as PanelContainer
+	if objective != null:
+		objective.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("25163a") if dark else Color(0.985, 0.955, 1.0, 0.98), 24, Color("dca8ff"), 2, 9))
+	if board_shell != null:
+		board_shell.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("32194f") if dark else Color("5a2d86"), 32, Color("f4c6ff"), 4, 22))
+	var tray := find_child("BlockTray", true, false) as PanelContainer
+	if tray != null:
+		tray.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("211631") if dark else Color(0.99, 0.955, 1.0, 0.99), 32, Color("efbaff"), 3, 16))
+	var tray_title := find_child("BlockTrayTitle", true, false) as Label
+	if tray_title != null:
+		Unjam3DTheme.label_3d(tray_title, Color("f5eaff") if dark else Unjam3DTheme.PURPLE_DARK, Color("12091e") if dark else Color.WHITE, 2)
+	var boosters := find_child("CampaignBoosters", true, false) as HBoxContainer
+	if boosters != null:
+		for child in boosters.get_children():
+			if child is Button:
+				var button := child as Button
+				button.custom_minimum_size.y = maxf(button.custom_minimum_size.y, 58.0)
+				Unjam3DTheme.gloss_button(button, Unjam3DTheme.PURPLE_DARK, false, 22, dark)
 
 func block_progression_band(level: int = level_number) -> String:
 	if level <= 1: return "starter"

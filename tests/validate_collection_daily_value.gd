@@ -61,7 +61,7 @@ func _run() -> void:
 	for token in ["HomeDailyGamesButton", "build_daily_games"]:
 		if not home.contains(token):
 			failures.append("Home is missing Daily Games route token: %s" % token)
-	for token in ["func build_daily_games", "DailyGamesGrid", "PLAY DAILY", "PERMANENT COLLECTION PERKS", "rainbow_bridge"]:
+	for token in ["func build_daily_games", "DailyGamesGrid", "PLAY DAILY", "PERMANENT REWARD BOOST", "rainbow_bridge"]:
 		if not main.contains(token):
 			failures.append("Premium main is missing Collection/Daily contract token: %s" % token)
 	if not live.contains("build_daily_games"):

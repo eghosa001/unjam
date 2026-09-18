@@ -4,6 +4,13 @@ var tutorial_layer: CanvasLayer
 var tutorial_panel: PanelContainer
 var tutorial_title: Label
 var tutorial_body: Label
+var tutorial_demo: Label
+var tutorial_step_label: Label
+var tutorial_progress_label: Label
+var tutorial_prev_button: Button
+var tutorial_next_button: Button
+var tutorial_steps: Array[String] = []
+var tutorial_step_index := 0
 var help_button: Button
 var theme_button: Button
 var tutorial_game := "rescue_rush"
@@ -107,57 +114,115 @@ func _build_shell() -> void:
 	tutorial_panel = PanelContainer.new()
 	tutorial_panel.name = "TutorialPanel"
 	tutorial_panel.set_anchors_preset(Control.PRESET_CENTER)
-	tutorial_panel.position = Vector2(-430, -560)
-	tutorial_panel.custom_minimum_size = Vector2(860, 1120)
+	tutorial_panel.position = Vector2(-430, -500)
+	tutorial_panel.custom_minimum_size = Vector2(860, 1000)
 	tutorial_panel.visible = false
 	PremiumDesignSystem.apply_panel(tutorial_panel, dark, accent, true, 36)
 	tutorial_layer.add_child(tutorial_panel)
+
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 38)
 	margin.add_theme_constant_override("margin_right", 38)
-	margin.add_theme_constant_override("margin_top", 36)
-	margin.add_theme_constant_override("margin_bottom", 36)
+	margin.add_theme_constant_override("margin_top", 30)
+	margin.add_theme_constant_override("margin_bottom", 30)
 	tutorial_panel.add_child(margin)
+
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 24)
+	box.add_theme_constant_override("separation", 16)
 	margin.add_child(box)
 
 	var eyebrow := Label.new()
-	eyebrow.text = "UNJAM PLAY GUIDE"
+	eyebrow.text = "QUICK PLAY GUIDE"
 	eyebrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	eyebrow.add_theme_font_size_override("font_size", 15)
 	PremiumDesignSystem.apply_label(eyebrow, dark, "accent", accent)
 	box.add_child(eyebrow)
+
 	tutorial_title = Label.new()
 	tutorial_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	tutorial_title.add_theme_font_size_override("font_size", 40)
+	tutorial_title.add_theme_font_size_override("font_size", 38)
 	PremiumDesignSystem.apply_label(tutorial_title, dark, "title", accent)
 	box.add_child(tutorial_title)
+
 	tutorial_body = Label.new()
-	tutorial_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	tutorial_body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	tutorial_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	tutorial_body.add_theme_font_size_override("font_size", 28)
+	tutorial_body.add_theme_font_size_override("font_size", 21)
 	PremiumDesignSystem.apply_label(tutorial_body, dark, "body", accent)
 	box.add_child(tutorial_body)
+
+	var demo_panel := PanelContainer.new()
+	demo_panel.name = "TutorialDemoPanel"
+	demo_panel.custom_minimum_size = Vector2(0, 190)
+	PremiumDesignSystem.apply_panel(demo_panel, dark, accent, true, 30)
+	box.add_child(demo_panel)
+	var demo_margin := MarginContainer.new()
+	for side in ["left", "right", "top", "bottom"]:
+		demo_margin.add_theme_constant_override("margin_%s" % side, 18)
+	demo_panel.add_child(demo_margin)
+	var demo_box := VBoxContainer.new()
+	demo_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	demo_box.add_theme_constant_override("separation", 10)
+	demo_margin.add_child(demo_box)
+
+	tutorial_demo = Label.new()
+	tutorial_demo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tutorial_demo.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	tutorial_demo.add_theme_font_size_override("font_size", 48)
+	PremiumDesignSystem.apply_label(tutorial_demo, dark, "title", accent)
+	demo_box.add_child(tutorial_demo)
+
+	tutorial_step_label = Label.new()
+	tutorial_step_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tutorial_step_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	tutorial_step_label.add_theme_font_size_override("font_size", 25)
+	PremiumDesignSystem.apply_label(tutorial_step_label, dark, "body", accent)
+	demo_box.add_child(tutorial_step_label)
+
+	tutorial_progress_label = Label.new()
+	tutorial_progress_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tutorial_progress_label.add_theme_font_size_override("font_size", 15)
+	PremiumDesignSystem.apply_label(tutorial_progress_label, dark, "accent", accent)
+	box.add_child(tutorial_progress_label)
+
+	var step_nav := HBoxContainer.new()
+	step_nav.name = "TutorialStepNavigation"
+	step_nav.add_theme_constant_override("separation", 10)
+	box.add_child(step_nav)
+	tutorial_prev_button = Button.new()
+	tutorial_prev_button.text = "‹  BACK"
+	tutorial_prev_button.custom_minimum_size = Vector2(0, 70)
+	tutorial_prev_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tutorial_prev_button.pressed.connect(_tutorial_previous)
+	PremiumDesignSystem.apply_button(tutorial_prev_button, dark, accent, "secondary", 22)
+	step_nav.add_child(tutorial_prev_button)
+	tutorial_next_button = Button.new()
+	tutorial_next_button.text = "NEXT  ›"
+	tutorial_next_button.custom_minimum_size = Vector2(0, 70)
+	tutorial_next_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tutorial_next_button.pressed.connect(_tutorial_next)
+	PremiumDesignSystem.apply_button(tutorial_next_button, dark, accent, "primary", 22)
+	step_nav.add_child(tutorial_next_button)
 
 	var tabs := HBoxContainer.new()
 	tabs.name = "TutorialTabs"
 	tabs.alignment = BoxContainer.ALIGNMENT_CENTER
-	tabs.add_theme_constant_override("separation", 10)
+	tabs.add_theme_constant_override("separation", 8)
 	box.add_child(tabs)
 	for game_id in ["rescue_rush", "water_sort", "block_puzzle"]:
 		var button := Button.new()
 		button.text = _game_name(game_id)
-		button.custom_minimum_size = Vector2(0, 66)
+		button.custom_minimum_size = Vector2(0, 62)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.add_theme_font_size_override("font_size", 16)
+		button.add_theme_font_size_override("font_size", 15)
 		button.pressed.connect(show_tutorial.bind(game_id))
 		PremiumDesignSystem.apply_button(button, dark, PremiumDesignSystem.accent_for_game(game_id), "secondary", 20)
 		tabs.add_child(button)
+
 	var close := Button.new()
 	close.name = "TutorialClose"
-	close.text = "GOT IT — PLAY"
-	close.custom_minimum_size = Vector2(0, 84)
+	close.text = "PLAY NOW"
+	close.custom_minimum_size = Vector2(0, 82)
 	close.add_theme_font_size_override("font_size", 22)
 	close.pressed.connect(hide_tutorial)
 	PremiumDesignSystem.apply_button(close, dark, accent, "primary", 24)
@@ -202,14 +267,31 @@ func show_tutorial(game_id: String = "rescue_rush") -> void:
 	if tutorial_panel == null:
 		return
 	tutorial_game = game_id
-	tutorial_title.text = _game_name(game_id) + " — HOW TO PLAY"
+	tutorial_step_index = 0
+	tutorial_title.text = _game_name(game_id)
 	match game_id:
 		"water_sort":
-			tutorial_body.text = "GOAL\nPut each colour into its own tube.\n\nHOW\n1. Tap a tube that contains liquid.\n2. Tap another tube to pour into it.\n3. Pour only into an empty tube or onto the same colour.\n4. A tube holds four layers.\n\nTIP\nUse empty tubes as temporary space. UNDO reverses your last pour and HINT suggests a legal move."
+			tutorial_body.text = "Sort every colour into its own tube. You only need three ideas."
+			tutorial_steps = [
+				"Tap a tube with liquid, then tap the tube you want to pour into.",
+				"Pour only into an empty tube or onto the same colour. Each tube holds four layers.",
+				"Use empty tubes as breathing room. UNDO repairs a mistake; HINT reveals a safe move."
+			]
 		"block_puzzle":
-			tutorial_body.text = "GOAL\nPlace the available shapes and clear complete rows or columns.\n\nHOW\n1. Touch and hold a piece.\n2. Drag it onto the board; the lifted preview keeps the target visible.\n3. Release over a valid position to place it.\n4. Clear lines to keep space open and build combos.\n\nTIP\nPlan all three pieces before using tight spaces."
+			tutorial_body.text = "Place all three shapes, clear lines and protect your future space."
+			tutorial_steps = [
+				"Touch and hold a piece. It lifts so the board stays visible under your finger.",
+				"Drag to a valid position and release. Complete rows or columns disappear immediately.",
+				"Look at all three pieces before committing. Keep the centre and long lanes flexible."
+			]
 		_:
-			tutorial_body.text = "GOAL\nFree the trapped character by sending every arrow block out of the board.\n\nHOW\n1. Each arrow moves only in the direction it points.\n2. Tap an arrow only when its entire path to the edge is clear.\n3. Escaping arrows can trigger special pieces and chain reactions.\n4. Clear the path around the rescue character to complete the level.\n\nTIP\nRead the outside lanes first. HINT highlights a useful move and UNDO reverses mistakes."
+			tutorial_body.text = "Free the trapped character by opening a clear route to the edge."
+			tutorial_steps = [
+				"Read the arrow. A piece can leave only in the direction it points.",
+				"Tap it only when every square from the piece to the edge is clear.",
+				"Special pieces can open gates or trigger chains. Clear the rescue lane to finish."
+			]
+	_render_tutorial_step()
 	var dim := tutorial_layer.get_node("TutorialDim") as ColorRect
 	dim.visible = true
 	tutorial_panel.visible = true
@@ -217,6 +299,38 @@ func show_tutorial(game_id: String = "rescue_rush") -> void:
 	theme_button.visible = false
 	var dark := theme_mode == "dark"
 	PremiumDesignSystem.apply_panel(tutorial_panel, dark, PremiumDesignSystem.accent_for_game(game_id), true, 36)
+
+func _tutorial_demo_for(game_id: String, step: int) -> String:
+	match game_id:
+		"water_sort":
+			return ["▥  →  ▥", "●●  →  ●●", "▥  ◌  ▥"][clampi(step, 0, 2)]
+		"block_puzzle":
+			return ["◆  ⇧", "◆  →  ▦", "▦  ✦  ▦"][clampi(step, 0, 2)]
+		_:
+			return ["↗  →  EDGE", "■  ✕  ↗", "↗  ✦  ♥"][clampi(step, 0, 2)]
+
+func _render_tutorial_step() -> void:
+	if tutorial_steps.is_empty() or tutorial_step_label == null:
+		return
+	tutorial_step_index = clampi(tutorial_step_index, 0, tutorial_steps.size() - 1)
+	tutorial_demo.text = _tutorial_demo_for(tutorial_game, tutorial_step_index)
+	tutorial_step_label.text = tutorial_steps[tutorial_step_index]
+	tutorial_progress_label.text = "STEP %d OF %d" % [tutorial_step_index + 1, tutorial_steps.size()]
+	tutorial_prev_button.disabled = tutorial_step_index <= 0
+	tutorial_next_button.disabled = tutorial_step_index >= tutorial_steps.size() - 1
+	tutorial_next_button.text = "READY ✓" if tutorial_next_button.disabled else "NEXT  ›"
+
+func _tutorial_next() -> void:
+	if tutorial_step_index < tutorial_steps.size() - 1:
+		tutorial_step_index += 1
+		FeedbackManager.tap()
+		_render_tutorial_step()
+
+func _tutorial_previous() -> void:
+	if tutorial_step_index > 0:
+		tutorial_step_index -= 1
+		FeedbackManager.tap()
+		_render_tutorial_step()
 
 func hide_tutorial() -> void:
 	if tutorial_panel == null:

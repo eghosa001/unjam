@@ -60,46 +60,64 @@ func build_settings() -> void:
 	_remove_active_game()
 	var root := _page_root()
 	var accent := _accent()
-	_page_header(root, "SETTINGS", "Comfort, sound and accessibility", "AUTO-SAVE", PremiumDesignSystem.SUCCESS)
-	var intro := _card(root, Vector2(0, 88), true)
-	var intro_margin := _pad(intro, 18)
-	var intro_label := _label("Tune sound, comfort and appearance across all three games.", 18, "muted", accent)
-	intro_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	intro_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	intro_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	intro_margin.add_child(intro_label)
-	var controls := GridContainer.new()
-	controls.name = "CompactSettingsGrid"
-	controls.columns = 2
-	controls.add_theme_constant_override("h_separation", 14)
-	controls.add_theme_constant_override("v_separation", 18)
-	controls.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	controls.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	root.add_child(controls)
-	var setting_rows: Array = [
-		["sound", "SOUND", "Effects", true],
-		["music", "MUSIC", "Ambient audio", true],
-		["vibration", "HAPTICS", "Touch feedback", true]
-	]
-	for setting in setting_rows:
+	_page_header(root, "SETTINGS", "Make UNJAM feel right for you", "AUTO-SAVE", PremiumDesignSystem.SUCCESS)
+
+	var scroll := ScrollContainer.new()
+	scroll.name = "SettingsScroll"
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	root.add_child(scroll)
+	var stack := VBoxContainer.new()
+	stack.name = "PremiumSettingsStack"
+	stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	stack.add_theme_constant_override("separation", 16)
+	scroll.add_child(stack)
+
+	var audio := _card(stack, Vector2(0, 0), true)
+	var audio_margin := _pad(audio, 20)
+	var audio_box := VBoxContainer.new()
+	audio_box.add_theme_constant_override("separation", 10)
+	audio_margin.add_child(audio_box)
+	audio_box.add_child(_label("♫  SOUND & FEEL", 24, "title", accent))
+	audio_box.add_child(_label("Choose how every tap, move and celebration responds.", 17, "muted", accent))
+	for setting in [
+		["sound", "🔊  SOUND EFFECTS", "Moves, taps and rewards", true],
+		["music", "♫  MUSIC", "Calm background soundtrack", true],
+		["vibration", "◉  HAPTICS", "Touch vibration feedback", true]
+	]:
 		var key := String(setting[0])
 		var enabled := bool(SaveManager.data.get(key, bool(setting[3])))
 		var button := _setting_button(String(setting[1]), String(setting[2]), enabled, accent)
 		button.pressed.connect(_toggle_setting.bind(key))
-		controls.add_child(button)
+		audio_box.add_child(button)
+
+	var comfort := _card(stack, Vector2(0, 0), false)
+	var comfort_margin := _pad(comfort, 20)
+	var comfort_box := VBoxContainer.new()
+	comfort_box.add_theme_constant_override("separation", 10)
+	comfort_margin.add_child(comfort_box)
+	comfort_box.add_child(_label("✦  COMFORT", 24, "title", accent))
+	comfort_box.add_child(_label("Large touch targets are always on. Adjust motion speed here.", 17, "muted", accent))
 	var reduced := bool(SaveManager.data.get("reduce_motion", false))
-	var reduced_button := _setting_button("REDUCED MOTION", "Minimise non-essential animation", reduced, accent)
+	var reduced_button := _setting_button("◌  REDUCED MOTION", "Minimise decorative movement", reduced, accent)
 	reduced_button.pressed.connect(_toggle_reduced_motion)
-	controls.add_child(reduced_button)
+	comfort_box.add_child(reduced_button)
 	var fast := bool(SaveManager.data.get("fast_animation", false))
-	var fast_button := _setting_button("FAST ANIMATION", "Quicker gameplay motion", fast, accent)
+	var fast_button := _setting_button("»  FAST ANIMATION", "Quicker gameplay transitions", fast, accent)
 	fast_button.pressed.connect(_toggle_setting.bind("fast_animation"))
-	controls.add_child(fast_button)
+	comfort_box.add_child(fast_button)
+
+	var appearance_card := _card(stack, Vector2(0, 0), true)
+	var appearance_margin := _pad(appearance_card, 20)
+	var appearance_box := VBoxContainer.new()
+	appearance_box.add_theme_constant_override("separation", 10)
+	appearance_margin.add_child(appearance_box)
+	appearance_box.add_child(_label("☀  APPEARANCE", 24, "title", accent))
 	var shell := get_node_or_null("UXShell")
 	var theme_name := "LIGHT"
 	if shell != null and shell.get("theme_mode") != null:
 		theme_name = String(shell.get("theme_mode")).to_upper()
-	var appearance := _button("APPEARANCE   •   %s" % theme_name, Vector2(0, 112 if get_viewport_rect().size.y >= 1400.0 else 84), "secondary")
+	var appearance := _button("THEME  •  %s\nTap to switch appearance" % theme_name, Vector2(0, 92), "secondary")
 	appearance.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	appearance.add_theme_font_size_override("font_size", 20)
 	appearance.pressed.connect(func() -> void:
@@ -107,44 +125,36 @@ func build_settings() -> void:
 			shell.call("_toggle_theme")
 		call_deferred("build_settings")
 	)
-	controls.add_child(appearance)
-	var accessibility_note := _label("ACCESSIBILITY  •  LARGE TOUCH TARGETS ARE ENABLED THROUGHOUT GAMEPLAY", 16, "muted", accent)
-	accessibility_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	accessibility_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	root.add_child(accessibility_note)
-	var help_card := _card(root, Vector2(0, 132), false)
-	var help_margin := _pad(help_card, 18)
+	appearance_box.add_child(appearance)
+
+	var help_card := _card(stack, Vector2(0, 0), false)
+	var help_margin := _pad(help_card, 20)
 	var help_box := VBoxContainer.new()
-	help_box.add_theme_constant_override("separation", 12)
+	help_box.add_theme_constant_override("separation", 10)
 	help_margin.add_child(help_box)
-	var help_title := _label("HELP & PRIVACY", 20, "accent", accent)
-	help_box.add_child(help_title)
-	var utility := HBoxContainer.new()
-	utility.add_theme_constant_override("separation", 12)
-	help_box.add_child(utility)
-	var how_to := _button("?  HOW TO PLAY", Vector2(0, 74), "utility")
+	help_box.add_child(_label("?  HELP & PRIVACY", 24, "title", accent))
+	var how_to := _button("HOW TO PLAY\nQuick visual guide for the current game", Vector2(0, 88), "utility")
 	how_to.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	how_to.pressed.connect(_show_current_tutorial)
-	utility.add_child(how_to)
-	var privacy := _button("PRIVACY OPTIONS", Vector2(0, 74), "utility")
+	help_box.add_child(how_to)
+	var privacy := _button("PRIVACY OPTIONS\nReview consent and privacy controls", Vector2(0, 88), "utility")
 	privacy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	privacy.pressed.connect(PrivacyManager.show_privacy_options)
-	utility.add_child(privacy)
-	var note := _label("Progress saves automatically. You can adjust sound, music, haptics, motion and appearance at any time.", 15, "muted", accent)
+	help_box.add_child(privacy)
+
+	var note := _label("Your progress saves automatically.", 16, "muted", accent)
 	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	root.add_child(note)
-	PremiumVisuals.entrance(root, 0.018)
+	stack.add_child(note)
+	PremiumVisuals.entrance(stack, 0.018)
 	_add_surface_diorama(selected_game_id, "Settings3DDiorama")
 
 func _setting_button(title_text: String, detail_text: String, enabled: bool, accent: Color) -> Button:
 	var state := "ON" if enabled else "OFF"
 	var role := "success" if enabled else "toggle_off"
-	var button_height := 104 if get_viewport_rect().size.y >= 1400.0 else 88
-	var button := _button("%s   •   %s\n%s" % [title_text, state, detail_text], Vector2(0, button_height), role)
+	var button := _button("%s   •   %s\n%s" % [title_text, state, detail_text], Vector2(0, 94), role)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	button.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	button.add_theme_font_size_override("font_size", 19)
+	button.add_theme_font_size_override("font_size", 20)
+	button.tooltip_text = "%s: %s" % [title_text, state]
 	return button
 
 func _toggle_reduced_motion() -> void:
@@ -287,7 +297,7 @@ func build_collection() -> void:
 	_remove_active_game()
 	var root := _page_root()
 	var accent := _accent("rescue_rush")
-	_page_header(root, "COLLECTION", "Your complete UNJAM journey", "◈  %d" % int(SaveManager.data.get("coins", 0)), PremiumDesignSystem.GOLD)
+	_page_header(root, "COLLECTION", "Progress, friends and permanent rewards", "◈  %d" % int(SaveManager.data.get("coins", 0)), PremiumDesignSystem.GOLD)
 	var scroll := ScrollContainer.new()
 	scroll.name = "CollectionScroll"
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -307,12 +317,12 @@ func build_collection() -> void:
 		total_stars += MultiGameManager.total_stars(game_id)
 		total_perfect += int(progress.get("perfect_clears", 0))
 		total_badges += (progress.get("world_badges", []) as Array).size()
-	var overview := _card(stack, Vector2(0, 172), true)
+	var overview := _card(stack, Vector2(0, 184), true)
 	var overview_margin := _pad(overview, 20)
 	var overview_box := VBoxContainer.new()
 	overview_box.add_theme_constant_override("separation", 12)
 	overview_margin.add_child(overview_box)
-	var overview_title := _label("JOURNEY OVERVIEW", 27, "title", accent)
+	var overview_title := _label("YOUR UNJAM JOURNEY", 28, "title", accent)
 	overview_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	overview_box.add_child(overview_title)
 	var metrics := GridContainer.new()
@@ -323,7 +333,7 @@ func build_collection() -> void:
 	for metric in [["LEVELS", total_completed], ["STARS", total_stars], ["PERFECT", total_perfect], ["BADGES", total_badges]]:
 		var chip := _journey_metric(String(metric[0]), int(metric[1]), accent)
 		metrics.add_child(chip)
-	var games_title := _label("YOUR THREE GAMES", 24, "title", accent)
+	var games_title := _label("THREE PUZZLE WORLDS", 25, "title", accent)
 	stack.add_child(games_title)
 	var game_grid := GridContainer.new()
 	game_grid.columns = 2 if get_viewport_rect().size.x >= 720.0 else 1
@@ -338,7 +348,7 @@ func build_collection() -> void:
 	var achievement_box := VBoxContainer.new()
 	achievement_box.add_theme_constant_override("separation", 8)
 	achievement_margin.add_child(achievement_box)
-	achievement_box.add_child(_label("ACHIEVEMENTS", 23, "title", Unjam3DTheme.GOLD))
+	achievement_box.add_child(_label("★  ACHIEVEMENT CABINET", 24, "title", Unjam3DTheme.GOLD))
 	var achievement_lines: Array[String] = []
 	for game_id in MultiGameManager.GAME_IDS:
 		var unlocked := MultiGameManager.unlocked_achievements(game_id)
@@ -351,7 +361,7 @@ func build_collection() -> void:
 	var garden_box := VBoxContainer.new()
 	garden_box.add_theme_constant_override("separation", 10)
 	garden_margin.add_child(garden_box)
-	garden_box.add_child(_label("RESCUE GARDEN", 25, "title", accent))
+	garden_box.add_child(_label("♥  RESCUE GARDEN", 26, "title", accent))
 	var rescued: Array = SaveManager.data.get("rescued", [])
 	var friends := _label(_friend_roster_text(rescued), 20, "body", accent)
 	friends.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -373,9 +383,9 @@ func build_collection() -> void:
 	value_box.add_theme_constant_override("separation", 8)
 	value_margin.add_child(value_box)
 	var owned_count := EconomyManager.collection_owned_count()
-	value_box.add_child(_label("PERMANENT COLLECTION PERKS  •  %d / 6" % owned_count, 23, "title", PremiumDesignSystem.GOLD))
+	value_box.add_child(_label("✦  PERMANENT REWARD BOOST  •  %d / 6" % owned_count, 24, "title", PremiumDesignSystem.GOLD))
 	var value_copy := _label(
-		"Every owned upgrade adds +5 coins to EVERY Daily Game. Your garden also creates a once-per-day gift; a complete 6/6 garden adds an extra +20 gift bonus.",
+		"Each upgrade permanently adds +5 coins to every Daily Game and strengthens your once-per-day Garden Gift.",
 		18,
 		"body",
 		accent
@@ -462,33 +472,67 @@ func _journey_metric(title_text: String, value: int, accent: Color) -> PanelCont
 
 func _collection_game_card(game_id: String) -> PanelContainer:
 	var accent := Unjam3DTheme.game_accent(game_id)
-	var progress := MultiGameManager.progress_for(game_id)
-	var highest := clampi(int(progress.get("highest_level", 1)), 1, MultiGameManager.CAMPAIGN_LEVELS)
+	var progress_data := MultiGameManager.progress_for(game_id)
+	var highest := clampi(int(progress_data.get("highest_level", 1)), 1, MultiGameManager.CAMPAIGN_LEVELS)
+	var world := MultiGameManager.world_for_game_level(game_id, highest)
+	var local_level := posmod(highest - 1, 100) + 1
+	var icon := "↗"
+	if game_id == "water_sort":
+		icon = "◉"
+	elif game_id == "block_puzzle":
+		icon = "◆"
+
 	var card := PanelContainer.new()
-	card.custom_minimum_size = Vector2(0, 210)
+	card.custom_minimum_size = Vector2(0, 248)
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	card.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Unjam3DTheme.surface_fill(_dark(), false), 26, Color(accent, 0.75), 2, 8))
+	card.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Unjam3DTheme.surface_fill(_dark(), true), 28, Color(accent, 0.82), 3, 11))
 	var margin := MarginContainer.new()
 	for side in ["left", "right", "top", "bottom"]:
 		margin.add_theme_constant_override("margin_%s" % side, 18)
 	card.add_child(margin)
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 7)
+	box.add_theme_constant_override("separation", 8)
 	margin.add_child(box)
-	var title := _label(MultiGameManager.display_name(game_id), 23, "title", accent)
+
+	var title := _label("%s  %s" % [icon, MultiGameManager.display_name(game_id).to_upper()], 24, "title", accent)
 	box.add_child(title)
-	box.add_child(_label("LEVEL %d  •  WORLD %d / %d" % [highest, MultiGameManager.world_for_game_level(game_id, highest), MultiGameManager.world_count_for(game_id)], 17, "body", accent))
-	box.add_child(_label("★ %d   •   PERFECT %d" % [MultiGameManager.total_stars(game_id), int(progress.get("perfect_clears", 0))], 16, "muted", accent))
-	box.add_child(_label("%d levels cleared  •  %d badges" % [int(progress.get("levels_completed", 0)), (progress.get("world_badges", []) as Array).size()], 15, "muted", accent))
-	var open := _button("OPEN LEVELS", Vector2(0, 68), "primary", game_id)
+	var journey := _label("WORLD %d  •  LEVEL %d" % [world, highest], 18, "body", accent)
+	box.add_child(journey)
+
+	var progress := ProgressBar.new()
+	progress.max_value = 100.0
+	progress.value = float(local_level)
+	progress.show_percentage = false
+	progress.custom_minimum_size = Vector2(0, 18)
+	progress.add_theme_stylebox_override("background", PremiumDesignSystem.box(PremiumDesignSystem.surface_3(_dark()), 9, Color.TRANSPARENT, 0, 0, _dark()))
+	progress.add_theme_stylebox_override("fill", PremiumDesignSystem.box(accent, 9, accent.lightened(0.14), 1, 0, _dark()))
+	box.add_child(progress)
+
+	var stats := _label("★ %s   •   PERFECT %d   •   BADGES %d" % [
+		_compact_stat(MultiGameManager.total_stars(game_id)),
+		int(progress_data.get("perfect_clears", 0)),
+		(progress_data.get("world_badges", []) as Array).size()
+	], 16, "muted", accent)
+	stats.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(stats)
+
+	var open := _button("OPEN JOURNEY", Vector2(0, 72), "primary", game_id)
 	open.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	open.pressed.connect(open_game_campaign.bind(game_id))
 	box.add_child(open)
 	return card
 
+func _compact_stat(value: int) -> String:
+	if value >= 1000000:
+		return "%.1fM" % (float(value) / 1000000.0)
+	if value >= 1000:
+		return "%.1fK" % (float(value) / 1000.0)
+	return str(value)
+
 func build_level_select() -> void:
 	super.build_level_select()
 	_inject_game_tabs("rescue_rush")
+	_inject_journey_summary("rescue_rush")
 	_upgrade_level_browser("rescue_rush")
 	_add_surface_diorama("rescue_rush", "Levels3DDiorama")
 
@@ -497,6 +541,7 @@ func build_multi_level_select() -> void:
 	_inject_game_tabs(selected_game_id)
 	if selected_game_id == "block_puzzle":
 		_inject_block_modes()
+	_inject_journey_summary(selected_game_id)
 	_upgrade_level_browser(selected_game_id)
 	_add_surface_diorama(selected_game_id, "Levels3DDiorama")
 
@@ -568,10 +613,78 @@ func _find_page_root() -> VBoxContainer:
 					return inner as VBoxContainer
 	return null
 
+func _inject_journey_summary(game_id: String) -> void:
+	var root := _find_page_root()
+	if root == null:
+		return
+	var old := root.get_node_or_null("JourneySummary")
+	if old != null:
+		root.remove_child(old)
+		old.queue_free()
+
+	var accent := Unjam3DTheme.game_accent(game_id)
+	var level := _highest_level_for_game(game_id)
+	var world := MultiGameManager.world_for_game_level(game_id, level)
+	var world_count := MultiGameManager.world_count_for(game_id)
+	var local_level := posmod(level - 1, 100) + 1
+	var next_milestone := 25
+	for milestone in [25, 50, 75, 100]:
+		if local_level <= milestone:
+			next_milestone = milestone
+			break
+
+	var card := PanelContainer.new()
+	card.name = "JourneySummary"
+	card.custom_minimum_size = Vector2(0, 190)
+	card.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Unjam3DTheme.surface_fill(_dark(), true), 30, Color(accent, 0.82), 3, 12))
+	var margin := MarginContainer.new()
+	for side in ["left", "right", "top", "bottom"]:
+		margin.add_theme_constant_override("margin_%s" % side, 20)
+	card.add_child(margin)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 9)
+	margin.add_child(box)
+
+	var top := HBoxContainer.new()
+	top.add_theme_constant_override("separation", 12)
+	box.add_child(top)
+	var copy := VBoxContainer.new()
+	copy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top.add_child(copy)
+	var title := _label("%s JOURNEY" % MultiGameManager.display_name(game_id).to_upper(), 25, "title", accent)
+	copy.add_child(title)
+	var detail := _label("WORLD %d / %d  •  LEVEL %d  •  NEXT MILESTONE %d" % [world, world_count, level, next_milestone], 17, "body", accent)
+	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	copy.add_child(detail)
+	var play := _button("▶  CONTINUE", Vector2(220, 72), "primary", game_id)
+	play.pressed.connect(_continue_campaign.bind(game_id))
+	top.add_child(play)
+
+	var progress := ProgressBar.new()
+	progress.max_value = 100.0
+	progress.value = float(local_level)
+	progress.show_percentage = false
+	progress.custom_minimum_size = Vector2(0, 22)
+	progress.add_theme_stylebox_override("background", PremiumDesignSystem.box(PremiumDesignSystem.surface_3(_dark()), 10, Color.TRANSPARENT, 0, 0, _dark()))
+	progress.add_theme_stylebox_override("fill", PremiumDesignSystem.box(accent, 10, accent.lightened(0.14), 1, 0, _dark()))
+	box.add_child(progress)
+	var hint := _label("Challenge nodes at 25 • 50 • 75 • 100 are highlighted below.", 15, "muted", accent)
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(hint)
+
+	root.add_child(card)
+	root.move_child(card, mini(2, root.get_child_count() - 1))
+
+func _continue_campaign(game_id: String) -> void:
+	var level := _highest_level_for_game(game_id)
+	FeedbackManager.tap()
+	if game_id == "rescue_rush":
+		start_level(level)
+	else:
+		start_multi_level(game_id, level, false)
+
 func _level_column_count(usable_width: float) -> int:
 	if usable_width >= 900.0:
-		return 4
-	if usable_width >= 610.0:
 		return 3
 	return 2
 
@@ -595,8 +708,8 @@ func _upgrade_level_browser(game_id: String) -> void:
 			if not child is Button:
 				continue
 			var button := child as Button
-			button.custom_minimum_size = Vector2(maxf(132.0, button_width), 126.0)
-			button.add_theme_font_size_override("font_size", 21 if columns >= 3 else 19)
+			button.custom_minimum_size = Vector2(maxf(156.0, button_width), 148.0)
+			button.add_theme_font_size_override("font_size", 22 if columns >= 3 else 20)
 			var first_line := button.text.get_slice("\n", 0).strip_edges()
 			var is_current := "CURRENT" in button.text.to_upper() or (first_line.is_valid_int() and int(first_line) == current_level and not button.disabled)
 			if button.disabled:
