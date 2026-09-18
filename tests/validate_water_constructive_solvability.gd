@@ -1,7 +1,8 @@
 extends SceneTree
 
 const MAX_LEVEL := 10000
-const CAPACITY := 4\nconst Progression = preload("res://scripts/core/water_sort_progression.gd")
+const CAPACITY := 4
+const Progression = preload("res://scripts/core/water_sort_progression.gd")
 
 func _initialize() -> void:
 	call_deferred("_run")
