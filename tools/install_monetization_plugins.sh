@@ -13,13 +13,20 @@ curl -fL "https://github.com/godot-sdk-integrations/godot-google-play-billing/re
 rm -rf "$CACHE_DIR/billing"
 mkdir -p "$CACHE_DIR/billing"
 unzip -oq "$CACHE_DIR/billing.zip" -d "$CACHE_DIR/billing"
-BILLING_FILE=$(find "$CACHE_DIR/billing" -type f -name BillingClient.gd -print -quit)
-test -n "$BILLING_FILE"
-BILLING_DIR=$(dirname "$BILLING_FILE")
-test -f "$BILLING_DIR/plugin.cfg"
+BILLING_ADDON=$(find "$CACHE_DIR/billing" -type d -path "*/addons/GodotGooglePlayBilling" -print -quit)
+if [[ -z "$BILLING_ADDON" ]]; then
+  BILLING_FILE=$(find "$CACHE_DIR/billing" -type f -name BillingClient.gd -print -quit)
+  test -n "$BILLING_FILE"
+  BILLING_ADDON=$(dirname "$BILLING_FILE")
+fi
+test -f "$BILLING_ADDON/plugin.cfg"
 rm -rf addons/GodotGooglePlayBilling
 mkdir -p addons/GodotGooglePlayBilling
-cp -R "$BILLING_DIR/." addons/GodotGooglePlayBilling/
+cp -R "$BILLING_ADDON/." addons/GodotGooglePlayBilling/
+test -f addons/GodotGooglePlayBilling/BillingClient.gd
+test -f addons/GodotGooglePlayBilling/plugin.cfg
+test -f addons/GodotGooglePlayBilling/bin/debug/GodotGooglePlayBilling-debug.aar
+test -f addons/GodotGooglePlayBilling/bin/release/GodotGooglePlayBilling-release.aar
 
 # Poing Studios AdMob editor/GDScript plugin.
 curl -fL "https://github.com/poingstudios/godot-admob-plugin/releases/download/v${ADMOB_VERSION}/poing-godot-admob-v${ADMOB_VERSION}.zip" -o "$CACHE_DIR/admob.zip"
