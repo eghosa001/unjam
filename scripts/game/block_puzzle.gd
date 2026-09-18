@@ -450,7 +450,10 @@ func _spawn_clear_feedback(indices: Array[int], line_count: int) -> void:
 		tw.finished.connect(glow.queue_free)
 
 func _spawn_neon_debris(cell: Control, delay: float) -> void:
-	var center := cell.global_position + cell.size * 0.5
+	var global_center := cell.get_global_rect().get_center()
+	var center := global_center
+	if effects_layer != null:
+		center = effects_layer.get_global_transform_with_canvas().affine_inverse() * global_center
 	for j in range(3):
 		var p := Panel.new()
 		var side := 8.0 + float((j + int(center.x)) as int % 3) * 3.0

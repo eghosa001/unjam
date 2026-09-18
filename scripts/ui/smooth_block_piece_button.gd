@@ -21,8 +21,9 @@ func _begin_drag_feedback() -> void:
 	modulate = Color(1, 1, 1, 0)
 	var tween := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween.tween_property(self, "scale", Vector2(0.84, 0.84), 0.07)
-	if has_node("/root/FeedbackManager"):
-		FeedbackManager.tap()
+	var feedback := get_node_or_null("/root/FeedbackManager")
+	if feedback != null and feedback.has_method("tap"):
+		feedback.call("tap")
 
 func _get_drag_data(_at_position: Vector2) -> Variant:
 	if touch_drag_started:
@@ -82,7 +83,7 @@ func _show_touch_preview(screen_position: Vector2) -> void:
 	if touch_preview == null or not is_instance_valid(touch_preview):
 		_clear_single_touch_preview()
 		touch_preview = SmoothDragPreview.new()
-		touch_preview.configure(shape, accent)
+		touch_preview.configure(shape, accent, _board_cell_visual_size(game))
 		touch_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		touch_preview.z_index = 950
 		var layer = game.get("effects_layer")
@@ -100,7 +101,7 @@ func _make_drag_preview() -> Control:
 	wrapper.position = Vector2(-190, -315)
 	var preview := SmoothDragPreview.new()
 	preview.position = Vector2(10, 10)
-	preview.configure(shape, accent)
+	preview.configure(shape, accent, _board_cell_visual_size(_game()))
 	wrapper.add_child(preview)
 	return wrapper
 
@@ -144,7 +145,7 @@ func _finish_touch_drag(screen_position: Vector2) -> void:
 			_end_drag_feedback(false)
 	else:
 		_clear_touch_footprint()
-		if touch_preview != null and is_instance_valid(touch_preview) and touch_preview.has_method("set_drag_scale"):
-			touch_preview.call("set_drag_scale", Vector2(0.92, 0.92))
-		_hide_touch_preview(false)
+		# Restore the tray piece only after the floating copy is synchronously gone.
+		# Fading the preview while revealing the source creates a visible double.
+		_clear_single_touch_preview()
 		_end_drag_feedback(false)

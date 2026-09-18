@@ -1,0 +1,16 @@
+title: UNJAM
+description: Three premium puzzle games. One bright place to unwind.
+url: https://eghosa001.github.io
+baseurl: /unjam
+markdown: kramdown
+exclude:
+  - README.md
+  - RELEASE_CHECKLIST.md
+  - project.godot
+  - export_presets.cfg
+  - scenes
+  - scripts
+  - tests
+  - tools
+  - docs
+  - data

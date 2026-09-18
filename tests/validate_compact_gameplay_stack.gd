@@ -2,6 +2,8 @@ extends SceneTree
 
 const TALL_VIEWPORT := Vector2i(1080, 1920)
 const SELECTOR_VIEWPORTS := [
+	Vector2i(540, 960),
+	Vector2i(720, 1280),
 	Vector2i(1080, 1920),
 	Vector2i(1440, 3200)
 ]
@@ -74,22 +76,47 @@ func _check_selector(viewport_size: Vector2i, failures: Array[String]) -> void:
 	if main.has_signal("surface_changed"):
 		main.emit_signal("surface_changed", "live")
 	await _frames(4)
-	var quote_label := _find_label(main, "Different puzzles.")
-	var home_button := _find_button(main, "HOME")
-	if quote_label == null or home_button == null:
-		failures.append("Game selector final content or bottom navigation is missing at %s" % str(viewport_size))
+	var logical_size := root.get_visible_rect().size
+	var live := main.get_node_or_null("PremiumLive") as Control
+	var header := main.find_child("GameSelectorHeader", true, false) as Control
+	var scroll := main.find_child("GameSelectorScroll", true, false) as ScrollContainer
+	var nav := main.find_child("GameSelectorBottomNav", true, false) as Control
+	var title := main.find_child("GameSelectorTitle", true, false) as Label
+	if live == null or header == null or scroll == null or nav == null or title == null:
+		failures.append("Game selector responsive structure is incomplete at %s" % str(viewport_size))
 	else:
-		var quote := quote_label.get_parent() as Control
-		var nav := home_button.get_parent().get_parent() as Control
-		var gap := nav.get_global_rect().position.y - quote.get_global_rect().end.y
-		var max_gap := maxf(140.0, float(viewport_size.y) * 0.075)
-		print("SELECTOR_COMPOSITION %s gap=%.1f max=%.1f" % [str(viewport_size), gap, max_gap])
-		if gap < MIN_SELECTOR_TRAILING_GAP:
-			failures.append("Game selector content crowds/overlaps bottom navigation at %s: %.1fpx gap" % [str(viewport_size), gap])
-		elif gap > max_gap:
-			failures.append("Game selector leaves %.1fpx unused before bottom navigation at %s (max %.1fpx)" % [gap, str(viewport_size), max_gap])
+		var screen := Rect2(Vector2.ZERO, logical_size)
+		for control in [live, header, scroll, nav]:
+			var rect: Rect2 = (control as Control).get_global_rect()
+			if not _inside(rect, screen):
+				failures.append("Game selector control %s spills outside %s: %s" % [control.name, str(viewport_size), str(rect)])
+		var header_rect := header.get_global_rect()
+		var scroll_rect := scroll.get_global_rect()
+		var nav_rect := nav.get_global_rect()
+		if header_rect.intersects(nav_rect) or scroll_rect.intersects(nav_rect):
+			failures.append("Game selector content overlaps bottom navigation at %s" % str(viewport_size))
+		if scroll_rect.size.y < 180.0:
+			failures.append("Game selector scroll viewport is too short at %s: %.1fpx" % [str(viewport_size), scroll_rect.size.y])
+		if title.get_theme_font_size("font_size") < 26:
+			failures.append("Game selector title became unreadably small at %s" % str(viewport_size))
+		for game_id in ["rescue_rush", "water_sort", "block_puzzle"]:
+			var card := main.find_child("GameCard3D_%s" % game_id, true, false) as Control
+			var art := main.find_child("GameArtShell_%s" % game_id, true, false) as Control
+			if card == null or art == null:
+				failures.append("Game selector %s card/art missing at %s" % [game_id, str(viewport_size)])
+				continue
+			if not card.get_global_rect().encloses(art.get_global_rect()):
+				failures.append("Game selector %s artwork escapes its card at %s" % [game_id, str(viewport_size)])
+		print("SELECTOR_COMPOSITION physical=%s logical=%s header=%s scroll=%s nav=%s" % [str(viewport_size), str(logical_size), str(header_rect), str(scroll_rect), str(nav_rect)])
 	main.queue_free()
 	await process_frame
+
+func _inside(rect: Rect2, viewport_rect: Rect2) -> bool:
+	var epsilon := 2.0
+	return rect.position.x >= viewport_rect.position.x - epsilon \
+		and rect.position.y >= viewport_rect.position.y - epsilon \
+		and rect.end.x <= viewport_rect.end.x + epsilon \
+		and rect.end.y <= viewport_rect.end.y + epsilon
 
 func _find_label(node: Node, fragment: String) -> Label:
 	if node is Label and fragment in (node as Label).text:

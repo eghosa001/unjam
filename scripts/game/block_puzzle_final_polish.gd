@@ -197,13 +197,85 @@ func _fit_3d_board_layout() -> void:
 	if board_grid == null or board_shell == null or board_grid.get_child_count() == 0:
 		return
 	var viewport_size := get_viewport_rect().size
-	var available_board_width := maxf(320.0, viewport_size.x - 72.0)
-	var available_board_height := maxf(320.0, viewport_size.y * 0.54)
+	var compact_width := viewport_size.x < 700.0
+	var compact_height := viewport_size.y < 1100.0
+	var compact := compact_width or compact_height
+
+	var outer := get_node_or_null("BlockOuter") as MarginContainer
+	if outer != null:
+		var side := 16 if compact_width else 28
+		outer.add_theme_constant_override("margin_left", side)
+		outer.add_theme_constant_override("margin_right", side)
+		outer.add_theme_constant_override("margin_top", 10 if compact_height else 18)
+		outer.add_theme_constant_override("margin_bottom", 10 if compact_height else 22)
+	var root_box := get_node_or_null("BlockOuter/BlockRoot") as VBoxContainer
+	if root_box != null:
+		root_box.add_theme_constant_override("separation", 6 if compact else 8)
+
+	var header := find_child("BlockHeader", true, false) as HBoxContainer
+	if header != null:
+		header.custom_minimum_size.y = 60.0 if compact else 78.0
+		header.add_theme_constant_override("separation", 6 if compact_width else 12)
+	for spec in [["BackAction", 58.0, 54.0, 28], ["RetryAction", 58.0, 54.0, 28], ["HintAction", 96.0, 54.0, 14]]:
+		var button := find_child(String(spec[0]), true, false) as Button
+		if button == null:
+			continue
+		if compact:
+			button.custom_minimum_size = Vector2(float(spec[1]), float(spec[2]))
+			button.add_theme_font_size_override("font_size", int(spec[3]))
+	if title_label != null:
+		title_label.add_theme_font_size_override("font_size", 22 if compact_width else (26 if viewport_size.x < 900.0 else 31))
+
+	var score_card := find_child("BlockScoreCard", true, false) as PanelContainer
+	if score_card != null:
+		score_card.custom_minimum_size.y = 80.0 if compact_height else 92.0
+	if score_label != null:
+		score_label.add_theme_font_size_override("font_size", 31 if compact else 39)
+	if goal_label != null:
+		goal_label.add_theme_font_size_override("font_size", 15 if compact_width else (17 if viewport_size.x < 900.0 else 20))
+
+	var objective_card := find_child("BlockObjectiveCard", true, false) as PanelContainer
+	if objective_card != null:
+		objective_card.custom_minimum_size.y = 42.0 if compact_height else 52.0
+	var objective_label := find_child("BlockObjectiveLabel", true, false) as Label
+	if objective_label != null:
+		objective_label.add_theme_font_size_override("font_size", 16 if compact_width else 21)
+
+	var tray := find_child("BlockTray", true, false) as PanelContainer
+	if tray != null:
+		tray.custom_minimum_size.y = 150.0 if viewport_size.y < 1050.0 else (174.0 if viewport_size.y < 1400.0 else 218.0)
+	var tray_title := find_child("BlockTrayTitle", true, false) as Label
+	if tray_title != null:
+		tray_title.add_theme_font_size_override("font_size", 15 if compact_width else 20)
+	if piece_row != null:
+		piece_row.add_theme_constant_override("separation", 8 if compact_width else 18)
+		piece_row.custom_minimum_size.y = 112.0 if viewport_size.y < 1050.0 else (136.0 if viewport_size.y < 1400.0 else 180.0)
+
+	var boosters := find_child("CampaignBoosters", true, false) as HBoxContainer
+	if boosters != null:
+		boosters.custom_minimum_size.y = 48.0 if compact_height else 58.0
+		boosters.add_theme_constant_override("separation", 4 if compact_width else 8)
+		for child in boosters.get_children():
+			if child is Button:
+				(child as Button).add_theme_font_size_override("font_size", 11 if compact_width else 13)
+	if status_label != null:
+		status_label.add_theme_font_size_override("font_size", 16 if compact_width else 21)
+		status_label.custom_minimum_size.y = 26.0 if compact_height else 32.0
+	if hint_label != null:
+		hint_label.add_theme_font_size_override("font_size", 13 if compact_width else 16)
+		hint_label.custom_minimum_size.y = 24.0 if compact_height else 28.0
+
+	var side_margin := 16.0 if compact_width else 28.0
+	var width_budget := maxf(260.0, viewport_size.x - side_margin * 2.0 - 18.0)
+	# Reserve more vertical space for the tray/boosters on short phones instead of
+	# enforcing a desktop-sized minimum board that spills below the viewport.
+	var height_ratio := 0.40 if viewport_size.y < 1100.0 else (0.44 if viewport_size.y < 1500.0 else 0.50)
+	var height_budget := maxf(260.0, viewport_size.y * height_ratio)
 	var gap := float(board_grid.get_theme_constant("h_separation"))
 	var cell_size := clampf(floor(minf(
-		(available_board_width - 22.0 - gap * float(GRID_SIZE - 1)) / float(GRID_SIZE),
-		(available_board_height - 22.0 - gap * float(GRID_SIZE - 1)) / float(GRID_SIZE)
-	)), 44.0, FINAL_CELL_MAX)
+		(width_budget - 18.0 - gap * float(GRID_SIZE - 1)) / float(GRID_SIZE),
+		(height_budget - 18.0 - gap * float(GRID_SIZE - 1)) / float(GRID_SIZE)
+	)), 30.0, FINAL_CELL_MAX)
 	for child in board_grid.get_children():
 		if child is Control:
 			(child as Control).custom_minimum_size = Vector2(cell_size, cell_size)
@@ -211,8 +283,9 @@ func _fit_3d_board_layout() -> void:
 		cell_size * GRID_SIZE + gap * float(GRID_SIZE - 1) + 18.0,
 		cell_size * GRID_SIZE + gap * float(GRID_SIZE - 1) + 18.0
 	)
-	if piece_row != null:
-		piece_row.custom_minimum_size.y = 150.0 if viewport_size.y < 1100.0 else 180.0
+	# Recompute tray controls after the row geometry changes; this keeps all three
+	# pieces inside the tray instead of retaining a stale desktop width.
+	render_pieces()
 
 func load_level() -> void:
 	_clear_streak = 0
@@ -281,7 +354,7 @@ func _cell_group_center(indices: Array[int]) -> Vector2:
 		if idx < 0 or idx >= cell_buttons.size(): continue
 		var cell := cell_buttons[idx] as Control
 		if cell == null or not is_instance_valid(cell): continue
-		center += cell.get_global_rect().get_center() - global_position
+		center += cell.get_global_rect().get_center()
 		count += 1
 	if count <= 0: return Vector2.INF
 	return center / float(count)
@@ -291,8 +364,9 @@ func _spawn_tension_frame() -> void:
 		return
 	var frame := Panel.new()
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.position = board_shell.global_position - global_position - Vector2(10, 10)
-	frame.size = board_shell.size + Vector2(20, 20)
+	var frame_rect := _effects_rect(board_shell, 10.0)
+	frame.position = frame_rect.position
+	frame.size = frame_rect.size
 	frame.add_theme_stylebox_override("panel", style_box(Color("ff9f1c0a"), 30, Color("ffb347"), 4, 8))
 	frame.modulate.a = 0.0
 	effects_layer.add_child(frame)

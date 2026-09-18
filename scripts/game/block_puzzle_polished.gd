@@ -41,6 +41,11 @@ const ADVANCED_SHAPES := [
 var active_touch_piece: BlockPieceButton
 
 func register_touch_drag(piece: BlockPieceButton) -> void:
+	if active_touch_piece != null and is_instance_valid(active_touch_piece) and active_touch_piece != piece:
+		# Only one tray piece may own a floating visual at a time. A second touch
+		# must retire the first ghost before becoming the active drag owner.
+		if active_touch_piece.has_method("dispose_visuals"):
+			active_touch_piece.call("dispose_visuals")
 	active_touch_piece = piece
 
 func clear_touch_drag(piece: BlockPieceButton) -> void:

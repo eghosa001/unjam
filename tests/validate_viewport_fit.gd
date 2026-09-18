@@ -32,6 +32,7 @@ func _run() -> void:
 	var rescue_motion := _read("res://scripts/game/rescue_rush_polished.gd")
 	var block_scene := _read("res://scenes/BlockPuzzle.tscn")
 	var block_polish := _read("res://scripts/game/block_puzzle_final_polish.gd")
+	var block_campaign := _read("res://scripts/game/block_puzzle_10000.gd")
 
 	if not project_text.contains('window/stretch/aspect="expand"'):
 		return _fail("Project stretch aspect must be explicitly set to expand for tall/short portrait screens")
@@ -56,8 +57,8 @@ func _run() -> void:
 		return _fail("Rescue Rush completion must wait for the final escape visual to fully leave the viewport")
 
 	# Ensure the live Block Puzzle scene keeps the final competitive polish layer.
-	if not block_scene.contains("block_puzzle_final_polish.gd"):
-		return _fail("Block Puzzle scene is not using the final polish layer")
+	if not block_scene.contains("block_puzzle_10000.gd") or not block_campaign.contains('extends "res://scripts/game/block_puzzle_final_polish.gd"'):
+		return _fail("Block Puzzle scene is not preserving the final polish layer through its campaign controller")
 	for required in ["CLEAR STREAK", "TIGHT BOARD", "TENSION_THRESHOLD", "PremiumVisuals.burst"]:
 		if not block_polish.contains(required):
 			return _fail("Block Puzzle final polish regression: missing %s" % required)

@@ -14,6 +14,8 @@ var clear_echo := 0.0
 var clear_phase := 0.0
 var clear_color := Color("8b7cf6")
 var footprint_phase := 0.0
+var special_kind := ""
+var special_layers := 0
 
 func configure(value: bool, preview_value: bool = false, color: Color = Color("4f7cff"), index: int = 0) -> void:
 	var old := occupied
@@ -32,6 +34,11 @@ func configure(value: bool, preview_value: bool = false, color: Color = Color("4
 		elif old and not occupied:
 			clear_color = old_accent
 			_play_clear()
+	queue_redraw()
+
+func set_special(kind: String = "", layers: int = 0) -> void:
+	special_kind = kind
+	special_layers = maxi(0, layers)
 	queue_redraw()
 
 func _ready() -> void:
@@ -157,21 +164,18 @@ func _draw() -> void:
 	_draw_box(rect, board_fill, 6, Color("8264aa"), 1)
 	var inner_well := rect.grow(-3.0)
 	_draw_box(inner_well, Color(0.23, 0.16, 0.37, 0.72), 5, Color(1,1,1,0.045), 1)
-	if occupied or preview or footprint_active:
-		var inset := rect.grow(-3.0)
-		var fill := accent
-		if preview:
-			fill = Color(accent, 0.52)
-		elif footprint_active and not occupied:
-			if footprint_valid:
-				var pulse := 0.82 + 0.18 * sin(footprint_phase)
-				fill = Color(footprint_color, 0.64 + pulse * 0.16)
-			else:
-				fill = Color("ff4f73", 0.48)
+	var inset := rect.grow(-3.0)
+	if occupied or preview:
+		var fill := Color(accent, 0.52) if preview else accent
 		_draw_block(inset, fill)
-		if footprint_active:
-			var edge := Color(footprint_color.lightened(0.42), 0.88) if footprint_valid else Color("ff8ba3", 0.90)
-			_draw_box(inset.grow(1.5), Color.TRANSPARENT, 6, edge, 3)
+	if footprint_active:
+		# Keep the target footprint visually distinct from the single floating drag
+		# piece. Drawing another full 3D block here made every dragged brick look
+		# doubled when it crossed the board.
+		var pulse := 0.72 + 0.28 * sin(footprint_phase)
+		var edge := Color(footprint_color.lightened(0.42), 0.72 + pulse * 0.20) if footprint_valid else Color("ff8ba3", 0.92)
+		var wash := Color(footprint_color, 0.08 + pulse * 0.06) if footprint_valid else Color("ff4f73", 0.10)
+		_draw_box(inset.grow(1.0), wash, 6, edge, 3)
 	if clear_phase > 0.001 and not occupied:
 		var clear_fill := Color(clear_color, clampf(clear_phase, 0.0, 1.0))
 		_draw_block(rect.grow(-3.0), clear_fill)
@@ -179,12 +183,54 @@ func _draw() -> void:
 		_draw_box(rect.grow(-6.0), Color(1, 1, 1, flash_alpha), 6, Color.TRANSPARENT, 0)
 	if impact > 0.001:
 		_draw_box(rect.grow(1.0 + impact * 3.0), Color.TRANSPARENT, 6, Color(accent.lightened(0.42), impact * 0.90), 3)
+	_draw_special_overlay(rect)
 	if clear_echo > 0.001:
 		var neon := Color("ff416c", clear_echo)
 		_draw_box(rect.grow(1.0 + clear_echo * 4.0), Color(neon, 0.08), 6, neon, 3)
 		var c := rect.get_center()
 		var r := rect.size.x * (0.14 + (1.0 - clear_echo) * 0.46)
 		draw_arc(c, r, 0.0, TAU, 24, Color("ff7a96", clear_echo), 2.5, true)
+
+func _draw_special_overlay(rect: Rect2) -> void:
+	if special_kind.is_empty() or special_layers <= 0:
+		return
+	var inset := rect.grow(-5.0)
+	if special_kind == "crate":
+		_draw_box(inset, Color("915a35", 0.88), 5, Color("e6b77e"), 2)
+		draw_line(inset.position + Vector2(5, 5), inset.end - Vector2(5, 5), Color("f5d2a4"), 3.0, true)
+		draw_line(Vector2(inset.end.x - 5, inset.position.y + 5), Vector2(inset.position.x + 5, inset.end.y - 5), Color("f5d2a4"), 3.0, true)
+	elif special_kind == "ice":
+		_draw_box(inset, Color("9de6ff", 0.24), 6, Color("d9f7ff", 0.92), 3)
+		draw_line(inset.position + Vector2(7, inset.size.y * 0.28), inset.position + Vector2(inset.size.x * 0.72, 7), Color(1, 1, 1, 0.82), 2.0, true)
+	elif special_kind == "lock":
+		_draw_box(inset, Color("4b4f67", 0.62), 6, Color("f0cf63", 0.95), 3)
+		var center := inset.get_center()
+		draw_arc(center + Vector2(0, -4), inset.size.x * 0.18, PI, TAU, 16, Color("ffe894"), 3.0, true)
+		_draw_box(Rect2(center + Vector2(-inset.size.x * 0.18, -2), Vector2(inset.size.x * 0.36, inset.size.y * 0.32)), Color("d5a52c", 0.94), 4, Color("fff0a6"), 2)
+	elif special_kind == "steel":
+		_draw_box(inset, Color("8693a8", 0.46), 5, Color("dce7f5", 0.96), 3)
+		draw_line(inset.position + Vector2(6, inset.size.y * 0.33), Vector2(inset.end.x - 6, inset.position.y + inset.size.y * 0.33), Color("f7fbff", 0.72), 2.0, true)
+		draw_line(inset.position + Vector2(6, inset.size.y * 0.66), Vector2(inset.end.x - 6, inset.position.y + inset.size.y * 0.66), Color("536073", 0.68), 2.0, true)
+	elif special_kind == "target":
+		var center := inset.get_center()
+		draw_arc(center, inset.size.x * 0.27, 0.0, TAU, 28, Color("ffd85a", 0.96), 3.5, true)
+		draw_circle(center, 3.0, Color("fff4b1"))
+	elif special_kind in ["row_target", "col_target", "cross_target"]:
+		var marker := Color("ffd85a", 0.92)
+		if special_kind in ["row_target", "cross_target"]:
+			var y := inset.get_center().y
+			draw_line(Vector2(inset.position.x + 4, y), Vector2(inset.end.x - 4, y), marker, 3.0, true)
+		if special_kind in ["col_target", "cross_target"]:
+			var x := inset.get_center().x
+			draw_line(Vector2(x, inset.position.y + 4), Vector2(x, inset.end.y - 4), marker, 3.0, true)
+	elif special_kind == "preserve":
+		_draw_box(inset, Color(0.24, 0.95, 0.74, 0.10), 6, Color("67f0c2", 0.94), 3)
+		var center := inset.get_center()
+		draw_arc(center, inset.size.x * 0.22, PI, TAU, 18, Color("b6ffe8", 0.92), 3.0, true)
+	if special_layers > 1:
+		var badge := Rect2(Vector2(inset.end.x - 22, inset.position.y + 4), Vector2(18, 18))
+		_draw_box(badge, Color("241638", 0.92), 8, Color(1, 1, 1, 0.28), 1)
+		draw_string(ThemeDB.fallback_font, badge.position + Vector2(3, 14), str(special_layers), HORIZONTAL_ALIGNMENT_CENTER, 12, 12, Color.WHITE)
 
 func _draw_block(rect: Rect2, fill: Color) -> void:
 	_draw_extruded_cube(rect, fill)
