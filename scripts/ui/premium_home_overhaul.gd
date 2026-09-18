@@ -25,11 +25,12 @@ func _on_surface_changed(surface: String) -> void:
 	var main := get_parent()
 	if main == null:
 		return
+	var previous_game := selected_game
 	var current = main.get("selected_game_id")
 	if current != null and String(current) in MultiGameManager.GAME_IDS:
 		selected_game = String(current)
 	var mode := _theme_mode()
-	if not built or mode != last_theme:
+	if not built or mode != last_theme or selected_game != previous_game:
 		_sync()
 
 func _sync() -> void:
