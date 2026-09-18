@@ -56,6 +56,7 @@ func _current_surface() -> String:
 func _sync_shell(surface: String) -> void:
 	if tutorial_panel == null:
 		return
+	_layout_tutorial_panel()
 	if help_button != null:
 		help_button.visible = surface == "game" and not tutorial_panel.visible
 	if theme_button != null:
@@ -114,46 +115,46 @@ func _build_shell() -> void:
 	tutorial_panel = PanelContainer.new()
 	tutorial_panel.name = "TutorialPanel"
 	tutorial_panel.set_anchors_preset(Control.PRESET_CENTER)
-	tutorial_panel.position = Vector2(-430, -500)
-	tutorial_panel.custom_minimum_size = Vector2(860, 1000)
 	tutorial_panel.visible = false
+	_layout_tutorial_panel()
 	PremiumDesignSystem.apply_panel(tutorial_panel, dark, accent, true, 36)
 	tutorial_layer.add_child(tutorial_panel)
 
 	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 38)
-	margin.add_theme_constant_override("margin_right", 38)
-	margin.add_theme_constant_override("margin_top", 30)
-	margin.add_theme_constant_override("margin_bottom", 30)
+	var compact_tutorial := get_viewport_rect().size.x < 700.0 or get_viewport_rect().size.y < 1200.0
+	margin.add_theme_constant_override("margin_left", 22 if compact_tutorial else 34)
+	margin.add_theme_constant_override("margin_right", 22 if compact_tutorial else 34)
+	margin.add_theme_constant_override("margin_top", 20 if compact_tutorial else 26)
+	margin.add_theme_constant_override("margin_bottom", 20 if compact_tutorial else 26)
 	tutorial_panel.add_child(margin)
 
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 16)
+	box.add_theme_constant_override("separation", 10 if compact_tutorial else 13)
 	margin.add_child(box)
 
 	var eyebrow := Label.new()
 	eyebrow.text = "QUICK PLAY GUIDE"
 	eyebrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	eyebrow.add_theme_font_size_override("font_size", 15)
+	eyebrow.add_theme_font_size_override("font_size", 14 if compact_tutorial else 16)
 	PremiumDesignSystem.apply_label(eyebrow, dark, "accent", accent)
 	box.add_child(eyebrow)
 
 	tutorial_title = Label.new()
 	tutorial_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	tutorial_title.add_theme_font_size_override("font_size", 38)
+	tutorial_title.add_theme_font_size_override("font_size", 31 if compact_tutorial else 38)
 	PremiumDesignSystem.apply_label(tutorial_title, dark, "title", accent)
 	box.add_child(tutorial_title)
 
 	tutorial_body = Label.new()
 	tutorial_body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	tutorial_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	tutorial_body.add_theme_font_size_override("font_size", 21)
+	tutorial_body.add_theme_font_size_override("font_size", 18 if compact_tutorial else 21)
 	PremiumDesignSystem.apply_label(tutorial_body, dark, "body", accent)
 	box.add_child(tutorial_body)
 
 	var demo_panel := PanelContainer.new()
 	demo_panel.name = "TutorialDemoPanel"
-	demo_panel.custom_minimum_size = Vector2(0, 190)
+	demo_panel.custom_minimum_size = Vector2(0, 150 if compact_tutorial else 176)
 	PremiumDesignSystem.apply_panel(demo_panel, dark, accent, true, 30)
 	box.add_child(demo_panel)
 	var demo_margin := MarginContainer.new()
@@ -168,20 +169,20 @@ func _build_shell() -> void:
 	tutorial_demo = Label.new()
 	tutorial_demo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	tutorial_demo.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	tutorial_demo.add_theme_font_size_override("font_size", 48)
+	tutorial_demo.add_theme_font_size_override("font_size", 40 if compact_tutorial else 48)
 	PremiumDesignSystem.apply_label(tutorial_demo, dark, "title", accent)
 	demo_box.add_child(tutorial_demo)
 
 	tutorial_step_label = Label.new()
 	tutorial_step_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	tutorial_step_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	tutorial_step_label.add_theme_font_size_override("font_size", 25)
+	tutorial_step_label.add_theme_font_size_override("font_size", 20 if compact_tutorial else 24)
 	PremiumDesignSystem.apply_label(tutorial_step_label, dark, "body", accent)
 	demo_box.add_child(tutorial_step_label)
 
 	tutorial_progress_label = Label.new()
 	tutorial_progress_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	tutorial_progress_label.add_theme_font_size_override("font_size", 15)
+	tutorial_progress_label.add_theme_font_size_override("font_size", 14 if compact_tutorial else 16)
 	PremiumDesignSystem.apply_label(tutorial_progress_label, dark, "accent", accent)
 	box.add_child(tutorial_progress_label)
 
@@ -191,14 +192,14 @@ func _build_shell() -> void:
 	box.add_child(step_nav)
 	tutorial_prev_button = Button.new()
 	tutorial_prev_button.text = "‹  BACK"
-	tutorial_prev_button.custom_minimum_size = Vector2(0, 70)
+	tutorial_prev_button.custom_minimum_size = Vector2(0, 64 if compact_tutorial else 70)
 	tutorial_prev_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	tutorial_prev_button.pressed.connect(_tutorial_previous)
 	PremiumDesignSystem.apply_button(tutorial_prev_button, dark, accent, "secondary", 22)
 	step_nav.add_child(tutorial_prev_button)
 	tutorial_next_button = Button.new()
 	tutorial_next_button.text = "NEXT  ›"
-	tutorial_next_button.custom_minimum_size = Vector2(0, 70)
+	tutorial_next_button.custom_minimum_size = Vector2(0, 64 if compact_tutorial else 70)
 	tutorial_next_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	tutorial_next_button.pressed.connect(_tutorial_next)
 	PremiumDesignSystem.apply_button(tutorial_next_button, dark, accent, "primary", 22)
