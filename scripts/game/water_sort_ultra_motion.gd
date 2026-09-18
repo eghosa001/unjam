@@ -29,7 +29,7 @@ func _available_tube_height(row_count: int) -> float:
 	# Reserve header/info/objective/feedback/actions and margins, then let the
 	# bottle rows consume the rest on tall phones instead of leaving a dead stage.
 	var remaining := viewport_height - 438.0
-	return clampf(remaining, 340.0, viewport_height * 0.60)
+	return clampf(remaining, 340.0, viewport_height * 0.56)
 
 func _apply_tube_layout() -> void:
 	if board == null or not is_instance_valid(board):
@@ -59,9 +59,10 @@ func _apply_tube_layout() -> void:
 			(child as Control).custom_minimum_size = tube_size
 	var stage := find_child("GameplayStage", true, false) as PanelContainer
 	if stage != null:
-		var content_height := tube_size.y * float(row_count) + row_gap * float(maxi(row_count - 1, 0)) + 42.0
-		var tall_screen_floor := 1080.0 if get_viewport_rect().size.y >= 1800.0 else 0.0
-		stage.custom_minimum_size.y = minf(available_height, maxf(content_height, tall_screen_floor))
+		var content_height := tube_size.y * float(row_count) + row_gap * float(maxi(row_count - 1, 0)) + 36.0
+		# Size the glass stage to the actual puzzle instead of forcing a 1080 px
+		# pale panel on tall phones. The holder can absorb surplus scenery around it.
+		stage.custom_minimum_size.y = minf(available_height, maxf(content_height, 420.0))
 
 func _tube_size_for_count(tube_count: int) -> Vector2:
 	if tube_count <= 6:
