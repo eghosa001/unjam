@@ -39,7 +39,7 @@ func _run() -> void:
 		if int(Progression.profile(level).empty_bottles) == 1:
 			late_one_empty += 1
 	if late_one_empty < 200 or late_one_empty > 450:
-		return _fail("Late-game one-empty mix is outside the intended 20-45%% range: %d/1000" % late_one_empty)
+		return _fail("Late-game one-empty mix is outside the intended 200-450 per 1000 range: %d/1000" % late_one_empty)
 
 	if String(Progression.milestone_kind(10)) != "challenge":
 		return _fail("Level 10 challenge milestone missing")
