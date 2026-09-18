@@ -9,6 +9,7 @@ const GAME_IDS := ["rescue_rush", "water_sort", "block_puzzle"]
 const GAME_NAMES := {"rescue_rush":"RESCUE RUSH","water_sort":"WATER SORT","block_puzzle":"BLOCK PUZZLE"}
 const TASK_REWARD := 75
 const DAILY_HISTORY_LIMIT := 45
+const WATER_WORLD_BADGE_SPAN_VERSION := 2
 
 func _ready()->void: ensure_state()
 
@@ -24,6 +25,7 @@ func ensure_state()->void:
   for k in ["milestone_chests","world_badges","daily_completed","achievements"]:
    if not g.get(k,[]) is Array:g[k]=[]
   g["daily_completed"]=_bounded_date_history(g.get("daily_completed",[]) as Array)
+  if id=="water_sort":g=_migrate_water_sort_world_badges(g)
   g["daily_last_date"]=String(g.get("daily_last_date","")); all[id]=g
  SaveManager.data["game_progress"]=all
  if not SaveManager.data.get("multi_active_runs",{}) is Dictionary:SaveManager.data["multi_active_runs"]={}
@@ -31,6 +33,18 @@ func ensure_state()->void:
  var task_store:Dictionary=SaveManager.data.get("daily_tasks",{})
  _prune_daily_task_history(task_store)
  SaveManager.data["daily_tasks"]=task_store
+
+
+func _migrate_water_sort_world_badges(g:Dictionary)->Dictionary:
+ if int(g.get("world_badge_span_version",0))>=WATER_WORLD_BADGE_SPAN_VERSION:return g
+ var highest:=clampi(int(g.get("highest_level",1)),1,CAMPAIGN_LEVELS+1)
+ var completed_level:=clampi(highest-1,0,CAMPAIGN_LEVELS)
+ var earned_worlds:=clampi(int(completed_level/WaterSortProgression.WORLD_SIZE),0,WaterSortProgression.WORLD_COUNT)
+ var migrated:Array=[]
+ for world in range(1,earned_worlds+1):migrated.append(str(world))
+ g["world_badges"]=migrated
+ g["world_badge_span_version"]=WATER_WORLD_BADGE_SPAN_VERSION
+ return g
 
 func display_name(id:String)->String:return String(GAME_NAMES.get(id,id.to_upper()))
 
@@ -172,7 +186,9 @@ func complete_level(id:String,n:int,stars:int,coin_reward:=25)->Dictionary:
  elif first:g["perfect_streak"]=0
  if first and n%10==0:var c:Array=g.get("milestone_chests",[]);c.append(key);g["milestone_chests"]=c;rewards.milestone=true;SaveManager.data["coins"]=int(SaveManager.data.get("coins",0))+100
  var badge_span:=WaterSortProgression.WORLD_SIZE if id=="water_sort" else LEVELS_PER_WORLD
- if first and n%badge_span==0:var wk:=str(int(n/badge_span));var b:Array=g.get("world_badges",[]);b.append(wk);g["world_badges"]=b;rewards.world_badge=true;SaveManager.data["coins"]=int(SaveManager.data.get("coins",0))+250;SaveManager.data["prestige_points"]=int(SaveManager.data.get("prestige_points",0))+5
+ if first and n%badge_span==0:
+  var wk:=str(int(n/badge_span));var b:Array=g.get("world_badges",[])
+  if wk not in b:b.append(wk);g["world_badges"]=b;rewards.world_badge=true;SaveManager.data["coins"]=int(SaveManager.data.get("coins",0))+250;SaveManager.data["prestige_points"]=int(SaveManager.data.get("prestige_points",0))+5
  all[id]=g;SaveManager.data["game_progress"]=all;_advance_tasks(id,stars);SaveManager.save();var difficulty:=difficulty_for_game(id,n);RetentionManager.record_level_complete(n,stars,0,0,0,"",-1,id,difficulty);AnalyticsManager.track("multi_game_level_complete",{"game":id,"level":n,"stars":stars,"difficulty":difficulty});return rewards
 func save_checkpoint(id:String,data:Dictionary)->void:
  ensure_state();var runs:Dictionary=SaveManager.data.get("multi_active_runs",{});var payload:=data.duplicate(true);payload["game"]=id;payload["saved_at"]=int(Time.get_unix_time_from_system());runs[id]=payload;SaveManager.data["multi_active_runs"]=runs;SaveManager.save()
