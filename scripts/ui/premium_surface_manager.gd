@@ -99,9 +99,9 @@ func _polish_tree(node: Node, surface: String, dark: bool, accent: Color) -> voi
 func _role_for_surface_button(button: Button, surface: String) -> String:
 	var text := button.text.strip_edges().to_upper()
 	if surface == "settings":
-		if text.ends_with(": ON"):
+		if text.ends_with(": ON") or "• ✓ ON" in text or "• ON\n" in text:
 			return "success"
-		if text.ends_with(": OFF"):
+		if text.ends_with(": OFF") or "• ○ OFF" in text or "• OFF\n" in text:
 			return "toggle_off"
 	if surface == "collection" and "OWNED" in text:
 		return "success"
