@@ -110,6 +110,12 @@ static func quality_gate(profile: Dictionary, plan: Dictionary) -> Dictionary:
 		reasons.append("too_many_low_branch_moves")
 	if not boss_like and level > 1000 and average_choices < 2.0:
 		reasons.append("branching_too_low")
+	var advanced_ratio := float(metadata.get("advanced_piece_ratio", 0.0))
+	var initial_occupied := int(metadata.get("initial_occupancy", 0))
+	if not boss_like and level > 4000 and proof_moves >= 10 and advanced_ratio < 0.12:
+		reasons.append("late_piece_pressure_low")
+	if not boss_like and level > 6000 and average_choices > 120.0 and initial_occupied < 14:
+		reasons.append("late_board_too_open")
 
 	return {
 		"accepted": reasons.is_empty(),
@@ -121,6 +127,8 @@ static func quality_gate(profile: Dictionary, plan: Dictionary) -> Dictionary:
 		"forced_ratio": forced_ratio,
 		"low_branch_ratio": low_branch_ratio,
 		"average_legal_choices": average_choices,
+		"advanced_piece_ratio": advanced_ratio,
+		"initial_occupied": initial_occupied,
 		"boss_exception": boss_like,
 	}
 
