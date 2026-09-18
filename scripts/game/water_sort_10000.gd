@@ -102,10 +102,10 @@ func generate_tubes_with_solution(seed_value: int, colors: int) -> Dictionary:
 			best["metadata"] = metrics.duplicate(true)
 
 	if best.is_empty():
-		# Defensive fallback: the parent constructive generator remains a valid
-		# proof-producing path if a future profile accidentally over-constrains
-		# candidate construction.
-		best = super.generate_tubes_with_solution(seed_value, colors)
+		# Keep the profile's exact workspace pressure even if every scored
+		# candidate is rejected. Falling back to the legacy generator would
+		# silently reintroduce two empty bottles on one-empty endgame levels.
+		best = _construct_balanced_fallback(seed_value, colors, empty_bottles, 1009)
 		var fallback_tubes: Array = best.get("tubes", [])
 		var fallback_solution: Array = best.get("solution", [])
 		best["metadata"] = Progression.score_board(fallback_tubes, fallback_solution.size())
