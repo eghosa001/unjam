@@ -38,7 +38,7 @@ func _run() -> void:
 			return _fail("%s tutorial progress indicator is missing" % game_id)
 		if next == null or back == null or next.custom_minimum_size.y < 64.0 or back.custom_minimum_size.y < 64.0:
 			return _fail("%s tutorial navigation touch targets are too small" % game_id)
-		var first_text := step.text
+		var first_text: String = step.text
 		next.emit_signal("pressed")
 		await _frames(2)
 		if step.text == first_text or "STEP 2 OF 3" not in progress.text:
