@@ -4,7 +4,7 @@ extends RefCounted
 const Generator = preload("res://scripts/core/block_puzzle_campaign_generator.gd")
 const GRID_SIZE := 8
 
-const BOT_NAMES := ["greedy", "space", "future", "pressure"]
+const BOT_NAMES := ["greedy", "space", "combo", "random_competent"]
 
 static func audit_plan(profile: Dictionary, plan: Dictionary) -> Dictionary:
 	if plan.is_empty():
@@ -64,15 +64,42 @@ static func canonical_signature(profile: Dictionary, plan: Dictionary) -> String
 		board.append(row)
 	var trays := PackedStringArray()
 	for tray_value in (plan.get("trays", []) as Array):
-		var values := PackedStringArray()
+		var values: Array[int] = []
 		for value in (tray_value as Array):
-			values.append(str(int(value)))
-		trays.append(",".join(values))
-	var specials := JSON.stringify(plan.get("special_plan", {}))
+			values.append(int(value))
+		values.sort()
+		var encoded := PackedStringArray()
+		for value in values:
+			encoded.append(str(value))
+		trays.append(",".join(encoded))
+	var objective: Dictionary = plan.get("special_plan", {})
+	var special_values: Array[String] = []
+	for raw in (objective.get("specials", []) as Array):
+		var special: Dictionary = raw
+		special_values.append("%03d:%s:%d" % [
+			int(special.get("index", -1)),
+			String(special.get("kind", "")),
+			int(special.get("layers", 0))
+		])
+	special_values.sort()
+	var rows: Array[int] = []
+	for raw in (objective.get("target_rows", []) as Array):
+		rows.append(int(raw))
+	rows.sort()
+	var cols: Array[int] = []
+	for raw in (objective.get("target_cols", []) as Array):
+		cols.append(int(raw))
+	cols.sort()
+	var objective_key := "%s|r%s|c%s|d%d" % [
+		",".join(special_values),
+		str(rows),
+		str(cols),
+		int(objective.get("required_double_clears", 0))
+	]
 	return ("%s#%s#%s" % [
 		"/".join(board),
 		"/".join(trays),
-		specials
+		objective_key
 	]).sha256_text()
 
 static func _run_bot(profile: Dictionary, plan: Dictionary, strategy: String) -> Dictionary:
@@ -133,12 +160,13 @@ static func _best_move(board: Array, tray: Array, strategy: String) -> Dictionar
 						value = cleared * 10000.0 + shape.size() * 20.0 - occupied
 					"space":
 						value = cleared * 500.0 - occupied * 14.0 - pockets * 180.0 + future * 2.0
-					"future":
-						value = cleared * 1600.0 + future * 36.0 - pockets * 260.0 - occupied * 3.0
-					"pressure":
-						value = line_fill * 130.0 + occupied * 6.0 + shape.size() * 18.0 - cleared * 90.0
-						if occupied > 44:
-							value += cleared * 2400.0
+					"combo":
+						value = cleared * 1700.0 + future * 26.0 + line_fill * 44.0 - pockets * 210.0
+						if cleared >= 2:
+							value += 9000.0 + cleared * 1800.0
+					"random_competent":
+						value = cleared * 1200.0 + future * 18.0 - pockets * 160.0 - occupied * 2.0
+						value += _deterministic_noise(board, tray_index, shape_index, x, y) * 900.0
 					_:
 						value = cleared * 1000.0 + future
 				if value > best_value:
@@ -162,6 +190,12 @@ static func _future_fits(board: Array, tray: Array, used_index: int) -> int:
 					if total >= 36:
 						return total
 	return total
+
+static func _deterministic_noise(board: Array, tray_index: int, shape_index: int, x: int, y: int) -> float:
+	var hash_value := tray_index * 73856093 + shape_index * 19349663 + x * 83492791 + y * 265443576
+	var occupied := _occupied(board)
+	hash_value = posmod(hash_value + occupied * 97531, 2147483647)
+	return float(hash_value) / 2147483647.0
 
 static func _apply(board: Array, shape: Array, origin: Vector2i) -> Dictionary:
 	var next := board.duplicate(true)
