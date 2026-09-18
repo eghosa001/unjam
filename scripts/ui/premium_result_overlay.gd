@@ -90,7 +90,7 @@ func _build() -> void:
 	badge.text = badge_text
 	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	badge.add_theme_font_size_override("font_size", 18 if compact else 19)
+	badge.add_theme_font_size_override("font_size", 22 if compact else 24)
 	Unjam3DTheme.label_3d(badge, Color.WHITE, accent.darkened(0.45), 3)
 	badge_panel.add_child(badge)
 
@@ -105,7 +105,7 @@ func _build() -> void:
 	subtitle.text = subtitle_text
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	subtitle.add_theme_font_size_override("font_size", 18 if compact else 21)
+	subtitle.add_theme_font_size_override("font_size", 22 if compact else 24)
 	Unjam3DTheme.label_3d(subtitle, Color("3d6286"), Color.WHITE, 2)
 	box.add_child(subtitle)
 
@@ -138,7 +138,7 @@ func _build() -> void:
 	var performance := Label.new()
 	performance.text = "✦  PERFORMANCE"
 	performance.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	performance.add_theme_font_size_override("font_size", 16 if compact else 18)
+	performance.add_theme_font_size_override("font_size", 20 if compact else 22)
 	Unjam3DTheme.label_3d(performance, accent, Color.WHITE, 2)
 	box.add_child(performance)
 
@@ -151,7 +151,7 @@ func _build() -> void:
 	stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	stats.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	stats.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	stats.add_theme_font_size_override("font_size", 20 if compact else 24)
+	stats.add_theme_font_size_override("font_size", 24 if compact else 27)
 	Unjam3DTheme.label_3d(stats, Unjam3DTheme.NAVY, Color.WHITE, 2)
 	stats_panel.add_child(stats)
 
@@ -178,7 +178,7 @@ func _build() -> void:
 	var hint := Label.new()
 	hint.text = "NEXT PUZZLE READY  •  KEEP THE MOMENTUM ♥"
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint.add_theme_font_size_override("font_size", 16 if compact else 18)
+	hint.add_theme_font_size_override("font_size", 20 if compact else 22)
 	Unjam3DTheme.label_3d(hint, Color("557a98"), Color.WHITE, 2)
 	box.add_child(hint)
 

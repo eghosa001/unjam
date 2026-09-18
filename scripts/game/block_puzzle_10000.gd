@@ -48,7 +48,7 @@ func _add_booster_bar() -> void:
 		return
 	var bar := HBoxContainer.new()
 	bar.name = "CampaignBoosters"
-	bar.custom_minimum_size = Vector2(0, 58)
+	bar.custom_minimum_size = Vector2(0, 68)
 	bar.alignment = BoxContainer.ALIGNMENT_CENTER
 	bar.add_theme_constant_override("separation", 8)
 	for spec in [
@@ -61,9 +61,9 @@ func _add_booster_bar() -> void:
 		var button := Button.new()
 		button.name = "Booster_%s" % key.capitalize()
 		button.text = "%s %s\n◈ %d" % [String(spec[2]), String(spec[1]), int(BOOSTER_COSTS[key])]
-		button.custom_minimum_size = Vector2(0, 56)
+		button.custom_minimum_size = Vector2(0, 66)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.add_theme_font_size_override("font_size", 13)
+		button.add_theme_font_size_override("font_size", 20)
 		Unjam3DTheme.gloss_button(button, Unjam3DTheme.PURPLE_DARK, false, 18)
 		button.pressed.connect(_use_booster.bind(key))
 		bar.add_child(button)

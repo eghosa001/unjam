@@ -79,7 +79,7 @@ func build_ui() -> void:
 	rescue_label = _status_label(HORIZONTAL_ALIGNMENT_CENTER)
 	chain_label = _status_label(HORIZONTAL_ALIGNMENT_RIGHT)
 	for label in [moves_label, rescue_label, chain_label]:
-		label.add_theme_font_size_override("font_size", 21)
+		label.add_theme_font_size_override("font_size", 24)
 		Unjam3DTheme.label_3d(label, Color.WHITE, Color("043666"), 3)
 		status.add_child(label)
 
@@ -91,7 +91,7 @@ func build_ui() -> void:
 	objective_label.text = "🐥  " + objective_instruction().to_upper()
 	objective_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	objective_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	objective_label.add_theme_font_size_override("font_size", 20)
+	objective_label.add_theme_font_size_override("font_size", 23)
 	Unjam3DTheme.label_3d(objective_label, Unjam3DTheme.NAVY, Color.WHITE, 2)
 	objective.add_child(objective_label)
 
@@ -141,7 +141,7 @@ func build_ui() -> void:
 	hint_label = Label.new()
 	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	hint_label.add_theme_font_size_override("font_size", 16)
+	hint_label.add_theme_font_size_override("font_size", 22)
 	hint_label.custom_minimum_size = Vector2(0, 40)
 	hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	Unjam3DTheme.label_3d(hint_label, Color.WHITE, Unjam3DTheme.NAVY, 3)

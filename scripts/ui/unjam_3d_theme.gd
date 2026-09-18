@@ -1,6 +1,16 @@
 class_name Unjam3DTheme
 extends RefCounted
 
+static var _readable_font: FontVariation
+
+static func readable_font() -> FontVariation:
+	if _readable_font == null:
+		var font := FontVariation.new()
+		font.base_font = ThemeDB.fallback_font
+		font.variation_embolden = 0.85
+		_readable_font = font
+	return _readable_font
+
 const SKY_TOP := Color("41b9ff")
 const SKY_BOTTOM := Color("dff8ff")
 const DEEP_BLUE := Color("075bb8")
@@ -51,8 +61,9 @@ static func gloss_button(button: Button, accent: Color, primary: bool = true, ra
 	button.flat = false
 	button.focus_mode = Control.FOCUS_NONE
 	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	button.custom_minimum_size.y = maxf(button.custom_minimum_size.y, 84.0)
-	button.add_theme_font_size_override("font_size", maxi(25, button.get_theme_font_size("font_size")))
+	button.custom_minimum_size.y = maxf(button.custom_minimum_size.y, 88.0)
+	button.add_theme_font_override("font", readable_font())
+	button.add_theme_font_size_override("font_size", maxi(28, button.get_theme_font_size("font_size")))
 	var base := accent if primary else (Color("162743") if dark_mode else Color("edf9ff"))
 	var edge := accent.lightened(0.28) if primary else (accent.lightened(0.10) if dark_mode else Color("9de2ff"))
 	var pressed := base.darkened(0.14)
@@ -64,16 +75,19 @@ static func gloss_button(button: Button, accent: Color, primary: bool = true, ra
 	button.add_theme_color_override("font_color", Color.WHITE if primary else secondary_text)
 	button.add_theme_color_override("font_hover_color", Color.WHITE if primary else secondary_text)
 	button.add_theme_color_override("font_pressed_color", Color.WHITE if primary else secondary_text)
-	button.add_theme_color_override("font_outline_color", Color(0.02, 0.18, 0.34, 0.55))
-	button.add_theme_constant_override("outline_size", 4)
+	button.add_theme_color_override("font_outline_color", Color(0.02, 0.12, 0.24, 0.72))
+	button.add_theme_constant_override("outline_size", 2)
 
 static func label_3d(label: Label, color: Color = Color.WHITE, outline: Color = Color("07518e"), outline_size: int = 4) -> void:
+	label.add_theme_font_override("font", readable_font())
 	label.add_theme_color_override("font_color", color)
 	label.add_theme_color_override("font_outline_color", outline)
-	label.add_theme_constant_override("outline_size", outline_size)
-	label.add_theme_color_override("font_shadow_color", Color(0.02, 0.12, 0.25, 0.34))
+	var font_size := label.get_theme_font_size("font_size")
+	var outline_cap := 2 if font_size > 0 and font_size <= 24 else (3 if font_size < 40 else 5)
+	label.add_theme_constant_override("outline_size", mini(outline_size, outline_cap))
+	label.add_theme_color_override("font_shadow_color", Color(0.02, 0.10, 0.20, 0.20))
 	label.add_theme_constant_override("shadow_offset_x", 0)
-	label.add_theme_constant_override("shadow_offset_y", 4)
+	label.add_theme_constant_override("shadow_offset_y", 2)
 
 static func badge(fill: Color, radius: int = 22) -> StyleBoxFlat:
 	return panel_3d(fill, radius, fill.lightened(0.34), 2, 7)

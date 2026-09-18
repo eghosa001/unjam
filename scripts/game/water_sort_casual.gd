@@ -59,14 +59,14 @@ func build_ui() -> void:
 	meta_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	meta_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	meta_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	meta_label.add_theme_font_size_override("font_size", 18)
+	meta_label.add_theme_font_size_override("font_size", 22)
 	Unjam3DTheme.label_3d(meta_label, Color.WHITE, Color("034477"), 3)
 	info_row.add_child(meta_label)
 	move_label = Label.new()
 	move_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	move_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	move_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	move_label.add_theme_font_size_override("font_size", 20)
+	move_label.add_theme_font_size_override("font_size", 24)
 	Unjam3DTheme.label_3d(move_label, Color.WHITE, Color("034477"), 3)
 	info_row.add_child(move_label)
 
@@ -78,7 +78,7 @@ func build_ui() -> void:
 	objective_label.text = "💧  SORT • POUR • SOLVE"
 	objective_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	objective_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	objective_label.add_theme_font_size_override("font_size", 20)
+	objective_label.add_theme_font_size_override("font_size", 23)
 	Unjam3DTheme.label_3d(objective_label, Unjam3DTheme.NAVY, Color.WHITE, 2)
 	objective.add_child(objective_label)
 
@@ -118,14 +118,14 @@ func build_ui() -> void:
 	hint_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	hint_label.add_theme_font_size_override("font_size", 18)
+	hint_label.add_theme_font_size_override("font_size", 22)
 	Unjam3DTheme.label_3d(hint_label, Unjam3DTheme.NAVY, Color.WHITE, 2)
 	feedback_row.add_child(hint_label)
 	status_label = Label.new()
 	status_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	status_label.add_theme_font_size_override("font_size", 19)
+	status_label.add_theme_font_size_override("font_size", 22)
 	Unjam3DTheme.label_3d(status_label, Unjam3DTheme.WATER_DARK, Color.WHITE, 2)
 	feedback_row.add_child(status_label)
 

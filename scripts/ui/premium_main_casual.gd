@@ -582,7 +582,7 @@ func _inject_block_modes() -> void:
 	var bar := HBoxContainer.new()
 	bar.name = "BlockPuzzleModes"
 	bar.custom_minimum_size = Vector2(0, 86)
-	bar.add_theme_constant_override("separation", 10)
+	bar.add_theme_constant_override("separation", 6)
 	var specs := [
 		["endless", "ENDLESS", "SURVIVAL"],
 		["zen", "ZEN", "NO GAME OVER"],
