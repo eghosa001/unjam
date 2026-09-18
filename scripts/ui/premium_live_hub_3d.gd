@@ -87,7 +87,7 @@ func _build() -> void:
 	subtitle.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	subtitle.clip_text = true
 	subtitle.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	subtitle.add_theme_font_size_override("font_size", 16 if narrow else (17 if phone_width else 19))
+	subtitle.add_theme_font_size_override("font_size", 22 if narrow else (24 if phone_width else 26))
 	Unjam3DTheme.label_3d(subtitle, Color("e9fbff"), Unjam3DTheme.NAVY, 3)
 	titles.add_child(subtitle)
 	var settings := _button("⚙", side_button_size, Unjam3DTheme.WATER_DARK, true)
@@ -104,12 +104,12 @@ func _build() -> void:
 	root.add_child(wallet)
 	var coins := Label.new()
 	coins.text = "●  %d" % int(SaveManager.data.get("coins", 0))
-	coins.add_theme_font_size_override("font_size", 19 if narrow else 22)
+	coins.add_theme_font_size_override("font_size", 23 if narrow else 26)
 	Unjam3DTheme.label_3d(coins, Unjam3DTheme.GOLD, Unjam3DTheme.NAVY, 3)
 	wallet.add_child(coins)
 	var stars := Label.new()
 	stars.text = "★  %d" % _total_stars()
-	stars.add_theme_font_size_override("font_size", 19 if narrow else 22)
+	stars.add_theme_font_size_override("font_size", 23 if narrow else 26)
 	Unjam3DTheme.label_3d(stars, Color.WHITE, Unjam3DTheme.NAVY, 3)
 	wallet.add_child(stars)
 
@@ -138,7 +138,7 @@ func _build() -> void:
 	quote_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	quote_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	quote_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	quote_label.add_theme_font_size_override("font_size", 18 if narrow else (21 if compact else 23))
+	quote_label.add_theme_font_size_override("font_size", 22 if narrow else (24 if compact else 26))
 	Unjam3DTheme.label_3d(quote_label, Color("244279"), Color.WHITE, 2)
 	quote.add_child(quote_label)
 	_add_bottom_nav(nav_height, nav_bottom, nav_side)
@@ -189,7 +189,7 @@ func _add_game_card(parent: VBoxContainer, game_id: String) -> void:
 	var desc := Label.new()
 	desc.text = _reference_card_copy(game_id)
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	desc.add_theme_font_size_override("font_size", 18 if narrow else (20 if compact else 23))
+	desc.add_theme_font_size_override("font_size", 22 if narrow else (24 if compact else 26))
 	Unjam3DTheme.label_3d(desc, Color.WHITE, dark.darkened(0.34), 3)
 	info.add_child(desc)
 	var spacer := Control.new()
@@ -222,7 +222,7 @@ func _add_game_card(parent: VBoxContainer, game_id: String) -> void:
 	level_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	level_label.clip_text = true
 	level_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	level_label.add_theme_font_size_override("font_size", 17 if narrow else 20)
+	level_label.add_theme_font_size_override("font_size", 21 if narrow else 23)
 	Unjam3DTheme.label_3d(level_label, Color.WHITE, dark.darkened(0.35), 2)
 	level_chip.add_child(level_label)
 
@@ -245,7 +245,7 @@ func _add_game_card(parent: VBoxContainer, game_id: String) -> void:
 	star_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	star_label.clip_text = true
 	star_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	star_label.add_theme_font_size_override("font_size", 18 if narrow else 21)
+	star_label.add_theme_font_size_override("font_size", 21 if narrow else 23)
 	Unjam3DTheme.label_3d(star_label, Color("fff2a0"), dark.darkened(0.38), 3)
 	footer.add_child(star_label)
 	var play := _button("PLAY  ›", Vector2(0 if compact else 118, footer_height), dark, true)
