@@ -213,9 +213,9 @@ func _build_shell() -> void:
 	for game_id in ["rescue_rush", "water_sort", "block_puzzle"]:
 		var button := Button.new()
 		button.text = _game_name(game_id)
-		button.custom_minimum_size = Vector2(0, 62)
+		button.custom_minimum_size = Vector2(0, 54 if compact_tutorial else 62)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.add_theme_font_size_override("font_size", 15)
+		button.add_theme_font_size_override("font_size", 13 if compact_tutorial else 15)
 		button.pressed.connect(show_tutorial.bind(game_id))
 		PremiumDesignSystem.apply_button(button, dark, PremiumDesignSystem.accent_for_game(game_id), "secondary", 20)
 		tabs.add_child(button)
@@ -223,12 +223,24 @@ func _build_shell() -> void:
 	var close := Button.new()
 	close.name = "TutorialClose"
 	close.text = "PLAY NOW"
-	close.custom_minimum_size = Vector2(0, 82)
+	close.custom_minimum_size = Vector2(0, 72 if compact_tutorial else 82)
 	close.add_theme_font_size_override("font_size", 22)
 	close.pressed.connect(hide_tutorial)
 	PremiumDesignSystem.apply_button(close, dark, accent, "primary", 24)
 	box.add_child(close)
 	_sync_shell(_current_surface())
+
+func _layout_tutorial_panel() -> void:
+	if tutorial_panel == null:
+		return
+	var viewport_size := get_viewport_rect().size
+	var panel_width := clampf(viewport_size.x - 48.0, 440.0, 860.0)
+	var panel_height := clampf(viewport_size.y * 0.72, 650.0, 760.0)
+	if viewport_size.y < 1100.0:
+		panel_height = minf(panel_height, viewport_size.y - 44.0)
+	var panel_size := Vector2(panel_width, panel_height)
+	tutorial_panel.custom_minimum_size = panel_size
+	tutorial_panel.position = -panel_size * 0.5
 
 func _toggle_theme() -> void:
 	theme_mode = "light" if theme_mode == "dark" else "dark"
@@ -267,6 +279,7 @@ func _apply_theme() -> void:
 func show_tutorial(game_id: String = "rescue_rush") -> void:
 	if tutorial_panel == null:
 		return
+	_layout_tutorial_panel()
 	tutorial_game = game_id
 	tutorial_step_index = 0
 	tutorial_title.text = _game_name(game_id)
