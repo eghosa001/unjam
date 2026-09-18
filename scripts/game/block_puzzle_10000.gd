@@ -2,6 +2,7 @@ extends "res://scripts/game/block_puzzle_final_polish.gd"
 
 const Progression = preload("res://scripts/core/block_puzzle_progression.gd")
 const CampaignGenerator = preload("res://scripts/core/block_puzzle_campaign_generator.gd")
+const LevelPack = preload("res://scripts/core/block_puzzle_level_pack.gd")
 
 var campaign_profile: Dictionary = {}
 var campaign_plan: Dictionary = {}
@@ -63,7 +64,7 @@ func load_level() -> void:
 			var opening := level_config()
 			generation_profile["target_score"] = int(opening.get("target_score", 100))
 			generation_profile["target_lines"] = int(opening.get("target_lines", 2))
-		campaign_plan = CampaignGenerator.generate(generation_profile)
+		campaign_plan = LevelPack.plan_for_level(level_number, generation_profile)
 		if campaign_plan.is_empty():
 			push_error("Block Puzzle campaign generator produced no proof for level %d" % level_number)
 	_reset_objective_state()
@@ -319,7 +320,7 @@ func campaign_plan_for_level(level: int) -> Dictionary:
 		var i := clampi(level - 1, 0, 9)
 		p["target_score"] = scores[i]
 		p["target_lines"] = lines[i]
-	return CampaignGenerator.generate(p)
+	return LevelPack.plan_for_level(level, p)
 
 func deterministic_tray_signature(level: int, batch: int) -> String:
 	var plan := campaign_plan_for_level(clampi(level, 1, Progression.MAX_LEVEL))
