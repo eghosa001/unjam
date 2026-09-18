@@ -23,11 +23,11 @@ Android ad requests are blocked until the UMP consent state is `obtained` or `no
 
 The privacy policy source is `docs/privacy.html`.
 
-The publisher record is `docs/app-ads.txt`:
+The publisher record is mirrored in `app-ads.txt` at the repository/site root and in `docs/app-ads.txt`:
 
 `google.com, pub-7517898921176341, DIRECT, f08c47fec0942fa0`
 
-For AdMob app verification, this file must be publicly reachable at the root of the developer website domain used by the Google Play listing, e.g. `https://<developer-domain>/app-ads.txt`.
+For AdMob app verification, `app-ads.txt` must be publicly reachable at the root of the developer website domain used by the Google Play listing, e.g. `https://<developer-domain>/app-ads.txt`. Keep the root copy as the authoritative deployable path.
 
 ## Google Play Billing
 
