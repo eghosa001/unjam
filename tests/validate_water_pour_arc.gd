@@ -43,6 +43,29 @@ func _run() -> void:
 		game.queue_free()
 		return _fail("Leftward Water Sort pour arc has the wrong direction")
 
+	var tube_script = load("res://scripts/ui/water_tube_3d_motion.gd")
+	var ghost = tube_script.new()
+	ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ghost.size = Vector2(154.0, 316.0)
+	ghost.custom_minimum_size = ghost.size
+	ghost.pivot_offset = Vector2(ghost.size.x * 0.5, ghost.size.y * 0.11)
+	ghost.scale = Vector2(1.04, 1.04)
+	ghost.configure([0, 1, 2, 3], false, -1)
+	game.add_child(ghost)
+	await process_frame
+	var direction := 1.0
+	var final_rotation := deg_to_rad(70.0)
+	var local_rim: Vector2 = game.call("_source_rim_local", ghost, direction)
+	var desired_rim := Vector2(420.0, 260.0)
+	ghost.position = game.call("_position_for_tilted_rim", ghost, local_rim, desired_rim, final_rotation)
+	ghost.rotation = final_rotation
+	var actual_rim: Vector2 = game.call("_control_point", ghost, local_rim)
+	if actual_rim.distance_to(desired_rim) > 0.75:
+		ghost.queue_free()
+		game.queue_free()
+		return _fail("Tilted Water Sort source rim does not land on the calculated arc launch point")
+	ghost.queue_free()
+
 	var motion_text := _read("res://scripts/game/water_sort_reference_motion.gd")
 	for token in ["_source_rim_local", "_receiver_rim_local", "_position_for_tilted_rim", "_liquid_arc_points", "_release_pour_visual_lock"]:
 		if not motion_text.contains(token):
