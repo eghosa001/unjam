@@ -82,7 +82,7 @@ func _show_touch_preview(screen_position: Vector2) -> void:
 	if touch_preview == null or not is_instance_valid(touch_preview):
 		_clear_single_touch_preview()
 		touch_preview = SmoothDragPreview.new()
-		touch_preview.configure(shape, accent)
+		touch_preview.configure(shape, accent, _board_cell_visual_size(game))
 		touch_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		touch_preview.z_index = 950
 		var layer = game.get("effects_layer")
@@ -100,7 +100,7 @@ func _make_drag_preview() -> Control:
 	wrapper.position = Vector2(-190, -315)
 	var preview := SmoothDragPreview.new()
 	preview.position = Vector2(10, 10)
-	preview.configure(shape, accent)
+	preview.configure(shape, accent, _board_cell_visual_size(_game()))
 	wrapper.add_child(preview)
 	return wrapper
 
@@ -144,7 +144,7 @@ func _finish_touch_drag(screen_position: Vector2) -> void:
 			_end_drag_feedback(false)
 	else:
 		_clear_touch_footprint()
-		if touch_preview != null and is_instance_valid(touch_preview) and touch_preview.has_method("set_drag_scale"):
-			touch_preview.call("set_drag_scale", Vector2(0.92, 0.92))
-		_hide_touch_preview(false)
+		# Restore the tray piece only after the floating copy is synchronously gone.
+		# Fading the preview while revealing the source creates a visible double.
+		_clear_single_touch_preview()
 		_end_drag_feedback(false)
