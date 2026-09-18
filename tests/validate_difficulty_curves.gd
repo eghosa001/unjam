@@ -26,14 +26,19 @@ func _check_water() -> bool:
 	var game = packed.instantiate()
 	root.add_child(game)
 	await process_frame
-	var cases := {1:3, 10:3, 11:4, 30:4, 31:5, 130:5, 131:6, 210:6, 211:7, 300:7, 301:8, 10000:8}
+	var cases := {
+		1:[3,3], 3:[4,4], 8:[5,5], 20:[5,5],
+		100:[6,7], 500:[7,8], 1000:[7,9], 2500:[9,11],
+		5000:[11,12], 7500:[12,12], 10000:[12,12]
+	}
 	for level in cases.keys():
 		game.set("level_number", int(level))
 		var cfg: Dictionary = game.call("level_config")
 		var actual := int(cfg.get("colors", -1))
-		if actual != int(cases[level]):
+		var expected: Array = cases[level]
+		if actual < int(expected[0]) or actual > int(expected[1]):
 			game.queue_free()
-			return _fail("Water level %d expected %d colors, got %d" % [level, int(cases[level]), actual])
+			return _fail("Water level %d expected %d..%d colors, got %d" % [level, int(expected[0]), int(expected[1]), actual])
 	game.queue_free()
 	await process_frame
 	return true

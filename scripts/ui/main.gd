@@ -155,18 +155,28 @@ func build_home() -> void:
 
 func difficulty_short(label: String) -> String:
 	match label:
+		"tutorial": return "LEARN"
 		"easy": return "EASY"
 		"medium": return "MED"
+		"normal-hard": return "N-HARD"
 		"hard": return "HARD"
+		"very hard": return "V-HARD"
+		"expert": return "EXPERT"
+		"extreme": return "EXTREME"
 		"milestone": return "MILE"
 		"boss": return "BOSS"
 		_: return label.to_upper()
 
 func difficulty_color(label: String) -> Color:
 	match label:
+		"tutorial": return Color("57d69a")
 		"easy": return Color("57d69a")
 		"medium": return Color("66a8ff")
-		"hard": return Color("ff9d57")
+		"normal-hard": return Color("66a8ff")
+		"hard": return Color("ffb454")
+		"very hard": return Color("ff8a55")
+		"expert": return Color("d983ff")
+		"extreme": return Color("ff667a")
 		"milestone": return Color("ffd166")
 		"boss": return Color("ff5d7a")
 		_: return Color("95a4bb")

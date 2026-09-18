@@ -112,7 +112,7 @@ func _run() -> void:
 	if project_text.contains("res://addons/stagehand/plugin.cfg"):
 		return _fail("Project still enables the missing Stagehand editor plugin")
 
-	if not water_ui.contains("GameplayStage") or not water_scene.contains("water_sort_assisted.gd") or not water_assisted.contains('extends "res://scripts/game/water_sort_casual.gd"'):
+	if not water_ui.contains("GameplayStage") or not water_scene.contains("water_sort_10000.gd") or not water_assisted.contains('extends "res://scripts/game/water_sort_casual.gd"'):
 		return _fail("Water Sort assisted leaf is not preserving the gameplay-first stage")
 	if not block_scene.contains("block_puzzle_final_polish.gd") or not block_polish.contains('extends "res://scripts/game/block_puzzle_3d.gd"'):
 		return _fail("Block Puzzle final polish must preserve the 3D gameplay presentation chain")

@@ -24,6 +24,7 @@ func _run() -> void:
 	var project_text := _read("res://project.godot")
 	var shell_text := _read("res://scripts/ui/ux_shell_casual.gd")
 	var water_scene := _read("res://scenes/WaterSort.tscn")
+	var water_10000 := _read("res://scripts/game/water_sort_10000.gd")
 	var water_assisted := _read("res://scripts/game/water_sort_assisted.gd")
 	var water_motion := _read("res://scripts/game/water_sort_reference_motion.gd")
 	var water_fit := _read("res://scripts/game/water_sort_ultra_motion.gd")
@@ -39,8 +40,8 @@ func _run() -> void:
 	# Lock the active Water Sort path to lip-based pouring and completion-after-
 	# visuals. The assisted leaf must remain layered over the active casual/motion
 	# stack so hints/extra-tube support cannot reconnect an obsolete renderer.
-	if not water_scene.contains("water_sort_assisted.gd") or not water_assisted.contains('extends "res://scripts/game/water_sort_casual.gd"'):
-		return _fail("Water Sort scene no longer uses the assisted leaf over the active casual/motion stack")
+	if not water_scene.contains("water_sort_10000.gd") or not water_10000.contains('extends "res://scripts/game/water_sort_assisted.gd"') or not water_assisted.contains('extends "res://scripts/game/water_sort_casual.gd"'):
+		return _fail("Water Sort scene no longer uses the 10K leaf over the assisted casual/motion stack")
 	if not water_motion.contains("visual_pour_rim_local") or not water_motion.contains("visual_receive_rim_local"):
 		return _fail("Water Sort pour animation must resolve source and receiver at the visible bottle rims")
 	if not water_motion.contains("pending_completion") or not water_motion.contains("_complete_if_visuals_settled"):

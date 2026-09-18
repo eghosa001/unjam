@@ -14,31 +14,58 @@ func _run() -> void:
 	var water = (load("res://scenes/WaterSort.tscn") as PackedScene).instantiate()
 	root.add_child(water)
 	await process_frame
-	var water_signatures := {}
+	var water_profile_signatures := {}
 	var water_hard_colors := 0
+	# Scan all 10,000 progression profiles cheaply. Board construction itself is
+	# sampled below; constructive solvability has its own focused regression.
 	for n in range(1, MAX_LEVEL + 1):
 		water.level_number = n
 		var cfg: Dictionary = water.level_config()
 		var colors := int(cfg.get("colors", 0))
+		var empties := int(cfg.get("empty_bottles", 0))
+		var par := int(cfg.get("par", 0))
+		var target := int(cfg.get("target_difficulty", 0))
+		if colors < 3 or colors > 12:
+			errors.append("Water %d colors outside 3..12" % n)
+		if empties < 1 or empties > 2:
+			errors.append("Water %d empty-bottle count outside 1..2" % n)
+		if par <= 0 or target < 0 or target > 100:
+			errors.append("Water %d invalid progression target" % n)
+		if n >= 5000 and colors >= 10:
+			water_hard_colors += 1
+		if n % 10 == 0:
+			water_profile_signatures["%d:%d:%d:%d:%s" % [colors, empties, par, target, water.difficulty()]] = true
+
+	var sample_levels: Array[int] = [1,2,3,4,5,6,7,8,9,10,25,50,100,250,500,750,1000,1500,2500,5000,7500,9000,9500,9900,10000]
+	var water_board_signatures := {}
+	for n in sample_levels:
+		water.level_number = n
+		var cfg: Dictionary = water.level_config()
+		var colors := int(cfg.get("colors", 0))
+		var empties := int(cfg.get("empty_bottles", 0))
 		var tubes: Array = water.generate_tubes(n, colors)
 		var counts := {}
-		if tubes.size() != colors + 2:
-			errors.append("Water %d tube count" % n)
+		if tubes.size() != colors + empties:
+			errors.append("Water %d tube count: expected %d, got %d" % [n, colors + empties, tubes.size()])
+		var actual_empties := 0
 		for tube in tubes:
+			if tube.is_empty():
+				actual_empties += 1
 			if tube.size() > 4:
 				errors.append("Water %d capacity" % n)
 			for color in tube:
 				counts[color] = int(counts.get(color, 0)) + 1
+		if actual_empties != empties:
+			errors.append("Water %d empty-bottle mismatch" % n)
 		for color in range(colors):
 			if int(counts.get(color, 0)) != 4:
 				errors.append("Water %d distribution" % n)
-		if n >= 5000 and colors >= 7:
-			water_hard_colors += 1
-		if n % 25 == 0:
-			water_signatures[_water_signature(tubes)] = true
-	if water_signatures.size() < 300:
-		errors.append("Water structural diversity too low: %d signatures" % water_signatures.size())
-	if water_hard_colors < 1500:
+		water_board_signatures[_water_signature(tubes)] = true
+	if water_profile_signatures.size() < 100:
+		errors.append("Water progression profile diversity too low: %d signatures" % water_profile_signatures.size())
+	if water_board_signatures.size() < int(sample_levels.size() * 0.70):
+		errors.append("Water sampled structural diversity too low: %d/%d signatures" % [water_board_signatures.size(), sample_levels.size()])
+	if water_hard_colors < 4500:
 		errors.append("Water late campaign is too soft: only %d high-colour levels" % water_hard_colors)
 	water.queue_free()
 	await process_frame

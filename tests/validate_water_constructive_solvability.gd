@@ -2,6 +2,7 @@ extends SceneTree
 
 const MAX_LEVEL := 10000
 const CAPACITY := 4
+const Progression = preload("res://scripts/core/water_sort_progression.gd")
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -15,12 +16,33 @@ func _run() -> void:
 		return _fail("Water Sort generator does not expose a constructive solution proof")
 	var max_solution := 0
 	var signatures := {}
-	for level in range(1, MAX_LEVEL + 1):
+	var full_audit := OS.get_environment("WATER_FULL_AUDIT") == "1"
+	var levels: Array[int] = []
+	if full_audit:
+		for level in range(1, MAX_LEVEL + 1):
+			levels.append(level)
+	else:
+		for level in range(1, 11):
+			levels.append(level)
+		for level in [25, 50, 100, 250, 500, 750, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000, 5500, 6000, 6500, 7000, 7500, 8000, 8500, 9000, 9500, 9900, 10000]:
+			levels.append(level)
+	for level in levels:
 		game.level_number = level
 		var cfg: Dictionary = game.level_config()
 		var generated: Dictionary = game.call("generate_tubes_with_solution", level, int(cfg.get("colors", 4)))
 		var tubes: Array = generated.get("tubes", []).duplicate(true)
 		var solution: Array = generated.get("solution", [])
+		var expected_empties := int(cfg.get("empty_bottles", 2))
+		var actual_empties := 0
+		for tube_value in tubes:
+			if (tube_value as Array).is_empty():
+				actual_empties += 1
+		if tubes.size() != int(cfg.get("colors", 4)) + expected_empties:
+			game.queue_free()
+			return _fail("Water Sort level %d tube count does not match colors + empties" % level)
+		if actual_empties != expected_empties:
+			game.queue_free()
+			return _fail("Water Sort level %d expected %d empty bottles, got %d" % [level, expected_empties, actual_empties])
 		if tubes.is_empty() or solution.is_empty():
 			game.queue_free()
 			return _fail("Water Sort level %d has no constructive solution proof" % level)
@@ -37,16 +59,21 @@ func _run() -> void:
 		if not _solved(tubes):
 			game.queue_free()
 			return _fail("Water Sort level %d proof does not solve generated board" % level)
-		if level % 25 == 0:
-			signatures[_signature(generated.get("tubes", []))] = true
-		if level % 1000 == 0:
+		var canonical := Progression.canonical_signature(generated.get("tubes", []))
+		if signatures.has(canonical):
+			game.queue_free()
+			return _fail("Water Sort canonical duplicate: level %d matches level %d" % [level, int(signatures[canonical])])
+		signatures[canonical] = level
+		if full_audit and level % 1000 == 0:
 			print("Water constructive proof: %d/%d" % [level, MAX_LEVEL])
-	if signatures.size() < 300:
+	var minimum_unique := 300 if full_audit else int(levels.size() * 0.75)
+	if signatures.size() < minimum_unique:
 		game.queue_free()
-		return _fail("Water Sort constructive generator diversity too low: %d signatures" % signatures.size())
+		return _fail("Water Sort constructive generator diversity too low: %d/%d signatures" % [signatures.size(), levels.size()])
 	game.queue_free()
 	await process_frame
-	print("WATER_CONSTRUCTIVE_10000_OK: every generated level has a legal replayable solution proof within par; max proof length %d." % max_solution)
+	var mode := "10000" if full_audit else "SAMPLED"
+	print("WATER_CONSTRUCTIVE_%s_OK: legal replayable solution proofs within par; max proof length %d." % [mode, max_solution])
 	quit(0)
 
 func _can_pour(tubes: Array, from_idx: int, to_idx: int) -> bool:

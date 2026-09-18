@@ -117,7 +117,7 @@ jobs:
         shell: bash
         run: |
           set -euxo pipefail
-          for t in validate_campaign validate_campaign_diversity validate_level_launch validate_gameplay_interactions validate_progression_transitions validate_home_direct_levels_runtime validate_rescue_hint_exec validate_water_assist_runtime validate_block_hint_exec_runtime validate_assist_economy_runtime validate_shop_navigation_runtime validate_shop_catalog_ui validate_insufficient_coins_prompt validate_restore_purchase_flow validate_live_wallet_shop validate_secondary_wallet_shop validate_gameplay_wallet_ui validate_water_constructive_solvability; do
+          for t in validate_campaign validate_campaign_diversity validate_level_launch validate_gameplay_interactions validate_progression_transitions validate_home_direct_levels_runtime validate_rescue_hint_exec validate_water_assist_runtime validate_block_hint_exec_runtime validate_assist_economy_runtime validate_shop_navigation_runtime validate_shop_catalog_ui validate_insufficient_coins_prompt validate_restore_purchase_flow validate_live_wallet_shop validate_secondary_wallet_shop validate_gameplay_wallet_ui validate_water_progression validate_water_constructive_solvability; do
             echo "===== START $t ====="
             timeout 180s godot --headless --path . --script "res://tests/$t.gd"
             echo "===== PASS $t ====="

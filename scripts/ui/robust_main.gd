@@ -15,11 +15,29 @@ var current_surface: String:
 var active_game: Control
 var selected_game_id := "rescue_rush"
 var selected_multi_world := 1
+var selected_multi_page := 1
+const MULTI_LEVEL_PAGE_SIZE := 100
 
 func _ready() -> void:
 	MultiGameManager.ensure_state()
 	super._ready()
 	_queue_surface_changed()
+
+func _multi_page_count(game_id: String, world: int) -> int:
+	var first := MultiGameManager.first_level_in_game_world(game_id, world)
+	var last := MultiGameManager.last_level_in_game_world(game_id, world)
+	return maxi(1, ceili(float(last - first + 1) / float(MULTI_LEVEL_PAGE_SIZE)))
+
+func _multi_page_for_level(game_id: String, level: int) -> int:
+	var world := MultiGameManager.world_for_game_level(game_id, level)
+	var first := MultiGameManager.first_level_in_game_world(game_id, world)
+	return clampi(int((level - first) / MULTI_LEVEL_PAGE_SIZE) + 1, 1, _multi_page_count(game_id, world))
+
+func _multi_page_bounds(game_id: String, world: int, page: int) -> Vector2i:
+	var world_first := MultiGameManager.first_level_in_game_world(game_id, world)
+	var world_last := MultiGameManager.last_level_in_game_world(game_id, world)
+	var first := world_first + (clampi(page, 1, _multi_page_count(game_id, world)) - 1) * MULTI_LEVEL_PAGE_SIZE
+	return Vector2i(first, mini(first + MULTI_LEVEL_PAGE_SIZE - 1, world_last))
 
 func _queue_surface_changed() -> void:
 	if _surface_emit_pending:
@@ -110,7 +128,7 @@ func _add_game_card(parent: VBoxContainer, game_id: String, accent: Color, subti
 	info.add_child(subtitle)
 	var highest := mini(MultiGameManager.CAMPAIGN_LEVELS, int(progress.get("highest_level", 1)))
 	var stats := Label.new()
-	stats.text = "LEVEL %d / 10,000   •   %d ★   •   %d PERFECT\nWORLD %d / 100   •   %d BADGES" % [highest, MultiGameManager.total_stars(game_id), int(progress.get("perfect_clears", 0)), MultiGameManager.highest_unlocked_world(game_id), (progress.get("world_badges", []) as Array).size()]
+	stats.text = "LEVEL %d / 10,000   •   %d ★   •   %d PERFECT\nWORLD %d / %d   •   %d BADGES" % [highest, MultiGameManager.total_stars(game_id), int(progress.get("perfect_clears", 0)), MultiGameManager.highest_unlocked_game_world(game_id), MultiGameManager.world_count_for(game_id), (progress.get("world_badges", []) as Array).size()]
 	stats.add_theme_font_size_override("font_size", 16)
 	stats.modulate = Color("c2cde0")
 	info.add_child(stats)
@@ -136,7 +154,9 @@ func _daily_done(game_id: String) -> bool:
 
 func open_game_campaign(game_id: String) -> void:
 	selected_game_id = game_id
-	selected_multi_world = MultiGameManager.highest_unlocked_world(game_id)
+	var highest := MultiGameManager.highest_level(game_id)
+	selected_multi_world = MultiGameManager.highest_unlocked_game_world(game_id)
+	selected_multi_page = _multi_page_for_level(game_id, highest)
 	if game_id == "rescue_rush":
 		build_level_select()
 	else:
@@ -151,7 +171,8 @@ func build_level_select() -> void:
 func build_multi_level_select() -> void:
 	current_surface = "levels"
 	_remove_active_game()
-	selected_multi_world = clampi(selected_multi_world, 1, MultiGameManager.WORLD_COUNT)
+	selected_multi_world = clampi(selected_multi_world, 1, MultiGameManager.world_count_for(selected_game_id))
+	selected_multi_page = clampi(selected_multi_page, 1, _multi_page_count(selected_game_id, selected_multi_world))
 	clear_content()
 	add_background()
 	var margin := MarginContainer.new()
@@ -171,7 +192,7 @@ func build_multi_level_select() -> void:
 	back.pressed.connect(build_home)
 	header.add_child(back)
 	var title := Label.new()
-	title.text = "%s  •  WORLD %d / 100" % [MultiGameManager.display_name(selected_game_id), selected_multi_world]
+	title.text = "%s  •  WORLD %d / %d" % [MultiGameManager.display_name(selected_game_id), selected_multi_world, MultiGameManager.world_count_for(selected_game_id)]
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -185,7 +206,9 @@ func build_multi_level_select() -> void:
 	header.add_child(stars)
 	var hero := add_glass_card(root, Vector2(0, 96))
 	var hero_label := Label.new()
-	hero_label.text = "%s\nLEVELS %d–%d" % [MultiGameManager.world_name(selected_game_id, selected_multi_world).to_upper(), MultiGameManager.first_level_in_world(selected_multi_world), MultiGameManager.last_level_in_world(selected_multi_world)]
+	var page_bounds := _multi_page_bounds(selected_game_id, selected_multi_world, selected_multi_page)
+	var page_count := _multi_page_count(selected_game_id, selected_multi_world)
+	hero_label.text = "%s\nLEVELS %d–%d   •   SET %d/%d" % [MultiGameManager.world_name(selected_game_id, selected_multi_world).to_upper(), page_bounds.x, page_bounds.y, selected_multi_page, page_count]
 	hero_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hero_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	hero_label.add_theme_font_size_override("font_size", 21)
@@ -195,15 +218,15 @@ func build_multi_level_select() -> void:
 	nav.add_theme_constant_override("separation", 12)
 	root.add_child(nav)
 	var prev := make_button("◀ PREV", Vector2(220, 60))
-	prev.disabled = selected_multi_world <= 1
-	prev.pressed.connect(_change_multi_world.bind(-1))
+	prev.disabled = selected_multi_world <= 1 and selected_multi_page <= 1
+	prev.pressed.connect(_change_multi_page.bind(-1))
 	nav.add_child(prev)
 	var current := make_button("CURRENT", Vector2(220, 60), true)
 	current.pressed.connect(_jump_multi_current)
 	nav.add_child(current)
 	var next := make_button("NEXT ▶", Vector2(220, 60))
-	next.disabled = selected_multi_world >= MultiGameManager.WORLD_COUNT
-	next.pressed.connect(_change_multi_world.bind(1))
+	next.disabled = selected_multi_world >= MultiGameManager.world_count_for(selected_game_id) and selected_multi_page >= _multi_page_count(selected_game_id, selected_multi_world)
+	next.pressed.connect(_change_multi_page.bind(1))
 	nav.add_child(next)
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -213,10 +236,11 @@ func build_multi_level_select() -> void:
 	grid.add_theme_constant_override("h_separation", 11)
 	grid.add_theme_constant_override("v_separation", 11)
 	scroll.add_child(grid)
-	for level_number in range(MultiGameManager.first_level_in_world(selected_multi_world), MultiGameManager.last_level_in_world(selected_multi_world) + 1):
+	var visible_bounds := _multi_page_bounds(selected_game_id, selected_multi_world, selected_multi_page)
+	for level_number in range(visible_bounds.x, visible_bounds.y + 1):
 		var unlocked := MultiGameManager.is_level_unlocked(selected_game_id, level_number)
 		var level_stars := MultiGameManager.get_stars(selected_game_id, level_number)
-		var difficulty := MultiGameManager.difficulty_for_level(level_number)
+		var difficulty := MultiGameManager.difficulty_for_game(selected_game_id, level_number)
 		var button := make_button("%d\n%s   %s" % [level_number, "★".repeat(level_stars), difficulty_short(difficulty)], Vector2(170, 102), level_number == MultiGameManager.highest_level(selected_game_id))
 		button.disabled = not unlocked
 		button.add_theme_font_size_override("font_size", 16)
@@ -224,12 +248,32 @@ func build_multi_level_select() -> void:
 		button.pressed.connect(start_multi_level.bind(selected_game_id, level_number, false))
 		grid.add_child(button)
 
+func _change_multi_page(delta: int) -> void:
+	if delta < 0:
+		if selected_multi_page > 1:
+			selected_multi_page -= 1
+		elif selected_multi_world > 1:
+			selected_multi_world -= 1
+			selected_multi_page = _multi_page_count(selected_game_id, selected_multi_world)
+	elif delta > 0:
+		var pages := _multi_page_count(selected_game_id, selected_multi_world)
+		if selected_multi_page < pages:
+			selected_multi_page += 1
+		elif selected_multi_world < MultiGameManager.world_count_for(selected_game_id):
+			selected_multi_world += 1
+			selected_multi_page = 1
+	build_multi_level_select()
+
 func _change_multi_world(delta: int) -> void:
-	selected_multi_world = clampi(selected_multi_world + delta, 1, MultiGameManager.WORLD_COUNT)
+	# Compatibility entry point for older callers: move to the adjacent world.
+	selected_multi_world = clampi(selected_multi_world + delta, 1, MultiGameManager.world_count_for(selected_game_id))
+	selected_multi_page = 1
 	build_multi_level_select()
 
 func _jump_multi_current() -> void:
-	selected_multi_world = MultiGameManager.highest_unlocked_world(selected_game_id)
+	var highest := MultiGameManager.highest_level(selected_game_id)
+	selected_multi_world = MultiGameManager.highest_unlocked_game_world(selected_game_id)
+	selected_multi_page = _multi_page_for_level(selected_game_id, highest)
 	build_multi_level_select()
 
 func build_collection() -> void:
@@ -326,7 +370,8 @@ func force_back_from_game() -> void:
 		build_level_select()
 	else:
 		selected_game_id = game_id
-		selected_multi_world = MultiGameManager.world_for_level(MultiGameManager.highest_level(game_id))
+		selected_multi_world = MultiGameManager.world_for_game_level(game_id, MultiGameManager.highest_level(game_id))
+		selected_multi_page = _multi_page_for_level(game_id, MultiGameManager.highest_level(game_id))
 		build_multi_level_select()
 
 func _on_rescue_finished(completed_level: int) -> void:
@@ -354,7 +399,8 @@ func _on_multi_finished(completed_level: int, game_id: String) -> void:
 func _on_multi_quit(game_id: String) -> void:
 	active_game = null
 	selected_game_id = game_id
-	selected_multi_world = MultiGameManager.world_for_level(MultiGameManager.highest_level(game_id))
+	selected_multi_world = MultiGameManager.world_for_game_level(game_id, MultiGameManager.highest_level(game_id))
+	selected_multi_page = _multi_page_for_level(game_id, MultiGameManager.highest_level(game_id))
 	build_multi_level_select()
 
 func _checkpoint_for(game_id: String) -> Dictionary:
