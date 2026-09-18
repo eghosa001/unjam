@@ -1,0 +1,399 @@
+class_name BlockPuzzleExactSolver
+extends RefCounted
+
+const Generator = preload("res://scripts/core/block_puzzle_campaign_generator.gd")
+const GRID_SIZE := 8
+const FULL_ROW := 0xff
+
+static func find_solution(profile: Dictionary, plan: Dictionary, max_nodes: int = 250000) -> Dictionary:
+	var state := _initial_state(profile, plan)
+	if state.is_empty():
+		return {"solved": false, "nodes": 0, "reason": "invalid_state"}
+	var proof_shapes: Array = plan.get("proof_shapes", [])
+	var proof_origins: Array = plan.get("proof_origins", [])
+	var upper := maxi(1, proof_shapes.size())
+	var context := {
+		"nodes": 0,
+		"max_nodes": maxi(1, max_nodes),
+		"cutoff": false,
+		"memo": {},
+		"profile": profile,
+		"plan": plan,
+		"proof_shapes": proof_shapes,
+		"proof_origins": proof_origins,
+	}
+	var path: Array[Dictionary] = []
+	var solved := _dfs(state, upper, path, context)
+	return {
+		"solved": solved,
+		"moves": path.size() if solved else -1,
+		"path": path.duplicate(true) if solved else [],
+		"nodes": int(context["nodes"]),
+		"cutoff": bool(context["cutoff"]),
+		"uses_64_bit_board": true,
+	}
+
+static func find_optimal(profile: Dictionary, plan: Dictionary, max_nodes: int = 350000) -> Dictionary:
+	var proof_shapes: Array = plan.get("proof_shapes", [])
+	if proof_shapes.is_empty():
+		return {"solved": false, "optimal_verified": false, "nodes": 0}
+	var total_nodes := 0
+	for limit in range(1, proof_shapes.size() + 1):
+		var state := _initial_state(profile, plan)
+		var context := {
+			"nodes": 0,
+			"max_nodes": maxi(1, max_nodes - total_nodes),
+			"cutoff": false,
+			"memo": {},
+			"profile": profile,
+			"plan": plan,
+			"proof_shapes": plan.get("proof_shapes", []),
+			"proof_origins": plan.get("proof_origins", []),
+		}
+		var path: Array[Dictionary] = []
+		var solved := _dfs(state, limit, path, context)
+		total_nodes += int(context["nodes"])
+		if solved:
+			return {
+				"solved": true,
+				"optimal_verified": not bool(context["cutoff"]),
+				"optimal_moves": path.size(),
+				"path": path.duplicate(true),
+				"nodes": total_nodes,
+				"uses_64_bit_board": true,
+			}
+		if bool(context["cutoff"]) or total_nodes >= max_nodes:
+			return {
+				"solved": false,
+				"optimal_verified": false,
+				"optimal_moves": -1,
+				"nodes": total_nodes,
+				"cutoff": true,
+				"uses_64_bit_board": true,
+			}
+	return {"solved": false, "optimal_verified": false, "optimal_moves": -1, "nodes": total_nodes}
+
+static func validate_known_solution(profile: Dictionary, plan: Dictionary) -> Dictionary:
+	var state := _initial_state(profile, plan)
+	if state.is_empty():
+		return {"solved": false, "reason": "invalid_state"}
+	var shapes: Array = plan.get("proof_shapes", [])
+	var origins: Array = plan.get("proof_origins", [])
+	if shapes.size() != origins.size() or shapes.is_empty():
+		return {"solved": false, "reason": "missing_proof"}
+	for i in range(shapes.size()):
+		var shape_index := int(shapes[i])
+		var origin_cell := int(origins[i])
+		var tray := _current_tray(state, plan)
+		var slot := _find_unused_shape_slot(tray, int(state["used_mask"]), shape_index)
+		if slot < 0:
+			return {"solved": false, "reason": "proof_piece_not_in_tray", "move": i}
+		var move := _apply_move(state, shape_index, slot, origin_cell, profile, plan)
+		if move.is_empty():
+			return {"solved": false, "reason": "illegal_proof_move", "move": i}
+		state = move
+		if _goal(state, profile):
+			return {
+				"solved": true,
+				"moves": i + 1,
+				"score": int(state["score"]),
+				"lines": int(state["lines"]),
+				"uses_64_bit_board": true,
+			}
+	return {
+		"solved": _goal(state, profile),
+		"moves": shapes.size(),
+		"score": int(state.get("score", 0)),
+		"lines": int(state.get("lines", 0)),
+		"uses_64_bit_board": true,
+	}
+
+static func board_to_mask(board: Array) -> int:
+	var mask: int = 0
+	for y in range(mini(GRID_SIZE, board.size())):
+		var row: Array = board[y]
+		for x in range(mini(GRID_SIZE, row.size())):
+			if bool(row[x]):
+				mask |= (1 << (y * GRID_SIZE + x))
+	return mask
+
+static func _initial_state(profile: Dictionary, plan: Dictionary) -> Dictionary:
+	var board: Array = plan.get("initial_cells", [])
+	var trays: Array = plan.get("trays", [])
+	if board.size() != GRID_SIZE or trays.is_empty():
+		return {}
+	var objective: Dictionary = plan.get("special_plan", {})
+	var layers := {}
+	var preserve_mask: int = 0
+	for raw in (objective.get("specials", []) as Array):
+		var special: Dictionary = raw
+		var idx := int(special.get("index", -1))
+		if idx < 0 or idx >= 64:
+			continue
+		var kind := String(special.get("kind", ""))
+		if kind == "preserve":
+			preserve_mask |= (1 << idx)
+		elif kind in ["crate", "ice", "lock", "steel", "target"]:
+			layers[idx] = maxi(1, int(special.get("layers", 1)))
+	var rows_mask := 0
+	for raw in (objective.get("target_rows", []) as Array):
+		var row := int(raw)
+		if row >= 0 and row < 8:
+			rows_mask |= (1 << row)
+	var cols_mask := 0
+	for raw in (objective.get("target_cols", []) as Array):
+		var col := int(raw)
+		if col >= 0 and col < 8:
+			cols_mask |= (1 << col)
+	return {
+		"board": board_to_mask(board),
+		"tray_index": 0,
+		"used_mask": 0,
+		"score": 0,
+		"lines": 0,
+		"moves": 0,
+		"combo": 0,
+		"special_layers": layers,
+		"preserve_mask": preserve_mask,
+		"rows_pending": rows_mask,
+		"cols_pending": cols_mask,
+		"double_progress": 0,
+		"double_required": maxi(0, int(objective.get("required_double_clears", 0))),
+	}
+
+static func _dfs(state: Dictionary, depth_left: int, path: Array[Dictionary], context: Dictionary) -> bool:
+	context["nodes"] = int(context["nodes"]) + 1
+	if int(context["nodes"]) > int(context["max_nodes"]):
+		context["cutoff"] = true
+		return false
+	var profile: Dictionary = context["profile"]
+	if _goal(state, profile):
+		return true
+	if depth_left <= 0:
+		return false
+
+	var plan: Dictionary = context["plan"]
+	var tray := _current_tray(state, plan)
+	if tray.is_empty():
+		return false
+	var key := _state_key(state)
+	var memo: Dictionary = context["memo"]
+	if memo.has(key) and int(memo[key]) >= depth_left:
+		return false
+	memo[key] = depth_left
+	context["memo"] = memo
+
+	var candidates := _ordered_candidates(state, tray, context)
+	for candidate in candidates:
+		var next := _apply_move(
+			state,
+			int(candidate["shape"]),
+			int(candidate["slot"]),
+			int(candidate["origin"]),
+			profile,
+			plan
+		)
+		if next.is_empty():
+			continue
+		path.append(candidate)
+		if _dfs(next, depth_left - 1, path, context):
+			return true
+		path.pop_back()
+		if bool(context["cutoff"]):
+			return false
+	return false
+
+static func _ordered_candidates(state: Dictionary, tray: Array, context: Dictionary) -> Array[Dictionary]:
+	var candidates: Array[Dictionary] = []
+	var used_mask := int(state["used_mask"])
+	var move_number := int(state["moves"])
+	var proof_shapes: Array = context["proof_shapes"]
+	var proof_origins: Array = context["proof_origins"]
+	var preferred_shape := int(proof_shapes[move_number]) if move_number < proof_shapes.size() else -1
+	var preferred_origin := int(proof_origins[move_number]) if move_number < proof_origins.size() else -1
+
+	for slot in range(tray.size()):
+		if (used_mask & (1 << slot)) != 0:
+			continue
+		var shape_index := int(tray[slot])
+		if shape_index < 0 or shape_index >= Generator.SHAPES.size():
+			continue
+		for origin in _legal_origins(int(state["board"]), int(state["preserve_mask"]), shape_index):
+			var priority := 0
+			if shape_index == preferred_shape and origin == preferred_origin:
+				priority = 1000000
+			else:
+				var preview := _preview_clear_count(int(state["board"]), shape_index, origin)
+				priority = preview * 10000 + Generator.SHAPES[shape_index].size() * 100
+			candidates.append({"slot": slot, "shape": shape_index, "origin": origin, "priority": priority})
+	candidates.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return int(a["priority"]) > int(b["priority"])
+	)
+	return candidates
+
+static func _apply_move(
+	state: Dictionary,
+	shape_index: int,
+	slot: int,
+	origin_cell: int,
+	profile: Dictionary,
+	plan: Dictionary
+) -> Dictionary:
+	var tray := _current_tray(state, plan)
+	if slot < 0 or slot >= tray.size() or (int(state["used_mask"]) & (1 << slot)) != 0:
+		return {}
+	if int(tray[slot]) != shape_index:
+		return {}
+	var placement := _placement_mask(shape_index, origin_cell)
+	if placement == null:
+		return {}
+	var placement_mask := int(placement)
+	var board := int(state["board"])
+	if (board & placement_mask) != 0 or (int(state["preserve_mask"]) & placement_mask) != 0:
+		return {}
+
+	var next := state.duplicate(true)
+	var filled := board | placement_mask
+	var clear_data := _clear_data(filled)
+	var clear_mask := int(clear_data["mask"])
+	var cleared := int(clear_data["count"])
+	next["board"] = filled & ~clear_mask
+	next["score"] = int(state["score"]) + Generator.SHAPES[shape_index].size() * 10
+	next["lines"] = int(state["lines"]) + cleared
+	next["moves"] = int(state["moves"]) + 1
+	next["combo"] = int(state["combo"]) + 1 if cleared > 0 else 0
+	if cleared > 0:
+		next["score"] = int(next["score"]) + cleared * 120 + maxi(0, cleared - 1) * 80
+		if cleared >= 2:
+			next["double_progress"] = int(state["double_progress"]) + 1
+
+	var rows_pending := int(state["rows_pending"])
+	for row in (clear_data["rows"] as Array):
+		rows_pending &= ~(1 << int(row))
+	next["rows_pending"] = rows_pending
+	var cols_pending := int(state["cols_pending"])
+	for col in (clear_data["cols"] as Array):
+		cols_pending &= ~(1 << int(col))
+	next["cols_pending"] = cols_pending
+
+	var layers: Dictionary = (state["special_layers"] as Dictionary).duplicate(true)
+	if clear_mask != 0:
+		for raw_idx in layers.keys().duplicate():
+			var idx := int(raw_idx)
+			if (clear_mask & (1 << idx)) == 0:
+				continue
+			var remain := int(layers[raw_idx]) - 1
+			if remain <= 0:
+				layers.erase(raw_idx)
+			else:
+				layers[raw_idx] = remain
+	next["special_layers"] = layers
+
+	var used := int(state["used_mask"]) | (1 << slot)
+	var tray_index := int(state["tray_index"])
+	var full_used_mask := (1 << tray.size()) - 1
+	if used == full_used_mask:
+		tray_index += 1
+		used = 0
+	next["tray_index"] = tray_index
+	next["used_mask"] = used
+
+	var move_limit := int(profile.get("move_limit", -1))
+	if move_limit > 0 and int(next["moves"]) > move_limit:
+		return {}
+	return next
+
+static func _current_tray(state: Dictionary, plan: Dictionary) -> Array:
+	var trays: Array = plan.get("trays", [])
+	var index := int(state["tray_index"])
+	if index < 0 or index >= trays.size():
+		return []
+	return trays[index] as Array
+
+static func _find_unused_shape_slot(tray: Array, used_mask: int, shape_index: int) -> int:
+	for slot in range(tray.size()):
+		if (used_mask & (1 << slot)) == 0 and int(tray[slot]) == shape_index:
+			return slot
+	return -1
+
+static func _goal(state: Dictionary, profile: Dictionary) -> bool:
+	if int(state["score"]) < int(profile.get("target_score", 0)):
+		return false
+	if int(state["lines"]) < int(profile.get("target_lines", 0)):
+		return false
+	if not (state["special_layers"] as Dictionary).is_empty():
+		return false
+	if int(state["rows_pending"]) != 0 or int(state["cols_pending"]) != 0:
+		return false
+	if int(state["double_progress"]) < int(state["double_required"]):
+		return false
+	return true
+
+static func _legal_origins(board: int, preserve_mask: int, shape_index: int) -> Array[int]:
+	var out: Array[int] = []
+	for origin in range(64):
+		var placement = _placement_mask(shape_index, origin)
+		if placement == null:
+			continue
+		var mask := int(placement)
+		if (board & mask) == 0 and (preserve_mask & mask) == 0:
+			out.append(origin)
+	return out
+
+static func _placement_mask(shape_index: int, origin_cell: int) -> Variant:
+	if shape_index < 0 or shape_index >= Generator.SHAPES.size() or origin_cell < 0 or origin_cell >= 64:
+		return null
+	var origin_x := origin_cell % 8
+	var origin_y := int(origin_cell / 8)
+	var mask: int = 0
+	for raw in (Generator.SHAPES[shape_index] as Array):
+		var p: Vector2i = raw
+		var x := origin_x + p.x
+		var y := origin_y + p.y
+		if x < 0 or x >= 8 or y < 0 or y >= 8:
+			return null
+		mask |= (1 << (y * 8 + x))
+	return mask
+
+static func _preview_clear_count(board: int, shape_index: int, origin: int) -> int:
+	var placement = _placement_mask(shape_index, origin)
+	if placement == null or (board & int(placement)) != 0:
+		return -1
+	return int(_clear_data(board | int(placement))["count"])
+
+static func _clear_data(board: int) -> Dictionary:
+	var rows: Array[int] = []
+	var cols: Array[int] = []
+	var clear_mask: int = 0
+	for y in range(8):
+		var row_mask := FULL_ROW << (y * 8)
+		if (board & row_mask) == row_mask:
+			rows.append(y)
+			clear_mask |= row_mask
+	for x in range(8):
+		var col_mask: int = 0
+		for y in range(8):
+			col_mask |= (1 << (y * 8 + x))
+		if (board & col_mask) == col_mask:
+			cols.append(x)
+			clear_mask |= col_mask
+	return {"mask": clear_mask, "count": rows.size() + cols.size(), "rows": rows, "cols": cols}
+
+static func _state_key(state: Dictionary) -> String:
+	var layers: Dictionary = state["special_layers"]
+	var encoded_layers: Array[String] = []
+	for raw_idx in layers.keys():
+		encoded_layers.append("%d:%d" % [int(raw_idx), int(layers[raw_idx])])
+	encoded_layers.sort()
+	return "%d/%d/%d/%d/%d/%d/%d/%d/%d/%s" % [
+		int(state["board"]),
+		int(state["tray_index"]),
+		int(state["used_mask"]),
+		int(state["score"]),
+		int(state["lines"]),
+		int(state["combo"]),
+		int(state["rows_pending"]),
+		int(state["cols_pending"]),
+		int(state["double_progress"]),
+		",".join(encoded_layers),
+	]
