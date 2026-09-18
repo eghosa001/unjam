@@ -22,6 +22,7 @@ func _draw() -> void:
 
 	_draw_sky(w, h)
 	_draw_distant_world(w, h)
+	_draw_atmospheric_haze(w, h)
 	_draw_water_world(w, h)
 	_draw_foreground(w, h)
 	if dark_mode:
@@ -32,7 +33,7 @@ func _draw() -> void:
 
 func _draw_sky(w: float, h: float) -> void:
 	# More bands than before keeps the large mobile background smooth without a shader.
-	var bands := 36
+	var bands := 52
 	for i in range(bands):
 		var t := float(i) / float(bands - 1)
 		var y := h * t
@@ -42,8 +43,8 @@ func _draw_sky(w: float, h: float) -> void:
 
 	# Warm sun bloom gives the same cheerful fantasy-game lighting as the reference.
 	var sun := Vector2(w * 0.77, h * 0.105)
-	for i in range(5, 0, -1):
-		var radius := w * (0.034 + float(i) * 0.018)
+	for i in range(7, 0, -1):
+		var radius := w * (0.032 + float(i) * 0.015)
 		draw_circle(sun, radius, Color(1.0, 0.91, 0.52, 0.018 + float(6 - i) * 0.012))
 	draw_circle(sun, w * 0.038, Color("fff0a3"))
 	draw_circle(sun - Vector2(w * 0.010, w * 0.010), w * 0.017, Color(1, 1, 1, 0.52))
@@ -101,6 +102,17 @@ func _draw_distant_world(w: float, h: float) -> void:
 	for item in [Vector2(0.06,0.40), Vector2(0.18,0.37), Vector2(0.84,0.35), Vector2(0.95,0.40)]:
 		_draw_tree(Vector2(w * item.x, h * item.y), w * 0.028)
 
+func _draw_atmospheric_haze(w: float, h: float) -> void:
+	# Soft translucent bands separate the mountain, cliff and water planes so the
+	# procedural background reads like a polished illustration instead of flat layers.
+	for i in range(5):
+		var t := float(i) / 4.0
+		var y := h * (0.34 + t * 0.085)
+		var alpha := 0.055 - t * 0.006
+		draw_rect(Rect2(0, y, w, h * 0.075), Color(0.88, 0.99, 1.0, alpha))
+	var horizon_y := h * 0.655
+	draw_line(Vector2(0, horizon_y), Vector2(w, horizon_y), Color(0.88, 1.0, 1.0, 0.24), maxf(2.0, w * 0.003), true)
+
 func _draw_water_world(w: float, h: float) -> void:
 	# Three waterfalls with a shaded edge and luminous center.
 	for x in [w * 0.215, w * 0.505, w * 0.785]:
@@ -114,15 +126,21 @@ func _draw_water_world(w: float, h: float) -> void:
 
 	# River gradient and perspective streaks.
 	var water_top := h * 0.675
-	for i in range(12):
-		var t := float(i) / 11.0
+	for i in range(18):
+		var t := float(i) / 17.0
 		var yy := water_top + (h - water_top) * t
-		var band_h := (h - water_top) / 11.0 + 2.0
+		var band_h := (h - water_top) / 17.0 + 2.0
 		draw_rect(Rect2(0, yy, w, band_h), Color("20bddc").lerp(Color("087fbb"), t * 0.82))
-	for i in range(8):
-		var yy := h * (0.71 + float(i) * 0.036)
+	for i in range(12):
+		var yy := h * (0.705 + float(i) * 0.025)
 		var inset := w * (0.03 + float(i) * 0.018)
 		draw_line(Vector2(inset, yy), Vector2(w - inset, yy - h * 0.010), Color(0.80, 1.0, 1.0, 0.18), maxf(2.0, w * 0.003))
+
+	# Small specular streaks keep the river glossy without a shader or continuous animation.
+	for p in [Vector2(0.12,0.735), Vector2(0.30,0.79), Vector2(0.58,0.745), Vector2(0.78,0.83), Vector2(0.90,0.76)]:
+		var center := Vector2(w * p.x, h * p.y)
+		draw_line(center - Vector2(w * 0.030, 0), center + Vector2(w * 0.030, 0), Color(0.94, 1.0, 1.0, 0.34), maxf(2.0, w * 0.003), true)
+		draw_circle(center, maxf(2.0, w * 0.003), Color(1, 1, 1, 0.46))
 
 	# Stepping stones pull the eye toward the central play area.
 	for i in range(5):
