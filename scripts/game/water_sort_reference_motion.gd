@@ -254,6 +254,31 @@ func _liquid_arc_points(source_mouth: Vector2, receiver_mouth: Vector2, directio
 		)
 	return points
 
+func _release_pour_visual_lock(source_index: int, target_index: int) -> void:
+	active_source_tubes.erase(source_index)
+	active_target_tubes.erase(target_index)
+	if board != null and is_instance_valid(board):
+		for idx in [source_index, target_index]:
+			if idx < 0 or idx >= board.get_child_count():
+				continue
+			var live := board.get_child(idx)
+			if live != null and is_instance_valid(live):
+				live.modulate = Color.WHITE
+				live.disabled = false
+				if live.has_method("configure") and idx < tubes.size():
+					live.call("configure", tubes[idx], false, idx)
+	if _run_queued_action_if_ready():
+		return
+	_complete_if_visuals_settled()
+	_refresh_idle_status_after_pours()
+
+func _abort_pour_visuals(ghost: Node, receiver: Node, source_index: int, target_index: int) -> void:
+	if ghost != null and is_instance_valid(ghost):
+		ghost.queue_free()
+	if receiver != null and is_instance_valid(receiver):
+		receiver.queue_free()
+	_release_pour_visual_lock(source_index, target_index)
+
 func _play_premium_concurrent_pour(source_values: Array, target_values: Array, from_rect: Rect2, to_rect: Rect2, color_index: int, amount: int, source_index: int, target_index: int) -> void:
 	var liquid: Color = MotionTube.PALETTE[color_index]
 	var ghost := MotionTube.new()
@@ -288,6 +313,7 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 	FeedbackManager.lift()
 	await lift.finished
 	if not is_instance_valid(ghost) or not is_instance_valid(receiver):
+		_abort_pour_visuals(ghost, receiver, source_index, target_index)
 		return
 
 	var receiver_local := _receiver_rim_local(receiver)
@@ -307,6 +333,7 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 	travel.tween_property(ghost, "position", desired, travel_time)
 	await travel.finished
 	if not is_instance_valid(ghost) or not is_instance_valid(receiver):
+		_abort_pour_visuals(ghost, receiver, source_index, target_index)
 		return
 
 	var tip_time := MotionSystem.duration(&"settle") * 0.78
@@ -314,6 +341,7 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 	tip.tween_property(ghost, "rotation", final_rotation, tip_time)
 	await tip.finished
 	if not is_instance_valid(ghost) or not is_instance_valid(receiver):
+		_abort_pour_visuals(ghost, receiver, source_index, target_index)
 		return
 
 	ghost.call("begin_pour_out", amount)
@@ -374,12 +402,14 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 		PremiumVisuals.burst(_control_point(receiver, Vector2(receiver.size.x * 0.5, 34.0)), liquid, 9)
 
 	if not is_instance_valid(ghost):
+		_abort_pour_visuals(ghost, receiver, source_index, target_index)
 		return
 	var upright_time := MotionSystem.duration(&"settle") * 0.64
 	var upright := create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	upright.tween_property(ghost, "rotation", 0.0, upright_time)
 	await upright.finished
 	if not is_instance_valid(ghost):
+		_abort_pour_visuals(ghost, receiver, source_index, target_index)
 		return
 	var return_time := MotionSystem.duration(&"travel") * 0.72
 	var returning := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
@@ -391,17 +421,4 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 	if is_instance_valid(receiver):
 		receiver.queue_free()
 
-	active_source_tubes.erase(source_index)
-	active_target_tubes.erase(target_index)
-	for idx in [source_index, target_index]:
-		if board != null and idx >= 0 and idx < board.get_child_count():
-			var live := board.get_child(idx)
-			if live != null and is_instance_valid(live):
-				live.modulate = Color.WHITE
-				live.disabled = false
-				live.call("configure", tubes[idx], false, idx)
-
-	if _run_queued_action_if_ready():
-		return
-	_complete_if_visuals_settled()
-	_refresh_idle_status_after_pours()
+	_release_pour_visual_lock(source_index, target_index)
