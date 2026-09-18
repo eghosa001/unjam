@@ -203,63 +203,96 @@ static func _mechanic_required(mechanics: Array, mechanic: String) -> void:
 		mechanics.append(mechanic)
 
 static func _add_reverse_piece(pieces: Array[Dictionary], size: int, rescue_pos: Vector2i, seed_value: int, type: String, metadata: Dictionary) -> int:
+	var occupied := _occupied_map(pieces)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
-	var best_score := -100000
-	var best: Array[Dictionary] = []
-	for y in range(size):
-		for x in range(size):
-			var pos := Vector2i(x, y)
-			if pos == rescue_pos or _occupied(pieces, pos):
-				continue
-			for direction_index in range(4):
-				var direction := DIR_VECTORS[direction_index]
-				if not _candidate_path_clear(pos, direction, pieces, rescue_pos, size):
+	var best_pos := Vector2i(-1, -1)
+	var best_direction := "right"
+	var best_score := -1
+
+	# Dense late boards used to scan every cell/direction and repeatedly rescan
+	# the full piece array. Sample a deterministic candidate set first and use an
+	# O(1) occupancy map; this keeps 10,000-level generation viable on mobile.
+	var attempts := mini(72, size * size * 2)
+	for _attempt in range(attempts):
+		var pos := Vector2i(rng.randi_range(0, size - 1), rng.randi_range(0, size - 1))
+		if pos == rescue_pos or occupied.has(pos):
+			continue
+		var direction_index := rng.randi_range(0, 3)
+		var direction := DIR_VECTORS[direction_index]
+		if not _candidate_path_clear_map(pos, direction, occupied, rescue_pos, size):
+			continue
+		var impact := _blocking_impact_map(pos, pieces, occupied, rescue_pos, size)
+		var score := impact * 100 + _route_length(pos, direction, size) * 4
+		if score > best_score:
+			best_score = score
+			best_pos = pos
+			best_direction = DIR_NAMES[direction_index]
+			if impact >= 2:
+				break
+
+	# Deterministic exhaustive fallback only when the sampled set found nothing.
+	# It is rare, but guarantees dense boards continue filling rather than silently
+	# dropping below their configured object target.
+	if best_score < 0:
+		for y in range(size):
+			for x in range(size):
+				var pos := Vector2i(x, y)
+				if pos == rescue_pos or occupied.has(pos):
 					continue
-				var impact := _blocking_impact(pos, pieces, rescue_pos, size)
-				var route_length := _route_length(pos, direction, size)
-				var edge_distance := mini(mini(x, size - 1 - x), mini(y, size - 1 - y))
-				var score := impact * 100 + route_length * 4 + edge_distance * 3 + rng.randi_range(0, 7)
-				if score > best_score:
-					best_score = score
-					best = [{"pos": pos, "direction": DIR_NAMES[direction_index]}]
-				elif score == best_score:
-					best.append({"pos": pos, "direction": DIR_NAMES[direction_index]})
-	if best.is_empty():
+				for direction_index in range(4):
+					var direction := DIR_VECTORS[direction_index]
+					if _candidate_path_clear_map(pos, direction, occupied, rescue_pos, size):
+						best_pos = pos
+						best_direction = DIR_NAMES[direction_index]
+						best_score = 0
+						break
+				if best_score >= 0:
+					break
+			if best_score >= 0:
+				break
+
+	if best_score < 0:
 		return -1
-	var chosen: Dictionary = best[rng.randi_range(0, best.size() - 1)]
-	var pos: Vector2i = chosen["pos"]
-	var piece := _piece(pos.x, pos.y, type, String(chosen["direction"]))
+	var piece := _piece(best_pos.x, best_pos.y, type, best_direction)
 	for key in metadata.keys():
 		piece[key] = metadata[key]
 	var index := pieces.size()
 	pieces.append(piece)
 	return index
 
-static func _candidate_path_clear(pos: Vector2i, direction: Vector2i, pieces: Array[Dictionary], rescue_pos: Vector2i, size: int) -> bool:
+static func _occupied_map(pieces: Array[Dictionary]) -> Dictionary:
+	var result: Dictionary = {}
+	for piece in pieces:
+		if bool(piece.get("active", true)):
+			result[_piece_pos(piece)] = true
+	return result
+
+static func _candidate_path_clear_map(pos: Vector2i, direction: Vector2i, occupied: Dictionary, rescue_pos: Vector2i, size: int) -> bool:
 	var cursor := pos + direction
 	while _inside(cursor, size):
-		if cursor == rescue_pos or _occupied(pieces, cursor):
+		if cursor == rescue_pos or occupied.has(cursor):
 			return false
 		cursor += direction
 	return true
 
-static func _blocking_impact(candidate: Vector2i, pieces: Array[Dictionary], rescue_pos: Vector2i, size: int) -> int:
+static func _blocking_impact_map(candidate: Vector2i, pieces: Array[Dictionary], occupied: Dictionary, rescue_pos: Vector2i, size: int) -> int:
 	var impact := 0
 	for piece in pieces:
-		var type := String(piece.get("type", "normal"))
-		if type in ["blocker", "gate"]:
+		var type_name := String(piece.get("type", "normal"))
+		if type_name in ["blocker", "gate"]:
 			continue
-		var cursor := _piece_pos(piece) + _dir_vector(String(piece.get("direction", "right")))
+		var direction := _dir_vector(String(piece.get("direction", "right")))
+		var cursor := _piece_pos(piece) + direction
 		while _inside(cursor, size):
 			if cursor == rescue_pos:
 				break
 			if cursor == candidate:
 				impact += 1
 				break
-			if _occupied(pieces, cursor):
+			if occupied.has(cursor):
 				break
-			cursor += _dir_vector(String(piece.get("direction", "right")))
+			cursor += direction
 	return impact
 
 static func _route_length(pos: Vector2i, direction: Vector2i, size: int) -> int:
