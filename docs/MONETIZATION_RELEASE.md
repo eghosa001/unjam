@@ -61,7 +61,7 @@ The install entrypoint is `tools/install_monetization_plugins.sh`.
 4. Set Play Console `Contains ads` accurately.
 5. Complete Data Safety and target-audience declarations based on the actual shipped SDKs and audience.
 6. Create the five product IDs above in Play Console if in-app purchases will ship.
-7. Deploy `backend/play-verifier/` to a dedicated Google Cloud project. The deploy script now verifies `/healthz` and prints the runtime service-account email and exact `/verify` endpoint. Grant that runtime service account Purchases API access to UNJAM in Play Console and set `UNJAM_PURCHASE_VERIFICATION_URL=https://<cloud-run-host>/verify`.
+7. Deploy `backend/play-verifier/` to a dedicated Google Cloud project. The deploy script verifies `/healthz` and prints the runtime service-account email and exact `/verify` endpoint. After Play Console access is granted, `/readiness` must also return HTTP 200 with both Firestore and Google Play dependencies ready. Grant that runtime service account Purchases API access to UNJAM in Play Console and set `UNJAM_PURCHASE_VERIFICATION_URL=https://<cloud-run-host>/verify`.
 8. Use Play license testers and Google test ads during development; do not click live ads during testing.
 9. Require a green exact-commit CI run plus Internal testing before Production.
 
@@ -70,7 +70,7 @@ The install entrypoint is `tools/install_monetization_plugins.sh`.
 
 Before a production AAB can be built, `.github/workflows/android-release.yml` now runs `tools/check_live_monetization.py`. It blocks release unless:
 
-- the Cloud Run purchase verifier returns `{"ok": true}` from `/healthz`;
+- the Cloud Run purchase verifier returns `{"ok": true}` from `/healthz` **and** `/readiness` proves both Firestore access and Google Play Purchases API authorization;
 - the developer website configured in repository variable `UNJAM_DEVELOPER_WEBSITE_URL` serves the exact AdMob seller record from its **hostname root** `/app-ads.txt`;
 - the configured privacy policy URL is publicly reachable and identifies UNJAM;
 - the Android package remains `com.eghosa.unjamgam`.
