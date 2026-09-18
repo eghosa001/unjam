@@ -1,7 +1,7 @@
 extends SceneTree
 
 const MAX_LEVEL := 10000
-const CAPACITY := 4
+const CAPACITY := 4\nconst Progression = preload("res://scripts/core/water_sort_progression.gd")
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -31,6 +31,17 @@ func _run() -> void:
 		var generated: Dictionary = game.call("generate_tubes_with_solution", level, int(cfg.get("colors", 4)))
 		var tubes: Array = generated.get("tubes", []).duplicate(true)
 		var solution: Array = generated.get("solution", [])
+		var expected_empties := int(cfg.get("empty_bottles", 2))
+		var actual_empties := 0
+		for tube_value in tubes:
+			if (tube_value as Array).is_empty():
+				actual_empties += 1
+		if tubes.size() != int(cfg.get("colors", 4)) + expected_empties:
+			game.queue_free()
+			return _fail("Water Sort level %d tube count does not match colors + empties" % level)
+		if actual_empties != expected_empties:
+			game.queue_free()
+			return _fail("Water Sort level %d expected %d empty bottles, got %d" % [level, expected_empties, actual_empties])
 		if tubes.is_empty() or solution.is_empty():
 			game.queue_free()
 			return _fail("Water Sort level %d has no constructive solution proof" % level)
@@ -47,7 +58,11 @@ func _run() -> void:
 		if not _solved(tubes):
 			game.queue_free()
 			return _fail("Water Sort level %d proof does not solve generated board" % level)
-		signatures[_signature(generated.get("tubes", []))] = true
+		var canonical := Progression.canonical_signature(generated.get("tubes", []))
+		if signatures.has(canonical):
+			game.queue_free()
+			return _fail("Water Sort canonical duplicate: level %d matches level %d" % [level, int(signatures[canonical])])
+		signatures[canonical] = level
 		if full_audit and level % 1000 == 0:
 			print("Water constructive proof: %d/%d" % [level, MAX_LEVEL])
 	var minimum_unique := 300 if full_audit else int(levels.size() * 0.75)
