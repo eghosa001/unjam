@@ -399,20 +399,36 @@ func _render_special_cells() -> void:
 		if cell == null or not is_instance_valid(cell) or not cell.has_method("set_special"):
 			continue
 		var special: Dictionary = campaign_special_cells.get(str(i), {})
+		if special.is_empty():
+			var row := int(i / GRID_SIZE)
+			var col := i % GRID_SIZE
+			if row in target_rows_pending or col in target_cols_pending:
+				cell.call("set_special", "target", 1)
+				continue
 		cell.call("set_special", String(special.get("kind", "")), int(special.get("layers", 0)))
 
 func _objective_status_text() -> String:
 	if daily_mode:
 		return ""
-	var active := 0
+	var crates := 0
+	var ice_layers := 0
+	var targets := 0
 	for raw in campaign_special_cells.values():
 		var special: Dictionary = raw
-		if String(special.get("kind", "")) in ["crate", "ice", "target"] and int(special.get("layers", 0)) > 0:
-			active += 1
-	var extra := target_rows_pending.size() + target_cols_pending.size() + maxi(0, required_double_clears - double_clear_progress)
-	if active + extra <= 0:
-		return ""
-	return "  •  GOALS %d" % (active + extra)
+		var kind := String(special.get("kind", ""))
+		var layers := int(special.get("layers", 0))
+		if kind == "crate": crates += layers
+		elif kind == "ice": ice_layers += layers
+		elif kind == "target": targets += layers
+	var parts := PackedStringArray()
+	if crates > 0: parts.append("CRATE %d" % crates)
+	if ice_layers > 0: parts.append("ICE %d" % ice_layers)
+	if targets > 0: parts.append("TARGET %d" % targets)
+	if not target_rows_pending.is_empty(): parts.append("ROW %d" % target_rows_pending.size())
+	if not target_cols_pending.is_empty(): parts.append("COL %d" % target_cols_pending.size())
+	var doubles_left := maxi(0, required_double_clears - double_clear_progress)
+	if doubles_left > 0: parts.append("DOUBLE %d" % doubles_left)
+	return "" if parts.is_empty() else "  •  " + " / ".join(parts)
 
 func _to_int_array(raw: Variant) -> Array[int]:
 	var out: Array[int] = []
