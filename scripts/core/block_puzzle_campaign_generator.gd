@@ -98,6 +98,7 @@ static func generate(profile: Dictionary) -> Dictionary:
 		proof_origins.append(origin.y * GRID_SIZE + origin.x)
 		proof_events.append({
 			"shape": shape_index,
+			"legal_count": int(move.get("legal_count", 1)),
 			"origin": origin.y * GRID_SIZE + origin.x,
 			"placed_indices": (result.get("placed_indices", []) as Array).duplicate(),
 			"rows": (result.get("rows", []) as Array).duplicate(),
