@@ -6,6 +6,11 @@ func _main() -> Node:
 		return parent
 	return super._main()
 
+func _on_node_added(node: Node) -> void:
+	super._on_node_added(node)
+	if node is Control and String(node.name) in ["BlockTray", "CompactGameFeedback", "CompactGameActions", "CompactProgressStrip"]:
+		call_deferred("_compact_shell")
+
 func _build_shell() -> void:
 	super._build_shell()
 	_compact_shell()
