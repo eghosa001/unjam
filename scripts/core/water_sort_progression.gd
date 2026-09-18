@@ -65,7 +65,7 @@ static func profile(raw_level: int) -> Dictionary:
 	var empty_bottles := _empty_bottles_for_level(level)
 	var three_star_limit := maxi(target_moves, 6)
 	var two_star_limit := three_star_limit + maxi(5, ceili(float(three_star_limit) * 0.15))
-	var scramble_steps := clampi(roundi(float(target_moves) * 0.60), 4, colors * CAPACITY)
+	var scramble_steps := clampi(target_moves, 4, 80)
 	if level <= 10:
 		scramble_steps = clampi(3 + level, 4, 14)
 
