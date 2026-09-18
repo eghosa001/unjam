@@ -24,6 +24,16 @@ func _run() -> void:
 	main.set("current_surface", "live")
 	await _capture("02-live-dark")
 
+	# Capture the game selector at the smallest supported portrait class too.
+	root.size = Vector2i(540, 960)
+	await _settle(8)
+	main.set("current_surface", "live")
+	if main.has_signal("surface_changed"):
+		main.emit_signal("surface_changed", "live")
+	await _capture("02b-live-540x960-dark")
+	root.size = Vector2i(1080, 1920)
+	await _settle(8)
+
 	main.call("build_level_select")
 	await _capture("03-levels-rescue-dark")
 
