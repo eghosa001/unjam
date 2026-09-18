@@ -205,6 +205,15 @@ func _draw_special_overlay(rect: Rect2) -> void:
 	elif special_kind == "ice":
 		_draw_box(inset, Color("9de6ff", 0.24), 6, Color("d9f7ff", 0.92), 3)
 		draw_line(inset.position + Vector2(7, inset.size.y * 0.28), inset.position + Vector2(inset.size.x * 0.72, 7), Color(1, 1, 1, 0.82), 2.0, true)
+	elif special_kind == "lock":
+		_draw_box(inset, Color("4b4f67", 0.62), 6, Color("f0cf63", 0.95), 3)
+		var center := inset.get_center()
+		draw_arc(center + Vector2(0, -4), inset.size.x * 0.18, PI, TAU, 16, Color("ffe894"), 3.0, true)
+		_draw_box(Rect2(center + Vector2(-inset.size.x * 0.18, -2), Vector2(inset.size.x * 0.36, inset.size.y * 0.32)), Color("d5a52c", 0.94), 4, Color("fff0a6"), 2)
+	elif special_kind == "steel":
+		_draw_box(inset, Color("8693a8", 0.46), 5, Color("dce7f5", 0.96), 3)
+		draw_line(inset.position + Vector2(6, inset.size.y * 0.33), Vector2(inset.end.x - 6, inset.position.y + inset.size.y * 0.33), Color("f7fbff", 0.72), 2.0, true)
+		draw_line(inset.position + Vector2(6, inset.size.y * 0.66), Vector2(inset.end.x - 6, inset.position.y + inset.size.y * 0.66), Color("536073", 0.68), 2.0, true)
 	elif special_kind == "target":
 		var center := inset.get_center()
 		draw_arc(center, inset.size.x * 0.27, 0.0, TAU, 28, Color("ffd85a", 0.96), 3.5, true)
@@ -213,6 +222,8 @@ func _draw_special_overlay(rect: Rect2) -> void:
 		_draw_box(inset, Color(0.24, 0.95, 0.74, 0.10), 6, Color("67f0c2", 0.94), 3)
 		var center := inset.get_center()
 		draw_arc(center, inset.size.x * 0.22, PI, TAU, 18, Color("b6ffe8", 0.92), 3.0, true)
+	if special_layers > 1:
+		draw_string(ThemeDB.fallback_font, inset.position + Vector2(inset.size.x - 14, 15), str(special_layers), HORIZONTAL_ALIGNMENT_CENTER, 12, 13, Color.WHITE)
 
 func _draw_block(rect: Rect2, fill: Color) -> void:
 	_draw_extruded_cube(rect, fill)
