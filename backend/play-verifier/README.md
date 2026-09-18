@@ -4,7 +4,8 @@ Small Cloud Run service used only to verify UNJAM Google Play one-time products 
 
 ## Endpoints
 
-- `GET /healthz` -> `{ "ok": true }`
+- `GET /healthz` -> process/liveness check only (`{ "ok": true }`)
+- `GET /readiness` -> verifies Firestore access **and** Google Play Purchases API authorization for `com.eghosa.unjamgam`; returns HTTP 503 until both are ready
 - `POST /verify` body: `package_name`, `product_id`, `purchase_token`, `claim_id`
 - `POST /commit` body: same fields, called after the game has persisted the reward locally
 
@@ -33,11 +34,14 @@ bash deploy.sh
 
 The script enables the required Google APIs, creates a dedicated Cloud Run runtime service account, grants only Firestore data access in the Cloud project, creates the default Firestore Native database when needed, and deploys the service with scale-to-zero. It does **not** grant Play Console access because only the Play account owner/admin can do that.
 
-After deployment, copy the printed Cloud Run service URL. In Play Console, give the runtime service account app access to UNJAM with the permission that allows access to the Purchases API. Then verify:
+After deployment, copy the printed Cloud Run service URL. In Play Console, give the runtime service account app access to UNJAM with the permission that allows access to the Purchases API. Then verify both liveness and real external authorization:
 
 ```bash
 curl https://YOUR-CLOUD-RUN-URL/healthz
+curl https://YOUR-CLOUD-RUN-URL/readiness
 ```
+
+`/readiness` must return HTTP 200 with `firestore: true` and `google_play: true`. This is the check that proves the runtime service account can reach Firestore and is authorized for UNJAM in the Play Developer API.
 
 The GitHub Actions release secret must be the `/verify` endpoint, not just the service root:
 
