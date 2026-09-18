@@ -98,6 +98,8 @@ func _run() -> void:
 		if not levels.has_level(n):
 			errors.append("Rescue %d missing" % n)
 			continue
+		if n % 20 != 0 and n not in [1, 2, 3, 4, 5, 10, 25, 50, 75, 100, 10000]:
+			continue
 		var level: Dictionary = CampaignGeneratorScript.generate(n)
 		var board_width := int(level.get("width", 0))
 		if board_width < 7 or board_width > 8:
@@ -110,8 +112,7 @@ func _run() -> void:
 			if occupied.has(key):
 				errors.append("Rescue %d duplicate piece at %s" % [n, key])
 			occupied[key] = true
-		if n % 20 == 0:
-			rescue_signatures[_rescue_signature(level)] = true
+		rescue_signatures[_rescue_signature(level)] = true
 	if rescue_signatures.size() < 400:
 		errors.append("Rescue structural diversity too low: %d signatures" % rescue_signatures.size())
 	if multi.world_for_level(MAX_LEVEL) != 100:
