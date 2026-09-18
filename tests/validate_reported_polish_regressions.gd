@@ -26,12 +26,23 @@ func _init() -> void:
 	quit(0)
 
 func _validate_opening_rhythm(errors: Array[String]) -> void:
-	var expected := ["easy", "easy", "medium", "easy", "medium", "medium", "easy", "medium", "medium", "hard"]
+	var first_score := -1
+	var last_score := -1
 	for level_number in range(1, 11):
 		var level: Dictionary = CampaignGeneratorScript.generate(level_number)
-		var actual := String(level.get("difficulty", ""))
-		if actual != expected[level_number - 1]:
-			errors.append("Rescue Rush level %d difficulty is %s, expected %s" % [level_number, actual, expected[level_number - 1]])
+		var score := int(level.get("difficulty_score", -1))
+		if score < 10 or score > 25:
+			errors.append("Rescue Rush level %d opening difficulty score is outside 10..25: %d" % [level_number, score])
+		if int(level.get("mistake_limit", -1)) != 0:
+			errors.append("Rescue Rush level %d should not punish blocked taps during onboarding" % level_number)
+		if int(level.get("width", 0)) != 7 or int(level.get("height", 0)) != 7:
+			errors.append("Rescue Rush level %d should use the readable 7x7 opening board" % level_number)
+		if level_number == 1:
+			first_score = score
+		if level_number == 10:
+			last_score = score
+	if last_score < first_score:
+		errors.append("Rescue Rush opening difficulty must not regress across levels 1..10")
 
 func _require_source(path: String, needles: Array[String], label: String, errors: Array[String]) -> void:
 	var file := FileAccess.open(path, FileAccess.READ)

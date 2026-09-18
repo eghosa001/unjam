@@ -309,7 +309,8 @@ func render_board() -> void:
 		child.queue_free()
 
 	moves_label.text = "MOVES\n%d / %d" % [moves, par_moves]
-	rescue_label.text = "RESCUE\n%s" % ("SAFE" if rescued else rescue_id.to_upper())
+	var mistake_text := "FREE" if mistake_limit <= 0 else "%d / %d" % [mistakes_this_level, mistake_limit]
+	rescue_label.text = "MISTAKES\n%s" % mistake_text
 	chain_label.text = "CHAIN\n×%d" % maxi(chain_count, 1)
 
 	var route := _best_escape_lane()

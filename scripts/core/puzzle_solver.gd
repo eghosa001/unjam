@@ -22,9 +22,14 @@ static func find_solution(level: Dictionary, source_pieces: Array = [], max_stat
 			var p: Dictionary = raw.duplicate(true)
 			p["active"] = bool(p.get("active", true))
 			initial.append(p)
-	if _rescue_has_exit(initial, rescue, width, height):
+	if _goal_satisfied(level, initial, rescue, width, height, 0):
 		return []
-	# Generated campaign boards contain an authored rescue lane. Try that
+	# Generated campaign boards carry a reverse-construction proof. Simulate it
+	# first; this both verifies generation and keeps hints instant on dense boards.
+	var known := _find_known_solution(level, initial, rescue, width, height)
+	if not known.is_empty():
+		return known
+	# Generated campaign boards also contain an authored rescue lane. Try that
 	# deterministic route first so Hint stays instant on dense boss levels instead
 	# of exploring thousands of irrelevant filler-piece permutations. Every step is
 	# simulated with the same special/cascade rules as gameplay; BFS remains the
@@ -44,7 +49,7 @@ static func find_solution(level: Dictionary, source_pieces: Array = [], max_stat
 			var next: Array = _apply_move(pieces, i, rescue, width, height)
 			var next_path: Array = path.duplicate()
 			next_path.append(i)
-			if _rescue_has_exit(next, rescue, width, height):
+			if _goal_satisfied(level, next, rescue, width, height, next_path.size()):
 				var result: Array[int] = []
 				for step in next_path:
 					result.append(int(step))
@@ -56,6 +61,26 @@ static func find_solution(level: Dictionary, source_pieces: Array = [], max_stat
 				queue_paths.append(next_path)
 	return []
 
+static func _find_known_solution(level: Dictionary, source: Array, rescue: Vector2i, width: int, height: int) -> Array[int]:
+	var raw: Variant = level.get("known_solution", [])
+	if not raw is Array or (raw as Array).is_empty():
+		return []
+	var pieces: Array = source.duplicate(true)
+	var path: Array[int] = []
+	for raw_index in raw:
+		var index := int(raw_index)
+		if index < 0 or index >= pieces.size():
+			return []
+		if not bool(pieces[index].get("active", true)):
+			continue
+		if not _path_clear(pieces, index, rescue, width, height):
+			return []
+		pieces = _apply_move(pieces, index, rescue, width, height)
+		path.append(index)
+		if _goal_satisfied(level, pieces, rescue, width, height, path.size()):
+			return path
+	return path if _goal_satisfied(level, pieces, rescue, width, height, path.size()) else []
+
 static func _find_authored_solution(level: Dictionary, source: Array, rescue: Vector2i, width: int, height: int) -> Array[int]:
 	var target_direction: Vector2i = DIRS.get(String(level.get("target_exit", "")), Vector2i.ZERO)
 	if target_direction == Vector2i.ZERO:
@@ -64,7 +89,7 @@ static func _find_authored_solution(level: Dictionary, source: Array, rescue: Ve
 	var path: Array[int] = []
 	var guard := maxi(8, pieces.size() * 2)
 	for _step in range(guard):
-		if _rescue_has_exit(pieces, rescue, width, height):
+		if _goal_satisfied(level, pieces, rescue, width, height, path.size()):
 			return path
 		var chosen := -1
 		# Required keys are authored on safe edge paths; taking them first opens
@@ -84,7 +109,7 @@ static func _find_authored_solution(level: Dictionary, source: Array, rescue: Ve
 			return []
 		pieces = _apply_move(pieces, chosen, rescue, width, height)
 		path.append(chosen)
-	return path if _rescue_has_exit(pieces, rescue, width, height) else []
+	return path if _goal_satisfied(level, pieces, rescue, width, height, path.size()) else []
 
 static func _ordered_legal_moves(level: Dictionary, pieces: Array, rescue: Vector2i, width: int, height: int) -> Array[int]:
 	var keys: Array[int] = []
@@ -126,7 +151,7 @@ static func has_solution(level: Dictionary, max_states: int = 4000) -> bool:
 		return false
 	var pieces: Array = level.get("pieces", [])
 	var rescue: Vector2i = Vector2i(int(rescue_raw[0]), int(rescue_raw[1]))
-	if _rescue_has_exit(pieces, rescue, int(level.get("width", 0)), int(level.get("height", 0))):
+	if _goal_satisfied(level, pieces, rescue, int(level.get("width", 0)), int(level.get("height", 0)), 0):
 		return true
 	return not find_solution(level, [], max_states).is_empty()
 
@@ -138,9 +163,7 @@ static func _apply_move(source: Array, index: int, rescue: Vector2i, width: int,
 	var pieces: Array = source.duplicate(true)
 	if index < 0 or index >= pieces.size():
 		return pieces
-	var legal_before: Dictionary = _legal_map(pieces, rescue, width, height)
 	_escape_once(pieces, index, rescue, width, height)
-	_resolve_cascades(pieces, legal_before, rescue, width, height)
 	return pieces
 
 static func _resolve_cascades(pieces: Array, previous_legal: Dictionary, rescue: Vector2i, width: int, height: int) -> void:
@@ -213,6 +236,41 @@ static func _rescue_has_exit(pieces: Array, rescue: Vector2i, width: int, height
 		if not blocked:
 			return true
 	return false
+
+static func _goal_satisfied(level: Dictionary, pieces: Array, rescue: Vector2i, width: int, height: int, steps: int = -1) -> bool:
+	if not _rescue_has_exit(pieces, rescue, width, height):
+		return false
+	var objective := String(level.get("objective", "rescue_route"))
+	match objective:
+		"full_escape":
+			for piece in pieces:
+				if bool(piece.get("active", true)) and String(piece.get("type", "normal")) not in ["blocker", "gate"]:
+					return false
+			return true
+		"key_rescue":
+			for piece in pieces:
+				if bool(piece.get("active", true)) and String(piece.get("type", "normal")) == "key":
+					return false
+			return true
+		"gate_run":
+			for piece in pieces:
+				if bool(piece.get("active", true)) and String(piece.get("type", "normal")) == "gate":
+					return false
+			return true
+		"bomb_route":
+			for piece in pieces:
+				if bool(piece.get("active", true)) and String(piece.get("type", "normal")) == "bomb":
+					return false
+			return true
+		"chain_rescue":
+			for piece in pieces:
+				if bool(piece.get("active", true)) and String(piece.get("type", "normal")) == "linked":
+					return false
+			return true
+		"perfect_rescue":
+			return steps < 0 or steps <= int(level.get("action_budget", 999999))
+		_:
+			return true
 
 static func _rotate_neighbors(pieces: Array, center: Vector2i) -> void:
 	var directions: Array[Vector2i] = [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]

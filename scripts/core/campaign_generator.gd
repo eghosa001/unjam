@@ -1,190 +1,428 @@
 extends RefCounted
 class_name CampaignGenerator
 
+const Progression = preload("res://scripts/core/rescue_rush_progression.gd")
+const Solver = preload("res://scripts/core/puzzle_solver.gd")
+
 const RESCUES: Array[String] = ["chick", "puppy", "kitten", "robot", "slime", "panda", "fox", "alien"]
 const DIR_NAMES: Array[String] = ["up", "right", "down", "left"]
 const DIR_VECTORS: Array[Vector2i] = [Vector2i.UP, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT]
 
 static func generate(level_number: int) -> Dictionary:
-	var n := clampi(level_number, 1, 10000)
-	if n <= 12:
-		return _generate_onboarding(n)
-	var world := int((n - 1) / 100) + 1
-	var tier := _campaign_tier(n)
-	var difficulty := _rhythm_for_level(n, tier)
-	var milestone := ""
-	if n % 100 == 0:
-		milestone = "world_finale"
-		difficulty = "boss"
-	elif n % 10 == 0:
-		milestone = "milestone"
-		difficulty = "hard"
-	var difficulty_score := _difficulty_score(tier, difficulty, milestone)
-	var size := 7 if difficulty_score < 11 else 8
-	var rescue_id := RESCUES[(n * 7 + world) % RESCUES.size()]
-	var target_dir_index := posmod(n * 5 + world * 3, 4)
-	var target_dir := DIR_VECTORS[target_dir_index]
-	var target_name := DIR_NAMES[target_dir_index]
-	# Bias the rescue away from its intended exit. This guarantees a meaningful
-	# authored lane: 4 required blockers on 7x7 and 5 on 8x8 boards.
-	var center := _rescue_position_for_exit(size, target_dir_index)
-	var phase := posmod(n - 1, 6) + 1
+	var n := clampi(level_number, 1, Progression.TOTAL_LEVELS)
+	var profile: Dictionary = Progression.profile(n)
+	for attempt in range(6):
+		var candidate := _build_candidate(profile, n * 104729 + attempt * 7919)
+		var solution: Array[int] = Solver.find_solution(candidate, [], 6000)
+		if not solution.is_empty():
+			candidate["solver_verified"] = true
+			candidate["generation_attempt"] = attempt + 1
+			candidate["optimal_moves"] = solution.size()
+			candidate["estimated_required_moves"] = solution.size()
+			candidate["par_moves"] = solution.size() + 2
+			if String(candidate.get("objective", "")) == Progression.OBJECTIVE_PERFECT_RESCUE:
+				candidate["action_budget"] = maxi(solution.size(), int(candidate.get("action_budget", solution.size())))
+			candidate["structural_signature"] = Progression.canonical_signature(candidate)
+			return candidate
+	var fallback := _build_fallback(profile)
+	fallback["solver_verified"] = Solver.has_solution(fallback, 6000)
+	fallback["generation_attempt"] = 0
+	fallback["structural_signature"] = Progression.canonical_signature(fallback)
+	return fallback
+
+static func _build_candidate(profile: Dictionary, seed_value: int) -> Dictionary:
+	var n := int(profile.get("level", 1))
+	var size := int(profile.get("board_size", 7))
+	var world := int(profile.get("world", 1))
+	var target_index := posmod(n * 5 + world * 3, 4)
+	var target_dir := DIR_VECTORS[target_index]
+	var target_name := DIR_NAMES[target_index]
+	var rescue_pos := _rescue_position(size, target_index, n)
 	var pieces: Array[Dictionary] = []
+	var movable_order: Array[int] = []
 
+	# Three sealed sides make the authored exit lane meaningful without hiding
+	# information. These blockers never move and remain visually explicit.
 	for i in range(4):
-		if i == target_dir_index:
+		if i == target_index:
 			continue
-		var sealed := center + DIR_VECTORS[i]
-		pieces.append(_piece(sealed.x, sealed.y, "blocker", DIR_NAMES[i]))
+		var sealed := rescue_pos + DIR_VECTORS[i]
+		if _inside(sealed, size):
+			pieces.append(_piece(sealed.x, sealed.y, "blocker", DIR_NAMES[i]))
 
-	var target_cells := _ray_cells(center, target_dir, size)
-	var required_moves := 0
-	match phase:
-		1:
-			required_moves += _add_manual_lane(pieces, target_cells, target_name, n)
-		2:
-			required_moves += _add_gate_lane(pieces, target_cells, target_name, world, n, size, center, target_dir)
-		3:
-			required_moves += _add_manual_lane(pieces, target_cells, target_name, n)
-			_add_safe_special(pieces, size, center, target_dir, n + 17, "rotate")
-			if difficulty_score >= 9:
-				_add_safe_special(pieces, size, center, target_dir, n + 29, "linked")
-		4:
-			required_moves += _add_manual_lane(pieces, target_cells, target_name, n)
-			_add_safe_special(pieces, size, center, target_dir, n + 41, "bomb")
-		5:
-			required_moves += _add_manual_lane(pieces, target_cells, target_name, n)
-			_add_link_pair(pieces, size, center, target_dir, n + 53)
-		_:
-			required_moves += _add_double_gate_lane(pieces, target_cells, target_name, world, n, size, center, target_dir)
-			_add_link_pair(pieces, size, center, target_dir, n + 71)
+	var mechanics: Array = profile.get("mechanics", []).duplicate()
+	var objective := String(profile.get("objective", Progression.OBJECTIVE_RESCUE_ROUTE))
+	if objective in [Progression.OBJECTIVE_KEY_RESCUE, Progression.OBJECTIVE_GATE_RUN] and "gate" not in mechanics:
+		_mechanic_required(mechanics, "gate")
+	if objective == Progression.OBJECTIVE_BOMB_ROUTE and "bomb" not in mechanics:
+		_mechanic_required(mechanics, "bomb")
+	if objective == Progression.OBJECTIVE_CHAIN_RESCUE and "linked" not in mechanics:
+		_mechanic_required(mechanics, "linked")
+	var lane := _ray_cells(rescue_pos, target_dir, size)
+	var gate_ids: Array[String] = []
+	var gate_slots := 0
+	if "gate" in mechanics:
+		gate_slots = 2 if int(profile.get("difficulty_target", 0)) >= 88 and lane.size() >= 3 else 1
+	gate_slots = mini(gate_slots, lane.size())
+	for i in range(lane.size()):
+		var pos: Vector2i = lane[i]
+		if i < gate_slots:
+			var gate_id := "gate_%d_%d" % [n, i]
+			gate_ids.append(gate_id)
+			var gate := _piece(pos.x, pos.y, "gate", target_name)
+			gate["key_id"] = gate_id
+			pieces.append(gate)
+		else:
+			var index := pieces.size()
+			pieces.append(_piece(pos.x, pos.y, "normal", _perpendicular_direction(target_name, seed_value + i)))
+			movable_order.append(index)
 
-	if milestone == "world_finale" and phase != 6:
-		var extra_id := "boss_%d" % n
-		if _convert_lane_piece_to_gate(pieces, target_cells, extra_id):
-			if _add_required_edge_special(pieces, size, center, target_dir, n + 503, "key", extra_id):
-				required_moves += 1
+	# Required special actions are added through the same reverse-safe placement
+	# path as normal arrows. Later insertions may block earlier arrows, but every
+	# inserted arrow has a clear route when it is added; reversing insertion order
+	# therefore supplies a deterministic candidate solution.
+	for gate_id in gate_ids:
+		var key_index := _add_reverse_piece(pieces, size, rescue_pos, seed_value + 301 + movable_order.size() * 17, "key", {"key_id": gate_id})
+		if key_index >= 0:
+			movable_order.append(key_index)
 
-	var filler_count := clampi(5 + difficulty_score + int(world / 20), 7, 24)
-	_add_fillers(pieces, size, center, target_dir, n, filler_count)
-	if milestone == "milestone":
-		_add_safe_special(pieces, size, center, target_dir, n + 101, "rotate")
-	elif milestone == "world_finale":
-		_add_safe_special(pieces, size, center, target_dir, n + 149, "bomb")
+	if "rotate" in mechanics:
+		var rotate_index := _add_reverse_piece(pieces, size, rescue_pos, seed_value + 401, "rotate", {})
+		if rotate_index >= 0:
+			movable_order.append(rotate_index)
 
+	if "linked" in mechanics:
+		var link_id := "link_%d" % n
+		for k in range(2):
+			var link_index := _add_reverse_piece(pieces, size, rescue_pos, seed_value + 503 + k * 43, "linked", {"link_id": link_id})
+			if link_index >= 0:
+				movable_order.append(link_index)
+
+	if "bomb" in mechanics:
+		var bomb_index := _add_reverse_piece(pieces, size, rescue_pos, seed_value + 607, "bomb", {})
+		if bomb_index >= 0:
+			movable_order.append(bomb_index)
+
+	var target_objects := int(profile.get("piece_target", 18))
+	var filler_seed := seed_value + 701
+	var guard := 0
+	while pieces.size() < target_objects and guard < 180:
+		guard += 1
+		var index := _add_reverse_piece(pieces, size, rescue_pos, filler_seed + guard * 97, "normal", {})
+		if index < 0:
+			break
+		movable_order.append(index)
+
+	var known_solution: Array[int] = movable_order.duplicate()
+	known_solution.reverse()
+	var level := _base_level(profile, size, world, target_name, rescue_pos, pieces, known_solution)
+	level["mechanics"] = mechanics.duplicate()
+	level["human_review_required"] = String(profile.get("level_role", "")) == "world_boss"
+	level["finale_review_required"] = n == Progression.TOTAL_LEVELS
+	level["generation_seed"] = seed_value
+	level["actual_piece_count"] = pieces.size()
+	level["initial_frontier"] = _initial_frontier(level)
+	level["dependency_depth"] = _dependency_depth(level)
+	level["false_clear_candidates"] = _false_clear_candidates(level)
+	level["estimated_required_moves"] = known_solution.size()
+	level["par_moves"] = maxi(3, mini(known_solution.size(), int(profile.get("action_budget", known_solution.size()))))
+	level["action_budget"] = maxi(int(profile.get("action_budget", level["par_moves"])), int(level["par_moves"]))
+	return level
+
+static func _base_level(profile: Dictionary, size: int, world: int, target_name: String, rescue_pos: Vector2i, pieces: Array[Dictionary], known_solution: Array[int]) -> Dictionary:
+	var score := int(profile.get("difficulty_target", 10))
+	var role := String(profile.get("level_role", "progression"))
 	return {
-		"id": n,
+		"id": int(profile.get("level", 1)),
 		"width": size,
 		"height": size,
 		"world": world,
-		"phase": phase,
-		"campaign_tier": tier,
-		"difficulty": difficulty,
-		"difficulty_score": difficulty_score,
-		"milestone": milestone,
+		"phase": int((int(profile.get("local_level", 1)) - 1) / 25) + 1,
+		"campaign_tier": int((int(profile.get("level", 1)) - 1) / 1000),
+		"difficulty": _legacy_difficulty(score, role),
+		"difficulty_label": String(profile.get("difficulty_label", "medium")),
+		"difficulty_score": score,
+		"difficulty_target": score,
+		"level_role": role,
+		"milestone": String(profile.get("milestone", "")),
 		"target_exit": target_name,
-		"estimated_required_moves": required_moves,
-		"par_moves": clampi(required_moves + 2 + int(difficulty_score / 5), 7, 24),
-		"rescue_id": rescue_id,
-		"rescue": [center.x, center.y],
-		"pieces": pieces
+		"objective": String(profile.get("objective", Progression.OBJECTIVE_RESCUE_ROUTE)),
+		"mistake_limit": int(profile.get("mistake_limit", 3)),
+		"required_chain": int(profile.get("required_chain", 3)),
+		"frontier_target": [int(profile.get("frontier_min", 2)), int(profile.get("frontier_max", 5))],
+		"dependency_target": int(profile.get("dependency_target", 4)),
+		"mechanics": profile.get("mechanics", []).duplicate(),
+		"rescue_id": RESCUES[(int(profile.get("level", 1)) * 7 + world) % RESCUES.size()],
+		"rescue": [rescue_pos.x, rescue_pos.y],
+		"pieces": pieces,
+		"known_solution": known_solution,
 	}
 
-static func _generate_onboarding(n: int) -> Dictionary:
-	# The first ten levels teach the interaction but now alternate easy breathing
-	# rooms with meaningful medium puzzles so the opening does not feel trivial.
-	var size := 5 if n <= 4 else 6
-	var center := Vector2i(int(size / 2), int(size / 2))
-	var target_dir_index := posmod(n - 1, 4)
-	var target_dir := DIR_VECTORS[target_dir_index]
-	var target_name := DIR_NAMES[target_dir_index]
+static func _build_fallback(profile: Dictionary) -> Dictionary:
+	var n := int(profile.get("level", 1))
+	var size := int(profile.get("board_size", 7))
+	var world := int(profile.get("world", 1))
+	var target_index := posmod(n + world, 4)
+	var target_dir := DIR_VECTORS[target_index]
+	var target_name := DIR_NAMES[target_index]
+	var rescue_pos := _rescue_position(size, target_index, n)
 	var pieces: Array[Dictionary] = []
+	var movable: Array[int] = []
 	for i in range(4):
-		if i == target_dir_index:
+		if i == target_index:
 			continue
-		var sealed := center + DIR_VECTORS[i]
-		pieces.append(_piece(sealed.x, sealed.y, "blocker", DIR_NAMES[i]))
-
-	var opening_rhythm := ["easy", "easy", "medium", "easy", "medium", "medium", "easy", "medium", "medium", "hard"]
-	var milestone := "milestone" if n % 10 == 0 else ""
-	var difficulty := String(opening_rhythm[n - 1]) if n <= 10 else "medium"
-	if milestone != "":
-		difficulty = "hard"
-	var lane := _ray_cells(center, target_dir, size)
-	var needed := 1
-	if difficulty == "medium":
-		needed = 2 if n <= 5 else 3
-	elif difficulty == "hard":
-		needed = mini(3, lane.size())
-	elif n >= 4:
-		needed = 2
-	needed = mini(needed, lane.size())
-	for i in range(needed):
-		var pos := lane[i]
+		var sealed := rescue_pos + DIR_VECTORS[i]
+		if _inside(sealed, size):
+			pieces.append(_piece(sealed.x, sealed.y, "blocker", DIR_NAMES[i]))
+	for i in range(_ray_cells(rescue_pos, target_dir, size).size()):
+		var pos: Vector2i = _ray_cells(rescue_pos, target_dir, size)[i]
+		var index := pieces.size()
 		pieces.append(_piece(pos.x, pos.y, "normal", _perpendicular_direction(target_name, n + i)))
+		movable.append(index)
+	var known_solution: Array[int] = movable.duplicate()
+	known_solution.reverse()
+	var level := _base_level(profile, size, world, target_name, rescue_pos, pieces, known_solution)
+	level["actual_piece_count"] = pieces.size()
+	level["initial_frontier"] = _initial_frontier(level)
+	level["dependency_depth"] = _dependency_depth(level)
+	level["false_clear_candidates"] = _false_clear_candidates(level)
+	level["estimated_required_moves"] = known_solution.size()
+	level["par_moves"] = maxi(3, known_solution.size())
+	level["action_budget"] = maxi(int(profile.get("action_budget", known_solution.size())), known_solution.size())
+	return level
 
-	# Medium opening levels get a few safe, solvable side-lane movers. Later
-	# special mechanics remain reserved for the post-onboarding campaign.
-	if difficulty == "medium" and n >= 5:
-		_add_fillers(pieces, size, center, target_dir, n + 300, 2 + int(n / 3))
+static func _mechanic_required(mechanics: Array, mechanic: String) -> void:
+	if mechanic in mechanics:
+		return
+	if mechanics.size() >= 3:
+		var replace_index := mechanics.find("rotate")
+		if replace_index < 0:
+			replace_index = 0
+		mechanics[replace_index] = mechanic
+	else:
+		mechanics.append(mechanic)
 
-	var difficulty_score := 11 if difficulty == "hard" else (7 + int(n / 4) if difficulty == "medium" else 3 + int(n / 4))
-	return {
-		"id": n, "width": size, "height": size, "world": 1, "phase": 1,
-		"campaign_tier": 0, "difficulty": difficulty, "difficulty_label": difficulty, "difficulty_score": difficulty_score,
-		"milestone": milestone, "target_exit": target_name, "estimated_required_moves": needed,
-		"par_moves": needed + 2 + (1 if difficulty == "medium" else 0), "rescue_id": RESCUES[(n * 7 + 1) % RESCUES.size()],
-		"rescue": [center.x, center.y], "pieces": pieces
-	}
+static func _add_reverse_piece(pieces: Array[Dictionary], size: int, rescue_pos: Vector2i, seed_value: int, type: String, metadata: Dictionary) -> int:
+	var occupied := _occupied_map(pieces)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_value
+	var fallback_pos := Vector2i(-1, -1)
+	var fallback_direction := "right"
 
-static func _rescue_position_for_exit(size: int, target_dir_index: int) -> Vector2i:
-	var mid := int(size / 2)
-	var near_side := 2
-	var far_side := size - 3
-	match target_dir_index:
-		0: return Vector2i(mid, far_side)
-		1: return Vector2i(near_side, mid)
-		2: return Vector2i(mid, near_side)
-		_: return Vector2i(far_side, mid)
+	# Prefer a legal placement that blocks at least one earlier arrow. We only
+	# need one good dependency-producing placement, not an exhaustive ranking.
+	var attempts := mini(24, size * size)
+	for _attempt in range(attempts):
+		var pos := Vector2i(rng.randi_range(0, size - 1), rng.randi_range(0, size - 1))
+		if pos == rescue_pos or occupied.has(pos) or not _special_position_safe(type, pos, pieces):
+			continue
+		var direction_index := rng.randi_range(0, 3)
+		var direction := DIR_VECTORS[direction_index]
+		if not _candidate_path_clear_map(pos, direction, occupied, rescue_pos, size):
+			continue
+		if fallback_pos.x < 0:
+			fallback_pos = pos
+			fallback_direction = DIR_NAMES[direction_index]
+		if _blocks_existing_path(pos, pieces, occupied, rescue_pos, size):
+			return _append_piece(pieces, pos, type, DIR_NAMES[direction_index], metadata)
 
-static func _rhythm_for_level(level_number: int, tier: int) -> String:
-	var local := posmod(level_number - 1, 32)
-	if tier == 0:
-		if level_number <= 5:
-			return "medium"
-		return "easy" if local in [7, 15, 23, 31] else ("hard" if local >= 20 and local % 3 != 0 else "medium")
-	if tier <= 2:
-		return "easy" if local in [15, 31] else ("hard" if local % 3 != 0 else "medium")
-	return "medium" if local in [7, 15, 23, 31] else "hard"
+	if fallback_pos.x >= 0:
+		return _append_piece(pieces, fallback_pos, type, fallback_direction, metadata)
 
-static func _campaign_tier(level_number: int) -> int:
-	if level_number <= 100: return 0
-	if level_number <= 500: return 1
-	if level_number <= 1500: return 2
-	if level_number <= 3000: return 3
-	if level_number <= 5000: return 4
-	if level_number <= 7500: return 5
-	return 6
+	# Deterministic exhaustive fallback is only for very dense boards where the
+	# small sample missed the remaining legal cell.
+	for y in range(size):
+		for x in range(size):
+			var pos := Vector2i(x, y)
+			if pos == rescue_pos or occupied.has(pos) or not _special_position_safe(type, pos, pieces):
+				continue
+			for direction_index in range(4):
+				var direction := DIR_VECTORS[direction_index]
+				if _candidate_path_clear_map(pos, direction, occupied, rescue_pos, size):
+					return _append_piece(pieces, pos, type, DIR_NAMES[direction_index], metadata)
+	return -1
 
-static func _difficulty_score(tier: int, difficulty: String, milestone: String) -> int:
-	var rhythm_bonus := 0
-	match difficulty:
-		"easy": rhythm_bonus = 0
-		"medium": rhythm_bonus = 3
-		"hard": rhythm_bonus = 6
-		"boss": rhythm_bonus = 9
-		_: rhythm_bonus = 2
-	var score := 3 + tier * 2 + rhythm_bonus
-	if milestone == "milestone": score += 2
-	elif milestone == "world_finale": score += 4
-	return clampi(score, 3, 24)
+static func _append_piece(pieces: Array[Dictionary], pos: Vector2i, type: String, direction: String, metadata: Dictionary) -> int:
+	var piece := _piece(pos.x, pos.y, type, direction)
+	for key in metadata.keys():
+		piece[key] = metadata[key]
+	var index := pieces.size()
+	pieces.append(piece)
+	return index
+
+static func _special_position_safe(type: String, pos: Vector2i, pieces: Array[Dictionary]) -> bool:
+	if type == "rotate":
+		for direction in DIR_VECTORS:
+			var idx := _piece_index_at(pieces, pos + direction)
+			if idx >= 0 and String(pieces[idx].get("type", "normal")) not in ["blocker", "gate"]:
+				return false
+	elif type == "bomb":
+		for y in range(pos.y - 1, pos.y + 2):
+			for x in range(pos.x - 1, pos.x + 2):
+				var idx := _piece_index_at(pieces, Vector2i(x, y))
+				if idx >= 0 and String(pieces[idx].get("type", "normal")) == "key":
+					return false
+	return true
+
+static func _blocks_existing_path(candidate: Vector2i, pieces: Array[Dictionary], occupied: Dictionary, rescue_pos: Vector2i, size: int) -> bool:
+	for piece in pieces:
+		var type_name := String(piece.get("type", "normal"))
+		if type_name in ["blocker", "gate"]:
+			continue
+		var direction := _dir_vector(String(piece.get("direction", "right")))
+		var cursor := _piece_pos(piece) + direction
+		while _inside(cursor, size):
+			if cursor == rescue_pos:
+				break
+			if cursor == candidate:
+				return true
+			if occupied.has(cursor):
+				break
+			cursor += direction
+	return false
+
+static func _occupied_map(pieces: Array[Dictionary]) -> Dictionary:
+	var result: Dictionary = {}
+	for piece in pieces:
+		if bool(piece.get("active", true)):
+			result[_piece_pos(piece)] = true
+	return result
+
+static func _candidate_path_clear_map(pos: Vector2i, direction: Vector2i, occupied: Dictionary, rescue_pos: Vector2i, size: int) -> bool:
+	var cursor := pos + direction
+	while _inside(cursor, size):
+		if cursor == rescue_pos or occupied.has(cursor):
+			return false
+		cursor += direction
+	return true
+
+
+static func _route_length(pos: Vector2i, direction: Vector2i, size: int) -> int:
+	var count := 0
+	var cursor := pos + direction
+	while _inside(cursor, size):
+		count += 1
+		cursor += direction
+	return count
+
+static func _initial_frontier(level: Dictionary) -> int:
+	var pieces: Array = level.get("pieces", [])
+	var rescue_raw: Array = level.get("rescue", [])
+	if rescue_raw.size() != 2:
+		return 0
+	var rescue_pos := Vector2i(int(rescue_raw[0]), int(rescue_raw[1]))
+	var width := int(level.get("width", 0))
+	var height := int(level.get("height", 0))
+	var count := 0
+	for i in range(pieces.size()):
+		if _piece_path_clear(pieces, i, rescue_pos, width, height):
+			count += 1
+	return count
+
+static func _dependency_depth(level: Dictionary) -> int:
+	var pieces: Array = level.get("pieces", [])
+	var rescue_raw: Array = level.get("rescue", [])
+	if rescue_raw.size() != 2:
+		return 0
+	var rescue_pos := Vector2i(int(rescue_raw[0]), int(rescue_raw[1]))
+	var width := int(level.get("width", 0))
+	var height := int(level.get("height", 0))
+	var memo: Dictionary = {}
+	var visiting: Dictionary = {}
+	var best := 0
+	for i in range(pieces.size()):
+		best = maxi(best, _depth_from(i, pieces, rescue_pos, width, height, memo, visiting))
+	return best
+
+static func _depth_from(index: int, pieces: Array, rescue_pos: Vector2i, width: int, height: int, memo: Dictionary, visiting: Dictionary) -> int:
+	if memo.has(index):
+		return int(memo[index])
+	if visiting.has(index):
+		return 1
+	visiting[index] = true
+	var piece: Dictionary = pieces[index]
+	if String(piece.get("type", "normal")) in ["blocker", "gate"]:
+		visiting.erase(index)
+		memo[index] = 0
+		return 0
+	var direction := _dir_vector(String(piece.get("direction", "right")))
+	var cursor := _piece_pos(piece) + direction
+	var depth := 1
+	while cursor.x >= 0 and cursor.y >= 0 and cursor.x < width and cursor.y < height:
+		if cursor == rescue_pos:
+			break
+		var blocker := _piece_index_at(pieces, cursor)
+		if blocker >= 0:
+			depth = 1 + _depth_from(blocker, pieces, rescue_pos, width, height, memo, visiting)
+			break
+		cursor += direction
+	visiting.erase(index)
+	memo[index] = depth
+	return depth
+
+static func _false_clear_candidates(level: Dictionary) -> int:
+	var pieces: Array = level.get("pieces", [])
+	var rescue_raw: Array = level.get("rescue", [])
+	if rescue_raw.size() != 2:
+		return 0
+	var rescue_pos := Vector2i(int(rescue_raw[0]), int(rescue_raw[1]))
+	var width := int(level.get("width", 0))
+	var height := int(level.get("height", 0))
+	var count := 0
+	for i in range(pieces.size()):
+		var piece: Dictionary = pieces[i]
+		if String(piece.get("type", "normal")) in ["blocker", "gate"]:
+			continue
+		var direction := _dir_vector(String(piece.get("direction", "right")))
+		var cursor := _piece_pos(piece) + direction
+		var distance := 0
+		while cursor.x >= 0 and cursor.y >= 0 and cursor.x < width and cursor.y < height:
+			distance += 1
+			if cursor == rescue_pos or _piece_index_at(pieces, cursor) >= 0:
+				if distance >= 3:
+					count += 1
+				break
+			cursor += direction
+	return count
+
+static func _piece_path_clear(pieces: Array, index: int, rescue_pos: Vector2i, width: int, height: int) -> bool:
+	if index < 0 or index >= pieces.size():
+		return false
+	var piece: Dictionary = pieces[index]
+	if String(piece.get("type", "normal")) in ["blocker", "gate"]:
+		return false
+	var direction := _dir_vector(String(piece.get("direction", "right")))
+	var cursor := _piece_pos(piece) + direction
+	while cursor.x >= 0 and cursor.y >= 0 and cursor.x < width and cursor.y < height:
+		if cursor == rescue_pos or _piece_index_at(pieces, cursor) >= 0:
+			return false
+		cursor += direction
+	return true
+
+static func _piece_index_at(pieces: Array, pos: Vector2i) -> int:
+	for i in range(pieces.size()):
+		var piece: Dictionary = pieces[i]
+		if bool(piece.get("active", true)) and _piece_pos(piece) == pos:
+			return i
+	return -1
+
+static func _rescue_position(size: int, target_index: int, n: int) -> Vector2i:
+	var low := 2
+	var high := size - 3
+	var mid := int((size - 1) / 2)
+	var wobble := -1 if posmod(n, 2) == 0 else 0
+	match target_index:
+		0: return Vector2i(clampi(mid + wobble, 2, size - 3), high)
+		1: return Vector2i(low, clampi(mid + wobble, 2, size - 3))
+		2: return Vector2i(clampi(mid + wobble, 2, size - 3), low)
+		_: return Vector2i(high, clampi(mid + wobble, 2, size - 3))
 
 static func _ray_cells(center: Vector2i, direction: Vector2i, size: int) -> Array[Vector2i]:
 	var out: Array[Vector2i] = []
-	var p := center + direction
-	while _inside(p, size):
-		out.append(p)
-		p += direction
+	var cursor := center + direction
+	while _inside(cursor, size):
+		out.append(cursor)
+		cursor += direction
 	return out
 
 static func _perpendicular_direction(target_direction: String, seed_value: int) -> String:
@@ -192,137 +430,14 @@ static func _perpendicular_direction(target_direction: String, seed_value: int) 
 		return "up" if seed_value % 2 == 0 else "down"
 	return "left" if seed_value % 2 == 0 else "right"
 
-static func _add_manual_lane(pieces: Array[Dictionary], cells: Array[Vector2i], target_direction: String, seed_value: int) -> int:
-	var count := 0
-	for i in range(cells.size()):
-		var p := cells[i]
-		pieces.append(_piece(p.x, p.y, "normal", _perpendicular_direction(target_direction, seed_value + i)))
-		count += 1
-	return count
-
-static func _add_gate_lane(pieces: Array[Dictionary], cells: Array[Vector2i], target_direction: String, world: int, seed_value: int, size: int, center: Vector2i, target_dir: Vector2i) -> int:
-	if cells.is_empty(): return 0
-	var gate_id := "gate_%d_%d" % [world, seed_value]
-	var first := cells[0]
-	var gate := _piece(first.x, first.y, "gate", target_direction)
-	gate["key_id"] = gate_id
-	pieces.append(gate)
-	var count := 1
-	for i in range(1, cells.size()):
-		var p := cells[i]
-		pieces.append(_piece(p.x, p.y, "normal", _perpendicular_direction(target_direction, seed_value + i)))
-		count += 1
-	if _add_required_edge_special(pieces, size, center, target_dir, seed_value + 211, "key", gate_id):
-		count += 1
-	return count
-
-static func _add_double_gate_lane(pieces: Array[Dictionary], cells: Array[Vector2i], target_direction: String, world: int, seed_value: int, size: int, center: Vector2i, target_dir: Vector2i) -> int:
-	if cells.is_empty(): return 0
-	var count := 0
-	var gate_slots := mini(2, cells.size())
-	for i in range(gate_slots):
-		var gate_id := "double_%d_%d_%d" % [world, seed_value, i]
-		var p := cells[i]
-		var gate := _piece(p.x, p.y, "gate", target_direction)
-		gate["key_id"] = gate_id
-		pieces.append(gate)
-		count += 1
-		if _add_required_edge_special(pieces, size, center, target_dir, seed_value + 307 + i * 37, "key", gate_id):
-			count += 1
-	for i in range(gate_slots, cells.size()):
-		var p := cells[i]
-		pieces.append(_piece(p.x, p.y, "normal", _perpendicular_direction(target_direction, seed_value + i)))
-		count += 1
-	return count
-
-static func _convert_lane_piece_to_gate(pieces: Array[Dictionary], cells: Array[Vector2i], gate_id: String) -> bool:
-	for cell in cells:
-		for i in range(pieces.size()):
-			if _piece_pos(pieces[i]) == cell and String(pieces[i].get("type", "")) == "normal":
-				pieces[i]["type"] = "gate"
-				pieces[i]["key_id"] = gate_id
-				return true
-	return false
-
-static func _add_required_edge_special(pieces: Array[Dictionary], size: int, center: Vector2i, target_dir: Vector2i, seed_value: int, special_type: String, link_value: String) -> bool:
-	var candidates: Array[Dictionary] = []
-	for x in range(size):
-		candidates.append({"p": Vector2i(x, 0), "d": "up"})
-		candidates.append({"p": Vector2i(x, size - 1), "d": "down"})
-	for y in range(1, size - 1):
-		candidates.append({"p": Vector2i(0, y), "d": "left"})
-		candidates.append({"p": Vector2i(size - 1, y), "d": "right"})
-	var start := posmod(seed_value, candidates.size())
-	for offset in range(candidates.size()):
-		var candidate: Dictionary = candidates[(start + offset) % candidates.size()]
-		var pos: Vector2i = candidate["p"]
-		if pos == center or _on_target_ray(pos, center, target_dir) or _occupied(pieces, pos): continue
-		if _reserved_by_authored_paths(pieces, pos, size): continue
-		var special := _piece(pos.x, pos.y, special_type, String(candidate["d"]))
-		if special_type == "key": special["key_id"] = link_value
-		elif special_type == "linked": special["link_id"] = link_value
-		pieces.append(special)
-		return true
-	return false
-
-static func _add_link_pair(pieces: Array[Dictionary], size: int, center: Vector2i, target_dir: Vector2i, seed_value: int) -> void:
-	var id := "link_%d" % seed_value
-	_add_required_edge_special(pieces, size, center, target_dir, seed_value, "linked", id)
-	_add_required_edge_special(pieces, size, center, target_dir, seed_value + 19, "linked", id)
-
-static func _add_fillers(pieces: Array[Dictionary], size: int, center: Vector2i, target_dir: Vector2i, seed_value: int, amount: int) -> void:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 7301 + seed_value * 7919
-	var remaining := amount
-	var attempts := 0
-	while remaining > 0 and attempts < 1600:
-		attempts += 1
-		var pos := Vector2i(rng.randi_range(0, size - 1), rng.randi_range(0, size - 1))
-		if pos == center or _on_target_ray(pos, center, target_dir) or _occupied(pieces, pos): continue
-		if _reserved_by_authored_paths(pieces, pos, size): continue
-		var direction := DIR_NAMES[rng.randi_range(0, 3)]
-		if pos.x == 0: direction = "left"
-		elif pos.x == size - 1: direction = "right"
-		elif pos.y == 0: direction = "up"
-		elif pos.y == size - 1: direction = "down"
-		pieces.append(_piece(pos.x, pos.y, "normal", direction))
-		remaining -= 1
-
-static func _add_safe_special(pieces: Array[Dictionary], size: int, center: Vector2i, target_dir: Vector2i, seed_value: int, type: String) -> void:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 9001 + seed_value * 3571
-	for _i in range(160):
-		var pos := Vector2i(rng.randi_range(0, size - 1), rng.randi_range(0, size - 1))
-		if pos == center or _on_target_ray(pos, center, target_dir) or _occupied(pieces, pos): continue
-		if _distance_to_target_ray(pos, center, target_dir, size) <= 1: continue
-		if _reserved_by_authored_paths(pieces, pos, size): continue
-		var direction := DIR_NAMES[rng.randi_range(0, 3)]
-		if pos.x == 0: direction = "left"
-		elif pos.x == size - 1: direction = "right"
-		elif pos.y == 0: direction = "up"
-		elif pos.y == size - 1: direction = "down"
-		var special := _piece(pos.x, pos.y, type, direction)
-		if type == "linked": special["link_id"] = "bonus_%d" % seed_value
-		pieces.append(special)
-		return
-
-static func _reserved_by_authored_paths(pieces: Array[Dictionary], candidate: Vector2i, size: int) -> bool:
-	for piece in pieces:
-		var type := String(piece.get("type", "normal"))
-		if type in ["gate", "blocker"]: continue
-		var p := _piece_pos(piece)
-		var direction := _dir_vector(String(piece.get("direction", "right")))
-		p += direction
-		while _inside(p, size):
-			if p == candidate: return true
-			p += direction
-	return false
-
-static func _distance_to_target_ray(pos: Vector2i, center: Vector2i, direction: Vector2i, size: int) -> int:
-	var best := 99
-	for p in _ray_cells(center, direction, size):
-		best = mini(best, maxi(absi(pos.x - p.x), absi(pos.y - p.y)))
-	return best
+static func _legacy_difficulty(score: int, role: String) -> String:
+	if role == "world_boss":
+		return "boss"
+	if score < 30:
+		return "easy"
+	if score < 60:
+		return "medium"
+	return "hard"
 
 static func _piece(x: int, y: int, type: String, direction: String) -> Dictionary:
 	return {"x": x, "y": y, "type": type, "direction": direction}
@@ -334,16 +449,10 @@ static func _dir_vector(direction: String) -> Vector2i:
 	var index := DIR_NAMES.find(direction)
 	return DIR_VECTORS[index] if index >= 0 else Vector2i.RIGHT
 
-static func _on_target_ray(pos: Vector2i, center: Vector2i, direction: Vector2i) -> bool:
-	var p := center + direction
-	for _i in range(8):
-		if p == pos: return true
-		p += direction
-	return false
-
 static func _occupied(pieces: Array[Dictionary], pos: Vector2i) -> bool:
-	for p in pieces:
-		if _piece_pos(p) == pos: return true
+	for piece in pieces:
+		if bool(piece.get("active", true)) and _piece_pos(piece) == pos:
+			return true
 	return false
 
 static func _inside(pos: Vector2i, size: int) -> bool:

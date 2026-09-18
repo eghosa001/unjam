@@ -20,8 +20,9 @@ func _init() -> void:
 			early_score_total += int(level.get("difficulty_score", 0))
 		elif level_number > 9500:
 			late_score_total += int(level.get("difficulty_score", 0))
-		if errors.size() < 100 and not PuzzleSolverScript.has_solution(level, 2000):
-			errors.append("Level %d has no verified solution" % level_number)
+		var independent_solver_sample := level_number <= 12 or level_number % 100 == 0 or level_number in [501, 1001, 2001, 5001, 9001, 9501, 9999]
+		if errors.size() < 100 and independent_solver_sample and not PuzzleSolverScript.has_solution(level, 6000):
+			errors.append("Level %d has no independently verified solution" % level_number)
 		if errors.size() >= 100:
 			break
 		if level_number % 1000 == 0:
@@ -47,17 +48,28 @@ func validate_difficulty(level_number: int, level: Dictionary, errors: Array[Str
 	if difficulty not in VALID_DIFFICULTIES:
 		errors.append("Level %d invalid difficulty label" % level_number)
 	var expected_milestone := ""
-	if level_number % 100 == 0:
+	var local := posmod(level_number - 1, 100) + 1
+	if local == 100:
 		expected_milestone = "world_finale"
 		if difficulty != "boss": errors.append("Level %d finale is not boss difficulty" % level_number)
-	elif level_number % 10 == 0:
-		expected_milestone = "milestone"
-		if difficulty != "hard": errors.append("Level %d milestone is not hard difficulty" % level_number)
+	elif local == 75:
+		expected_milestone = "major_challenge"
+	elif local == 50:
+		expected_milestone = "mini_boss"
+	elif local == 25:
+		expected_milestone = "challenge"
 	if String(level.get("milestone", "")) != expected_milestone:
 		errors.append("Level %d milestone mismatch" % level_number)
 	var score := int(level.get("difficulty_score", 0))
-	if score < 3 or score > 24:
+	if score < 10 or score > 99:
 		errors.append("Level %d invalid difficulty score" % level_number)
+	if not bool(level.get("solver_verified", false)):
+		errors.append("Level %d was not solver verified by generation" % level_number)
+	var mistake_limit := int(level.get("mistake_limit", -1))
+	if level_number <= 20 and mistake_limit != 0:
+		errors.append("Level %d tutorial should not punish blocked taps" % level_number)
+	elif level_number >= 501 and mistake_limit not in [2, 3]:
+		errors.append("Level %d late mistake limit should be 2 or 3" % level_number)
 
 func validate(level_number: int, level: Dictionary, errors: Array[String]) -> void:
 	if level.is_empty():
@@ -65,7 +77,7 @@ func validate(level_number: int, level: Dictionary, errors: Array[String]) -> vo
 		return
 	var width := int(level.get("width", 0))
 	var height := int(level.get("height", 0))
-	if width < 3 or height < 3 or width > 8 or height > 8:
+	if width < 7 or height < 7 or width > 8 or height > 8:
 		errors.append("Level %d has invalid dimensions" % level_number)
 		return
 	var rescue_data: Array = level.get("rescue", [])

@@ -20,6 +20,12 @@ var chain_count: int = 0
 var board_locked: bool = false
 var completion_rewards: Dictionary = {}
 var hints_used_this_level: int = 0
+var mistakes_this_level: int = 0
+var undos_used_this_level: int = 0
+var mistake_limit: int = 3
+var objective_type: String = "rescue_route"
+var action_budget: int = 999999
+var best_chain: int = 0
 
 var board_grid: GridContainer
 var moves_label: Label
@@ -47,6 +53,9 @@ func _ready() -> void:
 	width = int(level_data.get("width", 5))
 	height = int(level_data.get("height", 5))
 	par_moves = int(level_data.get("par_moves", 8))
+	mistake_limit = maxi(0, int(level_data.get("mistake_limit", 3)))
+	objective_type = String(level_data.get("objective", "rescue_route"))
+	action_budget = maxi(1, int(level_data.get("action_budget", par_moves + 3)))
 	rescue_id = String(level_data.get("rescue_id", "chick"))
 	var rp: Array = level_data.get("rescue", [2, 2])
 	rescue_pos = Vector2i(int(rp[0]), int(rp[1]))
@@ -315,7 +324,13 @@ func is_path_clear(index: int) -> bool:
 	return true
 
 func snapshot() -> Dictionary:
-	return {"pieces": pieces.duplicate(true), "moves": moves, "rescued": rescued, "chain": chain_count, "hints": hints_used_this_level}
+	return {
+		"pieces": pieces.duplicate(true),
+		"moves": moves,
+		"rescued": rescued,
+		"chain": chain_count,
+		"best_chain": best_chain,
+	}
 
 func _legal_map() -> Dictionary:
 	var result: Dictionary = {}
@@ -329,48 +344,78 @@ func try_move(index: int) -> void:
 	hint_label.text = ""
 	if not is_path_clear(index):
 		chain_count = 0
-		hint_label.text = "Blocked — clear its path first."
+		mistakes_this_level += 1
+		var remaining := maxi(0, mistake_limit - mistakes_this_level)
+		hint_label.text = "Blocked — clear its full route first."
+		if mistake_limit > 0:
+			hint_label.text += "  Mistakes left: %d" % remaining
 		FeedbackManager.blocked()
 		shake_board()
+		AnalyticsManager.track("rescue_blocked_tap", {"level": level_number, "mistakes": mistakes_this_level, "limit": mistake_limit})
+		if mistake_limit > 0 and mistakes_this_level >= mistake_limit:
+			await _fail_and_restart("Too many blocked taps — rescue reset.")
+		else:
+			_save_checkpoint()
 		return
 	board_locked = true
 	var legal_before: Dictionary = _legal_map()
 	history.append(snapshot())
 	moves += 1
-	chain_count = 1
+	chain_count = maxi(1, chain_count + 1)
+	best_chain = maxi(best_chain, chain_count)
 	FeedbackManager.escape(chain_count)
 	escape_piece(index, true)
 	await get_tree().create_timer(0.07).timeout
 	await _resolve_cascades(legal_before)
 	await resolve_rescue()
+	if not rescued and objective_type == "perfect_rescue" and moves >= action_budget:
+		await _fail_and_restart("Action budget missed — rescue reset.")
+		return
 	if not rescued:
 		render_board()
 		_save_checkpoint()
 	board_locked = false
 
+func _fail_and_restart(message: String) -> void:
+	board_locked = true
+	if hint_label != null:
+		hint_label.text = message
+	AnalyticsManager.track("rescue_attempt_failed", {"level": level_number, "reason": "mistake_limit"})
+	var tree := get_tree()
+	if tree != null:
+		await tree.create_timer(0.45).timeout
+	if is_inside_tree():
+		restart_level()
+
 func _resolve_cascades(previous_legal: Dictionary) -> void:
+	# Strategic Rescue Rush does not auto-remove every newly opened arrow.
+	# Only pieces explicitly authored as auto_chain may leave automatically;
+	# keys, bombs and linked pieces still resolve their deterministic effects
+	# inside escape_piece(). This preserves real decisions after each release.
 	var baseline: Dictionary = previous_legal.duplicate()
-	var guard: int = 0
-	var max_steps: int = maxi(8, pieces.size() * 2)
+	var guard := 0
+	var max_steps := maxi(4, pieces.size())
 	while guard < max_steps:
 		guard += 1
-		var newly_opened: Array[int] = []
+		var chained: Array[int] = []
 		for i in range(pieces.size()):
-			if bool(pieces[i].get("active", true)) and is_path_clear(i) and not bool(baseline.get(i, false)):
-				newly_opened.append(i)
-		if newly_opened.is_empty():
-			break
-		var before_batch: Dictionary = _legal_map()
-		for index in newly_opened:
+			if not bool(pieces[i].get("active", true)):
+				continue
+			if not bool(pieces[i].get("auto_chain", false)):
+				continue
+			if is_path_clear(i) and not bool(baseline.get(i, false)):
+				chained.append(i)
+		if chained.is_empty():
+			return
+		var before_batch := _legal_map()
+		for index in chained:
 			if index >= 0 and index < pieces.size() and bool(pieces[index].get("active", true)) and is_path_clear(index):
 				chain_count += 1
+				best_chain = maxi(best_chain, chain_count)
 				FeedbackManager.escape(chain_count)
 				escape_piece(index, true)
-				PremiumVisuals.burst(Vector2(540, 860), world_accent(), mini(18, 5 + chain_count))
 				await get_tree().create_timer(0.045).timeout
 		baseline = before_batch
-	if chain_count >= 3:
-		AnalyticsManager.track("cascade", {"level": level_number, "chain": chain_count})
 
 func shake_board() -> void:
 	if board_panel == null:
@@ -457,21 +502,66 @@ func rescue_has_exit() -> bool:
 	return false
 
 func resolve_rescue() -> void:
-	if not rescue_has_exit():
+	if not _objective_satisfied():
 		return
 	rescued = true
 	chain_count += 1
+	best_chain = maxi(best_chain, chain_count)
 	FeedbackManager.rescue()
 	PremiumVisuals.burst(Vector2(540, 860), world_accent(), 28)
 	PremiumVisuals.screen_flash(world_accent(), 0.16)
 	await get_tree().create_timer(0.12).timeout
 	complete_level()
 
+func _objective_satisfied() -> bool:
+	if not rescue_has_exit():
+		return false
+	match objective_type:
+		"full_escape":
+			return _active_type_count_excluding(["blocker", "gate"]) == 0
+		"key_rescue":
+			return _active_type_count("key") == 0
+		"gate_run":
+			return _active_type_count("gate") == 0
+		"bomb_route":
+			return _active_type_count("bomb") == 0
+		"chain_rescue":
+			return _active_type_count("linked") == 0
+		"perfect_rescue":
+			return moves <= action_budget
+		_:
+			return true
+
+func objective_instruction() -> String:
+	match objective_type:
+		"full_escape": return "Clear every movable arrow, then free the rescue"
+		"key_rescue": return "Release every required key, then open the rescue lane"
+		"gate_run": return "Open every gate and free the rescue"
+		"bomb_route": return "Resolve the bomb route and free the rescue"
+		"chain_rescue": return "Resolve the linked chain and free the rescue"
+		"perfect_rescue": return "Free the rescue within %d actions" % action_budget
+		_: return "Open a clear lane and free the rescue"
+
+func _active_type_count(type_name: String) -> int:
+	var count := 0
+	for piece in pieces:
+		if bool(piece.get("active", true)) and String(piece.get("type", "normal")) == type_name:
+			count += 1
+	return count
+
+func _active_type_count_excluding(excluded: Array[String]) -> int:
+	var count := 0
+	for piece in pieces:
+		if bool(piece.get("active", true)) and String(piece.get("type", "normal")) not in excluded:
+			count += 1
+	return count
+
 func complete_level() -> void:
 	var stars: int = 3
-	if moves > par_moves:
+	var assist_penalty := mistakes_this_level + hints_used_this_level + undos_used_this_level
+	if assist_penalty > 0 or moves > par_moves:
 		stars = 2
-	if moves > par_moves + 3:
+	if assist_penalty > 1 or moves > par_moves + 3:
 		stars = 1
 	completion_rewards = {}
 	_clear_checkpoint(false)
@@ -482,6 +572,17 @@ func complete_level() -> void:
 		RetentionManager.record_level_complete(level_number, stars, moves, par_moves, chain_count, rescue_id, hints_used_this_level)
 	AdManager.note_level_completed()
 	AnalyticsManager.level_completed(level_number, moves, stars)
+	AnalyticsManager.track("rescue_level_difficulty", {
+		"level": level_number,
+		"difficulty_score": int(level_data.get("difficulty_score", 0)),
+		"objective": objective_type,
+		"moves": moves,
+		"mistakes": mistakes_this_level,
+		"hints": hints_used_this_level,
+		"undos": undos_used_this_level,
+		"best_chain": best_chain,
+		"stars": stars,
+	})
 	show_result(stars)
 
 func reward_summary() -> String:
@@ -509,7 +610,7 @@ func show_result(stars: int) -> void:
 	result.configure(
 		"DAILY COMPLETE" if daily_mode else "RESCUE COMPLETE",
 		subtitle,
-		"%d MOVES   •   +%d COINS\nPERFECT ≤ %d" % [moves, base_reward + bonus_reward, par_moves],
+		"%d MOVES   •   +%d COINS\n3★: 0 ERRORS • NO HINT/UNDO • ≤ %d" % [moves, base_reward + bonus_reward, par_moves],
 		stars,
 		world_accent(),
 		"BACK HOME" if daily_mode else ("NEXT RESCUE" if LevelManager.has_level(level_number + 1) else "CAMPAIGN COMPLETE"),
@@ -544,7 +645,8 @@ func undo_move() -> void:
 	moves = int(state.get("moves", 0))
 	rescued = bool(state.get("rescued", false))
 	chain_count = int(state.get("chain", 0))
-	hints_used_this_level = int(state.get("hints", hints_used_this_level))
+	best_chain = maxi(best_chain, int(state.get("best_chain", best_chain)))
+	undos_used_this_level += 1
 	SaveManager.record_undo()
 	FeedbackManager.tap()
 	hint_label.text = "Move undone."
@@ -582,9 +684,12 @@ func restart_level() -> void:
 	history.clear()
 	moves = 0
 	chain_count = 0
+	best_chain = 0
 	rescued = false
 	board_locked = false
 	hints_used_this_level = 0
+	mistakes_this_level = 0
+	undos_used_this_level = 0
 	call_deferred("_restart_in_place")
 
 func _restart_in_place() -> void:
@@ -592,6 +697,9 @@ func _restart_in_place() -> void:
 	width = int(level_data.get("width", 5))
 	height = int(level_data.get("height", 5))
 	par_moves = int(level_data.get("par_moves", 8))
+	mistake_limit = maxi(0, int(level_data.get("mistake_limit", 3)))
+	objective_type = String(level_data.get("objective", "rescue_route"))
+	action_budget = maxi(1, int(level_data.get("action_budget", par_moves + 3)))
 	rescue_id = String(level_data.get("rescue_id", "chick"))
 	var rp: Array = level_data.get("rescue", [2, 2])
 	rescue_pos = Vector2i(int(rp[0]), int(rp[1]))
@@ -614,7 +722,10 @@ func _save_checkpoint() -> void:
 		"pieces": pieces.duplicate(true),
 		"moves": moves,
 		"chain": chain_count,
+		"best_chain": best_chain,
 		"hints": hints_used_this_level,
+		"mistakes": mistakes_this_level,
+		"undos": undos_used_this_level,
 		"saved_at": int(Time.get_unix_time_from_system())
 	}
 	SaveManager.save()
@@ -639,7 +750,10 @@ func _restore_checkpoint() -> void:
 	pieces = clean
 	moves = maxi(0, int(checkpoint.get("moves", 0)))
 	chain_count = maxi(0, int(checkpoint.get("chain", 0)))
+	best_chain = maxi(0, int(checkpoint.get("best_chain", chain_count)))
 	hints_used_this_level = maxi(0, int(checkpoint.get("hints", 0)))
+	mistakes_this_level = maxi(0, int(checkpoint.get("mistakes", 0)))
+	undos_used_this_level = maxi(0, int(checkpoint.get("undos", 0)))
 	history.clear()
 	if hint_label != null:
 		hint_label.text = "Rescue restored from your last checkpoint."

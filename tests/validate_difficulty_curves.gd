@@ -9,15 +9,26 @@ func _run() -> void:
 	if not _check_rescue(): return
 	if not await _check_water(): return
 	if not await _check_block(): return
-	print("DIFFICULTY_CURVES_OK: Rescue opening rhythm, Water color bands and Block progression bands are locked.")
+	print("DIFFICULTY_CURVES_OK: Rescue sawtooth progression, Water color bands and Block progression bands are locked.")
 	quit(0)
 
 func _check_rescue() -> bool:
-	var expected := ["easy", "easy", "medium", "easy", "medium", "medium", "easy", "medium", "medium", "hard"]
-	for level in range(1, 11):
+	var samples := [1, 100, 1000, 3000, 5000, 7500, 9000, 10000]
+	var previous_floor := -1
+	for level in samples:
 		var data: Dictionary = CampaignGeneratorScript.generate(level)
-		if String(data.get("difficulty", "")) != expected[level - 1]:
-			return _fail("Rescue level %d expected %s, got %s" % [level, expected[level - 1], String(data.get("difficulty", ""))])
+		var score := int(data.get("difficulty_score", -1))
+		if score < 10 or score > 99:
+			return _fail("Rescue level %d invalid 0-99 difficulty score: %d" % [level, score])
+		if level == 10000 and (score < 98 or String(data.get("difficulty", "")) != "boss"):
+			return _fail("Rescue level 10000 must finish at grandmaster boss difficulty")
+		if previous_floor >= 0 and score + 15 < previous_floor:
+			return _fail("Rescue sampled difficulty falls too sharply at level %d" % level)
+		previous_floor = score
+	for level in [25, 50, 75, 100]:
+		var data: Dictionary = CampaignGeneratorScript.generate(level)
+		if String(data.get("milestone", "")).is_empty():
+			return _fail("Rescue level %d missing quarter-world milestone" % level)
 	return true
 
 func _check_water() -> bool:
