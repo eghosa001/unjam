@@ -197,12 +197,41 @@ jobs:
           fi
           printf '%s  %s\n' "$ACTUAL_BLOCK_REVIEW_SHA256" "human_review.json" > data/block_puzzle_campaign/human_review.sha256
           du -sh data/block_puzzle_campaign
+      - name: Export release APK for monetization manifest verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/android
+          cp export_presets.cfg "$RUNNER_TEMP/export_presets.release-aab.cfg"
+          sed -i 's/gradle_build\/export_format=1/gradle_build\/export_format=0/' export_presets.cfg
+          godot --headless --verbose --path . --install-android-build-template --export-release Android build/android/unjam-release-check.apk 2>&1 | tee android-release-apk-export.log
+          test -s build/android/unjam-release-check.apk
+          cp "$RUNNER_TEMP/export_presets.release-aab.cfg" export_presets.cfg
+      - name: Verify release monetization manifest contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=build/android/unjam-release-check.apk
+          AAPT="$(find "$ANDROID_SDK_ROOT/build-tools" -type f -name aapt | sort | tail -1)"
+          test -x "$AAPT"
+          "$AAPT" dump badging "$APK" | tee build/android/release-apk-badging.txt
+          "$AAPT" dump permissions "$APK" | tee build/android/release-apk-permissions.txt
+          "$AAPT" dump xmltree "$APK" AndroidManifest.xml | tee build/android/release-apk-manifest.txt
+          grep -F "package: name='com.eghosa.unjamgam'" build/android/release-apk-badging.txt
+          grep -F "android.permission.INTERNET" build/android/release-apk-permissions.txt
+          grep -F "android.permission.ACCESS_NETWORK_STATE" build/android/release-apk-permissions.txt
+          grep -F "com.google.android.gms.permission.AD_ID" build/android/release-apk-permissions.txt
+          grep -F "com.android.vending.BILLING" build/android/release-apk-permissions.txt
+          grep -F "com.google.android.gms.ads.APPLICATION_ID" build/android/release-apk-manifest.txt
+          grep -F "ca-app-pub-7517898921176341~1892369383" build/android/release-apk-manifest.txt
+          grep -F "com.android.vending.billingclient.version" build/android/release-apk-manifest.txt
+          rm -f "$APK"
       - name: Export release AAB
         shell: bash
         run: |
           set -o pipefail
           mkdir -p build/android
-          godot --headless --verbose --path . --install-android-build-template --export-release Android build/android/unjam-release.aab 2>&1 | tee android-release-export.log
+          godot --headless --verbose --path . --export-release Android build/android/unjam-release.aab 2>&1 | tee android-release-export.log
           if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" android-release-export.log; then exit 1; fi
           test -s build/android/unjam-release.aab
       - name: Verify 16 KB native page compatibility
