@@ -34,6 +34,10 @@ func _compact_shell() -> void:
 	_layout_tutorial_panel()
 	if help_button != null:
 		help_button.text = "?"
+		# The base shell anchors this control to the bottom-left. Switch to an
+		# absolute top-left anchor before using viewport coordinates so collision
+		# avoidance math matches the actual rendered rectangle.
+		help_button.set_anchors_preset(Control.PRESET_TOP_LEFT)
 		help_button.custom_minimum_size = Vector2(80, 80)
 		help_button.size = Vector2(80, 80)
 		var viewport_size := get_viewport().get_visible_rect().size
