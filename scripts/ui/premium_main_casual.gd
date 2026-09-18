@@ -314,6 +314,8 @@ func build_level_select() -> void:
 func build_multi_level_select() -> void:
 	super.build_multi_level_select()
 	_inject_game_tabs(selected_game_id)
+	if selected_game_id == "block_puzzle":
+		_inject_block_modes()
 	_upgrade_level_browser(selected_game_id)
 	_add_surface_diorama(selected_game_id, "Levels3DDiorama")
 
@@ -339,6 +341,41 @@ func _inject_game_tabs(active_game_id: String) -> void:
 		button.disabled = current
 		button.pressed.connect(open_game_campaign.bind(game_id))
 		tabs.add_child(button)
+
+func _inject_block_modes() -> void:
+	var root := _find_page_root()
+	if root == null:
+		return
+	var old := root.get_node_or_null("BlockPuzzleModes")
+	if old != null:
+		root.remove_child(old)
+		old.queue_free()
+	var stats = SaveManager.data.get("block_mode_stats", {})
+	if not stats is Dictionary:
+		stats = {}
+	var bar := HBoxContainer.new()
+	bar.name = "BlockPuzzleModes"
+	bar.custom_minimum_size = Vector2(0, 86)
+	bar.add_theme_constant_override("separation", 10)
+	var specs := [
+		["endless", "ENDLESS", "SURVIVAL"],
+		["zen", "ZEN", "NO GAME OVER"],
+		["extreme", "EXTREME", "MASTER RULES"],
+	]
+	for spec in specs:
+		var mode := String(spec[0])
+		var mode_stats = (stats as Dictionary).get(mode, {})
+		var best := int((mode_stats as Dictionary).get("best_score", 0)) if mode_stats is Dictionary else 0
+		var subtitle := String(spec[2])
+		if best > 0:
+			subtitle += "  •  BEST %d" % best
+		var button := _button("%s\n%s" % [String(spec[1]), subtitle], Vector2(0, 82), "secondary", "block_puzzle")
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.add_theme_font_size_override("font_size", 15)
+		button.pressed.connect(start_block_mode.bind(mode))
+		bar.add_child(button)
+	root.add_child(bar)
+	root.move_child(bar, mini(2, root.get_child_count() - 1))
 
 func _find_page_root() -> VBoxContainer:
 	if content == null:
