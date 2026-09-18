@@ -21,6 +21,23 @@ export function createPurchaseService({ allowedPackage, products, play, ledger }
   if (!allowedPackage || !products || !play || !ledger) throw new Error('Purchase service dependencies are required');
 
   return {
+    async readiness() {
+      const dependencies = { firestore: false, google_play: false };
+      try {
+        if (typeof ledger.probeAccess !== 'function') throw new Error('Firestore readiness probe unavailable');
+        dependencies.firestore = (await ledger.probeAccess()) === true;
+      } catch {
+        return { ok: false, dependencies, reason: 'Firestore access failed' };
+      }
+      try {
+        if (typeof play.probeAccess !== 'function') throw new Error('Google Play readiness probe unavailable');
+        dependencies.google_play = (await play.probeAccess({ packageName: allowedPackage })) === true;
+      } catch {
+        return { ok: false, dependencies, reason: 'Google Play Purchases API access failed' };
+      }
+      return { ok: dependencies.firestore && dependencies.google_play, dependencies, package_name: allowedPackage };
+    },
+
     async verify(input) {
       const error = validateRequest(input, allowedPackage, products);
       if (error) return bad(error, String(input?.product_id ?? ''));
