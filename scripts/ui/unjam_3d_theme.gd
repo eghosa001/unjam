@@ -47,12 +47,24 @@ static func panel_3d(fill: Color, radius: int = 28, edge: Color = Color.WHITE, e
 	style.shadow_offset = Vector2(0, maxf(2.0, depth * 0.48))
 	return style
 
+static func bold_text(control: Control, strength: float = 0.72) -> void:
+	# Use Godot's FontVariation embolden instead of thick outlines/shadows.
+	# This keeps labels bold at phone scale while preserving sharp glyph edges.
+	if control.has_meta("unjam_crisp_bold"):
+		return
+	var variation := FontVariation.new()
+	variation.variation_embolden = clampf(strength, 0.45, 1.05)
+	control.add_theme_font_override("font", variation)
+	control.set_meta("unjam_crisp_bold", true)
+
 static func gloss_button(button: Button, accent: Color, primary: bool = true, radius: int = 28, dark_mode: bool = false) -> void:
 	button.flat = false
 	button.focus_mode = Control.FOCUS_NONE
 	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	button.custom_minimum_size.y = maxf(button.custom_minimum_size.y, 84.0)
-	button.add_theme_font_size_override("font_size", maxi(25, button.get_theme_font_size("font_size")))
+	var compact_request := button.custom_minimum_size.y > 0.0 and button.custom_minimum_size.y <= 72.0
+	button.custom_minimum_size.y = maxf(button.custom_minimum_size.y, 64.0 if compact_request else 84.0)
+	button.add_theme_font_size_override("font_size", maxi(17 if compact_request else 25, button.get_theme_font_size("font_size")))
+	bold_text(button, 0.78 if primary else 0.68)
 	var base := accent if primary else (Color("162743") if dark_mode else Color("edf9ff"))
 	var edge := accent.lightened(0.28) if primary else (accent.lightened(0.10) if dark_mode else Color("9de2ff"))
 	var pressed := base.darkened(0.14)
@@ -64,16 +76,19 @@ static func gloss_button(button: Button, accent: Color, primary: bool = true, ra
 	button.add_theme_color_override("font_color", Color.WHITE if primary else secondary_text)
 	button.add_theme_color_override("font_hover_color", Color.WHITE if primary else secondary_text)
 	button.add_theme_color_override("font_pressed_color", Color.WHITE if primary else secondary_text)
-	button.add_theme_color_override("font_outline_color", Color(0.02, 0.18, 0.34, 0.55))
-	button.add_theme_constant_override("outline_size", 4)
+	button.add_theme_color_override("font_outline_color", Color(0.015, 0.10, 0.20, 0.90))
+	button.add_theme_constant_override("outline_size", 1)
 
-static func label_3d(label: Label, color: Color = Color.WHITE, outline: Color = Color("07518e"), outline_size: int = 4) -> void:
+static func label_3d(label: Label, color: Color = Color.WHITE, outline: Color = Color("07518e"), outline_size: int = 1) -> void:
+	bold_text(label, 0.66)
 	label.add_theme_color_override("font_color", color)
 	label.add_theme_color_override("font_outline_color", outline)
-	label.add_theme_constant_override("outline_size", outline_size)
-	label.add_theme_color_override("font_shadow_color", Color(0.02, 0.12, 0.25, 0.34))
+	# Heavy 3-11 px outlines were the main source of fuzzy text in screenshots.
+	# Keep a single-pixel edge only for contrast; depth belongs to panels, not glyphs.
+	label.add_theme_constant_override("outline_size", mini(maxi(outline_size, 0), 1))
+	label.add_theme_color_override("font_shadow_color", Color(0.01, 0.06, 0.12, 0.14))
 	label.add_theme_constant_override("shadow_offset_x", 0)
-	label.add_theme_constant_override("shadow_offset_y", 4)
+	label.add_theme_constant_override("shadow_offset_y", 1)
 
 static func badge(fill: Color, radius: int = 22) -> StyleBoxFlat:
 	return panel_3d(fill, radius, fill.lightened(0.34), 2, 7)
