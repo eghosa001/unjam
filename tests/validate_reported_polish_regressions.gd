@@ -6,7 +6,7 @@ func _init() -> void:
 	var errors: Array[String] = []
 	_validate_opening_rhythm(errors)
 	_require_source("res://scripts/ui/smooth_block_piece_button.gd", ["func _get_drag_data", "touch_drag_started", "_clear_single_touch_preview"], "Block Puzzle single touch-preview ownership", errors)
-	_require_source("res://scripts/ui/premium_main_casual.gd", ["func _inject_game_tabs", "JOURNEY OVERVIEW", "func _level_column_count"], "Levels/Collection responsive ownership", errors)
+	_require_source("res://scripts/ui/premium_main_casual.gd", ["func _inject_game_tabs", "YOUR UNJAM JOURNEY", "func _level_column_count"], "Levels/Collection responsive ownership", errors)
 	_require_source("res://scripts/ui/premium_live_hub.gd", ["func _refresh_progress_on_entry"], "Choose Game progress refresh", errors)
 	_require_source("res://scripts/ui/ux_shell_casual.gd", ["apply_theme_mode"], "active-game theme propagation", errors)
 	_require_source("res://scripts/ui/unjam_3d_backdrop.gd", ["dark_mode"], "3D backdrop dark theme", errors)
