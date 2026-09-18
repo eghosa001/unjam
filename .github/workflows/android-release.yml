@@ -56,6 +56,14 @@ jobs:
           test "${{ inputs.version_code }}" -ge 1
           test "${{ inputs.version_code }}" -le 2100000000
           test -n "${{ inputs.version_name }}"
+      - name: Verify live monetization endpoints
+        env:
+          UNJAM_PURCHASE_VERIFICATION_URL: ${{ secrets.UNJAM_PURCHASE_VERIFICATION_URL }}
+          UNJAM_DEVELOPER_WEBSITE_URL: ${{ vars.UNJAM_DEVELOPER_WEBSITE_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/check_live_monetization.py
       - name: Setup Node 22
         uses: actions/setup-node@v4
         with:
