@@ -50,4 +50,5 @@ echo
 echo "OWNER ACTION REQUIRED:"
 echo "1. In Play Console, grant $SERVICE_ACCOUNT access to package com.eghosa.unjamgam with permission to use the Purchases API."
 echo "2. Set GitHub Actions secret UNJAM_PURCHASE_VERIFICATION_URL to $SERVICE_URL/verify."
-echo "3. Run the Monetization Readiness workflow after the Play permission is granted."
+echo "3. Confirm curl $SERVICE_URL/readiness returns HTTP 200 with firestore=true and google_play=true."
+echo "4. Run the Monetization Readiness workflow after the Play permission is granted."
