@@ -4,6 +4,7 @@ const Progression = preload("res://scripts/core/block_puzzle_progression.gd")
 const LevelPack = preload("res://scripts/core/block_puzzle_level_pack.gd")
 const Generator = preload("res://scripts/core/block_puzzle_campaign_generator.gd")
 const Auditor = preload("res://scripts/core/block_puzzle_campaign_auditor.gd")
+const Solver = preload("res://scripts/core/block_puzzle_exact_solver.gd")
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -32,6 +33,9 @@ func _run() -> void:
 		)
 		if not bool(proof.get("solved", false)):
 			return _fail("Packed Block Puzzle level %d failed its proof replay" % level)
+		var exact := Solver.find_solution(profile, plan, 50000)
+		if not bool(exact.get("solved", false)):
+			return _fail("Packed Block Puzzle level %d failed exact-state solver validation" % level)
 		var signature := Auditor.canonical_signature(profile, plan)
 		if signatures.has(signature):
 			return _fail("Packed duplicate: level %d matches level %d" % [level, int(signatures[signature])])
