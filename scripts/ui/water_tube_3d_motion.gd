@@ -7,6 +7,7 @@ class_name WaterTube3DMotion
 var viewport_container: SubViewportContainer
 var viewport_3d: SubViewport
 var stage_3d: Node3D
+var camera_3d: Camera3D
 var liquid_root_3d: Node3D
 var liquid_segments_3d: Array[MeshInstance3D] = []
 var liquid_materials_3d: Array[StandardMaterial3D] = []
@@ -106,12 +107,12 @@ func _build_3d_view() -> void:
 	rim_light.light_energy = 0.72
 	stage_3d.add_child(rim_light)
 
-	var camera := Camera3D.new()
-	camera.position = Vector3(3.05, 0.90, 6.65)
-	camera.fov = 31.0
-	stage_3d.add_child(camera)
-	camera.look_at(Vector3(0, 0.08, 0), Vector3.UP)
-	camera.current = true
+	camera_3d = Camera3D.new()
+	camera_3d.position = Vector3(3.05, 0.90, 6.65)
+	camera_3d.fov = 31.0
+	stage_3d.add_child(camera_3d)
+	camera_3d.look_at(Vector3(0, 0.08, 0), Vector3.UP)
+	camera_3d.current = true
 
 	_build_glass_3d()
 	_build_liquid_materials_3d()
@@ -224,6 +225,40 @@ func _material_3d(color: Color, metallic_value: float, roughness_value: float) -
 func _request_3d_frame() -> void:
 	if viewport_3d != null:
 		viewport_3d.render_target_update_mode = SubViewport.UPDATE_ONCE
+
+func _project_rim_point(local_3d: Vector3) -> Vector2:
+	if camera_3d == null or viewport_3d == null or stage_3d == null:
+		return Vector2(size.x * 0.5, size.y * 0.10)
+	var viewport_point := camera_3d.unproject_position(stage_3d.to_global(local_3d))
+	var viewport_size := Vector2(viewport_3d.size)
+	if viewport_size.x <= 0.0 or viewport_size.y <= 0.0:
+		return Vector2(size.x * 0.5, size.y * 0.10)
+	return Vector2(
+		viewport_point.x / viewport_size.x * size.x,
+		viewport_point.y / viewport_size.y * size.y
+	)
+
+func visual_receive_rim_local() -> Vector2:
+	# Project the actual 3D opening center instead of reusing the retired 2D
+	# bottle rectangle. This keeps the incoming stream glued to the rendered rim
+	# across responsive tube sizes and SubViewport stretching.
+	return _project_rim_point(Vector3(0.0, 1.66, 0.0))
+
+func visual_pour_rim_local(direction: float) -> Vector2:
+	# Find the left/right screen edge of the real 3D torus rim. Camera perspective
+	# means a fixed world-X offset is not guaranteed to be the visible downhill
+	# lip, so sample the circumference and select by projected screen X.
+	if camera_3d == null or viewport_3d == null or stage_3d == null:
+		return super.visual_pour_rim_local(direction)
+	var want_right := direction >= 0.0
+	var best := visual_receive_rim_local()
+	for i in range(24):
+		var angle := TAU * float(i) / 24.0
+		var rim_3d := Vector3(cos(angle) * 0.62, 1.66, sin(angle) * 0.62)
+		var projected := _project_rim_point(rim_3d)
+		if (want_right and projected.x > best.x) or (not want_right and projected.x < best.x):
+			best = projected
+	return best
 
 func _draw() -> void:
 	# Keep interaction feedback in the inexpensive 2D layer while the bottle and
