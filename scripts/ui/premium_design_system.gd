@@ -78,9 +78,9 @@ static func role_for_button(button: Button) -> String:
 		return "primary"
 	if "HINT" in text or "DAILY" in text or "REWARD" in text:
 		return "reward"
-	if "OWNED" in text or text.ends_with(": ON"):
+	if "OWNED" in text or text.ends_with(": ON") or "• ✓ ON" in text or "• ON\n" in text:
 		return "success"
-	if text.ends_with(": OFF"):
+	if text.ends_with(": OFF") or "• ○ OFF" in text or "• OFF\n" in text:
 		return "toggle_off"
 	if text in ["←", "‹", "BACK", "←  BACK", "◀ PREV", "NEXT ▶"]:
 		return "utility"
@@ -95,6 +95,8 @@ static func apply_button(button: Button, dark: bool, accent: Color, role: String
 	button.custom_minimum_size = Vector2(button.custom_minimum_size.x, maxf(button.custom_minimum_size.y, 78.0))
 	var current_font := button.get_theme_font_size("font_size")
 	button.add_theme_font_size_override("font_size", maxi(20, current_font))
+	Unjam3DTheme.bold_text(button, 0.74)
+	button.add_theme_constant_override("outline_size", 1)
 	var normal := surface_2(dark)
 	var edge := border(dark)
 	var text_color := ink(dark)
@@ -149,11 +151,16 @@ static func apply_panel(panel: PanelContainer, dark: bool, accent: Color, emphas
 	panel.add_theme_stylebox_override("panel", box(fill, radius, edge, 2 if emphasis else 1, 10 if emphasis else 4, dark))
 
 static func apply_label(label: Label, dark: bool, kind: String = "body", accent: Color = Color.WHITE) -> void:
+	Unjam3DTheme.bold_text(label, 0.76 if kind in ["title", "accent"] else 0.58)
+	# Keep UI copy optically sharp. Any needed separation comes from a 1 px edge,
+	# never a multi-pixel text shadow that softens small phone typography.
+	label.add_theme_constant_override("outline_size", 0)
+	label.add_theme_color_override("font_shadow_color", Color.TRANSPARENT)
+	label.add_theme_constant_override("shadow_offset_x", 0)
+	label.add_theme_constant_override("shadow_offset_y", 0)
 	match kind:
 		"title":
 			label.add_theme_color_override("font_color", ink(dark))
-			label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.18 if dark else 0.05))
-			label.add_theme_constant_override("shadow_offset_y", 2)
 		"accent":
 			label.add_theme_color_override("font_color", accent)
 		"muted":
