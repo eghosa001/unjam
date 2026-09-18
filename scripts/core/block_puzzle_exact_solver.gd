@@ -145,6 +145,11 @@ static func _initial_state(profile: Dictionary, plan: Dictionary) -> Dictionary:
 		var col := int(raw)
 		if col >= 0 and col < 8:
 			cols_mask |= (1 << col)
+	var raw_move_limit := int(profile.get("move_limit", -1))
+	var proof_moves := (plan.get("proof_shapes", []) as Array).size()
+	var effective_move_limit := -1
+	if raw_move_limit > 0:
+		effective_move_limit = maxi(raw_move_limit, proof_moves)
 	return {
 		"board": board_to_mask(board),
 		"tray_index": 0,
@@ -159,6 +164,7 @@ static func _initial_state(profile: Dictionary, plan: Dictionary) -> Dictionary:
 		"cols_pending": cols_mask,
 		"double_progress": 0,
 		"double_required": maxi(0, int(objective.get("required_double_clears", 0))),
+		"moves_remaining": effective_move_limit,
 	}
 
 static func _dfs(state: Dictionary, depth_left: int, path: Array[Dictionary], context: Dictionary) -> bool:
@@ -253,6 +259,10 @@ static func _apply_move(
 		return {}
 
 	var next := state.duplicate(true)
+	if int(state.get("moves_remaining", -1)) == 0:
+		return {}
+	if int(state.get("moves_remaining", -1)) > 0:
+		next["moves_remaining"] = int(state["moves_remaining"]) - 1
 	var filled := board | placement_mask
 	var clear_data := _clear_data(filled)
 	var clear_mask := int(clear_data["mask"])
@@ -298,9 +308,6 @@ static func _apply_move(
 	next["tray_index"] = tray_index
 	next["used_mask"] = used
 
-	var move_limit := int(profile.get("move_limit", -1))
-	if move_limit > 0 and int(next["moves"]) > move_limit:
-		return {}
 	return next
 
 static func _current_tray(state: Dictionary, plan: Dictionary) -> Array:
@@ -385,7 +392,7 @@ static func _state_key(state: Dictionary) -> String:
 	for raw_idx in layers.keys():
 		encoded_layers.append("%d:%d" % [int(raw_idx), int(layers[raw_idx])])
 	encoded_layers.sort()
-	return "%d/%d/%d/%d/%d/%d/%d/%d/%d/%s" % [
+	return "%d/%d/%d/%d/%d/%d/%d/%d/%d/%d/%s" % [
 		int(state["board"]),
 		int(state["tray_index"]),
 		int(state["used_mask"]),
@@ -395,5 +402,6 @@ static func _state_key(state: Dictionary) -> String:
 		int(state["rows_pending"]),
 		int(state["cols_pending"]),
 		int(state["double_progress"]),
+		int(state.get("moves_remaining", -1)),
 		",".join(encoded_layers),
 	]
