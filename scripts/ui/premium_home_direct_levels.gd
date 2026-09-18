@@ -46,7 +46,7 @@ func build_home_launcher() -> void:
 	# Extra-tall phones need the complete hero/action composition lower on the
 	# canvas. Push both together so the hero-to-action gap stays tight while the
 	# primary CTA remains visually centred instead of clustering near the top.
-	var tall_top_push := maxf(0.0, viewport_size.y - 1920.0) * 0.44
+	var tall_top_push := maxf(0.0, viewport_size.y - 1920.0) * 0.54
 	if tall_top_push > 0.0:
 		var tall_top_spacer := Control.new()
 		tall_top_spacer.name = "HomeTallTopSpacer"
