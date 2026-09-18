@@ -228,7 +228,7 @@ func _make_hero(parent: VBoxContainer) -> void:
 	var level := _home_current_level(selected_game)
 	var world := MultiGameManager.world_for_game_level(selected_game, level)
 	current.text = "%s\nLEVEL %d  •  WORLD %d" % [MultiGameManager.display_name(selected_game).to_upper(), level, world]
-	current.add_theme_font_size_override("font_size", 28 if viewport_size.x < 700.0 else 34)
+	current.add_theme_font_size_override("font_size", 21 if viewport_size.y < 1100.0 else (28 if viewport_size.x < 700.0 else 34))
 	Unjam3DTheme.label_3d(current, Color.WHITE, Unjam3DTheme.NAVY, 5)
 	overlay.add_child(current)
 
@@ -238,7 +238,7 @@ func _make_hero(parent: VBoxContainer) -> void:
 
 	var caption := Label.new()
 	caption.text = "ONE TAP BACK INTO THE ACTION"
-	caption.add_theme_font_size_override("font_size", 16 if viewport_size.x < 700.0 else 19)
+	caption.add_theme_font_size_override("font_size", 13 if viewport_size.y < 1100.0 else (16 if viewport_size.x < 700.0 else 19))
 	Unjam3DTheme.label_3d(caption, Color("e8f8ff"), Unjam3DTheme.NAVY, 3)
 	overlay.add_child(caption)
 
@@ -247,7 +247,8 @@ func _make_game_strip(parent: VBoxContainer) -> void:
 	strip.name = "HomeGameStrip"
 	var viewport_size := get_viewport_rect().size
 	var compact := viewport_size.x < 700.0
-	strip.custom_minimum_size = Vector2(0, 112 if viewport_size.y < 1250.0 else 132)
+	var short_phone := viewport_size.y < 1100.0
+	strip.custom_minimum_size = Vector2(0, 70 if short_phone else (96 if viewport_size.y < 1450.0 else 124))
 	strip.alignment = BoxContainer.ALIGNMENT_CENTER
 	strip.add_theme_constant_override("separation", 10)
 	parent.add_child(strip)
@@ -265,28 +266,59 @@ func _make_game_strip(parent: VBoxContainer) -> void:
 		var button := Button.new()
 		button.name = "HomeDirect_%s" % game_id
 		button.text = "%s  %s\nLEVEL %d  •  ★ %s" % [String(entry[2]), String(entry[1]), level, _compact_number(stars)]
-		button.custom_minimum_size = Vector2(0, 104 if compact else 120)
+		button.custom_minimum_size = Vector2(0, 66 if short_phone else (88 if compact else 114))
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.add_theme_font_size_override("font_size", 16 if compact else 19)
+		button.add_theme_font_size_override("font_size", 13 if short_phone else (16 if compact else 19))
 		button.tooltip_text = "Open %s journey • %d levels cleared" % [MultiGameManager.display_name(game_id), int(progress.get("levels_completed", 0))]
 		var accent := Unjam3DTheme.game_accent(game_id)
 		Unjam3DTheme.gloss_button(button, accent, game_id == selected_game, 25, _theme_mode() == "dark")
 		button.pressed.connect(_select_and_open_game.bind(game_id))
 		strip.add_child(button)
 
+func _make_progress_ribbon(parent: VBoxContainer) -> void:
+	var viewport_size := get_viewport_rect().size
+	if viewport_size.y < 1100.0:
+		return
+	var panel := PanelContainer.new()
+	panel.name = "HomeProgressRibbon"
+	panel.custom_minimum_size = Vector2(0, 76 if viewport_size.y < 1450.0 else 88)
+	panel.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("0c2745") if _theme_mode() == "dark" else Color(0.93, 0.99, 1.0, 0.94), 24, Color(1, 1, 1, 0.32), 2, 6))
+	parent.add_child(panel)
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 8)
+	panel.add_child(row)
+	var total_levels := 0
+	var daily_done := 0
+	for game_id in MultiGameManager.GAME_IDS:
+		total_levels += int(MultiGameManager.progress_for(game_id).get("levels_completed", 0))
+		var main := get_parent()
+		if main != null and main.has_method("_daily_done") and bool(main.call("_daily_done", game_id)):
+			daily_done += 1
+	for copy in ["LEVELS  %s" % _compact_number(total_levels), "★  %s" % _compact_number(_total_stars()), "DAILY  %d/3" % daily_done]:
+		var label := Label.new()
+		label.text = copy
+		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		label.add_theme_font_size_override("font_size", 17 if viewport_size.x < 700.0 else 20)
+		Unjam3DTheme.label_3d(label, Color("f4fbff") if _theme_mode() == "dark" else Unjam3DTheme.NAVY, Color("06172c") if _theme_mode() == "dark" else Color.WHITE, 1)
+		row.add_child(label)
+
 func _make_motto(parent: VBoxContainer) -> void:
 	var center := CenterContainer.new()
 	parent.add_child(center)
 	var plaque := PanelContainer.new()
 	plaque.name = "HomeMottoStone"
-	plaque.custom_minimum_size = Vector2(minf(780.0, get_viewport_rect().size.x - 56.0), 74)
+	var viewport_size := get_viewport_rect().size
+	plaque.custom_minimum_size = Vector2(minf(780.0, viewport_size.x - 40.0), 48 if viewport_size.y < 1100.0 else (60 if viewport_size.y < 1450.0 else 70))
 	plaque.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("122741") if _theme_mode() == "dark" else Color(0.93, 0.98, 1.0, 0.92), 28, Color(1,1,1,0.30), 2, 7))
 	center.add_child(plaque)
 	var label := Label.new()
 	label.text = "SMALL PUZZLES  •  BIG MOMENTS  •  BRIGHTER DAYS"
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 18)
+	label.add_theme_font_size_override("font_size", 13 if viewport_size.y < 1100.0 else (16 if viewport_size.y < 1450.0 else 18))
 	Unjam3DTheme.label_3d(label, Color("f2f8ff") if _theme_mode() == "dark" else Unjam3DTheme.NAVY, Color("071a35") if _theme_mode() == "dark" else Color.WHITE, 2)
 	plaque.add_child(label)
 
@@ -294,10 +326,12 @@ func _make_bottom_nav() -> void:
 	var nav := PanelContainer.new()
 	nav.name = "HomeBottomNav3D"
 	nav.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	nav.offset_left = 22
-	nav.offset_right = -22
-	nav.offset_top = -116
-	nav.offset_bottom = -14
+	var viewport_size := get_viewport_rect().size
+	var short_phone := viewport_size.y < 1100.0
+	nav.offset_left = 10 if viewport_size.x < 700.0 else 22
+	nav.offset_right = -10 if viewport_size.x < 700.0 else -22
+	nav.offset_top = -100 if short_phone else -116
+	nav.offset_bottom = -8 if short_phone else -14
 	nav.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("071a35") if _theme_mode() == "dark" else Color("0756a8"), 30, Color("67d3ff"), 3, 12))
 	add_child(nav)
 	var row := HBoxContainer.new()
@@ -316,9 +350,9 @@ func _make_bottom_nav() -> void:
 		var button := Button.new()
 		button.name = String(entry[2])
 		button.text = String(entry[0])
-		button.custom_minimum_size = Vector2(0, 84)
+		button.custom_minimum_size = Vector2(0, 70 if short_phone else 84)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.add_theme_font_size_override("font_size", 16 if get_viewport_rect().size.x < 700.0 else 18)
+		button.add_theme_font_size_override("font_size", 13 if short_phone else (16 if viewport_size.x < 700.0 else 18))
 		var selected := i == 0
 		var accent := Unjam3DTheme.WATER if selected else Color("0d6dc2")
 		if String(entry[2]) == "HomeShopNavButton":
