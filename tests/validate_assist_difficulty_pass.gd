@@ -5,10 +5,10 @@ func _initialize() -> void:
 	_require_source("res://scripts/ui/premium_home_direct_levels.gd", ["open_game_campaign", "rescue_rush", "water_sort", "block_puzzle"], "Home direct game-level shortcuts", failures)
 	_require_source("res://scripts/game/block_puzzle_final_polish.gd", ["func block_progression_band", "func _best_hint_placement", "func show_hint", "place_selected"], "Block Puzzle progression and executing hint", failures)
 	_require_source("res://scripts/ui/smooth_block_piece_button.gd", ["func _finish_touch_drag", "_hide_touch_preview(true)", "place_piece_from_drag"], "Block Puzzle single-copy drop lifecycle", failures)
-	_require_source("res://scripts/game/water_sort_assisted.gd", ["func add_extra_tube", "func _best_water_move", "func show_hint", "level_number <= 10", "level_number <= 30", "level_number <= 130", "select_tube"], "Water Sort solver hint, extra tube and progression", failures)
+	_require_source("res://scripts/game/water_sort_assisted.gd", ["func add_extra_tube", "func _best_water_move", "func show_hint", "select_tube"], "Water Sort solver hint and extra tube", failures)\n\t_require_source("res://scripts/game/water_sort_10000.gd", ["WaterSortProgression", "generate_tubes_with_solution", "target_difficulty", "empty_bottles", "two_star_moves"], "Water Sort 10K progression runtime", failures)
 	_require_source("res://scripts/game/rescue_rush_assisted.gd", ["PuzzleSolver.first_solution_move", "await try_move", "func show_hint"], "Rescue Rush executing solution hint", failures)
 	_require_source("res://scenes/Game.tscn", ["rescue_rush_assisted.gd"], "Rescue Rush assisted leaf wiring", failures)
-	_require_source("res://scenes/WaterSort.tscn", ["water_sort_assisted.gd"], "Water Sort assisted leaf wiring", failures)
+	_require_source("res://scenes/WaterSort.tscn", ["water_sort_10000.gd"], "Water Sort 10K leaf wiring", failures)
 	_require_source("res://scenes/Main.tscn", ["premium_home_direct_levels.gd"], "Home direct-level leaf wiring", failures)
 
 	var smooth := _read("res://scripts/ui/smooth_block_piece_button.gd")
