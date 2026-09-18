@@ -26,6 +26,7 @@ jobs:
     env:
       EXPECTED_PACKAGE: com.eghosa.unjamgam
       EXPECTED_UPLOAD_SHA1: ${{ secrets.UNJAM_ANDROID_UPLOAD_SHA1 }}
+      WATER_FULL_AUDIT: "1"
     steps:
       - uses: actions/checkout@v4
       - name: Validate release contract
