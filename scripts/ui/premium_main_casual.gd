@@ -297,7 +297,7 @@ func build_collection() -> void:
 	_remove_active_game()
 	var root := _page_root()
 	var accent := _accent("rescue_rush")
-	_page_header(root, "COLLECTION", "Your complete UNJAM journey", "◈  %d" % int(SaveManager.data.get("coins", 0)), PremiumDesignSystem.GOLD)
+	_page_header(root, "COLLECTION", "Progress, friends and permanent rewards", "◈  %d" % int(SaveManager.data.get("coins", 0)), PremiumDesignSystem.GOLD)
 	var scroll := ScrollContainer.new()
 	scroll.name = "CollectionScroll"
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -317,12 +317,12 @@ func build_collection() -> void:
 		total_stars += MultiGameManager.total_stars(game_id)
 		total_perfect += int(progress.get("perfect_clears", 0))
 		total_badges += (progress.get("world_badges", []) as Array).size()
-	var overview := _card(stack, Vector2(0, 172), true)
+	var overview := _card(stack, Vector2(0, 184), true)
 	var overview_margin := _pad(overview, 20)
 	var overview_box := VBoxContainer.new()
 	overview_box.add_theme_constant_override("separation", 12)
 	overview_margin.add_child(overview_box)
-	var overview_title := _label("JOURNEY OVERVIEW", 27, "title", accent)
+	var overview_title := _label("YOUR UNJAM JOURNEY", 28, "title", accent)
 	overview_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	overview_box.add_child(overview_title)
 	var metrics := GridContainer.new()
@@ -333,7 +333,7 @@ func build_collection() -> void:
 	for metric in [["LEVELS", total_completed], ["STARS", total_stars], ["PERFECT", total_perfect], ["BADGES", total_badges]]:
 		var chip := _journey_metric(String(metric[0]), int(metric[1]), accent)
 		metrics.add_child(chip)
-	var games_title := _label("YOUR THREE GAMES", 24, "title", accent)
+	var games_title := _label("THREE PUZZLE WORLDS", 25, "title", accent)
 	stack.add_child(games_title)
 	var game_grid := GridContainer.new()
 	game_grid.columns = 2 if get_viewport_rect().size.x >= 720.0 else 1
@@ -348,7 +348,7 @@ func build_collection() -> void:
 	var achievement_box := VBoxContainer.new()
 	achievement_box.add_theme_constant_override("separation", 8)
 	achievement_margin.add_child(achievement_box)
-	achievement_box.add_child(_label("ACHIEVEMENTS", 23, "title", Unjam3DTheme.GOLD))
+	achievement_box.add_child(_label("★  ACHIEVEMENT CABINET", 24, "title", Unjam3DTheme.GOLD))
 	var achievement_lines: Array[String] = []
 	for game_id in MultiGameManager.GAME_IDS:
 		var unlocked := MultiGameManager.unlocked_achievements(game_id)
@@ -361,7 +361,7 @@ func build_collection() -> void:
 	var garden_box := VBoxContainer.new()
 	garden_box.add_theme_constant_override("separation", 10)
 	garden_margin.add_child(garden_box)
-	garden_box.add_child(_label("RESCUE GARDEN", 25, "title", accent))
+	garden_box.add_child(_label("♥  RESCUE GARDEN", 26, "title", accent))
 	var rescued: Array = SaveManager.data.get("rescued", [])
 	var friends := _label(_friend_roster_text(rescued), 20, "body", accent)
 	friends.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -383,9 +383,9 @@ func build_collection() -> void:
 	value_box.add_theme_constant_override("separation", 8)
 	value_margin.add_child(value_box)
 	var owned_count := EconomyManager.collection_owned_count()
-	value_box.add_child(_label("PERMANENT COLLECTION PERKS  •  %d / 6" % owned_count, 23, "title", PremiumDesignSystem.GOLD))
+	value_box.add_child(_label("✦  PERMANENT REWARD BOOST  •  %d / 6" % owned_count, 24, "title", PremiumDesignSystem.GOLD))
 	var value_copy := _label(
-		"Every owned upgrade adds +5 coins to EVERY Daily Game. Your garden also creates a once-per-day gift; a complete 6/6 garden adds an extra +20 gift bonus.",
+		"Each upgrade permanently adds +5 coins to every Daily Game and strengthens your once-per-day Garden Gift.",
 		18,
 		"body",
 		accent
@@ -472,29 +472,62 @@ func _journey_metric(title_text: String, value: int, accent: Color) -> PanelCont
 
 func _collection_game_card(game_id: String) -> PanelContainer:
 	var accent := Unjam3DTheme.game_accent(game_id)
-	var progress := MultiGameManager.progress_for(game_id)
-	var highest := clampi(int(progress.get("highest_level", 1)), 1, MultiGameManager.CAMPAIGN_LEVELS)
+	var progress_data := MultiGameManager.progress_for(game_id)
+	var highest := clampi(int(progress_data.get("highest_level", 1)), 1, MultiGameManager.CAMPAIGN_LEVELS)
+	var world := MultiGameManager.world_for_game_level(game_id, highest)
+	var local_level := posmod(highest - 1, 100) + 1
+	var icon := "↗"
+	if game_id == "water_sort":
+		icon = "◉"
+	elif game_id == "block_puzzle":
+		icon = "◆"
+
 	var card := PanelContainer.new()
-	card.custom_minimum_size = Vector2(0, 210)
+	card.custom_minimum_size = Vector2(0, 248)
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	card.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Unjam3DTheme.surface_fill(_dark(), false), 26, Color(accent, 0.75), 2, 8))
+	card.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Unjam3DTheme.surface_fill(_dark(), true), 28, Color(accent, 0.82), 3, 11))
 	var margin := MarginContainer.new()
 	for side in ["left", "right", "top", "bottom"]:
 		margin.add_theme_constant_override("margin_%s" % side, 18)
 	card.add_child(margin)
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 7)
+	box.add_theme_constant_override("separation", 8)
 	margin.add_child(box)
-	var title := _label(MultiGameManager.display_name(game_id), 23, "title", accent)
+
+	var title := _label("%s  %s" % [icon, MultiGameManager.display_name(game_id).to_upper()], 24, "title", accent)
 	box.add_child(title)
-	box.add_child(_label("LEVEL %d  •  WORLD %d / %d" % [highest, MultiGameManager.world_for_game_level(game_id, highest), MultiGameManager.world_count_for(game_id)], 17, "body", accent))
-	box.add_child(_label("★ %d   •   PERFECT %d" % [MultiGameManager.total_stars(game_id), int(progress.get("perfect_clears", 0))], 16, "muted", accent))
-	box.add_child(_label("%d levels cleared  •  %d badges" % [int(progress.get("levels_completed", 0)), (progress.get("world_badges", []) as Array).size()], 15, "muted", accent))
-	var open := _button("OPEN LEVELS", Vector2(0, 68), "primary", game_id)
+	var journey := _label("WORLD %d  •  LEVEL %d" % [world, highest], 18, "body", accent)
+	box.add_child(journey)
+
+	var progress := ProgressBar.new()
+	progress.max_value = 100.0
+	progress.value = float(local_level)
+	progress.show_percentage = false
+	progress.custom_minimum_size = Vector2(0, 18)
+	progress.add_theme_stylebox_override("background", PremiumDesignSystem.box(PremiumDesignSystem.surface_3(_dark()), 9, Color.TRANSPARENT, 0, 0, _dark()))
+	progress.add_theme_stylebox_override("fill", PremiumDesignSystem.box(accent, 9, accent.lightened(0.14), 1, 0, _dark()))
+	box.add_child(progress)
+
+	var stats := _label("★ %s   •   PERFECT %d   •   BADGES %d" % [
+		_compact_stat(MultiGameManager.total_stars(game_id)),
+		int(progress_data.get("perfect_clears", 0)),
+		(progress_data.get("world_badges", []) as Array).size()
+	], 16, "muted", accent)
+	stats.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(stats)
+
+	var open := _button("OPEN JOURNEY", Vector2(0, 72), "primary", game_id)
 	open.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	open.pressed.connect(open_game_campaign.bind(game_id))
 	box.add_child(open)
 	return card
+
+func _compact_stat(value: int) -> String:
+	if value >= 1000000:
+		return "%.1fM" % (float(value) / 1000000.0)
+	if value >= 1000:
+		return "%.1fK" % (float(value) / 1000.0)
+	return str(value)
 
 func build_level_select() -> void:
 	super.build_level_select()
