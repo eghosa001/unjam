@@ -4,6 +4,7 @@ const Progression = preload("res://scripts/core/block_puzzle_progression.gd")
 const Generator = preload("res://scripts/core/block_puzzle_campaign_generator.gd")
 const LevelPack = preload("res://scripts/core/block_puzzle_level_pack.gd")
 const Auditor = preload("res://scripts/core/block_puzzle_campaign_auditor.gd")
+const Solver = preload("res://scripts/core/block_puzzle_exact_solver.gd")
 
 const ROOT := "res://data/block_puzzle_campaign"
 
@@ -18,6 +19,7 @@ func _run() -> void:
 
 	var signatures := {}
 	var world_hashes := {}
+	var human_review: Array[Dictionary] = []
 	var total_levels := 0
 	for world in range(1, Progression.WORLD_COUNT + 1):
 		var levels := {}
@@ -27,6 +29,7 @@ func _run() -> void:
 			var profile := _generation_profile(level)
 			var plan := {}
 			var signature := ""
+			var solver_report := {}
 			for attempt in range(8):
 				var candidate_profile := profile.duplicate(true)
 				if attempt > 0 and level != Progression.MAX_LEVEL:
@@ -41,12 +44,16 @@ func _run() -> void:
 				)
 				if not bool(proof.get("solved", false)):
 					continue
+				var exact := Solver.find_solution(candidate_profile, candidate, 50000)
+				if not bool(exact.get("solved", false)):
+					continue
 				var candidate_signature := Auditor.canonical_signature(candidate_profile, candidate)
 				if signatures.has(candidate_signature):
 					continue
 				plan = candidate
 				profile = candidate_profile
 				signature = candidate_signature
+				solver_report = exact
 				break
 			if plan.is_empty():
 				return _fail("Could not build unique proof-backed Block Puzzle level %d" % level)
@@ -59,7 +66,37 @@ func _run() -> void:
 			metadata["world"] = int(profile.get("world", world))
 			metadata["milestone"] = String(profile.get("milestone", "normal"))
 			metadata["signature"] = signature
+			metadata["level_hash"] = signature
+			metadata["solution_moves"] = int(solver_report.get("moves", metadata.get("proof_moves", 0)))
+			metadata["solver_nodes"] = int(solver_report.get("nodes", 0))
+			var three_star := maxi(int(profile.get("par", 18)), int(metadata.get("proof_moves", 0)))
+			metadata["three_star_limit"] = three_star
+			metadata["two_star_limit"] = three_star + 6
+			var effective_limit := int(profile.get("move_limit", -1))
+			if effective_limit > 0:
+				var margin := 3 if level <= 5000 else (2 if level < 9000 else 1)
+				effective_limit = maxi(effective_limit, int(metadata.get("proof_moves", 0)) + margin)
+			metadata["effective_move_limit"] = effective_limit
+			metadata["optimal_moves"] = -1
+			metadata["optimal_verified"] = false
+			if level <= 10 or level in [25, 50, 100]:
+				var optimal := Solver.find_optimal(profile, plan, 350000)
+				if bool(optimal.get("solved", false)) and bool(optimal.get("optimal_verified", false)):
+					metadata["optimal_moves"] = int(optimal.get("optimal_moves", -1))
+					metadata["optimal_verified"] = true
 			encoded["m"] = metadata
+			if String(profile.get("milestone", "normal")) in ["boss", "world_finale", "mastery", "finale"]:
+				var audit := Auditor.audit_plan(profile, plan)
+				human_review.append({
+					"level": level,
+					"world": int(profile.get("world", world)),
+					"milestone": String(profile.get("milestone", "")),
+					"difficulty": int(profile.get("difficulty_score", 0)),
+					"proof_moves": int(metadata.get("proof_moves", 0)),
+					"bot_success_rate": float(audit.get("bot_success_rate", -1.0)),
+					"calibrated_difficulty": int(audit.get("calibrated_difficulty", -1)),
+					"signature": signature
+				})
 			levels[str(level)] = encoded
 			total_levels += 1
 			if level % 250 == 0:
@@ -81,6 +118,15 @@ func _run() -> void:
 		file.store_string(serialized)
 		file.close()
 		world_hashes[str(world)] = serialized.sha256_text()
+
+	var review_file := FileAccess.open(ROOT + "/human_review.json", FileAccess.WRITE)
+	if review_file == null:
+		return _fail("Could not write Block Puzzle human-review queue")
+	review_file.store_string(JSON.stringify({
+		"generator_version": Generator.GENERATOR_VERSION,
+		"levels": human_review,
+	}))
+	review_file.close()
 
 	var manifest := {
 		"pack_version": LevelPack.PACK_VERSION,
