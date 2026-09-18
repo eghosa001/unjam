@@ -19,12 +19,13 @@ func _build() -> void:
 	var dark_mode := _theme_mode() == "dark"
 	var viewport_size := get_viewport_rect().size
 	var narrow := viewport_size.x < 600.0
+	var phone_width := viewport_size.x <= 1120.0
 	var compact := viewport_size.x < 900.0
 	var short := viewport_size.y < 1100.0
 	var medium_height := viewport_size.y < 1500.0
 	var nav_height := 74.0 if short else (84.0 if medium_height else 92.0)
 	var nav_bottom := 10.0 if short else 16.0
-	var nav_side := 12.0 if narrow else (20.0 if compact else 28.0)
+	var nav_side := 12.0 if narrow else (20.0 if phone_width else 28.0)
 	var nav_reserve := nav_height + nav_bottom + (14.0 if short else 22.0)
 
 	var bg := Unjam3DBackdrop.new()
@@ -35,8 +36,8 @@ func _build() -> void:
 	var outer := MarginContainer.new()
 	outer.name = "GameSelectorOuter"
 	outer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	outer.add_theme_constant_override("margin_left", 12 if narrow else (20 if compact else 34))
-	outer.add_theme_constant_override("margin_right", 12 if narrow else (20 if compact else 34))
+	outer.add_theme_constant_override("margin_left", 12 if narrow else (20 if phone_width else 34))
+	outer.add_theme_constant_override("margin_right", 12 if narrow else (20 if phone_width else 34))
 	outer.add_theme_constant_override("margin_top", 10 if short else (18 if medium_height else 28))
 	outer.add_theme_constant_override("margin_bottom", int(nav_reserve))
 	add_child(outer)
@@ -48,9 +49,9 @@ func _build() -> void:
 	var header := HBoxContainer.new()
 	header.name = "GameSelectorHeader"
 	header.custom_minimum_size = Vector2(0, 58 if short else (72 if medium_height else 92))
-	header.add_theme_constant_override("separation", 6 if narrow else 12)
+	header.add_theme_constant_override("separation", 6 if narrow else (8 if phone_width else 12))
 	root.add_child(header)
-	var side_button_size := Vector2(54, 52) if short else (Vector2(68, 64) if medium_height else Vector2(92, 82))
+	var side_button_size := Vector2(54, 52) if short else (Vector2(68, 64) if phone_width else Vector2(92, 82))
 	var back := _button("←", side_button_size, Unjam3DTheme.WATER_DARK, true)
 	back.name = "GameSelectorBack"
 	back.add_theme_font_size_override("font_size", 27 if short else (31 if medium_height else 34))
@@ -58,8 +59,10 @@ func _build() -> void:
 	header.add_child(back)
 	var titles := VBoxContainer.new()
 	titles.name = "GameSelectorTitles"
+	titles.custom_minimum_size = Vector2.ZERO
 	titles.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	titles.alignment = BoxContainer.ALIGNMENT_CENTER
+	titles.clip_contents = true
 	titles.add_theme_constant_override("separation", 0 if short else 2)
 	header.add_child(titles)
 	var title := Label.new()
@@ -67,21 +70,27 @@ func _build() -> void:
 	title.text = "CHOOSE A GAME"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	title.custom_minimum_size = Vector2.ZERO
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.clip_text = true
 	title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	title.add_theme_font_size_override("font_size", 27 if narrow else (32 if compact else 40))
+	title.add_theme_font_size_override("font_size", 27 if narrow else (34 if phone_width else 40))
 	Unjam3DTheme.label_3d(title, Color.WHITE, Unjam3DTheme.NAVY, 5 if compact else 6)
 	titles.add_child(title)
 	var subtitle := Label.new()
 	subtitle.name = "GameSelectorSubtitle"
 	subtitle.text = "THREE PUZZLES  •  ONE JOURNEY"
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.custom_minimum_size = Vector2.ZERO
+	subtitle.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	subtitle.clip_text = true
 	subtitle.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	subtitle.add_theme_font_size_override("font_size", 11 if narrow else (14 if compact else 16))
+	subtitle.add_theme_font_size_override("font_size", 11 if narrow else (14 if phone_width else 16))
 	Unjam3DTheme.label_3d(subtitle, Color("e9fbff"), Unjam3DTheme.NAVY, 3)
 	titles.add_child(subtitle)
 	var settings := _button("⚙", side_button_size, Unjam3DTheme.WATER_DARK, true)
 	settings.name = "GameSelectorSettings"
-	settings.add_theme_font_size_override("font_size", 25 if short else (28 if medium_height else 30))
+	settings.add_theme_font_size_override("font_size", 25 if short else (28 if phone_width else 30))
 	settings.pressed.connect(func(): get_parent().call("build_settings"))
 	header.add_child(settings)
 
