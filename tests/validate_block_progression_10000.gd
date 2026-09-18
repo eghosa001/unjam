@@ -8,6 +8,8 @@ func _initialize() -> void:
 func _run() -> void:
 	if not _validate_all_profiles():
 		return
+	if not _validate_global_progression_contract():
+		return
 	if not await _validate_runtime_contract():
 		return
 	print("BLOCK_10000_OK: 10,000 profiles, deterministic trays, worlds, milestones and finale contract validated.")
@@ -55,6 +57,22 @@ func _validate_all_profiles() -> bool:
 		return _fail("Level 10000 must unlock the full piece library")
 	if int(finale.get("move_limit", -1)) <= 0:
 		return _fail("Level 10000 must be move-limited")
+	return true
+
+func _validate_global_progression_contract() -> bool:
+	var multi := root.get_node_or_null("MultiGameManager")
+	if multi == null:
+		return _fail("MultiGameManager missing")
+	if int(multi.call("world_count_for", "block_puzzle")) != 20:
+		return _fail("Block Puzzle must expose 20 worlds")
+	if int(multi.call("world_for_game_level", "block_puzzle", 500)) != 1:
+		return _fail("Level 500 must remain in World 1")
+	if int(multi.call("world_for_game_level", "block_puzzle", 501)) != 2:
+		return _fail("Level 501 must open World 2")
+	if int(multi.call("first_level_in_game_world", "block_puzzle", 20)) != 9501:
+		return _fail("World 20 must start at level 9501")
+	if int(multi.call("last_level_in_game_world", "block_puzzle", 20)) != 10000:
+		return _fail("World 20 must end at level 10000")
 	return true
 
 func _validate_runtime_contract() -> bool:
