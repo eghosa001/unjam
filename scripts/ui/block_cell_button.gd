@@ -164,21 +164,18 @@ func _draw() -> void:
 	_draw_box(rect, board_fill, 6, Color("8264aa"), 1)
 	var inner_well := rect.grow(-3.0)
 	_draw_box(inner_well, Color(0.23, 0.16, 0.37, 0.72), 5, Color(1,1,1,0.045), 1)
-	if occupied or preview or footprint_active:
-		var inset := rect.grow(-3.0)
-		var fill := accent
-		if preview:
-			fill = Color(accent, 0.52)
-		elif footprint_active and not occupied:
-			if footprint_valid:
-				var pulse := 0.82 + 0.18 * sin(footprint_phase)
-				fill = Color(footprint_color, 0.64 + pulse * 0.16)
-			else:
-				fill = Color("ff4f73", 0.48)
+	var inset := rect.grow(-3.0)
+	if occupied or preview:
+		var fill := Color(accent, 0.52) if preview else accent
 		_draw_block(inset, fill)
-		if footprint_active:
-			var edge := Color(footprint_color.lightened(0.42), 0.88) if footprint_valid else Color("ff8ba3", 0.90)
-			_draw_box(inset.grow(1.5), Color.TRANSPARENT, 6, edge, 3)
+	if footprint_active:
+		# Keep the target footprint visually distinct from the single floating drag
+		# piece. Drawing another full 3D block here made every dragged brick look
+		# doubled when it crossed the board.
+		var pulse := 0.72 + 0.28 * sin(footprint_phase)
+		var edge := Color(footprint_color.lightened(0.42), 0.72 + pulse * 0.20) if footprint_valid else Color("ff8ba3", 0.92)
+		var wash := Color(footprint_color, 0.08 + pulse * 0.06) if footprint_valid else Color("ff4f73", 0.10)
+		_draw_box(inset.grow(1.0), wash, 6, edge, 3)
 	if clear_phase > 0.001 and not occupied:
 		var clear_fill := Color(clear_color, clampf(clear_phase, 0.0, 1.0))
 		_draw_block(rect.grow(-3.0), clear_fill)
@@ -218,12 +215,22 @@ func _draw_special_overlay(rect: Rect2) -> void:
 		var center := inset.get_center()
 		draw_arc(center, inset.size.x * 0.27, 0.0, TAU, 28, Color("ffd85a", 0.96), 3.5, true)
 		draw_circle(center, 3.0, Color("fff4b1"))
+	elif special_kind in ["row_target", "col_target", "cross_target"]:
+		var marker := Color("ffd85a", 0.92)
+		if special_kind in ["row_target", "cross_target"]:
+			var y := inset.get_center().y
+			draw_line(Vector2(inset.position.x + 4, y), Vector2(inset.end.x - 4, y), marker, 3.0, true)
+		if special_kind in ["col_target", "cross_target"]:
+			var x := inset.get_center().x
+			draw_line(Vector2(x, inset.position.y + 4), Vector2(x, inset.end.y - 4), marker, 3.0, true)
 	elif special_kind == "preserve":
 		_draw_box(inset, Color(0.24, 0.95, 0.74, 0.10), 6, Color("67f0c2", 0.94), 3)
 		var center := inset.get_center()
 		draw_arc(center, inset.size.x * 0.22, PI, TAU, 18, Color("b6ffe8", 0.92), 3.0, true)
 	if special_layers > 1:
-		draw_string(ThemeDB.fallback_font, inset.position + Vector2(inset.size.x - 14, 15), str(special_layers), HORIZONTAL_ALIGNMENT_CENTER, 12, 13, Color.WHITE)
+		var badge := Rect2(Vector2(inset.end.x - 22, inset.position.y + 4), Vector2(18, 18))
+		_draw_box(badge, Color("241638", 0.92), 8, Color(1, 1, 1, 0.28), 1)
+		draw_string(ThemeDB.fallback_font, badge.position + Vector2(3, 14), str(special_layers), HORIZONTAL_ALIGNMENT_CENTER, 12, 12, Color.WHITE)
 
 func _draw_block(rect: Rect2, fill: Color) -> void:
 	_draw_extruded_cube(rect, fill)
