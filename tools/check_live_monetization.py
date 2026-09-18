@@ -69,6 +69,7 @@ def main() -> int:
 
     verifier_root = verify_url.rsplit("/verify", 1)[0]
     health_url = verifier_root.rstrip("/") + "/healthz"
+    readiness_url = verifier_root.rstrip("/") + "/readiness"
 
     status, final_url, body = fetch(health_url)
     if status != 200:
@@ -80,6 +81,23 @@ def main() -> int:
     if health.get("ok") is not True:
         fail("Purchase verifier /healthz did not return {\"ok\": true}")
     print(f"PASS purchase verifier health: {final_url}")
+
+    status, final_url, body = fetch(readiness_url)
+    if status != 200:
+        fail(f"Purchase verifier dependency readiness returned HTTP {status} at {final_url}")
+    try:
+        readiness = json.loads(body)
+    except json.JSONDecodeError:
+        fail("Purchase verifier /readiness did not return JSON")
+    dependencies = readiness.get("dependencies", {})
+    if (
+        readiness.get("ok") is not True
+        or dependencies.get("firestore") is not True
+        or dependencies.get("google_play") is not True
+        or readiness.get("package_name") != EXPECTED_PACKAGE
+    ):
+        fail("Purchase verifier dependencies are not ready for Firestore + Google Play Purchases API")
+    print(f"PASS purchase verifier dependencies: {final_url}")
 
     status, final_url, body = fetch(app_ads_url)
     if status != 200:
