@@ -49,6 +49,8 @@ def main() -> int:
         'backend/play-verifier',
         'npm test',
         'https://*/verify',
+        'UNJAM_DEVELOPER_WEBSITE_URL',
+        'check_live_monetization.py',
     ):
         if token not in workflow:
             errors.append(f'missing release workflow contract token: {token}')
