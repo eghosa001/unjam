@@ -35,7 +35,7 @@ func _build_3d_scene() -> void:
 	viewport_3d = SubViewport.new()
 	viewport_3d.own_world_3d = true
 	viewport_3d.name = "MascotViewport3D"
-	viewport_3d.size = Vector2i(512, 512)
+	viewport_3d.size = Vector2i(640, 640)
 	viewport_3d.transparent_bg = true
 	viewport_3d.render_target_update_mode = SubViewport.UPDATE_DISABLED
 	add_child(viewport_3d)
@@ -50,26 +50,33 @@ func _build_3d_scene() -> void:
 	environment.background_color = Color("78d7ff")
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	environment.ambient_light_color = Color("d8f6ff")
-	environment.ambient_light_energy = 1.25
+	environment.ambient_light_energy = 0.92
 	world_environment.environment = environment
 	stage.add_child(world_environment)
 
 	var key := DirectionalLight3D.new()
 	key.rotation_degrees = Vector3(-38, -34, 0)
 	key.light_color = Color("fff4d0")
-	key.light_energy = 1.45
+	key.light_energy = 1.72
 	key.shadow_enabled = true
 	stage.add_child(key)
 
 	var fill := DirectionalLight3D.new()
 	fill.rotation_degrees = Vector3(-18, 142, 18)
 	fill.light_color = Color("75d7ff")
-	fill.light_energy = 0.72
+	fill.light_energy = 0.58
 	stage.add_child(fill)
 
+	var face_light := OmniLight3D.new()
+	face_light.position = Vector3(0.0, 2.0, 4.0)
+	face_light.light_color = Color("fff2d2")
+	face_light.light_energy = 0.48
+	face_light.omni_range = 8.0
+	stage.add_child(face_light)
+
 	var camera := Camera3D.new()
-	camera.position = Vector3(0.0, 2.05, 7.2)
-	camera.fov = 40.0
+	camera.position = Vector3(0.0, 2.05, 7.35)
+	camera.fov = 36.0
 	stage.add_child(camera)
 	camera.look_at(Vector3(0.0, 1.55, 0.0), Vector3.UP)
 	camera.current = true
@@ -85,13 +92,13 @@ func _build_3d_scene() -> void:
 	_add_sphere(mascot_root, 1.20, Vector3(0, -1.34, -0.10), Color(0.02, 0.16, 0.25, 0.18), Vector3(1.05, 0.12, 0.55))
 
 	# Body and explorer outfit.
-	_add_capsule(mascot_root, 0.72, 1.72, Vector3(0, 0.10, 0), Color("ffd83d"), 0.05, 0.28)
+	_add_capsule(mascot_root, 0.72, 1.72, Vector3(0, 0.10, 0), Color("ffd04a"), 0.03, 0.20)
 	_add_box(mascot_root, Vector3(1.34, 0.54, 0.66), Vector3(0, -0.28, 0.16), Color("1c86e8"), 0.15, 0.26)
 	_add_box(mascot_root, Vector3(1.10, 0.14, 0.72), Vector3(0, 0.10, 0.18), Color("b56e16"), 0.10, 0.36)
 	_add_sphere(mascot_root, 0.13, Vector3(0, 0.11, 0.60), Color("ffd83d"), Vector3.ONE)
 
 	# Head with face depth.
-	_add_sphere(mascot_root, 0.93, Vector3(0, 1.36, 0), Color("ffd83d"), Vector3(1.03, 0.98, 0.96))
+	_add_sphere(mascot_root, 0.93, Vector3(0, 1.36, 0), Color("ffd45a"), Vector3(1.03, 0.98, 0.96))
 	_add_sphere(mascot_root, 0.25, Vector3(-0.36, 1.23, 0.78), Color("ff8c6a"), Vector3(1.0, 0.58, 0.28))
 	_add_sphere(mascot_root, 0.25, Vector3(0.36, 1.23, 0.78), Color("ff8c6a"), Vector3(1.0, 0.58, 0.28))
 	_add_sphere(mascot_root, 0.115, Vector3(-0.30, 1.52, 0.82), Color("183450"), Vector3(0.84, 1.12, 0.45))
@@ -99,11 +106,19 @@ func _build_3d_scene() -> void:
 	_add_sphere(mascot_root, 0.038, Vector3(-0.335, 1.565, 0.918), Color.WHITE, Vector3.ONE)
 	_add_sphere(mascot_root, 0.038, Vector3(0.265, 1.565, 0.918), Color.WHITE, Vector3.ONE)
 	_add_sphere(mascot_root, 0.20, Vector3(0, 1.16, 0.865), Color("7b321f"), Vector3(1.35, 0.34, 0.25))
+	# Small face/outfit details break up the primitive silhouette and make the
+	# hero read as authored character art rather than stacked geometry.
+	_add_box(mascot_root, Vector3(0.22, 0.045, 0.055), Vector3(-0.30, 1.72, 0.835), Color("66421f"), 0.0, 0.28)
+	_add_box(mascot_root, Vector3(0.22, 0.045, 0.055), Vector3(0.30, 1.72, 0.835), Color("66421f"), 0.0, 0.28)
+	_add_sphere(mascot_root, 0.075, Vector3(0, 1.38, 0.915), Color("f3a246"), Vector3(0.8, 1.0, 0.55))
+	_add_box(mascot_root, Vector3(1.18, 0.16, 0.76), Vector3(0, 0.58, -0.28), Color("ef4938"), 0.02, 0.22)
+	_add_box(mascot_root, Vector3(0.88, 0.11, 0.74), Vector3(0, 0.66, 0.36), Color("fff0c8"), 0.0, 0.24)
 
 	# Explorer cap with brim.
 	_add_cylinder(mascot_root, 0.70, 0.77, 0.34, Vector3(0, 2.18, 0), Color("ff6a37"), 0.05, 0.30)
 	_add_box(mascot_root, Vector3(1.28, 0.12, 0.58), Vector3(0, 2.02, 0.44), Color("ff8d1f"), 0.05, 0.30)
-	_add_box(mascot_root, Vector3(0.66, 0.10, 0.10), Vector3(0, 2.31, 0.69), Color("fff3d1"), 0.02, 0.40)
+	_add_box(mascot_root, Vector3(0.66, 0.10, 0.10), Vector3(0, 2.31, 0.69), Color("fff3d1"), 0.02, 0.28)
+	_add_sphere(mascot_root, 0.13, Vector3(0, 2.22, 0.73), Color("2fc7ff"), Vector3(1.0, 1.0, 0.45))
 
 	# Left arm relaxed.
 	var left_pivot := Node3D.new()
@@ -133,8 +148,8 @@ func _material(color: Color, metallic_value: float = 0.0, roughness_value: float
 	material.roughness = roughness_value
 	if color.a >= 0.995:
 		material.clearcoat_enabled = true
-		material.clearcoat = 0.42
-		material.clearcoat_roughness = 0.12
+		material.clearcoat = 0.62
+		material.clearcoat_roughness = 0.075
 	if color.a < 0.995:
 		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	return material
