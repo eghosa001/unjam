@@ -8,6 +8,9 @@ func _run() -> void:
 	root.add_child(game)
 	await process_frame
 	await process_frame
+	var multi = root.get_node_or_null("MultiGameManager")
+	if multi == null:
+		return _fail("MultiGameManager autoload is unavailable")
 
 	game.level_number = 1000
 	game.load_level()
@@ -23,7 +26,7 @@ func _run() -> void:
 		return _fail("Level 1000 generated no proof-backed ice target")
 
 	for fixture in [[1500, "locks", "lock"], [1800, "steel", "steel"]]:
-		MultiGameManager.clear_checkpoint("block_puzzle")
+		multi.call("clear_checkpoint", "block_puzzle")
 		game.level_number = int(fixture[0])
 		game.load_level()
 		await process_frame
@@ -38,7 +41,7 @@ func _run() -> void:
 		if not found:
 			return _fail("Level %d generated no %s objective cells" % [int(fixture[0]), String(fixture[2])])
 
-	MultiGameManager.clear_checkpoint("block_puzzle")
+	multi.call("clear_checkpoint", "block_puzzle")
 	game.level_number = 1000
 	game.load_level()
 	await process_frame
@@ -49,7 +52,7 @@ func _run() -> void:
 
 	for key in game.campaign_special_cells.keys().duplicate():
 		var special: Dictionary = game.campaign_special_cells[key]
-		if String(special.get("kind", "")) in ["crate", "ice", "target"]:
+		if String(special.get("kind", "")) in ["crate", "ice", "lock", "steel", "target"]:
 			game.campaign_special_cells.erase(key)
 	game.target_rows_pending.clear()
 	game.target_cols_pending.clear()
