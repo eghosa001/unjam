@@ -16,9 +16,10 @@ static func has_production_pack() -> bool:
 
 static func plan_for_level(raw_level: int, profile_override: Dictionary = {}) -> Dictionary:
 	var level := clampi(raw_level, 1, Progression.MAX_LEVEL)
-	var packed := _packed_plan(level)
-	if not packed.is_empty():
-		return packed
+	if has_production_pack():
+		# A shipped pack is authoritative. Never silently replace a missing or
+		# corrupted production record with a newly generated puzzle.
+		return _packed_plan(level)
 	var profile := profile_override.duplicate(true) if not profile_override.is_empty() else Progression.profile(level)
 	return Generator.generate(profile)
 
@@ -64,7 +65,15 @@ static func _load_world(world: int) -> Dictionary:
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
 		return {}
-	var parsed = JSON.parse_string(file.get_as_text())
+	var raw_text := file.get_as_text()
+	var pack_manifest := manifest()
+	var world_hashes = pack_manifest.get("world_hashes", {})
+	if world_hashes is Dictionary:
+		var expected := String((world_hashes as Dictionary).get(str(world), ""))
+		if not expected.is_empty() and raw_text.sha256_text() != expected:
+			push_error("Block Puzzle world pack hash mismatch: world %d" % world)
+			return {}
+	var parsed = JSON.parse_string(raw_text)
 	if not parsed is Dictionary:
 		return {}
 	var data := (parsed as Dictionary).duplicate(true)
