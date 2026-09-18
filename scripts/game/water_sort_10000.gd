@@ -286,8 +286,8 @@ func _construct_balanced_fallback(seed_value: int, colors: int, empty_bottles: i
 	_shuffle_int_array(color_indices, rng)
 	var inverse_moves: Array[Vector2i] = []
 	while color_indices.size() >= 2 and empty_index >= 0:
-		var a := color_indices.pop_back()
-		var b := color_indices.pop_back()
+		var a: int = int(color_indices.pop_back())
+		var b: int = int(color_indices.pop_back())
 		var a_tube: Array = state[a]
 		var b_tube: Array = state[b]
 		var empty_tube: Array = state[empty_index]
