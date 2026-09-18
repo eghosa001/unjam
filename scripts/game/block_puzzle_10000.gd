@@ -71,6 +71,7 @@ func _add_booster_bar() -> void:
 	root.add_child(bar)
 	root.move_child(bar, maxi(0, status_label.get_index()))
 	_refresh_booster_buttons()
+	call_deferred("_fit_3d_board_layout")
 
 func block_progression_band(level: int = level_number) -> String:
 	# Preserve the public band contract used by existing tests/UI while the
@@ -871,8 +872,16 @@ func _render_special_cells() -> void:
 		if special.is_empty():
 			var row := int(i / GRID_SIZE)
 			var col := i % GRID_SIZE
-			if row in target_rows_pending or col in target_cols_pending:
-				cell.call("set_special", "target", 1)
+			var row_target := row in target_rows_pending
+			var col_target := col in target_cols_pending
+			if row_target and col_target:
+				cell.call("set_special", "cross_target", 1)
+				continue
+			if row_target:
+				cell.call("set_special", "row_target", 1)
+				continue
+			if col_target:
+				cell.call("set_special", "col_target", 1)
 				continue
 		cell.call("set_special", String(special.get("kind", "")), int(special.get("layers", 0)))
 
