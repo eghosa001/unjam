@@ -50,6 +50,10 @@ static func generate(profile: Dictionary) -> Dictionary:
 	var initial_board := board.duplicate(true)
 	var tier := clampi(int(profile.get("piece_tier", 1)), 1, 6)
 	var pool: Array = (TIER_POOLS.get(tier, TIER_POOLS[1]) as Array).duplicate()
+	if level == 10000:
+		# Hand-authored finale palette: every tray is drawn from the most spatially
+		# demanding families, with small rescue pieces retained for exact finishing.
+		pool = [0, 1, 2, 3, 4, 12, 15, 16, 17, 18, 19, 21, 22, 23, 24]
 	var target_lines := maxi(1, int(profile.get("target_lines", 2)))
 	var target_score := maxi(1, int(profile.get("target_score", 100)))
 	var difficulty := clampi(int(profile.get("difficulty_score", 20)), 0, 100)
@@ -235,6 +239,8 @@ static func _forced_single_move(board: Array) -> Dictionary:
 	return best
 
 static func _initial_board(profile: Dictionary, rng: RandomNumberGenerator) -> Array:
+	if int(profile.get("level_id", 1)) == 10000:
+		return _finale_board()
 	var board := _empty_board()
 	var ratio := clampf(float(profile.get("initial_occupancy", 0.0)), 0.0, 0.40)
 	var target := clampi(int(round(ratio * 64.0)), 0, 26)
@@ -462,6 +468,25 @@ static func _shuffle_ints(values: Array[int], rng: RandomNumberGenerator) -> voi
 		var tmp := values[i]
 		values[i] = values[j]
 		values[j] = tmp
+
+static func _finale_board() -> Array:
+	var rows := [
+		"11101110",
+		"11011011",
+		"10100100",
+		"01101001",
+		"00011000",
+		"10000100",
+		"01000010",
+		"00000000",
+	]
+	var board: Array = []
+	for encoded in rows:
+		var row: Array = []
+		for i in range(GRID_SIZE):
+			row.append(encoded[i] == "1")
+		board.append(row)
+	return board
 
 static func _empty_board() -> Array:
 	var board: Array = []
