@@ -214,7 +214,9 @@ func _build_liquid_materials_3d() -> void:
 	# longer allocates new StandardMaterial3D resources every animation frame.
 	liquid_materials_3d.clear()
 	for color in PALETTE:
-		liquid_materials_3d.append(_material_3d(color.lightened(0.025), 0.0, 0.10))
+		var liquid: Color = color.lightened(0.035)
+		liquid.a = 0.97
+		liquid_materials_3d.append(_material_3d(liquid, 0.02, 0.055))
 
 func _build_liquid_segments_3d() -> void:
 	liquid_root_3d = Node3D.new()
@@ -223,10 +225,10 @@ func _build_liquid_segments_3d() -> void:
 	liquid_segments_3d.clear()
 	for slot in range(CAPACITY):
 		var mesh := CylinderMesh.new()
-		mesh.top_radius = 0.49
-		mesh.bottom_radius = 0.49
+		mesh.top_radius = 0.47
+		mesh.bottom_radius = 0.47
 		mesh.height = 0.60
-		mesh.radial_segments = 20
+		mesh.radial_segments = 28
 		mesh.cap_top = true
 		mesh.cap_bottom = true
 		var segment := MeshInstance3D.new()
@@ -238,14 +240,14 @@ func _build_liquid_segments_3d() -> void:
 
 func _build_liquid_meniscus_3d() -> void:
 	var mesh := SphereMesh.new()
-	mesh.radius = 0.49
-	mesh.height = 0.98
-	mesh.radial_segments = 24
-	mesh.rings = 8
+	mesh.radius = 0.47
+	mesh.height = 0.94
+	mesh.radial_segments = 32
+	mesh.rings = 10
 	liquid_meniscus_3d = MeshInstance3D.new()
 	liquid_meniscus_3d.name = "LiquidMeniscus3D"
 	liquid_meniscus_3d.mesh = mesh
-	liquid_meniscus_3d.scale = Vector3(1.0, 0.11, 1.0)
+	liquid_meniscus_3d.scale = Vector3(1.0, 0.085, 1.0)
 	liquid_meniscus_3d.visible = false
 	liquid_root_3d.add_child(liquid_meniscus_3d)
 
