@@ -223,13 +223,13 @@ func _build_liquid_segments_3d() -> void:
 func _build_liquid_meniscus_3d() -> void:
 	var mesh := SphereMesh.new()
 	mesh.radius = 0.49
-	mesh.height = 0.16
+	mesh.height = 0.98
 	mesh.radial_segments = 24
 	mesh.rings = 8
 	liquid_meniscus_3d = MeshInstance3D.new()
 	liquid_meniscus_3d.name = "LiquidMeniscus3D"
 	liquid_meniscus_3d.mesh = mesh
-	liquid_meniscus_3d.scale = Vector3(1.0, 0.34, 1.0)
+	liquid_meniscus_3d.scale = Vector3(1.0, 0.11, 1.0)
 	liquid_meniscus_3d.visible = false
 	liquid_root_3d.add_child(liquid_meniscus_3d)
 
