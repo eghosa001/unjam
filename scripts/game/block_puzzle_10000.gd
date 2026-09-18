@@ -1,6 +1,7 @@
 extends "res://scripts/game/block_puzzle_final_polish.gd"
 
 const Progression = preload("res://scripts/core/block_puzzle_progression.gd")
+const CampaignGenerator = preload("res://scripts/core/block_puzzle_campaign_generator.gd")
 
 # Fixed-orientation campaign library. The first five shapes remain flexible;
 # higher tiers progressively unlock space-demanding polyominoes.
@@ -42,6 +43,7 @@ const TIER_POOLS := {
 }
 
 var campaign_profile: Dictionary = {}
+var campaign_plan: Dictionary = {}
 var campaign_move_limit := -1
 var campaign_failed := false
 
@@ -67,6 +69,9 @@ func difficulty() -> String:
 func level_config() -> Dictionary:
 	if daily_mode:
 		return super.level_config()
+	var target_score_value := int(_profile().get("target_score", 100))
+	var target_lines_value := int(_profile().get("target_lines", 2))
+	var par_value := int(_profile().get("par", 18))
 	# Preserve the deliberately fast onboarding contract already proven by the
 	# production tests: the first ten levels teach, then campaign math takes over.
 	if level_number <= 10:
@@ -74,18 +79,32 @@ func level_config() -> Dictionary:
 		var lines := [2, 2, 3, 3, 3, 4, 4, 4, 5, 5]
 		var pars := [18, 18, 20, 20, 21, 22, 22, 23, 24, 24]
 		var i := clampi(level_number - 1, 0, 9)
-		return {"target_score": scores[i], "target_lines": lines[i], "par": pars[i]}
-	var p := _profile()
-	return {
-		"target_score": int(p.get("target_score", 100)),
-		"target_lines": int(p.get("target_lines", 2)),
-		"par": int(p.get("par", 18)),
-	}
+		target_score_value = scores[i]
+		target_lines_value = lines[i]
+		par_value = pars[i]
+	var proof_moves := int((campaign_plan.get("metadata", {}) as Dictionary).get("proof_moves", 0))
+	if proof_moves > 0:
+		par_value = maxi(par_value, proof_moves)
+	return {"target_score": target_score_value, "target_lines": target_lines_value, "par": par_value}
 
 func load_level() -> void:
 	campaign_profile = Progression.profile(level_number)
-	campaign_move_limit = int(campaign_profile.get("move_limit", -1))
+	campaign_plan = {}
 	campaign_failed = false
+	if not daily_mode:
+		var generation_profile := campaign_profile.duplicate(true)
+		if level_number <= 10:
+			var opening := level_config()
+			generation_profile["target_score"] = int(opening.get("target_score", 100))
+			generation_profile["target_lines"] = int(opening.get("target_lines", 2))
+		campaign_plan = CampaignGenerator.generate(generation_profile)
+		if campaign_plan.is_empty():
+			push_error("Block Puzzle campaign generator produced no proof for level %d" % level_number)
+	var proof_moves := int((campaign_plan.get("metadata", {}) as Dictionary).get("proof_moves", 0))
+	campaign_move_limit = int(campaign_profile.get("move_limit", -1))
+	if campaign_move_limit > 0 and proof_moves > 0:
+		var margin := 3 if level_number <= 5000 else (2 if level_number < 9000 else 1)
+		campaign_move_limit = maxi(campaign_move_limit, proof_moves + margin)
 
 	var checkpoint := MultiGameManager.checkpoint(GAME_ID)
 	var restoring := (
@@ -99,7 +118,7 @@ func load_level() -> void:
 		return
 
 	if not restoring:
-		_apply_campaign_prefill()
+		_apply_campaign_plan_board()
 		piece_batch = 0
 		refill_pieces()
 		render()
@@ -117,26 +136,18 @@ func refill_pieces() -> void:
 	pieces.clear()
 	piece_colors.clear()
 	piece_batch += 1
-	var tray_rng := RandomNumberGenerator.new()
-	tray_rng.seed = int(_profile().get("seed", level_number * 104729)) + piece_batch * 99991
-	var tier := int(_profile().get("piece_tier", 1))
-	var pool: Array = (TIER_POOLS.get(tier, TIER_POOLS[1]) as Array).duplicate()
-	var flex_pool := [0, 1, 2, 3, 4]
-	var flex_slot := tray_rng.randi_range(0, 2)
-
-	for i in range(3):
-		var shape_index: int
-		if i == flex_slot:
-			shape_index = int(flex_pool[tray_rng.randi_range(0, flex_pool.size() - 1)])
-		else:
-			var start_index := 0
-			if tier >= 4:
-				start_index = int(floor(float(pool.size()) * 0.35))
-			elif tier >= 2:
-				start_index = int(floor(float(pool.size()) * 0.20))
-			shape_index = int(pool[tray_rng.randi_range(start_index, pool.size() - 1)])
+	var trays: Array = campaign_plan.get("trays", [])
+	var tray_index := piece_batch - 1
+	if tray_index < 0 or tray_index >= trays.size():
+		selected_piece = -1
+		return
+	var tray: Array = trays[tray_index]
+	var color_rng := RandomNumberGenerator.new()
+	color_rng.seed = int(_profile().get("seed", level_number * 104729)) + piece_batch * 99991
+	for raw_index in tray:
+		var shape_index := clampi(int(raw_index), 0, CAMPAIGN_SHAPES.size() - 1)
 		pieces.append(CAMPAIGN_SHAPES[shape_index].duplicate())
-		piece_colors.append(COLOR_PALETTE[tray_rng.randi_range(0, COLOR_PALETTE.size() - 1)])
+		piece_colors.append(COLOR_PALETTE[color_rng.randi_range(0, COLOR_PALETTE.size() - 1)])
 	selected_piece = -1
 
 func render() -> void:
@@ -268,87 +279,52 @@ func complete_level() -> void:
 			"piece_tier": int(_profile().get("piece_tier", 1)),
 			"planning_horizon": int(_profile().get("planning_horizon", 1)),
 			"milestone": String(_profile().get("milestone", "normal")),
-			"move_limited": campaign_move_limit > 0
+			"move_limited": campaign_move_limit > 0,
+			"proof_moves": int((campaign_plan.get("metadata", {}) as Dictionary).get("proof_moves", 0)),
+			"constructive_verified": bool((campaign_plan.get("metadata", {}) as Dictionary).get("verified_constructive", false))
 		})
 	super.complete_level()
 
 func campaign_profile_for_level(level: int) -> Dictionary:
 	return Progression.profile(level)
 
+func campaign_plan_for_level(level: int) -> Dictionary:
+	var p := Progression.profile(level)
+	if level <= 10:
+		var scores := [100, 130, 165, 190, 220, 255, 285, 315, 350, 390]
+		var lines := [2, 2, 3, 3, 3, 4, 4, 4, 5, 5]
+		var i := clampi(level - 1, 0, 9)
+		p["target_score"] = scores[i]
+		p["target_lines"] = lines[i]
+	return CampaignGenerator.generate(p)
+
 func deterministic_tray_signature(level: int, batch: int) -> String:
-	var old_level := level_number
-	var old_profile := campaign_profile
-	var old_batch := piece_batch
-	var old_pieces := pieces.duplicate(true)
-	var old_colors := piece_colors.duplicate(true)
-	var old_selected := selected_piece
-	level_number = clampi(level, 1, Progression.MAX_LEVEL)
-	campaign_profile = Progression.profile(level_number)
-	piece_batch = maxi(0, batch - 1)
-	refill_pieces()
-	var signature_parts: PackedStringArray = []
-	for shape in pieces:
-		var cells_text: PackedStringArray = []
-		for raw in shape:
-			var p := _as_point(raw)
-			cells_text.append("%d:%d" % [p.x, p.y])
-		signature_parts.append(",".join(cells_text))
-	var signature := "|".join(signature_parts)
-	level_number = old_level
-	campaign_profile = old_profile
-	piece_batch = old_batch
-	pieces = old_pieces
-	piece_colors = old_colors
-	selected_piece = old_selected
-	return signature
+	var plan := campaign_plan_for_level(clampi(level, 1, Progression.MAX_LEVEL))
+	var trays: Array = plan.get("trays", [])
+	var tray_index := maxi(0, batch - 1)
+	if tray_index >= trays.size():
+		return ""
+	var parts: PackedStringArray = []
+	for raw_index in (trays[tray_index] as Array):
+		parts.append(str(int(raw_index)))
+	return ",".join(parts)
 
 func _profile() -> Dictionary:
 	if campaign_profile.is_empty() or int(campaign_profile.get("level_id", -1)) != level_number:
 		campaign_profile = Progression.profile(level_number)
 	return campaign_profile
 
-func _apply_campaign_prefill() -> void:
-	var ratio := float(_profile().get("initial_occupancy", 0.0))
-	var target := clampi(int(round(ratio * float(GRID_SIZE * GRID_SIZE))), 0, 26)
-	if target <= 0:
+func _apply_campaign_plan_board() -> void:
+	var initial: Array = campaign_plan.get("initial_cells", [])
+	if initial.size() != GRID_SIZE:
 		return
-
-	var board_rng := RandomNumberGenerator.new()
-	board_rng.seed = int(_profile().get("seed", level_number * 104729)) + 31337
-	var reserve_x := board_rng.randi_range(1, GRID_SIZE - 4)
-	var reserve_y := board_rng.randi_range(1, GRID_SIZE - 4)
-	var candidates: Array[Vector2i] = []
 	for y in range(GRID_SIZE):
-		for x in range(GRID_SIZE):
-			if x >= reserve_x and x < reserve_x + 3 and y >= reserve_y and y < reserve_y + 3:
-				continue
-			candidates.append(Vector2i(x, y))
-	_shuffle_points(candidates, board_rng)
-
-	var row_load: Array[int] = []
-	var col_load: Array[int] = []
-	for _i in range(GRID_SIZE):
-		row_load.append(0)
-		col_load.append(0)
-
-	var placed := 0
-	for point in candidates:
-		if placed >= target:
-			break
-		if row_load[point.y] >= 6 or col_load[point.x] >= 6:
+		var row: Array = initial[y]
+		if row.size() != GRID_SIZE:
 			continue
-		cells[point.y][point.x] = true
-		cell_colors[point.y][point.x] = COLOR_PALETTE[board_rng.randi_range(0, COLOR_PALETTE.size() - 1)]
-		row_load[point.y] += 1
-		col_load[point.x] += 1
-		placed += 1
-
-func _shuffle_points(values: Array[Vector2i], random: RandomNumberGenerator) -> void:
-	for i in range(values.size() - 1, 0, -1):
-		var j := random.randi_range(0, i)
-		var tmp := values[i]
-		values[i] = values[j]
-		values[j] = tmp
+		for x in range(GRID_SIZE):
+			cells[y][x] = bool(row[x])
+			cell_colors[y][x] = COLOR_PALETTE[posmod(x * 7 + y * 11 + level_number, COLOR_PALETTE.size())] if bool(row[x]) else Color.TRANSPARENT
 
 func _fail_campaign(reason: String) -> void:
 	campaign_failed = true
