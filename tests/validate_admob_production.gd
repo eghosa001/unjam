@@ -21,6 +21,11 @@ func run() -> void:
 	expect_true(String(ProjectSettings.get_setting("monetization/admob_rewarded_unit_id", "")) == EXPECTED_REWARDED, "production rewarded ad unit ID missing")
 	expect_true(String(ProjectSettings.get_setting("monetization/admob_interstitial_unit_id", "")) == EXPECTED_INTERSTITIAL, "production interstitial ad unit ID missing")
 
+	var export_source := FileAccess.get_file_as_string("res://export_presets.cfg")
+	expect_true('permissions/internet=true' in export_source, "Android INTERNET permission missing from export preset")
+	expect_true('permissions/access_network_state=true' in export_source, "Android ACCESS_NETWORK_STATE permission missing from export preset")
+	expect_true('com.google.android.gms.permission.AD_ID' in export_source, "Android AD_ID permission missing from export preset")
+
 	var config_script := load("res://scripts/systems/admob_config.gd")
 	expect_true(config_script != null, "AdMob config helper missing")
 	if config_script != null:
@@ -43,10 +48,14 @@ func run() -> void:
 		expect_true("addons/admob/android/bin" in installer, "AdMob native Android dependency destination missing")
 		expect_true("cat > addons/unjam_admob_provider.gd" not in installer, "installer must not overwrite the maintained provider adapter")
 
-	expect_true(FileAccess.file_exists("res://docs/app-ads.txt"), "app-ads.txt missing")
+	expect_true(FileAccess.file_exists("res://app-ads.txt"), "root app-ads.txt missing")
+	if FileAccess.file_exists("res://app-ads.txt"):
+		var root_app_ads := FileAccess.get_file_as_string("res://app-ads.txt")
+		expect_true("google.com, pub-7517898921176341, DIRECT, f08c47fec0942fa0" in root_app_ads, "root app-ads.txt publisher entry incorrect")
+	expect_true(FileAccess.file_exists("res://docs/app-ads.txt"), "docs app-ads.txt mirror missing")
 	if FileAccess.file_exists("res://docs/app-ads.txt"):
 		var app_ads := FileAccess.get_file_as_string("res://docs/app-ads.txt")
-		expect_true("google.com, pub-7517898921176341, DIRECT, f08c47fec0942fa0" in app_ads, "app-ads.txt publisher entry incorrect")
+		expect_true("google.com, pub-7517898921176341, DIRECT, f08c47fec0942fa0" in app_ads, "docs app-ads.txt publisher entry incorrect")
 
 	expect_true(ResourceLoader.exists("res://addons/unjam_admob_provider.gd"), "UNJAM AdMob provider adapter missing")
 	var provider_script := load("res://addons/unjam_admob_provider.gd")

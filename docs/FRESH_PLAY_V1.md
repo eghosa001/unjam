@@ -5,7 +5,7 @@ This repository is configured for a replacement Google Play listing starting at 
 ## Owner-controlled setup
 
 1. Create the replacement app in Google Play Console.
-2. Keep package `com.eghosa.unjam` only if Play accepts it for the replacement listing. If Play rejects the package as already used, stop before configuring billing/AdMob and update the package in the repository first.
+2. Keep package `com.eghosa.unjamgam` only if Play accepts it for the replacement listing. If Play rejects the package as already used, stop before configuring billing/AdMob and update the package in the repository first.
 3. Use Play App Signing and generate a new RSA upload key for this replacement app.
 4. Add the following GitHub Actions secrets:
    - `UNJAM_ANDROID_KEYSTORE_BASE64`: base64 of the new upload keystore file.
