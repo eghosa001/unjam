@@ -159,7 +159,7 @@ func _add_game_card(parent: VBoxContainer, game_id: String) -> void:
 	var compact := viewport_size.x <= 1120.0
 	var short := viewport_size.y < 1100.0
 	var medium_height := viewport_size.y < 1500.0
-	var card_height := 226.0 if short else (420.0 if medium_height else 486.0)
+	var card_height := 226.0 if short else (400.0 if medium_height else (450.0 if viewport_size.y <= 2000.0 else 486.0))
 	if not compact:
 		card_height = clampf(viewport_size.y * 0.22, 330.0, 500.0)
 	var panel := PanelContainer.new()
