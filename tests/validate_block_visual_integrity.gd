@@ -138,6 +138,17 @@ func _validate_runtime(viewport_size: Vector2i) -> bool:
 		game.queue_free()
 		return _fail("Floating preview remained after tray visual disposal")
 
+	# Reconfiguring a tray slot with a new brick must synchronously kill the old
+	# floating preview before the replacement piece can draw.
+	first.call("_show_touch_preview", screen_point)
+	if _drag_preview_count(effects) != 1:
+		game.queue_free()
+		return _fail("Preview fixture failed before tray reconfiguration")
+	first.configure([Vector2i(0, 0), Vector2i(0, 1)], false, Color("39df63"), 0)
+	if _drag_preview_count(effects) != 0:
+		game.queue_free()
+		return _fail("Old floating brick survived a tray piece replacement")
+
 	game.target_rows_pending.clear()
 	game.target_rows_pending.append(2)
 	game.target_cols_pending.clear()
