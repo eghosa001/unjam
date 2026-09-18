@@ -1,6 +1,7 @@
 extends Node
 
 const WaterSortProgression = preload("res://scripts/core/water_sort_progression.gd")
+const BlockPuzzleProgression = preload("res://scripts/core/block_puzzle_progression.gd")
 
 const CAMPAIGN_LEVELS := 10000
 const LEVELS_PER_WORLD := 100
@@ -10,6 +11,7 @@ const GAME_NAMES := {"rescue_rush":"RESCUE RUSH","water_sort":"WATER SORT","bloc
 const TASK_REWARD := 75
 const DAILY_HISTORY_LIMIT := 45
 const WATER_WORLD_BADGE_SPAN_VERSION := 2
+const BLOCK_WORLD_BADGE_SPAN_VERSION := 2
 
 func _ready()->void: ensure_state()
 
@@ -26,6 +28,7 @@ func ensure_state()->void:
    if not g.get(k,[]) is Array:g[k]=[]
   g["daily_completed"]=_bounded_date_history(g.get("daily_completed",[]) as Array)
   if id=="water_sort":g=_migrate_water_sort_world_badges(g)
+  elif id=="block_puzzle":g=_migrate_block_puzzle_world_badges(g)
   g["daily_last_date"]=String(g.get("daily_last_date","")); all[id]=g
  SaveManager.data["game_progress"]=all
  if not SaveManager.data.get("multi_active_runs",{}) is Dictionary:SaveManager.data["multi_active_runs"]={}
@@ -44,6 +47,17 @@ func _migrate_water_sort_world_badges(g:Dictionary)->Dictionary:
  for world in range(1,earned_worlds+1):migrated.append(str(world))
  g["world_badges"]=migrated
  g["world_badge_span_version"]=WATER_WORLD_BADGE_SPAN_VERSION
+ return g
+
+func _migrate_block_puzzle_world_badges(g:Dictionary)->Dictionary:
+ if int(g.get("world_badge_span_version",0))>=BLOCK_WORLD_BADGE_SPAN_VERSION:return g
+ var highest:=clampi(int(g.get("highest_level",1)),1,CAMPAIGN_LEVELS+1)
+ var completed_level:=clampi(highest-1,0,CAMPAIGN_LEVELS)
+ var earned_worlds:=clampi(int(completed_level/BlockPuzzleProgression.WORLD_SIZE),0,BlockPuzzleProgression.WORLD_COUNT)
+ var migrated:Array=[]
+ for world in range(1,earned_worlds+1):migrated.append(str(world))
+ g["world_badges"]=migrated
+ g["world_badge_span_version"]=BLOCK_WORLD_BADGE_SPAN_VERSION
  return g
 
 func display_name(id:String)->String:return String(GAME_NAMES.get(id,id.to_upper()))
@@ -75,16 +89,18 @@ func world_for_level(n:int)->int:return clampi(int((maxi(1,n)-1)/LEVELS_PER_WORL
 func first_level_in_world(w:int)->int:return (clampi(w,1,WORLD_COUNT)-1)*LEVELS_PER_WORLD+1
 func last_level_in_world(w:int)->int:return mini(first_level_in_world(w)+LEVELS_PER_WORLD-1,CAMPAIGN_LEVELS)
 func highest_unlocked_world(id:String)->int:return world_for_level(highest_level(id))
-func world_count_for(id:String)->int:return WaterSortProgression.WORLD_COUNT if id=="water_sort" else WORLD_COUNT
-func world_for_game_level(id:String,n:int)->int:return int(WaterSortProgression.profile(n).get("world",1)) if id=="water_sort" else world_for_level(n)
+func world_count_for(id:String)->int:return WaterSortProgression.WORLD_COUNT if id=="water_sort" else (BlockPuzzleProgression.WORLD_COUNT if id=="block_puzzle" else WORLD_COUNT)
+func world_for_game_level(id:String,n:int)->int:return int(WaterSortProgression.profile(n).get("world",1)) if id=="water_sort" else (int(BlockPuzzleProgression.profile(n).get("world",1)) if id=="block_puzzle" else world_for_level(n))
 func first_level_in_game_world(id:String,w:int)->int:
  if id=="water_sort":return (clampi(w,1,WaterSortProgression.WORLD_COUNT)-1)*WaterSortProgression.WORLD_SIZE+1
+ if id=="block_puzzle":return (clampi(w,1,BlockPuzzleProgression.WORLD_COUNT)-1)*BlockPuzzleProgression.WORLD_SIZE+1
  return first_level_in_world(w)
 func last_level_in_game_world(id:String,w:int)->int:
  if id=="water_sort":return mini(first_level_in_game_world(id,w)+WaterSortProgression.WORLD_SIZE-1,CAMPAIGN_LEVELS)
+ if id=="block_puzzle":return mini(first_level_in_game_world(id,w)+BlockPuzzleProgression.WORLD_SIZE-1,CAMPAIGN_LEVELS)
  return last_level_in_world(w)
 func highest_unlocked_game_world(id:String)->int:return world_for_game_level(id,highest_level(id))
-func difficulty_for_game(id:String,n:int)->String:return String(WaterSortProgression.profile(n).get("difficulty_label","normal-hard")) if id=="water_sort" else difficulty_for_level(n)
+func difficulty_for_game(id:String,n:int)->String:return String(WaterSortProgression.profile(n).get("difficulty_label","normal-hard")) if id=="water_sort" else (String(BlockPuzzleProgression.profile(n).get("difficulty_class","normal")) if id=="block_puzzle" else difficulty_for_level(n))
 func world_name(id:String,w:int)->String:
  var themes={"rescue_rush":["Garden Escape","Locks & Keys","Chain Reaction","Blast Lab","Linked Zone","Chaos Rescue","Portal Works","Crystal Circuit","Neon Factory","Rescue Nexus"],"water_sort":["Color Springs","Glass Garden","Prism Bay","Liquid Lab","Neon Pour","Spectrum Works","Crystal Flow","Chromatic Vault","Aurora Mix","Master Distillery"],"block_puzzle":["Starter Grid","Brick Yard","Shape Works","Line Factory","Pattern City","Block Forge","Grid Nexus","Combo Circuit","Master Matrix","Infinite Board"]}
  var set:Array=themes[id];var base:=String(set[(w-1)%set.size()]);var chapter:=int((w-1)/set.size())+1;return "%s %d"%[base,chapter] if chapter>1 else base
@@ -185,7 +201,7 @@ func complete_level(id:String,n:int,stars:int,coin_reward:=25)->Dictionary:
  if stars==3 and previous<3:g["perfect_clears"]=int(g.get("perfect_clears",0))+1;g["perfect_streak"]=int(g.get("perfect_streak",0))+1;g["best_perfect_streak"]=maxi(int(g.get("best_perfect_streak",0)),int(g.get("perfect_streak",0)))
  elif first:g["perfect_streak"]=0
  if first and n%10==0:var c:Array=g.get("milestone_chests",[]);c.append(key);g["milestone_chests"]=c;rewards.milestone=true;SaveManager.data["coins"]=int(SaveManager.data.get("coins",0))+100
- var badge_span:=WaterSortProgression.WORLD_SIZE if id=="water_sort" else LEVELS_PER_WORLD
+ var badge_span:=WaterSortProgression.WORLD_SIZE if id=="water_sort" else (BlockPuzzleProgression.WORLD_SIZE if id=="block_puzzle" else LEVELS_PER_WORLD)
  if first and n%badge_span==0:
   var wk:=str(int(n/badge_span));var b:Array=g.get("world_badges",[])
   if wk not in b:b.append(wk);g["world_badges"]=b;rewards.world_badge=true;SaveManager.data["coins"]=int(SaveManager.data.get("coins",0))+250;SaveManager.data["prestige_points"]=int(SaveManager.data.get("prestige_points",0))+5
