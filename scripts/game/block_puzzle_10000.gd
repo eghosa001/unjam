@@ -25,6 +25,13 @@ var required_double_clears := 0
 var double_clear_progress := 0
 var booster_buttons: Dictionary = {}
 var booster_uses := {"undo": 0, "hammer": 0, "shuffle": 0, "rotate": 0}
+var attempt_number := 1
+var attempt_restarts := 0
+var attempt_started_msec := 0
+var attempt_hint_uses := 0
+var attempt_level_marker := -1
+var attempt_mode_marker := ""
+var attempt_closed := false
 
 func build_ui() -> void:
 	super.build_ui()
@@ -113,6 +120,14 @@ func level_config() -> Dictionary:
 
 func load_level() -> void:
 	play_mode = play_mode if play_mode in VALID_MODES else "campaign"
+	if attempt_level_marker != level_number or attempt_mode_marker != play_mode:
+		attempt_number = 1
+		attempt_restarts = 0
+		attempt_level_marker = level_number
+		attempt_mode_marker = play_mode
+	attempt_started_msec = Time.get_ticks_msec()
+	attempt_hint_uses = 0
+	attempt_closed = false
 	campaign_profile = _mode_profile()
 	campaign_plan = {}
 	campaign_failed = false
@@ -168,6 +183,14 @@ func load_level() -> void:
 		if play_mode in ["campaign", "extreme"] and ((campaign_move_limit > 0 and placements >= campaign_move_limit and not reached_goal()) or not any_move_available()):
 			campaign_failed = true
 		render()
+	AnalyticsManager.track("block_puzzle_attempt_started", {
+		"level": level_number,
+		"mode": play_mode,
+		"daily": daily_mode,
+		"attempt": attempt_number,
+		"restarts": attempt_restarts,
+		"difficulty_score": int(campaign_profile.get("difficulty_score", -1))
+	})
 
 func refill_pieces() -> void:
 	if daily_mode:
@@ -556,6 +579,19 @@ func _refresh_booster_buttons() -> void:
 	if rotate_button != null:
 		rotate_button.disabled = rotate_button.disabled or selected_piece < 0 or selected_piece >= pieces.size() or pieces[selected_piece].is_empty()
 
+func show_hint() -> void:
+	if completed or _clear_transition_active:
+		return
+	attempt_hint_uses += 1
+	AnalyticsManager.track("block_puzzle_attempt_hint", {
+		"level": level_number,
+		"mode": play_mode,
+		"attempt": attempt_number,
+		"hint_number": attempt_hint_uses,
+		"placements": placements
+	})
+	await super.show_hint()
+
 func undo_move() -> void:
 	if daily_mode:
 		super.undo_move()
@@ -584,10 +620,16 @@ func undo_move() -> void:
 	_save_checkpoint()
 
 func restart_level() -> void:
+	if not completed:
+		_track_attempt_end("restart", false)
+	attempt_number += 1
+	attempt_restarts += 1
 	campaign_failed = false
 	super.restart_level()
 
 func complete_level() -> void:
+	if not attempt_closed:
+		_track_attempt_end("complete", true)
 	if not daily_mode and play_mode == "extreme":
 		_complete_extreme_mode()
 		return
@@ -759,6 +801,8 @@ func _record_mode_best() -> void:
 	SaveManager.save()
 
 func _quit() -> void:
+	if not completed:
+		_track_attempt_end("quit", false)
 	_record_mode_best()
 	super._quit()
 
@@ -904,6 +948,33 @@ func _restore_checkpoint() -> void:
 	var saved_boosters = checkpoint.get("booster_uses", null)
 	if saved_boosters is Dictionary:
 		booster_uses = (saved_boosters as Dictionary).duplicate(true)
+
+func _track_attempt_end(outcome: String, success: bool) -> void:
+	if attempt_closed:
+		return
+	attempt_closed = true
+	var elapsed_seconds := maxf(0.0, float(Time.get_ticks_msec() - attempt_started_msec) / 1000.0)
+	var booster_total := 0
+	for value in booster_uses.values():
+		booster_total += int(value)
+	AnalyticsManager.track("block_puzzle_attempt_finished", {
+		"level": level_number,
+		"mode": play_mode,
+		"daily": daily_mode,
+		"attempt": attempt_number,
+		"first_attempt_success": success and attempt_number == 1,
+		"success": success,
+		"outcome": outcome,
+		"moves": placements,
+		"lines": lines_cleared,
+		"score": score,
+		"restarts": attempt_restarts,
+		"hint_uses": attempt_hint_uses,
+		"booster_uses": booster_total,
+		"booster_breakdown": booster_uses.duplicate(true),
+		"elapsed_seconds": elapsed_seconds,
+		"difficulty_score": int(campaign_profile.get("difficulty_score", -1))
+	})
 
 func _fail_campaign(reason: String) -> void:
 	campaign_failed = true
