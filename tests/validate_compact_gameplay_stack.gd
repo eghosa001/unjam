@@ -50,8 +50,11 @@ func _check_scene(path: String, holder_name: String, failures: Array[String]) ->
 		var visual := holder.get_child(0) as Control
 		if visual.get_global_rect().end.y > holder.get_global_rect().end.y + 1.0:
 			failures.append("%s gameplay visual spills below its holder" % path)
-		if path.ends_with("WaterSort.tscn") and visual.size_flags_vertical != Control.SIZE_EXPAND_FILL:
-			failures.append("Water Sort stage leaves avoidable vertical dead space inside its holder")
+		if path.ends_with("WaterSort.tscn"):
+			if visual.size_flags_vertical == Control.SIZE_EXPAND_FILL:
+				failures.append("Water Sort stage still stretches into an oversized flat board instead of wrapping its tubes")
+			if visual.get_global_rect().size.y > holder.get_global_rect().size.y + 1.0:
+				failures.append("Water Sort stage is taller than its responsive holder")
 	var actions := scene.find_child("CompactGameActions", true, false) as Control
 	if actions == null:
 		failures.append("%s missing CompactGameActions" % path)
@@ -107,6 +110,10 @@ func _check_selector(viewport_size: Vector2i, failures: Array[String]) -> void:
 				continue
 			if not card.get_global_rect().encloses(art.get_global_rect()):
 				failures.append("Game selector %s artwork escapes its card at %s" % [game_id, str(viewport_size)])
+		if viewport_size.y <= 960:
+			var last_card := main.find_child("GameCard3D_block_puzzle", true, false) as Control
+			if last_card == null or last_card.get_global_rect().end.y > scroll_rect.end.y + 2.0:
+				failures.append("Compact game selector still hides the third game card behind scrolling/navigation at %s" % str(viewport_size))
 		print("SELECTOR_COMPOSITION physical=%s logical=%s header=%s scroll=%s nav=%s" % [str(viewport_size), str(logical_size), str(header_rect), str(scroll_rect), str(nav_rect)])
 	main.queue_free()
 	await process_frame
