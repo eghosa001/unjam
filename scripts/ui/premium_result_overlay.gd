@@ -46,6 +46,7 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	z_index = 1000
 	_build()
+	call_deferred("_celebrate")
 
 func _build() -> void:
 	var viewport_size := get_viewport_rect().size
@@ -134,6 +135,13 @@ func _build() -> void:
 		tw.parallel().tween_property(star_panel, "scale", Vector2(1.10, 1.10), 0.14)
 		tw.tween_property(star_panel, "scale", Vector2.ONE, 0.09)
 
+	var performance := Label.new()
+	performance.text = "✦  PERFORMANCE"
+	performance.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	performance.add_theme_font_size_override("font_size", 16 if compact else 18)
+	Unjam3DTheme.label_3d(performance, accent, Color.WHITE, 2)
+	box.add_child(performance)
+
 	var stats_panel := PanelContainer.new()
 	stats_panel.custom_minimum_size = Vector2(0, 118 if compact else 144)
 	stats_panel.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("edf9ff"), 28, Color("a9e2ff"), 2, 6))
@@ -168,7 +176,7 @@ func _build() -> void:
 	box.add_child(continue_button)
 
 	var hint := Label.new()
-	hint.text = "ONE MOVE CLOSER TO A BRIGHTER DAY ♥"
+	hint.text = "NEXT PUZZLE READY  •  KEEP THE MOMENTUM ♥"
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint.add_theme_font_size_override("font_size", 16 if compact else 18)
 	Unjam3DTheme.label_3d(hint, Color("557a98"), Color.WHITE, 2)
@@ -181,3 +189,11 @@ func _build() -> void:
 	tween.tween_property(card, "modulate:a", 1.0, 0.10)
 	tween.parallel().tween_property(card, "scale", Vector2(1.025, 1.025), 0.23)
 	tween.tween_property(card, "scale", Vector2.ONE, 0.09)
+
+
+func _celebrate() -> void:
+	if not is_inside_tree():
+		return
+	var center := get_viewport_rect().size * 0.5
+	PremiumVisuals.screen_flash(accent, 0.08)
+	PremiumVisuals.burst(center + Vector2(0, -110), accent, 26)
