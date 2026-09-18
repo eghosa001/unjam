@@ -47,6 +47,9 @@ func _run() -> void:
 				var exact := Solver.find_solution(candidate_profile, candidate, 50000)
 				if not bool(exact.get("solved", false)):
 					continue
+				var quality := Auditor.quality_gate(candidate_profile, candidate)
+				if not bool(quality.get("accepted", false)):
+					continue
 				var candidate_signature := Auditor.canonical_signature(candidate_profile, candidate)
 				if signatures.has(candidate_signature):
 					continue
@@ -54,6 +57,7 @@ func _run() -> void:
 				profile = candidate_profile
 				signature = candidate_signature
 				solver_report = exact
+				plan["quality_gate"] = quality.duplicate(true)
 				break
 			if plan.is_empty():
 				return _fail("Could not build unique proof-backed Block Puzzle level %d" % level)
@@ -69,6 +73,10 @@ func _run() -> void:
 			metadata["level_hash"] = signature
 			metadata["solution_moves"] = int(solver_report.get("moves", metadata.get("proof_moves", 0)))
 			metadata["solver_nodes"] = int(solver_report.get("nodes", 0))
+			var quality_meta: Dictionary = plan.get("quality_gate", {})
+			metadata["quality_forced_ratio"] = float(quality_meta.get("forced_ratio", 0.0))
+			metadata["quality_average_choices"] = float(quality_meta.get("average_legal_choices", 0.0))
+			metadata["quality_unique_shapes"] = int(quality_meta.get("unique_shapes", 0))
 			var three_star := maxi(int(profile.get("par", 18)), int(metadata.get("proof_moves", 0)))
 			metadata["three_star_limit"] = three_star
 			metadata["two_star_limit"] = three_star + 6
