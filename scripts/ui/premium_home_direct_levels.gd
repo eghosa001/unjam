@@ -41,7 +41,7 @@ func _make_game_strip(parent: VBoxContainer) -> void:
 	strip.name = "HomeGameStrip"
 	var viewport_size := get_viewport_rect().size
 	var short_phone := viewport_size.y < 1100.0
-	strip.custom_minimum_size = Vector2(0, 74 if short_phone else (118 if viewport_size.y >= 1400.0 else 96))
+	strip.custom_minimum_size = Vector2(0, 96 if short_phone else (136 if viewport_size.y >= 1400.0 else 118))
 	strip.alignment = BoxContainer.ALIGNMENT_CENTER
 	strip.add_theme_constant_override("separation", 10)
 	parent.add_child(strip)
@@ -56,9 +56,9 @@ func _make_game_strip(parent: VBoxContainer) -> void:
 		var button := Button.new()
 		button.name = "HomeDirect_%s" % game_id
 		button.text = String(entry[1])
-		button.custom_minimum_size = Vector2(0, 66 if short_phone else 90)
+		button.custom_minimum_size = Vector2(0, 90 if short_phone else 108)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.add_theme_font_size_override("font_size", 15 if viewport_size.x < 600.0 else 18)
+		button.add_theme_font_size_override("font_size", 20 if viewport_size.x < 600.0 else 24)
 		button.tooltip_text = "Open %s levels" % MultiGameManager.display_name(game_id)
 		var button_accent := accent.darkened(0.18) if _theme_mode() == "dark" else accent
 		Unjam3DTheme.gloss_button(button, button_accent, true, 24)
