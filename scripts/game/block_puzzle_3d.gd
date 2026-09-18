@@ -72,7 +72,7 @@ func build_ui() -> void:
 	var back := Button.new()
 	back.name = "BackAction"
 	back.text = "←"
-	back.custom_minimum_size = Vector2(58, 54) if compact else Vector2(84, 70)
+	back.custom_minimum_size = Vector2(74, 68) if compact else Vector2(92, 78)
 	back.add_theme_font_size_override("font_size", 28 if compact else 34)
 	Unjam3DTheme.gloss_button(back, Unjam3DTheme.PURPLE_DARK, true, 24)
 	back.pressed.connect(_quit)
@@ -82,14 +82,14 @@ func build_ui() -> void:
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	title_label.name = "BlockTitle"
-	title_label.add_theme_font_size_override("font_size", 22 if compact else 31)
+	title_label.add_theme_font_size_override("font_size", 27 if compact else 33)
 	title_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	Unjam3DTheme.label_3d(title_label, Color.WHITE, Unjam3DTheme.NAVY, 5)
 	header.add_child(title_label)
 	var retry := Button.new()
 	retry.name = "RetryAction"
 	retry.text = "↻"
-	retry.custom_minimum_size = Vector2(58, 54) if compact else Vector2(84, 70)
+	retry.custom_minimum_size = Vector2(74, 68) if compact else Vector2(92, 78)
 	retry.add_theme_font_size_override("font_size", 28 if compact else 34)
 	Unjam3DTheme.gloss_button(retry, Unjam3DTheme.PURPLE_DARK, true, 24)
 	retry.pressed.connect(restart_level)
@@ -97,8 +97,8 @@ func build_ui() -> void:
 	var hint := Button.new()
 	hint.name = "HintAction"
 	hint.text = "HINT"
-	hint.custom_minimum_size = Vector2(96, 54) if compact else Vector2(174, 78)
-	hint.add_theme_font_size_override("font_size", 14 if compact else 17)
+	hint.custom_minimum_size = Vector2(120, 68) if compact else Vector2(184, 82)
+	hint.add_theme_font_size_override("font_size", 22 if compact else 24)
 	Unjam3DTheme.gloss_button(hint, Unjam3DTheme.PURPLE, true, 22)
 	# HintManager owns cost deduction, solver gating, rewarded recovery and the
 	# live wallet label. Leaving this button unbound here prevents a free hint path.
@@ -122,7 +122,7 @@ func build_ui() -> void:
 	goal_label.name = "BlockGoal"
 	goal_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	goal_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	goal_label.add_theme_font_size_override("font_size", 15 if compact else 20)
+	goal_label.add_theme_font_size_override("font_size", 20 if compact else 23)
 	Unjam3DTheme.label_3d(goal_label, Color("fff0ff"), Color("541285"), 3)
 	score_box.add_child(goal_label)
 
@@ -136,7 +136,7 @@ func build_ui() -> void:
 	objective_label.text = "▦  DRAG • PLACE • CLEAR"
 	objective_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	objective_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	objective_label.add_theme_font_size_override("font_size", 16 if compact else 21)
+	objective_label.add_theme_font_size_override("font_size", 20 if compact else 23)
 	Unjam3DTheme.label_3d(objective_label, Unjam3DTheme.NAVY, Color.WHITE, 2)
 	objective.add_child(objective_label)
 
@@ -188,7 +188,7 @@ func build_ui() -> void:
 	tray_title.name = "BlockTrayTitle"
 	tray_title.text = "DRAG A BLOCK ONTO THE BOARD"
 	tray_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	tray_title.add_theme_font_size_override("font_size", 15 if compact else 20)
+	tray_title.add_theme_font_size_override("font_size", 20 if compact else 22)
 	Unjam3DTheme.label_3d(tray_title, Unjam3DTheme.PURPLE_DARK, Color.WHITE, 2)
 	tray_box.add_child(tray_title)
 	piece_row = HBoxContainer.new()
@@ -202,7 +202,7 @@ func build_ui() -> void:
 	status_label.name = "BlockStatus"
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	status_label.add_theme_font_size_override("font_size", 16 if compact else 21)
+	status_label.add_theme_font_size_override("font_size", 20 if compact else 23)
 	status_label.custom_minimum_size = Vector2(0, 26 if compact else 32)
 	Unjam3DTheme.label_3d(status_label, Color.WHITE, Unjam3DTheme.PURPLE_DARK, 3)
 	root.add_child(status_label)
@@ -210,7 +210,7 @@ func build_ui() -> void:
 	hint_label.name = "BlockHint"
 	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	hint_label.add_theme_font_size_override("font_size", 13 if compact else 16)
+	hint_label.add_theme_font_size_override("font_size", 19 if compact else 21)
 	hint_label.custom_minimum_size = Vector2(0, 24 if compact else 28)
 	Unjam3DTheme.label_3d(hint_label, Color.WHITE, Unjam3DTheme.NAVY, 3)
 	root.add_child(hint_label)
