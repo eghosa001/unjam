@@ -351,6 +351,7 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 	stream.default_color = Color(liquid, 0.96)
 	stream.begin_cap_mode = Line2D.LINE_CAP_ROUND
 	stream.end_cap_mode = Line2D.LINE_CAP_ROUND
+	stream.joint_mode = Line2D.LINE_JOINT_ROUND
 	stream.antialiased = true
 	stream.z_index = 670
 	add_child(stream)
@@ -359,6 +360,7 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 	shine.default_color = Color(liquid.lightened(0.42), 0.90)
 	shine.begin_cap_mode = Line2D.LINE_CAP_ROUND
 	shine.end_cap_mode = Line2D.LINE_CAP_ROUND
+	shine.joint_mode = Line2D.LINE_JOINT_ROUND
 	shine.antialiased = true
 	shine.z_index = 671
 	add_child(shine)
@@ -386,6 +388,13 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 		flow.parallel().tween_property(receiver, "scale", Vector2(1.025, 0.988), pour_time * 0.45)
 	await flow.finished
 	FeedbackManager.pour_land()
+	if not is_instance_valid(ghost) or not is_instance_valid(receiver):
+		if is_instance_valid(stream):
+			stream.queue_free()
+		if is_instance_valid(shine):
+			shine.queue_free()
+		_abort_pour_visuals(ghost, receiver, source_index, target_index)
+		return
 
 	if is_instance_valid(stream) and is_instance_valid(shine):
 		var fade_time := MotionSystem.duration(&"micro")
@@ -399,7 +408,7 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 	if is_instance_valid(shine):
 		shine.queue_free()
 	if is_instance_valid(receiver):
-		PremiumVisuals.burst(_control_point(receiver, Vector2(receiver.size.x * 0.5, 34.0)), liquid, 9)
+		PremiumVisuals.burst(_control_point(receiver, _receiver_rim_local(receiver)), liquid, 9)
 
 	if not is_instance_valid(ghost):
 		_abort_pour_visuals(ghost, receiver, source_index, target_index)
