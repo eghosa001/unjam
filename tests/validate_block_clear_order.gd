@@ -7,8 +7,14 @@ func _initialize() -> void:
 		quit(1)
 		return
 	var scene_source := scene_file.get_as_text()
-	if not scene_source.contains("block_puzzle_final_polish.gd") or scene_source.contains("block_puzzle_3d_clear.gd"):
-		push_error("Block Puzzle active scene is not using the final polish wrapper or still references the retired clear layer")
+	if not scene_source.contains("block_puzzle_10000.gd") or scene_source.contains("block_puzzle_3d_clear.gd"):
+		push_error("Block Puzzle active scene is not using the 10,000-level controller or still references the retired clear layer")
+		quit(1)
+		return
+
+	var campaign_file := FileAccess.open("res://scripts/game/block_puzzle_10000.gd", FileAccess.READ)
+	if campaign_file == null or not campaign_file.get_as_text().contains('extends "res://scripts/game/block_puzzle_final_polish.gd"'):
+		push_error("Block Puzzle campaign controller no longer inherits the final polish wrapper")
 		quit(1)
 		return
 
