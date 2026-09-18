@@ -39,12 +39,12 @@ func build_ui() -> void:
 			var existing := child as Button
 			existing.custom_minimum_size.x = 0
 			existing.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			existing.add_theme_font_size_override("font_size", 17)
+			existing.add_theme_font_size_override("font_size", 26)
 	var add_tube := Button.new()
 	add_tube.name = "AddTubeAction"
 	add_tube.custom_minimum_size = Vector2(0, 116)
 	add_tube.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	add_tube.add_theme_font_size_override("font_size", 16)
+	add_tube.add_theme_font_size_override("font_size", 25)
 	Unjam3DTheme.gloss_button(add_tube, Unjam3DTheme.WATER, true, 24)
 	add_tube.pressed.connect(add_extra_tube)
 	actions.add_child(add_tube)
