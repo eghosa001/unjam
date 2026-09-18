@@ -296,7 +296,7 @@ func _collection_game_card(game_id: String) -> PanelContainer:
 	margin.add_child(box)
 	var title := _label(MultiGameManager.display_name(game_id), 23, "title", accent)
 	box.add_child(title)
-	box.add_child(_label("LEVEL %d  •  WORLD %d" % [highest, MultiGameManager.world_for_level(highest)], 17, "body", accent))
+	box.add_child(_label("LEVEL %d  •  WORLD %d / %d" % [highest, MultiGameManager.world_for_game_level(game_id, highest), MultiGameManager.world_count_for(game_id)], 17, "body", accent))
 	box.add_child(_label("★ %d   •   PERFECT %d" % [MultiGameManager.total_stars(game_id), int(progress.get("perfect_clears", 0))], 16, "muted", accent))
 	box.add_child(_label("%d levels cleared  •  %d badges" % [int(progress.get("levels_completed", 0)), (progress.get("world_badges", []) as Array).size()], 15, "muted", accent))
 	var open := _button("OPEN LEVELS", Vector2(0, 68), "primary", game_id)
