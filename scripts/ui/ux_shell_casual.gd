@@ -6,15 +6,16 @@ func _main() -> Node:
 		return parent
 	return super._main()
 
-func _on_node_added(node: Node) -> void:
-	super._on_node_added(node)
-	if node is Control and String(node.name) in ["BlockTray", "CompactGameFeedback", "CompactGameActions", "CompactProgressStrip"]:
-		call_deferred("_compact_shell")
-
 func _build_shell() -> void:
 	super._build_shell()
+	if not get_tree().node_added.is_connected(_on_casual_layout_node_added):
+		get_tree().node_added.connect(_on_casual_layout_node_added)
 	_compact_shell()
 	_restyle_3d_shell()
+
+func _on_casual_layout_node_added(node: Node) -> void:
+	if node is Control and String(node.name) in ["BlockTray", "CompactGameFeedback", "CompactGameActions", "CompactProgressStrip"]:
+		call_deferred("_compact_shell")
 
 func _after_shell_sync() -> void:
 	_compact_shell()
