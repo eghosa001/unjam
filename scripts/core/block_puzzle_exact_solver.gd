@@ -182,7 +182,7 @@ static func _dfs(state: Dictionary, depth_left: int, path: Array[Dictionary], co
 	var tray := _current_tray(state, plan)
 	if tray.is_empty():
 		return false
-	var key := _state_key(state)
+	var key := _state_key(state, profile)
 	var memo: Dictionary = context["memo"]
 	if memo.has(key) and int(memo[key]) >= depth_left:
 		return false
@@ -242,12 +242,18 @@ static func _ordered_candidates(state: Dictionary, tray: Array, context: Diction
 	var preferred_shape := int(proof_shapes[move_number]) if move_number < proof_shapes.size() else -1
 	var preferred_origin := int(proof_origins[move_number]) if move_number < proof_origins.size() else -1
 
+	var seen_shapes := {}
 	for slot in range(tray.size()):
 		if (used_mask & (1 << slot)) != 0:
 			continue
 		var shape_index := int(tray[slot])
 		if shape_index < 0 or shape_index >= Generator.SHAPES.size():
 			continue
+		# Identical unused tray pieces are interchangeable. Exploring every slot
+		# produces equivalent positions with different bit identities.
+		if seen_shapes.has(shape_index):
+			continue
+		seen_shapes[shape_index] = true
 		for origin in _legal_origins(int(state["board"]), int(state["preserve_mask"]), shape_index):
 			var priority := 0
 			if shape_index == preferred_shape and origin == preferred_origin:
@@ -410,22 +416,26 @@ static func _clear_data(board: int) -> Dictionary:
 			clear_mask |= col_mask
 	return {"mask": clear_mask, "count": rows.size() + cols.size(), "rows": rows, "cols": cols}
 
-static func _state_key(state: Dictionary) -> String:
+static func _state_key(state: Dictionary, profile: Dictionary) -> String:
 	var layers: Dictionary = state["special_layers"]
 	var encoded_layers: Array[String] = []
 	for raw_idx in layers.keys():
 		encoded_layers.append("%d:%d" % [int(raw_idx), int(layers[raw_idx])])
 	encoded_layers.sort()
-	return "%d/%d/%d/%d/%d/%d/%d/%d/%d/%d/%s" % [
+	# Progress beyond a completed score/line requirement has no effect on future
+	# legality, so canonicalize it in the transposition key.
+	var score_key := mini(int(state["score"]), maxi(0, int(profile.get("target_score", 0))))
+	var lines_key := mini(int(state["lines"]), maxi(0, int(profile.get("target_lines", 0))))
+	var double_key := mini(int(state["double_progress"]), int(state["double_required"]))
+	return "%d/%d/%d/%d/%d/%d/%d/%d/%d/%s" % [
 		int(state["board"]),
 		int(state["tray_index"]),
 		int(state["used_mask"]),
-		int(state["score"]),
-		int(state["lines"]),
-		int(state["combo"]),
+		score_key,
+		lines_key,
 		int(state["rows_pending"]),
 		int(state["cols_pending"]),
-		int(state["double_progress"]),
+		double_key,
 		int(state.get("moves_remaining", -1)),
 		",".join(encoded_layers),
 	]
