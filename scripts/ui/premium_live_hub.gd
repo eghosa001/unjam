@@ -10,6 +10,7 @@ const DESCRIPTIONS := {
 
 var built := false
 var last_theme := ""
+var _responsive_rebuild_pending := false
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -21,8 +22,24 @@ func _ready() -> void:
 		main.surface_changed.connect(_on_surface_changed)
 	if not EconomyManager.balance_changed.is_connected(_on_economy_balance_changed):
 		EconomyManager.balance_changed.connect(_on_economy_balance_changed)
+	var viewport := get_viewport()
+	if viewport != null and not viewport.size_changed.is_connected(_queue_responsive_rebuild):
+		viewport.size_changed.connect(_queue_responsive_rebuild)
 	var initial_surface := String(main.get("current_surface")) if main != null and main.get("current_surface") != null else "home"
 	call_deferred("_on_surface_changed", initial_surface)
+
+func _queue_responsive_rebuild() -> void:
+	if not visible or _responsive_rebuild_pending:
+		return
+	_responsive_rebuild_pending = true
+	call_deferred("_rebuild_for_viewport")
+
+func _rebuild_for_viewport() -> void:
+	_responsive_rebuild_pending = false
+	if not visible or not is_inside_tree():
+		return
+	_build()
+	_ensure_wallet_shop_action()
 
 func _on_surface_changed(surface: String) -> void:
 	visible = surface == "live"
