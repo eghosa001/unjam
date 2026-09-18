@@ -14,6 +14,8 @@ var clear_echo := 0.0
 var clear_phase := 0.0
 var clear_color := Color("8b7cf6")
 var footprint_phase := 0.0
+var special_kind := ""
+var special_layers := 0
 
 func configure(value: bool, preview_value: bool = false, color: Color = Color("4f7cff"), index: int = 0) -> void:
 	var old := occupied
@@ -32,6 +34,11 @@ func configure(value: bool, preview_value: bool = false, color: Color = Color("4
 		elif old and not occupied:
 			clear_color = old_accent
 			_play_clear()
+	queue_redraw()
+
+func set_special(kind: String = "", layers: int = 0) -> void:
+	special_kind = kind
+	special_layers = maxi(0, layers)
 	queue_redraw()
 
 func _ready() -> void:
