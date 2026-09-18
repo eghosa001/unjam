@@ -88,7 +88,7 @@ func build_ui() -> void:
 	objective.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color(0.96, 0.99, 1.0, 0.94), 25, Color("82dbff"), 2, 6))
 	root.add_child(objective)
 	var objective_label := Label.new()
-	objective_label.text = "🐥  CLEAR THE LANE • FREE THE CHICK"
+	objective_label.text = "🐥  " + objective_instruction().to_upper()
 	objective_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	objective_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	objective_label.add_theme_font_size_override("font_size", 20)
