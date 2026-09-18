@@ -3,6 +3,11 @@ import { FieldValue, Firestore } from '@google-cloud/firestore';
 export function createFirestoreLedger({ db = new Firestore(), collectionName = 'play_purchase_claims' } = {}) {
   const collection = db.collection(collectionName);
   return {
+    async probeAccess() {
+      await collection.doc('__unjam_readiness_probe__').get();
+      return true;
+    },
+
     async issue({ tokenHash, packageName, productId, claimId, purchase }) {
       const ref = collection.doc(tokenHash);
       return db.runTransaction(async (tx) => {
