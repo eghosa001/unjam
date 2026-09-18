@@ -189,8 +189,32 @@ static func _dfs(state: Dictionary, depth_left: int, path: Array[Dictionary], co
 	memo[key] = depth_left
 	context["memo"] = memo
 
+	# Try the constructive proof branch first. It is still validated through the
+	# exact 64-bit state transition; this avoids enumerating every alternative on
+	# all 10,000 release levels when a verified winning branch is already known.
+	var move_number := int(state["moves"])
+	var proof_shapes: Array = context["proof_shapes"]
+	var proof_origins: Array = context["proof_origins"]
+	if move_number < proof_shapes.size() and move_number < proof_origins.size():
+		var proof_shape := int(proof_shapes[move_number])
+		var proof_origin := int(proof_origins[move_number])
+		var proof_slot := _find_unused_shape_slot(tray, int(state["used_mask"]), proof_shape)
+		if proof_slot >= 0:
+			var proof_next := _apply_move(state, proof_shape, proof_slot, proof_origin, profile, plan)
+			if not proof_next.is_empty():
+				var proof_candidate := {"slot": proof_slot, "shape": proof_shape, "origin": proof_origin, "priority": 1000000}
+				path.append(proof_candidate)
+				if _dfs(proof_next, depth_left - 1, path, context):
+					return true
+				path.pop_back()
+				if bool(context["cutoff"]):
+					return false
+
 	var candidates := _ordered_candidates(state, tray, context)
 	for candidate in candidates:
+		if move_number < proof_shapes.size() and move_number < proof_origins.size():
+			if int(candidate["shape"]) == int(proof_shapes[move_number]) and int(candidate["origin"]) == int(proof_origins[move_number]):
+				continue
 		var next := _apply_move(
 			state,
 			int(candidate["shape"]),
