@@ -59,8 +59,13 @@ func _run() -> void:
 	if Progression.canonical_signature(canonical_a) != Progression.canonical_signature(canonical_b):
 		return _fail("Color-renamed duplicate boards are not canonicalized")
 
-	var original_save := SaveManager.data.duplicate(true)
-	SaveManager.data["game_progress"] = {
+	var save_manager := root.get_node_or_null("/root/SaveManager")
+	var multi_game_manager := root.get_node_or_null("/root/MultiGameManager")
+	if save_manager == null or multi_game_manager == null:
+		return _fail("Required progression autoloads are unavailable")
+	var original_save: Dictionary = (save_manager.get("data") as Dictionary).duplicate(true)
+	var synthetic_save: Dictionary = original_save.duplicate(true)
+	synthetic_save["game_progress"] = {
 		"water_sort": {
 			"highest_level": 1451,
 			"stars": {},
@@ -76,15 +81,16 @@ func _run() -> void:
 			"achievements": []
 		}
 	}
-	MultiGameManager.ensure_state()
-	var migrated := MultiGameManager.progress_for("water_sort")
+	save_manager.set("data", synthetic_save)
+	multi_game_manager.call("ensure_state")
+	var migrated: Dictionary = multi_game_manager.call("progress_for", "water_sort")
 	var migrated_badges: Array = migrated.get("world_badges", [])
 	var migration_ok := (
 		int(migrated.get("highest_level", 0)) == 1451
 		and int(migrated.get("world_badge_span_version", 0)) == 2
 		and migrated_badges == ["1", "2"]
 	)
-	SaveManager.data = original_save
+	save_manager.set("data", original_save)
 	if not migration_ok:
 		return _fail("Legacy Water Sort 100-level world badges did not migrate cleanly to 500-level worlds")
 
