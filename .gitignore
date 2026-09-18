@@ -15,3 +15,5 @@ local.properties
 key.properties
 secrets.properties
 google-services.json
+
+gha-creds-*.json

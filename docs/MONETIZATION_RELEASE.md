@@ -49,18 +49,30 @@ CI installs:
 
 - Poing Godot AdMob v5.1.0
 - Poing Android native template for Godot 4.7.2
-- Godot Google Play Billing 3.3.0
+- Godot Google Play Billing 3.3.0 (Google Play Billing Library 9.1.0)
 
 The install entrypoint is `tools/install_monetization_plugins.sh`.
 
 ## Before public monetized release
 
 1. Publish/link the Google Play listing in AdMob.
-2. Make `app-ads.txt` publicly reachable from the Play listing developer website domain.
+2. Make `app-ads.txt` publicly reachable at the **hostname root** AdMob will crawl from the Play listing developer website. A project subpath is not enough.
 3. Complete AdMob/UMP privacy messaging configuration.
 4. Set Play Console `Contains ads` accurately.
 5. Complete Data Safety and target-audience declarations based on the actual shipped SDKs and audience.
 6. Create the five product IDs above in Play Console if in-app purchases will ship.
-7. Deploy `backend/play-verifier/` to a dedicated Google Cloud project, grant its runtime service account Purchases API access to the replacement UNJAM app in Play Console, and set `UNJAM_PURCHASE_VERIFICATION_URL=https://<cloud-run-host>/verify`.
+7. Deploy `backend/play-verifier/` to a dedicated Google Cloud project. The deploy script verifies `/healthz` and prints the runtime service-account email and exact `/verify` endpoint. After Play Console access is granted, `/readiness` must also return HTTP 200 with both Firestore and Google Play dependencies ready. Grant that runtime service account Purchases API access to UNJAM in Play Console and set `UNJAM_PURCHASE_VERIFICATION_URL=https://<cloud-run-host>/verify`.
 8. Use Play license testers and Google test ads during development; do not click live ads during testing.
 9. Require a green exact-commit CI run plus Internal testing before Production.
+
+
+## Automated live readiness
+
+Before a production AAB can be built, `.github/workflows/android-release.yml` now runs `tools/check_live_monetization.py`. It blocks release unless:
+
+- the Cloud Run purchase verifier returns `{"ok": true}` from `/healthz` **and** `/readiness` proves both Firestore access and Google Play Purchases API authorization;
+- the developer website configured in repository variable `UNJAM_DEVELOPER_WEBSITE_URL` serves the exact AdMob seller record from its **hostname root** `/app-ads.txt`;
+- the configured privacy policy URL is publicly reachable and identifies UNJAM;
+- the Android package remains `com.eghosa.unjamgam`.
+
+The standalone **Monetization Readiness** workflow runs the same checks without building an APK/AAB.

@@ -61,6 +61,10 @@ func run() -> void:
 	if FileAccess.file_exists("res://tools/install_monetization_plugins.sh"):
 		var installer := FileAccess.get_file_as_string("res://tools/install_monetization_plugins.sh")
 		expect_true("godot-google-play-billing" in installer and "3.3.0" in installer, "Google Play Billing 3.3.0 installer missing")
+		expect_true("addons/GodotGooglePlayBilling/bin/debug/GodotGooglePlayBilling-debug.aar" in installer, "Billing installer does not require debug native AAR")
+		expect_true("addons/GodotGooglePlayBilling/bin/release/GodotGooglePlayBilling-release.aar" in installer, "Billing installer does not require release native AAR")
+	var project_source := FileAccess.get_file_as_string("res://project.godot")
+	expect_true("res://addons/GodotGooglePlayBilling/plugin.cfg" in project_source, "Google Play Billing export plugin is not enabled in project.godot")
 	if failures.is_empty():
 		print("BILLING PRODUCTION INTEGRATION VALIDATION PASS")
 		quit(0)

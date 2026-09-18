@@ -29,9 +29,13 @@ def main() -> int:
     root = Path(__file__).resolve().parents[1]
     workflow_path = root / '.github' / 'workflows' / 'android-release.yml'
     preset_path = root / 'export_presets.cfg'
+    project_path = root / 'project.godot'
+    live_checker_path = root / 'tools' / 'check_live_monetization.py'
 
     workflow = workflow_path.read_text(encoding='utf-8')
     preset = preset_path.read_text(encoding='utf-8')
+    project = project_path.read_text(encoding='utf-8')
+    live_checker = live_checker_path.read_text(encoding='utf-8')
 
     errors: list[str] = []
 
@@ -49,6 +53,8 @@ def main() -> int:
         'backend/play-verifier',
         'npm test',
         'https://*/verify',
+        'UNJAM_DEVELOPER_WEBSITE_URL',
+        'check_live_monetization.py',
     ):
         if token not in workflow:
             errors.append(f'missing release workflow contract token: {token}')
@@ -61,9 +67,29 @@ def main() -> int:
         if test_name in workflow:
             errors.append(f'obsolete release test still referenced: {test_name}')
 
-    for token in (EXPECTED_PACKAGE, EXPECTED_VERSION_CODE, EXPECTED_VERSION_NAME, EXPECTED_BACKEND_EXCLUSION):
+    for token in (
+        EXPECTED_PACKAGE,
+        EXPECTED_VERSION_CODE,
+        EXPECTED_VERSION_NAME,
+        EXPECTED_BACKEND_EXCLUSION,
+        'permissions/internet=true',
+        'permissions/access_network_state=true',
+        'com.google.android.gms.permission.AD_ID',
+    ):
         if token not in preset:
-            errors.append(f'export preset does not preserve fresh-app contract: {token}')
+            errors.append(f'export preset does not preserve fresh-app/monetization contract: {token}')
+
+    for token in (
+        'res://addons/admob/plugin.cfg',
+        'res://addons/GodotGooglePlayBilling/plugin.cfg',
+        'ca-app-pub-7517898921176341~1892369383',
+    ):
+        if token not in project:
+            errors.append(f'project.godot missing monetization contract token: {token}')
+
+    for token in ('/healthz', '/readiness', 'google_play', 'firestore'):
+        if token not in live_checker:
+            errors.append(f'live monetization checker missing dependency contract token: {token}')
 
     if errors:
         print('Release contract validation failed:')
