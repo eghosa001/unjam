@@ -4,6 +4,13 @@ const Progression = preload("res://scripts/core/block_puzzle_progression.gd")
 const CampaignGenerator = preload("res://scripts/core/block_puzzle_campaign_generator.gd")
 const LevelPack = preload("res://scripts/core/block_puzzle_level_pack.gd")
 
+const BOOSTER_COSTS := {
+	"undo": 20,
+	"hammer": 45,
+	"shuffle": 40,
+	"rotate": 30,
+}
+
 var campaign_profile: Dictionary = {}
 var campaign_plan: Dictionary = {}
 var campaign_move_limit := -1
@@ -13,6 +20,47 @@ var target_rows_pending: Array[int] = []
 var target_cols_pending: Array[int] = []
 var required_double_clears := 0
 var double_clear_progress := 0
+var booster_buttons: Dictionary = {}
+var booster_uses := {"undo": 0, "hammer": 0, "shuffle": 0, "rotate": 0}
+
+func build_ui() -> void:
+	super.build_ui()
+	_add_booster_bar()
+
+func _add_booster_bar() -> void:
+	if status_label == null:
+		return
+	var root := status_label.get_parent() as VBoxContainer
+	if root == null:
+		return
+	var existing := root.get_node_or_null("CampaignBoosters")
+	if existing != null:
+		return
+	var bar := HBoxContainer.new()
+	bar.name = "CampaignBoosters"
+	bar.custom_minimum_size = Vector2(0, 58)
+	bar.alignment = BoxContainer.ALIGNMENT_CENTER
+	bar.add_theme_constant_override("separation", 8)
+	for spec in [
+		["undo", "UNDO", "↶"],
+		["hammer", "HAMMER", "◆"],
+		["shuffle", "SHUFFLE", "⟳"],
+		["rotate", "ROTATE", "↻"],
+	]:
+		var key := String(spec[0])
+		var button := Button.new()
+		button.name = "Booster_%s" % key.capitalize()
+		button.text = "%s %s\n◈ %d" % [String(spec[2]), String(spec[1]), int(BOOSTER_COSTS[key])]
+		button.custom_minimum_size = Vector2(0, 56)
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.add_theme_font_size_override("font_size", 13)
+		Unjam3DTheme.gloss_button(button, Unjam3DTheme.PURPLE_DARK, false, 18)
+		button.pressed.connect(_use_booster.bind(key))
+		bar.add_child(button)
+		booster_buttons[key] = button
+	root.add_child(bar)
+	root.move_child(bar, maxi(0, status_label.get_index()))
+	_refresh_booster_buttons()
 
 func block_progression_band(level: int = level_number) -> String:
 	# Preserve the public band contract used by existing tests/UI while the
@@ -58,6 +106,7 @@ func load_level() -> void:
 	campaign_profile = Progression.profile(level_number)
 	campaign_plan = {}
 	campaign_failed = false
+	booster_uses = {"undo": 0, "hammer": 0, "shuffle": 0, "rotate": 0}
 	if not daily_mode:
 		var generation_profile := campaign_profile.duplicate(true)
 		if level_number <= 10:
@@ -132,6 +181,7 @@ func render() -> void:
 		move_text = "  •  MOVES %d/%d" % [placements, campaign_move_limit]
 	goal_label.text = "LINES %d/%d  •  TARGET %d%s%s" % [lines_cleared, target_lines, target_score, move_text, _objective_status_text()]
 	_render_special_cells()
+	_refresh_booster_buttons()
 	if campaign_failed:
 		hint_label.text = "This attempt is blocked. Undo a mistake or restart the same deterministic puzzle."
 	elif milestone != "normal":
@@ -261,6 +311,203 @@ func place_selected(origin: Vector2i) -> void:
 	selected_piece = -1
 	render()
 	_save_checkpoint()
+
+func _use_booster(kind: String) -> void:
+	if completed or _clear_transition_active:
+		return
+	match kind:
+		"undo":
+			if history.is_empty():
+				_booster_unavailable("Nothing to undo")
+				return
+			if not _spend_booster(kind):
+				return
+			booster_uses[kind] = int(booster_uses.get(kind, 0)) + 1
+			undo_move()
+		"hammer":
+			var target := _hammer_target()
+			if target < 0:
+				_booster_unavailable("Hammer has no useful target")
+				return
+			if not _spend_booster(kind):
+				return
+			booster_uses[kind] = int(booster_uses.get(kind, 0)) + 1
+			_apply_hammer(target)
+		"shuffle":
+			if not _spend_booster(kind):
+				return
+			booster_uses[kind] = int(booster_uses.get(kind, 0)) + 1
+			_apply_shuffle()
+		"rotate":
+			var index := selected_piece
+			if index < 0 or index >= pieces.size() or pieces[index].is_empty():
+				_booster_unavailable("Select a block to rotate")
+				return
+			var rotated := _rotated_shape(pieces[index])
+			if _shape_signature(rotated) == _shape_signature(pieces[index]) or not _shape_has_legal_move(rotated):
+				_booster_unavailable("That block has no useful rotation")
+				return
+			if not _spend_booster(kind):
+				return
+			booster_uses[kind] = int(booster_uses.get(kind, 0)) + 1
+			pieces[index] = rotated
+			render_pieces()
+			render()
+			_save_checkpoint()
+		_:
+			return
+	AnalyticsManager.track("block_puzzle_booster_used", {
+		"level": level_number,
+		"booster": kind,
+		"cost": int(BOOSTER_COSTS.get(kind, 0)),
+		"uses": int(booster_uses.get(kind, 0))
+	})
+
+func _spend_booster(kind: String) -> bool:
+	var cost := int(BOOSTER_COSTS.get(kind, 0))
+	if cost <= 0:
+		return true
+	if EconomyManager.spend(cost, "block_puzzle_booster_%s" % kind, {"level": level_number}):
+		return true
+	_booster_unavailable("Need %d coins for %s" % [cost, kind.capitalize()])
+	return false
+
+func _booster_unavailable(message: String) -> void:
+	status_label.text = message
+	FeedbackManager.blocked()
+	_refresh_booster_buttons()
+
+func _hammer_target() -> int:
+	for key in campaign_special_cells.keys():
+		var special: Dictionary = campaign_special_cells[key]
+		if String(special.get("kind", "")) in ["crate", "ice"] and int(special.get("layers", 0)) > 0:
+			return int(key)
+	var best := -1
+	var best_fits := -1
+	for y in range(GRID_SIZE):
+		for x in range(GRID_SIZE):
+			if not bool(cells[y][x]):
+				continue
+			var idx := y * GRID_SIZE + x
+			var special: Dictionary = campaign_special_cells.get(str(idx), {})
+			if String(special.get("kind", "")) == "preserve":
+				continue
+			var old := bool(cells[y][x])
+			cells[y][x] = false
+			var fits := _current_legal_fit_count(32)
+			cells[y][x] = old
+			if fits > best_fits:
+				best_fits = fits
+				best = idx
+	return best
+
+func _apply_hammer(index: int) -> void:
+	var key := str(index)
+	var special: Dictionary = campaign_special_cells.get(key, {})
+	var kind := String(special.get("kind", ""))
+	if kind in ["crate", "ice"]:
+		var layers := maxi(0, int(special.get("layers", 1)) - 1)
+		if layers <= 0:
+			campaign_special_cells.erase(key)
+			if kind == "crate":
+				var y := int(index / GRID_SIZE)
+				var x := index % GRID_SIZE
+				cells[y][x] = false
+				cell_colors[y][x] = Color.TRANSPARENT
+		else:
+			special["layers"] = layers
+			campaign_special_cells[key] = special
+	else:
+		var y := int(index / GRID_SIZE)
+		var x := index % GRID_SIZE
+		cells[y][x] = false
+		cell_colors[y][x] = Color.TRANSPARENT
+	campaign_failed = false
+	selected_piece = -1
+	status_label.text = "Hammer opened space"
+	FeedbackManager.line_clear(1)
+	render()
+	_save_checkpoint()
+
+func _apply_shuffle() -> void:
+	var random := RandomNumberGenerator.new()
+	random.seed = int(_profile().get("seed", level_number * 104729)) + placements * 131071 + int(booster_uses.get("shuffle", 0)) * 524287
+	var tier := clampi(int(_profile().get("piece_tier", 1)), 1, 6)
+	var pool: Array = (CampaignGenerator.TIER_POOLS.get(tier, CampaignGenerator.TIER_POOLS[1]) as Array)
+	pieces.clear()
+	piece_colors.clear()
+	pieces.append(CampaignGenerator.SHAPES[0].duplicate())
+	piece_colors.append(COLOR_PALETTE[random.randi_range(0, COLOR_PALETTE.size() - 1)])
+	for _i in range(2):
+		var shape_index := int(pool[random.randi_range(0, pool.size() - 1)])
+		var shape: Array = CampaignGenerator.SHAPES[shape_index].duplicate()
+		if not _shape_has_legal_move(shape):
+			shape = CampaignGenerator.SHAPES[random.randi_range(1, 2)].duplicate()
+		pieces.append(shape)
+		piece_colors.append(COLOR_PALETTE[random.randi_range(0, COLOR_PALETTE.size() - 1)])
+	selected_piece = -1
+	campaign_failed = false
+	status_label.text = "Tray shuffled"
+	render()
+	_save_checkpoint()
+
+func _rotated_shape(shape: Array) -> Array:
+	var rotated: Array[Vector2i] = []
+	var min_x := 999
+	var min_y := 999
+	for raw in shape:
+		var p := _as_point(raw)
+		var r := Vector2i(-p.y, p.x)
+		rotated.append(r)
+		min_x = mini(min_x, r.x)
+		min_y = mini(min_y, r.y)
+	var normalized: Array = []
+	for p in rotated:
+		normalized.append(Vector2i(p.x - min_x, p.y - min_y))
+	return normalized
+
+func _shape_signature(shape: Array) -> String:
+	var values: Array[String] = []
+	for raw in shape:
+		var p := _as_point(raw)
+		values.append("%d:%d" % [p.x, p.y])
+	values.sort()
+	return "|".join(values)
+
+func _shape_has_legal_move(shape: Array) -> bool:
+	for y in range(GRID_SIZE):
+		for x in range(GRID_SIZE):
+			if can_place(shape, Vector2i(x, y)):
+				return true
+	return false
+
+func _current_legal_fit_count(cap: int) -> int:
+	var fits := 0
+	for shape in pieces:
+		if (shape as Array).is_empty():
+			continue
+		for y in range(GRID_SIZE):
+			for x in range(GRID_SIZE):
+				if can_place(shape, Vector2i(x, y)):
+					fits += 1
+					if fits >= cap:
+						return fits
+	return fits
+
+func _refresh_booster_buttons() -> void:
+	if booster_buttons.is_empty():
+		return
+	for key in booster_buttons.keys():
+		var button = booster_buttons[key] as Button
+		if button == null or not is_instance_valid(button):
+			continue
+		button.disabled = completed or _clear_transition_active
+	var undo_button = booster_buttons.get("undo") as Button
+	if undo_button != null:
+		undo_button.disabled = undo_button.disabled or history.is_empty()
+	var rotate_button = booster_buttons.get("rotate") as Button
+	if rotate_button != null:
+		rotate_button.disabled = rotate_button.disabled or selected_piece < 0 or selected_piece >= pieces.size() or pieces[selected_piece].is_empty()
 
 func undo_move() -> void:
 	if daily_mode:
@@ -451,6 +698,7 @@ func _save_checkpoint() -> void:
 	checkpoint["required_double_clears"] = required_double_clears
 	checkpoint["double_clear_progress"] = double_clear_progress
 	checkpoint["campaign_failed"] = campaign_failed
+	checkpoint["booster_uses"] = booster_uses.duplicate(true)
 	MultiGameManager.save_checkpoint(GAME_ID, checkpoint)
 
 func _restore_checkpoint() -> void:
@@ -468,6 +716,9 @@ func _restore_checkpoint() -> void:
 	required_double_clears = maxi(0, int(checkpoint.get("required_double_clears", required_double_clears)))
 	double_clear_progress = maxi(0, int(checkpoint.get("double_clear_progress", double_clear_progress)))
 	campaign_failed = bool(checkpoint.get("campaign_failed", false))
+	var saved_boosters = checkpoint.get("booster_uses", null)
+	if saved_boosters is Dictionary:
+		booster_uses = (saved_boosters as Dictionary).duplicate(true)
 
 func _fail_campaign(reason: String) -> void:
 	campaign_failed = true
