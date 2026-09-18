@@ -1,6 +1,7 @@
 extends "res://scripts/ui/ux_shell_premium.gd"
 
 var _cached_help_blocker: Control
+var _help_layout_refresh_pending := false
 
 func _main() -> Node:
 	var parent := get_parent()
@@ -18,14 +19,26 @@ func _build_shell() -> void:
 func _on_casual_layout_node_added(node: Node) -> void:
 	if node is Control and String(node.name) in ["BlockTray", "CompactGameFeedback", "CompactGameActions", "CompactProgressStrip"]:
 		_cached_help_blocker = node as Control
-		call_deferred("_layout_help_button")
+		_queue_help_layout_refresh()
 
-func _process(_delta: float) -> void:
-	if help_button != null and help_button.visible:
-		_layout_help_button()
+func _queue_help_layout_refresh() -> void:
+	if _help_layout_refresh_pending:
+		return
+	_help_layout_refresh_pending = true
+	call_deferred("_refresh_help_after_layout")
+
+func _refresh_help_after_layout() -> void:
+	if not is_inside_tree():
+		_help_layout_refresh_pending = false
+		return
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_help_layout_refresh_pending = false
+	_layout_help_button()
 
 func _after_shell_sync() -> void:
 	_compact_shell()
+	_queue_help_layout_refresh()
 	_restyle_3d_shell()
 
 func _apply_theme() -> void:
@@ -121,16 +134,15 @@ func _restyle_tutorial_children(node: Node) -> void:
 		_restyle_tutorial_children(child)
 
 func _gameplay_help_blocker() -> Control:
+	var main := _main()
+	if main != null:
+		for name in ["BlockTray", "CompactGameFeedback", "CompactGameActions", "CompactProgressStrip"]:
+			var blocker := main.find_child(name, true, false) as Control
+			if blocker != null and blocker.visible and blocker.is_visible_in_tree():
+				_cached_help_blocker = blocker
+				return blocker
 	if _cached_help_blocker != null and is_instance_valid(_cached_help_blocker) 		and _cached_help_blocker.visible and _cached_help_blocker.is_visible_in_tree():
 		return _cached_help_blocker
-	var main := _main()
-	if main == null:
-		return null
-	for name in ["BlockTray", "CompactGameFeedback", "CompactGameActions", "CompactProgressStrip"]:
-		var blocker := main.find_child(name, true, false) as Control
-		if blocker != null and blocker.visible and blocker.is_visible_in_tree():
-			_cached_help_blocker = blocker
-			return blocker
 	_cached_help_blocker = null
 	return null
 
