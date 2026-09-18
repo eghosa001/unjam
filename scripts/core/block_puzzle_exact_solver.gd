@@ -274,7 +274,7 @@ static func _apply_move(
 		return {}
 	if int(tray[slot]) != shape_index:
 		return {}
-	var placement := _placement_mask(shape_index, origin_cell)
+	var placement: Variant = _placement_mask(shape_index, origin_cell)
 	if placement == null:
 		return {}
 	var placement_mask := int(placement)
