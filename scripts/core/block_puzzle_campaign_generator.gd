@@ -64,6 +64,7 @@ static func generate(profile: Dictionary) -> Dictionary:
 	var clear_events := 0
 	var advanced_moves := 0
 	var ambiguity_total := 0.0
+	var proof_events: Array[Dictionary] = []
 
 	while (total_lines < target_lines or score < target_score) and proof_shapes.size() < max_moves:
 		var move := _choose_constructive_move(board, pool, difficulty, desired_delay, since_clear, rng)
@@ -91,6 +92,15 @@ static func generate(profile: Dictionary) -> Dictionary:
 		ambiguity_total += float(move.get("legal_count", 1))
 		proof_shapes.append(shape_index)
 		proof_origins.append(origin.y * GRID_SIZE + origin.x)
+		proof_events.append({
+			"shape": shape_index,
+			"origin": origin.y * GRID_SIZE + origin.x,
+			"placed_indices": (result.get("placed_indices", []) as Array).duplicate(),
+			"rows": (result.get("rows", []) as Array).duplicate(),
+			"cols": (result.get("cols", []) as Array).duplicate(),
+			"cleared_indices": (result.get("cleared_indices", []) as Array).duplicate(),
+			"line_count": cleared,
+		})
 
 	if total_lines < target_lines or score < target_score:
 		return {}
@@ -104,6 +114,7 @@ static func generate(profile: Dictionary) -> Dictionary:
 		trays.append(tray)
 
 	var proof_moves := proof_shapes.size()
+	var special_plan := _build_special_plan(profile, initial_board, proof_events, rng)
 	var average_ambiguity := ambiguity_total / float(maxi(1, proof_moves))
 	var advanced_ratio := float(advanced_moves) / float(maxi(1, proof_moves))
 	var metrics := {
@@ -122,6 +133,8 @@ static func generate(profile: Dictionary) -> Dictionary:
 		"trays": trays,
 		"proof_shapes": proof_shapes,
 		"proof_origins": proof_origins,
+		"proof_events": proof_events,
+		"special_plan": special_plan,
 		"metadata": metrics,
 	}
 
@@ -256,6 +269,7 @@ static func _initial_board(profile: Dictionary, rng: RandomNumberGenerator) -> A
 
 static func _apply(board: Array, shape: Array, origin: Vector2i) -> Dictionary:
 	var next := board.duplicate(true)
+	var placed_indices: Array[int] = []
 	for point in shape:
 		var p: Vector2i = point
 		var x := origin.x + p.x
@@ -263,6 +277,7 @@ static func _apply(board: Array, shape: Array, origin: Vector2i) -> Dictionary:
 		if x < 0 or x >= GRID_SIZE or y < 0 or y >= GRID_SIZE or bool(next[y][x]):
 			return {"legal": false}
 		next[y][x] = true
+		placed_indices.append(y * GRID_SIZE + x)
 
 	var rows: Array[int] = []
 	var cols: Array[int] = []
@@ -282,13 +297,171 @@ static func _apply(board: Array, shape: Array, origin: Vector2i) -> Dictionary:
 				break
 		if full:
 			cols.append(x)
+
+	var cleared_indices: Array[int] = []
 	for y in rows:
 		for x in range(GRID_SIZE):
+			var idx := y * GRID_SIZE + x
+			if idx not in cleared_indices:
+				cleared_indices.append(idx)
 			next[y][x] = false
 	for x in cols:
 		for y in range(GRID_SIZE):
+			var idx := y * GRID_SIZE + x
+			if idx not in cleared_indices:
+				cleared_indices.append(idx)
 			next[y][x] = false
-	return {"legal": true, "board": next, "cleared": rows.size() + cols.size()}
+	return {
+		"legal": true,
+		"board": next,
+		"cleared": rows.size() + cols.size(),
+		"rows": rows,
+		"cols": cols,
+		"cleared_indices": cleared_indices,
+		"placed_indices": placed_indices,
+	}
+
+static func _build_special_plan(
+	profile: Dictionary,
+	initial_board: Array,
+	proof_events: Array[Dictionary],
+	rng: RandomNumberGenerator
+) -> Dictionary:
+	var family := String(profile.get("objective", "score"))
+	var level := int(profile.get("level_id", 1))
+	var cleared_cells: Array[int] = []
+	var cleared_counts := {}
+	var placed_cells: Array[int] = []
+	var cleared_rows: Array[int] = []
+	var cleared_cols: Array[int] = []
+	var double_events := 0
+	for event in proof_events:
+		for raw in (event.get("cleared_indices", []) as Array):
+			var idx := int(raw)
+			if idx not in cleared_cells:
+				cleared_cells.append(idx)
+			cleared_counts[idx] = int(cleared_counts.get(idx, 0)) + 1
+		for raw in (event.get("placed_indices", []) as Array):
+			var idx := int(raw)
+			if idx not in placed_cells:
+				placed_cells.append(idx)
+		for raw in (event.get("rows", []) as Array):
+			var row := int(raw)
+			if row not in cleared_rows:
+				cleared_rows.append(row)
+		for raw in (event.get("cols", []) as Array):
+			var col := int(raw)
+			if col not in cleared_cols:
+				cleared_cols.append(col)
+		if int(event.get("line_count", 0)) >= 2:
+			double_events += 1
+
+	_shuffle_ints(cleared_cells, rng)
+	_shuffle_ints(cleared_rows, rng)
+	_shuffle_ints(cleared_cols, rng)
+
+	var crate_candidates: Array[int] = []
+	for idx in cleared_cells:
+		var y := int(idx / GRID_SIZE)
+		var x := idx % GRID_SIZE
+		if y >= 0 and y < initial_board.size() and x >= 0 and x < (initial_board[y] as Array).size() and bool(initial_board[y][x]):
+			crate_candidates.append(idx)
+	_shuffle_ints(crate_candidates, rng)
+
+	var preserve_candidates: Array[int] = []
+	for idx in range(GRID_SIZE * GRID_SIZE):
+		var y := int(idx / GRID_SIZE)
+		var x := idx % GRID_SIZE
+		if bool(initial_board[y][x]):
+			continue
+		if idx in placed_cells or idx in cleared_cells:
+			continue
+		preserve_candidates.append(idx)
+	_shuffle_ints(preserve_candidates, rng)
+
+	var specials: Array[Dictionary] = []
+	var target_rows: Array[int] = []
+	var target_cols: Array[int] = []
+	var required_double_clears := 0
+	var target_count := clampi(1 + int(level / 2200), 1, 5)
+
+	match family:
+		"clear_columns":
+			target_cols = cleared_cols.slice(0, mini(2, cleared_cols.size()))
+		"row_column":
+			target_rows = cleared_rows.slice(0, mini(1, cleared_rows.size()))
+			target_cols = cleared_cols.slice(0, mini(1, cleared_cols.size()))
+		"double_clear", "combo":
+			required_double_clears = mini(1, double_events)
+		"marked_cells":
+			_add_specials(specials, cleared_cells, "target", target_count, 1)
+		"designated_rows":
+			target_rows = cleared_rows.slice(0, mini(2, cleared_rows.size()))
+		"crates":
+			_add_specials(specials, crate_candidates, "crate", target_count, 1)
+		"ice":
+			_add_specials(specials, cleared_cells, "ice", target_count, 1)
+		"layered_obstacle":
+			var repeated: Array[int] = []
+			for idx in cleared_cells:
+				if int(cleared_counts.get(idx, 0)) >= 2:
+					repeated.append(idx)
+			if repeated.is_empty():
+				_add_specials(specials, cleared_cells, "ice", target_count, 1)
+			else:
+				_add_specials(specials, repeated, "ice", target_count, 2)
+		"preserve_cells":
+			_add_specials(specials, preserve_candidates, "preserve", mini(3, target_count), 1)
+		"dual_objective":
+			_add_specials(specials, cleared_cells, "target", target_count, 1)
+			_add_specials(specials, preserve_candidates, "preserve", mini(2, target_count), 1)
+		"triple_objective":
+			_add_specials(specials, cleared_cells, "ice", target_count, 1)
+			_add_specials(specials, preserve_candidates, "preserve", mini(2, target_count), 1)
+			target_rows = cleared_rows.slice(0, mini(1, cleared_rows.size()))
+		"advanced_conditional":
+			_add_specials(specials, cleared_cells, "ice", target_count, 1)
+			_add_specials(specials, preserve_candidates, "preserve", mini(2, target_count), 1)
+			target_rows = cleared_rows.slice(0, mini(1, cleared_rows.size()))
+			target_cols = cleared_cols.slice(0, mini(1, cleared_cols.size()))
+			required_double_clears = mini(1, double_events)
+
+	return {
+		"family": family,
+		"specials": specials,
+		"target_rows": target_rows,
+		"target_cols": target_cols,
+		"required_double_clears": required_double_clears,
+		"proof_supported": true,
+	}
+
+static func _add_specials(
+	out: Array[Dictionary],
+	candidates: Array[int],
+	kind: String,
+	count: int,
+	layers: int
+) -> void:
+	var added := 0
+	for idx in candidates:
+		if added >= count:
+			break
+		var occupied := false
+		for item in out:
+			if int(item.get("index", -1)) == idx:
+				occupied = true
+				break
+		if occupied:
+			continue
+		out.append({"index": idx, "kind": kind, "layers": layers})
+		added += 1
+
+static func _shuffle_ints(values: Array[int], rng: RandomNumberGenerator) -> void:
+	for i in range(values.size() - 1, 0, -1):
+		var j := rng.randi_range(0, i)
+		var tmp := values[i]
+		values[i] = values[j]
+		values[j] = tmp
 
 static func _empty_board() -> Array:
 	var board: Array = []
