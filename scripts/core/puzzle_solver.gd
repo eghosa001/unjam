@@ -8,12 +8,16 @@ const DIRS := {
 	"right": Vector2i.RIGHT
 }
 
+static func _empty_int_path() -> Array[int]:
+	var empty: Array[int] = []
+	return empty
+
 static func find_solution(level: Dictionary, source_pieces: Array = [], max_states: int = 4000) -> Array[int]:
 	var width: int = int(level.get("width", 0))
 	var height: int = int(level.get("height", 0))
 	var rescue_raw: Array = level.get("rescue", [])
 	if width <= 0 or height <= 0 or rescue_raw.size() != 2:
-		return []
+		return _empty_int_path()
 	var rescue: Vector2i = Vector2i(int(rescue_raw[0]), int(rescue_raw[1]))
 	var initial: Array = []
 	var raw_pieces: Array = source_pieces if not source_pieces.is_empty() else level.get("pieces", [])
@@ -23,10 +27,10 @@ static func find_solution(level: Dictionary, source_pieces: Array = [], max_stat
 			p["active"] = bool(p.get("active", true))
 			initial.append(p)
 	if _goal_satisfied(level, initial, rescue, width, height, 0):
-		return []
+		return _empty_int_path()
 	# Generated campaign boards carry a reverse-construction proof. Simulate it
 	# first; this both verifies generation and keeps hints instant on dense boards.
-	var known := _find_known_solution(level, initial, rescue, width, height)
+	var known: Array[int] = _find_known_solution(level, initial, rescue, width, height)
 	if not known.is_empty():
 		return known
 	# Generated campaign boards also contain an authored rescue lane. Try that
@@ -34,7 +38,7 @@ static func find_solution(level: Dictionary, source_pieces: Array = [], max_stat
 	# of exploring thousands of irrelevant filler-piece permutations. Every step is
 	# simulated with the same special/cascade rules as gameplay; BFS remains the
 	# fallback for custom/daily boards or when the authored route is unavailable.
-	var authored := _find_authored_solution(level, initial, rescue, width, height)
+	var authored: Array[int] = _find_authored_solution(level, initial, rescue, width, height)
 	if not authored.is_empty():
 		return authored
 	var queue_states: Array = [initial]
@@ -59,32 +63,53 @@ static func find_solution(level: Dictionary, source_pieces: Array = [], max_stat
 				visited[key] = true
 				queue_states.append(next)
 				queue_paths.append(next_path)
-	return []
+	return _empty_int_path()
 
 static func _find_known_solution(level: Dictionary, source: Array, rescue: Vector2i, width: int, height: int) -> Array[int]:
 	var raw: Variant = level.get("known_solution", [])
 	if not raw is Array or (raw as Array).is_empty():
-		return []
+		return _empty_int_path()
 	var pieces: Array = source.duplicate(true)
-	var path: Array[int] = []
+	var pending: Array[int] = []
 	for raw_index in raw:
 		var index := int(raw_index)
 		if index < 0 or index >= pieces.size():
-			return []
-		if not bool(pieces[index].get("active", true)):
-			continue
-		if not _path_clear(pieces, index, rescue, width, height):
-			return []
-		pieces = _apply_move(pieces, index, rescue, width, height)
-		path.append(index)
-		if _goal_satisfied(level, pieces, rescue, width, height, path.size()):
-			return path
-	return path if _goal_satisfied(level, pieces, rescue, width, height, path.size()) else []
+			return _empty_int_path()
+		pending.append(index)
+	var path: Array[int] = []
+	# Reverse construction provides a dependency proof, but late-game special
+	# mechanics can temporarily make the next authored index illegal. Keep the
+	# proof bounded and deterministic: choose the earliest currently legal proof
+	# move, then restart the scan. This is O(n²) for <=54 pieces and avoids the
+	# exponential BFS fallback while still simulating every move before accepting
+	# the proof as solved.
+	while not pending.is_empty():
+		var progressed := false
+		for pending_position in range(pending.size()):
+			var index := pending[pending_position]
+			if not bool(pieces[index].get("active", true)):
+				pending.remove_at(pending_position)
+				progressed = true
+				break
+			if not _path_clear(pieces, index, rescue, width, height):
+				continue
+			pieces = _apply_move(pieces, index, rescue, width, height)
+			path.append(index)
+			pending.remove_at(pending_position)
+			progressed = true
+			if _goal_satisfied(level, pieces, rescue, width, height, path.size()):
+				return path
+			break
+		if not progressed:
+			break
+	if _goal_satisfied(level, pieces, rescue, width, height, path.size()):
+		return path
+	return _empty_int_path()
 
 static func _find_authored_solution(level: Dictionary, source: Array, rescue: Vector2i, width: int, height: int) -> Array[int]:
 	var target_direction: Vector2i = DIRS.get(String(level.get("target_exit", "")), Vector2i.ZERO)
 	if target_direction == Vector2i.ZERO:
-		return []
+		return _empty_int_path()
 	var pieces: Array = source.duplicate(true)
 	var path: Array[int] = []
 	var guard := maxi(8, pieces.size() * 2)
@@ -106,10 +131,12 @@ static func _find_authored_solution(level: Dictionary, source: Array, rescue: Ve
 					chosen = i
 					break
 		if chosen < 0:
-			return []
+			return _empty_int_path()
 		pieces = _apply_move(pieces, chosen, rescue, width, height)
 		path.append(chosen)
-	return path if _goal_satisfied(level, pieces, rescue, width, height, path.size()) else []
+	if _goal_satisfied(level, pieces, rescue, width, height, path.size()):
+		return path
+	return _empty_int_path()
 
 static func _ordered_legal_moves(level: Dictionary, pieces: Array, rescue: Vector2i, width: int, height: int) -> Array[int]:
 	var keys: Array[int] = []

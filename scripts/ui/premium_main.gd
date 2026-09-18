@@ -17,7 +17,9 @@ func _label(text_value: String, font_size: int, kind: String = "body", tint: Col
 
 func _button(text_value: String, minimum: Vector2, role: String = "secondary", game_id: String = "") -> Button:
 	var button := make_button(text_value, minimum, role == "primary")
-	PremiumDesignSystem.apply_button(button, _dark(), _accent(game_id), role, 24)
+	button.clip_text = true
+	var font_size := 24 if get_viewport_rect().size.x >= 700.0 else 18
+	PremiumDesignSystem.apply_button(button, _dark(), _accent(game_id), role, font_size)
 	return button
 
 func _card(parent: Node, minimum: Vector2, emphasis: bool = false, game_id: String = "") -> PanelContainer:
@@ -39,10 +41,13 @@ func _page_root() -> VBoxContainer:
 	add_background()
 	var outer := MarginContainer.new()
 	outer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	outer.add_theme_constant_override("margin_left", 46)
-	outer.add_theme_constant_override("margin_right", 46)
-	outer.add_theme_constant_override("margin_top", 42)
-	outer.add_theme_constant_override("margin_bottom", 42)
+	var compact := get_viewport_rect().size.x < 700.0
+	var side_margin := 20 if compact else 46
+	var vertical_margin := 24 if compact else 42
+	outer.add_theme_constant_override("margin_left", side_margin)
+	outer.add_theme_constant_override("margin_right", side_margin)
+	outer.add_theme_constant_override("margin_top", vertical_margin)
+	outer.add_theme_constant_override("margin_bottom", vertical_margin)
 	content.add_child(outer)
 	var root := VBoxContainer.new()
 	root.add_theme_constant_override("separation", 18)
@@ -51,23 +56,27 @@ func _page_root() -> VBoxContainer:
 
 func _page_header(root: VBoxContainer, title_text: String, subtitle_text: String, right_text: String = "", right_tint: Color = Color.WHITE) -> void:
 	var accent := _accent()
+	var compact := get_viewport_rect().size.x < 700.0
 	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", 16)
+	header.add_theme_constant_override("separation", 10 if compact else 16)
 	root.add_child(header)
-	var back := _button("‹", Vector2(92, 82), "utility")
-	back.add_theme_font_size_override("font_size", 38)
+	var back := _button("‹", Vector2(68, 68) if compact else Vector2(92, 82), "utility")
+	back.add_theme_font_size_override("font_size", 32 if compact else 38)
 	back.pressed.connect(build_home)
 	header.add_child(back)
 	var heading := VBoxContainer.new()
 	heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(heading)
-	var title := _label(title_text, 40, "title", accent)
+	var title := _label(title_text, 31 if compact else 40, "title", accent)
+	title.clip_text = true
 	heading.add_child(title)
-	var subtitle := _label(subtitle_text, 19, "muted", accent)
+	var subtitle := _label(subtitle_text, 15 if compact else 19, "muted", accent)
+	subtitle.clip_text = true
 	heading.add_child(subtitle)
 	if not right_text.is_empty():
-		var right := _label(right_text, 18, "accent", right_tint)
-		right.custom_minimum_size = Vector2(190, 70)
+		var right := _label(right_text, 14 if compact else 18, "accent", right_tint)
+		right.custom_minimum_size = Vector2(112 if compact else 190, 58 if compact else 70)
+		right.clip_text = true
 		right.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		right.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		header.add_child(right)

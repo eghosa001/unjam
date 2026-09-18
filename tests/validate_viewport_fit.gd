@@ -69,7 +69,7 @@ func _run() -> void:
 	for viewport_size in STRESS_VIEWPORTS:
 		if not await _validate_late_game_viewport(viewport_size):
 			return
-	print("Viewport-fit validation passed: baseline surfaces fit 7 portrait sizes, and level 10,000 for all three games fits the two narrow stress viewports without help/back overlap.")
+	print("Viewport-fit validation passed: home, settings, collection, all level selectors, tutorial, and gameplay fit 7 portrait sizes; level 10,000 for all three games fits the two narrow stress viewports without help/back overlap.")
 	quit(0)
 
 func _validate_viewport(viewport_size: Vector2) -> bool:
@@ -95,8 +95,34 @@ func _validate_viewport(viewport_size: Vector2) -> bool:
 	if not _assert_tree_fit(main, logical_size, "Settings", ["TutorialPanel"]):
 		return false
 
+	main.call("build_collection")
+	await _frames(6)
+	if not _assert_horizontal_fit(main, logical_size, "Collection", ["TutorialPanel", "Collection3DDiorama"]):
+		return false
+
+	main.call("build_level_select")
+	await _frames(6)
+	if not _assert_horizontal_fit(main, logical_size, "Rescue levels", ["TutorialPanel", "Levels3DDiorama"]):
+		return false
+
+	main.set("selected_game_id", "water_sort")
+	main.set("selected_multi_world", 1)
+	main.call("build_multi_level_select")
+	await _frames(6)
+	if not _assert_horizontal_fit(main, logical_size, "Water Sort levels", ["TutorialPanel", "Levels3DDiorama"]):
+		return false
+
+	main.set("selected_game_id", "block_puzzle")
+	main.set("selected_multi_world", 1)
+	main.call("build_multi_level_select")
+	await _frames(6)
+	if not _assert_horizontal_fit(main, logical_size, "Block Puzzle levels", ["TutorialPanel", "Levels3DDiorama"]):
+		return false
+
 	main.call("start_level", 1)
 	await _frames(8)
+	if not await _assert_tutorial_fit(main, logical_size):
+		return false
 	_hide_tutorial(main)
 	await _frames(2)
 	if not _assert_active_game(main, logical_size, "Rescue Rush"):
@@ -213,6 +239,33 @@ func _assert_tree_fit(root_control: Control, viewport_size: Vector2, label: Stri
 			return _fail("%s control %s spills outside %s: %s" % [label, str(node.get_path()), str(viewport_size), str(rect)])
 	return true
 
+func _assert_horizontal_fit(root_control: Control, viewport_size: Vector2, label: String, skip_names: Array[String]) -> bool:
+	for node in _controls(root_control):
+		if not node.visible or not node.is_visible_in_tree():
+			continue
+		if node.name in skip_names:
+			continue
+		var rect := node.get_global_rect()
+		if rect.size.x <= 1.0 or rect.size.y <= 1.0:
+			continue
+		if not _rect_inside_horizontal(rect, viewport_size):
+			return _fail("%s control %s spills horizontally outside %s: %s" % [label, str(node.get_path()), str(viewport_size), str(rect)])
+	return true
+
+func _assert_tutorial_fit(main: Control, viewport_size: Vector2) -> bool:
+	var shell := main.get_node_or_null("UXShell")
+	if shell == null:
+		return _fail("UXShell missing while validating tutorial")
+	if shell.has_method("show_tutorial"):
+		shell.call("show_tutorial", "rescue_rush")
+	await _frames(4)
+	var panel = shell.get("tutorial_panel")
+	if panel == null or not is_instance_valid(panel) or not panel.visible:
+		return _fail("Tutorial panel missing at %s" % str(viewport_size))
+	if not _rect_inside(panel.get_global_rect(), viewport_size):
+		return _fail("Tutorial panel spills outside %s: %s" % [str(viewport_size), str(panel.get_global_rect())])
+	return true
+
 func _assert_help_button(main: Control, viewport_size: Vector2) -> bool:
 	var shell := main.get_node_or_null("UXShell")
 	if shell == null:
@@ -254,6 +307,10 @@ func _hide_tutorial(main: Control) -> void:
 	var panel = shell.get("tutorial_panel")
 	if panel != null and is_instance_valid(panel) and panel.visible and shell.has_method("hide_tutorial"):
 		shell.call("hide_tutorial")
+
+func _rect_inside_horizontal(rect: Rect2, viewport_size: Vector2) -> bool:
+	var epsilon := 2.0
+	return rect.position.x >= -epsilon and rect.end.x <= float(viewport_size.x) + epsilon
 
 func _rect_inside(rect: Rect2, viewport_size: Vector2) -> bool:
 	var epsilon := 2.0

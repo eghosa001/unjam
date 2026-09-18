@@ -82,16 +82,17 @@ func build_ui() -> void:
 	Unjam3DTheme.label_3d(objective_label, Unjam3DTheme.NAVY, Color.WHITE, 2)
 	objective.add_child(objective_label)
 
-	var center := CenterContainer.new()
+	var center := MarginContainer.new()
 	center.name = "GameplayStageHolder"
 	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	root.add_child(center)
 	var stage := PanelContainer.new()
 	stage.name = "GameplayStage"
 	stage.custom_minimum_size = Vector2(0, 520)
 	stage.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	stage.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	stage.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color(0.88, 0.98, 1.0, 0.74), 38, Color("baf2ff"), 3, 14))
+	stage.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color(0.80, 0.95, 1.0, 0.82), 38, Color("89e4ff"), 3, 16))
 	center.add_child(stage)
 	var stage_margin := MarginContainer.new()
 	for side in ["left", "right", "top", "bottom"]:
@@ -108,7 +109,7 @@ func build_ui() -> void:
 
 	var feedback := PanelContainer.new()
 	feedback.custom_minimum_size = Vector2(0, 72)
-	feedback.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color(0.95, 0.99, 1.0, 0.94), 24, Color("91dfff"), 2, 5))
+	feedback.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color(0.94, 0.99, 1.0, 0.98), 24, Color("78d9ff"), 2, 7))
 	root.add_child(feedback)
 	var feedback_row := HBoxContainer.new()
 	feedback_row.add_theme_constant_override("separation", 10)
@@ -117,14 +118,14 @@ func build_ui() -> void:
 	hint_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	hint_label.add_theme_font_size_override("font_size", 16)
+	hint_label.add_theme_font_size_override("font_size", 18)
 	Unjam3DTheme.label_3d(hint_label, Unjam3DTheme.NAVY, Color.WHITE, 2)
 	feedback_row.add_child(hint_label)
 	status_label = Label.new()
 	status_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	status_label.add_theme_font_size_override("font_size", 17)
+	status_label.add_theme_font_size_override("font_size", 19)
 	Unjam3DTheme.label_3d(status_label, Unjam3DTheme.WATER_DARK, Color.WHITE, 2)
 	feedback_row.add_child(status_label)
 

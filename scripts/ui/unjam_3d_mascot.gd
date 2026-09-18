@@ -131,6 +131,10 @@ func _material(color: Color, metallic_value: float = 0.0, roughness_value: float
 	material.albedo_color = color
 	material.metallic = metallic_value
 	material.roughness = roughness_value
+	if color.a >= 0.995:
+		material.clearcoat_enabled = true
+		material.clearcoat = 0.42
+		material.clearcoat_roughness = 0.12
 	if color.a < 0.995:
 		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	return material

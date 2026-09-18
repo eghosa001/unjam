@@ -141,13 +141,15 @@ func _build_shell() -> void:
 	box.add_child(tutorial_body)
 
 	var tabs := HBoxContainer.new()
+	tabs.name = "TutorialTabs"
 	tabs.alignment = BoxContainer.ALIGNMENT_CENTER
 	tabs.add_theme_constant_override("separation", 10)
 	box.add_child(tabs)
 	for game_id in ["rescue_rush", "water_sort", "block_puzzle"]:
 		var button := Button.new()
 		button.text = _game_name(game_id)
-		button.custom_minimum_size = Vector2(245, 66)
+		button.custom_minimum_size = Vector2(0, 66)
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.add_theme_font_size_override("font_size", 16)
 		button.pressed.connect(show_tutorial.bind(game_id))
 		PremiumDesignSystem.apply_button(button, dark, PremiumDesignSystem.accent_for_game(game_id), "secondary", 20)

@@ -127,6 +127,11 @@ static func _build_candidate(profile: Dictionary, seed_value: int) -> Dictionary
 	level["estimated_required_moves"] = known_solution.size()
 	level["par_moves"] = maxi(3, mini(known_solution.size(), int(profile.get("action_budget", known_solution.size()))))
 	level["action_budget"] = maxi(int(profile.get("action_budget", level["par_moves"])), int(level["par_moves"]))
+	# Perfect Rescue is validated during generation. Its budget must already admit
+	# the reverse-construction proof; raising it only after Solver.find_solution()
+	# causes valid late-game candidates to reject their proof and fall into BFS.
+	if objective == Progression.OBJECTIVE_PERFECT_RESCUE:
+		level["action_budget"] = maxi(int(level["action_budget"]), known_solution.size())
 	return level
 
 static func _base_level(profile: Dictionary, size: int, world: int, target_name: String, rescue_pos: Vector2i, pieces: Array[Dictionary], known_solution: Array[int]) -> Dictionary:
