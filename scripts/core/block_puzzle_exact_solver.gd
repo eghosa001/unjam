@@ -39,7 +39,10 @@ static func find_optimal(profile: Dictionary, plan: Dictionary, max_nodes: int =
 		return {"solved": false, "optimal_verified": false, "nodes": 0}
 	var total_nodes := 0
 	var initial_state := _initial_state(profile, plan)
-	var lower_bound := _optimistic_line_move_lower_bound(initial_state, profile, plan)
+	var lower_bound := maxi(
+		_optimistic_line_move_lower_bound(initial_state, profile, plan),
+		_initial_geometry_line_lower_bound(initial_state, profile, plan)
+	)
 	for limit in range(maxi(1, lower_bound), proof_shapes.size() + 1):
 		var state := _initial_state(profile, plan)
 		var context := {
@@ -419,6 +422,83 @@ static func _clear_data(board: int) -> Dictionary:
 			cols.append(x)
 			clear_mask |= col_mask
 	return {"mask": clear_mask, "count": rows.size() + cols.size(), "rows": rows, "cols": cols}
+
+static func _initial_geometry_line_lower_bound(state: Dictionary, profile: Dictionary, plan: Dictionary) -> int:
+	var remaining_lines := maxi(0, int(profile.get("target_lines", 0)) - int(state.get("lines", 0)))
+	if remaining_lines <= 0 or remaining_lines > 2:
+		return 0
+	var proof_shapes: Array = plan.get("proof_shapes", [])
+	if proof_shapes.is_empty():
+		return 0
+	var line_masks: Array[int] = []
+	for y in range(8):
+		line_masks.append(FULL_ROW << (y * 8))
+	for x in range(8):
+		var col_mask: int = 0
+		for y in range(8):
+			col_mask |= (1 << (y * 8 + x))
+		line_masks.append(col_mask)
+	var board := int(state.get("board", 0))
+	for moves in range(1, proof_shapes.size() + 1):
+		if remaining_lines == 1:
+			for mask in line_masks:
+				var missing_mask := int(mask) & ~board
+				var missing_count := _count_bits64(missing_mask)
+				if _max_target_cells_with_moves(state, plan, moves, missing_mask) >= missing_count:
+					return moves
+		else:
+			for a in range(line_masks.size()):
+				for b in range(a + 1, line_masks.size()):
+					var union_mask := int(line_masks[a]) | int(line_masks[b])
+					var missing_mask := union_mask & ~board
+					var missing_count := _count_bits64(missing_mask)
+					if _max_target_cells_with_moves(state, plan, moves, missing_mask) >= missing_count:
+						return moves
+	return proof_shapes.size() + 1
+
+static func _max_target_cells_with_moves(state: Dictionary, plan: Dictionary, move_count: int, target_mask: int) -> int:
+	if move_count <= 0 or target_mask == 0:
+		return 0
+	var trays: Array = plan.get("trays", [])
+	var tray_index := int(state.get("tray_index", 0))
+	var current_tray_index := tray_index
+	var used_mask := int(state.get("used_mask", 0))
+	var moves_left := move_count
+	var total := 0
+	while moves_left > 0 and tray_index < trays.size():
+		var tray: Array = trays[tray_index]
+		var capacities: Array[int] = []
+		for slot in range(tray.size()):
+			if tray_index == current_tray_index and (used_mask & (1 << slot)) != 0:
+				continue
+			var shape_index := int(tray[slot])
+			if shape_index >= 0 and shape_index < Generator.SHAPES.size():
+				capacities.append(_shape_target_capacity(shape_index, target_mask))
+		if capacities.is_empty():
+			tray_index += 1
+			used_mask = 0
+			continue
+		capacities.sort()
+		capacities.reverse()
+		if moves_left < capacities.size():
+			for i in range(moves_left):
+				total += capacities[i]
+			return total
+		for capacity in capacities:
+			total += capacity
+		moves_left -= capacities.size()
+		tray_index += 1
+		used_mask = 0
+	return total
+
+static func _shape_target_capacity(shape_index: int, target_mask: int) -> int:
+	var best := 0
+	for origin in range(64):
+		var placement: Variant = _placement_mask(shape_index, origin)
+		if placement == null:
+			continue
+		best = maxi(best, _count_bits64(int(placement) & target_mask))
+	return best
 
 static func _optimistic_line_move_lower_bound(state: Dictionary, profile: Dictionary, plan: Dictionary) -> int:
 	var remaining_lines := maxi(0, int(profile.get("target_lines", 0)) - int(state.get("lines", 0)))
