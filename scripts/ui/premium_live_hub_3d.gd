@@ -3,6 +3,8 @@ extends "res://scripts/ui/premium_live_hub.gd"
 func _button(text_value: String, minimum: Vector2, accent: Color, strong := false) -> Button:
 	var button := Button.new()
 	button.text = text_value
+	button.clip_text = true
+	button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	button.custom_minimum_size = minimum
 	button.add_theme_font_size_override("font_size", 25)
 	Unjam3DTheme.gloss_button(button, accent, strong, 26, _theme_mode() == "dark")
@@ -51,7 +53,7 @@ func _build() -> void:
 	header.custom_minimum_size = Vector2(0, 88 if short else (96 if medium_height else 106))
 	header.add_theme_constant_override("separation", 6 if narrow else (8 if phone_width else 12))
 	root.add_child(header)
-	var side_button_size := Vector2(78, 84) if short else (Vector2(86, 90) if phone_width else Vector2(98, 96))
+	var side_button_size := Vector2(72, 84) if short else (Vector2(76, 90) if phone_width else Vector2(92, 96))
 	var back := _button("←", side_button_size, Unjam3DTheme.WATER_DARK, true)
 	back.name = "GameSelectorBack"
 	back.add_theme_font_size_override("font_size", 27 if short else (31 if medium_height else 34))
@@ -74,7 +76,7 @@ func _build() -> void:
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title.clip_text = true
 	title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	title.add_theme_font_size_override("font_size", 32 if narrow else (38 if phone_width else 44))
+	title.add_theme_font_size_override("font_size", 31 if narrow else (36 if phone_width else 42))
 	Unjam3DTheme.label_3d(title, Color.WHITE, Unjam3DTheme.NAVY, 5 if compact else 6)
 	titles.add_child(title)
 	var subtitle := Label.new()
@@ -85,7 +87,7 @@ func _build() -> void:
 	subtitle.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	subtitle.clip_text = true
 	subtitle.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	subtitle.add_theme_font_size_override("font_size", 16 if narrow else (18 if phone_width else 20))
+	subtitle.add_theme_font_size_override("font_size", 16 if narrow else (17 if phone_width else 19))
 	Unjam3DTheme.label_3d(subtitle, Color("e9fbff"), Unjam3DTheme.NAVY, 3)
 	titles.add_child(subtitle)
 	var settings := _button("⚙", side_button_size, Unjam3DTheme.WATER_DARK, true)
@@ -218,6 +220,8 @@ func _add_game_card(parent: VBoxContainer, game_id: String) -> void:
 	level_label.text = "LEVEL %d" % highest
 	level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	level_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	level_label.clip_text = true
+	level_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	level_label.add_theme_font_size_override("font_size", 17 if narrow else 20)
 	Unjam3DTheme.label_3d(level_label, Color.WHITE, dark.darkened(0.35), 2)
 	level_chip.add_child(level_label)
@@ -239,6 +243,8 @@ func _add_game_card(parent: VBoxContainer, game_id: String) -> void:
 	star_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	star_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	star_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	star_label.clip_text = true
+	star_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	star_label.add_theme_font_size_override("font_size", 18 if narrow else 21)
 	Unjam3DTheme.label_3d(star_label, Color("fff2a0"), dark.darkened(0.38), 3)
 	footer.add_child(star_label)
