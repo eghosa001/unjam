@@ -17,7 +17,8 @@ func build_home_launcher() -> void:
 
 	var viewport_size := get_viewport_rect().size
 	var dark_mode := _theme_mode() == "dark"
-	var compact_height := viewport_size.y < 1250.0
+	var short_phone := viewport_size.y < 1100.0
+	var compact_height := viewport_size.y < 1450.0
 	var compact_width := viewport_size.x < 700.0
 	clip_contents = true
 
@@ -29,15 +30,15 @@ func build_home_launcher() -> void:
 
 	var outer := MarginContainer.new()
 	outer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	outer.add_theme_constant_override("margin_left", 20 if compact_width else 34)
-	outer.add_theme_constant_override("margin_right", 20 if compact_width else 34)
-	outer.add_theme_constant_override("margin_top", 18 if compact_height else 28)
-	outer.add_theme_constant_override("margin_bottom", 116 if compact_height else 132)
+	outer.add_theme_constant_override("margin_left", 12 if compact_width else 34)
+	outer.add_theme_constant_override("margin_right", 12 if compact_width else 34)
+	outer.add_theme_constant_override("margin_top", 10 if short_phone else (18 if compact_height else 28))
+	outer.add_theme_constant_override("margin_bottom", 104 if short_phone else (118 if compact_height else 132))
 	add_child(outer)
 
 	var root := VBoxContainer.new()
 	root.name = "HomePremiumRoot"
-	root.add_theme_constant_override("separation", 8 if compact_height else 11)
+	root.add_theme_constant_override("separation", 5 if short_phone else (8 if compact_height else 11))
 	outer.add_child(root)
 
 	_make_status_bar(root)
@@ -46,7 +47,7 @@ func build_home_launcher() -> void:
 	# Extra-tall phones need the complete hero/action composition lower on the
 	# canvas. Push both together so the hero-to-action gap stays tight while the
 	# primary CTA remains visually centred instead of clustering near the top.
-	var tall_top_push := maxf(0.0, viewport_size.y - 1920.0) * 0.57
+	var tall_top_push := minf(460.0, maxf(0.0, viewport_size.y - 1920.0) * 0.34)
 	if tall_top_push > 0.0:
 		var tall_top_spacer := Control.new()
 		tall_top_spacer.name = "HomeTallTopSpacer"
@@ -58,17 +59,17 @@ func build_home_launcher() -> void:
 	# Tall phones get breathing room between the hero and actions without
 	# allowing the hero itself to balloon into empty space.
 	var aspect_ratio := viewport_size.y / maxf(1.0, viewport_size.x)
-	var balance_height := maxf(0.0, aspect_ratio - 1.82) * 360.0
+	var balance_height := maxf(0.0, aspect_ratio - 2.15) * 160.0
 	if balance_height > 0.0:
 		var spacer := Control.new()
 		spacer.name = "HomeUpperBalanceSpacer"
-		spacer.custom_minimum_size = Vector2(0, minf(balance_height, 180.0))
+		spacer.custom_minimum_size = Vector2(0, minf(balance_height, 72.0))
 		root.add_child(spacer)
 
 	var action_cluster := VBoxContainer.new()
 	action_cluster.name = "HomeActionCluster"
 	action_cluster.alignment = BoxContainer.ALIGNMENT_CENTER
-	action_cluster.add_theme_constant_override("separation", 9 if compact_height else 12)
+	action_cluster.add_theme_constant_override("separation", 5 if short_phone else (8 if compact_height else 12))
 	root.add_child(action_cluster)
 
 	var current_level := _home_current_level(selected_game)
@@ -76,9 +77,9 @@ func build_home_launcher() -> void:
 	primary_button.name = "HomePrimaryAction"
 	primary_button.text = "▶  CONTINUE  •  %s  •  LEVEL %d" % [_short_game_name(selected_game), current_level]
 	primary_button.tooltip_text = "Continue your current %s campaign" % MultiGameManager.display_name(selected_game)
-	primary_button.custom_minimum_size = Vector2(0, 112 if compact_height else 132)
+	primary_button.custom_minimum_size = Vector2(0, 76 if short_phone else (98 if compact_height else 122))
 	primary_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	primary_button.add_theme_font_size_override("font_size", 29 if compact_width else 36)
+	primary_button.add_theme_font_size_override("font_size", 23 if short_phone else (29 if compact_width else 36))
 	Unjam3DTheme.gloss_button(primary_button, Unjam3DTheme.game_accent(selected_game), true, 34, dark_mode)
 	primary_button.pressed.connect(_continue_selected_game)
 	action_cluster.add_child(primary_button)
@@ -90,9 +91,9 @@ func build_home_launcher() -> void:
 	var choose := Button.new()
 	choose.name = "HomeChooseGameButton"
 	choose.text = "◈  CHOOSE GAME"
-	choose.custom_minimum_size = Vector2(0, 80 if compact_height else 90)
+	choose.custom_minimum_size = Vector2(0, 56 if short_phone else (72 if compact_height else 88))
 	choose.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	choose.add_theme_font_size_override("font_size", 18 if compact_width else 22)
+	choose.add_theme_font_size_override("font_size", 15 if short_phone else (18 if compact_width else 22))
 	Unjam3DTheme.gloss_button(choose, Unjam3DTheme.WATER_DARK, false, 24, dark_mode)
 	choose.pressed.connect(_open_game_selector)
 	quick_row.add_child(choose)
@@ -105,20 +106,23 @@ func build_home_launcher() -> void:
 		if main != null and main.has_method("_daily_done") and bool(main.call("_daily_done", game_id)):
 			daily_done += 1
 	daily.text = "☀  DAILY  •  %d/3" % daily_done
-	daily.custom_minimum_size = Vector2(0, 80 if compact_height else 90)
+	daily.custom_minimum_size = Vector2(0, 56 if short_phone else (72 if compact_height else 88))
 	daily.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	daily.add_theme_font_size_override("font_size", 18 if compact_width else 22)
+	daily.add_theme_font_size_override("font_size", 15 if short_phone else (18 if compact_width else 22))
 	Unjam3DTheme.gloss_button(daily, Unjam3DTheme.GOLD, true, 24, dark_mode)
 	daily.pressed.connect(_open_daily_games)
 	quick_row.add_child(daily)
 
 	_make_game_strip(action_cluster)
+	_make_progress_ribbon(action_cluster)
 
+	# Keep the actual Home content contiguous. Any unavoidable surplus on tall
+	# phones belongs below the content, not as a giant visual hole through it.
+	_make_motto(root)
 	var lower_spacer := Control.new()
 	lower_spacer.name = "HomeLowerBalanceSpacer"
 	lower_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(lower_spacer)
-	_make_motto(root)
 	_make_bottom_nav()
 	_animate_entry(root)
 
