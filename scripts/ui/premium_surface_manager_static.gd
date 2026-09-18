@@ -33,8 +33,8 @@ func _polish_tree(node: Node, surface: String, dark: bool, accent: Color) -> voi
 		return
 	if node is Button and not _is_gameplay_widget(node):
 		var button := node as Button
-		button.custom_minimum_size.y = maxf(button.custom_minimum_size.y, 82.0)
-		button.add_theme_font_size_override("font_size", maxi(21, button.get_theme_font_size("font_size")))
+		button.custom_minimum_size.y = maxf(button.custom_minimum_size.y, 94.0)
+		button.add_theme_font_size_override("font_size", maxi(25, button.get_theme_font_size("font_size")))
 		var role := _role_for_surface_button(button, surface)
 		var button_accent := _button_accent(role, accent)
 		Unjam3DTheme.gloss_button(button, button_accent, role in ["primary", "reward", "success"], 24 if not _looks_like_level_button(button, surface) else 20, dark)
@@ -52,7 +52,7 @@ func _polish_tree(node: Node, surface: String, dark: bool, accent: Color) -> voi
 		elif base_font_size > 0:
 			label.set_meta("unjam_surface_base_font_size", base_font_size)
 		if base_font_size > 0:
-			label.add_theme_font_size_override("font_size", base_font_size + (4 if base_font_size >= 28 else 2))
+			label.add_theme_font_size_override("font_size", base_font_size + (6 if base_font_size >= 28 else 4))
 		var font_size := base_font_size
 		var text := label.text.strip_edges().to_upper()
 		var color := Unjam3DTheme.text_primary(dark)
@@ -108,8 +108,8 @@ func _ensure_secondary_wallet(content: Control, surface: String, dark: bool) -> 
 		wallet = Button.new()
 		wallet.name = "SecondaryCoinShopButton"
 		var viewport_width := get_viewport().get_visible_rect().size.x
-		wallet.custom_minimum_size = Vector2(142 if viewport_width < 600.0 else 178, 70)
-		wallet.add_theme_font_size_override("font_size", 16 if viewport_width < 600.0 else 19)
+		wallet.custom_minimum_size = Vector2(164 if viewport_width < 600.0 else 190, 84)
+		wallet.add_theme_font_size_override("font_size", 20 if viewport_width < 600.0 else 23)
 		wallet.tooltip_text = "Coins • Open Shop"
 		Unjam3DTheme.gloss_button(wallet, Unjam3DTheme.ORANGE, true, 23, dark)
 		wallet.pressed.connect(_open_shop)
