@@ -229,7 +229,10 @@ func build_daily_games() -> void:
 func _daily_game_card(game_id: String, collection_bonus: int) -> PanelContainer:
 	var accent := Unjam3DTheme.game_accent(game_id)
 	var done := _daily_done(game_id)
-	var card := _card(null, Vector2(0, 250), true, game_id)
+	var card := PanelContainer.new()
+	card.custom_minimum_size = Vector2(0, 250)
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	PremiumDesignSystem.apply_panel(card, _dark(), accent, true, 28)
 	var margin := _pad(card, 18)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 8)
