@@ -121,7 +121,7 @@ func _build_shell() -> void:
 	tutorial_layer.add_child(tutorial_panel)
 
 	var margin := MarginContainer.new()
-	var compact_tutorial := get_viewport_rect().size.x < 700.0 or get_viewport_rect().size.y < 1200.0
+	var compact_tutorial := get_viewport().get_visible_rect().size.x < 700.0 or get_viewport().get_visible_rect().size.y < 1200.0
 	margin.add_theme_constant_override("margin_left", 22 if compact_tutorial else 34)
 	margin.add_theme_constant_override("margin_right", 22 if compact_tutorial else 34)
 	margin.add_theme_constant_override("margin_top", 20 if compact_tutorial else 26)
@@ -233,7 +233,7 @@ func _build_shell() -> void:
 func _layout_tutorial_panel() -> void:
 	if tutorial_panel == null:
 		return
-	var viewport_size := get_viewport_rect().size
+	var viewport_size := get_viewport().get_visible_rect().size
 	var panel_width := clampf(viewport_size.x - 48.0, 440.0, 860.0)
 	var panel_height := clampf(viewport_size.y * 0.72, 650.0, 760.0)
 	if viewport_size.y < 1100.0:
