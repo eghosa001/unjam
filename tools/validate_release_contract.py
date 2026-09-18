@@ -51,6 +51,7 @@ def main() -> int:
         'https://*/verify',
         'UNJAM_DEVELOPER_WEBSITE_URL',
         'check_live_monetization.py',
+        '/readiness',
     ):
         if token not in workflow:
             errors.append(f'missing release workflow contract token: {token}')
