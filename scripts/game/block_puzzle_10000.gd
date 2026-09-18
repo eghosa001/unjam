@@ -259,7 +259,7 @@ func reached_goal() -> bool:
 	for raw in campaign_special_cells.values():
 		var special: Dictionary = raw
 		var kind := String(special.get("kind", ""))
-		if kind in ["crate", "ice", "target"] and int(special.get("layers", 0)) > 0:
+		if kind in ["crate", "ice", "lock", "steel", "target"] and int(special.get("layers", 0)) > 0:
 			return false
 	return true
 
@@ -427,7 +427,7 @@ func _booster_unavailable(message: String) -> void:
 func _hammer_target() -> int:
 	for key in campaign_special_cells.keys():
 		var special: Dictionary = campaign_special_cells[key]
-		if String(special.get("kind", "")) in ["crate", "ice"] and int(special.get("layers", 0)) > 0:
+		if String(special.get("kind", "")) in ["crate", "ice", "lock", "steel"] and int(special.get("layers", 0)) > 0:
 			return int(key)
 	var best := -1
 	var best_fits := -1
@@ -452,7 +452,7 @@ func _apply_hammer(index: int) -> void:
 	var key := str(index)
 	var special: Dictionary = campaign_special_cells.get(key, {})
 	var kind := String(special.get("kind", ""))
-	if kind in ["crate", "ice"]:
+	if kind in ["crate", "ice", "lock", "steel"]:
 		var layers := maxi(0, int(special.get("layers", 1)) - 1)
 		if layers <= 0:
 			campaign_special_cells.erase(key)
@@ -809,7 +809,7 @@ func _apply_objective_clear(clear_plan: Dictionary) -> void:
 			continue
 		var special: Dictionary = campaign_special_cells[key]
 		var kind := String(special.get("kind", ""))
-		if kind not in ["crate", "ice", "target"]:
+		if kind not in ["crate", "ice", "lock", "steel", "target"]:
 			continue
 		var layers := maxi(0, int(special.get("layers", 0)) - 1)
 		if layers <= 0:
@@ -837,6 +837,8 @@ func _objective_status_text() -> String:
 		return ""
 	var crates := 0
 	var ice_layers := 0
+	var locks := 0
+	var steel_layers := 0
 	var targets := 0
 	for raw in campaign_special_cells.values():
 		var special: Dictionary = raw
@@ -844,10 +846,14 @@ func _objective_status_text() -> String:
 		var layers := int(special.get("layers", 0))
 		if kind == "crate": crates += layers
 		elif kind == "ice": ice_layers += layers
+		elif kind == "lock": locks += layers
+		elif kind == "steel": steel_layers += layers
 		elif kind == "target": targets += layers
 	var parts := PackedStringArray()
 	if crates > 0: parts.append("CRATE %d" % crates)
 	if ice_layers > 0: parts.append("ICE %d" % ice_layers)
+	if locks > 0: parts.append("LOCK %d" % locks)
+	if steel_layers > 0: parts.append("STEEL %d" % steel_layers)
 	if targets > 0: parts.append("TARGET %d" % targets)
 	if not target_rows_pending.is_empty(): parts.append("ROW %d" % target_rows_pending.size())
 	if not target_cols_pending.is_empty(): parts.append("COL %d" % target_cols_pending.size())
