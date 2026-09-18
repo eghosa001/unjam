@@ -149,6 +149,17 @@ func _validate_runtime(viewport_size: Vector2i) -> bool:
 		game.queue_free()
 		return _fail("Old floating brick survived a tray piece replacement")
 
+	# Multi-touch may never leave two tray ghosts alive.
+	var second := piece_row.get_child(1) as SmoothBlockPieceButton
+	game.call("register_touch_drag", first)
+	first.call("_show_touch_preview", first.get_global_rect().get_center())
+	game.call("register_touch_drag", second)
+	second.call("_show_touch_preview", second.get_global_rect().get_center())
+	if _drag_preview_count(effects) != 1:
+		game.queue_free()
+		return _fail("Multiple tray pieces can own floating previews simultaneously")
+	second.call("dispose_visuals")
+
 	game.target_rows_pending.clear()
 	game.target_rows_pending.append(2)
 	game.target_cols_pending.clear()
