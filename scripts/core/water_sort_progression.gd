@@ -129,8 +129,8 @@ static func score_board(tubes: Array, proof_moves: int) -> Dictionary:
 	var legal_moves := 0
 	var empty_target_moves := 0
 
-	for tube_value in tubes:
-		var tube: Array = tube_value
+	for tube_index in range(tubes.size()):
+		var tube: Array = tubes[tube_index]
 		if tube.is_empty():
 			empty_count += 1
 			continue
@@ -139,7 +139,7 @@ static func score_board(tubes: Array, proof_moves: int) -> Dictionary:
 			color_count = maxi(color_count, color + 1)
 			if not color_tubes.has(color):
 				color_tubes[color] = {}
-			(color_tubes[color] as Dictionary)[str(tubes.find(tube_value))] = true
+			(color_tubes[color] as Dictionary)[str(tube_index)] = true
 			if i > 0 and int(tube[i]) != int(tube[i - 1]):
 				color_breaks += 1
 			burial_total += float(tube.size() - 1 - i)
