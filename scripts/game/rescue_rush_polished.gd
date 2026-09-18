@@ -301,11 +301,12 @@ func activate_link(link_id: String, source_index: int) -> void:
 			chain_count += 1
 
 func resolve_rescue() -> void:
-	if not rescue_has_exit():
+	if not _objective_satisfied():
 		return
 	_spawn_rescue_escape()
 	rescued = true
 	chain_count += 1
+	best_chain = maxi(best_chain, chain_count)
 	FeedbackManager.rescue()
 	PremiumVisuals.burst(Vector2(540, 860), world_accent(), 28)
 	# Do not use a full-screen flash here. The local celebration keeps the finish
