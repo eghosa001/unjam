@@ -78,7 +78,7 @@ func generate_tubes_with_solution(seed_value: int, colors: int) -> Dictionary:
 
 	for attempt in range(candidate_count):
 		var step_delta := attempt - int(candidate_count / 2)
-		var requested_steps := clampi(base_steps + step_delta * 2, 4, colors * CAPACITY)
+		var requested_steps := clampi(base_steps + step_delta * 2, 4, 80)
 		var candidate := _construct_progression_candidate(
 			seed_value,
 			colors,
