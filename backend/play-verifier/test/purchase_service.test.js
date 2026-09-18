@@ -47,10 +47,42 @@ function service({ playResult = purchased(), ledger = fakeLedger() } = {}) {
       [REMOVE_ADS]: { nonConsumable: true },
       [COINS]: { nonConsumable: false },
     },
-    play: { async getPurchase() { return playResult; } },
-    ledger,
+    play: {
+      async getPurchase() { return playResult; },
+      async probeAccess() { return true; },
+    },
+    ledger: {
+      ...ledger,
+      async probeAccess() { return true; },
+    },
   });
 }
+
+test('readiness requires both Firestore and Google Play access', async () => {
+  const result = await service().readiness();
+  assert.deepEqual(result.dependencies, { firestore: true, google_play: true });
+  assert.equal(result.ok, true);
+  assert.equal(result.package_name, PACKAGE);
+});
+
+test('readiness fails closed when Play Purchases API access fails', async () => {
+  const ledger = fakeLedger();
+  ledger.probeAccess = async () => true;
+  const s = createPurchaseService({
+    allowedPackage: PACKAGE,
+    products: { [REMOVE_ADS]: { nonConsumable: true } },
+    play: {
+      async getPurchase() { return purchased(); },
+      async probeAccess() { throw new Error('forbidden'); },
+    },
+    ledger,
+  });
+  const result = await s.readiness();
+  assert.equal(result.ok, false);
+  assert.equal(result.dependencies.firestore, true);
+  assert.equal(result.dependencies.google_play, false);
+  assert.match(result.reason, /Google Play/i);
+});
 
 test('rejects package names outside the allowlist', async () => {
   const result = await service().verify({ package_name: 'evil.app', product_id: REMOVE_ADS, purchase_token: 'tok', claim_id: 'claim-aaa' });
