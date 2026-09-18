@@ -26,6 +26,7 @@ jobs:
     env:
       EXPECTED_PACKAGE: com.eghosa.unjamgam
       EXPECTED_UPLOAD_SHA1: ${{ secrets.UNJAM_ANDROID_UPLOAD_SHA1 }}
+      EXPECTED_BLOCK_REVIEW_SHA256: ${{ secrets.UNJAM_BLOCK_CAMPAIGN_REVIEW_SHA256 }}
       WATER_FULL_AUDIT: "1"
     steps:
       - uses: actions/checkout@v4
@@ -48,6 +49,8 @@ jobs:
           test -n "$KEY_PASSWORD"
           test -n "$EXPECTED_UPLOAD_SHA1"
           [[ "$EXPECTED_UPLOAD_SHA1" =~ ^([0-9A-Fa-f]{2}:){19}[0-9A-Fa-f]{2}$ ]]
+          test -n "$EXPECTED_BLOCK_REVIEW_SHA256"
+          [[ "$EXPECTED_BLOCK_REVIEW_SHA256" =~ ^[0-9A-Fa-f]{64}$ ]]
           [[ "$VERIFY_URL" == https://*/verify ]]
           [[ "${{ inputs.version_code }}" =~ ^[1-9][0-9]*$ ]]
           test "${{ inputs.version_code }}" -ge 1
@@ -177,6 +180,14 @@ jobs:
           test "$(find data/block_puzzle_campaign -maxdepth 1 -name 'world_*.json' | wc -l)" -eq 20
           timeout 3600s godot --headless --path . --script res://tools/audit_block_campaign_pack.gd
           timeout 180s godot --headless --path . --script res://tests/validate_block_pack_runtime.gd
+          ACTUAL_BLOCK_REVIEW_SHA256="$(sha256sum data/block_puzzle_campaign/human_review.json | awk '{print $1}')"
+          EXPECTED_BLOCK_REVIEW_SHA256="$(printf '%s' "$EXPECTED_BLOCK_REVIEW_SHA256" | tr '[:upper:]' '[:lower:]')"
+          if [[ "$ACTUAL_BLOCK_REVIEW_SHA256" != "$EXPECTED_BLOCK_REVIEW_SHA256" ]]; then
+            echo "Block Puzzle boss review bundle is not approved. Expected $EXPECTED_BLOCK_REVIEW_SHA256 but generated $ACTUAL_BLOCK_REVIEW_SHA256" >&2
+            echo "Run the Block Puzzle Campaign Review workflow, review its human_review.json, then update UNJAM_BLOCK_CAMPAIGN_REVIEW_SHA256." >&2
+            exit 1
+          fi
+          printf '%s  %s\n' "$ACTUAL_BLOCK_REVIEW_SHA256" "human_review.json" > data/block_puzzle_campaign/human_review.sha256
           du -sh data/block_puzzle_campaign
       - name: Export release AAB
         shell: bash
@@ -251,5 +262,6 @@ jobs:
             build/android/aab-zip-test.log
             data/block_puzzle_campaign/manifest.json
             data/block_puzzle_campaign/human_review.json
+            data/block_puzzle_campaign/human_review.sha256
           if-no-files-found: error
           retention-days: 14
