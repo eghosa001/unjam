@@ -429,7 +429,7 @@ func _is_custom_surface(node: Node) -> bool:
 		if cursor.name in ["PremiumHome", "PremiumLive", "ActiveGame"]:
 			return true
 		var path := _script_path(cursor)
-		if path.begins_with("res://scripts/game/") or path.ends_with("premium_home_overhaul.gd") or path.ends_with("premium_live_hub.gd"):
+		if path.begins_with("res://scripts/game/") 			or path.ends_with("premium_home_overhaul.gd") 			or path.ends_with("premium_live_hub.gd") 			or path.ends_with("premium_result_overlay.gd") 			or path.ends_with("monetization_hub_3d.gd"):
 			return true
 		cursor = cursor.get_parent()
 	return false
