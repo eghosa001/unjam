@@ -28,15 +28,49 @@ func select_piece(index: int) -> void:
 		hint_label.text = PLACEMENT_HELP
 
 func render_pieces() -> void:
-	for child in piece_row.get_children():
-		piece_row.remove_child(child)
-		child.queue_free()
+	if piece_row == null:
+		return
+	# Keep exactly one stable control per tray slot. Recreating all three buttons
+	# on every render used to allow an outgoing preview/control and its replacement
+	# to be visible in the same frame, producing a doubled brick.
+	while piece_row.get_child_count() > pieces.size():
+		var extra := piece_row.get_child(piece_row.get_child_count() - 1)
+		if extra.has_method("dispose_visuals"):
+			extra.call("dispose_visuals")
+		piece_row.remove_child(extra)
+		extra.queue_free()
 	for i in range(pieces.size()):
-		var button := SmoothPieceButton.new()
-		button.custom_minimum_size = Vector2(270, 150)
-		button.configure(pieces[i], i == selected_piece, piece_colors[i], i)
-		button.pressed.connect(select_piece.bind(i))
-		piece_row.add_child(button)
+		var button: SmoothBlockPieceButton = null
+		if i < piece_row.get_child_count() and piece_row.get_child(i) is SmoothBlockPieceButton:
+			button = piece_row.get_child(i) as SmoothBlockPieceButton
+		else:
+			if i < piece_row.get_child_count():
+				var retired := piece_row.get_child(i)
+				if retired.has_method("dispose_visuals"):
+					retired.call("dispose_visuals")
+				piece_row.remove_child(retired)
+				retired.queue_free()
+			button = SmoothPieceButton.new()
+			piece_row.add_child(button)
+			piece_row.move_child(button, i)
+			button.pressed.connect(select_piece.bind(i))
+		var button_size := _tray_piece_button_size()
+		button.custom_minimum_size = button_size
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		var color: Color = piece_colors[i] if i < piece_colors.size() else Color("8b7cf6")
+		button.configure(pieces[i], i == selected_piece, color, i)
+
+func _tray_piece_button_size() -> Vector2:
+	var viewport_size := get_viewport_rect().size
+	var compact := viewport_size.x < 700.0 or viewport_size.y < 1100.0
+	var side_budget := 32.0 if compact else 72.0
+	var tray_padding := 24.0 if compact else 36.0
+	var separation := float(piece_row.get_theme_constant("separation")) if piece_row != null else 12.0
+	var usable := maxf(300.0, viewport_size.x - side_budget - tray_padding - separation * 2.0)
+	var width := floorf(usable / 3.0)
+	var height := 112.0 if viewport_size.y < 1050.0 else (136.0 if viewport_size.y < 1400.0 else 154.0)
+	return Vector2(clampf(width, 96.0, 270.0), height)
 
 func _play_place_feedback(indices: Array[int], color: Color, points: int) -> void:
 	FeedbackManager.drop()
