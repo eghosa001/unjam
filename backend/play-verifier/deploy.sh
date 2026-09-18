@@ -35,4 +35,19 @@ gcloud run deploy "$SERVICE" \
   --memory=256Mi \
   --set-env-vars="UNJAM_PACKAGE_NAME=com.eghosa.unjamgam,UNJAM_LEDGER_COLLECTION=play_purchase_claims"
 
-gcloud run services describe "$SERVICE" --region="$REGION" --format='value(status.url)'
+SERVICE_URL="$(gcloud run services describe "$SERVICE" --region="$REGION" --format='value(status.url)')"
+test -n "$SERVICE_URL"
+
+echo "Cloud Run service: $SERVICE_URL"
+echo "Runtime service account: $SERVICE_ACCOUNT"
+echo "Purchase verification endpoint: $SERVICE_URL/verify"
+
+HEALTH="$(curl -fsS --retry 5 --retry-delay 2 "$SERVICE_URL/healthz")"
+printf '%s' "$HEALTH" | grep -Eq '"ok"[[:space:]]*:[[:space:]]*true'
+echo "Health check passed."
+
+echo
+echo "OWNER ACTION REQUIRED:"
+echo "1. In Play Console, grant $SERVICE_ACCOUNT access to package com.eghosa.unjamgam with permission to use the Purchases API."
+echo "2. Set GitHub Actions secret UNJAM_PURCHASE_VERIFICATION_URL to $SERVICE_URL/verify."
+echo "3. Run the Monetization Readiness workflow after the Play permission is granted."
