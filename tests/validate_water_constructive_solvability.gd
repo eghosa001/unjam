@@ -15,7 +15,17 @@ func _run() -> void:
 		return _fail("Water Sort generator does not expose a constructive solution proof")
 	var max_solution := 0
 	var signatures := {}
-	for level in range(1, MAX_LEVEL + 1):
+	var full_audit := OS.get_environment("WATER_FULL_AUDIT") == "1"
+	var levels: Array[int] = []
+	if full_audit:
+		for level in range(1, MAX_LEVEL + 1):
+			levels.append(level)
+	else:
+		for level in range(1, 11):
+			levels.append(level)
+		for level in [25, 50, 100, 250, 500, 750, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000, 5500, 6000, 6500, 7000, 7500, 8000, 8500, 9000, 9500, 9900, 10000]:
+			levels.append(level)
+	for level in levels:
 		game.level_number = level
 		var cfg: Dictionary = game.level_config()
 		var generated: Dictionary = game.call("generate_tubes_with_solution", level, int(cfg.get("colors", 4)))
@@ -37,16 +47,17 @@ func _run() -> void:
 		if not _solved(tubes):
 			game.queue_free()
 			return _fail("Water Sort level %d proof does not solve generated board" % level)
-		if level % 25 == 0:
-			signatures[_signature(generated.get("tubes", []))] = true
-		if level % 1000 == 0:
+		signatures[_signature(generated.get("tubes", []))] = true
+		if full_audit and level % 1000 == 0:
 			print("Water constructive proof: %d/%d" % [level, MAX_LEVEL])
-	if signatures.size() < 300:
+	var minimum_unique := 300 if full_audit else int(levels.size() * 0.75)
+	if signatures.size() < minimum_unique:
 		game.queue_free()
-		return _fail("Water Sort constructive generator diversity too low: %d signatures" % signatures.size())
+		return _fail("Water Sort constructive generator diversity too low: %d/%d signatures" % [signatures.size(), levels.size()])
 	game.queue_free()
 	await process_frame
-	print("WATER_CONSTRUCTIVE_10000_OK: every generated level has a legal replayable solution proof within par; max proof length %d." % max_solution)
+	var mode := "10000" if full_audit else "SAMPLED"
+	print("WATER_CONSTRUCTIVE_%s_OK: legal replayable solution proofs within par; max proof length %d." % [mode, max_solution])
 	quit(0)
 
 func _can_pour(tubes: Array, from_idx: int, to_idx: int) -> bool:
