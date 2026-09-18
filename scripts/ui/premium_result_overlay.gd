@@ -53,7 +53,7 @@ func _build() -> void:
 	var compact := viewport_size.x < 700.0 or viewport_size.y < 1100.0
 	var card_size := Vector2(
 		clampf(viewport_size.x - 48.0, 460.0, 760.0),
-		clampf(viewport_size.y - 96.0, 720.0, 900.0)
+		clampf(viewport_size.y * (0.69 if compact else 0.43), 650.0, 820.0)
 	)
 	var dim := ColorRect.new()
 	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -199,6 +199,7 @@ func _celebrate() -> void:
 		return
 	var center := get_viewport_rect().size * 0.5
 	if visuals.has_method("screen_flash"):
-		visuals.call("screen_flash", accent, 0.08)
+		visuals.call("screen_flash", accent, 0.10)
 	if visuals.has_method("burst"):
-		visuals.call("burst", center + Vector2(0, -110), accent, 26)
+		visuals.call("burst", center + Vector2(0, -120), accent, 34)
+		visuals.call("burst", center + Vector2(0, 20), Unjam3DTheme.GOLD, 22)

@@ -30,6 +30,10 @@ func _run() -> void:
 		var back = shell.get("tutorial_prev_button") as Button
 		if panel == null or not panel.visible:
 			return _fail("Tutorial panel did not open for %s" % game_id)
+		if panel.custom_minimum_size.y > 780.0:
+			return _fail("%s tutorial panel reverted to an oversized empty shell" % game_id)
+		if panel.custom_minimum_size.x > root.get_visible_rect().size.x - 20.0:
+			return _fail("%s tutorial panel is too wide for the viewport" % game_id)
 		if body == null or body.text.length() > 180:
 			return _fail("%s tutorial reverted to a wall of text" % game_id)
 		if demo == null or demo.text.is_empty() or step == null or step.text.is_empty():

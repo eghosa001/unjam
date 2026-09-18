@@ -77,7 +77,7 @@ func _build_3d_view() -> void:
 	viewport_3d.name = "TubeViewport3D"
 	# Slightly above the on-screen tube resolution, but far below the old
 	# 220x420 buffer. Idle tubes still render only once.
-	viewport_3d.size = Vector2i(192, 384)
+	viewport_3d.size = Vector2i(224, 448)
 	viewport_3d.transparent_bg = true
 	viewport_3d.render_target_update_mode = SubViewport.UPDATE_ONCE
 	viewport_container.add_child(viewport_3d)
@@ -92,31 +92,31 @@ func _build_3d_view() -> void:
 	environment.background_color = Color(0, 0, 0, 0)
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	environment.ambient_light_color = Color("dff8ff")
-	environment.ambient_light_energy = 0.82
+	environment.ambient_light_energy = 0.68
 	world_environment.environment = environment
 	stage_3d.add_child(world_environment)
 
 	var key := DirectionalLight3D.new()
 	key.rotation_degrees = Vector3(-42, -36, 0)
 	key.light_color = Color("fff8e8")
-	key.light_energy = 1.70
+	key.light_energy = 1.92
 	key.shadow_enabled = false
 	stage_3d.add_child(key)
 	var rim_light := DirectionalLight3D.new()
 	rim_light.rotation_degrees = Vector3(-20, 145, 8)
 	rim_light.light_color = Color("70dcff")
-	rim_light.light_energy = 1.10
+	rim_light.light_energy = 1.28
 	stage_3d.add_child(rim_light)
 	var fill_light := OmniLight3D.new()
 	fill_light.position = Vector3(-2.2, 2.8, 4.1)
 	fill_light.light_color = Color("b6f2ff")
-	fill_light.light_energy = 0.30
+	fill_light.light_energy = 0.42
 	fill_light.omni_range = 9.0
 	stage_3d.add_child(fill_light)
 
 	camera_3d = Camera3D.new()
-	camera_3d.position = Vector3(2.30, 0.72, 7.15)
-	camera_3d.fov = 31.0
+	camera_3d.position = Vector3(2.12, 0.66, 6.92)
+	camera_3d.fov = 29.0
 	stage_3d.add_child(camera_3d)
 	camera_3d.look_at(Vector3(0, 0.08, 0), Vector3.UP)
 	camera_3d.current = true
@@ -131,14 +131,30 @@ func _build_glass_3d() -> void:
 	glass_mesh.top_radius = 0.62
 	glass_mesh.bottom_radius = 0.54
 	glass_mesh.height = 3.32
-	glass_mesh.radial_segments = 24
+	glass_mesh.radial_segments = 32
 	glass_mesh.cap_top = false
 	glass_mesh.cap_bottom = true
 	var glass := MeshInstance3D.new()
 	glass.name = "OpenTopGlass"
 	glass.mesh = glass_mesh
-	glass.material_override = _material_3d(Color(0.82, 0.97, 1.0, 0.11), 0.0, 0.045)
+	glass.material_override = _material_3d(Color(0.78, 0.96, 1.0, 0.16), 0.0, 0.032)
 	stage_3d.add_child(glass)
+
+	# A second, faint inner shell produces a clean glass edge/reflection instead
+	# of a single washed-out transparent cylinder. It is static and rendered once.
+	var inner_mesh := CylinderMesh.new()
+	inner_mesh.top_radius = 0.55
+	inner_mesh.bottom_radius = 0.48
+	inner_mesh.height = 3.16
+	inner_mesh.radial_segments = 32
+	inner_mesh.cap_top = false
+	inner_mesh.cap_bottom = true
+	var inner_glass := MeshInstance3D.new()
+	inner_glass.name = "InnerGlassReflection"
+	inner_glass.mesh = inner_mesh
+	inner_glass.position = Vector3(0.0, -0.03, -0.015)
+	inner_glass.material_override = _material_3d(Color(0.90, 0.99, 1.0, 0.055), 0.0, 0.025)
+	stage_3d.add_child(inner_glass)
 
 	var rim_mesh := TorusMesh.new()
 	rim_mesh.inner_radius = 0.56
@@ -190,7 +206,7 @@ func _build_glass_3d() -> void:
 	contact_shadow.mesh = shadow_mesh
 	contact_shadow.position = Vector3(0.10, -1.77, -0.08)
 	contact_shadow.scale = Vector3(1.0, 1.0, 0.52)
-	contact_shadow.material_override = _material_3d(Color(0.02, 0.15, 0.28, 0.20), 0.0, 0.18)
+	contact_shadow.material_override = _material_3d(Color(0.02, 0.11, 0.22, 0.30), 0.0, 0.16)
 	stage_3d.add_child(contact_shadow)
 
 func _build_liquid_materials_3d() -> void:
@@ -198,7 +214,9 @@ func _build_liquid_materials_3d() -> void:
 	# longer allocates new StandardMaterial3D resources every animation frame.
 	liquid_materials_3d.clear()
 	for color in PALETTE:
-		liquid_materials_3d.append(_material_3d(color.lightened(0.025), 0.0, 0.10))
+		var liquid: Color = color.lightened(0.035)
+		liquid.a = 0.97
+		liquid_materials_3d.append(_material_3d(liquid, 0.02, 0.055))
 
 func _build_liquid_segments_3d() -> void:
 	liquid_root_3d = Node3D.new()
@@ -207,10 +225,10 @@ func _build_liquid_segments_3d() -> void:
 	liquid_segments_3d.clear()
 	for slot in range(CAPACITY):
 		var mesh := CylinderMesh.new()
-		mesh.top_radius = 0.49
-		mesh.bottom_radius = 0.49
+		mesh.top_radius = 0.47
+		mesh.bottom_radius = 0.47
 		mesh.height = 0.60
-		mesh.radial_segments = 20
+		mesh.radial_segments = 28
 		mesh.cap_top = true
 		mesh.cap_bottom = true
 		var segment := MeshInstance3D.new()
@@ -222,14 +240,14 @@ func _build_liquid_segments_3d() -> void:
 
 func _build_liquid_meniscus_3d() -> void:
 	var mesh := SphereMesh.new()
-	mesh.radius = 0.49
-	mesh.height = 0.98
-	mesh.radial_segments = 24
-	mesh.rings = 8
+	mesh.radius = 0.47
+	mesh.height = 0.94
+	mesh.radial_segments = 32
+	mesh.rings = 10
 	liquid_meniscus_3d = MeshInstance3D.new()
 	liquid_meniscus_3d.name = "LiquidMeniscus3D"
 	liquid_meniscus_3d.mesh = mesh
-	liquid_meniscus_3d.scale = Vector3(1.0, 0.11, 1.0)
+	liquid_meniscus_3d.scale = Vector3(1.0, 0.085, 1.0)
 	liquid_meniscus_3d.visible = false
 	liquid_root_3d.add_child(liquid_meniscus_3d)
 

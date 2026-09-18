@@ -149,7 +149,7 @@ func build_settings() -> void:
 	_add_surface_diorama(selected_game_id, "Settings3DDiorama")
 
 func _setting_button(title_text: String, detail_text: String, enabled: bool, accent: Color) -> Button:
-	var state := "ON" if enabled else "OFF"
+	var state := "✓ ON" if enabled else "○ OFF"
 	var role := "success" if enabled else "toggle_off"
 	var button := _button("%s   •   %s\n%s" % [title_text, state, detail_text], Vector2(0, 94), role)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -336,7 +336,7 @@ func build_collection() -> void:
 	var games_title := _label("THREE PUZZLE WORLDS", 25, "title", accent)
 	stack.add_child(games_title)
 	var game_grid := GridContainer.new()
-	game_grid.columns = 2 if get_viewport_rect().size.x >= 720.0 else 1
+	game_grid.columns = 3 if get_viewport_rect().size.x >= 900.0 else 1
 	game_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	game_grid.add_theme_constant_override("h_separation", 14)
 	game_grid.add_theme_constant_override("v_separation", 14)
@@ -555,13 +555,14 @@ func _inject_game_tabs(active_game_id: String) -> void:
 		old.queue_free()
 	var tabs := HBoxContainer.new()
 	tabs.name = "LevelGameTabs"
-	tabs.custom_minimum_size = Vector2(0, 92)
+	var compact_tabs := get_viewport_rect().size.x < 700.0
+	tabs.custom_minimum_size = Vector2(0, 70 if compact_tabs else 88)
 	tabs.add_theme_constant_override("separation", 10)
 	root.add_child(tabs)
 	root.move_child(tabs, mini(1, root.get_child_count() - 1))
 	for game_id in MultiGameManager.GAME_IDS:
 		var current: bool = game_id == active_game_id
-		var button := _button(MultiGameManager.display_name(game_id), Vector2(0, 84), "primary" if current else "secondary", game_id)
+		var button := _button(MultiGameManager.display_name(game_id), Vector2(0, 64 if compact_tabs else 80), "primary" if current else "secondary", game_id)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.add_theme_font_size_override("font_size", 18 if get_viewport_rect().size.x >= 700.0 else 15)
 		button.disabled = current
@@ -633,30 +634,33 @@ func _inject_journey_summary(game_id: String) -> void:
 			next_milestone = milestone
 			break
 
+	var narrow := get_viewport_rect().size.x < 700.0
 	var card := PanelContainer.new()
 	card.name = "JourneySummary"
-	card.custom_minimum_size = Vector2(0, 190)
+	card.custom_minimum_size = Vector2(0, 214 if narrow else 176)
 	card.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Unjam3DTheme.surface_fill(_dark(), true), 30, Color(accent, 0.82), 3, 12))
 	var margin := MarginContainer.new()
 	for side in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_%s" % side, 20)
+		margin.add_theme_constant_override("margin_%s" % side, 14 if narrow else 18)
 	card.add_child(margin)
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 9)
+	box.add_theme_constant_override("separation", 8)
 	margin.add_child(box)
 
-	var top := HBoxContainer.new()
-	top.add_theme_constant_override("separation", 12)
+	var top: BoxContainer = VBoxContainer.new() if narrow else HBoxContainer.new()
+	top.add_theme_constant_override("separation", 8 if narrow else 12)
 	box.add_child(top)
 	var copy := VBoxContainer.new()
 	copy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top.add_child(copy)
-	var title := _label("%s JOURNEY" % MultiGameManager.display_name(game_id).to_upper(), 25, "title", accent)
+	var title := _label("%s JOURNEY" % MultiGameManager.display_name(game_id).to_upper(), 22 if narrow else 25, "title", accent)
+	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	copy.add_child(title)
-	var detail := _label("WORLD %d / %d  •  LEVEL %d  •  NEXT MILESTONE %d" % [world, world_count, level, next_milestone], 17, "body", accent)
+	var detail := _label("WORLD %d / %d  •  LEVEL %d  •  NEXT MILESTONE %d" % [world, world_count, level, next_milestone], 15 if narrow else 17, "body", accent)
 	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	copy.add_child(detail)
-	var play := _button("▶  CONTINUE", Vector2(220, 72), "primary", game_id)
+	var play := _button("▶  CONTINUE", Vector2(0 if narrow else 220, 64 if narrow else 72), "primary", game_id)
+	play.size_flags_horizontal = Control.SIZE_EXPAND_FILL if narrow else Control.SIZE_SHRINK_END
 	play.pressed.connect(_continue_campaign.bind(game_id))
 	top.add_child(play)
 
@@ -668,7 +672,7 @@ func _inject_journey_summary(game_id: String) -> void:
 	progress.add_theme_stylebox_override("background", PremiumDesignSystem.box(PremiumDesignSystem.surface_3(_dark()), 10, Color.TRANSPARENT, 0, 0, _dark()))
 	progress.add_theme_stylebox_override("fill", PremiumDesignSystem.box(accent, 10, accent.lightened(0.14), 1, 0, _dark()))
 	box.add_child(progress)
-	var hint := _label("Challenge nodes at 25 • 50 • 75 • 100 are highlighted below.", 15, "muted", accent)
+	var hint := _label("MILESTONES  •  25  •  50  •  75  •  100", 14 if narrow else 15, "muted", accent)
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(hint)
 
@@ -752,6 +756,5 @@ func _add_surface_diorama(game_id: String, node_name: String) -> void:
 	content.add_child(art)
 
 func _highest_level_for_game(game_id: String) -> int:
-	if game_id == "rescue_rush":
-		return int(SaveManager.data.get("highest_level", 1))
-	return MultiGameManager.highest_level(game_id)
+	var level := int(SaveManager.data.get("highest_level", 1)) if game_id == "rescue_rush" else MultiGameManager.highest_level(game_id)
+	return clampi(level, 1, MultiGameManager.CAMPAIGN_LEVELS)

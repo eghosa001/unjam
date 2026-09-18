@@ -33,8 +33,10 @@ func _polish_tree(node: Node, surface: String, dark: bool, accent: Color) -> voi
 		return
 	if node is Button and not _is_gameplay_widget(node):
 		var button := node as Button
-		button.custom_minimum_size.y = maxf(button.custom_minimum_size.y, 94.0)
-		button.add_theme_font_size_override("font_size", maxi(25, button.get_theme_font_size("font_size")))
+		var viewport_size := get_viewport().get_visible_rect().size
+		var compact_surface := viewport_size.x < 600.0 or viewport_size.y < 1100.0
+		button.custom_minimum_size.y = maxf(button.custom_minimum_size.y, 72.0 if compact_surface else 90.0)
+		button.add_theme_font_size_override("font_size", maxi(18 if compact_surface else 23, button.get_theme_font_size("font_size")))
 		var role := _role_for_surface_button(button, surface)
 		var button_accent := _button_accent(role, accent)
 		Unjam3DTheme.gloss_button(button, button_accent, role in ["primary", "reward", "success"], 24 if not _looks_like_level_button(button, surface) else 20, dark)
@@ -60,7 +62,8 @@ func _polish_tree(node: Node, surface: String, dark: bool, accent: Color) -> voi
 			color = Color("d88700")
 		elif font_size >= 28 or text.begins_with("WORLD "):
 			color = accent.lightened(0.28) if dark else Unjam3DTheme.game_dark(_game_id_from_accent(accent))
-		Unjam3DTheme.label_3d(label, color, Color(1, 1, 1, 0.85), 2 if font_size < 24 else 3)
+		var crisp_edge := Color("06172c") if dark else Color(1, 1, 1, 0.92)
+		Unjam3DTheme.label_3d(label, color, crisp_edge, 1)
 	elif node is ProgressBar:
 		var progress := node as ProgressBar
 		progress.add_theme_stylebox_override("background", Unjam3DTheme.panel_3d(Color("17304c") if dark else Color("d7efff"), 12, Color(accent, 0.55) if dark else Color("84d5ff"), 2, 2))

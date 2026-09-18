@@ -21,6 +21,8 @@ func _run() -> void:
 	var performance := _find_label_with(overlay, "PERFORMANCE")
 	if card == null or not _inside(card.get_global_rect(), root.get_visible_rect().size):
 		return _fail("Premium result card does not fit the viewport")
+	if card.custom_minimum_size.y > 840.0:
+		return _fail("Premium result card reverted to an oversized low-density shell")
 	if primary == null or primary.custom_minimum_size.y < 84.0:
 		return _fail("Result primary action is not a large mobile touch target")
 	if performance == null:

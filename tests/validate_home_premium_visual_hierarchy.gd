@@ -4,6 +4,7 @@ func _initialize() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
+	root.size = Vector2i(540, 960)
 	var packed := load("res://scenes/Main.tscn") as PackedScene
 	if packed == null:
 		push_error("Main scene could not be loaded")
@@ -25,7 +26,8 @@ func _run() -> void:
 		if _find_node_named(home, "ExplorerSignStack") != null:
 			failures.append("Home still contains the cluttered explorer sign stack")
 		var mascot := _find_node_named(home, "HomeMascot3D") as Control
-		if mascot == null or mascot.custom_minimum_size.x < 640.0:
+		var mascot_min_width := 420.0 if root.size.x < 700 else 640.0
+		if mascot == null or mascot.custom_minimum_size.x < mascot_min_width:
 			failures.append("Home mascot is not the dominant centered hero")
 		var hero := _find_node_named(home, "HomeHero3D") as Control
 		if hero == null or hero.custom_minimum_size.y > 480.0:
@@ -33,6 +35,16 @@ func _run() -> void:
 		var strip := _find_node_named(home, "HomeGameStrip")
 		if strip == null or strip.get_child_count() != 3:
 			failures.append("Home does not have the clean three-game strip")
+		var nav := _find_node_named(home, "HomeBottomNav3D") as Control
+		var motto := _find_node_named(home, "HomeMottoStone") as Control
+		var primary := _find_node_named(home, "HomePrimaryAction") as Button
+		if nav == null or motto == null or primary == null:
+			failures.append("Compact Home responsive structure is incomplete")
+		else:
+			if motto.get_global_rect().end.y > nav.get_global_rect().position.y + 2.0:
+				failures.append("Compact Home content still runs behind the bottom navigation")
+			if primary.get_theme_font_size("font_size") < 23:
+				failures.append("Compact Home primary action text became too small")
 		if _find_label_with(home, "Small\nPuzzles") != null:
 			failures.append("Home still contains the competing right-side quote card")
 
