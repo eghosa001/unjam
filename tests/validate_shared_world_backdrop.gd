@@ -38,7 +38,7 @@ func _run() -> void:
 	if not _assert_single_shared_backdrop(main, "collection"):
 		return
 
-	main.call("build_home")
+	main.call("build_settings")
 	await _frames(2)
 	var hub := main.get_node_or_null("MonetizationHub")
 	if hub == null or not hub.has_method("open_shop"):
@@ -52,6 +52,14 @@ func _run() -> void:
 		return _fail("Shop overlay is not visible")
 	if _count_backdrops(overlay) != 0:
 		return _fail("Shop still creates its own full-screen world backdrop")
+	var content := main.get("content") as Control
+	if content != null and content.visible and content.is_visible_in_tree():
+		return _fail("Shop leaves the previous launcher foreground visible behind its catalog")
+	hub.call("_close_shop")
+	await _frames(2)
+	content = main.get("content") as Control
+	if content == null or not content.visible or not content.is_visible_in_tree():
+		return _fail("Closing Shop does not restore the previous launcher foreground")
 
 	main.queue_free()
 	await process_frame
