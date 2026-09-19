@@ -70,6 +70,7 @@ func _build_world() -> void:
 
 	_build_environment()
 	_build_camera()
+	_build_sky_details()
 	_build_water()
 	_build_distant_world()
 	_build_bridge()
@@ -86,7 +87,7 @@ func _build_environment() -> void:
 	environment.background_color = Color("34b9f6")
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	environment.ambient_light_color = Color("dffaff")
-	environment.ambient_light_energy = 1.15
+	environment.ambient_light_energy = 0.92
 	environment.reflected_light_source = Environment.REFLECTION_SOURCE_BG
 	world_environment.environment = environment
 	stage.add_child(world_environment)
@@ -95,7 +96,7 @@ func _build_environment() -> void:
 	key_light.name = "WarmSun"
 	key_light.rotation_degrees = Vector3(-46, -34, -7)
 	key_light.light_color = Color("fff1c5")
-	key_light.light_energy = 1.72
+	key_light.light_energy = 1.34
 	key_light.shadow_enabled = true
 	stage.add_child(key_light)
 
@@ -103,14 +104,14 @@ func _build_environment() -> void:
 	rim_light.name = "SkyRim"
 	rim_light.rotation_degrees = Vector3(-24, 146, 15)
 	rim_light.light_color = Color("8fe7ff")
-	rim_light.light_energy = 0.82
+	rim_light.light_energy = 0.66
 	stage.add_child(rim_light)
 
 	warm_fill = OmniLight3D.new()
 	warm_fill.name = "WaterBounce"
 	warm_fill.position = Vector3(0, 1.2, 5.4)
 	warm_fill.light_color = Color("8ff4ff")
-	warm_fill.light_energy = 0.78
+	warm_fill.light_energy = 0.56
 	warm_fill.omni_range = 24.0
 	stage.add_child(warm_fill)
 
@@ -125,8 +126,30 @@ func _build_camera() -> void:
 	camera.look_at(Vector3(0.0, 0.45, -5.8), Vector3.UP)
 	camera.current = true
 
+func _build_sky_details() -> void:
+	var cloud := _material(Color(0.96, 0.99, 1.0, 0.94), 0.0, 0.62, 0.18)
+	var cloud_shadow := _material(Color(0.70, 0.87, 0.93, 0.48), 0.0, 0.72, 0.08)
+	for center in [
+		Vector3(-5.8, 6.4, -18.0),
+		Vector3(4.6, 7.0, -20.0),
+		Vector3(0.4, 8.0, -24.0)
+	]:
+		_add_cloud_cluster(center, cloud, cloud_shadow)
+	var sun := _material(Color("ffe891"), 0.0, 0.22, 0.70)
+	sun.emission_enabled = true
+	sun.emission = Color("ffd86c")
+	sun.emission_energy_multiplier = 0.85
+	_add_sphere(stage, 1.18, Vector3(6.7, 8.1, -24.0), sun, Vector3.ONE)
+
+func _add_cloud_cluster(center: Vector3, cloud: Material, cloud_shadow: Material) -> void:
+	_add_sphere(stage, 0.95, center + Vector3(0.10, -0.24, 0.18), cloud_shadow, Vector3(1.48, 0.58, 0.82))
+	_add_sphere(stage, 0.82, center, cloud, Vector3(1.42, 0.66, 0.90))
+	_add_sphere(stage, 0.62, center + Vector3(-0.86, -0.02, 0.05), cloud, Vector3(1.25, 0.70, 0.88))
+	_add_sphere(stage, 0.66, center + Vector3(0.84, -0.05, 0.02), cloud, Vector3(1.28, 0.68, 0.90))
+	_add_sphere(stage, 0.56, center + Vector3(0.14, 0.54, -0.08), cloud, Vector3(1.05, 0.86, 0.92))
+
 func _build_water() -> void:
-	water_material = _material(Color("18bfe0"), 0.08, 0.16, 0.88)
+	water_material = _material(Color("0d9fd0"), 0.06, 0.20, 0.82)
 	water_material.clearcoat_enabled = true
 	water_material.clearcoat = 0.90
 	water_material.clearcoat_roughness = 0.07
@@ -135,7 +158,7 @@ func _build_water() -> void:
 
 	# Semi-transparent highlight lanes give the static river a reflective, premium
 	# finish without a continuously running shader.
-	var gloss := _material(Color(0.74, 0.98, 1.0, 0.30), 0.0, 0.10, 0.65)
+	var gloss := _material(Color(0.76, 0.96, 1.0, 0.24), 0.0, 0.12, 0.58)
 	for item in [
 		Vector4(-3.8, -1.91, -1.0, 2.8),
 		Vector4(2.9, -1.90, -4.2, 3.4),
@@ -171,16 +194,16 @@ func _build_distant_world() -> void:
 func _build_bridge() -> void:
 	var stone := _material(Color("889c94"), 0.02, 0.52, 0.30)
 	var stone_light := _material(Color("c9d8ca"), 0.01, 0.42, 0.40)
-	var deck := _add_box(stage, Vector3(7.8, 0.48, 0.72), Vector3(3.25, 2.05, -9.8), stone)
+	var deck := _add_box(stage, Vector3(7.8, 0.48, 0.72), Vector3(3.35, 2.15, -12.8), stone)
 	deck.rotation_degrees.y = -5.0
-	var cap := _add_box(stage, Vector3(7.9, 0.14, 0.82), Vector3(3.25, 2.38, -9.8), stone_light)
+	var cap := _add_box(stage, Vector3(7.9, 0.14, 0.82), Vector3(3.35, 2.48, -12.8), stone_light)
 	cap.rotation_degrees.y = -5.0
 	for x in [0.7, 2.55, 4.4, 6.25]:
-		_add_box(stage, Vector3(0.58, 3.15, 0.68), Vector3(x, 0.55, -9.82), stone)
-		_add_box(stage, Vector3(0.20, 3.0, 0.74), Vector3(x - 0.17, 0.62, -9.45), stone_light)
+		_add_box(stage, Vector3(0.58, 3.15, 0.68), Vector3(x, 0.70, -12.82), stone)
+		_add_box(stage, Vector3(0.20, 3.0, 0.74), Vector3(x - 0.17, 0.76, -12.45), stone_light)
 	for x in [-0.25, 0.75, 1.75, 2.75, 3.75, 4.75, 5.75, 6.75]:
-		_add_box(stage, Vector3(0.16, 0.72, 0.18), Vector3(x, 2.78, -9.75), stone_light)
-	_add_box(stage, Vector3(7.8, 0.14, 0.14), Vector3(3.25, 3.02, -9.75), stone_light)
+		_add_box(stage, Vector3(0.16, 0.72, 0.18), Vector3(x, 2.88, -12.75), stone_light)
+	_add_box(stage, Vector3(7.8, 0.14, 0.14), Vector3(3.35, 3.12, -12.75), stone_light)
 
 func _build_waterfalls() -> void:
 	var edge := _material(Color("1aa6c8"), 0.0, 0.16, 0.65)
@@ -205,8 +228,8 @@ func _build_waterfalls() -> void:
 			)
 
 func _build_shoreline() -> void:
-	var rock := _material(Color("71877e"), 0.0, 0.62, 0.22)
-	var rock_light := _material(Color("b7c8b6"), 0.0, 0.48, 0.28)
+	var rock := _material(Color("647a72"), 0.0, 0.62, 0.22)
+	var rock_light := _material(Color("9fb2a4"), 0.0, 0.48, 0.28)
 	var grass := _material(Color("45c65b"), 0.0, 0.48, 0.32)
 	for side_value in [-1.0, 1.0]:
 		var side: float = float(side_value)
@@ -230,8 +253,8 @@ func _build_shoreline() -> void:
 		_add_flower(item + Vector3(0, 0.18, 0), 0.24)
 
 func _build_stepping_stones() -> void:
-	var stone := _material(Color("91a59a"), 0.0, 0.52, 0.28)
-	var top := _material(Color("ccd8c4"), 0.0, 0.40, 0.36)
+	var stone := _material(Color("7f9389"), 0.0, 0.52, 0.28)
+	var top := _material(Color("aebdaf"), 0.0, 0.40, 0.36)
 	var shadow := _material(Color(0.02, 0.15, 0.22, 0.25), 0.0, 0.72, 0.0)
 	var stones := [
 		Vector4(0.35,-1.78,4.8,1.05),
@@ -275,12 +298,14 @@ func _add_island(position_value: Vector3, radius: float, height: float, opacity:
 	_add_box(stage, Vector3(radius * 0.28, height * 0.92, 0.12), position_value + Vector3(radius * 0.48, -height * 0.02, radius * 0.62), fall)
 
 func _add_cliff_terrace(position_value: Vector3, width: float) -> void:
-	var rock := _material(Color("617b72"), 0.0, 0.62, 0.18)
-	var rock_light := _material(Color("91aa98"), 0.0, 0.48, 0.26)
-	var grass := _material(Color("4bc65d"), 0.0, 0.46, 0.30)
-	_add_box(stage, Vector3(width, 2.75, 2.6), position_value, rock)
-	_add_box(stage, Vector3(width * 0.88, 2.28, 0.22), position_value + Vector3(-0.18, 0.15, 1.40), rock_light)
-	_add_box(stage, Vector3(width * 1.03, 0.32, 2.75), position_value + Vector3(0, 1.53, 0), grass)
+	var rock := _material(Color("5d766e"), 0.0, 0.64, 0.16)
+	var rock_light := _material(Color("8fa697"), 0.0, 0.50, 0.24)
+	var grass := _material(Color("48bd59"), 0.0, 0.46, 0.28)
+	var radius := width * 0.52
+	_add_cylinder(stage, radius, radius * 0.76, 2.70, position_value, rock)
+	_add_cylinder(stage, radius * 1.03, radius * 0.96, 0.28, position_value + Vector3(0, 1.49, 0), grass)
+	_add_sphere(stage, radius * 0.62, position_value + Vector3(-radius * 0.26, 0.25, radius * 0.72), rock_light, Vector3(1.10, 0.78, 0.56))
+	_add_sphere(stage, radius * 0.45, position_value + Vector3(radius * 0.46, 0.04, radius * 0.68), rock_light, Vector3(1.02, 0.72, 0.52))
 
 func _add_tree(position_value: Vector3, scale_value: float) -> void:
 	var trunk := _material(Color("80502d"), 0.0, 0.58, 0.18)
@@ -319,15 +344,15 @@ func _apply_world_style() -> void:
 	else:
 		environment.background_color = Color("32b8f7")
 		environment.ambient_light_color = Color("e8fbff")
-		environment.ambient_light_energy = 1.18
+		environment.ambient_light_energy = 0.94
 		key_light.light_color = Color("fff0c6")
-		key_light.light_energy = 1.72
+		key_light.light_energy = 1.34
 		rim_light.light_color = accent.lightened(0.48)
-		rim_light.light_energy = 0.86
+		rim_light.light_energy = 0.68
 		warm_fill.light_color = Color("99f5ff")
-		warm_fill.light_energy = 0.80
+		warm_fill.light_energy = 0.58
 	if water_material != null:
-		water_material.albedo_color = (Color("116cac") if dark_mode else Color("17c5e4")).lerp(accent, 0.08)
+		water_material.albedo_color = (Color("116cac") if dark_mode else Color("0d9fd0")).lerp(accent, 0.08)
 	for material in accent_materials:
 		if material != null:
 			material.emission = accent.lightened(0.28)
