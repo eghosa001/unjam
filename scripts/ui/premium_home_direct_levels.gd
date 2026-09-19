@@ -21,9 +21,9 @@ func build_home_launcher() -> void:
 	var compact_width := viewport_size.x < 700.0
 	clip_contents = true
 
-	var main := get_parent()
-	if main != null and main.has_method("set_world_backdrop_style"):
-		main.call("set_world_backdrop_style", Unjam3DTheme.game_accent(selected_game), dark_mode)
+	var main_node := get_parent()
+	if main_node != null and main_node.has_method("set_world_backdrop_style"):
+		main_node.call("set_world_backdrop_style", Unjam3DTheme.game_accent(selected_game), dark_mode)
 
 	var outer := MarginContainer.new()
 	outer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
