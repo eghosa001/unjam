@@ -29,25 +29,30 @@ func build_ui() -> void:
 	add_child(environment_3d)
 	PremiumVisuals.set_accent(Unjam3DTheme.GREEN)
 
+	var viewport_size := get_viewport_rect().size
+	var compact := viewport_size.x < 700.0 or viewport_size.y < 1100.0
 	var outer := MarginContainer.new()
+	outer.name = "RescueOuter"
 	outer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	outer.add_theme_constant_override("margin_left", 28)
-	outer.add_theme_constant_override("margin_right", 28)
-	outer.add_theme_constant_override("margin_top", 24)
-	outer.add_theme_constant_override("margin_bottom", 28)
+	outer.add_theme_constant_override("margin_left", 16 if compact else 28)
+	outer.add_theme_constant_override("margin_right", 16 if compact else 28)
+	outer.add_theme_constant_override("margin_top", 10 if compact else 20)
+	outer.add_theme_constant_override("margin_bottom", 12 if compact else 24)
 	add_child(outer)
 	var root := VBoxContainer.new()
-	root.add_theme_constant_override("separation", 11)
+	root.name = "RescueRoot"
+	root.add_theme_constant_override("separation", 7 if compact else 11)
 	outer.add_child(root)
 
 	var header := HBoxContainer.new()
-	header.custom_minimum_size = Vector2(0, 86)
-	header.add_theme_constant_override("separation", 12)
+	header.name = "RescueHeader"
+	header.custom_minimum_size = Vector2(0, 72 if compact else 86)
+	header.add_theme_constant_override("separation", 8 if compact else 12)
 	root.add_child(header)
 	var back := Button.new()
 	back.text = "←"
-	back.custom_minimum_size = Vector2(92, 78)
-	back.add_theme_font_size_override("font_size", 34)
+	back.custom_minimum_size = Vector2(80, 72) if compact else Vector2(92, 78)
+	back.add_theme_font_size_override("font_size", 30 if compact else 34)
 	style_button(back)
 	back.pressed.connect(_quit)
 	header.add_child(back)
@@ -56,20 +61,20 @@ func build_ui() -> void:
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 28)
+	title.add_theme_font_size_override("font_size", 25 if compact else 30)
 	Unjam3DTheme.label_3d(title, Color.WHITE, Unjam3DTheme.NAVY, 5)
 	header.add_child(title)
 	var retry := Button.new()
 	retry.text = "↻"
-	retry.custom_minimum_size = Vector2(92, 78)
-	retry.add_theme_font_size_override("font_size", 34)
+	retry.custom_minimum_size = Vector2(80, 72) if compact else Vector2(92, 78)
+	retry.add_theme_font_size_override("font_size", 30 if compact else 34)
 	style_button(retry)
 	retry.pressed.connect(restart_level)
 	header.add_child(retry)
 
 	var status_panel := PanelContainer.new()
 	status_panel.name = "CompactStatusStrip"
-	status_panel.custom_minimum_size = Vector2(0, 94)
+	status_panel.custom_minimum_size = Vector2(0, 82 if compact else 94)
 	status_panel.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("0760ad"), 30, Color("55cfff"), 3, 10))
 	root.add_child(status_panel)
 	var status := HBoxContainer.new()
@@ -79,19 +84,21 @@ func build_ui() -> void:
 	rescue_label = _status_label(HORIZONTAL_ALIGNMENT_CENTER)
 	chain_label = _status_label(HORIZONTAL_ALIGNMENT_RIGHT)
 	for label in [moves_label, rescue_label, chain_label]:
-		label.add_theme_font_size_override("font_size", 24)
+		label.add_theme_font_size_override("font_size", 21 if compact else 24)
 		Unjam3DTheme.label_3d(label, Color.WHITE, Color("043666"), 3)
 		status.add_child(label)
 
 	var objective := PanelContainer.new()
-	objective.custom_minimum_size = Vector2(0, 56)
+	objective.name = "RescueObjectiveCard"
+	objective.custom_minimum_size = Vector2(0, 50 if compact else 56)
 	objective.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color(0.96, 0.99, 1.0, 0.94), 25, Color("82dbff"), 2, 6))
 	root.add_child(objective)
 	var objective_label := Label.new()
 	objective_label.text = "🐥  " + objective_instruction().to_upper()
 	objective_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	objective_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	objective_label.add_theme_font_size_override("font_size", 23)
+	objective_label.name = "RescueObjectiveLabel"
+	objective_label.add_theme_font_size_override("font_size", 20 if compact else 23)
 	Unjam3DTheme.label_3d(objective_label, Unjam3DTheme.NAVY, Color.WHITE, 2)
 	objective.add_child(objective_label)
 
@@ -118,22 +125,22 @@ func build_ui() -> void:
 	root.add_child(actions)
 	var undo := Button.new()
 	undo.text = "↶\nUNDO"
-	undo.custom_minimum_size = Vector2(220, 116)
-	undo.add_theme_font_size_override("font_size", 19)
+	undo.custom_minimum_size = Vector2(190, 100) if compact else Vector2(220, 116)
+	undo.add_theme_font_size_override("font_size", 20 if compact else 22)
 	style_button(undo)
 	undo.pressed.connect(undo_move)
 	actions.add_child(undo)
 	var hint := Button.new()
 	hint.text = "💡\nHINT"
-	hint.custom_minimum_size = Vector2(220, 116)
-	hint.add_theme_font_size_override("font_size", 19)
+	hint.custom_minimum_size = Vector2(190, 100) if compact else Vector2(220, 116)
+	hint.add_theme_font_size_override("font_size", 20 if compact else 22)
 	style_button(hint, true)
 	hint.pressed.connect(show_hint)
 	actions.add_child(hint)
 	var restart := Button.new()
 	restart.text = "↻\nRESTART"
-	restart.custom_minimum_size = Vector2(220, 116)
-	restart.add_theme_font_size_override("font_size", 19)
+	restart.custom_minimum_size = Vector2(190, 100) if compact else Vector2(220, 116)
+	restart.add_theme_font_size_override("font_size", 20 if compact else 22)
 	style_button(restart)
 	restart.pressed.connect(restart_level)
 	actions.add_child(restart)
@@ -141,8 +148,8 @@ func build_ui() -> void:
 	hint_label = Label.new()
 	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	hint_label.add_theme_font_size_override("font_size", 22)
-	hint_label.custom_minimum_size = Vector2(0, 40)
+	hint_label.add_theme_font_size_override("font_size", 20 if compact else 22)
+	hint_label.custom_minimum_size = Vector2(0, 34 if compact else 40)
 	hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	Unjam3DTheme.label_3d(hint_label, Color.WHITE, Unjam3DTheme.NAVY, 3)
 	root.add_child(hint_label)
