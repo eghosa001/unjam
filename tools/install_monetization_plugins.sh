@@ -43,12 +43,18 @@ curl -fL "https://github.com/poingstudios/godot-admob-plugin/releases/download/v
 rm -rf "$CACHE_DIR/admob-android"
 mkdir -p "$CACHE_DIR/admob-android"
 unzip -oq "$CACHE_DIR/admob-android.zip" -d "$CACHE_DIR/admob-android"
+rm -rf addons/admob/android/bin
 mkdir -p addons/admob/android/bin
-find "$CACHE_DIR/admob-android" -maxdepth 4 -type f -exec cp -f {} addons/admob/android/bin/ \;
+ADMOB_ANDROID_PACKAGE=$(find "$CACHE_DIR/admob-android" -type f -name package.gd -print -quit)
+test -n "$ADMOB_ANDROID_PACKAGE"
+ADMOB_ANDROID_ROOT=$(dirname "$ADMOB_ANDROID_PACKAGE")
+cp -R "$ADMOB_ANDROID_ROOT/." addons/admob/android/bin/
 
 test -f addons/admob/plugin.cfg
 test -f addons/GodotGooglePlayBilling/BillingClient.gd
-test "$(find addons/admob/android/bin -type f | wc -l)" -gt 0
+test -f addons/admob/android/bin/package.gd
+test -f addons/admob/android/bin/ads/poing_godot_admob_ads.gd
+test "$(find addons/admob/android/bin/ads/libs -type f -name '*.aar' | wc -l)" -gt 0
 
 echo "Installed Google Play Billing ${BILLING_VERSION}, Poing AdMob ${ADMOB_VERSION}, and Android template ${GODOT_ADMOB_TEMPLATE_VERSION}."
 echo "The maintained UNJAM provider remains at addons/unjam_admob_provider.gd."
