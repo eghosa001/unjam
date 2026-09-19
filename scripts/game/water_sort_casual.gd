@@ -31,6 +31,7 @@ func build_ui() -> void:
 	header.add_theme_constant_override("separation", 8 if compact else 12)
 	root.add_child(header)
 	var back := Button.new()
+	back.name = "WaterBackAction"
 	back.text = "←"
 	back.custom_minimum_size = Vector2(80, 72) if compact else Vector2(92, 78)
 	back.add_theme_font_size_override("font_size", 30 if compact else 34)
@@ -45,6 +46,7 @@ func build_ui() -> void:
 	Unjam3DTheme.label_3d(title_label, Color.WHITE, Unjam3DTheme.NAVY, 5)
 	header.add_child(title_label)
 	var retry := Button.new()
+	retry.name = "WaterRetryAction"
 	retry.text = "↻"
 	retry.custom_minimum_size = Vector2(80, 72) if compact else Vector2(92, 78)
 	retry.add_theme_font_size_override("font_size", 30 if compact else 34)
@@ -143,6 +145,7 @@ func build_ui() -> void:
 	actions.add_theme_constant_override("separation", 14)
 	root.add_child(actions)
 	var undo := Button.new()
+	undo.name = "WaterUndoAction"
 	undo.text = "↶\nUNDO"
 	undo.custom_minimum_size = Vector2(190, 100) if compact else Vector2(220, 116)
 	undo.add_theme_font_size_override("font_size", 20 if compact else 22)
@@ -150,19 +153,13 @@ func build_ui() -> void:
 	undo.pressed.connect(undo_move)
 	actions.add_child(undo)
 	var hint := Button.new()
+	hint.name = "WaterHintAction"
 	hint.text = "💡\nHINT"
 	hint.custom_minimum_size = Vector2(190, 100) if compact else Vector2(220, 116)
 	hint.add_theme_font_size_override("font_size", 20 if compact else 22)
 	Unjam3DTheme.gloss_button(hint, Unjam3DTheme.ORANGE, true, 24)
 	hint.pressed.connect(show_hint)
 	actions.add_child(hint)
-	var restart := Button.new()
-	restart.text = "↻\nRESTART"
-	restart.custom_minimum_size = Vector2(190, 100) if compact else Vector2(220, 116)
-	restart.add_theme_font_size_override("font_size", 20 if compact else 22)
-	Unjam3DTheme.gloss_button(restart, Unjam3DTheme.WATER_DARK, true, 24)
-	restart.pressed.connect(restart_level)
-	actions.add_child(restart)
 	PremiumVisuals.entrance(root, 0.008)
 
 func apply_theme_mode(dark: bool) -> void:
