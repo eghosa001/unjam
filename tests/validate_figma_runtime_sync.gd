@@ -246,13 +246,14 @@ func _assert_secondary_nav(main: Control, active_name: String) -> bool:
 	if content == null:
 		return _fail("Secondary surface content is missing for %s" % active_name)
 	var names := ["SecondaryNavHome", "SecondaryNavGames", "SecondaryNavDaily", "SecondaryNavCollection", "SecondaryNavSettings"]
-	for name in names:
+	for raw_name in names:
+		var name := String(raw_name)
 		var button := content.find_child(name, true, false) as Button
 		if button == null:
 			return _fail("Secondary nav button missing: %s" % name)
 		if not button.has_meta("unjam_preserve_surface_style"):
 			return _fail("Secondary nav style can be overwritten by the generic surface pass: %s" % name)
-		var should_be_active := name == active_name
+		var should_be_active: bool = name == active_name
 		if button.disabled != should_be_active:
 			return _fail("Secondary nav active state is wrong for %s while %s should be active" % [name, active_name])
 		if not should_be_active and not _bound(button):
