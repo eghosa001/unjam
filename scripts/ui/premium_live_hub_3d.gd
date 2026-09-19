@@ -30,10 +30,9 @@ func _build() -> void:
 	var nav_side := 12.0 if narrow else (20.0 if phone_width else 28.0)
 	var nav_reserve := nav_height + nav_bottom + (14.0 if short else 22.0)
 
-	var bg := Unjam3DBackdrop.new()
-	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	bg.configure(Unjam3DTheme.WATER, dark_mode)
-	add_child(bg)
+	var main_node := get_parent()
+	if main_node != null and main_node.has_method("set_world_backdrop_style"):
+		main_node.call("set_world_backdrop_style", Unjam3DTheme.WATER, dark_mode)
 
 	var outer := MarginContainer.new()
 	outer.name = "GameSelectorOuter"
