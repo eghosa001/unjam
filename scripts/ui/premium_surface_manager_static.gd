@@ -5,17 +5,11 @@ extends "res://scripts/ui/premium_surface_manager.gd"
 # reskinned through one lightweight pass.
 
 func _configure_background(root: Node, game_id: String, dark: bool, accent: Color) -> void:
-	if root is Control:
-		var control := root as Control
-		var bg := control.get_node_or_null("Unjam3DSurfaceBackdrop") as Unjam3DBackdrop
-		if bg == null:
-			bg = Unjam3DBackdrop.new()
-			bg.name = "Unjam3DSurfaceBackdrop"
-			bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-			bg.z_index = -100
-			control.add_child(bg)
-			control.move_child(bg, 0)
-		bg.configure(Unjam3DTheme.game_accent(game_id), dark)
+	# Secondary-surface polish owns accent/theme only. Main owns the single
+	# full-screen world backdrop so navigation never swaps environments.
+	var main := get_parent()
+	if main != null and main.has_method("set_world_backdrop_style"):
+		main.call("set_world_backdrop_style", Unjam3DTheme.game_accent(game_id), dark)
 	_hide_legacy_backdrops(root)
 	PremiumVisuals.set_accent(accent)
 
