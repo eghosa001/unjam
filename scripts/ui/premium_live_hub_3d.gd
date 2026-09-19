@@ -127,22 +127,19 @@ func _build() -> void:
 	for game_id in ["rescue_rush", "water_sort", "block_puzzle"]:
 		_add_game_card(stack, game_id)
 
-	var quote := PanelContainer.new()
-	quote.name = "GameSelectorQuote"
-	quote.custom_minimum_size = Vector2(0, 64 if short else (76 if medium_height else 92))
-	quote.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("26334a") if dark_mode else Color("d0c8a8"), 24 if compact else 30, Color("f2e9bf"), 3, 6 if compact else 8))
-	if short:
-		quote.queue_free()
-	else:
-		stack.add_child(quote)
-	var quote_label := Label.new()
-	quote_label.text = "Different puzzles.  A brighter you.  ♥" if short else "Different puzzles.\nA brighter you.  ♥"
-	quote_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	quote_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	quote_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	quote_label.add_theme_font_size_override("font_size", 22 if narrow else (24 if compact else 26))
-	Unjam3DTheme.label_3d(quote_label, Color("244279"), Color.WHITE, 2)
 	if not short:
+		var quote := PanelContainer.new()
+		quote.name = "GameSelectorQuote"
+		quote.custom_minimum_size = Vector2(0, 76 if medium_height else 92)
+		quote.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("26334a") if dark_mode else Color("d0c8a8"), 24 if compact else 30, Color("f2e9bf"), 3, 6 if compact else 8))
+		stack.add_child(quote)
+		var quote_label := Label.new()
+		quote_label.text = "Different puzzles.\nA brighter you.  ♥"
+		quote_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		quote_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		quote_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		quote_label.add_theme_font_size_override("font_size", 24 if compact else 26)
+		Unjam3DTheme.label_3d(quote_label, Color("244279"), Color.WHITE, 2)
 		quote.add_child(quote_label)
 	_add_bottom_nav(nav_height, nav_bottom, nav_side)
 
@@ -258,6 +255,7 @@ func _add_game_card(parent: VBoxContainer, game_id: String) -> void:
 	Unjam3DTheme.label_3d(star_label, Color("fff2a0"), dark.darkened(0.38), 3)
 	footer.add_child(star_label)
 	var play := _button("PLAY  ›", Vector2(0 if compact else 118, footer_height), dark, true)
+	play.name = "GamePlay_%s" % game_id
 	play.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	play.add_theme_font_size_override("font_size", 18 if short else (22 if narrow else 25))
 	play.pressed.connect(_play.bind(game_id))
