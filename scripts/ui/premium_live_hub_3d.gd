@@ -21,7 +21,6 @@ func _build() -> void:
 	var dark_mode := _theme_mode() == "dark"
 	var viewport_size := get_viewport_rect().size
 	var small_phone := get_tree().root.size.y < 1100
-	var lightweight_preview := small_phone or get_tree().root.has_meta("unjam_test_lightweight_previews")
 	var narrow := viewport_size.x < 600.0
 	var phone_width := viewport_size.x <= 1120.0
 	var compact := viewport_size.x <= 1120.0
@@ -154,6 +153,7 @@ func _add_game_card(parent: VBoxContainer, game_id: String) -> void:
 
 	var viewport_size := get_viewport_rect().size
 	var small_phone := get_tree().root.size.y < 1100
+	var lightweight_preview := small_phone or get_tree().root.has_meta("unjam_test_lightweight_previews")
 	var narrow := viewport_size.x < 600.0
 	var compact := viewport_size.x <= 1120.0
 	var short := viewport_size.y < 1100.0
