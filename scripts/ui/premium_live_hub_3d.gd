@@ -21,6 +21,7 @@ func _build() -> void:
 	var dark_mode := _theme_mode() == "dark"
 	var viewport_size := get_viewport_rect().size
 	var small_phone := get_tree().root.size.y < 1100
+	var lightweight_preview := small_phone or get_tree().root.has_meta("unjam_test_lightweight_previews")
 	var narrow := viewport_size.x < 600.0
 	var phone_width := viewport_size.x <= 1120.0
 	var compact := viewport_size.x <= 1120.0
@@ -277,7 +278,7 @@ func _add_game_card(parent: VBoxContainer, game_id: String) -> void:
 	art_margin.add_theme_constant_override("margin_top", 4)
 	art_margin.add_theme_constant_override("margin_bottom", 4)
 	art_shell.add_child(art_margin)
-	if small_phone:
+	if lightweight_preview:
 		var compact_art := Label.new()
 		compact_art.name = "CompactGameArt_%s" % game_id
 		compact_art.text = _compact_art_copy(game_id)
