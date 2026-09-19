@@ -1,5 +1,8 @@
 extends "res://scripts/ui/premium_live_hub.gd"
 
+const GAME_CARD_TAP_SLOP := 28.0
+var _game_card_presses: Dictionary = {}
+
 # Premium game selector. Visual hierarchy only: game launch/navigation contracts,
 # progression data and all gameplay motion systems remain unchanged.
 
@@ -72,21 +75,6 @@ func _build() -> void:
 
 	for game_id in ["rescue_rush", "water_sort", "block_puzzle"]:
 		_add_game_card(stack, game_id)
-
-	if not short:
-		var quote := PanelContainer.new()
-		quote.name = "GameSelectorQuote"
-		quote.custom_minimum_size = Vector2(0, 72 if medium_height else 86)
-		quote.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("26334a") if dark_mode else Color(0.94, 0.98, 1.0, 0.94), 28, Color("d8f3ff"), 3, 8))
-		stack.add_child(quote)
-		var quote_label := Label.new()
-		quote_label.text = "PLAY YOUR WAY  •  MASTER ALL THREE WORLDS  ♥"
-		quote_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		quote_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		quote_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		quote_label.add_theme_font_size_override("font_size", 22 if narrow else 24)
-		Unjam3DTheme.label_3d(quote_label, Color("eef7ff") if dark_mode else Color("244279"), Color("071426") if dark_mode else Color.WHITE, 2)
-		quote.add_child(quote_label)
 
 	_add_bottom_nav(nav_height, nav_bottom, nav_side)
 
@@ -186,6 +174,8 @@ func _add_game_card(parent: VBoxContainer, game_id: String) -> void:
 
 	var panel := PanelContainer.new()
 	panel.name = "GameCard3D_%s" % game_id
+	panel.mouse_filter = Control.MOUSE_FILTER_PASS
+	panel.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	panel.custom_minimum_size = Vector2(0, card_height)
 	var fill := accent.darkened(0.44) if _theme_mode() == "dark" else accent.lightened(0.04)
 	panel.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(fill, 30 if compact else 38, accent.lightened(0.42), 4, 18))
@@ -214,6 +204,46 @@ func _add_game_card(parent: VBoxContainer, game_id: String) -> void:
 	else:
 		composition.add_child(info)
 		composition.add_child(art_shell)
+	_set_game_card_visuals_noninteractive(panel)
+	panel.gui_input.connect(_on_game_card_gui_input.bind(game_id))
+
+func _set_game_card_visuals_noninteractive(node: Node) -> void:
+	for child in node.get_children():
+		if child is Control:
+			(child as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_set_game_card_visuals_noninteractive(child)
+
+func _on_game_card_gui_input(event: InputEvent, game_id: String) -> void:
+	var key := ""
+	var position := Vector2.ZERO
+	var pressed := false
+	var released := false
+	if event is InputEventScreenTouch:
+		key = "touch_%d" % (event as InputEventScreenTouch).index
+		position = (event as InputEventScreenTouch).position
+		pressed = (event as InputEventScreenTouch).pressed
+		released = not pressed
+	elif event is InputEventMouseButton and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+		key = "mouse"
+		position = (event as InputEventMouseButton).position
+		pressed = (event as InputEventMouseButton).pressed
+		released = not pressed
+	else:
+		return
+	if pressed:
+		_game_card_presses[key] = {"game_id": game_id, "position": position}
+		return
+	if not released or not _game_card_presses.has(key):
+		return
+	var start: Dictionary = _game_card_presses[key]
+	_game_card_presses.erase(key)
+	if String(start.get("game_id", "")) != game_id:
+		return
+	if position.distance_to(start.get("position", position)) > GAME_CARD_TAP_SLOP:
+		return
+	FeedbackManager.tap()
+	_play(game_id)
+	get_viewport().set_input_as_handled()
 
 func _make_game_art_shell(game_id: String, compact: bool, short: bool, medium_height: bool, card_height: float) -> PanelContainer:
 	var art_shell := PanelContainer.new()
@@ -275,7 +305,7 @@ func _make_game_info(game_id: String, highest: int, world: int, level_in_world: 
 
 	var footer: Container = GridContainer.new() if compact else HBoxContainer.new()
 	if footer is GridContainer:
-		(footer as GridContainer).columns = 2
+		(footer as GridContainer).columns = 3
 	footer.custom_minimum_size = Vector2(0, 92 if short else (104 if compact else 72))
 	footer.add_theme_constant_override("h_separation", 7)
 	footer.add_theme_constant_override("v_separation", 7)
@@ -317,11 +347,6 @@ func _make_game_info(game_id: String, highest: int, world: int, level_in_world: 
 	Unjam3DTheme.label_3d(star_label, Color("fff2a0"), dark.darkened(0.38), 2)
 	footer.add_child(star_label)
 
-	var play := _button("PLAY  ›", Vector2(0 if compact else 128, footer_height), dark, true)
-	play.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	play.add_theme_font_size_override("font_size", 22 if narrow else 26)
-	play.pressed.connect(_play.bind(game_id))
-	footer.add_child(play)
 	return info
 
 func _reference_card_copy(game_id: String) -> String:
