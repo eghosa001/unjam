@@ -3,31 +3,60 @@ extends "res://scripts/ui/monetization_hub.gd"
 var _previous_world_accent := Unjam3DTheme.GREEN
 var _previous_world_dark_mode := false
 var _has_previous_world_style := false
+var _hidden_launcher_foregrounds: Array[Control] = []
 
 func open_shop() -> void:
 	if overlay == null or not is_instance_valid(overlay):
 		super.open_shop()
 		return
+	var opening := not overlay.visible
 	var main := get_parent()
-	var world: Unjam3DBackdrop = null
-	if main != null:
-		world = main.get_node_or_null("UnjamWorldBackdrop") as Unjam3DBackdrop
-	if world != null:
-		_previous_world_accent = world.accent
-		_previous_world_dark_mode = world.dark_mode
-		_has_previous_world_style = true
-		if main.has_method("set_world_backdrop_style"):
-			main.call("set_world_backdrop_style", Unjam3DTheme.ORANGE, world.dark_mode)
+	if opening:
+		_hide_launcher_foregrounds()
+		var world: Unjam3DBackdrop = null
+		if main != null:
+			world = main.get_node_or_null("UnjamWorldBackdrop") as Unjam3DBackdrop
+		if world != null:
+			_previous_world_accent = world.accent
+			_previous_world_dark_mode = world.dark_mode
+			_has_previous_world_style = true
+			if main.has_method("set_world_backdrop_style"):
+				main.call("set_world_backdrop_style", Unjam3DTheme.ORANGE, world.dark_mode)
 	super.open_shop()
 
 func _close_shop() -> void:
 	super._close_shop()
+	_restore_launcher_foregrounds()
 	if not _has_previous_world_style:
 		return
 	var main := get_parent()
 	if main != null and main.has_method("set_world_backdrop_style"):
 		main.call("set_world_backdrop_style", _previous_world_accent, _previous_world_dark_mode)
 	_has_previous_world_style = false
+
+func _hide_launcher_foregrounds() -> void:
+	_hidden_launcher_foregrounds.clear()
+	var main := get_parent()
+	if main == null:
+		return
+	var candidates: Array[Control] = []
+	for name in ["PremiumHome", "PremiumLive"]:
+		var control := main.get_node_or_null(name) as Control
+		if control != null:
+			candidates.append(control)
+	var content_value = main.get("content")
+	if content_value is Control:
+		candidates.append(content_value as Control)
+	for control in candidates:
+		if control != null and is_instance_valid(control) and control.visible:
+			_hidden_launcher_foregrounds.append(control)
+			control.hide()
+
+func _restore_launcher_foregrounds() -> void:
+	for control in _hidden_launcher_foregrounds:
+		if control != null and is_instance_valid(control):
+			control.show()
+	_hidden_launcher_foregrounds.clear()
 
 func _build_ui() -> void:
 	if layer != null:
