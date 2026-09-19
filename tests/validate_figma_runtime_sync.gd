@@ -5,6 +5,12 @@ const TEST_VIEWPORT := Vector2i(540, 960)
 func _initialize() -> void:
 	call_deferred("_run")
 
+func _manager() -> Node:
+	return root.get_node("MultiGameManager")
+
+func _save() -> Node:
+	return root.get_node("SaveManager")
+
 func _run() -> void:
 	root.size = TEST_VIEWPORT
 	var packed := load("res://scenes/Main.tscn") as PackedScene
@@ -77,7 +83,7 @@ func _test_selector_card_tap_and_level_launch(main: Control) -> bool:
 	for button in _buttons(live):
 		if button.visible and not button.disabled and button.text.strip_edges().begins_with("PLAY"):
 			return _fail("Selector still contains a redundant visible PLAY button: %s" % button.text)
-	MultiGameManager.clear_checkpoint("water_sort")
+	_manager().call("clear_checkpoint", "water_sort")
 	var water_card := live.find_child("GameCard3D_water_sort", true, false) as PanelContainer
 	if water_card == null:
 		return _fail("Water selector card is missing")
@@ -210,14 +216,18 @@ func _test_settings_toggle(main: Control) -> bool:
 			break
 	if sound == null or not _bound(sound):
 		return _fail("Sound Effects setting is missing or unbound")
-	var before := bool(SaveManager.data.get("sound", true))
+	var save := _save()
+	var data: Dictionary = save.get("data")
+	var before := bool(data.get("sound", true))
 	sound.pressed.emit()
 	await _frames(5)
-	var after := bool(SaveManager.data.get("sound", true))
+	data = save.get("data")
+	var after := bool(data.get("sound", true))
 	if after == before:
 		return _fail("Sound Effects toggle did not change state")
-	SaveManager.data["sound"] = before
-	SaveManager.save()
+	data["sound"] = before
+	save.set("data", data)
+	save.call("save")
 	return true
 
 func _all_enabled_buttons_bound(node: Control, allowed_unbound_names: Array[String]) -> bool:
