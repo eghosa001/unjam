@@ -3,40 +3,42 @@
 Updated: 2026-09-19  
 Repository: `eghosa001/unjam`  
 Branch: `ui/unified-world-backdrop`  
-Latest implementation commit reviewed: `b58cb7e9745d131b265f2fcf1b444954c93e057f`
+Latest implementation commit reviewed: `4d3761c601d4ff1c8a46928b74a4da8f83ad2b36`
 
 ## Current gate
 
-Final integration verification before merge to `main`.
+The implementation candidate passed the full Godot CI release-quality gate in run 1036. Merge remains gated on the exact PR head being green after this completion-status update, followed by post-merge verification on `main`.
 
 ## Issue inventory
 
 - **P0:** none known.
-- **P1 — AdMob Android native packaging:** fixed on this branch. The installer previously flattened the Poing AdMob Android template, causing `ads_CONFIGURATION_ERROR` to be injected into the APK manifest while export still succeeded. The installer now preserves the required `bin/<library>/...` hierarchy and asserts the core ads bridge/AARs exist. Debug and production CI now fail on missing AdMob libraries or any `_CONFIGURATION_ERROR` manifest marker. **Awaiting CI verification on the final branch head.**
-- **P1 — gameplay / progression / viewport:** no known open defects from the latest automated campaign, gameplay, viewport, robustness, and visual contracts.
-- **P2 — launcher visual continuity:** fixed. Home, game selector, secondary launcher surfaces, and Shop now reuse one persistent UNJAM world backdrop rather than swapping full-screen environments.
-- **P2/P3:** no additional release-blocking code issues known at this checkpoint.
+- **P1 — AdMob Android native packaging:** fixed and verified. The installer now preserves the Poing AdMob Android template's required `bin/<library>/...` hierarchy, asserts the ads bridge/AARs exist, and CI rejects missing AdMob libraries or any packaged `_CONFIGURATION_ERROR` marker.
+- **P1 — compact selector lifecycle:** fixed and verified. Compact layouts no longer allocate unattached `WorldProgress` controls/style resources, eliminating the Godot ObjectDB/RID shutdown leak while keeping all three game cards and Play actions visible at 540x960.
+- **P1 — gameplay / progression / viewport:** no known open defects from the final automated gameplay, campaign, viewport, robustness, monetization and UX contracts.
+- **P2 — launcher visual continuity:** fixed. Home, game selector, secondary launcher surfaces and Shop reuse one persistent UNJAM world backdrop.
+- **P2/P3:** no additional release-blocking code issues known.
 
-## Verified before the AdMob packaging correction
+## Verified implementation candidate
 
-Godot CI run 1016 on `da0f4a94a22c839fec63de0b7f75503f48a6eeba` passed:
+Godot CI run 1036 on `4d3761c601d4ff1c8a46928b74a4da8f83ad2b36` passed:
 - Godot 4.7.2 import/script validation
+- purchase-verifier backend tests
 - fast quality, monetization, viewport, robustness and premium UX contracts
+- flat-board 3D-effects architecture and idle-cost contracts
 - focused gameplay and 10,000-level campaign/progression contracts
 - boot smoke
 - rendered visual audit
-- Android API 36 APK and AAB exports
-- billing/package/permission manifest checks
-
-That run is **not** counted as proof of working native AdMob packaging because its export log exposed the missing-library error found during manual log review.
+- Android API 36 debug APK export
+- packaged AdMob/Google Play Billing manifest verification with no configuration-error marker
+- Android API 36 debug AAB export
 
 ## Visual states reviewed
 
-Latest rendered audit includes compact 540x960 and standard portrait coverage across Home, level/game selection, Collection, tutorial/result states, Rescue Rush, Water Sort and Block Puzzle. The inspected Home, Water Sort and Block Puzzle captures showed no obvious clipping, overlap, undersized primary controls, duplicate Block pieces, or off-screen gameplay controls. Full real-device touch/performance/ad behavior remains a device/account verification item.
+The final rendered audit covers dark/light Home, game selector, Rescue Rush/Water Sort/Block Puzzle level selectors, Collection, Settings, Shop, all three gameplay screens, tutorial and result states, including compact 540x960 captures. The compact Choose a Game screen now shows Rescue Rush, Water Sort and Block Puzzle together with their Play actions before scrolling. No obvious clipping, overlap, duplicate Block pieces, off-screen primary controls or undersized primary actions were found in the inspected audit.
 
 ## Security / monetization / release
 
-- Production purchase verification remains fail-closed and the release workflow requires the live verification URL.
+- Production purchase verification remains fail-closed and the production workflow requires the live verification URL.
 - Release signing material is not committed; the production workflow requires owner-controlled secrets.
 - Package identity remains `com.eghosa.unjamgam`.
 - Android release gates include API 36 export, billing/ads manifest verification and 16 KB native-page compatibility.
@@ -50,8 +52,8 @@ Latest rendered audit includes compact 540x960 and standard portrait coverage ac
 - Complete truthful Play Data Safety, Contains Ads, advertising ID, target audience and content-rating declarations.
 - Publish the privacy policy and root-hosted `app-ads.txt` on the developer website.
 - Link/confirm the Play app in AdMob and allow account-side ad readiness to complete.
-- Complete required internal/closed testing and real-device checks.
+- Complete required internal/closed testing and real-device touch/performance/ad checks.
 
-## Next unfinished action
+## Release sequence
 
-Verify the final branch head in CI, confirm the APK/AAB export logs and packaged manifest contain no AdMob configuration error, review the final diff, then merge to `main` and verify the post-merge workflow.
+Require a green exact-head PR CI check, review the final diff, merge PR #44 to `main`, then require the post-merge workflows to pass on the resulting `main` commit before treating repository completion as finished.
