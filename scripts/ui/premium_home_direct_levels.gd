@@ -121,8 +121,6 @@ func build_home_launcher() -> void:
 	lower_spacer.name = "HomeLowerBalanceSpacer"
 	lower_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(lower_spacer)
-	if not short_phone:
-		_make_motto(root)
 	_make_bottom_nav()
 	_animate_entry(root)
 
@@ -344,8 +342,8 @@ func _make_bottom_nav() -> void:
 	var entries: Array = [
 		["⌂\nHOME", Callable(), "HomeNavButton"],
 		["◈\nGAMES", Callable(self, "_open_game_selector"), "HomeLevelsNavButton"],
-		["♥\nCOLLECT", func(): get_parent().call("build_collection"), "HomeCollectionNavButton"],
-		["●\nSHOP", Callable(self, "_open_shop"), "HomeShopNavButton"],
+		["☀\nDAILY", Callable(self, "_open_daily_games"), "HomeDailyNavButton"],
+		["★\nCOLLECT", func(): get_parent().call("build_collection"), "HomeCollectionNavButton"],
 		["⚙\nSETTINGS", func(): get_parent().call("build_settings"), "HomeSettingsNavButton"]
 	]
 	for i in range(entries.size()):
@@ -358,9 +356,7 @@ func _make_bottom_nav() -> void:
 		button.add_theme_font_size_override("font_size", 14 if viewport_size.x < 600.0 else (16 if viewport_size.x < 700.0 else 18))
 		var selected := i == 0
 		var accent := Unjam3DTheme.WATER if selected else Color("0d6dc2")
-		if String(entry[2]) == "HomeShopNavButton":
-			accent = Unjam3DTheme.ORANGE
-		Unjam3DTheme.gloss_button(button, accent, selected or String(entry[2]) == "HomeShopNavButton", 22, _theme_mode() == "dark")
+		Unjam3DTheme.gloss_button(button, accent, selected, 22, _theme_mode() == "dark")
 		var callback: Callable = entry[1]
 		if callback.is_valid():
 			button.pressed.connect(callback)
