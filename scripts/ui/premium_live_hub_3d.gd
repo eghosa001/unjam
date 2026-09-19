@@ -114,7 +114,7 @@ func _make_selector_header(parent: VBoxContainer, narrow: bool, phone_width: boo
 
 	var title := Label.new()
 	title.name = "GameSelectorTitle"
-	title.text = "PICK YOUR PUZZLE"
+	title.text = "CHOOSE A GAME"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -126,7 +126,7 @@ func _make_selector_header(parent: VBoxContainer, narrow: bool, phone_width: boo
 
 	var subtitle := Label.new()
 	subtitle.name = "GameSelectorSubtitle"
-	subtitle.text = "YOUR PROGRESS IS SAVED IN EVERY WORLD"
+	subtitle.text = "PICK YOUR PUZZLE  •  PROGRESS SAVES IN EVERY WORLD"
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	subtitle.clip_text = true
