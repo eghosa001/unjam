@@ -102,11 +102,17 @@ func _check_selector(viewport_size: Vector2i, failures: Array[String]) -> void:
 		for game_id in ["rescue_rush", "water_sort", "block_puzzle"]:
 			var card := main.find_child("GameCard3D_%s" % game_id, true, false) as Control
 			var art := main.find_child("GameArtShell_%s" % game_id, true, false) as Control
-			if card == null or art == null:
-				failures.append("Game selector %s card/art missing at %s" % [game_id, str(viewport_size)])
+			var play := main.find_child("GamePlay_%s" % game_id, true, false) as Button
+			if card == null or art == null or play == null:
+				failures.append("Game selector %s card/art/play missing at %s" % [game_id, str(viewport_size)])
 				continue
 			if not card.get_global_rect().encloses(art.get_global_rect()):
 				failures.append("Game selector %s artwork escapes its card at %s" % [game_id, str(viewport_size)])
+			if viewport_size == Vector2i(540, 960):
+				if not scroll_rect.encloses(card.get_global_rect()):
+					failures.append("Compact selector does not show the full %s card before scrolling" % game_id)
+				if not scroll_rect.encloses(play.get_global_rect()):
+					failures.append("Compact selector hides the %s play action before scrolling" % game_id)
 		print("SELECTOR_COMPOSITION physical=%s logical=%s header=%s scroll=%s nav=%s" % [str(viewport_size), str(logical_size), str(header_rect), str(scroll_rect), str(nav_rect)])
 	main.queue_free()
 	await process_frame
