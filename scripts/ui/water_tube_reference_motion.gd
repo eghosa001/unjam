@@ -105,12 +105,16 @@ func _draw() -> void:
 			draw_style_box(style, r)
 		else:
 			draw_rect(r, lower_color, true)
-		# A translucent top-light strip creates a cheap vertical material ramp
-		# without requiring shaders and stays crisp under GL Compatibility.
-		var light_h := minf(7.0, r.size.y * 0.28)
-		if light_h > 1.0:
-			draw_rect(Rect2(r.position, Vector2(r.size.x, light_h)), Color(upper_color, 0.48), true)
-		draw_line(Vector2(r.position.x + 2, r.position.y + 2), Vector2(r.end.x - 2, r.position.y + 2 - wave * 0.3), upper_color.lightened(0.10), 2.0, true)
+		# Only the exposed liquid surface owns a highlight/meniscus line. Equal
+		# adjacent colours are one body of liquid, not stacked solid layers.
+		var next_fill := _slot_fill(slot + 1) if slot + 1 < CAPACITY else 0.0
+		var next_color := _slot_color(slot + 1) if next_fill > 0.001 else -1
+		var exposed_surface := next_fill <= 0.001 or next_color != _slot_color(slot)
+		if exposed_surface:
+			var light_h := minf(7.0, r.size.y * 0.28)
+			if light_h > 1.0:
+				draw_rect(Rect2(r.position, Vector2(r.size.x, light_h)), Color(upper_color, 0.48), true)
+			draw_line(Vector2(r.position.x + 2, r.position.y + 2), Vector2(r.end.x - 2, r.position.y + 2 - wave * 0.3), upper_color.lightened(0.10), 2.0, true)
 	var lip_y := body.position.y + 3.0
 	draw_line(Vector2(body.position.x - 3, lip_y), Vector2(body.end.x + 3, lip_y), outline, 4.0, true)
 	var specular_alpha := 0.28
