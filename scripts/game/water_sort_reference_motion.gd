@@ -282,6 +282,7 @@ func _abort_pour_visuals(ghost: Node, receiver: Node, source_index: int, target_
 func _play_premium_concurrent_pour(source_values: Array, target_values: Array, from_rect: Rect2, to_rect: Rect2, color_index: int, amount: int, source_index: int, target_index: int) -> void:
 	var liquid: Color = MotionTube.PALETTE[color_index]
 	var ghost := MotionTube.new()
+	ghost.name = "PourSourceGhost"
 	ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ghost.custom_minimum_size = from_rect.size
 	ghost.size = from_rect.size
@@ -292,6 +293,7 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 	add_child(ghost)
 
 	var receiver := MotionTube.new()
+	receiver.name = "PourReceiverGhost"
 	receiver.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	receiver.custom_minimum_size = to_rect.size
 	receiver.size = to_rect.size
@@ -302,7 +304,15 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 	receiver.call("begin_pour_in", color_index, amount)
 	add_child(receiver)
 
-	var direction := 1.0 if to_rect.get_center().x >= from_rect.get_center().x else -1.0
+	var horizontal_delta := to_rect.get_center().x - from_rect.get_center().x
+	var same_column_threshold := maxf(24.0, ghost.size.x * 0.25)
+	var direction := 1.0
+	if absf(horizontal_delta) <= same_column_threshold:
+		# Same-column pours need an explicit side. Put the source toward the
+		# screen centre so edge columns never throw the tilted bottle offscreen.
+		direction = -1.0 if to_rect.get_center().x <= get_viewport_rect().size.x * 0.5 else 1.0
+	else:
+		direction = 1.0 if horizontal_delta > 0.0 else -1.0
 	var home_pos := ghost.position
 	var lift_distance := 12.0 if MotionSystem.reduced() else 34.0
 	var lift_time := MotionSystem.duration(&"press")
@@ -328,6 +338,8 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 	var rim_height_gap := clampf(ghost.size.y * 0.28, 76.0, 116.0)
 	var desired_source_rim := target_lip + Vector2(-direction * rim_side_gap, -rim_height_gap)
 	var desired := _position_for_tilted_rim(ghost, source_local_at_pour, desired_source_rim, final_rotation)
+	var edge_margin := maxf(10.0, ghost.size.x * 0.10)
+	desired.x = clampf(desired.x, edge_margin, maxf(edge_margin, get_viewport_rect().size.x - ghost.size.x - edge_margin))
 	var travel_time := MotionSystem.duration(&"travel")
 	var travel := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	travel.tween_property(ghost, "position", desired, travel_time)
@@ -347,6 +359,7 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 	ghost.call("begin_pour_out", amount)
 	FeedbackManager.pour_start()
 	var stream := Line2D.new()
+	stream.name = "PourStream"
 	stream.width = 10.0
 	stream.default_color = Color(liquid, 0.96)
 	stream.begin_cap_mode = Line2D.LINE_CAP_ROUND
@@ -356,6 +369,7 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 	stream.z_index = 670
 	add_child(stream)
 	var shine := Line2D.new()
+	shine.name = "PourStreamHighlight"
 	shine.width = 3.0
 	shine.default_color = Color(liquid.lightened(0.42), 0.90)
 	shine.begin_cap_mode = Line2D.LINE_CAP_ROUND
