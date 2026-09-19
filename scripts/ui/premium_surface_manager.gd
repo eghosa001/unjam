@@ -40,6 +40,8 @@ func _refresh(force: bool) -> void:
 	_configure_background(content, game_id, dark, accent)
 	_polish_tree(content, surface, dark, accent)
 	_add_surface_chrome(content, surface, game_id, dark, accent)
+	if main.has_method("_restyle_secondary_nav"):
+		main.call("_restyle_secondary_nav", surface)
 	_animate_surface(content)
 
 func _configure_background(root: Node, game_id: String, dark: bool, accent: Color) -> void:
@@ -66,6 +68,10 @@ func _script_path(node: Node) -> String:
 	return String(script.resource_path) if script != null else ""
 
 func _is_gameplay_widget(node: Node) -> bool:
+	# Shared navigation owns its own selected/unselected visual state. Treat
+	# preserve-style controls as excluded from generic surface role recolouring.
+	if node is Button and node.has_meta("unjam_preserve_surface_style"):
+		return true
 	var path := _script_path(node)
 	return path.contains("water_tube") or path.contains("block_piece_button") or path.contains("block_cell_button") or path.contains("premium_piece_button")
 

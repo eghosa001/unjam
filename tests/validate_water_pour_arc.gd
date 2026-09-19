@@ -78,8 +78,30 @@ func _run() -> void:
 		return _fail("Tilted Water Sort source rim does not land on the calculated arc launch point")
 	ghost.queue_free()
 
+	# Same-column pours on the outer columns must always place the tilted source
+	# toward the screen centre, never outside the phone viewport.
+	var phone_width := 540.0
+	var source_size := Vector2(120.0, 220.0)
+	var left_column := Rect2(Vector2(18.0, 430.0), source_size)
+	var left_target := Rect2(Vector2(18.0, 160.0), source_size)
+	var right_column := Rect2(Vector2(402.0, 430.0), source_size)
+	var right_target := Rect2(Vector2(402.0, 160.0), source_size)
+	var left_direction := float(game.call("_pour_direction", left_column, left_target, source_size.x, phone_width))
+	var right_direction := float(game.call("_pour_direction", right_column, right_target, source_size.x, phone_width))
+	if left_direction != -1.0:
+		game.queue_free()
+		return _fail("Left-edge same-column Water pour does not place the source inward")
+	if right_direction != 1.0:
+		game.queue_free()
+		return _fail("Right-edge same-column Water pour does not place the source inward")
+	var clamped_left: Vector2 = game.call("_clamp_pour_source_position", Vector2(-90.0, 120.0), source_size, phone_width)
+	var clamped_right: Vector2 = game.call("_clamp_pour_source_position", Vector2(520.0, 120.0), source_size, phone_width)
+	if clamped_left.x < 10.0 or clamped_right.x + source_size.x > phone_width - 9.0:
+		game.queue_free()
+		return _fail("Water pour source clamp allows a tilted bottle outside the phone viewport")
+
 	var motion_text := _read("res://scripts/game/water_sort_reference_motion.gd")
-	for token in ["_source_rim_local", "_receiver_rim_local", "_position_for_tilted_rim", "_liquid_arc_points", "_release_pour_visual_lock"]:
+	for token in ["_source_rim_local", "_receiver_rim_local", "_position_for_tilted_rim", "_liquid_arc_points", "_pour_direction", "_clamp_pour_source_position", "_release_pour_visual_lock"]:
 		if not motion_text.contains(token):
 			game.queue_free()
 			return _fail("Water Sort motion contract missing %s" % token)
@@ -89,7 +111,7 @@ func _run() -> void:
 
 	game.queue_free()
 	await process_frame
-	print("WATER_POUR_ARC_OK: source-rim launch, curved ballistic path, receiver-mouth entry and lock recovery are wired.")
+	print("WATER_POUR_ARC_OK: source-rim launch, curved ballistic path, receiver-mouth entry, same-column edge safety and lock recovery are wired.")
 	quit(0)
 
 func _read(path: String) -> String:

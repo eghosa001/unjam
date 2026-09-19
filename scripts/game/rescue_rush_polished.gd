@@ -105,6 +105,7 @@ func _spawn_escape_visual(index: int, route: Array[Vector2i] = []) -> void:
 	if route.is_empty():
 		route = _escape_route_cells(index)
 	var ghost := RescueEscapePiece3D.new()
+	ghost.name = "RescueEscapeGhost"
 	ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ghost.disabled = true
 	ghost.size = cell.size

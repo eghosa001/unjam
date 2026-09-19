@@ -110,8 +110,14 @@ func show_hint() -> void:
 	selected_piece = piece_index
 	SaveManager.record_hint()
 	FeedbackManager.tap()
-	hint_label.text = "Best placement: block %d at row %d, column %d." % [piece_index + 1, origin.y + 1, origin.x + 1]
+	var guidance := "Best placement: block %d at row %d, column %d." % [piece_index + 1, origin.y + 1, origin.x + 1]
+	hint_label.text = guidance
 	await place_selected(origin)
+	# Placement re-renders the board. Restore the paid Hint guidance afterward
+	# so the player sees what was executed instead of an empty feedback row.
+	if hint_label != null and is_instance_valid(hint_label) and not completed:
+		hint_label.text = guidance
+		_fit_3d_board_layout()
 
 func _best_hint_placement() -> Dictionary:
 	var best: Dictionary = {}
@@ -285,10 +291,12 @@ func _fit_3d_board_layout() -> void:
 				(child as Button).add_theme_font_size_override("font_size", 20 if compact_width else 22)
 	if status_label != null:
 		status_label.add_theme_font_size_override("font_size", 21 if compact_width else 23)
-		status_label.custom_minimum_size.y = 30.0 if compact_height else 34.0
+		# Empty feedback rows consume no layout space at any stretch scale.
+		# They grow back to a readable row only when actionable text exists.
+		status_label.custom_minimum_size.y = 0.0 if status_label.text.strip_edges().is_empty() else (30.0 if compact_height else 34.0)
 	if hint_label != null:
 		hint_label.add_theme_font_size_override("font_size", 20 if compact_width else 21)
-		hint_label.custom_minimum_size.y = 28.0 if compact_height else 30.0
+		hint_label.custom_minimum_size.y = 0.0 if hint_label.text.strip_edges().is_empty() else (28.0 if compact_height else 30.0)
 
 	var side_margin := 16.0 if compact_width else 28.0
 	var width_budget := maxf(260.0, viewport_size.x - side_margin * 2.0 - 18.0)

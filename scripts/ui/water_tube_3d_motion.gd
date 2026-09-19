@@ -211,8 +211,11 @@ func _build_liquid_segments_3d() -> void:
 		mesh.bottom_radius = 0.49
 		mesh.height = 0.60
 		mesh.radial_segments = 20
-		mesh.cap_top = true
-		mesh.cap_bottom = true
+		# Interior liquid volumes do not own horizontal caps. Contiguous slots
+		# are merged into one run below, and only the exposed top gets a meniscus.
+		# This removes the stacked-solid-disc look between equal colours.
+		mesh.cap_top = false
+		mesh.cap_bottom = false
 		var segment := MeshInstance3D.new()
 		segment.name = "LiquidSegment%d" % slot
 		segment.mesh = mesh
@@ -233,38 +236,66 @@ func _build_liquid_meniscus_3d() -> void:
 	liquid_meniscus_3d.visible = false
 	liquid_root_3d.add_child(liquid_meniscus_3d)
 
+func _liquid_runs_3d(slot_height: float, liquid_bottom: float) -> Array:
+	var runs: Array = []
+	var active := false
+	var run_color := -1
+	var run_bottom := liquid_bottom
+	var run_height := 0.0
+	for slot in range(CAPACITY):
+		var fraction := _slot_fill(slot)
+		if fraction <= 0.001:
+			if active:
+				runs.append({"color": run_color, "bottom": run_bottom, "height": run_height})
+				active = false
+				run_height = 0.0
+			continue
+		var color_index := clampi(_slot_color(slot), 0, PALETTE.size() - 1)
+		var slot_bottom := liquid_bottom + float(slot) * slot_height
+		var fill_height := slot_height * fraction
+		var touches_previous := active and absf((run_bottom + run_height) - slot_bottom) <= 0.025
+		if active and run_color == color_index and touches_previous:
+			run_height += fill_height
+		else:
+			if active:
+				runs.append({"color": run_color, "bottom": run_bottom, "height": run_height})
+			active = true
+			run_color = color_index
+			run_bottom = slot_bottom
+			run_height = fill_height
+	if active:
+		runs.append({"color": run_color, "bottom": run_bottom, "height": run_height})
+	return runs
+
 func _refresh_liquid_3d() -> void:
 	if viewport_3d == null or liquid_segments_3d.size() != CAPACITY:
 		return
 	var slot_height := 0.63
 	var liquid_bottom := -1.43
-	var top_slot := -1
-	var top_height := 0.0
+	for segment in liquid_segments_3d:
+		segment.visible = false
+	var runs := _liquid_runs_3d(slot_height, liquid_bottom)
+	var top_surface := liquid_bottom
 	var top_color := 0
-	for slot in range(CAPACITY):
-		var segment := liquid_segments_3d[slot]
-		var fraction := _slot_fill(slot)
-		if fraction <= 0.001:
-			segment.visible = false
-			continue
-		segment.visible = true
-		var height := maxf(0.025, slot_height * fraction - 0.018)
+	for run_index in range(mini(runs.size(), liquid_segments_3d.size())):
+		var run: Dictionary = runs[run_index]
+		var segment := liquid_segments_3d[run_index]
+		var height := maxf(0.025, float(run.get("height", 0.0)))
+		var bottom := float(run.get("bottom", liquid_bottom))
+		var color_index := clampi(int(run.get("color", 0)), 0, PALETTE.size() - 1)
 		var mesh := segment.mesh as CylinderMesh
 		if mesh != null:
 			mesh.height = height
-		var slot_bottom := liquid_bottom + float(slot) * slot_height
-		segment.position = Vector3(0, slot_bottom + height * 0.5, 0)
-		var color_index := clampi(_slot_color(slot), 0, PALETTE.size() - 1)
+		segment.position = Vector3(0, bottom + height * 0.5, 0)
 		if color_index < liquid_materials_3d.size():
 			segment.material_override = liquid_materials_3d[color_index]
-		top_slot = slot
-		top_height = height
+		segment.visible = true
+		top_surface = bottom + height
 		top_color = color_index
 	if liquid_meniscus_3d != null:
-		liquid_meniscus_3d.visible = top_slot >= 0
-		if top_slot >= 0:
-			var top_bottom := liquid_bottom + float(top_slot) * slot_height
-			liquid_meniscus_3d.position = Vector3(0, top_bottom + top_height - 0.01, 0)
+		liquid_meniscus_3d.visible = not runs.is_empty()
+		if not runs.is_empty():
+			liquid_meniscus_3d.position = Vector3(0, top_surface - 0.01, 0)
 			if top_color < liquid_materials_3d.size():
 				liquid_meniscus_3d.material_override = liquid_materials_3d[top_color]
 	_request_3d_frame()

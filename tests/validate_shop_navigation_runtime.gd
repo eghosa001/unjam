@@ -33,24 +33,18 @@ func run() -> void:
 		home.call("build_home_launcher")
 		await _frames(2)
 
-	var shop_nav: Button = null
+	var retired_shop_nav: Button = null
+	var daily_nav: Button = null
 	var coin_shop: Button = null
 	if home != null:
-		shop_nav = home.find_child("HomeShopNavButton", true, false) as Button
+		retired_shop_nav = home.find_child("HomeShopNavButton", true, false) as Button
+		daily_nav = home.find_child("HomeDailyNavButton", true, false) as Button
 		coin_shop = home.find_child("HomeCoinShopButton", true, false) as Button
-	expect_true(shop_nav != null and shop_nav.visible, "Home bottom navigation has no visible Shop entry")
-	expect_true(coin_shop != null and coin_shop.visible, "Home coin balance is not a Shop action")
+	expect_true(retired_shop_nav == null, "Retired Shop tab is still present in Home persistent navigation")
+	expect_true(daily_nav != null and daily_nav.visible, "Home persistent navigation has no visible Daily entry")
+	expect_true(coin_shop != null and coin_shop.visible, "Home coin balance is not the Shop action")
 	if coin_shop != null:
 		expect_true("123" in coin_shop.text, "Home coin Shop action does not show wallet balance")
-
-	if shop_nav != null and hub != null:
-		shop_nav.emit_signal("pressed")
-		await _frames(2)
-		var overlay: Variant = hub.get("overlay")
-		var shop_open: bool = overlay is Control and (overlay as Control).visible
-		expect_true(shop_open, "Home Shop navigation did not open Shop overlay")
-		if hub.has_method("_close_shop"):
-			hub.call("_close_shop")
 
 	if coin_shop != null and hub != null:
 		coin_shop.emit_signal("pressed")
@@ -65,6 +59,11 @@ func run() -> void:
 		economy.grant(50, "qa_wallet_refresh")
 		await _frames(2)
 		expect_true("173" in coin_shop.text, "Home wallet did not refresh after EconomyManager balance signal")
+
+	if daily_nav != null:
+		daily_nav.emit_signal("pressed")
+		await _frames(3)
+		expect_true(String(main.get("current_surface")) == "daily", "Home Daily navigation did not open Daily Games")
 
 	main.queue_free()
 	await _frames(2)
