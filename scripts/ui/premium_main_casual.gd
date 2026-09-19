@@ -21,22 +21,18 @@ func build_home() -> void:
 	if home != null and home.has_method("_on_surface_changed"):
 		home.call("_on_surface_changed", "home")
 
+func set_world_backdrop_style(accent: Color, dark_mode: bool) -> void:
+	var backdrop := get_node_or_null("UnjamWorldBackdrop") as Unjam3DBackdrop
+	if backdrop != null and is_instance_valid(backdrop):
+		backdrop.configure(accent, dark_mode)
+
 func add_background() -> void:
-	# Base level builders call add_background() directly. Override it so every
-	# secondary surface uses the final bright backdrop without allocating the
-	# retired PremiumBackdrop first.
+	# All launcher surfaces share the persistent Main-level world. Secondary
+	# pages may change accent lighting, but they never allocate another world.
 	if content == null or not is_instance_valid(content):
 		return
 	content.clip_contents = true
-	var existing := content.get_node_or_null("Unjam3DSurfaceBackdrop") as Unjam3DBackdrop
-	if existing == null:
-		existing = Unjam3DBackdrop.new()
-		existing.name = "Unjam3DSurfaceBackdrop"
-		existing.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		existing.z_index = -100
-		content.add_child(existing)
-		content.move_child(existing, 0)
-	existing.configure(_accent(), _dark())
+	set_world_backdrop_style(_accent(), _dark())
 
 func _page_root() -> VBoxContainer:
 	clear_content()
