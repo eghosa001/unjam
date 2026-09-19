@@ -205,6 +205,14 @@ func _make_hero(parent: VBoxContainer) -> void:
 
 	var level := _home_current_level(selected_game)
 	var world := MultiGameManager.world_for_game_level(selected_game, level)
+	# PanelContainer lays direct Control children out to its content rect.  Put the
+	# floating world sign on a full-size free-position layer so it stays a small
+	# badge instead of stretching over the entire cinematic hero.
+	var badge_layer := Control.new()
+	badge_layer.name = "HomeHeroBadgeLayer"
+	badge_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	badge_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hero.add_child(badge_layer)
 	var world_badge := PanelContainer.new()
 	world_badge.name = "HomeWorldBadge"
 	world_badge.set_anchors_preset(Control.PRESET_TOP_RIGHT)
@@ -214,7 +222,7 @@ func _make_hero(parent: VBoxContainer) -> void:
 	world_badge.offset_bottom = 88
 	world_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	world_badge.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("8d5a31"), 18, Color("e2b778"), 2, 8))
-	hero.add_child(world_badge)
+	badge_layer.add_child(world_badge)
 	var world_label := Label.new()
 	world_label.text = "WORLD %d" % world
 	world_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
