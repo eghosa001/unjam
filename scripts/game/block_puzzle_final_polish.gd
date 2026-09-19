@@ -285,12 +285,12 @@ func _fit_3d_board_layout() -> void:
 				(child as Button).add_theme_font_size_override("font_size", 20 if compact_width else 22)
 	if status_label != null:
 		status_label.add_theme_font_size_override("font_size", 21 if compact_width else 23)
-		# A blank status line must not reserve a second feedback row on 540x960.
-		# When interaction text appears the Label still grows naturally to content.
-		status_label.custom_minimum_size.y = 0.0 if compact_height and status_label.text.strip_edges().is_empty() else (30.0 if compact_height else 34.0)
+		# Empty feedback rows consume no layout space at any stretch scale.
+		# They grow back to a readable row only when actionable text exists.
+		status_label.custom_minimum_size.y = 0.0 if status_label.text.strip_edges().is_empty() else (30.0 if compact_height else 34.0)
 	if hint_label != null:
 		hint_label.add_theme_font_size_override("font_size", 20 if compact_width else 21)
-		hint_label.custom_minimum_size.y = 28.0 if compact_height else 30.0
+		hint_label.custom_minimum_size.y = 0.0 if hint_label.text.strip_edges().is_empty() else (28.0 if compact_height else 30.0)
 
 	var side_margin := 16.0 if compact_width else 28.0
 	var width_budget := maxf(260.0, viewport_size.x - side_margin * 2.0 - 18.0)
