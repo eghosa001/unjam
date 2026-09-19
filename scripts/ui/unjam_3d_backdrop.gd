@@ -1,223 +1,425 @@
 class_name Unjam3DBackdrop
-extends Control
+extends SubViewportContainer
 
+# One persistent real-3D fantasy water world behind every launcher surface.
+# It is built from lightweight Godot primitives, rendered at a mobile-friendly
+# fixed resolution and switched to one-shot rendering once settled.
 var accent: Color = Unjam3DTheme.GREEN
 var dark_mode := false
+
+var viewport_3d: SubViewport
+var stage: Node3D
+var world_environment: WorldEnvironment
+var environment: Environment
+var key_light: DirectionalLight3D
+var rim_light: DirectionalLight3D
+var warm_fill: OmniLight3D
+var water_material: StandardMaterial3D
+var accent_materials: Array[StandardMaterial3D] = []
 
 func configure(value: Color, use_dark_mode: bool = false) -> void:
 	accent = value
 	dark_mode = use_dark_mode
-	queue_redraw()
+	if environment != null:
+		_apply_world_style()
+		_request_render()
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	resized.connect(queue_redraw)
-	queue_redraw()
+	stretch = true
+	_build_world()
+	visibility_changed.connect(_sync_render_activity)
+	_sync_render_activity()
+	call_deferred("_finish_initial_render")
 
-func _draw() -> void:
-	var w := size.x
-	var h := size.y
-	if w <= 1.0 or h <= 1.0:
+func _sync_render_activity() -> void:
+	if viewport_3d == null:
 		return
+	if is_visible_in_tree():
+		viewport_3d.render_target_update_mode = SubViewport.UPDATE_ONCE
+	else:
+		viewport_3d.render_target_update_mode = SubViewport.UPDATE_DISABLED
 
-	_draw_sky(w, h)
-	_draw_distant_world(w, h)
-	_draw_atmospheric_haze(w, h)
-	_draw_water_world(w, h)
-	_draw_foreground(w, h)
+func _finish_initial_render() -> void:
+	for _i in range(3):
+		if not is_inside_tree():
+			return
+		var tree := get_tree()
+		if tree == null:
+			return
+		await tree.process_frame
+	if viewport_3d != null and is_instance_valid(viewport_3d):
+		viewport_3d.render_target_update_mode = SubViewport.UPDATE_ONCE
+
+func _request_render() -> void:
+	if viewport_3d != null and is_instance_valid(viewport_3d):
+		viewport_3d.render_target_update_mode = SubViewport.UPDATE_ONCE
+
+func _build_world() -> void:
+	viewport_3d = SubViewport.new()
+	viewport_3d.name = "PremiumWorldViewport3D"
+	viewport_3d.size = Vector2i(720, 1280)
+	viewport_3d.own_world_3d = true
+	viewport_3d.transparent_bg = false
+	viewport_3d.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	add_child(viewport_3d)
+
+	stage = Node3D.new()
+	stage.name = "PremiumWaterWorld"
+	viewport_3d.add_child(stage)
+
+	_build_environment()
+	_build_camera()
+	_build_sky_details()
+	_build_water()
+	_build_distant_world()
+	_build_bridge()
+	_build_waterfalls()
+	_build_shoreline()
+	_build_stepping_stones()
+	_build_foreground_frame()
+	_apply_world_style()
+
+func _build_environment() -> void:
+	world_environment = WorldEnvironment.new()
+	environment = Environment.new()
+	environment.background_mode = Environment.BG_COLOR
+	environment.background_color = Color("34b9f6")
+	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	environment.ambient_light_color = Color("dffaff")
+	environment.ambient_light_energy = 0.92
+	environment.reflected_light_source = Environment.REFLECTION_SOURCE_BG
+	world_environment.environment = environment
+	stage.add_child(world_environment)
+
+	key_light = DirectionalLight3D.new()
+	key_light.name = "WarmSun"
+	key_light.rotation_degrees = Vector3(-46, -34, -7)
+	key_light.light_color = Color("fff1c5")
+	key_light.light_energy = 1.34
+	key_light.shadow_enabled = true
+	stage.add_child(key_light)
+
+	rim_light = DirectionalLight3D.new()
+	rim_light.name = "SkyRim"
+	rim_light.rotation_degrees = Vector3(-24, 146, 15)
+	rim_light.light_color = Color("8fe7ff")
+	rim_light.light_energy = 0.66
+	stage.add_child(rim_light)
+
+	warm_fill = OmniLight3D.new()
+	warm_fill.name = "WaterBounce"
+	warm_fill.position = Vector3(0, 1.2, 5.4)
+	warm_fill.light_color = Color("8ff4ff")
+	warm_fill.light_energy = 0.56
+	warm_fill.omni_range = 24.0
+	stage.add_child(warm_fill)
+
+func _build_camera() -> void:
+	var camera := Camera3D.new()
+	camera.name = "WorldCamera"
+	camera.position = Vector3(0.0, 5.6, 15.8)
+	camera.fov = 43.0
+	camera.near = 0.2
+	camera.far = 80.0
+	stage.add_child(camera)
+	camera.look_at(Vector3(0.0, 0.45, -5.8), Vector3.UP)
+	camera.current = true
+
+func _build_sky_details() -> void:
+	var cloud := _material(Color(0.96, 0.99, 1.0, 0.94), 0.0, 0.62, 0.18)
+	var cloud_shadow := _material(Color(0.70, 0.87, 0.93, 0.48), 0.0, 0.72, 0.08)
+	for center in [
+		Vector3(-5.8, 6.4, -18.0),
+		Vector3(4.6, 7.0, -20.0),
+		Vector3(0.4, 8.0, -24.0)
+	]:
+		_add_cloud_cluster(center, cloud, cloud_shadow)
+	var sun := _material(Color("ffe891"), 0.0, 0.22, 0.70)
+	sun.emission_enabled = true
+	sun.emission = Color("ffd86c")
+	sun.emission_energy_multiplier = 0.85
+	_add_sphere(stage, 1.18, Vector3(6.7, 8.1, -24.0), sun, Vector3.ONE)
+
+func _add_cloud_cluster(center: Vector3, cloud: Material, cloud_shadow: Material) -> void:
+	_add_sphere(stage, 0.95, center + Vector3(0.10, -0.24, 0.18), cloud_shadow, Vector3(1.48, 0.58, 0.82))
+	_add_sphere(stage, 0.82, center, cloud, Vector3(1.42, 0.66, 0.90))
+	_add_sphere(stage, 0.62, center + Vector3(-0.86, -0.02, 0.05), cloud, Vector3(1.25, 0.70, 0.88))
+	_add_sphere(stage, 0.66, center + Vector3(0.84, -0.05, 0.02), cloud, Vector3(1.28, 0.68, 0.90))
+	_add_sphere(stage, 0.56, center + Vector3(0.14, 0.54, -0.08), cloud, Vector3(1.05, 0.86, 0.92))
+
+func _build_water() -> void:
+	water_material = _material(Color("0d9fd0"), 0.06, 0.20, 0.82)
+	water_material.clearcoat_enabled = true
+	water_material.clearcoat = 0.90
+	water_material.clearcoat_roughness = 0.07
+	var water := _add_box(stage, Vector3(19.0, 0.20, 34.0), Vector3(0, -2.05, -4.2), water_material)
+	water.name = "GlossyRiver"
+
+	# Semi-transparent highlight lanes give the static river a reflective, premium
+	# finish without a continuously running shader.
+	var gloss := _material(Color(0.76, 0.96, 1.0, 0.24), 0.0, 0.12, 0.58)
+	for item in [
+		Vector4(-3.8, -1.91, -1.0, 2.8),
+		Vector4(2.9, -1.90, -4.2, 3.4),
+		Vector4(-1.2, -1.89, -8.0, 4.1),
+		Vector4(4.4, -1.88, 3.0, 2.0)
+	]:
+		_add_box(stage, Vector3(item.w, 0.025, 0.08), Vector3(item.x, item.y, item.z), gloss)
+
+func _build_distant_world() -> void:
+	# Far mountain/island silhouettes.
+	_add_island(Vector3(-5.2, 4.4, -17.0), 2.65, 2.9, 0.65)
+	_add_island(Vector3(4.9, 4.8, -18.5), 2.35, 2.7, 0.56)
+	_add_island(Vector3(-1.1, 6.6, -22.0), 1.55, 2.15, 0.44)
+
+	# Main waterfall terrace across the horizon.
+	for item in [
+		Vector4(-5.5, 0.60, -11.8, 3.2),
+		Vector4(-1.8, 0.95, -12.8, 4.0),
+		Vector4(2.1, 0.55, -12.0, 3.4),
+		Vector4(5.6, 0.90, -13.2, 3.0)
+	]:
+		_add_cliff_terrace(Vector3(item.x, item.y, item.z), item.w)
+
+	# Small tree silhouettes at different depths stop the scene from feeling stamped.
+	for item in [
+		Vector4(-6.1,2.55,-11.1,0.62), Vector4(-4.1,2.35,-12.2,0.52),
+		Vector4(-2.8,2.9,-12.7,0.48), Vector4(0.2,2.75,-13.0,0.56),
+		Vector4(2.8,2.55,-12.2,0.50), Vector4(4.6,2.75,-12.8,0.58),
+		Vector4(6.1,2.48,-11.7,0.62)
+	]:
+		_add_tree(Vector3(item.x, item.y, item.z), item.w)
+
+func _build_bridge() -> void:
+	var stone := _material(Color("889c94"), 0.02, 0.52, 0.30)
+	var stone_light := _material(Color("c9d8ca"), 0.01, 0.42, 0.40)
+	var deck := _add_box(stage, Vector3(7.8, 0.48, 0.72), Vector3(3.35, 2.15, -12.8), stone)
+	deck.rotation_degrees.y = -5.0
+	var cap := _add_box(stage, Vector3(7.9, 0.14, 0.82), Vector3(3.35, 2.48, -12.8), stone_light)
+	cap.rotation_degrees.y = -5.0
+	for x in [0.7, 2.55, 4.4, 6.25]:
+		_add_box(stage, Vector3(0.58, 3.15, 0.68), Vector3(x, 0.70, -12.82), stone)
+		_add_box(stage, Vector3(0.20, 3.0, 0.74), Vector3(x - 0.17, 0.76, -12.45), stone_light)
+	for x in [-0.25, 0.75, 1.75, 2.75, 3.75, 4.75, 5.75, 6.75]:
+		_add_box(stage, Vector3(0.16, 0.72, 0.18), Vector3(x, 2.88, -12.75), stone_light)
+	_add_box(stage, Vector3(7.8, 0.14, 0.14), Vector3(3.35, 3.12, -12.75), stone_light)
+
+func _build_waterfalls() -> void:
+	var edge := _material(Color("1aa6c8"), 0.0, 0.16, 0.65)
+	var body := _material(Color("78e8f5"), 0.0, 0.10, 0.58)
+	var core := _material(Color(0.93, 1.0, 1.0, 0.82), 0.0, 0.06, 0.50)
+	for fall in [
+		Vector4(-5.2,0.1,-10.75,1.15),
+		Vector4(-1.7,0.0,-11.65,1.55),
+		Vector4(2.4,0.0,-10.95,1.28),
+		Vector4(5.6,0.15,-12.0,1.02)
+	]:
+		_add_box(stage, Vector3(fall.w, 4.7, 0.16), Vector3(fall.x, fall.y, fall.z), edge)
+		_add_box(stage, Vector3(fall.w * 0.76, 4.66, 0.18), Vector3(fall.x, fall.y, fall.z + 0.05), body)
+		_add_box(stage, Vector3(fall.w * 0.22, 4.60, 0.20), Vector3(fall.x - fall.w * 0.12, fall.y + 0.05, fall.z + 0.10), core)
+		for n in range(3):
+			_add_sphere(
+				stage,
+				fall.w * (0.26 + float(n) * 0.04),
+				Vector3(fall.x + (float(n) - 1.0) * fall.w * 0.27, -2.00, fall.z + 0.18),
+				_material(Color(0.80, 0.99, 1.0, 0.32), 0.0, 0.12, 0.45),
+				Vector3(1.25, 0.24, 0.72)
+			)
+
+func _build_shoreline() -> void:
+	var rock := _material(Color("647a72"), 0.0, 0.62, 0.22)
+	var rock_light := _material(Color("9fb2a4"), 0.0, 0.48, 0.28)
+	var grass := _material(Color("45c65b"), 0.0, 0.48, 0.32)
+	for side_value in [-1.0, 1.0]:
+		var side: float = float(side_value)
+		for i in range(7):
+			var z := 5.5 - float(i) * 2.35
+			var x := side * (6.0 + float(i % 3) * 0.34)
+			var scale := 1.10 - float(i) * 0.045
+			_add_sphere(stage, 1.45 * scale, Vector3(x, -1.15, z), rock, Vector3(1.45, 0.62, 1.10))
+			_add_sphere(stage, 1.10 * scale, Vector3(x - side * 0.26, -0.72, z - 0.10), rock_light, Vector3(1.36, 0.45, 0.96))
+			_add_sphere(stage, 1.04 * scale, Vector3(x - side * 0.18, -0.38, z - 0.18), grass, Vector3(1.52, 0.28, 1.08))
+			if i % 2 == 0:
+				_add_tree(Vector3(x - side * 0.20, 0.35, z - 0.45), 0.55 * scale)
+
+	# Lily pads and white flowers.
+	var leaf := _material(Color("36a84a"), 0.0, 0.44, 0.25)
+	for item in [
+		Vector3(-3.8,-1.86,2.4), Vector3(3.5,-1.86,0.8),
+		Vector3(-4.5,-1.86,-4.8), Vector3(4.1,-1.86,-6.0)
+	]:
+		_add_cylinder(stage, 0.62, 0.62, 0.07, item, leaf)
+		_add_flower(item + Vector3(0, 0.18, 0), 0.24)
+
+func _build_stepping_stones() -> void:
+	var stone := _material(Color("7f9389"), 0.0, 0.52, 0.28)
+	var top := _material(Color("aebdaf"), 0.0, 0.40, 0.36)
+	var shadow := _material(Color(0.02, 0.15, 0.22, 0.25), 0.0, 0.72, 0.0)
+	var stones := [
+		Vector4(0.35,-1.78,4.8,1.05),
+		Vector4(-0.25,-1.79,2.4,0.92),
+		Vector4(0.18,-1.80,0.2,0.82),
+		Vector4(-0.16,-1.81,-1.7,0.70),
+		Vector4(0.08,-1.82,-3.2,0.58)
+	]
+	for item in stones:
+		_add_sphere(stage, item.w * 1.10, Vector3(item.x + 0.12, item.y - 0.10, item.z + 0.12), shadow, Vector3(1.18, 0.18, 0.88))
+		_add_sphere(stage, item.w, Vector3(item.x, item.y, item.z), stone, Vector3(1.18, 0.30, 0.90))
+		_add_sphere(stage, item.w * 0.78, Vector3(item.x - item.w * 0.12, item.y + item.w * 0.18, item.z - item.w * 0.08), top, Vector3(1.12, 0.20, 0.84))
+
+func _build_foreground_frame() -> void:
+	# Larger near-camera foliage produces the cinematic framing and depth seen in
+	# premium casual titles while leaving the central interaction area clear.
+	for item in [
+		Vector4(-7.0,0.1,5.0,1.15), Vector4(-6.7,2.0,3.0,0.92),
+		Vector4(7.0,0.0,4.5,1.18), Vector4(6.6,2.1,2.7,0.88)
+	]:
+		_add_tree(Vector3(item.x, item.y, item.z), item.w)
+
+	var leaf_dark := _material(Color("0b793d"), 0.0, 0.48, 0.30)
+	var leaf_mid := _material(Color("27b94b"), 0.0, 0.40, 0.38)
+	var leaf_light := _material(Color("83e256"), 0.0, 0.36, 0.42)
+	for side_value in [-1.0, 1.0]:
+		var side: float = float(side_value)
+		for i in range(4):
+			var base := Vector3(side * 7.55, -0.1 + float(i) * 1.65, 5.6 - float(i) * 1.4)
+			_add_sphere(stage, 1.25, base, leaf_dark, Vector3(1.20, 0.85, 0.85))
+			_add_sphere(stage, 0.92, base + Vector3(-side * 0.40, 0.45, -0.15), leaf_mid, Vector3(1.15, 0.90, 0.90))
+			_add_sphere(stage, 0.54, base + Vector3(-side * 0.68, 0.78, 0.02), leaf_light, Vector3.ONE)
+
+func _add_island(position_value: Vector3, radius: float, height: float, opacity: float) -> void:
+	var rock := _material(Color(0.35, 0.45, 0.42, opacity), 0.0, 0.58, 0.12)
+	var grass := _material(Color(0.34, 0.78, 0.34, opacity), 0.0, 0.44, 0.25)
+	_add_cylinder(stage, radius, radius * 0.34, height, position_value, rock)
+	_add_cylinder(stage, radius * 1.03, radius * 0.94, 0.22, position_value + Vector3(0, height * 0.51, 0), grass)
+	_add_tree(position_value + Vector3(-radius * 0.18, height * 0.72, 0), radius * 0.24)
+	var fall := _material(Color(0.76, 0.98, 1.0, 0.56 * opacity), 0.0, 0.10, 0.42)
+	_add_box(stage, Vector3(radius * 0.28, height * 0.92, 0.12), position_value + Vector3(radius * 0.48, -height * 0.02, radius * 0.62), fall)
+
+func _add_cliff_terrace(position_value: Vector3, width: float) -> void:
+	var rock := _material(Color("5d766e"), 0.0, 0.64, 0.16)
+	var rock_light := _material(Color("8fa697"), 0.0, 0.50, 0.24)
+	var grass := _material(Color("48bd59"), 0.0, 0.46, 0.28)
+	var radius := width * 0.52
+	_add_cylinder(stage, radius, radius * 0.76, 2.70, position_value, rock)
+	_add_cylinder(stage, radius * 1.03, radius * 0.96, 0.28, position_value + Vector3(0, 1.49, 0), grass)
+	_add_sphere(stage, radius * 0.62, position_value + Vector3(-radius * 0.26, 0.25, radius * 0.72), rock_light, Vector3(1.10, 0.78, 0.56))
+	_add_sphere(stage, radius * 0.45, position_value + Vector3(radius * 0.46, 0.04, radius * 0.68), rock_light, Vector3(1.02, 0.72, 0.52))
+
+func _add_tree(position_value: Vector3, scale_value: float) -> void:
+	var trunk := _material(Color("80502d"), 0.0, 0.58, 0.18)
+	var dark := _material(Color("087642"), 0.0, 0.46, 0.24)
+	var mid := _material(Color("23b34d"), 0.0, 0.38, 0.34)
+	var light := _material(Color("78dd54"), 0.0, 0.34, 0.40)
+	_add_cylinder(stage, scale_value * 0.16, scale_value * 0.20, scale_value * 1.55, position_value, trunk)
+	_add_sphere(stage, scale_value * 0.74, position_value + Vector3(0, scale_value * 1.05, 0), dark, Vector3(1.05, 0.92, 1.0))
+	_add_sphere(stage, scale_value * 0.58, position_value + Vector3(-scale_value * 0.48, scale_value * 0.95, 0.02), mid, Vector3.ONE)
+	_add_sphere(stage, scale_value * 0.55, position_value + Vector3(scale_value * 0.46, scale_value * 1.08, -0.04), mid, Vector3.ONE)
+	_add_sphere(stage, scale_value * 0.48, position_value + Vector3(-scale_value * 0.15, scale_value * 1.55, -0.02), light, Vector3.ONE)
+
+func _add_flower(position_value: Vector3, radius: float) -> void:
+	var white := _material(Color("fffef2"), 0.0, 0.32, 0.38)
+	var gold := _material(Color("ffd83d"), 0.0, 0.28, 0.52)
+	for offset in [
+		Vector3(radius,0,0), Vector3(-radius,0,0),
+		Vector3(0,0,radius), Vector3(0,0,-radius)
+	]:
+		_add_sphere(stage, radius * 0.55, position_value + offset, white, Vector3(1.0, 0.45, 1.0))
+	_add_sphere(stage, radius * 0.48, position_value + Vector3(0,0.04,0), gold, Vector3.ONE)
+
+func _apply_world_style() -> void:
+	if environment == null:
+		return
 	if dark_mode:
-		# Keep the same cheerful geometry while shifting the environment into a
-		# night palette. Accent colors remain visible through the translucent veil.
-		draw_rect(Rect2(0, 0, w, h), Color(0.015, 0.045, 0.105, 0.58))
-		draw_rect(Rect2(0, 0, w, h * 0.42), Color(0.055, 0.075, 0.18, 0.18))
+		environment.background_color = Color("092653")
+		environment.ambient_light_color = Color("6db4d6")
+		environment.ambient_light_energy = 0.72
+		key_light.light_color = Color("b8dcff")
+		key_light.light_energy = 1.15
+		rim_light.light_color = accent.lightened(0.34)
+		rim_light.light_energy = 0.78
+		warm_fill.light_color = Color("2dbde7")
+		warm_fill.light_energy = 0.62
+	else:
+		environment.background_color = Color("32b8f7")
+		environment.ambient_light_color = Color("e8fbff")
+		environment.ambient_light_energy = 0.94
+		key_light.light_color = Color("fff0c6")
+		key_light.light_energy = 1.34
+		rim_light.light_color = accent.lightened(0.48)
+		rim_light.light_energy = 0.68
+		warm_fill.light_color = Color("99f5ff")
+		warm_fill.light_energy = 0.58
+	if water_material != null:
+		water_material.albedo_color = (Color("116cac") if dark_mode else Color("0d9fd0")).lerp(accent, 0.08)
+	for material in accent_materials:
+		if material != null:
+			material.emission = accent.lightened(0.28)
 
-func _draw_sky(w: float, h: float) -> void:
-	# More bands than before keeps the large mobile background smooth without a shader.
-	var bands := 52
-	for i in range(bands):
-		var t := float(i) / float(bands - 1)
-		var y := h * t
-		var band_h := h / float(bands) + 2.0
-		var sky_color := Color("31b5ff").lerp(Color("eafcff"), pow(t, 0.86))
-		draw_rect(Rect2(0, y, w, band_h), sky_color)
+func _material(
+	color: Color,
+	metallic_value: float = 0.0,
+	roughness_value: float = 0.38,
+	clearcoat_value: float = 0.35
+) -> StandardMaterial3D:
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	material.metallic = metallic_value
+	material.roughness = clampf(roughness_value, 0.06, 0.82)
+	if color.a < 0.995:
+		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.clearcoat_enabled = true
+	material.clearcoat = clampf(clearcoat_value, 0.0, 1.0)
+	material.clearcoat_roughness = 0.10
+	return material
 
-	# Warm sun bloom gives the same cheerful fantasy-game lighting as the reference.
-	var sun := Vector2(w * 0.77, h * 0.105)
-	for i in range(7, 0, -1):
-		var radius := w * (0.032 + float(i) * 0.015)
-		draw_circle(sun, radius, Color(1.0, 0.91, 0.52, 0.018 + float(6 - i) * 0.012))
-	draw_circle(sun, w * 0.038, Color("fff0a3"))
-	draw_circle(sun - Vector2(w * 0.010, w * 0.010), w * 0.017, Color(1, 1, 1, 0.52))
+func _add_box(parent: Node3D, dimensions: Vector3, position_value: Vector3, material: Material) -> MeshInstance3D:
+	var mesh := BoxMesh.new()
+	mesh.size = dimensions
+	var instance := MeshInstance3D.new()
+	instance.mesh = mesh
+	instance.position = position_value
+	instance.material_override = material
+	parent.add_child(instance)
+	return instance
 
-	_draw_cloud(Vector2(w * 0.14, h * 0.13), w * 0.060, 0.78)
-	_draw_cloud(Vector2(w * 0.52, h * 0.205), w * 0.044, 0.52)
-	_draw_cloud(Vector2(w * 0.86, h * 0.19), w * 0.055, 0.66)
+func _add_sphere(
+	parent: Node3D,
+	radius: float,
+	position_value: Vector3,
+	material: Material,
+	scale_value: Vector3 = Vector3.ONE
+) -> MeshInstance3D:
+	var mesh := SphereMesh.new()
+	mesh.radius = radius
+	mesh.height = radius * 2.0
+	mesh.radial_segments = 20
+	mesh.rings = 10
+	var instance := MeshInstance3D.new()
+	instance.mesh = mesh
+	instance.position = position_value
+	instance.scale = scale_value
+	instance.material_override = material
+	parent.add_child(instance)
+	return instance
 
-	# Tiny atmospheric sparkles; deterministic so screenshots are stable.
-	for p in [Vector2(0.23,0.09), Vector2(0.36,0.18), Vector2(0.65,0.12), Vector2(0.91,0.29), Vector2(0.08,0.27)]:
-		var point := Vector2(w * p.x, h * p.y)
-		draw_circle(point, maxf(2.0, w * 0.0035), Color(1,1,1,0.68))
-		draw_line(point - Vector2(w * 0.008, 0), point + Vector2(w * 0.008, 0), Color(1,1,1,0.30), 2.0)
-
-func _draw_distant_world(w: float, h: float) -> void:
-	# Blue atmospheric mountain layer.
-	var distant := PackedVector2Array([
-		Vector2(0, h * 0.42), Vector2(w * 0.11, h * 0.31), Vector2(w * 0.20, h * 0.36),
-		Vector2(w * 0.34, h * 0.24), Vector2(w * 0.46, h * 0.39), Vector2(w * 0.61, h * 0.27),
-		Vector2(w * 0.73, h * 0.38), Vector2(w * 0.87, h * 0.25), Vector2(w, h * 0.34),
-		Vector2(w, h * 0.62), Vector2(0, h * 0.62)
-	])
-	draw_colored_polygon(distant, Color("75c6cf"))
-	var distant_light := PackedVector2Array([
-		Vector2(w * 0.10, h * 0.34), Vector2(w * 0.34, h * 0.24), Vector2(w * 0.27, h * 0.43),
-		Vector2(w * 0.60, h * 0.27), Vector2(w * 0.52, h * 0.45), Vector2(w * 0.87, h * 0.25),
-		Vector2(w * 0.81, h * 0.45)
-	])
-	draw_polyline(distant_light, Color(0.85, 1.0, 0.95, 0.28), maxf(2.0, w * 0.004), true)
-
-	# Near cliffs use light caps plus darker rock faces for an extruded 3D look.
-	var cliff_face := PackedVector2Array([
-		Vector2(0, h * 0.58), Vector2(w * 0.12, h * 0.46), Vector2(w * 0.28, h * 0.55),
-		Vector2(w * 0.43, h * 0.42), Vector2(w * 0.60, h * 0.57), Vector2(w * 0.76, h * 0.43),
-		Vector2(w, h * 0.51), Vector2(w, h * 0.72), Vector2(0, h * 0.72)
-	])
-	draw_colored_polygon(cliff_face, Color("2c805f"))
-	var grass_cap := PackedVector2Array([
-		Vector2(0, h * 0.535), Vector2(w * 0.12, h * 0.415), Vector2(w * 0.28, h * 0.505),
-		Vector2(w * 0.43, h * 0.372), Vector2(w * 0.60, h * 0.518), Vector2(w * 0.76, h * 0.385),
-		Vector2(w, h * 0.465), Vector2(w, h * 0.525), Vector2(w * 0.76, h * 0.455),
-		Vector2(w * 0.60, h * 0.588), Vector2(w * 0.43, h * 0.455), Vector2(w * 0.28, h * 0.575),
-		Vector2(w * 0.12, h * 0.485), Vector2(0, h * 0.605)
-	])
-	draw_colored_polygon(grass_cap, Color("61cd65"))
-	draw_polyline(grass_cap, Color("b4f57c"), maxf(2.0, w * 0.004), true)
-
-	# Floating islands provide foreground depth without covering the UI center.
-	_draw_floating_island(Vector2(w * 0.12, h * 0.39), w * 0.070)
-	_draw_floating_island(Vector2(w * 0.90, h * 0.365), w * 0.062)
-
-	# Rock ledges and trees around the horizon.
-	for item in [Vector2(0.08,0.48), Vector2(0.19,0.45), Vector2(0.82,0.43), Vector2(0.94,0.48)]:
-		_draw_rock(Vector2(w * item.x, h * item.y), w * 0.033)
-	for item in [Vector2(0.06,0.40), Vector2(0.18,0.37), Vector2(0.84,0.35), Vector2(0.95,0.40)]:
-		_draw_tree(Vector2(w * item.x, h * item.y), w * 0.028)
-
-func _draw_atmospheric_haze(w: float, h: float) -> void:
-	# Soft translucent bands separate the mountain, cliff and water planes so the
-	# procedural background reads like a polished illustration instead of flat layers.
-	for i in range(5):
-		var t := float(i) / 4.0
-		var y := h * (0.34 + t * 0.085)
-		var alpha := 0.055 - t * 0.006
-		draw_rect(Rect2(0, y, w, h * 0.075), Color(0.88, 0.99, 1.0, alpha))
-	var horizon_y := h * 0.655
-	draw_line(Vector2(0, horizon_y), Vector2(w, horizon_y), Color(0.88, 1.0, 1.0, 0.24), maxf(2.0, w * 0.003), true)
-
-func _draw_water_world(w: float, h: float) -> void:
-	# Three waterfalls with a shaded edge and luminous center.
-	for x in [w * 0.215, w * 0.505, w * 0.785]:
-		var fall_top := h * 0.445
-		var fall_height := h * 0.265
-		draw_rect(Rect2(x - w * 0.031, fall_top, w * 0.062, fall_height), Color("4bbdd0"))
-		draw_rect(Rect2(x - w * 0.022, fall_top, w * 0.044, fall_height), Color("b8f9ff"))
-		draw_rect(Rect2(x - w * 0.008, fall_top, w * 0.016, fall_height), Color(1, 1, 1, 0.76))
-		for splash_x in [-0.025, 0.0, 0.025]:
-			draw_circle(Vector2(x + w * splash_x, fall_top + fall_height), w * 0.023, Color(0.75, 0.98, 1.0, 0.44))
-
-	# River gradient and perspective streaks.
-	var water_top := h * 0.675
-	for i in range(18):
-		var t := float(i) / 17.0
-		var yy := water_top + (h - water_top) * t
-		var band_h := (h - water_top) / 17.0 + 2.0
-		draw_rect(Rect2(0, yy, w, band_h), Color("20bddc").lerp(Color("087fbb"), t * 0.82))
-	for i in range(12):
-		var yy := h * (0.705 + float(i) * 0.025)
-		var inset := w * (0.03 + float(i) * 0.018)
-		draw_line(Vector2(inset, yy), Vector2(w - inset, yy - h * 0.010), Color(0.80, 1.0, 1.0, 0.18), maxf(2.0, w * 0.003))
-
-	# Small specular streaks keep the river glossy without a shader or continuous animation.
-	for p in [Vector2(0.12,0.735), Vector2(0.30,0.79), Vector2(0.58,0.745), Vector2(0.78,0.83), Vector2(0.90,0.76)]:
-		var center := Vector2(w * p.x, h * p.y)
-		draw_line(center - Vector2(w * 0.030, 0), center + Vector2(w * 0.030, 0), Color(0.94, 1.0, 1.0, 0.34), maxf(2.0, w * 0.003), true)
-		draw_circle(center, maxf(2.0, w * 0.003), Color(1, 1, 1, 0.46))
-
-	# Stepping stones pull the eye toward the central play area.
-	for i in range(5):
-		var t := float(i) / 4.0
-		var p := Vector2(w * (0.37 + t * 0.26), h * (0.78 + t * 0.042))
-		var r := w * (0.035 - t * 0.007)
-		draw_circle(p + Vector2(0, r * 0.30), r, Color(0.02,0.20,0.28,0.22))
-		draw_circle(p, r, Color("9aa899"))
-		draw_circle(p - Vector2(r * 0.20, r * 0.20), r * 0.70, Color("cbd6b8"))
-
-func _draw_foreground(w: float, h: float) -> void:
-	# Darker foreground foliage makes the center feel brighter and deeper.
-	for side in [0, 1]:
-		var direction := -1.0 if side == 0 else 1.0
-		var sx := w * (0.015 if side == 0 else 0.985)
-		for i in range(12):
-			var y := h * (0.07 + float(i) * 0.078)
-			var r := w * (0.025 + float(i % 4) * 0.004)
-			draw_circle(Vector2(sx, y) + Vector2(direction * r * 0.25, r * 0.24), r * 1.40, Color("0d633d"))
-			draw_circle(Vector2(sx, y), r * 1.12, Color("1f9b50"))
-			draw_circle(Vector2(sx - direction * r * 0.45, y - r * 0.28), r * 0.78, Color("67d35d"))
-			draw_circle(Vector2(sx - direction * r * 0.62, y - r * 0.52), r * 0.35, Color("b4ed65"))
-
-	# Flowers, mushrooms and gem-like accent specks around the safe margins.
-	var flower_points := [Vector2(0.075,0.78), Vector2(0.14,0.88), Vector2(0.20,0.76), Vector2(0.81,0.87), Vector2(0.88,0.78), Vector2(0.94,0.90)]
-	for p in flower_points:
-		var center := Vector2(w * p.x, h * p.y)
-		_draw_flower(center, w * 0.010)
-	for p in [Vector2(0.10,0.68), Vector2(0.91,0.67), Vector2(0.16,0.94), Vector2(0.84,0.95)]:
-		var center := Vector2(w * p.x, h * p.y)
-		draw_circle(center + Vector2(0, w * 0.010), w * 0.009, Color("fff5da"))
-		draw_circle(center, w * 0.016, accent.lightened(0.20))
-		draw_arc(center, w * 0.016, PI, TAU, 16, Color.WHITE, maxf(1.5, w * 0.002), true)
-
-func _draw_cloud(center: Vector2, radius: float, alpha: float) -> void:
-	var shadow := Color(0.18, 0.55, 0.72, alpha * 0.16)
-	draw_circle(center + Vector2(radius * 0.10, radius * 0.28), radius * 1.06, shadow)
-	draw_circle(center, radius, Color(1,1,1,alpha))
-	draw_circle(center + Vector2(radius * 0.78, radius * 0.18), radius * 0.72, Color(1,1,1,alpha * 0.92))
-	draw_circle(center - Vector2(radius * 0.72, -radius * 0.14), radius * 0.63, Color(1,1,1,alpha * 0.88))
-	draw_circle(center + Vector2(radius * 0.14, -radius * 0.46), radius * 0.72, Color(1,1,1,alpha * 0.92))
-	draw_circle(center - Vector2(radius * 0.24, radius * 0.30), radius * 0.34, Color(1,1,1,alpha * 0.40))
-
-func _draw_floating_island(center: Vector2, radius: float) -> void:
-	var underside := PackedVector2Array([
-		center + Vector2(-radius, 0), center + Vector2(radius, 0),
-		center + Vector2(radius * 0.55, radius * 0.70), center + Vector2(0, radius * 1.55),
-		center + Vector2(-radius * 0.55, radius * 0.70)
-	])
-	draw_colored_polygon(underside, Color("55635c"))
-	var top := PackedVector2Array([
-		center + Vector2(-radius, 0), center + Vector2(-radius * 0.62, -radius * 0.35),
-		center + Vector2(0, -radius * 0.52), center + Vector2(radius * 0.70, -radius * 0.28),
-		center + Vector2(radius, 0), center + Vector2(0, radius * 0.24)
-	])
-	draw_colored_polygon(top, Color("66d363"))
-	draw_polyline(top + PackedVector2Array([top[0]]), Color("b4f57c"), maxf(1.5, radius * 0.055), true)
-	_draw_tree(center - Vector2(0, radius * 0.50), radius * 0.28)
-
-func _draw_tree(base: Vector2, scale_value: float) -> void:
-	draw_line(base + Vector2(0, scale_value * 1.4), base - Vector2(0, scale_value * 1.3), Color("75472d"), scale_value * 0.30, true)
-	draw_circle(base - Vector2(0, scale_value * 1.6), scale_value * 0.92, Color("177c45"))
-	draw_circle(base - Vector2(scale_value * 0.55, scale_value * 1.35), scale_value * 0.72, Color("2daf51"))
-	draw_circle(base + Vector2(scale_value * 0.50, -scale_value * 1.42), scale_value * 0.68, Color("55cb59"))
-	draw_circle(base - Vector2(scale_value * 0.28, scale_value * 1.95), scale_value * 0.58, Color("8ee55f"))
-
-func _draw_rock(center: Vector2, radius: float) -> void:
-	var points := PackedVector2Array([
-		center + Vector2(-radius, radius * 0.46), center + Vector2(-radius * 0.72, -radius * 0.38),
-		center + Vector2(-radius * 0.10, -radius), center + Vector2(radius * 0.72, -radius * 0.50),
-		center + Vector2(radius, radius * 0.44), center + Vector2(0, radius * 0.82)
-	])
-	draw_colored_polygon(points, Color("657c78"))
-	draw_polyline(PackedVector2Array([points[1], points[2], points[3]]), Color("a7c4ad"), maxf(1.0, radius * 0.12), true)
-
-func _draw_flower(center: Vector2, radius: float) -> void:
-	for direction in [Vector2.UP, Vector2.RIGHT, Vector2.DOWN, Vector2.LEFT]:
-		draw_circle(center + direction * radius * 0.90, radius * 0.72, Color("ff59ac"))
-	draw_circle(center, radius * 0.66, Color("ffd83d"))
-	draw_circle(center - Vector2(radius * 0.18, radius * 0.18), radius * 0.20, Color.WHITE)
+func _add_cylinder(
+	parent: Node3D,
+	top_radius: float,
+	bottom_radius: float,
+	height: float,
+	position_value: Vector3,
+	material: Material
+) -> MeshInstance3D:
+	var mesh := CylinderMesh.new()
+	mesh.top_radius = top_radius
+	mesh.bottom_radius = bottom_radius
+	mesh.height = height
+	mesh.radial_segments = 20
+	var instance := MeshInstance3D.new()
+	instance.mesh = mesh
+	instance.position = position_value
+	instance.material_override = material
+	parent.add_child(instance)
+	return instance

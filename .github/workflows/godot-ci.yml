@@ -98,7 +98,7 @@ jobs:
         shell: bash
         run: |
           set -euxo pipefail
-          for t in validate_collection_daily_value validate_soothing_audio_palette validate_motion_quality validate_transition_ownership validate_edge_safe_effects validate_gameplay_stage_budget validate_rescue_token_render_lifecycle validate_water_tubes_sleep_idle validate_block_cells_sleep_idle validate_block_single_touch_owner validate_reported_polish_regressions validate_assist_difficulty_pass validate_difficulty_curves validate_coin_economy validate_coin_grants validate_external_coin_sync validate_progression_coin_sync validate_monetization validate_admob_production validate_billing_production validate_premium_ux validate_visual_quality_contract validate_production_completion validate_uiux_regressions validate_viewport_fit validate_compact_gameplay_stack validate_home_premium_visual_hierarchy validate_home_event_driven validate_home_tall_screen_composition validate_tutorial_premium_flow validate_result_premium_hierarchy validate_block_puzzle_premium_visual_hierarchy validate_navigation_surface_coverage validate_retention validate_robustness validate_production_hardening_regressions; do
+          for t in validate_collection_daily_value validate_soothing_audio_palette validate_motion_quality validate_transition_ownership validate_edge_safe_effects validate_gameplay_stage_budget validate_rescue_token_render_lifecycle validate_water_tubes_sleep_idle validate_block_cells_sleep_idle validate_block_single_touch_owner validate_reported_polish_regressions validate_assist_difficulty_pass validate_difficulty_curves validate_coin_economy validate_coin_grants validate_external_coin_sync validate_progression_coin_sync validate_monetization validate_admob_production validate_billing_production validate_premium_ux validate_visual_quality_contract validate_production_completion validate_uiux_regressions validate_viewport_fit validate_compact_gameplay_stack validate_home_premium_visual_hierarchy validate_home_event_driven validate_home_tall_screen_composition validate_tutorial_premium_flow validate_result_premium_hierarchy validate_block_puzzle_premium_visual_hierarchy validate_navigation_surface_coverage validate_shared_world_backdrop validate_retention validate_robustness validate_production_hardening_regressions; do
             bash tools/run_godot_test.sh "$t" 45
           done
       - name: Fast flat-board 3D-effects architecture and idle-cost contracts
@@ -158,7 +158,7 @@ jobs:
           cp export_presets.cfg "$RUNNER_TEMP/export_presets.aab.cfg"
           sed -i 's/gradle_build\/export_format=1/gradle_build\/export_format=0/' export_presets.cfg
           godot --headless --verbose --path . --install-android-build-template --export-debug Android build/android/unjam-debug.apk 2>&1 | tee android-apk-export.log
-          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" android-apk-export.log; then exit 1; fi
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access|AdMob: Android library not found|CONFIGURATION_ERROR" android-apk-export.log; then exit 1; fi
           test -s build/android/unjam-debug.apk
           cp "$RUNNER_TEMP/export_presets.aab.cfg" export_presets.cfg
       - name: Verify packaged monetization manifest contract
@@ -182,6 +182,10 @@ jobs:
           grep -F '"9.1.0"' build/android/apk-manifest.txt
           grep -F "org.godotengine.plugin.v2.GodotGooglePlayBilling" build/android/apk-manifest.txt
           grep -F "com.android.billingclient.api.ProxyBillingActivity" build/android/apk-manifest.txt
+          if grep -F "_CONFIGURATION_ERROR" build/android/apk-manifest.txt; then
+            echo "Monetization plugin configuration error marker found in APK manifest" >&2
+            exit 1
+          fi
       - name: Upload Android debug APK
         uses: actions/upload-artifact@v4
         with:
@@ -194,7 +198,7 @@ jobs:
         run: |
           set -o pipefail
           godot --headless --verbose --path . --export-debug Android build/android/unjam-debug.aab 2>&1 | tee android-aab-export.log
-          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" android-aab-export.log; then exit 1; fi
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access|AdMob: Android library not found|CONFIGURATION_ERROR" android-aab-export.log; then exit 1; fi
           test -s build/android/unjam-debug.aab
       - name: Upload Android debug AAB
         uses: actions/upload-artifact@v4

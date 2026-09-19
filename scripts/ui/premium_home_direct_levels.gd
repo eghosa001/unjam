@@ -21,11 +21,9 @@ func build_home_launcher() -> void:
 	var compact_width := viewport_size.x < 700.0
 	clip_contents = true
 
-	var backdrop := Unjam3DBackdrop.new()
-	backdrop.name = "HomePremiumBackdrop"
-	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	backdrop.configure(Unjam3DTheme.game_accent(selected_game), dark_mode)
-	add_child(backdrop)
+	var main_node := get_parent()
+	if main_node != null and main_node.has_method("set_world_backdrop_style"):
+		main_node.call("set_world_backdrop_style", Unjam3DTheme.game_accent(selected_game), dark_mode)
 
 	var outer := MarginContainer.new()
 	outer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -162,10 +160,15 @@ func _make_brand_logo(parent: VBoxContainer) -> void:
 	parent.add_child(box)
 
 	var logo := Label.new()
+	logo.name = "HomeBrandLogo"
 	logo.text = "UNJAM"
 	logo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	logo.add_theme_font_size_override("font_size", 70 if compact else 84)
-	Unjam3DTheme.label_3d(logo, Color("fff4d5"), Color("064d93"), 9)
+	logo.add_theme_font_size_override("font_size", 76 if compact else 92)
+	# Gold face + saturated blue outline gives the logo the dimensional,
+	# toy-like identity used by the rest of the premium world.
+	Unjam3DTheme.label_3d(logo, Color("ffd83d"), Color("075bb8"), 10)
+	logo.add_theme_color_override("font_shadow_color", Color(0.02, 0.16, 0.34, 0.52))
+	logo.add_theme_constant_override("shadow_offset_y", 5)
 	box.add_child(logo)
 
 	var strap := Label.new()
@@ -185,11 +188,11 @@ func _make_hero(parent: VBoxContainer) -> void:
 	hero.add_theme_stylebox_override(
 		"panel",
 		Unjam3DTheme.panel_3d(
-			Color("102846") if _theme_mode() == "dark" else Color(0.72, 0.94, 1.0, 0.56),
+			Color(0.035, 0.10, 0.20, 0.82) if _theme_mode() == "dark" else Color(0.78, 0.96, 1.0, 0.72),
 			42,
-			Color(1, 1, 1, 0.48),
+			Color(1, 1, 1, 0.72),
 			3,
-			18
+			20
 		)
 	)
 	parent.add_child(hero)
@@ -199,6 +202,34 @@ func _make_hero(parent: VBoxContainer) -> void:
 	mascot.custom_minimum_size = Vector2(maxf(680.0, viewport_size.x - 96.0), maxf(270.0, hero_height - 28.0))
 	mascot.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	hero.add_child(mascot)
+
+	var level := _home_current_level(selected_game)
+	var world := MultiGameManager.world_for_game_level(selected_game, level)
+	# PanelContainer lays direct Control children out to its content rect.  Put the
+	# floating world sign on a full-size free-position layer so it stays a small
+	# badge instead of stretching over the entire cinematic hero.
+	var badge_layer := Control.new()
+	badge_layer.name = "HomeHeroBadgeLayer"
+	badge_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	badge_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hero.add_child(badge_layer)
+	var world_badge := PanelContainer.new()
+	world_badge.name = "HomeWorldBadge"
+	world_badge.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	world_badge.offset_left = -194
+	world_badge.offset_top = 22
+	world_badge.offset_right = -24
+	world_badge.offset_bottom = 88
+	world_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	world_badge.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("8d5a31"), 18, Color("e2b778"), 2, 8))
+	badge_layer.add_child(world_badge)
+	var world_label := Label.new()
+	world_label.text = "WORLD %d" % world
+	world_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	world_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	world_label.add_theme_font_size_override("font_size", 22)
+	Unjam3DTheme.label_3d(world_label, Color("fff7de"), Color("5a321b"), 3)
+	world_badge.add_child(world_label)
 
 	var overlay_margin := MarginContainer.new()
 	overlay_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -219,8 +250,6 @@ func _make_hero(parent: VBoxContainer) -> void:
 	overlay.add_child(eyebrow)
 
 	var current := Label.new()
-	var level := _home_current_level(selected_game)
-	var world := MultiGameManager.world_for_game_level(selected_game, level)
 	current.text = "%s\nLEVEL %d  •  WORLD %d" % [MultiGameManager.display_name(selected_game).to_upper(), level, world]
 	current.add_theme_font_size_override("font_size", 32 if viewport_size.x < 700.0 else 38)
 	Unjam3DTheme.label_3d(current, Color.WHITE, Unjam3DTheme.NAVY, 5)

@@ -20,6 +20,11 @@ func _run() -> void:
 	await _check_scene("res://scenes/Game.tscn", "GameplayBoardHolder", failures)
 	for viewport_size in SELECTOR_VIEWPORTS:
 		await _check_selector(viewport_size, failures)
+	# Unjam3DTheme intentionally caches a FontVariation for production UI reuse. This
+	# short-lived renderer test must release that static reference before SceneTree
+	# shutdown so the dummy renderer can destroy its glyph atlas/text RIDs cleanly.
+	Unjam3DTheme._readable_font = null
+	await _frames(6)
 	if failures.is_empty():
 		print("PASS compact gameplay stack")
 		quit(0)
@@ -59,8 +64,8 @@ func _check_scene(path: String, holder_name: String, failures: Array[String]) ->
 		var trailing_gap := root.get_visible_rect().size.y - actions.get_global_rect().end.y
 		if trailing_gap > MAX_TRAILING_ACTION_GAP:
 			failures.append("%s leaves %.1fpx unused below gameplay actions on a tall phone" % [path, trailing_gap])
-	scene.queue_free()
-	await process_frame
+	scene.free()
+	await _frames(2)
 
 func _check_selector(viewport_size: Vector2i, failures: Array[String]) -> void:
 	root.size = viewport_size
@@ -102,14 +107,22 @@ func _check_selector(viewport_size: Vector2i, failures: Array[String]) -> void:
 		for game_id in ["rescue_rush", "water_sort", "block_puzzle"]:
 			var card := main.find_child("GameCard3D_%s" % game_id, true, false) as Control
 			var art := main.find_child("GameArtShell_%s" % game_id, true, false) as Control
-			if card == null or art == null:
-				failures.append("Game selector %s card/art missing at %s" % [game_id, str(viewport_size)])
+			var play := main.find_child("GamePlay_%s" % game_id, true, false) as Button
+			if card == null or art == null or play == null:
+				failures.append("Game selector %s card/art/play missing at %s" % [game_id, str(viewport_size)])
 				continue
 			if not card.get_global_rect().encloses(art.get_global_rect()):
 				failures.append("Game selector %s artwork escapes its card at %s" % [game_id, str(viewport_size)])
+			if viewport_size == Vector2i(540, 960):
+				if not scroll_rect.encloses(card.get_global_rect()):
+					failures.append("Compact selector does not show the full %s card before scrolling" % game_id)
+				if not scroll_rect.encloses(play.get_global_rect()):
+					failures.append("Compact selector hides the %s play action before scrolling" % game_id)
+				if art.find_child("GamePreviewViewport3D", true, false) != null:
+					failures.append("Compact selector keeps an unnecessary live 3D preview for %s" % game_id)
 		print("SELECTOR_COMPOSITION physical=%s logical=%s header=%s scroll=%s nav=%s" % [str(viewport_size), str(logical_size), str(header_rect), str(scroll_rect), str(nav_rect)])
-	main.queue_free()
-	await process_frame
+	main.free()
+	await _frames(2)
 
 func _inside(rect: Rect2, viewport_rect: Rect2) -> bool:
 	var epsilon := 2.0

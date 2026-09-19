@@ -10,7 +10,7 @@ func _initialize() -> void:
 	_check_source("res://scripts/ui/premium_live_hub_3d.gd", ["CHOOSE A GAME", "Unjam3DGameArt", "_add_game_card"], failures)
 	_check_source("res://scripts/ui/unjam_3d_mascot.gd", ["extends SubViewportContainer", "Camera3D", "SphereMesh", "DirectionalLight3D"], failures)
 	_check_source("res://scripts/ui/unjam_3d_game_art.gd", ["extends SubViewportContainer", "_build_rescue_rush", "_build_water_sort", "_build_block_puzzle"], failures)
-	_check_source("res://scripts/ui/unjam_3d_backdrop.gd", ["_draw_floating_island", "_draw_water_world", "_draw_foreground"], failures)
+	_check_source("res://scripts/ui/unjam_3d_backdrop.gd", ["extends SubViewportContainer", "PremiumWorldViewport3D", "_build_bridge", "_build_waterfalls", "_build_foreground_frame", "DirectionalLight3D"], failures)
 	_check_source("res://scripts/systems/premium_visuals.gd", ["tactile_success", "tactile_invalid", "transition_cover"], failures)
 	_check_source("res://scripts/ui/motion_director.gd", ["create_tween", "TRANS", "EASE"], failures)
 	_check_source("res://scenes/Main.tscn", ["premium_home_direct_levels.gd", "premium_live_hub_3d.gd", "PremiumHome", "PremiumLive"], failures)
