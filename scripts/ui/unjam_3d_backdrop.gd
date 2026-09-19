@@ -208,7 +208,8 @@ func _build_shoreline() -> void:
 	var rock := _material(Color("71877e"), 0.0, 0.62, 0.22)
 	var rock_light := _material(Color("b7c8b6"), 0.0, 0.48, 0.28)
 	var grass := _material(Color("45c65b"), 0.0, 0.48, 0.32)
-	for side in [-1.0, 1.0]:
+	for side_value in [-1.0, 1.0]:
+		var side: float = float(side_value)
 		for i in range(7):
 			var z := 5.5 - float(i) * 2.35
 			var x := side * (6.0 + float(i % 3) * 0.34)
@@ -256,7 +257,8 @@ func _build_foreground_frame() -> void:
 	var leaf_dark := _material(Color("0b793d"), 0.0, 0.48, 0.30)
 	var leaf_mid := _material(Color("27b94b"), 0.0, 0.40, 0.38)
 	var leaf_light := _material(Color("83e256"), 0.0, 0.36, 0.42)
-	for side in [-1.0, 1.0]:
+	for side_value in [-1.0, 1.0]:
+		var side: float = float(side_value)
 		for i in range(4):
 			var base := Vector3(side * 7.55, -0.1 + float(i) * 1.65, 5.6 - float(i) * 1.4)
 			_add_sphere(stage, 1.25, base, leaf_dark, Vector3(1.20, 0.85, 0.85))
