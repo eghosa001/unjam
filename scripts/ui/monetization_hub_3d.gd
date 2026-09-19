@@ -1,5 +1,32 @@
 extends "res://scripts/ui/monetization_hub.gd"
 
+var _previous_world_accent := Unjam3DTheme.GREEN
+var _previous_world_dark_mode := false
+var _has_previous_world_style := false
+
+func open_shop() -> void:
+	if overlay == null or not is_instance_valid(overlay):
+		super.open_shop()
+		return
+	var main := get_parent()
+	var world := main.get_node_or_null("UnjamWorldBackdrop") as Unjam3DBackdrop if main != null else null
+	if world != null:
+		_previous_world_accent = world.accent
+		_previous_world_dark_mode = world.dark_mode
+		_has_previous_world_style = true
+		if main.has_method("set_world_backdrop_style"):
+			main.call("set_world_backdrop_style", Unjam3DTheme.ORANGE, world.dark_mode)
+	super.open_shop()
+
+func _close_shop() -> void:
+	super._close_shop()
+	if not _has_previous_world_style:
+		return
+	var main := get_parent()
+	if main != null and main.has_method("set_world_backdrop_style"):
+		main.call("set_world_backdrop_style", _previous_world_accent, _previous_world_dark_mode)
+	_has_previous_world_style = false
+
 func _build_ui() -> void:
 	if layer != null:
 		return
@@ -19,13 +46,10 @@ func _build_ui() -> void:
 	overlay.visible = false
 	layer.add_child(overlay)
 
-	var backdrop := Unjam3DBackdrop.new()
-	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	backdrop.configure(Unjam3DTheme.ORANGE)
-	overlay.add_child(backdrop)
 	var shade := ColorRect.new()
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	shade.color = Color(0.02, 0.25, 0.42, 0.34)
+	# Keep the shared world visible; Shop only adds a warm merchandising tint.
+	shade.color = Color(0.20, 0.08, 0.02, 0.20)
 	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	overlay.add_child(shade)
 
