@@ -113,6 +113,8 @@ func _check_selector(viewport_size: Vector2i, failures: Array[String]) -> void:
 					failures.append("Compact selector does not show the full %s card before scrolling" % game_id)
 				if not scroll_rect.encloses(play.get_global_rect()):
 					failures.append("Compact selector hides the %s play action before scrolling" % game_id)
+				if art.find_child("GamePreviewViewport3D", true, false) != null:
+					failures.append("Compact selector keeps an unnecessary live 3D preview for %s" % game_id)
 		print("SELECTOR_COMPOSITION physical=%s logical=%s header=%s scroll=%s nav=%s" % [str(viewport_size), str(logical_size), str(header_rect), str(scroll_rect), str(nav_rect)])
 	main.queue_free()
 	await _frames(4)
