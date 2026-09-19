@@ -29,6 +29,25 @@ Campaign target: deterministic 10,000 levels per game
 11. If the user says “continue,” resume from the last unfinished completion gate instead of restarting the audit.
 12. External/account-side tasks must not block code-side completion. Finish everything possible in the repository, then report the remaining manual tasks separately.
 
+## Persistent completion state
+
+Maintain `docs/UNJAM_COMPLETION_STATUS.md` while doing substantial completion work so another session can resume without depending on chat history.
+
+Create it if missing. Keep it compact and update it after each meaningful batch with:
+
+- exact branch and latest commit reviewed
+- current phase/gate
+- P0/P1/P2/P3 issue inventory and status
+- fixes completed
+- tests run and their results
+- screenshots/device states reviewed
+- performance measurements that matter
+- monetization/backend/release findings
+- owner-only blockers
+- next unfinished action
+
+Do not turn this file into a diary. Replace stale status with the current truth. When starting a new run, read it but verify important claims against the repository and current CI before trusting them.
+
 ## Tool strategy
 
 Use the best available tools instead of simulating them.
