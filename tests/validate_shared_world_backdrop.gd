@@ -20,6 +20,14 @@ func _run() -> void:
 	if not _assert_single_shared_backdrop(main, "home"):
 		return
 
+	var home := main.get_node_or_null("PremiumHome")
+	if home == null or not home.has_method("_open_game_selector"):
+		return _fail("Game selector navigation unavailable")
+	home.call("_open_game_selector")
+	await _frames(3)
+	if not _assert_single_shared_backdrop(main, "game selector"):
+		return
+
 	main.call("build_settings")
 	await _frames(3)
 	if not _assert_single_shared_backdrop(main, "settings"):
