@@ -205,6 +205,7 @@ jobs:
           cp export_presets.cfg "$RUNNER_TEMP/export_presets.release-aab.cfg"
           sed -i 's/gradle_build\/export_format=1/gradle_build\/export_format=0/' export_presets.cfg
           godot --headless --verbose --path . --install-android-build-template --export-release Android build/android/unjam-release-check.apk 2>&1 | tee android-release-apk-export.log
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access|AdMob: Android library not found|CONFIGURATION_ERROR" android-release-apk-export.log; then exit 1; fi
           test -s build/android/unjam-release-check.apk
           cp "$RUNNER_TEMP/export_presets.release-aab.cfg" export_presets.cfg
       - name: Verify release monetization manifest contract
@@ -228,6 +229,10 @@ jobs:
           grep -F '"9.1.0"' build/android/release-apk-manifest.txt
           grep -F "org.godotengine.plugin.v2.GodotGooglePlayBilling" build/android/release-apk-manifest.txt
           grep -F "com.android.billingclient.api.ProxyBillingActivity" build/android/release-apk-manifest.txt
+          if grep -F "_CONFIGURATION_ERROR" build/android/release-apk-manifest.txt; then
+            echo "Monetization plugin configuration error marker found in release APK manifest" >&2
+            exit 1
+          fi
           rm -f "$APK"
       - name: Export release AAB
         shell: bash
@@ -235,7 +240,7 @@ jobs:
           set -o pipefail
           mkdir -p build/android
           godot --headless --verbose --path . --export-release Android build/android/unjam-release.aab 2>&1 | tee android-release-export.log
-          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" android-release-export.log; then exit 1; fi
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access|AdMob: Android library not found|CONFIGURATION_ERROR" android-release-export.log; then exit 1; fi
           test -s build/android/unjam-release.aab
       - name: Verify 16 KB native page compatibility
         shell: bash
