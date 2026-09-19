@@ -277,12 +277,30 @@ func _add_game_card(parent: VBoxContainer, game_id: String) -> void:
 	art_margin.add_theme_constant_override("margin_top", 4)
 	art_margin.add_theme_constant_override("margin_bottom", 4)
 	art_shell.add_child(art_margin)
-	var art := Unjam3DGameArt.new()
-	art.custom_minimum_size = Vector2(0 if compact else 330, maxf(96.0, art_shell.custom_minimum_size.y - 12.0))
-	art.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	art.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	art.configure(game_id)
-	art_margin.add_child(art)
+	if small_phone:
+		var compact_art := Label.new()
+		compact_art.name = "CompactGameArt_%s" % game_id
+		compact_art.text = _compact_art_copy(game_id)
+		compact_art.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		compact_art.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		compact_art.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		compact_art.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		compact_art.add_theme_font_size_override("font_size", 24)
+		Unjam3DTheme.label_3d(compact_art, Color.WHITE, dark.darkened(0.34), 3)
+		art_margin.add_child(compact_art)
+	else:
+		var art := Unjam3DGameArt.new()
+		art.custom_minimum_size = Vector2(0 if compact else 330, maxf(96.0, art_shell.custom_minimum_size.y - 12.0))
+		art.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		art.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		art.configure(game_id)
+		art_margin.add_child(art)
+
+func _compact_art_copy(game_id: String) -> String:
+	match game_id:
+		"water_sort": return "◉  COLOR FLOW  ◉"
+		"block_puzzle": return "◆  BUILD & CLEAR  ◆"
+		_: return "↗  RESCUE RUN  ↗"
 
 func _reference_card_copy_short(game_id: String) -> String:
 	match game_id:
