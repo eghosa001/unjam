@@ -77,6 +77,7 @@ func _test_selector_card_tap_and_level_launch(main: Control) -> bool:
 	for button in _buttons(live):
 		if button.visible and not button.disabled and button.text.strip_edges().begins_with("PLAY"):
 			return _fail("Selector still contains a redundant visible PLAY button: %s" % button.text)
+	MultiGameManager.clear_checkpoint("water_sort")
 	var water_card := live.find_child("GameCard3D_water_sort", true, false) as PanelContainer
 	if water_card == null:
 		return _fail("Water selector card is missing")
