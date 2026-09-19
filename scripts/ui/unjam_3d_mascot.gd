@@ -57,14 +57,14 @@ func _build_3d_scene() -> void:
 	var key := DirectionalLight3D.new()
 	key.rotation_degrees = Vector3(-38, -34, 0)
 	key.light_color = Color("fff4d0")
-	key.light_energy = 1.45
+	key.light_energy = 1.68
 	key.shadow_enabled = true
 	stage.add_child(key)
 
 	var fill := DirectionalLight3D.new()
 	fill.rotation_degrees = Vector3(-18, 142, 18)
 	fill.light_color = Color("75d7ff")
-	fill.light_energy = 0.72
+	fill.light_energy = 0.86
 	stage.add_child(fill)
 
 	var camera := Camera3D.new()
@@ -98,7 +98,7 @@ func _build_3d_scene() -> void:
 	_add_sphere(mascot_root, 0.115, Vector3(0.30, 1.52, 0.82), Color("183450"), Vector3(0.84, 1.12, 0.45))
 	_add_sphere(mascot_root, 0.038, Vector3(-0.335, 1.565, 0.918), Color.WHITE, Vector3.ONE)
 	_add_sphere(mascot_root, 0.038, Vector3(0.265, 1.565, 0.918), Color.WHITE, Vector3.ONE)
-	_add_sphere(mascot_root, 0.20, Vector3(0, 1.16, 0.865), Color("7b321f"), Vector3(1.35, 0.34, 0.25))
+	_add_sphere(mascot_root, 0.20, Vector3(0, 1.16, 0.865), Color("ff7a22"), Vector3(1.35, 0.34, 0.25))
 
 	# Explorer cap with brim.
 	_add_cylinder(mascot_root, 0.70, 0.77, 0.34, Vector3(0, 2.18, 0), Color("ff6a37"), 0.05, 0.30)
@@ -124,17 +124,17 @@ func _build_3d_scene() -> void:
 	# Legs and chunky boots.
 	for side in [-1.0, 1.0]:
 		_add_capsule(mascot_root, 0.25, 0.82, Vector3(side * 0.38, -0.86, 0), Color("1c86e8"), 0.08, 0.34)
-		_add_sphere(mascot_root, 0.34, Vector3(side * 0.38, -1.24, 0.18), Color("ff6748"), Vector3(1.18, 0.62, 1.52))
+		_add_sphere(mascot_root, 0.34, Vector3(side * 0.38, -1.24, 0.18), Color("19a7ee"), Vector3(1.18, 0.62, 1.52))
 
 func _material(color: Color, metallic_value: float = 0.0, roughness_value: float = 0.34) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()
 	material.albedo_color = color
 	material.metallic = metallic_value
-	material.roughness = roughness_value
+	material.roughness = clampf(roughness_value, 0.10, 0.52)
 	if color.a >= 0.995:
 		material.clearcoat_enabled = true
-		material.clearcoat = 0.42
-		material.clearcoat_roughness = 0.12
+		material.clearcoat = 0.72
+		material.clearcoat_roughness = 0.09
 	if color.a < 0.995:
 		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	return material
