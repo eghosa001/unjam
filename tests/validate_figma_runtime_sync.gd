@@ -64,7 +64,18 @@ func _test_home_and_daily(main: Control) -> bool:
 	await _frames(6)
 	if String(main.get("current_surface")) != "daily":
 		return _fail("Home Daily nav did not open Daily Games")
+	if not _assert_secondary_nav(main, "SecondaryNavDaily"):
+		return false
 	if not _all_enabled_buttons_bound(main.get("content") as Control, [""]):
+		return false
+
+	main.call("build_collection")
+	await _frames(5)
+	if not _assert_secondary_nav(main, "SecondaryNavCollection"):
+		return false
+	main.call("build_settings")
+	await _frames(5)
+	if not _assert_secondary_nav(main, "SecondaryNavSettings"):
 		return false
 	return true
 
@@ -228,6 +239,24 @@ func _test_settings_toggle(main: Control) -> bool:
 	data["sound"] = before
 	save.set("data", data)
 	save.call("save")
+	return true
+
+func _assert_secondary_nav(main: Control, active_name: String) -> bool:
+	var content := main.get("content") as Control
+	if content == null:
+		return _fail("Secondary surface content is missing for %s" % active_name)
+	var names := ["SecondaryNavHome", "SecondaryNavGames", "SecondaryNavDaily", "SecondaryNavCollection", "SecondaryNavSettings"]
+	for name in names:
+		var button := content.find_child(name, true, false) as Button
+		if button == null:
+			return _fail("Secondary nav button missing: %s" % name)
+		if not button.has_meta("unjam_preserve_surface_style"):
+			return _fail("Secondary nav style can be overwritten by the generic surface pass: %s" % name)
+		var should_be_active := name == active_name
+		if button.disabled != should_be_active:
+			return _fail("Secondary nav active state is wrong for %s while %s should be active" % [name, active_name])
+		if not should_be_active and not _bound(button):
+			return _fail("Secondary nav button is not responsive: %s" % name)
 	return true
 
 func _all_enabled_buttons_bound(node: Control, allowed_unbound_names: Array[String]) -> bool:
