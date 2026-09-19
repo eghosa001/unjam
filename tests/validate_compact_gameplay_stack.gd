@@ -18,17 +18,11 @@ func _run() -> void:
 	var failures: Array[String] = []
 	await _check_scene("res://scenes/WaterSort.tscn", "GameplayStageHolder", failures)
 	await _check_scene("res://scenes/Game.tscn", "GameplayBoardHolder", failures)
-	# This contract measures responsive layout, not GPU rendering. Headless Godot's
-	# dummy renderer does not reliably reclaim SubViewport render targets at process
-	# shutdown, so keep selector previews lightweight here. The rendered visual-audit
-	# job still exercises the real 3D previews under an actual display server.
-	root.set_meta("unjam_test_lightweight_previews", true)
 	for viewport_size in SELECTOR_VIEWPORTS:
 		await _check_selector(viewport_size, failures)
 	# Unjam3DTheme intentionally caches a FontVariation for production UI reuse. This
 	# short-lived renderer test must release that static reference before SceneTree
 	# shutdown so the dummy renderer can destroy its glyph atlas/text RIDs cleanly.
-	root.remove_meta("unjam_test_lightweight_previews")
 	Unjam3DTheme._readable_font = null
 	await _frames(6)
 	if failures.is_empty():
