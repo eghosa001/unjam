@@ -48,7 +48,10 @@ func _page_root() -> VBoxContainer:
 	outer.add_theme_constant_override("margin_left", side_margin)
 	outer.add_theme_constant_override("margin_right", side_margin)
 	outer.add_theme_constant_override("margin_top", 34 if viewport_size.y >= 1400.0 else 24)
-	outer.add_theme_constant_override("margin_bottom", 34 if viewport_size.y >= 1400.0 else 24)
+	var bottom_margin := 34 if viewport_size.y >= 1400.0 else 24
+	if current_surface in ["daily", "collection", "settings"]:
+		bottom_margin = 136 if viewport_size.y >= 1400.0 else 114
+	outer.add_theme_constant_override("margin_bottom", bottom_margin)
 	content.add_child(outer)
 	var root := VBoxContainer.new()
 	root.add_theme_constant_override("separation", 18)
@@ -147,6 +150,7 @@ func build_settings() -> void:
 	stack.add_child(note)
 	PremiumVisuals.entrance(stack, 0.018)
 	_add_surface_diorama(selected_game_id, "Settings3DDiorama")
+	_add_secondary_nav("settings")
 
 func _setting_button(title_text: String, detail_text: String, enabled: bool, accent: Color) -> Button:
 	var state := "ON" if enabled else "OFF"
@@ -235,6 +239,7 @@ func build_daily_games() -> void:
 	stack.add_child(collection_cta)
 	PremiumVisuals.entrance(stack, 0.018)
 	_add_surface_diorama("rescue_rush", "DailyGames3DDiorama")
+	_add_secondary_nav("daily")
 
 func _daily_game_card(game_id: String, collection_bonus: int) -> PanelContainer:
 	var accent := Unjam3DTheme.game_accent(game_id)
@@ -453,6 +458,61 @@ func build_collection() -> void:
 		shop.add_child(button)
 	PremiumVisuals.entrance(stack, 0.018)
 	_add_surface_diorama("rescue_rush", "Collection3DDiorama")
+	_add_secondary_nav("collection")
+
+func _open_games_surface() -> void:
+	_remove_active_game()
+	if content != null and is_instance_valid(content):
+		content.hide()
+		content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	FeedbackManager.tap()
+	current_surface = "live"
+
+func _add_secondary_nav(active: String) -> void:
+	if content == null or not is_instance_valid(content):
+		return
+	var old := content.get_node_or_null("SecondaryBottomNav")
+	if old != null:
+		content.remove_child(old)
+		old.queue_free()
+	var viewport_size := get_viewport_rect().size
+	var nav := PanelContainer.new()
+	nav.name = "SecondaryBottomNav"
+	nav.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	nav.offset_left = 12 if viewport_size.x < 600.0 else 22
+	nav.offset_right = -12 if viewport_size.x < 600.0 else -22
+	nav.offset_top = -102 if viewport_size.y < 1100.0 else -114
+	nav.offset_bottom = -8 if viewport_size.y < 1100.0 else -14
+	nav.z_index = 180
+	nav.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("071a35") if _dark() else Color("0756a8"), 28, Color("67d3ff"), 3, 10))
+	content.add_child(nav)
+
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 3 if viewport_size.x < 600.0 else 5)
+	nav.add_child(row)
+	var entries: Array = [
+		["home", "⌂\nHOME", Callable(self, "build_home"), "SecondaryNavHome"],
+		["games", "◈\nGAMES", Callable(self, "_open_games_surface"), "SecondaryNavGames"],
+		["daily", "☀\nDAILY", Callable(self, "build_daily_games"), "SecondaryNavDaily"],
+		["collection", "★\nCOLLECT", Callable(self, "build_collection"), "SecondaryNavCollection"],
+		["settings", "⚙\nSETTINGS", Callable(self, "build_settings"), "SecondaryNavSettings"],
+	]
+	for entry in entries:
+		var key := String(entry[0])
+		var button := Button.new()
+		button.name = String(entry[3])
+		button.text = String(entry[1])
+		button.custom_minimum_size = Vector2(0, 78 if viewport_size.y < 1100.0 else 88)
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.add_theme_font_size_override("font_size", 14 if viewport_size.x < 600.0 else 17)
+		var selected := key == active
+		Unjam3DTheme.gloss_button(button, Unjam3DTheme.WATER if selected else Color("0d6dc2"), selected, 22, _dark())
+		button.disabled = selected
+		if not selected:
+			var callback: Callable = entry[2]
+			button.pressed.connect(callback)
+		row.add_child(button)
 
 func _journey_metric(title_text: String, value: int, accent: Color) -> PanelContainer:
 	var chip := PanelContainer.new()
