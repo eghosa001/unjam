@@ -254,8 +254,14 @@ func _assert_secondary_nav(main: Control, active_name: String) -> bool:
 		if not button.has_meta("unjam_preserve_surface_style"):
 			return _fail("Secondary nav style can be overwritten by the generic surface pass: %s" % name)
 		var should_be_active: bool = name == active_name
-		if button.disabled != should_be_active:
-			return _fail("Secondary nav active state is wrong for %s while %s should be active" % [name, active_name])
+		if button.disabled:
+			return _fail("Secondary nav must not use disabled styling for the active state: %s" % name)
+		if bool(button.get_meta("unjam_selected_nav", false)) != should_be_active:
+			return _fail("Secondary nav visual selection is wrong for %s while %s should be active" % [name, active_name])
+		if should_be_active and button.mouse_filter != Control.MOUSE_FILTER_IGNORE:
+			return _fail("Active secondary tab still accepts pointer input: %s" % name)
+		if not should_be_active and button.mouse_filter != Control.MOUSE_FILTER_STOP:
+			return _fail("Inactive secondary tab does not accept pointer input: %s" % name)
 		if not should_be_active and not _bound(button):
 			return _fail("Secondary nav button is not responsive: %s" % name)
 	return true
