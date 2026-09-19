@@ -25,6 +25,8 @@ func _run() -> void:
 		return _fail("Block compact feedback/booster structure is incomplete")
 	if status.text.strip_edges().is_empty() and status.custom_minimum_size.y > 1.0:
 		return _fail("Blank Block status row still reserves vertical space on a short phone")
+	if hint.text.strip_edges().is_empty() and hint.custom_minimum_size.y > 1.0:
+		return _fail("Blank Block hint row still reserves vertical space on a short phone")
 	if hint.get_theme_font_size("font_size") < 20:
 		return _fail("Block compact feedback text became unreadably small")
 
