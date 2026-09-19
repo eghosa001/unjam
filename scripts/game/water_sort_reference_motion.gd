@@ -254,6 +254,20 @@ func _liquid_arc_points(source_mouth: Vector2, receiver_mouth: Vector2, directio
 		)
 	return points
 
+func _pour_direction(from_rect: Rect2, to_rect: Rect2, source_width: float, viewport_width: float) -> float:
+	var horizontal_delta := to_rect.get_center().x - from_rect.get_center().x
+	var same_column_threshold := maxf(24.0, source_width * 0.25)
+	if absf(horizontal_delta) <= same_column_threshold:
+		# Same-column pours need an explicit side. Put the source toward the
+		# screen centre so edge columns never throw the tilted bottle offscreen.
+		return -1.0 if to_rect.get_center().x <= viewport_width * 0.5 else 1.0
+	return 1.0 if horizontal_delta > 0.0 else -1.0
+
+func _clamp_pour_source_position(desired: Vector2, ghost_size: Vector2, viewport_width: float) -> Vector2:
+	var edge_margin := maxf(10.0, ghost_size.x * 0.10)
+	var max_x := maxf(edge_margin, viewport_width - ghost_size.x - edge_margin)
+	return Vector2(clampf(desired.x, edge_margin, max_x), desired.y)
+
 func _release_pour_visual_lock(source_index: int, target_index: int) -> void:
 	active_source_tubes.erase(source_index)
 	active_target_tubes.erase(target_index)
@@ -304,15 +318,7 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 	receiver.call("begin_pour_in", color_index, amount)
 	add_child(receiver)
 
-	var horizontal_delta := to_rect.get_center().x - from_rect.get_center().x
-	var same_column_threshold := maxf(24.0, ghost.size.x * 0.25)
-	var direction := 1.0
-	if absf(horizontal_delta) <= same_column_threshold:
-		# Same-column pours need an explicit side. Put the source toward the
-		# screen centre so edge columns never throw the tilted bottle offscreen.
-		direction = -1.0 if to_rect.get_center().x <= get_viewport_rect().size.x * 0.5 else 1.0
-	else:
-		direction = 1.0 if horizontal_delta > 0.0 else -1.0
+	var direction := _pour_direction(from_rect, to_rect, ghost.size.x, get_viewport_rect().size.x)
 	var home_pos := ghost.position
 	var lift_distance := 12.0 if MotionSystem.reduced() else 34.0
 	var lift_time := MotionSystem.duration(&"press")
@@ -338,8 +344,7 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 	var rim_height_gap := clampf(ghost.size.y * 0.28, 76.0, 116.0)
 	var desired_source_rim := target_lip + Vector2(-direction * rim_side_gap, -rim_height_gap)
 	var desired := _position_for_tilted_rim(ghost, source_local_at_pour, desired_source_rim, final_rotation)
-	var edge_margin := maxf(10.0, ghost.size.x * 0.10)
-	desired.x = clampf(desired.x, edge_margin, maxf(edge_margin, get_viewport_rect().size.x - ghost.size.x - edge_margin))
+	desired = _clamp_pour_source_position(desired, ghost.size, get_viewport_rect().size.x)
 	var travel_time := MotionSystem.duration(&"travel")
 	var travel := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	travel.tween_property(ghost, "position", desired, travel_time)
