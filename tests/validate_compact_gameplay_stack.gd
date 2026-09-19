@@ -115,7 +115,7 @@ func _check_selector(viewport_size: Vector2i, failures: Array[String]) -> void:
 					failures.append("Compact selector hides the %s play action before scrolling" % game_id)
 		print("SELECTOR_COMPOSITION physical=%s logical=%s header=%s scroll=%s nav=%s" % [str(viewport_size), str(logical_size), str(header_rect), str(scroll_rect), str(nav_rect)])
 	main.queue_free()
-	await process_frame
+	await _frames(4)
 
 func _inside(rect: Rect2, viewport_rect: Rect2) -> bool:
 	var epsilon := 2.0
