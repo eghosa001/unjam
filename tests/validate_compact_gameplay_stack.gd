@@ -64,8 +64,8 @@ func _check_scene(path: String, holder_name: String, failures: Array[String]) ->
 		var trailing_gap := root.get_visible_rect().size.y - actions.get_global_rect().end.y
 		if trailing_gap > MAX_TRAILING_ACTION_GAP:
 			failures.append("%s leaves %.1fpx unused below gameplay actions on a tall phone" % [path, trailing_gap])
-	scene.queue_free()
-	await process_frame
+	scene.free()
+	await _frames(2)
 
 func _check_selector(viewport_size: Vector2i, failures: Array[String]) -> void:
 	root.size = viewport_size
@@ -121,8 +121,8 @@ func _check_selector(viewport_size: Vector2i, failures: Array[String]) -> void:
 				if art.find_child("GamePreviewViewport3D", true, false) != null:
 					failures.append("Compact selector keeps an unnecessary live 3D preview for %s" % game_id)
 		print("SELECTOR_COMPOSITION physical=%s logical=%s header=%s scroll=%s nav=%s" % [str(viewport_size), str(logical_size), str(header_rect), str(scroll_rect), str(nav_rect)])
-	main.queue_free()
-	await _frames(4)
+	main.free()
+	await _frames(2)
 
 func _inside(rect: Rect2, viewport_rect: Rect2) -> bool:
 	var epsilon := 2.0
