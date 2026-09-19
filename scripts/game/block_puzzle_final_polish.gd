@@ -110,8 +110,14 @@ func show_hint() -> void:
 	selected_piece = piece_index
 	SaveManager.record_hint()
 	FeedbackManager.tap()
-	hint_label.text = "Best placement: block %d at row %d, column %d." % [piece_index + 1, origin.y + 1, origin.x + 1]
+	var guidance := "Best placement: block %d at row %d, column %d." % [piece_index + 1, origin.y + 1, origin.x + 1]
+	hint_label.text = guidance
 	await place_selected(origin)
+	# Placement re-renders the board. Restore the paid Hint guidance afterward
+	# so the player sees what was executed instead of an empty feedback row.
+	if hint_label != null and is_instance_valid(hint_label) and not completed:
+		hint_label.text = guidance
+		_fit_3d_board_layout()
 
 func _best_hint_placement() -> Dictionary:
 	var best: Dictionary = {}
