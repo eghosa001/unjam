@@ -20,6 +20,11 @@ func _run() -> void:
 	await _check_scene("res://scenes/Game.tscn", "GameplayBoardHolder", failures)
 	for viewport_size in SELECTOR_VIEWPORTS:
 		await _check_selector(viewport_size, failures)
+	# Unjam3DTheme intentionally caches a FontVariation for production UI reuse. This
+	# short-lived renderer test must release that static reference before SceneTree
+	# shutdown so the dummy renderer can destroy its glyph atlas/text RIDs cleanly.
+	Unjam3DTheme._readable_font = null
+	await _frames(6)
 	if failures.is_empty():
 		print("PASS compact gameplay stack")
 		quit(0)
