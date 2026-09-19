@@ -40,7 +40,8 @@ func _run() -> void:
 	quit(0)
 
 func _assert_fit(game: Control, phase: String) -> bool:
-	var screen := Rect2(Vector2.ZERO, Vector2(VIEWPORT))
+	var logical_size := root.get_visible_rect().size
+	var screen := Rect2(Vector2.ZERO, logical_size)
 	for name in ["BlockHeader", "BlockScoreCard", "BlockObjectiveCard", "BlockBoardShell", "BlockTray", "CampaignBoosters", "BlockStatus", "BlockHint"]:
 		var control := game.find_child(name, true, false) as Control
 		if control == null:
@@ -50,7 +51,9 @@ func _assert_fit(game: Control, phase: String) -> bool:
 			return _fail("%s is missing during Block compact %s audit" % [name, phase])
 		var rect := control.get_global_rect()
 		if rect.position.x < -2.0 or rect.position.y < -2.0 or rect.end.x > screen.end.x + 2.0 or rect.end.y > screen.end.y + 2.0:
-			return _fail("%s spills outside 540x960 during %s: %s" % [name, phase, str(rect)])
+			return _fail("%s spills outside the logical canvas during %s: %s / %s" % [name, phase, str(rect), str(screen)])
+		if name in ["CampaignBoosters", "BlockStatus", "BlockHint"] and rect.end.y > screen.end.y - 18.0:
+			return _fail("%s has no bottom breathing room during %s: %s / %s" % [name, phase, str(rect), str(screen)])
 	return true
 
 func _frames(count: int) -> void:
