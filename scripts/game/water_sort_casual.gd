@@ -158,7 +158,7 @@ func build_ui() -> void:
 	hint.custom_minimum_size = Vector2(190, 100) if compact else Vector2(220, 116)
 	hint.add_theme_font_size_override("font_size", 20 if compact else 22)
 	Unjam3DTheme.gloss_button(hint, Unjam3DTheme.ORANGE, true, 24)
-	hint.pressed.connect(show_hint)
+	# HintManager is the single owner of paid/rewarded hint delivery.
 	actions.add_child(hint)
 	PremiumVisuals.entrance(root, 0.008)
 
