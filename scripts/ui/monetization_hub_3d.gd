@@ -9,7 +9,9 @@ func open_shop() -> void:
 		super.open_shop()
 		return
 	var main := get_parent()
-	var world := main.get_node_or_null("UnjamWorldBackdrop") as Unjam3DBackdrop if main != null else null
+	var world: Unjam3DBackdrop = null
+	if main != null:
+		world = main.get_node_or_null("UnjamWorldBackdrop") as Unjam3DBackdrop
 	if world != null:
 		_previous_world_accent = world.accent
 		_previous_world_dark_mode = world.dark_mode
