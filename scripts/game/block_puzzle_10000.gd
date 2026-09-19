@@ -248,10 +248,9 @@ func render() -> void:
 		elif milestone != "normal":
 			hint_label.text = "%s  •  DIFFICULTY %d/100" % [milestone.replace("_", " ").to_upper(), score_value]
 		else:
-			hint_label.text = "DIFFICULTY %d/100  •  PLAN %d+ MOVES AHEAD" % [
-				score_value,
-				int(campaign_profile.get("planning_horizon", 1))
-			]
+			# Keep the gameplay surface quiet. Difficulty/planning metadata belongs
+			# in level selection; this row is reserved for actionable hint/error text.
+			hint_label.text = ""
 	_refresh_booster_buttons()
 
 func can_place(shape: Array, origin: Vector2i) -> bool:
