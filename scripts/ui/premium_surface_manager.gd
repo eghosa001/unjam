@@ -66,6 +66,10 @@ func _script_path(node: Node) -> String:
 	return String(script.resource_path) if script != null else ""
 
 func _is_gameplay_widget(node: Node) -> bool:
+	# Shared navigation owns its own selected/unselected visual state. Treat
+	# preserve-style controls as excluded from generic surface role recolouring.
+	if node is Button and node.has_meta("unjam_preserve_surface_style"):
+		return true
 	var path := _script_path(node)
 	return path.contains("water_tube") or path.contains("block_piece_button") or path.contains("block_cell_button") or path.contains("premium_piece_button")
 
