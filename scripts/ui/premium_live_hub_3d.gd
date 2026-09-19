@@ -153,7 +153,6 @@ func _add_game_card(parent: VBoxContainer, game_id: String) -> void:
 
 	var viewport_size := get_viewport_rect().size
 	var small_phone := get_tree().root.size.y < 1100
-	var lightweight_preview := small_phone or get_tree().root.has_meta("unjam_test_lightweight_previews")
 	var narrow := viewport_size.x < 600.0
 	var compact := viewport_size.x <= 1120.0
 	var short := viewport_size.y < 1100.0
@@ -234,16 +233,16 @@ func _add_game_card(parent: VBoxContainer, game_id: String) -> void:
 	Unjam3DTheme.label_3d(level_label, Color.WHITE, dark.darkened(0.35), 2)
 	level_chip.add_child(level_label)
 
-	var progress_bar := ProgressBar.new()
-	progress_bar.name = "WorldProgress"
-	progress_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	progress_bar.custom_minimum_size = Vector2(0 if compact else 150, 24 if short else 30)
-	progress_bar.max_value = 100.0
-	progress_bar.value = float(level_in_world)
-	progress_bar.show_percentage = false
-	progress_bar.add_theme_stylebox_override("background", Unjam3DTheme.panel_3d(dark.darkened(0.16), 12, Color(dark.lightened(0.18), 0.7), 1, 2))
-	progress_bar.add_theme_stylebox_override("fill", Unjam3DTheme.panel_3d(Color("42e58a") if game_id == "rescue_rush" else accent.lightened(0.22), 12, Color.WHITE, 1, 3))
 	if not small_phone and not short:
+		var progress_bar := ProgressBar.new()
+		progress_bar.name = "WorldProgress"
+		progress_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		progress_bar.custom_minimum_size = Vector2(0 if compact else 150, 24 if short else 30)
+		progress_bar.max_value = 100.0
+		progress_bar.value = float(level_in_world)
+		progress_bar.show_percentage = false
+		progress_bar.add_theme_stylebox_override("background", Unjam3DTheme.panel_3d(dark.darkened(0.16), 12, Color(dark.lightened(0.18), 0.7), 1, 2))
+		progress_bar.add_theme_stylebox_override("fill", Unjam3DTheme.panel_3d(Color("42e58a") if game_id == "rescue_rush" else accent.lightened(0.22), 12, Color.WHITE, 1, 3))
 		footer.add_child(progress_bar)
 
 	var star_label := Label.new()
@@ -278,7 +277,7 @@ func _add_game_card(parent: VBoxContainer, game_id: String) -> void:
 	art_margin.add_theme_constant_override("margin_top", 4)
 	art_margin.add_theme_constant_override("margin_bottom", 4)
 	art_shell.add_child(art_margin)
-	if lightweight_preview:
+	if small_phone:
 		var compact_art := Label.new()
 		compact_art.name = "CompactGameArt_%s" % game_id
 		compact_art.text = _compact_art_copy(game_id)
