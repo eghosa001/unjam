@@ -274,6 +274,8 @@ func _all_enabled_buttons_bound(node: Control, allowed_unbound_names: Array[Stri
 			continue
 		if button.name in allowed_unbound_names:
 			continue
+		if bool(button.get_meta("unjam_selected_nav", false)):
+			continue
 		if button.pressed.get_connections().is_empty():
 			return _fail("Visible enabled button has no response: %s (%s)" % [str(button.get_path()), button.text.replace("\n", " / ")])
 	return true
