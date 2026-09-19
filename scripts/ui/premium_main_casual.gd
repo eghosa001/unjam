@@ -509,11 +509,36 @@ func _add_secondary_nav(active: String) -> void:
 		button.add_theme_font_size_override("font_size", 14 if viewport_size.x < 600.0 else 17)
 		var selected := key == active
 		Unjam3DTheme.gloss_button(button, Unjam3DTheme.WATER if selected else Color("0d6dc2"), selected, 22, _dark())
-		button.disabled = selected
+		button.disabled = false
+		button.mouse_filter = Control.MOUSE_FILTER_IGNORE if selected else Control.MOUSE_FILTER_STOP
 		if not selected:
 			var callback: Callable = entry[2]
 			button.pressed.connect(callback)
 		row.add_child(button)
+	_restyle_secondary_nav(active)
+
+func _restyle_secondary_nav(active: String) -> void:
+	if content == null or not is_instance_valid(content):
+		return
+	var nav := content.get_node_or_null("SecondaryBottomNav")
+	if nav == null:
+		return
+	var mapping := {
+		"home": "SecondaryNavHome",
+		"games": "SecondaryNavGames",
+		"daily": "SecondaryNavDaily",
+		"collection": "SecondaryNavCollection",
+		"settings": "SecondaryNavSettings",
+	}
+	for key in mapping.keys():
+		var button := nav.find_child(String(mapping[key]), true, false) as Button
+		if button == null:
+			continue
+		var selected := String(key) == active
+		button.disabled = false
+		button.mouse_filter = Control.MOUSE_FILTER_IGNORE if selected else Control.MOUSE_FILTER_STOP
+		button.set_meta("unjam_selected_nav", selected)
+		Unjam3DTheme.gloss_button(button, Unjam3DTheme.WATER if selected else Color("0d6dc2"), selected, 22, _dark())
 
 func _journey_metric(title_text: String, value: int, accent: Color) -> PanelContainer:
 	var chip := PanelContainer.new()
