@@ -103,6 +103,19 @@ func _run() -> void:
 	root.size = Vector2i(540, 960)
 	await _settle(8)
 	await _capture("09b-game-rescue-540x960")
+	var rescue_game = main.get("active_game")
+	if rescue_game != null and is_instance_valid(rescue_game):
+		var legal_index := -1
+		var rescue_pieces: Array = rescue_game.get("pieces")
+		for i in range(rescue_pieces.size()):
+			if bool(rescue_game.call("is_path_clear", i)):
+				legal_index = i
+				break
+		if legal_index >= 0:
+			rescue_game.call("try_move", legal_index)
+			await _settle(2)
+			await _capture("09c-game-rescue-motion-540x960")
+			await _wait_until_rescue_unlocked(rescue_game)
 	root.size = Vector2i(1080, 1920)
 	await _settle(6)
 
@@ -113,6 +126,13 @@ func _run() -> void:
 	root.size = Vector2i(540, 960)
 	await _settle(8)
 	await _capture("10b-game-water-540x960")
+	var water_game = main.get("active_game")
+	if water_game != null and is_instance_valid(water_game) and bool(water_game.call("can_show_hint")):
+		water_game.call("show_hint")
+		await _settle(2)
+		await _capture("10c-game-water-pouring-540x960")
+		await _wait_until_water_idle(water_game)
+		await _capture("10d-game-water-settled-540x960")
 	root.size = Vector2i(1080, 1920)
 	await _settle(6)
 
@@ -212,6 +232,22 @@ func _hide_tutorial(shell: Node) -> void:
 	var panel = shell.get("tutorial_panel")
 	if panel != null and is_instance_valid(panel) and panel.visible and shell.has_method("hide_tutorial"):
 		shell.call("hide_tutorial")
+
+func _wait_until_rescue_unlocked(game: Node, max_frames: int = 180) -> void:
+	for _i in range(max_frames):
+		if game == null or not is_instance_valid(game):
+			return
+		if not bool(game.get("board_locked")):
+			return
+		await process_frame
+
+func _wait_until_water_idle(game: Node, max_frames: int = 240) -> void:
+	for _i in range(max_frames):
+		if game == null or not is_instance_valid(game):
+			return
+		if not bool(game.call("_has_active_pours")):
+			return
+		await process_frame
 
 func _settle(frames: int = 5) -> void:
 	for _i in range(frames):
