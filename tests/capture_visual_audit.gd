@@ -113,8 +113,10 @@ func _run() -> void:
 				break
 		if legal_index >= 0:
 			rescue_game.call("try_move", legal_index)
-			await _settle(2)
-			await _capture("09c-game-rescue-motion-540x960")
+			if await _wait_for_named_motion(rescue_game, "RescueEscapeGhost", 90):
+				await _capture("09c-game-rescue-motion-540x960")
+			else:
+				push_error("Rescue motion capture never exposed RescueEscapeGhost")
 			await _wait_until_rescue_unlocked(rescue_game)
 	root.size = Vector2i(1080, 1920)
 	await _settle(6)
@@ -129,8 +131,10 @@ func _run() -> void:
 	var water_game = main.get("active_game")
 	if water_game != null and is_instance_valid(water_game) and bool(water_game.call("can_show_hint")):
 		water_game.call("show_hint")
-		await _settle(2)
-		await _capture("10c-game-water-pouring-540x960")
+		if await _wait_for_named_motion(water_game, "PourStream", 120):
+			await _capture("10c-game-water-pouring-540x960")
+		else:
+			push_error("Water motion capture never exposed PourStream")
 		await _wait_until_water_idle(water_game)
 		await _capture("10d-game-water-settled-540x960")
 	root.size = Vector2i(1080, 1920)
@@ -232,6 +236,16 @@ func _hide_tutorial(shell: Node) -> void:
 	var panel = shell.get("tutorial_panel")
 	if panel != null and is_instance_valid(panel) and panel.visible and shell.has_method("hide_tutorial"):
 		shell.call("hide_tutorial")
+
+func _wait_for_named_motion(game: Node, node_name: String, max_frames: int) -> bool:
+	for _i in range(max_frames):
+		if game == null or not is_instance_valid(game):
+			return false
+		var motion := game.find_child(node_name, true, false)
+		if motion != null and is_instance_valid(motion):
+			return true
+		await process_frame
+	return false
 
 func _wait_until_rescue_unlocked(game: Node, max_frames: int = 180) -> void:
 	for _i in range(max_frames):
