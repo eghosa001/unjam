@@ -108,6 +108,7 @@ func build_ui() -> void:
 	stage_center.add_child(board)
 
 	var feedback := PanelContainer.new()
+	feedback.name = "CompactGameFeedback"
 	feedback.custom_minimum_size = Vector2(0, 72)
 	feedback.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color(0.94, 0.99, 1.0, 0.98), 24, Color("78d9ff"), 2, 7))
 	root.add_child(feedback)

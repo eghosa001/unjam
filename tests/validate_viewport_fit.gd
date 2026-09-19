@@ -129,7 +129,7 @@ func _validate_viewport(viewport_size: Vector2) -> bool:
 		return false
 	if not _assert_help_button(main, logical_size):
 		return false
-	if not _assert_help_clear_of_navigation(main, "Rescue Rush"):
+	if not _assert_help_clear_of_navigation(main, "Rescue Rush") or not _assert_help_clear_of_bottom_ui(main, "Rescue Rush"):
 		return false
 
 	main.call("build_home")
@@ -142,7 +142,7 @@ func _validate_viewport(viewport_size: Vector2) -> bool:
 		return false
 	if not _assert_help_button(main, logical_size):
 		return false
-	if not _assert_help_clear_of_navigation(main, "Water Sort"):
+	if not _assert_help_clear_of_navigation(main, "Water Sort") or not _assert_help_clear_of_bottom_ui(main, "Water Sort"):
 		return false
 
 	main.call("build_home")
@@ -155,7 +155,7 @@ func _validate_viewport(viewport_size: Vector2) -> bool:
 		return false
 	if not _assert_help_button(main, logical_size):
 		return false
-	if not _assert_help_clear_of_navigation(main, "Block Puzzle"):
+	if not _assert_help_clear_of_navigation(main, "Block Puzzle") or not _assert_help_clear_of_bottom_ui(main, "Block Puzzle"):
 		return false
 
 	main.queue_free()
@@ -179,7 +179,7 @@ func _validate_late_game_viewport(viewport_size: Vector2) -> bool:
 	await _frames(2)
 	if not _assert_active_game(main, logical_size, "Rescue Rush level 10,000"):
 		return false
-	if not _assert_help_button(main, logical_size) or not _assert_help_clear_of_navigation(main, "Rescue Rush level 10,000"):
+	if not _assert_help_button(main, logical_size) or not _assert_help_clear_of_navigation(main, "Rescue Rush level 10,000") or not _assert_help_clear_of_bottom_ui(main, "Rescue Rush level 10,000"):
 		return false
 
 	main.call("build_home")
@@ -190,7 +190,7 @@ func _validate_late_game_viewport(viewport_size: Vector2) -> bool:
 	await _frames(2)
 	if not _assert_active_game(main, logical_size, "Water Sort level 10,000"):
 		return false
-	if not _assert_help_button(main, logical_size) or not _assert_help_clear_of_navigation(main, "Water Sort level 10,000"):
+	if not _assert_help_button(main, logical_size) or not _assert_help_clear_of_navigation(main, "Water Sort level 10,000") or not _assert_help_clear_of_bottom_ui(main, "Water Sort level 10,000"):
 		return false
 
 	main.call("build_home")
@@ -201,7 +201,7 @@ func _validate_late_game_viewport(viewport_size: Vector2) -> bool:
 	await _frames(2)
 	if not _assert_active_game(main, logical_size, "Block Puzzle level 10,000"):
 		return false
-	if not _assert_help_button(main, logical_size) or not _assert_help_clear_of_navigation(main, "Block Puzzle level 10,000"):
+	if not _assert_help_button(main, logical_size) or not _assert_help_clear_of_navigation(main, "Block Puzzle level 10,000") or not _assert_help_clear_of_bottom_ui(main, "Block Puzzle level 10,000"):
 		return false
 
 	main.queue_free()
@@ -298,6 +298,21 @@ func _assert_help_clear_of_navigation(main: Control, label: String) -> bool:
 			continue
 		if help_rect.intersects(button.get_global_rect()):
 			return _fail("%s help control overlaps navigation button %s" % [label, str(button.get_path())])
+	return true
+
+func _assert_help_clear_of_bottom_ui(main: Control, label: String) -> bool:
+	var shell := main.get_node_or_null("UXShell")
+	var game := main.get_node_or_null("ActiveGame") as Control
+	if shell == null or game == null:
+		return _fail("%s cannot validate help/content separation" % label)
+	var help = shell.get("help_button")
+	if help == null or not is_instance_valid(help):
+		return _fail("%s help button missing while checking bottom UI overlap" % label)
+	var help_rect: Rect2 = help.get_global_rect()
+	for name in ["BlockTray", "CompactGameFeedback", "CompactGameActions", "CompactProgressStrip"]:
+		var blocker := game.find_child(name, true, false) as Control
+		if blocker != null and blocker.visible and blocker.is_visible_in_tree() and help_rect.intersects(blocker.get_global_rect()):
+			return _fail("%s help %s overlaps %s %s" % [label, str(help_rect), name, str(blocker.get_global_rect())])
 	return true
 
 func _hide_tutorial(main: Control) -> void:
