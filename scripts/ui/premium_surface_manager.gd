@@ -40,6 +40,8 @@ func _refresh(force: bool) -> void:
 	_configure_background(content, game_id, dark, accent)
 	_polish_tree(content, surface, dark, accent)
 	_add_surface_chrome(content, surface, game_id, dark, accent)
+	if main.has_method("_restyle_secondary_nav"):
+		main.call("_restyle_secondary_nav", surface)
 	_animate_surface(content)
 
 func _configure_background(root: Node, game_id: String, dark: bool, accent: Color) -> void:
