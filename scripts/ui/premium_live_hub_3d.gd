@@ -273,7 +273,7 @@ func _make_game_info(game_id: String, highest: int, world: int, level_in_world: 
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	info.add_child(spacer)
 
-	var footer := GridContainer.new() if compact else HBoxContainer.new()
+	var footer: Container = GridContainer.new() if compact else HBoxContainer.new()
 	if footer is GridContainer:
 		(footer as GridContainer).columns = 2
 	footer.custom_minimum_size = Vector2(0, 92 if short else (104 if compact else 72))
