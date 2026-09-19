@@ -158,7 +158,7 @@ jobs:
           cp export_presets.cfg "$RUNNER_TEMP/export_presets.aab.cfg"
           sed -i 's/gradle_build\/export_format=1/gradle_build\/export_format=0/' export_presets.cfg
           godot --headless --verbose --path . --install-android-build-template --export-debug Android build/android/unjam-debug.apk 2>&1 | tee android-apk-export.log
-          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" android-apk-export.log; then exit 1; fi
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access|AdMob: Android library not found|CONFIGURATION_ERROR" android-apk-export.log; then exit 1; fi
           test -s build/android/unjam-debug.apk
           cp "$RUNNER_TEMP/export_presets.aab.cfg" export_presets.cfg
       - name: Verify packaged monetization manifest contract
@@ -182,6 +182,10 @@ jobs:
           grep -F '"9.1.0"' build/android/apk-manifest.txt
           grep -F "org.godotengine.plugin.v2.GodotGooglePlayBilling" build/android/apk-manifest.txt
           grep -F "com.android.billingclient.api.ProxyBillingActivity" build/android/apk-manifest.txt
+          if grep -F "_CONFIGURATION_ERROR" build/android/apk-manifest.txt; then
+            echo "Monetization plugin configuration error marker found in APK manifest" >&2
+            exit 1
+          fi
       - name: Upload Android debug APK
         uses: actions/upload-artifact@v4
         with:
@@ -194,7 +198,7 @@ jobs:
         run: |
           set -o pipefail
           godot --headless --verbose --path . --export-debug Android build/android/unjam-debug.aab 2>&1 | tee android-aab-export.log
-          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" android-aab-export.log; then exit 1; fi
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access|AdMob: Android library not found|CONFIGURATION_ERROR" android-aab-export.log; then exit 1; fi
           test -s build/android/unjam-debug.aab
       - name: Upload Android debug AAB
         uses: actions/upload-artifact@v4
