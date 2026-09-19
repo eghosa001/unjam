@@ -503,6 +503,7 @@ func _add_secondary_nav(active: String) -> void:
 		var button := Button.new()
 		button.name = String(entry[3])
 		button.text = String(entry[1])
+		button.set_meta("unjam_preserve_surface_style", true)
 		button.custom_minimum_size = Vector2(0, 78 if viewport_size.y < 1100.0 else 88)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.add_theme_font_size_override("font_size", 14 if viewport_size.x < 600.0 else 17)
