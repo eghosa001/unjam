@@ -96,7 +96,7 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 		_pour_flow_streak = 0
 	var accent := MotionTube.PALETTE[clampi(color_index, 0, MotionTube.PALETTE.size() - 1)]
 	if premium_feedback != null and is_instance_valid(premium_feedback):
-		var center := to_rect.get_center()
+		var center := _game_local(to_rect.get_center())
 		premium_feedback.show_ring(center, maxf(62.0, minf(to_rect.size.x, to_rect.size.y) * 0.72), accent)
 		if solved:
 			premium_feedback.show_banner("PERFECT TUBE", accent, Vector2(center.x, maxf(184.0, center.y - 86.0)), 194.0)
