@@ -210,8 +210,8 @@ func load_level() -> void:
 		render()
 		if play_mode in ["campaign", "extreme"] and campaign_move_limit > 0 and placements >= campaign_move_limit and not reached_goal():
 			call_deferred("_fail_campaign", "MOVE LIMIT REACHED")
-		elif play_mode in ["campaign", "extreme"] and not any_move_available():
-			call_deferred("_fail_campaign", "NO LEGAL MOVES")
+		elif not any_move_available():
+			call_deferred("_handle_no_legal_moves")
 	AnalyticsManager.track("block_puzzle_attempt_started", {
 		"level": level_number,
 		"mode": play_mode,
