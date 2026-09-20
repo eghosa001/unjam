@@ -53,6 +53,13 @@ func _run() -> void:
 	if water_3d_source.contains("GlassSecondaryHighlight") or water_3d_source.contains("highlight_mesh := BoxMesh.new()"):
 		return _fail("Water Sort still contains synthetic vertical glass highlight bars")
 
+	var home_source := _read("res://scripts/ui/premium_home_direct_levels.gd")
+	if not home_source.contains("HomeWorldProgress") or not home_source.contains("HomeWorldProgressBar"):
+		return _fail("Home still lacks useful current-world progress in its open middle area")
+	var water_base_source := _read("res://scripts/game/water_sort.gd")
+	if not water_base_source.contains("Tap a tube, then a destination"):
+		return _fail("Compact Water Sort guidance was not shortened for phone readability")
+
 	var water_source := _read("res://scripts/game/water_sort_10000.gd")
 	if not water_source.contains("PERFECT TUBE") or not water_source.contains("_pour_flow_streak") or not water_source.contains("_show_level_intro"):
 		return _fail("Water Sort premium flow/milestone feature is missing")
