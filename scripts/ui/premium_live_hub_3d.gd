@@ -101,7 +101,8 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 		level = figma_fallback_level
 	RefCanvas.add_shadow(canvas, Rect2(33, rect.position.y + 100.7, 112, 36), 13, Color(0.02,0.10,0.20,0.16), 3, Vector2(0,2))
 	var level_pill := PanelContainer.new()
-	level_pill.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.04, 0.30, 0.55), 13))
+	var pill_mid := Color(0.04, 0.30, 0.55)
+	level_pill.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(pill_mid.lightened(0.20), pill_mid, pill_mid.darkened(0.16), 13, pill_mid.lightened(0.28), 1, 0.40))
 	RefCanvas.set_rect(level_pill, 33, rect.position.y + 100.7, 112, 36)
 	level_pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(level_pill)
@@ -120,10 +121,8 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 func _add_card_preview(canvas: Control, game_id: String, card_y: float) -> void:
 	var origin_y := card_y + 22.5
 	var stage := PanelContainer.new()
-	stage.add_theme_stylebox_override("panel", RefCanvas.solid_box(
-		Color(0.92, 1.0, 0.86, 0.38) if game_id == "rescue_rush" else (Color(0.91, 0.99, 1.0, 0.42) if game_id == "water_sort" else Color(0.94, 0.91, 1.0, 0.34)),
-		16
-	))
+	var stage_mid := Color(0.92, 1.0, 0.86, 0.50) if game_id == "rescue_rush" else (Color(0.91, 0.99, 1.0, 0.54) if game_id == "water_sort" else Color(0.94, 0.91, 1.0, 0.46))
+	stage.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(stage_mid.lightened(0.12), stage_mid, stage_mid.darkened(0.10), 16, Color(1,1,1,0.24), 1, 0.40))
 	RefCanvas.set_rect(stage, 243, origin_y, 104, 112)
 	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(stage)
@@ -303,12 +302,12 @@ func _add_bottom_nav(canvas: Control) -> void:
 	RefCanvas.add_shadow(canvas, Rect2(13, 757, 362, 70), 18, Color(0.02,0.10,0.18,0.12), 5, Vector2(0,4))
 	var nav_fill := Color(0.07,0.10,0.17,0.98) if _selector_dark() else Color(0.985, 0.995, 1.0, 0.97)
 	var nav_border := Color(0.23,0.34,0.45,0.90) if _selector_dark() else Color(0.78,0.88,0.95,0.75)
-	shell.add_theme_stylebox_override("panel", RefCanvas.solid_box(nav_fill, 18, nav_border, 1))
+	shell.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(nav_fill.lightened(0.12), nav_fill, nav_fill.darkened(0.10), 18, nav_border, 1, 0.40))
 	RefCanvas.set_rect(shell, 13, 757, 362, 70)
 	shell.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(shell)
 	var active := PanelContainer.new()
-	active.add_theme_stylebox_override("panel", RefCanvas.solid_box(CYAN, 16))
+	active.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(CYAN.lightened(0.18), CYAN, CYAN.darkened(0.14), 16, CYAN.lightened(0.24), 1, 0.40))
 	RefCanvas.set_rect(active, 84, 767, 62, 48)
 	active.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(active)
