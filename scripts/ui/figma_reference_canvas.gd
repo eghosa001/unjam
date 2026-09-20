@@ -136,6 +136,38 @@ static func rounded_gradient3(top: Color, middle: Color, bottom: Color, radius: 
 		style.set_content_margin(side, 0.0)
 	return style
 
+static func horizontal_gradient(left: Color, right: Color, radius: float = 0.0, border_color: Color = Color.TRANSPARENT, border_width: float = 0.0) -> StyleBoxTexture:
+	var image_size := 96
+	var image := Image.create(image_size, image_size, false, Image.FORMAT_RGBA8)
+	var r := clampf(radius / 24.0 * 22.0, 0.0, 44.0)
+	var bw := maxf(0.0, border_width)
+	for y in range(image_size):
+		for x in range(image_size):
+			var px := float(x) + 0.5
+			var py := float(y) + 0.5
+			var dx := maxf(maxf(r - px, 0.0), px - (float(image_size) - r))
+			var dy := maxf(maxf(r - py, 0.0), py - (float(image_size) - r))
+			if dx * dx + dy * dy > r * r:
+				image.set_pixel(x, y, Color.TRANSPARENT)
+				continue
+			if bw > 0.0:
+				var inner_r := maxf(0.0, r - bw)
+				var idx := maxf(maxf(inner_r - px, 0.0), px - (float(image_size) - inner_r))
+				var idy := maxf(maxf(inner_r - py, 0.0), py - (float(image_size) - inner_r))
+				var in_inner := idx * idx + idy * idy <= inner_r * inner_r and px >= bw and py >= bw and px <= image_size - bw and py <= image_size - bw
+				if not in_inner:
+					image.set_pixel(x, y, border_color)
+					continue
+			var fx := float(x) / float(image_size - 1)
+			image.set_pixel(x, y, left.lerp(right, fx))
+	var style := StyleBoxTexture.new()
+	style.texture = ImageTexture.create_from_image(image)
+	var margin := maxi(8, int(ceil(r + bw + 2.0)))
+	for side in [SIDE_LEFT, SIDE_TOP, SIDE_RIGHT, SIDE_BOTTOM]:
+		style.set_texture_margin(side, margin)
+		style.set_content_margin(side, 0.0)
+	return style
+
 static func vertical_gradient(top: Color, bottom: Color, radius: float = 0.0, border_color: Color = Color.TRANSPARENT, border_width: float = 0.0) -> StyleBoxTexture:
 	return rounded_gradient(top, bottom, radius, border_color, border_width)
 
