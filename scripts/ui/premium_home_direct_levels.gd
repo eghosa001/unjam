@@ -535,15 +535,3 @@ func _select_home_game(game_id: String) -> void:
 		main.set("selected_game_id", game_id)
 	FeedbackManager.tap()
 	_refresh_home_selection()
-
-func _select_and_open_game(game_id: String) -> void:
-	selected_game = game_id
-	var main := get_parent()
-	if main == null or not main.has_method("open_game_campaign"):
-		return
-	main.set("selected_game_id", game_id)
-	FeedbackManager.tap()
-	main.call("open_game_campaign", game_id)
-
-func _open_game_levels(game_id: String) -> void:
-	_select_and_open_game(game_id)
