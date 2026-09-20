@@ -77,14 +77,12 @@ func _run() -> void:
 
 	if not main_scene.contains("premium_surface_manager_static.gd") or not main_scene.contains("premium_home_direct_levels.gd") or not main_scene.contains("premium_main_casual.gd") or not main_scene.contains("MotionDirector"):
 		return _fail("Main scene is not using the final reboot surface stack")
-	if not home_direct.contains('extends "res://scripts/ui/premium_home_casual.gd"') or not home_direct.contains("_open_game_levels"):
-		return _fail("Home direct-level leaf does not preserve the premium Home base")
-	if not home.contains("Unjam3DBackdrop") or not home.contains("Unjam3DMascot") or not home.contains("_open_game_selector"):
-		return _fail("Home is not using the reference-style 3D launcher")
-	if not settings.contains("Settings3DDiorama") or not settings.contains("Collection3DDiorama") or not settings.contains("Levels3DDiorama") or not settings.contains("Unjam3DGameArt.new()"):
-		return _fail("Secondary pages are missing one-shot 3D depth")
-	if not monetization.contains("UNJAM SHOP") or not monetization.contains("Unjam3DBackdrop"):
-		return _fail("Shop is not using the bright 3D surface")
+	if not home_direct.contains('extends "res://scripts/ui/premium_home_casual.gd"') or not home_direct.contains("FigmaHome390x844") or not home_direct.contains("HomePrimaryAction"):
+		return _fail("Home is not using the audited Figma launcher")
+	if not settings.contains("FigmaSurface390x844") or not settings.contains("SettingsCard/Sound") or not settings.contains("DailyCard/") or not settings.contains("JourneyHero"):
+		return _fail("Secondary pages are not using the audited Figma surface system")
+	if not monetization.contains("FigmaShop390x844") or not monetization.contains("ShopRewardedCoinsButton"):
+		return _fail("Shop is not using the audited Figma monetization surface")
 	if not ux_shell_base.contains("theme_mode := \"light\""):
 		return _fail("New installs still default to the old dark visual direction")
 
@@ -113,12 +111,12 @@ func _run() -> void:
 	if project_text.contains("res://addons/stagehand/plugin.cfg"):
 		return _fail("Project still enables the missing Stagehand editor plugin")
 
-	if not water_ui.contains("GameplayStage") or not water_scene.contains("water_sort_10000.gd") or not water_assisted.contains('extends "res://scripts/game/water_sort_casual.gd"'):
-		return _fail("Water Sort assisted leaf is not preserving the gameplay-first stage")
-	if not block_scene.contains("block_puzzle_10000.gd") or not block_campaign.contains('extends "res://scripts/game/block_puzzle_final_polish.gd"') or not block_polish.contains('extends "res://scripts/game/block_puzzle_3d.gd"'):
-		return _fail("Block Puzzle campaign must preserve the final-polish and 3D gameplay presentation chain")
-	if not rescue_ui.contains("GameplayBoardHolder") or not rescue_scene.contains("rescue_rush_assisted.gd") or not rescue_assisted.contains('extends "res://scripts/game/rescue_rush_casual.gd"'):
-		return _fail("Rescue Rush assisted leaf is not preserving the gameplay-first presentation")
+	if not water_ui.contains("FigmaWater390x844") or not water_ui.contains("GameplayStage") or not water_scene.contains("water_sort_10000.gd") or not water_assisted.contains('extends "res://scripts/game/water_sort_casual.gd"'):
+		return _fail("Water Sort is not preserving the Figma gameplay shell over the assisted motion stack")
+	if not block_ui.contains("FigmaBlock390x844") or not block_scene.contains("block_puzzle_10000.gd") or not block_campaign.contains('extends "res://scripts/game/block_puzzle_final_polish.gd"') or not block_polish.contains('extends "res://scripts/game/block_puzzle_3d.gd"'):
+		return _fail("Block Puzzle campaign must preserve Figma presentation and final gameplay polish")
+	if not rescue_ui.contains("FigmaRescue390x844") or not rescue_ui.contains("RescueBoardPanel") or not rescue_scene.contains("rescue_rush_assisted.gd") or not rescue_assisted.contains('extends "res://scripts/game/rescue_rush_casual.gd"'):
+		return _fail("Rescue Rush assisted leaf is not preserving the Figma gameplay presentation")
 
 	print("UI/UX regression contract validated")
 	quit(0)
