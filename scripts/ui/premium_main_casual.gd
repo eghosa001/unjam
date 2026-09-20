@@ -590,21 +590,131 @@ func _compact_stat(value: int) -> String:
 		return "%.1fK" % (float(value) / 1000.0)
 	return str(value)
 
+func _multi_page_count(game_id: String, world: int) -> int:
+	var first := MultiGameManager.first_level_in_game_world(game_id,world)
+	var last := MultiGameManager.last_level_in_game_world(game_id,world)
+	return maxi(1,ceili(float(last-first+1)/float(FIGMA_LEVEL_PAGE_SIZE)))
+
+func _multi_page_for_level(game_id: String, level: int) -> int:
+	var world := MultiGameManager.world_for_game_level(game_id,level)
+	var first := MultiGameManager.first_level_in_game_world(game_id,world)
+	return clampi(int((level-first)/FIGMA_LEVEL_PAGE_SIZE)+1,1,_multi_page_count(game_id,world))
+
+func _multi_page_bounds(game_id: String, world: int, page: int) -> Vector2i:
+	var world_first := MultiGameManager.first_level_in_game_world(game_id,world)
+	var world_last := MultiGameManager.last_level_in_game_world(game_id,world)
+	var safe_page := clampi(page,1,_multi_page_count(game_id,world))
+	var first := world_first + (safe_page-1)*FIGMA_LEVEL_PAGE_SIZE
+	return Vector2i(first,mini(first+FIGMA_LEVEL_PAGE_SIZE-1,world_last))
+
 func build_level_select() -> void:
-	super.build_level_select()
-	_inject_game_tabs("rescue_rush")
-	_inject_journey_summary("rescue_rush")
-	_upgrade_level_browser("rescue_rush")
-	_add_surface_diorama("rescue_rush", "Levels3DDiorama")
+	selected_game_id = "rescue_rush"
+	selected_multi_world = clampi(selected_multi_world,1,MultiGameManager.world_count_for(selected_game_id))
+	if selected_multi_world <= 0:
+		selected_multi_world = MultiGameManager.highest_unlocked_game_world(selected_game_id)
+	selected_multi_page = clampi(selected_multi_page,1,_multi_page_count(selected_game_id,selected_multi_world))
+	_build_figma_level_browser(selected_game_id)
 
 func build_multi_level_select() -> void:
-	super.build_multi_level_select()
-	_inject_game_tabs(selected_game_id)
-	if selected_game_id == "block_puzzle":
-		_inject_block_modes()
-	_inject_journey_summary(selected_game_id)
-	_upgrade_level_browser(selected_game_id)
-	_add_surface_diorama(selected_game_id, "Levels3DDiorama")
+	selected_multi_world = clampi(selected_multi_world,1,MultiGameManager.world_count_for(selected_game_id))
+	selected_multi_page = clampi(selected_multi_page,1,_multi_page_count(selected_game_id,selected_multi_world))
+	_build_figma_level_browser(selected_game_id)
+
+func _build_figma_level_browser(game_id: String) -> void:
+	current_surface = "levels"
+	_remove_active_game()
+	var bottom_tint := Color(0.8956,0.9736,0.9268) if game_id == "rescue_rush" else (Color(0.892,0.9496,0.988) if game_id == "water_sort" else Color(0.947,0.914,0.988))
+	var canvas := _figma_surface("games",bottom_tint)
+	var accent := Unjam3DTheme.game_accent(game_id)
+	var title := MultiGameManager.display_name(game_id).to_upper()
+	var world_count := MultiGameManager.world_count_for(game_id)
+	_figma_header(
+		canvas,
+		title,
+		"WORLD %d / %d" % [selected_multi_world,world_count],
+		"◈ +",
+		accent,
+		Callable(self,"_open_games_surface"),
+		Callable(self,"_figma_open_shop")
+	)
+	_figma_level_tabs(canvas,game_id)
+
+	var bounds := _multi_page_bounds(game_id,selected_multi_world,selected_multi_page)
+	var world_name := MultiGameManager.world_name(game_id,selected_multi_world).to_upper()
+	_figma_card(canvas,"JourneyHero",Rect2(18,150,354,94),Color(1.0,0.9956,0.974),Color(accent,0.42),15)
+	_figma_text(canvas,world_name,Rect2(36,146,250,23),19,accent)
+	_figma_text(canvas,"LEVELS %d–%d • SET %d/%d" % [bounds.x,bounds.y,selected_multi_page,_multi_page_count(game_id,selected_multi_world)],Rect2(36,176,210,16),13,FIGMA_MUTED)
+
+	var prev := _figma_button(canvas,"LevelPrev","◀ PREV",Rect2(18,223,100,38),FIGMA_BLUE,Callable(),FIGMA_OFF_WHITE,13,13)
+	prev.disabled = selected_multi_world <= 1 and selected_multi_page <= 1
+	if not prev.disabled:
+		prev.pressed.connect(_change_multi_page.bind(-1))
+	var current := _figma_button(canvas,"LevelCurrent","CURRENT",Rect2(126,223,118,38),accent,Callable(self,"_jump_multi_current"),FIGMA_OFF_WHITE,13,13)
+	var next_fill := Color(0.44,0.55,0.65) if selected_multi_world >= world_count and selected_multi_page >= _multi_page_count(game_id,selected_multi_world) else FIGMA_BLUE
+	var next := _figma_button(canvas,"LevelNext","NEXT ▶",Rect2(252,223,120,38),next_fill,Callable(),FIGMA_OFF_WHITE,13,13)
+	next.disabled = selected_multi_world >= world_count and selected_multi_page >= _multi_page_count(game_id,selected_multi_world)
+	if not next.disabled:
+		next.pressed.connect(_change_multi_page.bind(1))
+
+	var current_level := _highest_level_for_game(game_id)
+	var index := 0
+	for level_number in range(bounds.x,bounds.y+1):
+		var col := index % 4
+		var row := int(index/4)
+		var x := 18.0 + float(col)*89.0
+		var y := 270.0 + float(row)*80.0
+		var unlocked := MultiGameManager.is_level_unlocked(game_id,level_number)
+		var stars := MultiGameManager.get_stars(game_id,level_number)
+		var is_current := unlocked and level_number == current_level
+		var milestone := level_number % 25 == 0
+		var fill := Color(0.995,0.995,0.982)
+		var border := Color(accent,0.40)
+		var text_color := FIGMA_INK
+		if not unlocked:
+			fill = Color(0.91,0.92,0.93)
+			border = Color(0.73,0.77,0.80,0.42)
+			text_color = Color(0.48,0.55,0.61)
+		elif is_current:
+			fill = accent
+			border = accent.lightened(0.22)
+			text_color = FIGMA_OFF_WHITE
+		elif milestone:
+			border = FIGMA_GOLD
+		var card := _figma_button(canvas,"Level/%d" % level_number,str(level_number),Rect2(x,y,80,68),fill,Callable(),text_color,15,15)
+		card.disabled = not unlocked
+		if unlocked:
+			if game_id == "rescue_rush":
+				card.pressed.connect(start_level.bind(level_number))
+			else:
+				card.pressed.connect(start_multi_level.bind(game_id,level_number,false))
+		var star_text := "LOCK" if not unlocked else ("★".repeat(stars) if stars > 0 else "···")
+		var star_color := FIGMA_OFF_WHITE if is_current else FIGMA_MUTED
+		_figma_text(canvas,star_text,Rect2(x+9,y+38,64,18),12,star_color,true)
+		index += 1
+
+func _figma_level_tabs(canvas: Control, active_game_id: String) -> void:
+	var specs := [
+		["rescue_rush","RESCUE",18.0],
+		["water_sort","WATER",134.0],
+		["block_puzzle","BLOCK",250.0],
+	]
+	for spec in specs:
+		var game_id := String(spec[0])
+		var active := game_id == active_game_id
+		var accent := Unjam3DTheme.game_accent(game_id)
+		var fill := accent if active else Color(0.987,0.996,1.0)
+		var text_color := FIGMA_OFF_WHITE if active else FIGMA_MUTED
+		var button := _figma_button(canvas,"LevelGameTab/%s" % game_id,String(spec[1]),Rect2(float(spec[2]),84,108,40),fill,Callable(),text_color,14,12)
+		if active:
+			button.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		else:
+			button.pressed.connect(_figma_switch_level_game.bind(game_id))
+
+func _figma_switch_level_game(game_id: String) -> void:
+	selected_game_id = game_id
+	selected_multi_world = MultiGameManager.highest_unlocked_game_world(game_id)
+	selected_multi_page = _multi_page_for_level(game_id,_highest_level_for_game(game_id))
+	build_multi_level_select()
 
 func _inject_game_tabs(active_game_id: String) -> void:
 	var root := _find_page_root()
