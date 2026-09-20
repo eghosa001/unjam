@@ -1,5 +1,20 @@
 extends "res://scripts/ui/premium_main.gd"
 
+const FIGMA_LEVEL_PAGE_SIZE := 20
+const FIGMA_BG_TOP := Color(0.94, 0.99, 1.0)
+const FIGMA_BG_BOTTOM := Color(0.892, 0.9496, 0.988)
+const FIGMA_NAVY := Color(0.03, 0.23, 0.47)
+const FIGMA_INK := Color(0.07, 0.20, 0.35)
+const FIGMA_MUTED := Color(0.31, 0.42, 0.52)
+const FIGMA_OFF_WHITE := Color(1.0, 0.995, 0.97)
+const FIGMA_BLUE := Color(0.03, 0.43, 0.78)
+const FIGMA_GREEN := Color(0.13, 0.78, 0.39)
+const FIGMA_CYAN := Color(0.14, 0.68, 1.0)
+const FIGMA_ORANGE := Color(1.0, 0.55, 0.12)
+const FIGMA_GOLD := Color(1.0, 0.84, 0.24)
+const FIGMA_PURPLE := Color(0.78, 0.24, 1.0)
+
+
 func _sync_persistent_surfaces_now(surface: String) -> void:
 	var home := get_node_or_null("PremiumHome")
 	if home != null and home.has_method("_on_surface_changed"):
@@ -57,6 +72,89 @@ func _page_root() -> VBoxContainer:
 	root.add_theme_constant_override("separation", 18)
 	outer.add_child(root)
 	return root
+
+func _figma_surface(active: String, bottom_tint: Color = FIGMA_BG_BOTTOM) -> FigmaReferenceCanvas:
+	clear_content()
+	content.visible = true
+	content.mouse_filter = Control.MOUSE_FILTER_STOP
+	var viewport_bg := ColorRect.new()
+	viewport_bg.name = "FigmaSurfaceViewportBackground"
+	viewport_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	viewport_bg.color = bottom_tint
+	viewport_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content.add_child(viewport_bg)
+	var canvas := FigmaReferenceCanvas.new()
+	canvas.name = "FigmaSurface390x844"
+	content.add_child(canvas)
+	var bg := PanelContainer.new()
+	bg.name = "FigmaSurfaceBackground"
+	bg.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient(FIGMA_BG_TOP, bottom_tint, 0))
+	FigmaReferenceCanvas.set_rect(bg, 0, 0, 390, 844)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(bg)
+	return canvas
+
+func _figma_text(canvas: Control, text_value: String, rect: Rect2, font_size: int, color: Color = FIGMA_INK, center := false) -> Label:
+	var label := FigmaReferenceCanvas.label(text_value, font_size, color, true)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER if center else HORIZONTAL_ALIGNMENT_LEFT
+	FigmaReferenceCanvas.set_rect(label, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
+	canvas.add_child(label)
+	return label
+
+func _figma_button(canvas: Control, name_value: String, text_value: String, rect: Rect2, fill: Color, callback: Callable, text_color: Color = FIGMA_OFF_WHITE, radius: float = 14.0, font_size: int = 12) -> Button:
+	var button := FigmaReferenceCanvas.button(text_value, font_size, text_color, fill, radius, fill.lightened(0.24), 1)
+	button.name = name_value
+	FigmaReferenceCanvas.set_rect(button, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
+	if callback.is_valid():
+		button.pressed.connect(callback)
+	canvas.add_child(button)
+	return button
+
+func _figma_card(canvas: Control, name_value: String, rect: Rect2, tint: Color = Color(1.0, 0.995, 0.97), accent: Color = Color(0.70, 0.88, 0.96, 0.45), radius: float = 16.0) -> PanelContainer:
+	var card := PanelContainer.new()
+	card.name = name_value
+	card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient(tint, tint.darkened(0.035), radius, accent, 1))
+	FigmaReferenceCanvas.set_rect(card, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
+	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(card)
+	return card
+
+func _figma_header(canvas: Control, title_text: String, subtitle_text: String, pill_text: String, pill_fill: Color, back_callback: Callable = Callable(self, "build_home")) -> void:
+	_figma_button(canvas, "FigmaBack", "‹", Rect2(18, 20, 52, 52), Color(0.987, 0.996, 1.0), back_callback, FIGMA_NAVY, 16, 27)
+	_figma_text(canvas, title_text, Rect2(84, 22, 205, 28), 23, FIGMA_INK)
+	var subtitle := _figma_text(canvas, subtitle_text, Rect2(84, 52, 210, 30), 12, FIGMA_MUTED)
+	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_figma_button(canvas, "FigmaHeaderPill", pill_text, Rect2(286, 22, 84, 46), pill_fill, Callable(), FIGMA_OFF_WHITE, 16, 12)
+
+func _figma_bottom_nav(canvas: Control, active: String) -> void:
+	_figma_card(canvas, "StdNav/Bar", Rect2(14, 758, 362, 70), Color(0.985, 0.995, 1.0), Color(0.78, 0.88, 0.95, 0.75), 18)
+	var xs := {"home":22.0, "games":91.0, "daily":160.0, "collection":229.0, "settings":298.0}
+	var names := {"home":"HOME", "games":"GAMES", "daily":"DAILY", "collection":"COLLECT", "settings":"SETTINGS"}
+	var callbacks := {
+		"home": Callable(self, "build_home"),
+		"games": Callable(self, "_open_games_surface"),
+		"daily": Callable(self, "build_daily_games"),
+		"collection": Callable(self, "build_collection"),
+		"settings": Callable(self, "build_settings"),
+	}
+	var hit_x := {"home":14.0, "games":84.0, "daily":153.0, "collection":222.0, "settings":291.0}
+	if xs.has(active):
+		_figma_card(canvas, "StdNav/Active", Rect2(float(hit_x[active]) + 1.0, 768, 62, 48), FIGMA_CYAN, FIGMA_CYAN, 16)
+	for key in ["home","games","daily","collection","settings"]:
+		var selected := key == active
+		_figma_text(canvas, String(names[key]), Rect2(float(xs[key]), 789, 58, 30), 12, Color(0.05,0.49,0.86) if selected else FIGMA_MUTED)
+		var hit := Button.new()
+		hit.name = "StdNav/Proto/%s" % String(names[key])
+		hit.flat = true
+		hit.focus_mode = Control.FOCUS_NONE
+		hit.modulate.a = 0.001
+		FigmaReferenceCanvas.set_rect(hit, float(hit_x[key]), 754, 74 if key != "settings" else 80, 78)
+		if not selected:
+			var cb: Callable = callbacks[key]
+			hit.pressed.connect(cb)
+		else:
+			hit.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		canvas.add_child(hit)
 
 func build_settings() -> void:
 	current_surface = "settings"
