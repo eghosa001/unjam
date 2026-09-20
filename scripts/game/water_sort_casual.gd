@@ -11,7 +11,7 @@ const OFF_WHITE := Color(1.0, 0.995, 0.97)
 const BLUE := Color(0.03, 0.43, 0.78)
 const ORANGE := Color(1.0, 0.55, 0.12)
 
-var figma_canvas: FigmaReferenceCanvas
+var figma_canvas: Control
 var gameplay_stage: PanelContainer
 
 func build_ui() -> void:
