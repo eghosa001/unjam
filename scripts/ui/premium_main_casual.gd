@@ -147,7 +147,7 @@ func _figma_bottom_nav(canvas: Control, active: String) -> void:
 	if xs.has(active):
 		_figma_card(canvas, "StdNav/Active", Rect2(float(hit_x[active]) + 1.0, 768, 62, 48), FIGMA_CYAN, FIGMA_CYAN, 16)
 	for key in ["home","games","daily","collection","settings"]:
-		var selected := key == active
+		var selected: bool = String(key) == active
 		_figma_text(canvas, String(names[key]), Rect2(float(xs[key]), 789, 58, 30), 12, Color(0.05,0.49,0.86) if selected else FIGMA_MUTED)
 		var hit := Button.new()
 		hit.name = "StdNav/Proto/%s" % String(names[key])
@@ -509,7 +509,7 @@ func _restyle_secondary_nav(active: String) -> void:
 		var button := nav.find_child(String(mapping[key]), true, false) as Button
 		if button == null:
 			continue
-		var selected := String(key) == active
+		var selected: bool = String(key) == active
 		button.disabled = false
 		button.mouse_filter = Control.MOUSE_FILTER_IGNORE if selected else Control.MOUSE_FILTER_STOP
 		button.set_meta("unjam_selected_nav", selected)
