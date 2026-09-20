@@ -428,8 +428,10 @@ func _draw() -> void:
 	for point in points:
 		max_x = maxi(max_x, point.x)
 		max_y = maxi(max_y, point.y)
-	var cell := minf(74.0, minf((size.x - 24.0) / float(max_x + 1), (size.y - 18.0) / float(max_y + 1)))
-	cell = maxf(14.0, cell)
+	var fit_cell := minf((size.x - 24.0) / float(max_x + 1), (size.y - 18.0) / float(max_y + 1))
+	# Keep every tray shape on one visual scale. A single-cell piece should read
+	# like one board cell, not inflate to fill the entire tray slot.
+	var cell := clampf(minf(30.0, fit_cell), 16.0, 30.0)
 	var total := Vector2((max_x + 1) * cell, (max_y + 1) * cell)
 	var origin := (size - total) * 0.5
 	for point in points:
@@ -466,7 +468,13 @@ func _draw_block(rect: Rect2, fill: Color) -> void:
 	draw_style_box(_style(fill, fill.lightened(0.28), 2, 6), front)
 	var inner := front.grow(-3.0)
 	draw_style_box(_style(Color(fill.lightened(0.10), 0.20), Color(1, 1, 1, 0.08), 1, 4), inner)
-	draw_line(front.position + Vector2(6, 5), Vector2(front.end.x - 6, front.position.y + 5), Color(fill.lightened(0.54), 0.92), 2.4, true)
+	draw_line(front.position + Vector2(6, 5), Vector2(front.end.x - 6, front.position.y + 5), Color(fill.lightened(0.58), 0.96), 2.6, true)
+	var gloss_band := Rect2(
+		front.position + Vector2(front.size.x * 0.16, front.size.y * 0.18),
+		Vector2(front.size.x * 0.46, maxf(3.0, front.size.y * 0.16))
+	)
+	draw_style_box(_style(Color(1, 1, 1, 0.16), Color(1, 1, 1, 0.06), 1, 5), gloss_band)
+	draw_circle(front.position + Vector2(front.size.x * 0.25, front.size.y * 0.30), maxf(1.2, front.size.x * 0.045), Color(1,1,1,0.52))
 
 func _sanitize_shape(value: Array) -> Array:
 	var unique := {}
