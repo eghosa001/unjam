@@ -40,10 +40,13 @@ func run() -> void:
 		root.add_child(game)
 		await _frames(6)
 
-		var hint := _find_button_with_text(game, "HINT")
+		var hint_names := {"rescue_rush":"RescueHintAction","water_sort":"WaterHintAction","block_puzzle":"HintAction"}
+		var hint := game.find_child(String(hint_names[game_id]), true, false) as Button
 		expect_true(hint != null, "%s Hint button missing" % game_id)
 		if hint != null:
-			expect_true("25" in hint.text and "160" in hint.text, "%s Hint does not disclose 25-coin cost and live 160 balance" % game_id)
+			expect_true("25" in hint.tooltip_text and "160" in hint.tooltip_text, "%s Hint tooltip does not disclose 25-coin cost and live 160 balance" % game_id)
+			if game_id == "block_puzzle":
+				expect_true(hint.text == "💡", "Block Figma hint control was expanded beyond its icon-only design")
 
 		var tube := game.find_child("AddTubeAction", true, false) as Button
 		if game_id == "water_sort":
@@ -54,7 +57,7 @@ func run() -> void:
 		economy.grant(10, "qa_gameplay_wallet", {"game": game_id})
 		await _frames(2)
 		if hint != null:
-			expect_true("170" in hint.text, "%s Hint wallet did not update after shared coin grant" % game_id)
+			expect_true("170" in hint.tooltip_text, "%s Hint wallet tooltip did not update after shared coin grant" % game_id)
 		if tube != null:
 			expect_true("170" in tube.text, "Extra Tube wallet did not update after shared coin grant")
 
@@ -65,15 +68,6 @@ func run() -> void:
 	save.data["multi_active_runs"] = original_runs
 	save.save()
 	_finish()
-
-func _find_button_with_text(node: Node, needle: String) -> Button:
-	for child in node.get_children():
-		if child is Button and needle in (child as Button).text.to_upper():
-			return child as Button
-		var nested := _find_button_with_text(child, needle)
-		if nested != null:
-			return nested
-	return null
 
 func _frames(count: int) -> void:
 	for _i in range(count):
