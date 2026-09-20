@@ -475,15 +475,10 @@ func _figma_today_label() -> String:
 	return "%s %d" % [months[clampi(month - 1,0,11)], int(d.get("day",1))]
 
 func _daily_ui_state(game_id: String, accent: Color) -> Dictionary:
-	var chosen := MultiGameManager.daily_selected_game()
-	var own_done := _daily_done(game_id)
-	var chosen_done := not chosen.is_empty() and _daily_done(chosen)
-	if chosen_done:
+	# Each Daily card is independent. Completing, abandoning or failing one game
+	# must never disable either of the other two.
+	if _daily_done(game_id):
 		return {"text":"DONE TODAY", "fill":FIGMA_GREEN, "disabled":true, "done":true}
-	if own_done:
-		return {"text":"DONE TODAY", "fill":FIGMA_GREEN, "disabled":true, "done":true}
-	if not chosen.is_empty() and chosen != game_id:
-		return {"text":"TODAY: %s" % _figma_short_game(chosen), "fill":Color("#718696"), "disabled":true, "done":false}
 	return {"text":"PLAY TODAY", "fill":accent, "disabled":false, "done":false}
 
 func _figma_daily_card(canvas: Control, game_id: String, y: float, collection_bonus: int) -> void:
