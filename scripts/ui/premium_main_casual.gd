@@ -252,10 +252,10 @@ func _figma_header(canvas: Control, title_text: String, subtitle_text: String, p
 	var back_fill := Color("#152b52") if not use_dark else Color("#101a31")
 	var back_button := _figma_button(canvas, "FigmaBack", "‹", Rect2(17,19,52,52), back_fill, back_callback, back_color, 18, 27)
 	back_button.tooltip_text = "Back"
-	var header_title := _figma_text(canvas, title_text, Rect2(83,21,194,28), 23, heading_color)
+	var header_title := _figma_text(canvas, title_text, Rect2(83,21,186,28), 23, heading_color)
 	header_title.name = "FigmaHeaderTitle"
 	FigmaReferenceCanvas.style_display_title(header_title, pill_fill.lightened(0.28), Color("#071d55"), 2)
-	var subtitle := _figma_text(canvas, subtitle_text, Rect2(83,51,194,30), 12, muted_color)
+	var subtitle := _figma_text(canvas, subtitle_text, Rect2(83,51,186,30), 12, muted_color)
 	subtitle.name = "FigmaHeaderSubtitle"
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	if pill_callback.is_valid():
