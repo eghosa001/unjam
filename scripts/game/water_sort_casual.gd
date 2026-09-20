@@ -62,6 +62,8 @@ func _build_figma_water(canvas: Control) -> void:
 	retry.pressed.connect(restart_level)
 	canvas.add_child(retry)
 
+	_add_water_identity_emblem(canvas)
+
 	var info := PanelContainer.new()
 	info.name = "WaterInfo"
 	RefCanvas.add_shadow(canvas, Rect2(17,79,354,42), 14, Color(0.02,0.10,0.18,0.22), 5, Vector2(0,4))
@@ -141,6 +143,32 @@ func _build_figma_water(canvas: Control) -> void:
 	RefCanvas.set_rect(frame_border, 0, 0, 390, 844)
 	frame_border.z_index = 900
 	canvas.add_child(frame_border)
+
+func _add_water_identity_emblem(canvas: Control) -> void:
+	var emblem := PanelContainer.new()
+	emblem.name = "Identity/Water Emblem"
+	emblem.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	emblem.add_theme_stylebox_override("panel",RefCanvas.rounded_gradient3(Color("#4ad0ff"),Color("#19b9ff"),Color("#0e91d8"),9,Color(0.72,0.94,1.0,0.55),1))
+	RefCanvas.set_rect(emblem,77,17,30,30)
+	canvas.add_child(emblem)
+	var glass := PanelContainer.new()
+	glass.name = "Mark/Glass"
+	glass.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	glass.add_theme_stylebox_override("panel",RefCanvas.solid_box(Color(1,1,1,0.02),5,Color(1,1,1,0.96),2))
+	RefCanvas.set_rect(glass,85,22,14,19)
+	canvas.add_child(glass)
+	var liquid := PanelContainer.new()
+	liquid.name = "Mark/Liquid"
+	liquid.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	liquid.add_theme_stylebox_override("panel",RefCanvas.solid_box(Color(1,1,1,0.92),3))
+	RefCanvas.set_rect(liquid,87,32,10,7)
+	canvas.add_child(liquid)
+	var rim := PanelContainer.new()
+	rim.name = "Mark/Rim"
+	rim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rim.add_theme_stylebox_override("panel",RefCanvas.solid_box(Color.WHITE,1))
+	RefCanvas.set_rect(rim,84,22,16,2)
+	canvas.add_child(rim)
 
 func _action_button(text_value: String, fill: Color) -> Button:
 	var button := RefCanvas.premium_button(text_value, 12, OFF_WHITE, fill, 16, fill.lightened(0.30), 1.3)
