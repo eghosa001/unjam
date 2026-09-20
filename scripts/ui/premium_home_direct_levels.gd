@@ -496,6 +496,9 @@ func _refresh_home_selection() -> void:
 	var total := maxi(1, last - first + 1)
 	var completed_in_world := clampi(completed_level - first + 1, 0, total)
 	var progress_accent := Unjam3DTheme.game_accent(selected_game)
+	var home_accent_glow := figma_canvas.get_node_or_null("HomeAccentGlow") as PanelContainer
+	if home_accent_glow != null:
+		home_accent_glow.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(progress_accent.r, progress_accent.g, progress_accent.b, 0.12 if not _home_dark() else 0.08), 120))
 	var world_title := figma_canvas.get_node_or_null("HomeWorldProgressTitle") as Label
 	if world_title != null:
 		world_title.text = "WORLD %d PROGRESS" % progress_world
