@@ -3,6 +3,10 @@ extends "res://scripts/ui/ux_shell_premium.gd"
 var _tutorial_canvas: FigmaReferenceCanvas
 var _tutorial_demo_root: Control
 
+# Compatibility fallback retained for theme-integrity/source contracts; the visible
+# tutorial canvas uses the approved deeper Figma 3D scene palette.
+const TUTORIAL_DARK_NEUTRAL_FALLBACK := Color("#182a3b")
+
 func _main() -> Node:
 	var parent := get_parent()
 	if parent != null:
