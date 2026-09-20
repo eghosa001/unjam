@@ -204,8 +204,10 @@ func _on_balance_changed(_new_balance: int, _delta: int, _reason: String) -> voi
 
 func _find_hint_button(node: Node) -> Button:
 	for child in node.get_children():
-		if child is Button and "HINT" in child.text.to_upper():
-			return child
+		if child is Button:
+			var button := child as Button
+			if "HINT" in button.text.to_upper() or "HINT" in String(button.name).to_upper():
+				return button
 		var nested := _find_hint_button(child)
 		if nested != null:
 			return nested
