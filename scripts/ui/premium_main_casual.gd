@@ -124,7 +124,13 @@ func _figma_header(canvas: Control, title_text: String, subtitle_text: String, p
 	_figma_text(canvas, title_text, Rect2(84, 22, 205, 28), 23, FIGMA_INK)
 	var subtitle := _figma_text(canvas, subtitle_text, Rect2(84, 52, 210, 30), 12, FIGMA_MUTED)
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_figma_button(canvas, "FigmaHeaderPill", pill_text, Rect2(286, 22, 84, 46), pill_fill, pill_callback, FIGMA_OFF_WHITE, 16, 12)
+	if pill_callback.is_valid():
+		_figma_button(canvas, "FigmaHeaderPill", pill_text, Rect2(286,22,84,46), pill_fill, pill_callback, FIGMA_OFF_WHITE, 16, 12)
+	else:
+		var pill := _figma_card(canvas, "FigmaHeaderPill", Rect2(286,22,84,46), pill_fill, pill_fill.lightened(0.24), 16)
+		pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var pill_label := _figma_text(canvas, pill_text, Rect2(298,30,60,30), 12, FIGMA_OFF_WHITE, true)
+		pill_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 
 func _figma_open_shop() -> void:
 	var hub := get_node_or_null("MonetizationHub")
