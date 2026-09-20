@@ -36,9 +36,26 @@ func _run() -> void:
 		game.queue_free()
 		await _frames(2)
 
+	var motion_source := _read("res://scripts/ui/motion_system.gd")
+	for token in ["&\"micro\": 0.055", "&\"travel\": 0.19", "&\"pour\": 0.235", "&\"screen\": 0.12"]:
+		if not motion_source.contains(token):
+			return _fail("Premium response timing missing: %s" % token)
+	var audio_source := _read("res://scripts/systems/feedback_manager.gd")
+	if not audio_source.contains("func snap()") or not audio_source.contains("_vibrate(7)") or not audio_source.contains("MUSIC_DURATION := 32.0"):
+		return _fail("Premium snap/pour haptics or longer calm music phrase is missing")
+	var drag_source := _read("res://scripts/ui/block_drag_preview.gd")
+	if not drag_source.contains("became_valid") or not drag_source.contains("feedback.call(\"snap\")"):
+		return _fail("Block Puzzle magnetic snap confirmation is missing")
+	var restore_source := _read("res://scripts/game/block_puzzle_polished.gd")
+	if restore_source.contains("pieces[i] = [Vector2i(0,0)]"):
+		return _fail("Block Puzzle checkpoint restore still fabricates a rescue piece")
+	var water_3d_source := _read("res://scripts/ui/water_tube_3d_motion.gd")
+	if water_3d_source.contains("GlassSecondaryHighlight") or water_3d_source.contains("highlight_mesh := BoxMesh.new()"):
+		return _fail("Water Sort still contains synthetic vertical glass highlight bars")
+
 	var water_source := _read("res://scripts/game/water_sort_10000.gd")
-	if not water_source.contains("PERFECT TUBE") or not water_source.contains("_pour_flow_streak"):
-		return _fail("Water Sort premium flow/solved-tube feature is missing")
+	if not water_source.contains("PERFECT TUBE") or not water_source.contains("_pour_flow_streak") or not water_source.contains("_show_level_intro"):
+		return _fail("Water Sort premium flow/milestone feature is missing")
 	var sequence_index := water_source.find("_pour_feedback_sequence += 1")
 	var await_index := water_source.find("await super._play_premium_concurrent_pour")
 	if sequence_index < 0 or await_index < 0 or sequence_index > await_index:
@@ -46,13 +63,13 @@ func _run() -> void:
 	if not water_source.contains("_last_rendered_pour_feedback_sequence") or not water_source.contains("streak_for_feedback"):
 		return _fail("Water feedback must suppress stale async completions")
 	var rescue_source := _read("res://scripts/game/rescue_rush_assisted.gd")
-	if not rescue_source.contains("FLOW ×%d") or not rescue_source.contains("show_ring"):
-		return _fail("Rescue Rush premium flow feedback is missing")
+	if not rescue_source.contains("FLOW ×%d") or not rescue_source.contains("show_ring") or not rescue_source.contains("_show_level_intro"):
+		return _fail("Rescue Rush premium flow/milestone feedback is missing")
 	if not rescue_source.contains("local_bottom_right") or not rescue_source.contains("local_size"):
 		return _fail("Rescue blocked-path ring must use transformed board size")
 	var block_source := _read("res://scripts/game/block_puzzle_10000.gd")
-	if not block_source.contains("LINE BLAST") or not block_source.contains("show_sweep"):
-		return _fail("Block Puzzle premium combo/sweep feedback is missing")
+	if not block_source.contains("LINE BLAST") or not block_source.contains("show_sweep") or not block_source.contains("_show_level_intro"):
+		return _fail("Block Puzzle premium combo/milestone feedback is missing")
 
 	print("PREMIUM_BENCHMARK_FEATURES_OK")
 	quit(0)
