@@ -631,7 +631,7 @@ func _collection_scroll_input(event: InputEvent, owner: Control, toward_upgrades
 func _buy_collection_upgrade(id: String, cost: int) -> bool:
 	if id in SaveManager.data.get("decorations",[]):
 		return true
-	if SaveManager.unlock_decoration(id,cost):
+	if EconomyManager.unlock_collection_item(id,cost):
 		FeedbackManager.effect()
 		PremiumVisuals.burst(Vector2(get_viewport_rect().size.x*0.5,get_viewport_rect().size.y*0.45),FIGMA_GOLD,18)
 		build_collection_upgrades()
@@ -649,7 +649,7 @@ func _buy_collection_upgrade(id: String, cost: int) -> bool:
 	return false
 
 func _retry_collection_upgrade(id: String, cost: int) -> bool:
-	if SaveManager.unlock_decoration(id,cost):
+	if EconomyManager.unlock_collection_item(id,cost):
 		FeedbackManager.effect()
 		build_collection_upgrades()
 		return true
