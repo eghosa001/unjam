@@ -67,7 +67,7 @@ func _track_escape_visual(node: Node) -> void:
 	if node != null and is_instance_valid(node):
 		_active_escape_visuals.append(node)
 
-func _finish_escape_visual(node: Node) -> void:
+func _finish_escape_visual(node: Variant) -> void:
 	_active_escape_visuals.erase(node)
 	if node != null and is_instance_valid(node):
 		node.queue_free()
@@ -161,9 +161,10 @@ func _acquire_speed_line() -> Line2D:
 	line.points = PackedVector2Array()
 	return line
 
-func _release_speed_line(line: Line2D) -> void:
-	if line == null or not is_instance_valid(line):
+func _release_speed_line(value: Variant) -> void:
+	if value == null or not is_instance_valid(value) or not value is Line2D:
 		return
+	var line := value as Line2D
 	line.visible = false
 	line.position = Vector2.ZERO
 	line.modulate = Color.WHITE
@@ -188,9 +189,10 @@ func _acquire_effect_label() -> Label:
 	label.modulate = Color.WHITE
 	return label
 
-func _release_effect_label(label: Label) -> void:
-	if label == null or not is_instance_valid(label):
+func _release_effect_label(value: Variant) -> void:
+	if value == null or not is_instance_valid(value) or not value is Label:
 		return
+	var label := value as Label
 	label.visible = false
 	label.position = Vector2.ZERO
 	label.scale = Vector2.ONE
