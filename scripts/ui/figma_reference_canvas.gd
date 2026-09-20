@@ -55,12 +55,6 @@ func _fit_reference_canvas() -> void:
 	position = (available - REFERENCE_SIZE * factor) * 0.5
 	size = REFERENCE_SIZE
 
-func ref_rect(node: Control, x: float, y: float, width: float, height: float) -> Control:
-	node.position = Vector2(x, y)
-	node.size = Vector2(width, height)
-	node.custom_minimum_size = Vector2(width, height)
-	return node
-
 static func solid_box(color: Color, radius: float = 0.0, border_color: Color = Color.TRANSPARENT, border_width: float = 0.0) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = color
@@ -347,6 +341,18 @@ static func add_shadow(parent: Control, rect: Rect2, radius: float, shadow_color
 	parent.add_child(shadow)
 	return shadow
 
+static func contrast_ratio(a: Color, b: Color) -> float:
+	var la := a.srgb_to_linear().get_luminance()
+	var lb := b.srgb_to_linear().get_luminance()
+	return (maxf(la, lb) + 0.05) / (minf(la, lb) + 0.05)
+
+static func accessible_text_color(preferred: Color, fill: Color, minimum_ratio: float = 4.5) -> Color:
+	if contrast_ratio(preferred, fill) >= minimum_ratio:
+		return preferred
+	var dark_candidate := Color("#071d55")
+	var light_candidate := Color("#fffef8")
+	return dark_candidate if contrast_ratio(dark_candidate, fill) >= contrast_ratio(light_candidate, fill) else light_candidate
+
 static func premium_button(text_value: String, font_size: int, text_color: Color, fill: Color, radius: float, border: Color = Color.TRANSPARENT, border_width: float = 0.0) -> Button:
 	var result := Button.new()
 	result.set_meta("unjam_figma_exact_geometry", true)
@@ -355,13 +361,14 @@ static func premium_button(text_value: String, font_size: int, text_color: Color
 	result.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	result.add_theme_font_override("font", Unjam3DTheme.readable_font())
 	result.add_theme_font_size_override("font_size", font_size)
-	result.add_theme_color_override("font_color", text_color)
-	result.add_theme_color_override("font_hover_color", text_color)
-	result.add_theme_color_override("font_pressed_color", text_color)
+	var resolved_text := accessible_text_color(text_color, fill)
+	result.add_theme_color_override("font_color", resolved_text)
+	result.add_theme_color_override("font_hover_color", resolved_text)
+	result.add_theme_color_override("font_pressed_color", resolved_text)
 
 	# StyleBoxTexture's nine-slice margins contribute to Button minimum size.
 	# Drawing the gradient in a geometry-neutral child preserves the exact Figma
-	# rectangle (including compact 38px toggles) without giving up the 3D finish.
+	# rectangle (including compact authored controls) without giving up the 3D finish.
 	var top := fill.lightened(0.18)
 	var bottom := fill.darkened(0.18)
 	var gradient := rounded_gradient3(top, fill, bottom, radius, border, border_width)
@@ -379,7 +386,15 @@ static func premium_button(text_value: String, font_size: int, text_color: Color
 	result.add_theme_stylebox_override("pressed", pressed_overlay)
 	result.add_theme_stylebox_override("focus", clear)
 	result.add_theme_stylebox_override("disabled", disabled_overlay)
-	result.add_theme_color_override("font_disabled_color", text_color.lerp(Color(0.82,0.86,0.90), 0.30))
+	var disabled_text := Color(resolved_text.r, resolved_text.g, resolved_text.b, 0.72)
+	result.add_theme_color_override("font_disabled_color", disabled_text)
+	result.button_down.connect(func() -> void:
+		if result.disabled:
+			return
+		var motion := result.get_node_or_null("/root/MotionSystem")
+		if motion != null and motion.has_method("press"):
+			motion.call("press", result, 0.78)
+	)
 	return result
 
 static func label(text_value: String, font_size: int, color: Color, bold := false) -> Label:
@@ -400,9 +415,10 @@ static func button(text_value: String, font_size: int, text_color: Color, fill: 
 	result.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	result.add_theme_font_override("font", Unjam3DTheme.readable_font())
 	result.add_theme_font_size_override("font_size", font_size)
-	result.add_theme_color_override("font_color", text_color)
-	result.add_theme_color_override("font_hover_color", text_color)
-	result.add_theme_color_override("font_pressed_color", text_color)
+	var resolved_text := accessible_text_color(text_color, fill)
+	result.add_theme_color_override("font_color", resolved_text)
+	result.add_theme_color_override("font_hover_color", resolved_text)
+	result.add_theme_color_override("font_pressed_color", resolved_text)
 	var normal := solid_box(fill, radius, border, border_width)
 	var hover := solid_box(fill.lightened(0.055), radius, border.lightened(0.06), border_width)
 	var pressed := solid_box(fill.darkened(0.075), radius, border, border_width)

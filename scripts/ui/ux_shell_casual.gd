@@ -196,17 +196,6 @@ func apply_theme_mode(dark: bool) -> void:
 	if game != null and game.has_method("apply_theme_mode"):
 		game.call("apply_theme_mode",dark)
 
-func _layout_tutorial_panel() -> void:
-	# Reference canvas owns all geometry and viewport scaling.
-	pass
-
-func _layout_help_button() -> void:
-	if help_button != null:
-		help_button.visible = false
-
-func _restyle_3d_shell() -> void:
-	pass
-
 func show_tutorial(game_id: String = "rescue_rush") -> void:
 	if tutorial_panel == null or _tutorial_canvas == null:
 		return
@@ -263,7 +252,7 @@ func _apply_figma_tutorial_theme(game_id: String) -> void:
 			demo_bottom = Color("#f1e5f6")
 	var backdrop := _tutorial_canvas.get_node_or_null("TutorialBackdrop") as PanelContainer
 	if backdrop != null:
-		var backdrop_top := Color("#101932") if dark else Color("#1b63c5")
+		var backdrop_top := TUTORIAL_DARK_NEUTRAL_FALLBACK.lerp(Color("#101932"), 0.72) if dark else Color("#1b63c5")
 		var backdrop_mid := Color("#0b1631") if dark else Color("#173f98")
 		var backdrop_bottom := Color("#060d22").lerp(accent.darkened(0.68),0.05) if dark else Color("#0a1d58").lerp(bottom,0.04)
 		var backdrop_border := Color("#334c78") if dark else Color("#5ba6e8")

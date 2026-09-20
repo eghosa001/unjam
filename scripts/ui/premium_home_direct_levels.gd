@@ -78,7 +78,7 @@ func _build_reference_home(canvas: Control) -> void:
 		cleared += int(MultiGameManager.progress_for(game_id).get("levels_completed", 0))
 	var player_level := maxi(1, 1 + int(cleared / 10))
 	_add_pill(canvas, Rect2(21, 64, 78, 40), Color(0.03, 0.43, 0.78), "LV %d" % player_level, 13, OFF_WHITE)
-	home_coin_button = _add_action(canvas, Rect2(107, 64, 112, 40), Color(1.0, 0.55, 0.12), "   %s +" % _compact_number(EconomyManager.balance()), 12, OFF_WHITE, Callable(self, "_open_shop"), 20)
+	home_coin_button = _add_action(canvas, Rect2(107, 62, 112, 44), Color(1.0, 0.55, 0.12), "   %s +" % _compact_number(EconomyManager.balance()), 12, OFF_WHITE, Callable(self, "_open_shop"), 20)
 	home_coin_button.name = "HomeCoinShopButton"
 	RefCanvas.add_collectible_gem(canvas, Vector2(122, 84), 8.0, "HomeCurrencyGem3D")
 	_add_pill(canvas, Rect2(227, 64, 92, 40), GOLD, "   %s" % _compact_number(_total_stars()), 12, NAVY)
@@ -155,7 +155,7 @@ func _add_hero(canvas: Control) -> void:
 	_add_text(canvas, "CURRENT JOURNEY", Rect2(41, 142, 150, 15), 12, ORANGE, true)
 	var level := _home_current_level(selected_game)
 	var world := MultiGameManager.world_for_game_level(selected_game, level)
-	var game_title := _add_text(canvas, _short_game_name(selected_game), Rect2(41, 167, 186, 34), 28, NAVY, true)
+	var game_title := _add_text(canvas, _short_game_name(selected_game), Rect2(41, 167, 180, 34), 27, NAVY, true)
 	game_title.name = "HomeHeroGameTitle"
 	RefCanvas.style_display_title(game_title, Unjam3DTheme.game_accent(selected_game).lightened(0.18), Color("#071d55"), 2)
 	var game_meta := _add_text(canvas, "LEVEL %d • WORLD %d" % [level, world], Rect2(41, 204, 170, 17), 14, BLUE, true)
@@ -185,7 +185,7 @@ func _add_hero_preview(canvas: Control, game_id: String) -> void:
 	stage.name = "FigmaHomeHeroPreview"
 	var stage_mid := Color(0.12,0.24,0.34,0.78) if _home_dark() else Color(0.87,0.96,0.98,0.62)
 	stage.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(stage_mid.lightened(0.15), stage_mid, stage_mid.darkened(0.12), 16, Color(1,1,1,0.20), 1, 0.40))
-	RefCanvas.set_rect(stage, 219, 144, 125, 136)
+	RefCanvas.set_rect(stage, 229, 144, 115, 136)
 	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	preview_root.add_child(stage)
 	match game_id:
@@ -289,7 +289,7 @@ func _add_quick_switch(canvas: Control) -> void:
 		RefCanvas.set_rect(card, x, 465, 108, 94)
 		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		canvas.add_child(card)
-		_add_text(canvas, String(entry[1]), Rect2(x + 7, 478, 96, 18), 10, entry[2], true)
+		_add_text(canvas, String(entry[1]), Rect2(x + 7, 478, 96, 18), 11, entry[2], true)
 		var level := _home_current_level(id)
 		var stars := MultiGameManager.total_stars(id)
 		_add_text(canvas, "L%d • ★%s" % [level, _compact_number(stars)], Rect2(x + 9, 509, 92, 15), 12, MUTED, false)
@@ -535,15 +535,3 @@ func _select_home_game(game_id: String) -> void:
 		main.set("selected_game_id", game_id)
 	FeedbackManager.tap()
 	_refresh_home_selection()
-
-func _select_and_open_game(game_id: String) -> void:
-	selected_game = game_id
-	var main := get_parent()
-	if main == null or not main.has_method("open_game_campaign"):
-		return
-	main.set("selected_game_id", game_id)
-	FeedbackManager.tap()
-	main.call("open_game_campaign", game_id)
-
-func _open_game_levels(game_id: String) -> void:
-	_select_and_open_game(game_id)

@@ -27,8 +27,8 @@ func _run() -> void:
 		return _fail("Figma Home hierarchy is incomplete")
 	if not _rect_eq(Rect2(hero.position, hero.size), Rect2(21,121,346,224)):
 		return _fail("Home hero drifted from Figma 346x224 reference")
-	if not _rect_eq(Rect2(preview.position, preview.size), Rect2(219,144,125,136)):
-		return _fail("Home preview drifted from Figma 125x136 reference")
+	if not _rect_eq(Rect2(preview.position, preview.size), Rect2(229,144,115,136)):
+		return _fail("Home preview drifted from approved crowding-safe 115x136 reference")
 	if not _rect_eq(Rect2(primary.position, primary.size), Rect2(41,285,178,48)):
 		return _fail("Home primary action drifted from Figma reference")
 	if not _rect_eq(Rect2(choose.position, choose.size), Rect2(21,365,166,52)):

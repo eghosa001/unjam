@@ -24,8 +24,6 @@ func collection_daily_bonus() -> int:
 	# valuable. At full collection this is +30 coins per Daily Game.
 	return collection_owned_count() * COLLECTION_DAILY_BONUS_PER_ITEM
 
-func collection_daily_reward(base_reward: int) -> int:
-	return maxi(0, base_reward) + collection_daily_bonus()
 
 func garden_gift_amount() -> int:
 	var owned := collection_owned_count()

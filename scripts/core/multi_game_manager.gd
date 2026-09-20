@@ -177,10 +177,6 @@ func daily_selected_game()->String:
  var value:=String(choices.get(date_key(),""))
  return value if value in GAME_IDS else ""
 
-func can_start_daily(id:String)->bool:
- if id not in GAME_IDS:return false
- var chosen:=daily_selected_game()
- return chosen.is_empty() or chosen==id
 
 func claim_daily_game(id:String)->bool:
  if id not in GAME_IDS:return false

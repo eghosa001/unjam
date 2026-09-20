@@ -17,8 +17,8 @@ func _initialize() -> void:
 		"func _chime_stream",
 		"func _build_calm_ambient_loop",
 		"Fmaj7 -> Dm7 -> Bbmaj7 -> Cadd9",
-		"music_player.volume_db = -15.5",
-		"sfx.volume_db = -1.5",
+		"music_player.volume_db = -10.0",
+		"sfx.volume_db = 0.0",
 		"root * 1.5",
 	]:
 		if not source.contains(token):

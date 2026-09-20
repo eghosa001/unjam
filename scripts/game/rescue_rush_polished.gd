@@ -37,15 +37,6 @@ func _escape_route_cells(index: int) -> Array[Vector2i]:
 	route.append(cursor)
 	return route
 
-func _route_from(start: Vector2i, direction: Vector2i) -> Array[Vector2i]:
-	var route: Array[Vector2i] = [start]
-	var cursor := start + direction
-	while is_inside(cursor):
-		route.append(cursor)
-		cursor += direction
-	route.append(cursor)
-	return route
-
 func _board_cell_local_position(pos: Vector2i, fallback: Vector2) -> Vector2:
 	if board_grid == null or not is_inside(pos):
 		return fallback

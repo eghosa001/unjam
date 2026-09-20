@@ -2,7 +2,6 @@ extends "res://scripts/ui/premium_main.gd"
 
 const FIGMA_LEVEL_PAGE_SIZE := 20
 const FIGMA_BG_TOP := Color("#dcebe8")
-const FIGMA_BG_MID := Color("#d4e3e8")
 const FIGMA_BG_BOTTOM := Color("#c3d2df")
 const FIGMA_NAVY := Color(0.03, 0.23, 0.47)
 const FIGMA_INK := Color(0.07, 0.20, 0.35)
@@ -13,10 +12,8 @@ const FIGMA_GREEN := Color(0.13, 0.78, 0.39)
 const FIGMA_CYAN := Color(0.14, 0.68, 1.0)
 const FIGMA_ORANGE := Color(1.0, 0.55, 0.12)
 const FIGMA_GOLD := Color(1.0, 0.84, 0.24)
-const FIGMA_PURPLE := Color(0.78, 0.24, 1.0)
 
 const FIGMA_DARK_TOP := Color("#182a3b")
-const FIGMA_DARK_MID := Color("#20384b")
 const FIGMA_DARK_BOTTOM := Color("#29465b")
 const FIGMA_DARK_CARD := Color("#223b50")
 const FIGMA_DARK_INK := Color("#eef7ff")
@@ -253,13 +250,17 @@ func _figma_header(canvas: Control, title_text: String, subtitle_text: String, p
 	var muted_color := Color("#c6d9ec") if not use_dark else FIGMA_DARK_MUTED
 	var back_color := FIGMA_DARK_INK
 	var back_fill := Color("#152b52") if not use_dark else Color("#101a31")
-	_figma_button(canvas, "FigmaBack", "‹", Rect2(17,19,52,52), back_fill, back_callback, back_color, 18, 27)
-	var header_title := _figma_text(canvas, title_text, Rect2(83,21,205,28), 23, heading_color)
+	var back_button := _figma_button(canvas, "FigmaBack", "‹", Rect2(17,19,52,52), back_fill, back_callback, back_color, 18, 27)
+	back_button.tooltip_text = "Back"
+	var header_title := _figma_text(canvas, title_text, Rect2(83,21,186,28), 23, heading_color)
 	header_title.name = "FigmaHeaderTitle"
+	header_title.clip_text = true
 	FigmaReferenceCanvas.style_display_title(header_title, pill_fill.lightened(0.28), Color("#071d55"), 2)
-	var subtitle := _figma_text(canvas, subtitle_text, Rect2(83,51,210,30), 12, muted_color)
+	var subtitle := _figma_text(canvas, subtitle_text, Rect2(83,51,186,30), 12, muted_color)
 	subtitle.name = "FigmaHeaderSubtitle"
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	subtitle.clip_text = true
+	FigmaReferenceCanvas.set_rect(subtitle, 83, 51, 186, 30)
 	if pill_callback.is_valid():
 		var pill_button := _figma_button(canvas, "FigmaHeaderPill", pill_text, Rect2(285,21,84,46), pill_fill, pill_callback, FIGMA_OFF_WHITE, 23, 12)
 		if pill_text.begins_with("◈"):
@@ -277,7 +278,8 @@ func _figma_header(canvas: Control, title_text: String, subtitle_text: String, p
 		else:
 			pill = _figma_solid_card(canvas, "FigmaHeaderPill", Rect2(285,21,84,46), pill_fill, pill_fill.lightened(0.24), 23)
 		pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var pill_label := _figma_text(canvas, pill_text, Rect2(297,29,60,30), 12, FIGMA_OFF_WHITE, true)
+		var pill_text_color := FigmaReferenceCanvas.accessible_text_color(FIGMA_OFF_WHITE, pill_fill)
+		var pill_label := _figma_text(canvas, pill_text, Rect2(297,29,60,30), 12, pill_text_color, true)
 		pill_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 
 func _on_figma_wallet_balance_changed(new_balance: int, _delta: int, _reason: String) -> void:
@@ -375,8 +377,8 @@ func build_settings() -> void:
 	_figma_text(canvas,"☀  APPEARANCE",Rect2(33,425,150,18),15,Color("#ff8c1f") if not dark_mode else heading_color)
 	_figma_text(canvas,"THEME",Rect2(33,448,210,28),13,muted_color)
 	var theme_fill := FIGMA_ORANGE
-	var theme_text := Color(0.76,0.84,0.90) if dark_mode else FIGMA_OFF_WHITE
-	var theme_button := _figma_button(canvas,"SettingToggle/Theme",theme_name,Rect2(279,442,72,38),theme_fill,Callable(),theme_text,19,12)
+	var theme_text := FIGMA_NAVY
+	var theme_button := _figma_button(canvas,"SettingToggle/Theme",theme_name,Rect2(279,439,72,44),theme_fill,Callable(),theme_text,19,12)
 	theme_button.pressed.connect(func() -> void:
 		if shell != null and shell.has_method("_toggle_theme"):
 			shell.call("_toggle_theme")
@@ -393,16 +395,16 @@ func build_settings() -> void:
 	var utility_fill := Color(0.12,0.18,0.28,0.96) if dark_mode else FIGMA_BLUE
 	var utility_border := Color(0.26,0.43,0.57,0.72) if dark_mode else utility_fill.lightened(0.24)
 	var utility_text := Color(0.76,0.84,0.90) if dark_mode else FIGMA_OFF_WHITE
-	FigmaReferenceCanvas.add_shadow(canvas, Rect2(33,543,144,42), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
+	FigmaReferenceCanvas.add_shadow(canvas, Rect2(33,541,144,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
 	var how_to := FigmaReferenceCanvas.premium_button("HOW TO PLAY",12,utility_text,Color("#086ec7") if not dark_mode else utility_fill,16,utility_border,1.2)
 	how_to.name = "SettingsHowToPlay"
-	FigmaReferenceCanvas.set_rect(how_to,33,543,144,42)
+	FigmaReferenceCanvas.set_rect(how_to,33,541,144,46)
 	how_to.pressed.connect(_show_current_tutorial)
 	canvas.add_child(how_to)
-	FigmaReferenceCanvas.add_shadow(canvas, Rect2(193,543,158,42), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
+	FigmaReferenceCanvas.add_shadow(canvas, Rect2(193,541,158,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
 	var privacy := FigmaReferenceCanvas.premium_button("PRIVACY OPTIONS",12,utility_text,Color("#086ec7") if not dark_mode else utility_fill,16,utility_border,1.2)
 	privacy.name = "SettingsPrivacy"
-	FigmaReferenceCanvas.set_rect(privacy,193,543,158,42)
+	FigmaReferenceCanvas.set_rect(privacy,193,541,158,46)
 	privacy.pressed.connect(PrivacyManager.show_privacy_options)
 	canvas.add_child(privacy)
 
@@ -422,22 +424,13 @@ func _figma_setting_row(canvas: Control, key: String, label_text: String, toggle
 	_figma_text(canvas,label_text,Rect2(34,label_y-7,210,30),13,text_color)
 	var enabled := bool(SaveManager.data.get(key,default_value))
 	var fill := FIGMA_BLUE if enabled else Color("#b2bfcc")
-	var button_text_color := Color(0.76,0.84,0.90) if dark_mode else FIGMA_OFF_WHITE
+	var button_text_color := FIGMA_OFF_WHITE if enabled else FIGMA_NAVY
 	var state := "ON" if enabled else "OFF"
-	var button := _figma_button(canvas,"SettingToggle/%s" % key.capitalize(),state,Rect2(279,toggle_y,72,38),fill,Callable(),button_text_color,19,12)
+	var button := _figma_button(canvas,"SettingToggle/%s" % key.capitalize(),state,Rect2(279,toggle_y-3.0,72,44),fill,Callable(),button_text_color,19,12)
 	if reduced_motion:
 		button.pressed.connect(_toggle_reduced_motion)
 	else:
 		button.pressed.connect(_toggle_setting.bind(key))
-
-func _setting_button(title_text: String, detail_text: String, enabled: bool, accent: Color) -> Button:
-	var state := "ON" if enabled else "OFF"
-	var role := "success" if enabled else "toggle_off"
-	var button := _button("%s   •   %s\n%s" % [title_text, state, detail_text], Vector2(0, 94), role)
-	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	button.add_theme_font_size_override("font_size", 20)
-	button.tooltip_text = "%s: %s" % [title_text, state]
-	return button
 
 func _toggle_reduced_motion() -> void:
 	var enabled := not bool(SaveManager.data.get("reduce_motion", false))
@@ -519,54 +512,6 @@ func _figma_daily_card(canvas: Control, game_id: String, y: float, collection_bo
 	button.disabled = bool(daily_state.get("disabled", false))
 	if not button.disabled:
 		button.pressed.connect(start_game_daily.bind(game_id))
-
-func _daily_game_card(game_id: String, collection_bonus: int) -> PanelContainer:
-	var accent := Unjam3DTheme.game_accent(game_id)
-	var done := _daily_done(game_id)
-	var card := PanelContainer.new()
-	card.custom_minimum_size = Vector2(0, 250)
-	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	PremiumDesignSystem.apply_panel(card, _dark(), accent, true, 28)
-	var margin := _pad(card, 18)
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 8)
-	margin.add_child(box)
-
-	var title := _label(MultiGameManager.display_name(game_id).to_upper(), 24, "title", accent)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	box.add_child(title)
-
-	var challenge_text := "TODAY’S RESCUE" if game_id == "rescue_rush" else ("TODAY’S SORT" if game_id == "water_sort" else "TODAY’S BLOCK RUN")
-	var challenge := _label(challenge_text, 16, "body", accent)
-	challenge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	box.add_child(challenge)
-
-	var reward_text := "+%d COINS" % (100 + collection_bonus)
-	if game_id != "rescue_rush":
-		reward_text = "+%d–%d COINS" % [125 + collection_bonus, 175 + collection_bonus]
-	var reward := _label(reward_text, 18, "accent", PremiumDesignSystem.GOLD)
-	reward.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	box.add_child(reward)
-
-	var perk := _label(
-		"Includes +%d permanent Collection bonus" % collection_bonus if collection_bonus > 0 else "Collection upgrades can boost this reward",
-		14,
-		"muted",
-		accent
-	)
-	perk.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	perk.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	box.add_child(perk)
-
-	var daily_state := _daily_ui_state(game_id, accent)
-	var play_text := String(daily_state.get("text", "PLAY TODAY"))
-	var play := _button(play_text, Vector2(0, 68), "success" if bool(daily_state.get("done", false)) else "primary", game_id)
-	play.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	play.disabled = bool(daily_state.get("disabled", false))
-	if not play.disabled:
-		play.pressed.connect(start_game_daily.bind(game_id))
-	box.add_child(play)
-	return card
 
 func _claim_collection_gift() -> void:
 	var amount := EconomyManager.claim_garden_gift()
@@ -655,7 +600,7 @@ func build_collection() -> void:
 	if not can_claim:
 		gift_text = "GARDEN GIFT CLAIMED" if EconomyManager.garden_gift_claimed_today() else "BUY AN UPGRADE IN SHOP"
 	var gift_fill := FIGMA_GREEN if can_claim else Color(0.54,0.64,0.72)
-	var gift := _figma_button(canvas,"CollectionGardenGift",gift_text,Rect2(33,605,250,40),gift_fill,Callable(),FIGMA_OFF_WHITE,16,12)
+	var gift := _figma_button(canvas,"CollectionGardenGift",gift_text,Rect2(33,603,250,44),gift_fill,Callable(),FIGMA_OFF_WHITE,16,12)
 	if can_claim:
 		gift.pressed.connect(_claim_collection_gift)
 	else:
@@ -752,7 +697,7 @@ func build_collection_upgrades() -> void:
 			canvas,
 			"CollectionUpgrade/%s" % id,
 			state_text,
-			Rect2(249,y+14,98,38),
+			Rect2(249,y+11,98,44),
 			pill_fill,
 			Callable(),
 			state_text_color,
@@ -853,55 +798,6 @@ func _open_games_surface() -> void:
 	FeedbackManager.tap()
 	current_surface = "live"
 
-func _add_secondary_nav(active: String) -> void:
-	if content == null or not is_instance_valid(content):
-		return
-	var old := content.get_node_or_null("SecondaryBottomNav")
-	if old != null:
-		content.remove_child(old)
-		old.queue_free()
-	var viewport_size := get_viewport_rect().size
-	var nav := PanelContainer.new()
-	nav.name = "SecondaryBottomNav"
-	nav.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	nav.offset_left = 12 if viewport_size.x < 600.0 else 22
-	nav.offset_right = -12 if viewport_size.x < 600.0 else -22
-	nav.offset_top = -102 if viewport_size.y < 1100.0 else -114
-	nav.offset_bottom = -8 if viewport_size.y < 1100.0 else -14
-	nav.z_index = 180
-	nav.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("071a35") if _dark() else Color("0756a8"), 28, Color("67d3ff"), 3, 10))
-	content.add_child(nav)
-
-	var row := HBoxContainer.new()
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override("separation", 3 if viewport_size.x < 600.0 else 5)
-	nav.add_child(row)
-	var entries: Array = [
-		["home", "⌂\nHOME", Callable(self, "build_home"), "SecondaryNavHome"],
-		["games", "◈\nGAMES", Callable(self, "_open_games_surface"), "SecondaryNavGames"],
-		["daily", "☀\nDAILY", Callable(self, "build_daily_games"), "SecondaryNavDaily"],
-		["collection", "★\nCOLLECT", Callable(self, "build_collection"), "SecondaryNavCollection"],
-		["settings", "⚙\nSETTINGS", Callable(self, "build_settings"), "SecondaryNavSettings"],
-	]
-	for entry in entries:
-		var key := String(entry[0])
-		var button := Button.new()
-		button.name = String(entry[3])
-		button.text = String(entry[1])
-		button.set_meta("unjam_preserve_surface_style", true)
-		button.custom_minimum_size = Vector2(0, 78 if viewport_size.y < 1100.0 else 88)
-		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.add_theme_font_size_override("font_size", 14 if viewport_size.x < 600.0 else 17)
-		var selected := key == active
-		Unjam3DTheme.gloss_button(button, Unjam3DTheme.WATER if selected else Color("0d6dc2"), selected, 22, _dark())
-		button.disabled = false
-		button.mouse_filter = Control.MOUSE_FILTER_IGNORE if selected else Control.MOUSE_FILTER_STOP
-		if not selected:
-			var callback: Callable = entry[2]
-			button.pressed.connect(callback)
-		row.add_child(button)
-	_restyle_secondary_nav(active)
-
 func _restyle_secondary_nav(active: String) -> void:
 	if content == null or not is_instance_valid(content):
 		return
@@ -924,74 +820,6 @@ func _restyle_secondary_nav(active: String) -> void:
 		button.mouse_filter = Control.MOUSE_FILTER_IGNORE if selected else Control.MOUSE_FILTER_STOP
 		button.set_meta("unjam_selected_nav", selected)
 		Unjam3DTheme.gloss_button(button, Unjam3DTheme.WATER if selected else Color("0d6dc2"), selected, 22, _dark())
-
-func _journey_metric(title_text: String, value: int, accent: Color) -> PanelContainer:
-	var chip := PanelContainer.new()
-	chip.custom_minimum_size = Vector2(0, 82)
-	chip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	chip.add_theme_stylebox_override("panel", PremiumDesignSystem.box(PremiumDesignSystem.surface_2(_dark()), 20, Color(accent, 0.30), 1, 2, _dark()))
-	var box := VBoxContainer.new()
-	box.alignment = BoxContainer.ALIGNMENT_CENTER
-	chip.add_child(box)
-	var number := _label(str(value), 27, "title", accent)
-	number.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	box.add_child(number)
-	var title := _label(title_text, 13, "muted", accent)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	box.add_child(title)
-	return chip
-
-func _collection_game_card(game_id: String) -> PanelContainer:
-	var accent := Unjam3DTheme.game_accent(game_id)
-	var progress_data := MultiGameManager.progress_for(game_id)
-	var highest := clampi(int(progress_data.get("highest_level", 1)), 1, MultiGameManager.CAMPAIGN_LEVELS)
-	var world := MultiGameManager.world_for_game_level(game_id, highest)
-	var local_level := posmod(highest - 1, 100) + 1
-	var icon := "↗"
-	if game_id == "water_sort":
-		icon = "◉"
-	elif game_id == "block_puzzle":
-		icon = "◆"
-
-	var card := PanelContainer.new()
-	card.custom_minimum_size = Vector2(0, 248)
-	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	card.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Unjam3DTheme.surface_fill(_dark(), true), 28, Color(accent, 0.82), 3, 11))
-	var margin := MarginContainer.new()
-	for side in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_%s" % side, 18)
-	card.add_child(margin)
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 8)
-	margin.add_child(box)
-
-	var title := _label("%s  %s" % [icon, MultiGameManager.display_name(game_id).to_upper()], 24, "title", accent)
-	box.add_child(title)
-	var journey := _label("WORLD %d  •  LEVEL %d" % [world, highest], 18, "body", accent)
-	box.add_child(journey)
-
-	var progress := ProgressBar.new()
-	progress.max_value = 100.0
-	progress.value = float(local_level)
-	progress.show_percentage = false
-	progress.custom_minimum_size = Vector2(0, 18)
-	progress.add_theme_stylebox_override("background", PremiumDesignSystem.box(PremiumDesignSystem.surface_3(_dark()), 9, Color.TRANSPARENT, 0, 0, _dark()))
-	progress.add_theme_stylebox_override("fill", PremiumDesignSystem.box(accent, 9, accent.lightened(0.14), 1, 0, _dark()))
-	box.add_child(progress)
-
-	var stats := _label("★ %s   •   PERFECT %d   •   BADGES %d" % [
-		_compact_stat(MultiGameManager.total_stars(game_id)),
-		int(progress_data.get("perfect_clears", 0)),
-		(progress_data.get("world_badges", []) as Array).size()
-	], 16, "muted", accent)
-	stats.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	box.add_child(stats)
-
-	var open := _button("OPEN JOURNEY", Vector2(0, 72), "primary", game_id)
-	open.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	open.pressed.connect(open_game_campaign.bind(game_id))
-	box.add_child(open)
-	return card
 
 func _compact_stat(value: int) -> String:
 	if value >= 1000000:
@@ -1063,20 +891,20 @@ func _build_figma_level_browser(game_id: String) -> void:
 	FigmaReferenceCanvas.set_rect(accent_rail,17,161,5,70)
 	canvas.add_child(accent_rail)
 
-	var page_y := 243.0 if game_id == "block_puzzle" else 222.0
-	var grid_y := 304.0 if game_id == "block_puzzle" else 269.0
+	var page_y := 247.0 if game_id == "block_puzzle" else 222.0
+	var grid_y := 308.0 if game_id == "block_puzzle" else 269.0
 	if game_id == "block_puzzle":
 		_add_figma_block_modes(canvas)
 
-	var prev := _figma_button(canvas,"LevelPrev","◀ PREV",Rect2(17,page_y,100,38),FIGMA_BLUE,Callable(),FIGMA_OFF_WHITE,13,13)
+	var prev := _figma_button(canvas,"LevelPrev","◀ PREV",Rect2(17,page_y - 3.0,100,44),FIGMA_BLUE,Callable(),FIGMA_OFF_WHITE,13,13)
 	prev.disabled = selected_multi_world <= 1 and selected_multi_page <= 1
 	_style_figma_page_button(prev,FIGMA_BLUE,accent,prev.disabled)
 	if not prev.disabled:
 		prev.pressed.connect(_change_multi_page.bind(-1))
-	var current := _figma_button(canvas,"LevelCurrent","CURRENT",Rect2(125,page_y,118,38),accent,Callable(self,"_jump_multi_current"),FIGMA_OFF_WHITE,13,13)
+	var current := _figma_button(canvas,"LevelCurrent","CURRENT",Rect2(125,page_y - 3.0,118,44),accent,Callable(self,"_jump_multi_current"),FIGMA_OFF_WHITE,13,13)
 	_style_figma_page_button(current,accent,accent,false)
 	var next_disabled := selected_multi_world >= world_count and selected_multi_page >= _multi_page_count(game_id,selected_multi_world)
-	var next := _figma_button(canvas,"LevelNext","NEXT ▶",Rect2(251,page_y,120,38),Color("#fcfeff"),Callable(),FIGMA_MUTED,13,13)
+	var next := _figma_button(canvas,"LevelNext","NEXT ▶",Rect2(251,page_y - 3.0,120,44),Color("#fcfeff"),Callable(),FIGMA_MUTED,13,13)
 	next.disabled = next_disabled
 	_style_figma_page_button(next,Color("#fcfeff"),accent,next_disabled,true)
 	if not next.disabled:
@@ -1131,7 +959,7 @@ func _figma_level_tabs(canvas: Control, active_game_id: String) -> void:
 		var active := game_id == active_game_id
 		var fill := active_accent if active else (Color("#20384b") if _dark() else Color("#fcfeff"))
 		var text_color := FIGMA_OFF_WHITE if active else (FIGMA_DARK_MUTED if _dark() else FIGMA_MUTED)
-		var button := _figma_button(canvas,"LevelGameTab/%s" % game_id,String(spec[1]),Rect2(float(spec[2]),83,108,40),fill,Callable(),text_color,14,12)
+		var button := _figma_button(canvas,"LevelGameTab/%s" % game_id,String(spec[1]),Rect2(float(spec[2]),81,108,44),fill,Callable(),text_color,14,12)
 		_style_figma_level_tab(button,active_accent,active)
 		if active:
 			button.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1228,7 +1056,7 @@ func _add_figma_block_modes(canvas: Control) -> void:
 	for spec in specs:
 		var mode := String(spec[0])
 		var fill: Color = spec[3] as Color
-		var button := _figma_button(canvas,"BlockMode/%s" % mode,String(spec[1]),Rect2(float(spec[2]),201,82,36),fill,Callable(),FIGMA_OFF_WHITE,13,12)
+		var button := _figma_button(canvas,"BlockMode/%s" % mode,String(spec[1]),Rect2(float(spec[2]),197,82,44),fill,Callable(),FIGMA_OFF_WHITE,13,12)
 		_style_figma_page_button(button,fill,fill,false)
 		if mode == "campaign":
 			button.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1264,41 +1092,6 @@ func _inject_game_tabs(active_game_id: String) -> void:
 		button.pressed.connect(open_game_campaign.bind(game_id))
 		tabs.add_child(button)
 
-func _inject_block_modes() -> void:
-	var root := _find_page_root()
-	if root == null:
-		return
-	var old := root.get_node_or_null("BlockPuzzleModes")
-	if old != null:
-		root.remove_child(old)
-		old.queue_free()
-	var stats = SaveManager.data.get("block_mode_stats", {})
-	if not stats is Dictionary:
-		stats = {}
-	var bar := HBoxContainer.new()
-	bar.name = "BlockPuzzleModes"
-	bar.custom_minimum_size = Vector2(0, 86)
-	bar.add_theme_constant_override("separation", 6)
-	var specs := [
-		["endless", "ENDLESS", "SURVIVAL"],
-		["zen", "ZEN", "NO GAME OVER"],
-		["extreme", "EXTREME", "MASTER RULES"],
-	]
-	for spec in specs:
-		var mode := String(spec[0])
-		var mode_stats = (stats as Dictionary).get(mode, {})
-		var best := int((mode_stats as Dictionary).get("best_score", 0)) if mode_stats is Dictionary else 0
-		var subtitle := String(spec[2])
-		if best > 0:
-			subtitle += "  •  BEST %d" % best
-		var button := _button("%s\n%s" % [String(spec[1]), subtitle], Vector2(0, 82), "secondary", "block_puzzle")
-		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.add_theme_font_size_override("font_size", 15)
-		button.pressed.connect(start_block_mode.bind(mode))
-		bar.add_child(button)
-	root.add_child(bar)
-	root.move_child(bar, mini(2, root.get_child_count() - 1))
-
 func _find_page_root() -> VBoxContainer:
 	if content == null:
 		return null
@@ -1308,76 +1101,6 @@ func _find_page_root() -> VBoxContainer:
 				if inner is VBoxContainer:
 					return inner as VBoxContainer
 	return null
-
-func _inject_journey_summary(game_id: String) -> void:
-	var root := _find_page_root()
-	if root == null:
-		return
-	var old := root.get_node_or_null("JourneySummary")
-	if old != null:
-		root.remove_child(old)
-		old.queue_free()
-
-	var accent := Unjam3DTheme.game_accent(game_id)
-	var level := _highest_level_for_game(game_id)
-	var world := MultiGameManager.world_for_game_level(game_id, level)
-	var world_count := MultiGameManager.world_count_for(game_id)
-	var local_level := posmod(level - 1, 100) + 1
-	var next_milestone := 25
-	for milestone in [25, 50, 75, 100]:
-		if local_level <= milestone:
-			next_milestone = milestone
-			break
-
-	var card := PanelContainer.new()
-	card.name = "JourneySummary"
-	card.custom_minimum_size = Vector2(0, 190)
-	card.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Unjam3DTheme.surface_fill(_dark(), true), 30, Color(accent, 0.82), 3, 12))
-	var margin := MarginContainer.new()
-	for side in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_%s" % side, 20)
-	card.add_child(margin)
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 9)
-	margin.add_child(box)
-
-	var top := HBoxContainer.new()
-	top.add_theme_constant_override("separation", 12)
-	box.add_child(top)
-	var copy := VBoxContainer.new()
-	copy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	top.add_child(copy)
-	var title := _label("%s JOURNEY" % MultiGameManager.display_name(game_id).to_upper(), 25, "title", accent)
-	copy.add_child(title)
-	var detail := _label("WORLD %d / %d  •  LEVEL %d  •  NEXT MILESTONE %d" % [world, world_count, level, next_milestone], 17, "body", accent)
-	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	copy.add_child(detail)
-	var play := _button("▶  CONTINUE", Vector2(220, 72), "primary", game_id)
-	play.pressed.connect(_continue_campaign.bind(game_id))
-	top.add_child(play)
-
-	var progress := ProgressBar.new()
-	progress.max_value = 100.0
-	progress.value = float(local_level)
-	progress.show_percentage = false
-	progress.custom_minimum_size = Vector2(0, 22)
-	progress.add_theme_stylebox_override("background", PremiumDesignSystem.box(PremiumDesignSystem.surface_3(_dark()), 10, Color.TRANSPARENT, 0, 0, _dark()))
-	progress.add_theme_stylebox_override("fill", PremiumDesignSystem.box(accent, 10, accent.lightened(0.14), 1, 0, _dark()))
-	box.add_child(progress)
-	var hint := _label("Challenge nodes at 25 • 50 • 75 • 100 are highlighted below.", 15, "muted", accent)
-	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	box.add_child(hint)
-
-	root.add_child(card)
-	root.move_child(card, mini(2, root.get_child_count() - 1))
-
-func _continue_campaign(game_id: String) -> void:
-	var level := _highest_level_for_game(game_id)
-	FeedbackManager.tap()
-	if game_id == "rescue_rush":
-		start_level(level)
-	else:
-		start_multi_level(game_id, level, false)
 
 func _level_column_count(usable_width: float) -> int:
 	if usable_width >= 900.0:

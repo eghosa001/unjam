@@ -204,10 +204,6 @@ func _commit_transfer_plan(plan: Dictionary) -> void:
 	tubes[from_idx] = source_after.duplicate()
 	tubes[to_idx] = target_after.duplicate()
 
-func _transfer_amount(from_idx: int, to_idx: int) -> int:
-	var plan := _build_transfer_plan(tubes, from_idx, to_idx)
-	return int(plan.get("amount", 0))
-
 func _game_local(global_point: Vector2) -> Vector2:
 	return get_global_transform_with_canvas().affine_inverse() * global_point
 

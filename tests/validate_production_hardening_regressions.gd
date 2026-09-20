@@ -12,6 +12,13 @@ func _run() -> void:
 	if not await _validate_shared_completion_overlay(): return
 	if not await _validate_help_does_not_overlap_game_footer(): return
 	if not await _validate_primary_visual_occupancy(): return
+	if not _validate_figma_button_contrast(): return
+	if not await _validate_header_badge_clearance(): return
+	if not await _validate_shop_header_clearance(): return
+	if not await _validate_selector_header_and_navigation(): return
+	if not await _validate_exact_touch_target_floor(): return
+	if not _validate_dead_code_cleanup(): return
+	if not _validate_retention_failure_wiring(): return
 	if not _validate_visual_workflow_installs_plugins(): return
 	if not _validate_main_ci_runs_new_hardening_gates(): return
 	if not _validate_release_workflow_exists(): return
@@ -205,6 +212,14 @@ func _validate_primary_visual_occupancy() -> bool:
 	if not hero.get_global_rect().encloses(primary.get_global_rect()):
 		main.queue_free(); await process_frame
 		return _fail("Figma Home primary action escapes its hero card")
+	var hero_title := home.find_child("HomeHeroGameTitle", true, false) as Control
+	var hero_preview := home.find_child("FigmaHomeHeroPreview", true, false) as Control
+	if hero_title == null or hero_preview == null:
+		main.queue_free(); await process_frame
+		return _fail("Figma Home title/preview diagnostics are incomplete")
+	if hero_title.get_global_rect().intersects(hero_preview.get_global_rect()):
+		main.queue_free(); await process_frame
+		return _fail("Figma Home game title overlaps its hero preview")
 
 	main.call("start_multi_level", "water_sort", 1, false)
 	await _frames(10)
@@ -224,6 +239,194 @@ func _validate_primary_visual_occupancy() -> bool:
 		return _fail("Water Sort bottles are below the audited Figma gameplay readability floor")
 	main.queue_free()
 	await process_frame
+	return true
+
+func _validate_figma_button_contrast() -> bool:
+	var bright_orange := Color("#ff8c1f")
+	var button := FigmaReferenceCanvas.premium_button("TEST", 12, Color.WHITE, bright_orange, 16)
+	var resolved: Color = button.get_theme_color("font_color")
+	button.free()
+	if FigmaReferenceCanvas.contrast_ratio(resolved, bright_orange) < 4.5:
+		return _fail("Shared Figma premium button allows sub-4.5:1 text contrast on bright orange")
+	var direct := FigmaReferenceCanvas.accessible_text_color(Color.WHITE, bright_orange)
+	if FigmaReferenceCanvas.contrast_ratio(direct, bright_orange) < 4.5:
+		return _fail("Figma accessible_text_color does not meet the production contrast floor")
+	return true
+
+func _validate_header_badge_clearance() -> bool:
+	root.size = Vector2i(1080, 1920)
+	var packed := load("res://scenes/Main.tscn") as PackedScene
+	var main := packed.instantiate() as Control
+	root.add_child(main)
+	main.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	await _frames(8)
+	main.call("build_settings")
+	await _frames(6)
+	var title := main.find_child("FigmaHeaderTitle", true, false) as Control
+	var subtitle := main.find_child("FigmaHeaderSubtitle", true, false) as Control
+	var pill := main.find_child("FigmaHeaderPill", true, false) as Control
+	if title == null or subtitle == null or pill == null:
+		main.queue_free(); await process_frame
+		return _fail("Shared Figma header diagnostics are incomplete")
+	var title_rect := title.get_global_rect()
+	var subtitle_rect := subtitle.get_global_rect()
+	var pill_rect := pill.get_global_rect()
+	if title_rect.intersects(pill_rect) or subtitle_rect.intersects(pill_rect):
+		main.queue_free(); await process_frame
+		return _fail("Shared Figma header title/subtitle intrudes into the status pill: title=%s subtitle=%s pill=%s" % [str(title_rect), str(subtitle_rect), str(pill_rect)])
+	main.queue_free()
+	await process_frame
+	return true
+
+func _validate_shop_header_clearance() -> bool:
+	root.size = Vector2i(1080, 1920)
+	var packed := load("res://scenes/Main.tscn") as PackedScene
+	var main := packed.instantiate() as Control
+	root.add_child(main)
+	main.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	await _frames(8)
+	var hub := main.get_node_or_null("MonetizationHub")
+	if hub == null or not hub.has_method("open_shop"):
+		main.queue_free(); await process_frame
+		return _fail("Shop hub unavailable for header clearance check")
+	hub.call("open_shop")
+	await _frames(6)
+	var title := main.find_child("ShopTitle3D", true, false) as Control
+	var subtitle := main.find_child("ShopSubtitle", true, false) as Control
+	var wallet := main.find_child("ShopCoinPill", true, false) as Control
+	if title == null or subtitle == null or wallet == null:
+		main.queue_free(); await process_frame
+		return _fail("Shop header diagnostics are incomplete")
+	var title_rect := title.get_global_rect()
+	var subtitle_rect := subtitle.get_global_rect()
+	var wallet_rect := wallet.get_global_rect()
+	if title_rect.intersects(wallet_rect) or subtitle_rect.intersects(wallet_rect):
+		main.queue_free(); await process_frame
+		return _fail("Shop header title/subtitle intrudes into the wallet pill: title=%s subtitle=%s wallet=%s" % [str(title_rect), str(subtitle_rect), str(wallet_rect)])
+	main.queue_free()
+	await process_frame
+	return true
+
+func _validate_selector_header_and_navigation() -> bool:
+	root.size = Vector2i(1080, 1920)
+	var packed := load("res://scenes/Main.tscn") as PackedScene
+	var main := packed.instantiate() as Control
+	root.add_child(main)
+	main.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	await _frames(8)
+	main.call("_open_games_surface")
+	await _frames(8)
+	var title := main.find_child("SelectorTitle3D", true, false) as Control
+	var subtitle := main.find_child("SelectorSubtitle", true, false) as Control
+	var settings := main.find_child("SelectorSettingsButton", true, false) as Button
+	var back := main.find_child("SelectorBackButton", true, false) as Button
+	if title == null or subtitle == null or settings == null or back == null:
+		main.queue_free(); await process_frame
+		return _fail("Choose-a-Game header/navigation diagnostics are incomplete")
+	var title_rect := title.get_global_rect()
+	var subtitle_rect := subtitle.get_global_rect()
+	var settings_rect := settings.get_global_rect()
+	if title_rect.intersects(settings_rect) or subtitle_rect.intersects(settings_rect):
+		main.queue_free(); await process_frame
+		return _fail("Choose-a-Game title/subtitle intrudes into Settings: title=%s subtitle=%s settings=%s" % [str(title_rect), str(subtitle_rect), str(settings_rect)])
+	if back.tooltip_text.is_empty() or settings.tooltip_text.is_empty():
+		main.queue_free(); await process_frame
+		return _fail("Choose-a-Game icon navigation lacks descriptive tooltips")
+	main.queue_free()
+	await process_frame
+	return true
+
+func _validate_exact_touch_target_floor() -> bool:
+	root.size = Vector2i(1080, 1920)
+	var packed := load("res://scenes/Main.tscn") as PackedScene
+	var main := packed.instantiate() as Control
+	root.add_child(main)
+	main.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	await _frames(8)
+	if not _figma_buttons_meet_floor(main, "Home"):
+		main.queue_free(); await process_frame
+		return false
+
+	for build_name in ["build_daily_games", "build_collection", "build_collection_upgrades", "build_settings"]:
+		main.call(build_name)
+		await _frames(3)
+		if not _figma_buttons_meet_floor(main, String(build_name)):
+			main.queue_free(); await process_frame
+			return false
+
+	for game_id in ["rescue_rush", "water_sort", "block_puzzle"]:
+		main.set("selected_game_id", game_id)
+		if game_id == "rescue_rush":
+			main.call("build_level_select")
+		else:
+			main.call("build_multi_level_select")
+		await _frames(3)
+		if not _figma_buttons_meet_floor(main, "%s level select" % game_id):
+			main.queue_free(); await process_frame
+			return false
+
+	var hub := main.get_node_or_null("MonetizationHub")
+	if hub != null and hub.has_method("open_shop"):
+		hub.call("open_shop")
+		await _frames(4)
+		if not _figma_buttons_meet_floor(main, "Shop"):
+			main.queue_free(); await process_frame
+			return false
+	main.queue_free()
+	await process_frame
+	return true
+
+func _figma_buttons_meet_floor(node: Node, context: String) -> bool:
+	for found in node.find_children("*", "Button", true, false):
+		var button := found as Button
+		if button == null or not button.visible or not bool(button.get_meta("unjam_figma_exact_geometry", false)):
+			continue
+		if button.size.x + 0.01 < 44.0 or button.size.y + 0.01 < 44.0:
+			return _fail("%s exact button is below 44x44: %s %.1fx%.1f" % [context, button.name, button.size.x, button.size.y])
+	return true
+
+func _validate_dead_code_cleanup() -> bool:
+	var retired := {
+		"res://scripts/systems/hint_manager.gd": ["func can_afford_hint("],
+		"res://scripts/core/multi_game_manager.gd": ["func can_start_daily("],
+		"res://scripts/systems/economy_manager.gd": ["func collection_daily_reward("],
+		"res://scripts/ui/device_fit.gd": ["func content_rect("],
+		"res://scripts/ui/figma_reference_canvas.gd": ["func ref_rect("],
+		"res://scripts/ui/premium_live_hub.gd": ["const DESCRIPTIONS"],
+		"res://scripts/ui/unjam_3d_theme.gd": ["const DEEP_BLUE", "const PINK"],
+		"res://scripts/game/block_puzzle_premium_layout.gd": ["const PREMIUM_CELL_MIN"],
+		"res://scripts/ui/premium_main_casual.gd": ["const FIGMA_BG_MID", "const FIGMA_DARK_MID", "const FIGMA_PURPLE", "func _setting_button(", "func _daily_game_card(", "func _add_secondary_nav(", "func _journey_metric(", "func _collection_game_card(", "func _inject_block_modes(", "func _inject_journey_summary(", "func _continue_campaign("],
+		"res://scripts/ui/premium_home_casual.gd": ["func _make_tagline(", "func _make_sign_stack("],
+		"res://scripts/ui/premium_home_direct_levels.gd": ["func _open_game_levels(", "func _select_and_open_game("],
+		"res://scripts/ui/ux_shell_casual.gd": ["func _layout_tutorial_panel(", "func _layout_help_button(", "func _restyle_3d_shell("],
+		"res://scripts/ui/robust_main.gd": ["func _add_journey_card("],
+		"res://scripts/game/water_sort_reference_motion.gd": ["func _transfer_amount("],
+		"res://scripts/game/rescue_rush_polished.gd": ["func _route_from("],
+		"res://scripts/ui/water_tube_button.gd": ["func _draw_round_rect_border("],
+		"res://scripts/ui/monetization_hub_3d.gd": ["const SHOP_DARK_BG_TOP", "const SHOP_DARK_BG_MID", "const SHOP_DARK_BG_BOTTOM", "const SHOP_DARK_CARD", "const SHOP_DARK_INK", "const SHOP_DARK_MUTED"]
+	}
+	for dead_path in retired:
+		var source := _source(dead_path)
+		for token in retired[dead_path]:
+			if source.contains(String(token)):
+				return _fail("Verified dead source returned: %s in %s" % [token, dead_path])
+	var tutorial := _source("res://scripts/ui/ux_shell_casual.gd")
+	if not tutorial.contains("TUTORIAL_DARK_NEUTRAL_FALLBACK.lerp"):
+		return _fail("Tutorial compatibility fallback became dead instead of serving the dark-scene contract")
+	return true
+
+func _validate_retention_failure_wiring() -> bool:
+	var rescue := _source("res://scripts/game/game.gd")
+	if rescue.count("RetentionManager.record_level_complete(") != 0:
+		return _fail("Rescue Rush still double-records retention completion")
+	if not rescue.contains("if not daily_mode:\n\t\tRetentionManager.record_level_fail()"):
+		return _fail("Rescue Rush campaign failure does not reset the win streak")
+	var water := _source("res://scripts/game/water_sort_10000.gd")
+	if not water.contains("if not daily_mode:\n\t\tRetentionManager.record_level_fail()"):
+		return _fail("Water Sort campaign failure does not reset the win streak")
+	var block := _source("res://scripts/game/block_puzzle_10000.gd")
+	if not block.contains("if not daily_mode and play_mode == \"campaign\":\n\t\tRetentionManager.record_level_fail()"):
+		return _fail("Block Puzzle campaign failure does not reset the win streak")
 	return true
 
 func _validate_visual_workflow_installs_plugins() -> bool:

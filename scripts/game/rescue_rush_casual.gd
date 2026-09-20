@@ -90,12 +90,14 @@ func _build_figma_rescue(canvas: Control) -> void:
 	RefCanvas.add_shadow(canvas, Rect2(15,15,54,54), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
 	var back := RefCanvas.premium_button("←",22,NAVY,Color(0.97,1.0,0.96),16,Color(0.67,0.90,0.72,0.55),1.4)
 	back.name = "RescueBackAction"
+	back.tooltip_text = "Back to levels"
 	RefCanvas.set_rect(back,15,15,54,54)
 	back.pressed.connect(_quit)
 	canvas.add_child(back)
 	RefCanvas.add_shadow(canvas, Rect2(319,15,54,54), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
 	var retry := RefCanvas.premium_button("↻",23,Color("#088c3d"),Color(0.97,1.0,0.96),16,Color(0.67,0.90,0.72,0.55),1.4)
 	retry.name = "RescueRetryAction"
+	retry.tooltip_text = "Restart level"
 	RefCanvas.set_rect(retry,319,15,54,54)
 	retry.pressed.connect(restart_level)
 	canvas.add_child(retry)

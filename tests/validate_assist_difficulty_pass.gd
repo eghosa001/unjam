@@ -2,7 +2,8 @@ extends SceneTree
 
 func _initialize() -> void:
 	var failures: Array[String] = []
-	_require_source("res://scripts/ui/premium_home_direct_levels.gd", ["open_game_campaign", "rescue_rush", "water_sort", "block_puzzle"], "Home direct game-level shortcuts", failures)
+	_require_source("res://scripts/ui/premium_home_direct_levels.gd", ["func _continue_selected_game", "start_level", "start_multi_level", "Callable(self, \"_open_game_selector\")", "rescue_rush", "water_sort", "block_puzzle"], "Home active game-level navigation", failures)
+	_require_source("res://scripts/ui/premium_home_casual.gd", ["func _open_game_selector()", "current_surface", "FeedbackManager.tap()"], "Inherited Home game selector", failures)
 	_require_source("res://scripts/game/block_puzzle_final_polish.gd", ["func block_progression_band", "func _best_hint_placement", "func show_hint", "place_selected"], "Block Puzzle progression and executing hint", failures)
 	_require_source("res://scripts/ui/smooth_block_piece_button.gd", ["func _finish_touch_drag", "_hide_touch_preview(true)", "place_piece_from_drag"], "Block Puzzle single-copy drop lifecycle", failures)
 	_require_source("res://scripts/game/water_sort_assisted.gd", ["func add_extra_tube", "func _best_water_move", "func show_hint", "select_tube"], "Water Sort solver hint and extra tube", failures)

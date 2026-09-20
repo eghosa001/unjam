@@ -36,17 +36,6 @@ func refresh() -> void:
 		_last_safe_margins = safe_margins
 		safe_area_changed.emit(safe_margins)
 
-func content_rect() -> Rect2:
-	var viewport := get_viewport()
-	var size := viewport.get_visible_rect().size if viewport != null else _last_viewport_size
-	return Rect2(
-		Vector2(safe_margins.x, safe_margins.y),
-		Vector2(
-			maxf(0.0, size.x - safe_margins.x - safe_margins.z),
-			maxf(0.0, size.y - safe_margins.y - safe_margins.w)
-		)
-	)
-
 func _calculate_safe_margins(logical_size: Vector2) -> Vector4:
 	# Headless/desktop environments can return an empty safe area. In that case
 	# there is no cutout to compensate for and all margins stay zero.

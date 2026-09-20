@@ -1,7 +1,6 @@
 extends "res://scripts/game/block_puzzle_polished.gd"
 
 const PREMIUM_CELL_MAX := 90.0
-const PREMIUM_CELL_MIN := 72.0
 
 var run_score_bar: ProgressBar
 var run_line_bar: ProgressBar

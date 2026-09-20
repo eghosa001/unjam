@@ -27,6 +27,18 @@ func _run() -> void:
 		return _fail("Block board is not the Figma 330x330 surface")
 	if tray.size.distance_to(Vector2(354,104)) > 1.0:
 		return _fail("Block tray is not the Figma 354x104 surface")
+	var score_card := game.find_child("BlockScoreCard",true,false) as Control
+	var score := game.get("score_label") as Label
+	var goal := game.get("goal_label") as Label
+	var hint := game.find_child("HintAction",true,false) as Button
+	if score_card == null or score == null or goal == null or hint == null:
+		return _fail("Block score-card diagnostics are incomplete")
+	if score.get_global_rect().intersects(goal.get_global_rect()) or goal.get_global_rect().intersects(hint.get_global_rect()):
+		return _fail("Block score/objective/hint columns overlap")
+	if not score_card.get_global_rect().encloses(goal.get_global_rect()):
+		return _fail("Block objective text escapes the score card")
+	if goal.autowrap_mode == TextServer.AUTOWRAP_OFF or not goal.clip_text:
+		return _fail("Block objective text is not bounded for late-game goals")
 	if piece_row.custom_minimum_size.y < 71.0 or piece_row.custom_minimum_size.y > 73.0:
 		return _fail("Block piece row drifted from the 72px Figma tray slot height")
 	if game.find_child("BlockPuzzle3DEnvironment",true,false) != null:

@@ -125,12 +125,14 @@ func _build_figma_block(canvas: Control) -> void:
 	FigmaReferenceCanvas.add_shadow(canvas, Rect2(15,15,54,54), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
 	var back := FigmaReferenceCanvas.premium_button("←", 22, Color(0.03,0.23,0.47), Color(0.98,0.96,1.0), 16, Color(0.84,0.68,0.98,0.52), 1.4)
 	back.name = "BackAction"
+	back.tooltip_text = "Back to levels"
 	FigmaReferenceCanvas.set_rect(back, 15, 15, 54, 54)
 	back.pressed.connect(_quit)
 	canvas.add_child(back)
 	FigmaReferenceCanvas.add_shadow(canvas, Rect2(319,15,54,54), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
 	var retry := FigmaReferenceCanvas.premium_button("↻", 23, Color("#7d21d6"), Color(0.98,0.96,1.0), 16, Color(0.84,0.68,0.98,0.52), 1.4)
 	retry.name = "RetryAction"
+	retry.tooltip_text = "Restart level"
 	FigmaReferenceCanvas.set_rect(retry, 319, 15, 54, 54)
 	retry.pressed.connect(restart_level)
 	canvas.add_child(retry)
@@ -156,15 +158,20 @@ func _build_figma_block(canvas: Control) -> void:
 	score_card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(score_card)
 	score_label = FigmaReferenceCanvas.label("", 22, Color(1,0.995,0.97), true)
-	FigmaReferenceCanvas.set_rect(score_label, 33, 96, 190, 28)
+	score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	FigmaReferenceCanvas.set_rect(score_label, 33, 94, 52, 44)
 	canvas.add_child(score_label)
-	goal_label = FigmaReferenceCanvas.label("", 13, Color(0.96,0.87,1.0), false)
-	FigmaReferenceCanvas.set_rect(goal_label, 33, 120, 240, 20)
+	goal_label = FigmaReferenceCanvas.label("", 12, Color(0.96,0.87,1.0), false)
+	goal_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	goal_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	goal_label.clip_text = true
+	FigmaReferenceCanvas.set_rect(goal_label, 92, 94, 198, 44)
 	canvas.add_child(goal_label)
 
 	FigmaReferenceCanvas.add_shadow(canvas, Rect2(303,87,52,52), 16, Color(0.02,0.10,0.18,0.22), 5, Vector2(0,4))
 	var hint := FigmaReferenceCanvas.premium_button("", 20, Color(1,0.995,0.97), Color("#c73dff"), 16, Color(0.89,0.62,1.0,0.56), 1.3)
 	hint.name = "HintAction"
+	hint.tooltip_text = "Hint"
 	FigmaReferenceCanvas.set_rect(hint, 303, 87, 52, 52)
 	# HintManager owns the actual paid/rewarded hint signal.
 	canvas.add_child(hint)
