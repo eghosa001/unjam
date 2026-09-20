@@ -148,14 +148,19 @@ func _validate_help_does_not_overlap_game_footer() -> bool:
 		await _frames(10)
 		var shell := main.get_node_or_null("UXShell")
 		var help = shell.get("help_button") if shell != null else null
-		var game := main.get_node_or_null("ActiveGame")
-		if help == null or game == null:
+		if help != null and is_instance_valid(help) and help.visible:
 			main.queue_free(); await process_frame
-			return _fail("Missing gameplay help or active game")
-		var footer := _first_named_control(game, ["CompactGameActions", "CompactProgressStrip"])
-		if footer != null and help.get_global_rect().intersects(footer.get_global_rect()):
+			return _fail("Retired floating Help button returned on %s Figma gameplay" % game_id)
+		var game := main.get_node_or_null("ActiveGame") as Control
+		var canvas_name := "FigmaWater390x844" if game_id == "water_sort" else "FigmaBlock390x844"
+		var canvas := game.find_child(canvas_name, true, false) as Control if game != null else null
+		var footer := _first_named_control(game, ["CompactGameActions", "CampaignBoosters"]) if game != null else null
+		if game == null or canvas == null or footer == null:
 			main.queue_free(); await process_frame
-			return _fail("Help button overlaps %s footer" % game_id)
+			return _fail("%s Figma gameplay/footer structure is incomplete" % game_id)
+		if not canvas.get_global_rect().encloses(footer.get_global_rect()):
+			main.queue_free(); await process_frame
+			return _fail("%s footer escapes its audited Figma gameplay canvas" % game_id)
 		main.call("build_home")
 		await _frames(5)
 	main.queue_free()
@@ -180,24 +185,40 @@ func _validate_primary_visual_occupancy() -> bool:
 	await _frames(8)
 	main.call("build_home")
 	await _frames(6)
-	var hero := main.find_child("HomeHero3D", true, false) as Control
-	# The dedicated Home composition gate caps the hero below 30% of screen
-	# height so it cannot crowd the CTA. Keep this legacy occupancy check aligned
-	# with that newer standard: dominant width plus at least ~22% vertical presence.
-	if hero == null or hero.size.x < 800.0 or hero.size.y < 420.0:
+
+	var home := main.get_node_or_null("PremiumHome") as Control
+	var canvas := home.find_child("FigmaHome390x844", true, false) as Control if home != null else null
+	var hero := home.find_child("FigmaHomeHero", true, false) as Control if home != null else null
+	var primary := home.find_child("HomePrimaryAction", true, false) as Control if home != null else null
+	if canvas == null or hero == null or primary == null:
 		main.queue_free(); await process_frame
-		return _fail("Home 3D hero does not occupy enough of the premium composition on 1080x1920")
+		return _fail("Figma Home primary visual hierarchy is incomplete")
+	if hero.size.distance_to(Vector2(346,224)) > 1.0:
+		main.queue_free(); await process_frame
+		return _fail("Figma Home hero drifted from audited 346x224 geometry")
+	if hero.get_global_rect().size.x < 760.0 or hero.get_global_rect().size.y < 480.0:
+		main.queue_free(); await process_frame
+		return _fail("Figma Home hero no longer has dominant physical presence on 1080x1920")
+	if hero.get_global_rect().intersects(primary.get_global_rect()):
+		main.queue_free(); await process_frame
+		return _fail("Figma Home hero overlaps its primary action")
+
 	main.call("start_multi_level", "water_sort", 1, false)
 	await _frames(10)
 	var game := main.get_node_or_null("ActiveGame")
+	var water_canvas := game.find_child("FigmaWater390x844", true, false) as Control if game != null else null
+	var stage := game.find_child("GameplayStage", true, false) as Control if game != null else null
 	var board = game.get("board") if game != null else null
-	if board == null or board.get_child_count() < 1:
+	if water_canvas == null or stage == null or board == null or board.get_child_count() < 1:
 		main.queue_free(); await process_frame
-		return _fail("Water Sort board missing during visual occupancy check")
+		return _fail("Water Sort Figma stage/board missing during visual occupancy check")
+	if stage.size.distance_to(Vector2(354,420)) > 1.0:
+		main.queue_free(); await process_frame
+		return _fail("Water Sort stage drifted from audited 354x420 geometry")
 	var tube := board.get_child(0) as Control
-	if tube == null or tube.size.x < 200.0 or tube.size.y < 360.0:
+	if tube == null or tube.custom_minimum_size.x < 42.0 or tube.custom_minimum_size.y < 168.0:
 		main.queue_free(); await process_frame
-		return _fail("Water Sort bottles remain undersized on 1080x1920")
+		return _fail("Water Sort bottles are below the audited Figma gameplay readability floor")
 	main.queue_free()
 	await process_frame
 	return true
