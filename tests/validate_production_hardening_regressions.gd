@@ -18,6 +18,7 @@ func _run() -> void:
 	if not await _validate_selector_header_and_navigation(): return
 	if not await _validate_exact_touch_target_floor(): return
 	if not _validate_dead_code_cleanup(): return
+	if not _validate_retention_failure_wiring(): return
 	if not _validate_visual_workflow_installs_plugins(): return
 	if not _validate_main_ci_runs_new_hardening_gates(): return
 	if not _validate_release_workflow_exists(): return
@@ -374,7 +375,14 @@ func _validate_dead_code_cleanup() -> bool:
 		"res://scripts/ui/premium_live_hub.gd": ["const DESCRIPTIONS"],
 		"res://scripts/ui/unjam_3d_theme.gd": ["const DEEP_BLUE", "const PINK"],
 		"res://scripts/game/block_puzzle_premium_layout.gd": ["const PREMIUM_CELL_MIN"],
-		"res://scripts/ui/premium_main_casual.gd": ["const FIGMA_BG_MID", "const FIGMA_DARK_MID", "const FIGMA_PURPLE"],
+		"res://scripts/ui/premium_main_casual.gd": ["const FIGMA_BG_MID", "const FIGMA_DARK_MID", "const FIGMA_PURPLE", "func _setting_button(", "func _daily_game_card(", "func _add_secondary_nav(", "func _journey_metric(", "func _collection_game_card(", "func _inject_block_modes(", "func _inject_journey_summary(", "func _continue_campaign("],
+		"res://scripts/ui/premium_home_casual.gd": ["func _make_tagline(", "func _make_sign_stack("],
+		"res://scripts/ui/premium_home_direct_levels.gd": ["func _open_game_levels(", "func _select_and_open_game("],
+		"res://scripts/ui/ux_shell_casual.gd": ["func _layout_tutorial_panel(", "func _layout_help_button(", "func _restyle_3d_shell("],
+		"res://scripts/ui/robust_main.gd": ["func _add_journey_card("],
+		"res://scripts/game/water_sort_reference_motion.gd": ["func _transfer_amount("],
+		"res://scripts/game/rescue_rush_polished.gd": ["func _route_from("],
+		"res://scripts/ui/water_tube_button.gd": ["func _draw_round_rect_border("],
 		"res://scripts/ui/monetization_hub_3d.gd": ["const SHOP_DARK_BG_TOP", "const SHOP_DARK_BG_MID", "const SHOP_DARK_BG_BOTTOM", "const SHOP_DARK_CARD", "const SHOP_DARK_INK", "const SHOP_DARK_MUTED"]
 	}
 	for dead_path in retired:
@@ -385,6 +393,20 @@ func _validate_dead_code_cleanup() -> bool:
 	var tutorial := _source("res://scripts/ui/ux_shell_casual.gd")
 	if not tutorial.contains("TUTORIAL_DARK_NEUTRAL_FALLBACK.lerp"):
 		return _fail("Tutorial compatibility fallback became dead instead of serving the dark-scene contract")
+	return true
+
+func _validate_retention_failure_wiring() -> bool:
+	var rescue := _source("res://scripts/game/game.gd")
+	if rescue.count("RetentionManager.record_level_complete(") != 0:
+		return _fail("Rescue Rush still double-records retention completion")
+	if not rescue.contains("if not daily_mode:\n\t\tRetentionManager.record_level_fail()"):
+		return _fail("Rescue Rush campaign failure does not reset the win streak")
+	var water := _source("res://scripts/game/water_sort_10000.gd")
+	if not water.contains("if not daily_mode:\n\t\tRetentionManager.record_level_fail()"):
+		return _fail("Water Sort campaign failure does not reset the win streak")
+	var block := _source("res://scripts/game/block_puzzle_10000.gd")
+	if not block.contains("if not daily_mode and play_mode == \"campaign\":\n\t\tRetentionManager.record_level_fail()"):
+		return _fail("Block Puzzle campaign failure does not reset the win streak")
 	return true
 
 func _validate_visual_workflow_installs_plugins() -> bool:
