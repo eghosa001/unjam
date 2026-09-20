@@ -26,7 +26,7 @@ func configure(title_value: String, subtitle_value: String, stats_value: String,
 	title_text = title_value
 	subtitle_text = subtitle_value
 	stats_text = stats_value
-	stars = clampi(star_count, 1, 3)
+	stars = clampi(star_count, 0, 3)
 	accent = color
 	button_text = action_text
 	badge_text = badge_value

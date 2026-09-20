@@ -296,12 +296,21 @@ func start_daily() -> void:
 
 func start_game_daily(game_id: String) -> void:
 	if _daily_done(game_id):
-		build_home()
+		build_daily_games()
+		return
+	if not MultiGameManager.claim_daily_game(game_id):
+		FeedbackManager.blocked()
+		build_daily_games()
 		return
 	selected_game_id = game_id
+	# Daily challenges are one-shot daily surfaces, not resumable campaign runs.
+	# Always launch today's selected challenge from its authored initial state.
 	if game_id == "rescue_rush":
+		SaveManager.data["active_run"] = {}
+		SaveManager.save()
 		_spawn_rescue(1, true, DailyChallenge.build_today())
 	else:
+		MultiGameManager.clear_checkpoint(game_id)
 		start_multi_level(game_id, MultiGameManager.daily_level(game_id), true)
 
 func start_multi_level(game_id: String, level_number: int, daily: bool = false) -> void:
@@ -414,9 +423,10 @@ func _on_multi_quit(game_id: String) -> void:
 	build_multi_level_select()
 
 func _checkpoint_for(game_id: String) -> Dictionary:
-	if game_id == "rescue_rush":
-		return SaveManager.data.get("active_run", {})
-	return MultiGameManager.checkpoint(game_id)
+	var checkpoint: Dictionary = SaveManager.data.get("active_run", {}) if game_id == "rescue_rush" else MultiGameManager.checkpoint(game_id)
+	if bool(checkpoint.get("daily", false)):
+		return {}
+	return checkpoint
 
 func resume_game(game_id: String) -> void:
 	var checkpoint := _checkpoint_for(game_id)

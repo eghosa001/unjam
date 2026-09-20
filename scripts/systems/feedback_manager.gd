@@ -31,14 +31,14 @@ func _ready() -> void:
 	for i in range(SFX_POOL_SIZE):
 		var sfx := AudioStreamPlayer.new()
 		sfx.name = "CalmSfx%02d" % (i + 1)
-		sfx.volume_db = -4.0
+		sfx.volume_db = -5.5
 		add_child(sfx)
 		sfx_players.append(sfx)
 	player = sfx_players[0]
 
 	music_player = AudioStreamPlayer.new()
 	music_player.name = "CalmAmbientMusic"
-	music_player.volume_db = -23.0
+	music_player.volume_db = -24.5
 	add_child(music_player)
 	music_stream = _build_calm_ambient_loop()
 	music_player.stream = music_stream
@@ -92,10 +92,10 @@ func drop() -> void:
 	_play_chime([329.63, 261.63], 0.145, 0.095, 0.34)
 
 func pour_start() -> void:
-	_play_chime([349.23, 440.0], 0.135, 0.065, 0.30)
+	_play_chime([349.23, 440.0], 0.135, 0.058, 0.26)
 
 func pour_land() -> void:
-	_play_chime([440.0, 523.25, 659.25], 0.180, 0.080, 0.46)
+	_play_chime([440.0, 523.25, 659.25], 0.180, 0.070, 0.40)
 
 func invalid() -> void:
 	blocked()
@@ -131,7 +131,7 @@ func tap() -> void:
 	apply_settings()
 	# A tiny wooden tick: audible enough for confirmation, quiet enough for
 	# repeated menu use.
-	_play_chime([392.0], 0.080, 0.050, 0.24)
+	_play_chime([392.0], 0.080, 0.042, 0.20)
 
 func blocked() -> void:
 	# Low, rounded two-note fall. Avoid sub-200 Hz buzzy sine errors.

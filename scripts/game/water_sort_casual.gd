@@ -231,32 +231,32 @@ func _apply_tube_layout() -> void:
 	var count := tubes.size()
 	if count <= 0:
 		return
-	var columns := 5 if count <= 5 else (3 if count <= 6 else (4 if count <= 8 else 5))
+
+	# The audited stage is 354×420. Fit every production configuration (up to
+	# 14 generated tubes, plus the optional assist tube) inside it instead of
+	# letting a third row overlap the move/status/action layers below.
+	var columns := count if count <= 5 else (3 if count <= 6 else (4 if count <= 8 else (5 if count <= 10 else (4 if count <= 12 else 5))))
 	var rows := int(ceil(float(count) / float(columns)))
-	var tube_size := Vector2(50, 251)
-	var h_gap := 11
-	var v_gap := 14
-	if rows > 1:
-		if count <= 6:
-			tube_size = Vector2(58, 176)
-			h_gap = 28
-			v_gap = 20
-		elif count <= 8:
-			tube_size = Vector2(48, 174)
-			h_gap = 22
-			v_gap = 20
-		else:
-			tube_size = Vector2(42, 168)
-			h_gap = 15
-			v_gap = 18
+	var stage_width := 326.0
+	var stage_height := 390.0
+	var h_gap := 12.0 if columns <= 4 else 10.0
+	var v_gap := 14.0 if rows <= 2 else 10.0
+	var ratio := 4.7 if rows == 1 else (2.65 if rows == 2 else 2.45)
+	var preferred_width := 52.0 if rows == 1 else (68.0 if rows == 2 else 52.0)
+	var width_limit := floorf((stage_width - h_gap * float(maxi(columns - 1, 0))) / float(columns))
+	var row_height_limit := floorf((stage_height - v_gap * float(maxi(rows - 1, 0))) / float(rows))
+	var height_width_limit := row_height_limit / ratio
+	var tube_width := clampf(minf(preferred_width, minf(width_limit, height_width_limit)), 38.0, preferred_width)
+	var tube_size := Vector2(tube_width, tube_width * ratio)
+
 	board.columns = columns
-	board.add_theme_constant_override("h_separation", h_gap)
-	board.add_theme_constant_override("v_separation", v_gap)
+	board.add_theme_constant_override("h_separation", int(h_gap))
+	board.add_theme_constant_override("v_separation", int(v_gap))
 	for child in board.get_children():
 		if child is Control:
 			(child as Control).custom_minimum_size = tube_size
-	var content_w := tube_size.x * columns + float(h_gap * maxi(columns - 1, 0))
-	var content_h := tube_size.y * rows + float(v_gap * maxi(rows - 1, 0))
+	var content_w := tube_size.x * columns + h_gap * float(maxi(columns - 1, 0))
+	var content_h := tube_size.y * rows + v_gap * float(maxi(rows - 1, 0))
 	board.size = Vector2(content_w, content_h)
 	board.custom_minimum_size = Vector2(content_w, content_h)
 	board.position = Vector2(194.0 - content_w * 0.5, 169.0 + (420.0 - content_h) * 0.5)

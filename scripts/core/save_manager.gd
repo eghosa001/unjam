@@ -45,6 +45,7 @@ const DEFAULT_DATA := {
 	"daily_streak": 0,
 	"daily_best_streak": 0,
 	"daily_completed": [],
+	"daily_game_choices": {},
 	"hints_used": 0,
 	"undos_used": 0,
 	"remove_ads": false,

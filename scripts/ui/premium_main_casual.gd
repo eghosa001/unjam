@@ -1,9 +1,9 @@
 extends "res://scripts/ui/premium_main.gd"
 
 const FIGMA_LEVEL_PAGE_SIZE := 20
-const FIGMA_BG_TOP := Color(0.94, 0.99, 1.0)
-const FIGMA_BG_MID := Color("#fafcff")
-const FIGMA_BG_BOTTOM := Color(0.892, 0.9496, 0.988)
+const FIGMA_BG_TOP := Color("#dcebe8")
+const FIGMA_BG_MID := Color("#d4e3e8")
+const FIGMA_BG_BOTTOM := Color("#c3d2df")
 const FIGMA_NAVY := Color(0.03, 0.23, 0.47)
 const FIGMA_INK := Color(0.07, 0.20, 0.35)
 const FIGMA_MUTED := Color(0.31, 0.42, 0.52)
@@ -15,10 +15,10 @@ const FIGMA_ORANGE := Color(1.0, 0.55, 0.12)
 const FIGMA_GOLD := Color(1.0, 0.84, 0.24)
 const FIGMA_PURPLE := Color(0.78, 0.24, 1.0)
 
-const FIGMA_DARK_TOP := Color("#07111d")
-const FIGMA_DARK_MID := Color("#0b1726")
-const FIGMA_DARK_BOTTOM := Color("#101c2d")
-const FIGMA_DARK_CARD := Color("#111d2d")
+const FIGMA_DARK_TOP := Color("#182a3b")
+const FIGMA_DARK_MID := Color("#20384b")
+const FIGMA_DARK_BOTTOM := Color("#29465b")
+const FIGMA_DARK_CARD := Color("#223b50")
 const FIGMA_DARK_INK := Color("#eef7ff")
 const FIGMA_DARK_MUTED := Color("#b6c7d6")
 
@@ -105,13 +105,13 @@ func _figma_surface(active: String, bottom_tint: Color = FIGMA_BG_BOTTOM, top_ti
 	clear_content()
 	content.visible = true
 	content.mouse_filter = Control.MOUSE_FILTER_STOP
-	var resolved_bottom := bottom_tint
-	var resolved_top := top_tint
-	if _dark() and (bottom_tint.get_luminance() > 0.35 or top_tint.get_luminance() > 0.35):
-		var bottom_hint := Color(bottom_tint.r, bottom_tint.g, bottom_tint.b, 1.0).darkened(0.62)
-		var top_hint := Color(top_tint.r, top_tint.g, top_tint.b, 1.0).darkened(0.68)
-		resolved_bottom = FIGMA_DARK_BOTTOM.lerp(bottom_hint, 0.22)
-		resolved_top = FIGMA_DARK_TOP.lerp(top_hint, 0.18)
+	# Every menu starts from a premium neutral palette, then receives only a faint
+	# hint of the requested surface tint. This avoids flat white/black pages while
+	# keeping game-specific greens/blues/purples visually dominant.
+	var opaque_bottom := Color(bottom_tint.r, bottom_tint.g, bottom_tint.b, 1.0)
+	var opaque_top := Color(top_tint.r, top_tint.g, top_tint.b, 1.0)
+	var resolved_bottom := FIGMA_DARK_BOTTOM.lerp(opaque_bottom, 0.07) if _dark() else FIGMA_BG_BOTTOM.lerp(opaque_bottom, 0.16)
+	var resolved_top := FIGMA_DARK_TOP.lerp(opaque_top, 0.06) if _dark() else FIGMA_BG_TOP.lerp(opaque_top, 0.12)
 	var viewport_bg := ColorRect.new()
 	viewport_bg.name = "FigmaSurfaceViewportBackground"
 	viewport_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -128,6 +128,31 @@ func _figma_surface(active: String, bottom_tint: Color = FIGMA_BG_BOTTOM, top_ti
 	FigmaReferenceCanvas.set_rect(bg, 0, 0, 390, 844)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(bg)
+
+	var halo_top := PanelContainer.new()
+	halo_top.name = "SurfaceBackdropHaloTop"
+	halo_top.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	halo_top.modulate.a = 0.20 if not _dark() else 0.16
+	halo_top.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color("#8fb9bd") if not _dark() else Color("#52758a"), 110))
+	FigmaReferenceCanvas.set_rect(halo_top, 268, -68, 205, 205)
+	canvas.add_child(halo_top)
+	canvas.move_child(halo_top, 1)
+
+	var halo_bottom := PanelContainer.new()
+	halo_bottom.name = "SurfaceBackdropHaloBottom"
+	halo_bottom.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	halo_bottom.modulate.a = 0.16 if not _dark() else 0.13
+	halo_bottom.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color("#9bafc4") if not _dark() else Color("#456579"), 100))
+	FigmaReferenceCanvas.set_rect(halo_bottom, -76, 632, 188, 188)
+	canvas.add_child(halo_bottom)
+	canvas.move_child(halo_bottom, 1)
+
+	var ribbon := Polygon2D.new()
+	ribbon.name = "SurfaceBackdropRibbon"
+	ribbon.polygon = PackedVector2Array([Vector2(-32,330),Vector2(420,235),Vector2(420,296),Vector2(-32,390)])
+	ribbon.color = Color("#7198a4", 0.065 if not _dark() else 0.085)
+	canvas.add_child(ribbon)
+	canvas.move_child(ribbon, 1)
 	return canvas
 
 func _figma_text(canvas: Control, text_value: String, rect: Rect2, font_size: int, color: Color = FIGMA_INK, center := false) -> Label:
@@ -275,8 +300,8 @@ func build_settings() -> void:
 
 	var canvas := _figma_surface(
 		"settings",
-		Color(0.09,0.12,0.20) if dark_mode else FIGMA_BG_BOTTOM,
-		Color(0.055,0.08,0.14) if dark_mode else FIGMA_BG_TOP
+		FIGMA_DARK_BOTTOM if dark_mode else FIGMA_BG_BOTTOM,
+		FIGMA_DARK_TOP if dark_mode else FIGMA_BG_TOP
 	)
 	_figma_header(canvas, "SETTINGS", "Make UNJAM feel right for you", "AUTO-SAVE", Color("#1aa8ff"), Callable(self,"build_home"), Callable(), dark_mode)
 	if not dark_mode:
@@ -386,7 +411,7 @@ func build_daily_games() -> void:
 	_remove_active_game()
 	var canvas := _figma_surface("daily", Color("#fff6e6"))
 	var bonus := EconomyManager.collection_daily_bonus()
-	_figma_header(canvas, "DAILY GAMES", "Three fresh challenges every day", "+%d" % bonus, FIGMA_GOLD)
+	_figma_header(canvas, "DAILY GAMES", "Choose one challenge for today", "+%d" % bonus, FIGMA_GOLD)
 	_figma_card(canvas, "DailyIntro", Rect2(17,89,354,64), Color("#fffef8"), Color(1.0,0.847,0.55,0.32), 16)
 	_figma_text(canvas, "TODAY • %s" % _figma_today_label(), Rect2(35,106,220,17), 14, FIGMA_INK)
 
@@ -414,25 +439,28 @@ func _figma_daily_card(canvas: Control, game_id: String, y: float, collection_bo
 	var accent := Unjam3DTheme.game_accent(game_id)
 	_figma_card(canvas, "DailyCard/%s" % game_id, Rect2(17,y,354,106), Color("#fffef8"), Color(1.0,0.847,0.55,0.32), 18)
 	_figma_text(canvas, MultiGameManager.display_name(game_id).to_upper(), Rect2(33,y+18,150,21), 17, accent)
-	var detail := "Fresh generated rescue" if game_id == "rescue_rush" else "Daily level %d" % MultiGameManager.daily_level(game_id)
+	var detail := "TODAY’S RESCUE" if game_id == "rescue_rush" else ("TODAY’S SORT" if game_id == "water_sort" else "TODAY’S BLOCK RUN")
 	_figma_text(canvas, detail, Rect2(33,y+48,175,15), 12, FIGMA_MUTED)
 	var reward := "+%d COINS" % (100 + collection_bonus) if game_id == "rescue_rush" else "+%d–%d COINS" % [125 + collection_bonus,175 + collection_bonus]
 	_figma_text(canvas, reward, Rect2(33,y+72,130,16), 13, FIGMA_ORANGE)
 	var done := _daily_done(game_id)
-	var fill := FIGMA_GREEN if done else accent
+	var chosen := MultiGameManager.daily_selected_game()
+	var locked := not chosen.is_empty() and chosen != game_id
+	var fill := FIGMA_GREEN if done else (Color("#718696") if locked else accent)
+	var button_text := "COMPLETED" if done else ("LOCKED TODAY" if locked else "PLAY TODAY")
 	var button := _figma_button(
 		canvas,
 		"DailyPlay/%s" % game_id,
-		"COMPLETED" if done else "PLAY DAILY",
-		Rect2(244,y+42,108,48),
+		button_text,
+		Rect2(236,y+42,116,48),
 		fill,
 		Callable(),
 		FIGMA_OFF_WHITE,
 		14,
-		12
+		11
 	)
-	button.disabled = done
-	if not done:
+	button.disabled = done or locked
+	if not done and not locked:
 		button.pressed.connect(start_game_daily.bind(game_id))
 
 func _daily_game_card(game_id: String, collection_bonus: int) -> PanelContainer:
@@ -451,9 +479,7 @@ func _daily_game_card(game_id: String, collection_bonus: int) -> PanelContainer:
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(title)
 
-	var challenge_text := "Fresh generated rescue"
-	if game_id != "rescue_rush":
-		challenge_text = "Daily level %d" % MultiGameManager.daily_level(game_id)
+	var challenge_text := "TODAY’S RESCUE" if game_id == "rescue_rush" else ("TODAY’S SORT" if game_id == "water_sort" else "TODAY’S BLOCK RUN")
 	var challenge := _label(challenge_text, 16, "body", accent)
 	challenge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(challenge)
@@ -475,10 +501,13 @@ func _daily_game_card(game_id: String, collection_bonus: int) -> PanelContainer:
 	perk.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	box.add_child(perk)
 
-	var play := _button("COMPLETED TODAY" if done else "PLAY DAILY", Vector2(0, 68), "success" if done else "primary", game_id)
+	var chosen := MultiGameManager.daily_selected_game()
+	var locked := not chosen.is_empty() and chosen != game_id
+	var play_text := "COMPLETED TODAY" if done else ("LOCKED TODAY" if locked else "PLAY TODAY")
+	var play := _button(play_text, Vector2(0, 68), "success" if done else "primary", game_id)
 	play.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	play.disabled = done
-	if not done:
+	play.disabled = done or locked
+	if not done and not locked:
 		play.pressed.connect(start_game_daily.bind(game_id))
 	box.add_child(play)
 	return card

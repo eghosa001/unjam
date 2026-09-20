@@ -218,6 +218,19 @@ func _run() -> void:
 			push_error("Water motion capture never exposed PourStream")
 		await _wait_until_water_idle(water_game)
 		await _capture("10d-game-water-settled-540x960")
+
+	# Late Water Sort levels can render 13–14 generated bottles. Keep an exact
+	# compact-phone evidence frame so future layout changes cannot reintroduce
+	# the lower-layer overlap fixed by the 15-tube-safe fitter.
+	main.call("start_multi_level", "water_sort", 10000, false)
+	await _settle(12)
+	_hide_tutorial(shell)
+	await _capture("10f-game-water-level10000-540x960")
+	var late_water = main.get("active_game")
+	if late_water != null and is_instance_valid(late_water):
+		var late_board := late_water.get("board") as GridContainer
+		if late_board == null or late_board.position.y < 169.0 or late_board.position.y + late_board.size.y > 589.5:
+			push_error("Late Water Sort board escaped the compact gameplay stage")
 	root.size = Vector2i(1080, 1920)
 	await _settle(6)
 

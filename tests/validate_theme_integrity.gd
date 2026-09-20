@@ -62,7 +62,7 @@ func _run() -> void:
 
 	var tutorial_source := _read("res://scripts/ui/ux_shell_casual.gd")
 	var result_source := _read("res://scripts/ui/premium_result_overlay.gd")
-	for token in ["theme_mode == \"dark\"", "Color(\"#07111d\")", "Color(\"#172238\")"]:
+	for token in ["theme_mode == \"dark\"", "Color(\"#182a3b\")", "Color(\"#172238\")"]:
 		if not tutorial_source.contains(token):
 			return _fail("How To Play dark-theme contract is missing: %s" % token)
 	for token in ["func _dark_theme()", "Color(\"#172238\") if dark", "Color(\"#eef7ff\") if dark"]:
@@ -75,8 +75,8 @@ func _run() -> void:
 	main.call("build_home")
 	await _frames(6)
 	var light_bg := main.find_child("FigmaHomeViewportBackground", true, false) as ColorRect
-	if light_bg == null or light_bg.color.get_luminance() < 0.65:
-		return _fail("Light theme no longer restores the bright Home canvas")
+	if light_bg == null or light_bg.color.get_luminance() < 0.52 or light_bg.color.get_luminance() > 0.88:
+		return _fail("Light theme is outside the premium tinted-neutral range")
 
 	var feedback := root.get_node_or_null("FeedbackManager")
 	if feedback != null and feedback.has_method("shutdown_audio"):
@@ -89,8 +89,8 @@ func _assert_dark_color_rect(parent: Node, node_name: String) -> bool:
 	var bg := parent.find_child(node_name, true, false) as ColorRect
 	if bg == null:
 		return _fail("Missing theme background: %s" % node_name)
-	if bg.color.get_luminance() > 0.26:
-		return _fail("%s is still too bright in dark mode (luminance %.3f)" % [node_name, bg.color.get_luminance()])
+	if bg.color.get_luminance() > 0.38 or bg.color.get_luminance() < 0.10:
+		return _fail("%s is outside the premium dark-neutral luminance range (%.3f)" % [node_name, bg.color.get_luminance()])
 	return true
 
 func _read(path: String) -> String:

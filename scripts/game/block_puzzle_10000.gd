@@ -207,9 +207,11 @@ func load_level() -> void:
 		render()
 		_save_checkpoint()
 	else:
-		if play_mode in ["campaign", "extreme"] and ((campaign_move_limit > 0 and placements >= campaign_move_limit and not reached_goal()) or not any_move_available()):
-			campaign_failed = true
 		render()
+		if play_mode in ["campaign", "extreme"] and campaign_move_limit > 0 and placements >= campaign_move_limit and not reached_goal():
+			call_deferred("_fail_campaign", "MOVE LIMIT REACHED")
+		elif play_mode in ["campaign", "extreme"] and not any_move_available():
+			call_deferred("_fail_campaign", "NO LEGAL MOVES")
 	AnalyticsManager.track("block_puzzle_attempt_started", {
 		"level": level_number,
 		"mode": play_mode,
@@ -947,9 +949,9 @@ func _to_int_array(raw: Variant) -> Array[int]:
 	return out
 
 func _save_checkpoint() -> void:
-	super._save_checkpoint()
 	if daily_mode or completed:
 		return
+	super._save_checkpoint()
 	var checkpoint := MultiGameManager.checkpoint(GAME_ID)
 	if checkpoint.is_empty():
 		return
@@ -964,6 +966,8 @@ func _save_checkpoint() -> void:
 	MultiGameManager.save_checkpoint(GAME_ID, checkpoint)
 
 func _restore_checkpoint() -> void:
+	if daily_mode:
+		return
 	var checkpoint := MultiGameManager.checkpoint(GAME_ID)
 	if checkpoint.is_empty() or int(checkpoint.get("level", -1)) != level_number:
 		return
@@ -1010,11 +1014,25 @@ func _track_attempt_end(outcome: String, success: bool) -> void:
 		"difficulty_score": int(campaign_profile.get("difficulty_score", -1))
 	})
 
+func _handle_no_legal_moves() -> void:
+	if play_mode == "zen" and not daily_mode:
+		_reset_zen_board()
+		return
+	if play_mode == "endless" and not daily_mode:
+		_record_mode_best()
+		_fail_campaign("ENDLESS RUN OVER • SCORE %d" % score)
+		return
+	_fail_campaign("NO LEGAL MOVES")
+
 func _fail_campaign(reason: String) -> void:
+	var existing_failure := find_child("BlockFailureResult", true, false)
+	if existing_failure != null:
+		return
 	campaign_failed = true
 	selected_piece = -1
 	status_label.text = reason
 	FeedbackManager.blocked()
+	_track_attempt_end("failed", false)
 	AnalyticsManager.track("block_puzzle_attempt_blocked", {
 		"level": level_number,
 		"reason": reason,
@@ -1025,3 +1043,28 @@ func _fail_campaign(reason: String) -> void:
 	})
 	render()
 	_save_checkpoint()
+	var result := PremiumResultOverlay.new()
+	result.name = "BlockFailureResult"
+	result.configure(
+		"BLOCK PUZZLE FAILED",
+		"No valid placement remains.",
+		"SCORE %d   •   %d LINES\n%d PLACEMENTS" % [score, lines_cleared, placements],
+		0,
+		Color("8b7cf6"),
+		"RETRY",
+		"NO MOVES"
+	)
+	result.configure_secondary("BACK HOME" if daily_mode else "BACK TO LEVELS", true)
+	add_child(result)
+	result.continue_requested.connect(func() -> void:
+		if is_instance_valid(result): result.queue_free()
+		restart_level()
+	)
+	result.secondary_requested.connect(func() -> void:
+		MultiGameManager.clear_checkpoint(GAME_ID)
+		if daily_mode:
+			finished.emit(-1)
+		else:
+			quit_requested.emit()
+		queue_free()
+	)

@@ -10,6 +10,7 @@ var _last_rendered_pour_feedback_sequence := 0
 var level_profile: Dictionary = {}
 var generation_meta: Dictionary = {}
 var two_star_moves := 0
+var failed := false
 
 func build_ui() -> void:
 	super.build_ui()
@@ -35,6 +36,7 @@ func level_config() -> Dictionary:
 	}
 
 func load_level() -> void:
+	failed = false
 	_pour_flow_streak = 0
 	_pour_feedback_sequence = 0
 	_last_rendered_pour_feedback_sequence = 0
@@ -71,6 +73,7 @@ func load_level() -> void:
 		]
 	render_board()
 	_refresh_extra_tube_button()
+	call_deferred("_check_no_legal_pours")
 
 func render_board() -> void:
 	super.render_board()
@@ -415,6 +418,58 @@ func _shuffle_int_array(values: Array[int], rng: RandomNumberGenerator) -> void:
 		var tmp := values[i]
 		values[i] = values[j]
 		values[j] = tmp
+
+func _has_any_legal_pour() -> bool:
+	for from_idx in range(tubes.size()):
+		for to_idx in range(tubes.size()):
+			if from_idx != to_idx and can_pour(from_idx, to_idx):
+				return true
+	return false
+
+func _refresh_idle_status_after_pours() -> void:
+	super._refresh_idle_status_after_pours()
+	_check_no_legal_pours()
+
+func _check_no_legal_pours() -> void:
+	if failed or completed or pending_completion or _has_active_pours():
+		return
+	if is_complete() or _has_any_legal_pour():
+		return
+	_show_no_legal_pours_failure()
+
+func _show_no_legal_pours_failure() -> void:
+	if failed or completed:
+		return
+	failed = true
+	selected = -1
+	status_label.text = "NO LEGAL POURS"
+	FeedbackManager.blocked()
+	MultiGameManager.clear_checkpoint(GAME_ID)
+	AnalyticsManager.track("water_sort_attempt_failed", {"level": level_number, "moves": moves, "daily": daily_mode, "reason": "no_legal_pours"})
+	var result := PremiumResultOverlay.new()
+	result.configure(
+		"WATER SORT FAILED",
+		"No valid pour remains.",
+		"%d MOVES   •   %d COLOURS\nUNDO OR RETRY EARLIER NEXT TIME" % [moves, color_count],
+		0,
+		Color("5da9ff"),
+		"RETRY",
+		"NO POURS"
+	)
+	result.configure_secondary("BACK HOME" if daily_mode else "BACK TO LEVELS", true)
+	add_child(result)
+	result.continue_requested.connect(func() -> void:
+		if is_instance_valid(result): result.queue_free()
+		failed = false
+		restart_level()
+	)
+	result.secondary_requested.connect(func() -> void:
+		if daily_mode:
+			finished.emit(-1)
+		else:
+			quit_requested.emit()
+		queue_free()
+	)
 
 func complete_level() -> void:
 	if completed:

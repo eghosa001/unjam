@@ -3,7 +3,7 @@ extends "res://scripts/core/save_manager.gd"
 const ROBUST_SAVE_PATH := "user://unjam_save.json"
 const BACKUP_PATH := "user://unjam_save.backup.json"
 const TEMP_PATH := "user://unjam_save.tmp.json"
-const SAVE_VERSION := 12
+const SAVE_VERSION := 13
 
 func _ready() -> void:
 	load_save()
@@ -76,6 +76,8 @@ func _sanitize() -> void:
 		data.stars = {}
 	if not data.get("purchase_claim_ids", {}) is Dictionary:
 		data.purchase_claim_ids = {}
+	if not data.get("daily_game_choices", {}) is Dictionary:
+		data.daily_game_choices = {}
 	for key in ["rescued", "decorations", "daily_completed", "milestone_chests", "world_badges", "achievements", "purchased_products", "processed_purchase_tokens"]:
 		if not data.get(key, []) is Array:
 			data[key] = []

@@ -2,17 +2,17 @@ extends "res://scripts/ui/premium_live_hub.gd"
 
 const RefCanvas = preload("res://scripts/ui/figma_reference_canvas.gd")
 
-const BG_TOP := Color(0.94, 0.99, 1.0)
-const BG_MID := Color(0.98, 0.99, 1.0)
-const BG_BOTTOM := Color(0.892, 0.9496, 0.988)
+const BG_TOP := Color("#dcebe8")
+const BG_MID := Color("#d4e3e8")
+const BG_BOTTOM := Color("#c3d2df")
 const NAVY := Color(0.03, 0.23, 0.47)
 const INK := Color(0.07, 0.20, 0.35)
 const MUTED := Color(0.31, 0.42, 0.52)
 const OFF_WHITE := Color(1.0, 0.995, 0.97)
 const CYAN := Color(0.14, 0.68, 1.0)
-const DARK_TOP := Color("#07111d")
-const DARK_MID := Color("#0b1726")
-const DARK_BOTTOM := Color("#101c2d")
+const DARK_TOP := Color("#182a3b")
+const DARK_MID := Color("#20384b")
+const DARK_BOTTOM := Color("#29465b")
 const DARK_INK := Color("#eef7ff")
 const DARK_MUTED := Color("#b6c7d6")
 

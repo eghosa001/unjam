@@ -33,6 +33,8 @@ func ensure_state()->void:
  SaveManager.data["game_progress"]=all
  if not SaveManager.data.get("multi_active_runs",{}) is Dictionary:SaveManager.data["multi_active_runs"]={}
  if not SaveManager.data.get("daily_tasks",{}) is Dictionary:SaveManager.data["daily_tasks"]={}
+ if not SaveManager.data.get("daily_game_choices",{}) is Dictionary:SaveManager.data["daily_game_choices"]={}
+ _prune_daily_game_choices()
  var task_store:Dictionary=SaveManager.data.get("daily_tasks",{})
  _prune_daily_task_history(task_store)
  SaveManager.data["daily_tasks"]=task_store
@@ -160,6 +162,32 @@ func _prune_daily_task_history(store:Dictionary)->void:
   var expired:=String(dates.pop_front())
   for raw_key in store.keys():
    if String(raw_key).begins_with(expired+":"):store.erase(raw_key)
+
+func _prune_daily_game_choices()->void:
+ var choices:Dictionary=SaveManager.data.get("daily_game_choices",{})
+ var keys:Array=choices.keys()
+ keys.sort()
+ while keys.size()>DAILY_HISTORY_LIMIT:
+  choices.erase(String(keys.pop_front()))
+ SaveManager.data["daily_game_choices"]=choices
+
+func daily_selected_game()->String:
+ ensure_state()
+ var choices:Dictionary=SaveManager.data.get("daily_game_choices",{})
+ var value:=String(choices.get(date_key(),""))
+ return value if value in GAME_IDS else ""
+
+func can_start_daily(id:String)->bool:
+ if id not in GAME_IDS:return false
+ var chosen:=daily_selected_game()
+ return chosen.is_empty() or chosen==id
+
+func claim_daily_game(id:String)->bool:
+ if id not in GAME_IDS:return false
+ ensure_state()
+ var key:=date_key();var choices:Dictionary=SaveManager.data.get("daily_game_choices",{});var chosen:=String(choices.get(key,""))
+ if not chosen.is_empty():return chosen==id
+ choices[key]=id;SaveManager.data["daily_game_choices"]=choices;_prune_daily_game_choices();SaveManager.save();return true
 
 func daily_level(id:String)->int:
  var d:=Time.get_date_dict_from_system();return posmod(int(d.year)*372+int(d.month)*31+int(d.day)+GAME_IDS.find(id)*997,CAMPAIGN_LEVELS)+1

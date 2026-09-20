@@ -14,6 +14,7 @@ var par_moves: int = 8
 var rescue_id: String = "chick"
 var rescue_pos: Vector2i = Vector2i.ZERO
 var rescued: bool = false
+var failed: bool = false
 var pieces: Array[Dictionary] = []
 var history: Array[Dictionary] = []
 var chain_count: int = 0
@@ -339,7 +340,7 @@ func _legal_map() -> Dictionary:
 	return result
 
 func try_move(index: int) -> void:
-	if board_locked or rescued:
+	if board_locked or rescued or failed:
 		return
 	hint_label.text = ""
 	if not is_path_clear(index):
@@ -369,23 +370,58 @@ func try_move(index: int) -> void:
 	await _resolve_cascades(legal_before)
 	await resolve_rescue()
 	if not rescued and objective_type == "perfect_rescue" and moves >= action_budget:
-		await _fail_and_restart("Action budget missed — rescue reset.")
+		await _fail_and_restart("Action budget reached before the rescue.")
+		return
+	if not rescued and not _has_any_legal_move():
+		await _fail_and_restart("No valid arrow can leave the board.")
 		return
 	if not rescued:
 		render_board()
 		_save_checkpoint()
 	board_locked = false
 
+func _has_any_legal_move() -> bool:
+	for i in range(pieces.size()):
+		if is_path_clear(i):
+			return true
+	return false
+
 func _fail_and_restart(message: String) -> void:
+	if failed or rescued:
+		return
+	failed = true
 	board_locked = true
 	if hint_label != null:
 		hint_label.text = message
-	AnalyticsManager.track("rescue_attempt_failed", {"level": level_number, "reason": "mistake_limit"})
-	var tree := get_tree()
-	if tree != null:
-		await tree.create_timer(0.45).timeout
-	if is_inside_tree():
+	_clear_checkpoint(true)
+	FeedbackManager.blocked()
+	AnalyticsManager.track("rescue_attempt_failed", {"level": level_number, "reason": message, "daily": daily_mode})
+	var result := PremiumResultOverlay.new()
+	result.configure(
+		"RESCUE FAILED",
+		message,
+		"%d MOVES   •   %d BLOCKED TAPS\nTRY A DIFFERENT ORDER" % [moves, mistakes_this_level],
+		0,
+		world_accent(),
+		"RETRY",
+		"ROUTE BLOCKED"
+	)
+	result.configure_secondary("BACK HOME" if daily_mode else "BACK TO LEVELS", true)
+	add_child(result)
+	result.continue_requested.connect(func() -> void:
+		if is_instance_valid(result): result.queue_free()
+		failed = false
+		board_locked = false
 		restart_level()
+	)
+	result.secondary_requested.connect(func() -> void:
+		if daily_mode:
+			finished.emit(-1)
+		else:
+			quit_requested.emit()
+		queue_free()
+	)
+	await get_tree().process_frame
 
 func _resolve_cascades(previous_legal: Dictionary) -> void:
 	# Strategic Rescue Rush does not auto-remove every newly opened arrow.
@@ -687,6 +723,7 @@ func restart_level() -> void:
 	chain_count = 0
 	best_chain = 0
 	rescued = false
+	failed = false
 	board_locked = false
 	hints_used_this_level = 0
 	mistakes_this_level = 0
@@ -713,7 +750,7 @@ func _restart_in_place() -> void:
 	render_board()
 
 func _save_checkpoint() -> void:
-	if rescued or level_data.is_empty():
+	if daily_mode or rescued or level_data.is_empty():
 		return
 	SaveManager.data["active_run"] = {
 		"level": level_number,
@@ -732,6 +769,8 @@ func _save_checkpoint() -> void:
 	SaveManager.save()
 
 func _restore_checkpoint() -> void:
+	if daily_mode:
+		return
 	var raw: Variant = SaveManager.data.get("active_run", {})
 	if not raw is Dictionary:
 		return
