@@ -155,6 +155,14 @@ func _run() -> void:
 	await _capture("09b-game-rescue-540x960")
 	var rescue_game = main.get("active_game")
 	if rescue_game != null and is_instance_valid(rescue_game):
+		var rescue_feedback := rescue_game.find_child("RescuePremiumFeedback", true, false)
+		if rescue_feedback != null:
+			rescue_feedback.call("show_banner", "FLOW ×3", Color("#21c763"), Vector2(270,300), 184.0)
+			rescue_feedback.call("show_ring", Vector2(270,470), 120.0, Color("#67e8ff"))
+			await _settle(2)
+			await _capture("09e-game-rescue-premium-feedback-540x960")
+
+	if rescue_game != null and is_instance_valid(rescue_game):
 		var legal_index := -1
 		var rescue_pieces: Array = rescue_game.get("pieces")
 		for i in range(rescue_pieces.size()):
@@ -192,6 +200,14 @@ func _run() -> void:
 	await _settle(8)
 	await _capture("10b-game-water-540x960")
 	var water_game = main.get("active_game")
+	if water_game != null and is_instance_valid(water_game):
+		var water_feedback := water_game.find_child("WaterPremiumFeedback", true, false)
+		if water_feedback != null:
+			water_feedback.call("show_banner", "PERFECT TUBE", Color("#19b9ff"), Vector2(270,300), 194.0)
+			water_feedback.call("show_ring", Vector2(270,470), 104.0, Color("#67e8ff"))
+			await _settle(2)
+			await _capture("10e-game-water-premium-feedback-540x960")
+
 	if water_game != null and is_instance_valid(water_game) and bool(water_game.call("can_show_hint")):
 		water_game.call("show_hint")
 		if await _wait_for_named_motion(water_game, "PourStream", 120):
@@ -210,6 +226,14 @@ func _run() -> void:
 	root.size = Vector2i(540, 960)
 	await _settle(8)
 	await _capture("11b-game-block-540x960")
+	var block_game = main.get("active_game")
+	if block_game != null and is_instance_valid(block_game):
+		var block_feedback := block_game.find_child("BlockPremiumFeedback", true, false)
+		if block_feedback != null:
+			block_feedback.call("show_banner", "COMBO ×3", Color("#ffd166"), Vector2(270,250), 184.0)
+			block_feedback.call("show_sweep", Rect2(70,300,400,320), Color("#ff7a66"))
+			await _settle(2)
+			await _capture("11c-game-block-premium-feedback-540x960")
 	root.size = Vector2i(1080, 1920)
 	await _settle(6)
 
