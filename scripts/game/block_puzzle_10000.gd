@@ -206,6 +206,8 @@ func load_level() -> void:
 		refill_pieces()
 		render()
 		_save_checkpoint()
+		if not any_move_available():
+			call_deferred("_handle_no_legal_moves")
 	else:
 		render()
 		if play_mode in ["campaign", "extreme"] and campaign_move_limit > 0 and placements >= campaign_move_limit and not reached_goal():
@@ -753,8 +755,6 @@ func _refill_free_mode() -> void:
 		pieces.append(CampaignGenerator.SHAPES[shape_index].duplicate())
 		piece_colors.append(COLOR_PALETTE[random.randi_range(0, COLOR_PALETTE.size() - 1)])
 	selected_piece = -1
-	if not any_move_available():
-		pieces[0] = CampaignGenerator.SHAPES[0].duplicate()
 
 func _apply_free_mode_board() -> void:
 	if play_mode == "zen":
