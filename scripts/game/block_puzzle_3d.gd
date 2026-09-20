@@ -125,12 +125,14 @@ func _build_figma_block(canvas: Control) -> void:
 	FigmaReferenceCanvas.add_shadow(canvas, Rect2(15,15,54,54), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
 	var back := FigmaReferenceCanvas.premium_button("←", 22, Color(0.03,0.23,0.47), Color(0.98,0.96,1.0), 16, Color(0.84,0.68,0.98,0.52), 1.4)
 	back.name = "BackAction"
+	back.tooltip_text = "Back to levels"
 	FigmaReferenceCanvas.set_rect(back, 15, 15, 54, 54)
 	back.pressed.connect(_quit)
 	canvas.add_child(back)
 	FigmaReferenceCanvas.add_shadow(canvas, Rect2(319,15,54,54), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
 	var retry := FigmaReferenceCanvas.premium_button("↻", 23, Color("#7d21d6"), Color(0.98,0.96,1.0), 16, Color(0.84,0.68,0.98,0.52), 1.4)
 	retry.name = "RetryAction"
+	retry.tooltip_text = "Restart level"
 	FigmaReferenceCanvas.set_rect(retry, 319, 15, 54, 54)
 	retry.pressed.connect(restart_level)
 	canvas.add_child(retry)
@@ -165,6 +167,7 @@ func _build_figma_block(canvas: Control) -> void:
 	FigmaReferenceCanvas.add_shadow(canvas, Rect2(303,87,52,52), 16, Color(0.02,0.10,0.18,0.22), 5, Vector2(0,4))
 	var hint := FigmaReferenceCanvas.premium_button("", 20, Color(1,0.995,0.97), Color("#c73dff"), 16, Color(0.89,0.62,1.0,0.56), 1.3)
 	hint.name = "HintAction"
+	hint.tooltip_text = "Hint"
 	FigmaReferenceCanvas.set_rect(hint, 303, 87, 52, 52)
 	# HintManager owns the actual paid/rewarded hint signal.
 	canvas.add_child(hint)
