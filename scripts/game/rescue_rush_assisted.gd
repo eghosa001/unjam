@@ -34,7 +34,8 @@ func _show_level_intro() -> void:
 	if milestone == "normal" and role not in ["world_boss", "boss"]:
 		return
 	var label := ("WORLD BOSS" if role == "world_boss" else milestone.replace("_", " ").to_upper())
-	premium_feedback.show_banner(label, Color("#ffd166"), Vector2(195, 178), 210.0)
+	var view := get_viewport_rect().size
+	premium_feedback.show_banner(label, Color("#ffd166"), Vector2(view.x * 0.5, view.y * 0.22), 176.0)
 
 func _spawn_chain_popup(center: Vector2, combo: int) -> void:
 	super._spawn_chain_popup(center, combo)
