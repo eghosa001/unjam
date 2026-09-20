@@ -76,6 +76,7 @@ func _build_reference_home(canvas: Control) -> void:
 	_add_hero(canvas)
 	_add_quick_actions(canvas)
 	_add_quick_switch(canvas)
+	_add_world_showcase(canvas)
 	_add_bottom_nav_reference(canvas)
 
 func _add_frame_background(canvas: Control) -> void:
@@ -256,6 +257,53 @@ func _add_quick_switch(canvas: Control) -> void:
 		tap.pressed.connect(_select_home_game.bind(id))
 		canvas.add_child(tap)
 
+func _home_game_accent(game_id: String) -> Color:
+	match game_id:
+		"water_sort": return Color(0.10, 0.66, 1.0)
+		"block_puzzle": return Color(0.78, 0.24, 1.0)
+		_: return Color(0.13, 0.78, 0.39)
+
+
+func _add_world_showcase(canvas: Control) -> void:
+	var root := Control.new()
+	root.name = "HomeWorldShowcaseRoot"
+	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	RefCanvas.set_rect(root, 0, 0, 390, 844)
+	canvas.add_child(root)
+
+	var accent := _home_game_accent(selected_game)
+	var rect := Rect2(21, 584, 346, 148)
+	RefCanvas.add_shadow(root, rect, 20, Color(0.01,0.06,0.12,0.24 if _home_dark() else 0.15), 6, Vector2(0,4))
+	var panel := PanelContainer.new()
+	panel.name = "HomeWorldShowcasePanel"
+	var top := DARK_CARD.lerp(accent.darkened(0.48), 0.22) if _home_dark() else accent.lightened(0.86)
+	var middle := DARK_CARD.lerp(accent.darkened(0.58), 0.16) if _home_dark() else accent.lightened(0.91)
+	var bottom := Color("#0d1828").lerp(accent.darkened(0.62), 0.15) if _home_dark() else accent.lightened(0.82)
+	panel.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(top, middle, bottom, 20, Color(accent, 0.72 if _home_dark() else 0.42), 1.3, 0.52))
+	RefCanvas.set_rect(panel, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(panel)
+
+	var art := Unjam3DGameArt.new()
+	art.name = "HomeWorldShowcase3D"
+	art.configure(selected_game)
+	RefCanvas.set_rect(art, 31, 594, 194, 128)
+	root.add_child(art)
+
+	var level := _home_current_level(selected_game)
+	var world := MultiGameManager.world_for_game_level(selected_game, level)
+	var next_milestone := int(ceil(float(level) / 25.0)) * 25
+	if next_milestone <= level:
+		next_milestone += 25
+	next_milestone = mini(next_milestone, MultiGameManager.CAMPAIGN_LEVELS)
+
+	_add_text(root, "WORLD SPOTLIGHT", Rect2(235, 599, 118, 16), 11, accent, true)
+	_add_text(root, _short_game_name(selected_game), Rect2(235, 620, 118, 25), 18, NAVY, true)
+	_add_text(root, "WORLD %d • LEVEL %d" % [world, level], Rect2(235, 651, 118, 16), 11, MUTED, true)
+	_add_text(root, "NEXT MILESTONE • %d" % next_milestone, Rect2(235, 679, 118, 16), 10, ORANGE, true)
+	_add_text(root, "One journey • three worlds" if selected_game == "rescue_rush" else "Keep the streak moving", Rect2(235, 704, 118, 14), 9, MUTED, false)
+
+
 func _add_bottom_nav_reference(canvas: Control) -> void:
 	var shell := PanelContainer.new()
 	shell.name = "HomeBottomNav3D"
@@ -395,6 +443,11 @@ func _refresh_home_selection() -> void:
 		figma_canvas.remove_child(old_preview)
 		old_preview.queue_free()
 	_add_hero_preview(figma_canvas, selected_game)
+	var old_showcase := figma_canvas.get_node_or_null("HomeWorldShowcaseRoot")
+	if old_showcase != null:
+		figma_canvas.remove_child(old_showcase)
+		old_showcase.queue_free()
+	_add_world_showcase(figma_canvas)
 	var accents := {
 		"rescue_rush": Color(0.13, 0.78, 0.39),
 		"water_sort": Color(0.10, 0.66, 1.0),
