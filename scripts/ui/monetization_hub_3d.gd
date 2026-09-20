@@ -1,11 +1,5 @@
 extends "res://scripts/ui/monetization_hub.gd"
 
-const SHOP_DARK_BG_TOP := Color("#182a3b")
-const SHOP_DARK_BG_MID := Color("#20384b")
-const SHOP_DARK_BG_BOTTOM := Color("#29465b")
-const SHOP_DARK_CARD := Color("#223b50")
-const SHOP_DARK_INK := Color("#eef7ff")
-const SHOP_DARK_MUTED := Color("#b6c7d6")
 const SHOP_SCENE_TOP := Color("#1b63c5")
 const SHOP_SCENE_MID := Color("#173f98")
 const SHOP_SCENE_BOTTOM := Color("#0a1d58")
