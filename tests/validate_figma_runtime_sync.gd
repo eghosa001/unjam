@@ -246,11 +246,8 @@ func _has_figma_surface(main: Control) -> bool:
 	var content := main.get("content") as Control
 	return content != null and content.find_child("FigmaSurface390x844",true,false) != null
 
-func _button_at(node: Node, expected_pos: Vector2, expected_size: Vector2) -> Button:
-	for button in _buttons(node):
-		if button.position.distance_to(expected_pos) <= 1.0 and button.size.distance_to(expected_size) <= 1.0:
-			return button
-	return null
+func _rect_eq(actual: Rect2, expected: Rect2) -> bool:
+	return actual.position.distance_to(expected.position) <= 1.0 and actual.size.distance_to(expected.size) <= 1.0
 
 func _all_enabled_buttons_bound(node: Control) -> bool:
 	if node == null:
