@@ -15,7 +15,7 @@ func _run() -> void:
 	var failures: Array[String] = []
 	root.size = TALL_VIEWPORT
 	await _check_game_scene("res://scenes/WaterSort.tscn","FigmaWater390x844","GameplayStage",Rect2(17,169,354,420),"CompactGameActions",Rect2(21,627,346,60),failures)
-	await _check_game_scene("res://scenes/Game.tscn","FigmaRescue390x844","RescueBoardPanel",Rect2(21,180,348,348),"CompactGameActions",Rect2(21,569,346,60),failures)
+	await _check_game_scene("res://scenes/Game.tscn","FigmaRescue390x844","RescueBoardPanel",Rect2(21,180,348,348),"CompactGameActions",Rect2(21,638,346,62),failures)
 	for viewport_size in SELECTOR_VIEWPORTS:
 		await _check_selector(viewport_size,failures)
 	if failures.is_empty():
