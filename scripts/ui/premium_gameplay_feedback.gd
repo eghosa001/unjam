@@ -8,9 +8,17 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	z_index = 780
 
+func _visual_scale() -> float:
+	# Effects are authored against the 540-wide QA viewport while gameplay uses
+	# a fixed higher logical resolution. Scale the effect, not the gameplay.
+	return clampf(size.x / 540.0, 1.0, 2.5)
+
 func show_banner(text_value: String, accent: Color, center: Vector2, width: float = 214.0) -> void:
 	if text_value.is_empty():
 		return
+	var visual_scale := _visual_scale()
+	var banner_width := width * visual_scale
+	var banner_height := 46.0 * visual_scale
 	if _active_banner != null and is_instance_valid(_active_banner):
 		_active_banner.queue_free()
 	var panel := PanelContainer.new()
@@ -19,20 +27,20 @@ func show_banner(text_value: String, accent: Color, center: Vector2, width: floa
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(accent.darkened(0.52), 0.94)
 	style.border_color = Color(accent.lightened(0.30), 0.92)
-	style.border_width_left = 2
-	style.border_width_right = 2
-	style.border_width_top = 2
-	style.border_width_bottom = 2
-	style.corner_radius_top_left = 18
-	style.corner_radius_top_right = 18
-	style.corner_radius_bottom_left = 18
-	style.corner_radius_bottom_right = 18
+	style.border_width_left = maxi(2, int(round(2.0 * visual_scale)))
+	style.border_width_right = maxi(2, int(round(2.0 * visual_scale)))
+	style.border_width_top = maxi(2, int(round(2.0 * visual_scale)))
+	style.border_width_bottom = maxi(2, int(round(2.0 * visual_scale)))
+	style.corner_radius_top_left = int(round(18.0 * visual_scale))
+	style.corner_radius_top_right = int(round(18.0 * visual_scale))
+	style.corner_radius_bottom_left = int(round(18.0 * visual_scale))
+	style.corner_radius_bottom_right = int(round(18.0 * visual_scale))
 	style.shadow_color = Color(0.01, 0.04, 0.10, 0.30)
-	style.shadow_size = 8
-	style.shadow_offset = Vector2(0, 5)
+	style.shadow_size = int(round(8.0 * visual_scale))
+	style.shadow_offset = Vector2(0, 5.0 * visual_scale)
 	panel.add_theme_stylebox_override("panel", style)
-	panel.size = Vector2(width, 46)
-	panel.position = center - Vector2(width * 0.5, 23)
+	panel.size = Vector2(banner_width, banner_height)
+	panel.position = center - Vector2(banner_width * 0.5, banner_height * 0.5)
 	panel.pivot_offset = panel.size * 0.5
 	panel.scale = Vector2(0.78, 0.78)
 	panel.modulate.a = 0.0
@@ -43,10 +51,10 @@ func show_banner(text_value: String, accent: Color, center: Vector2, width: floa
 	label.text = text_value
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 17)
+	label.add_theme_font_size_override("font_size", maxi(17, int(round(17.0 * visual_scale))))
 	label.add_theme_color_override("font_color", Color.WHITE)
 	label.add_theme_color_override("font_shadow_color", Color(0,0,0,0.52))
-	label.add_theme_constant_override("shadow_offset_y", 2)
+	label.add_theme_constant_override("shadow_offset_y", maxi(2, int(round(2.0 * visual_scale))))
 	panel.add_child(label)
 
 	if _reduced_motion():
@@ -66,20 +74,22 @@ func show_banner(text_value: String, accent: Color, center: Vector2, width: floa
 	tween.finished.connect(panel.queue_free)
 
 func show_ring(center: Vector2, diameter: float, accent: Color) -> void:
+	var visual_scale := _visual_scale()
+	var scaled_diameter := diameter * visual_scale
 	var ring := Panel.new()
 	ring.name = "PremiumGameplayRing"
 	ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	ring.size = Vector2(diameter, diameter)
+	ring.size = Vector2(scaled_diameter, scaled_diameter)
 	ring.position = center - ring.size * 0.5
 	ring.pivot_offset = ring.size * 0.5
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color.TRANSPARENT
 	style.border_color = Color(accent.lightened(0.28), 0.82)
-	style.border_width_left = 4
-	style.border_width_right = 4
-	style.border_width_top = 4
-	style.border_width_bottom = 4
-	var radius := int(diameter * 0.5)
+	style.border_width_left = maxi(4, int(round(4.0 * visual_scale)))
+	style.border_width_right = maxi(4, int(round(4.0 * visual_scale)))
+	style.border_width_top = maxi(4, int(round(4.0 * visual_scale)))
+	style.border_width_bottom = maxi(4, int(round(4.0 * visual_scale)))
+	var radius := int(scaled_diameter * 0.5)
 	style.corner_radius_top_left = radius
 	style.corner_radius_top_right = radius
 	style.corner_radius_bottom_left = radius
