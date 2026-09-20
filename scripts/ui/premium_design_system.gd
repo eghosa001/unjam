@@ -21,22 +21,22 @@ static func muted(dark: bool) -> Color:
 	return Color("b6c3d4") if dark else Color("6f7f92")
 
 static func canvas(dark: bool) -> Color:
-	return Color("0b1220") if dark else Color("eef2f5")
+	return Color("183149") if dark else Color("d5e2e5")
 
 static func surface(dark: bool) -> Color:
-	return Color("121a29") if dark else Color("f8fafc")
+	return Color("223c52") if dark else Color("e4eeec")
 
 static func surface_2(dark: bool) -> Color:
-	return Color("182538") if dark else Color("e9eef3")
+	return Color("29485f") if dark else Color("d6e5e5")
 
 static func surface_3(dark: bool) -> Color:
-	return Color("22304a") if dark else Color("dfe6ed")
+	return Color("31536b") if dark else Color("cadadd")
 
 static func border(dark: bool) -> Color:
-	return Color("334a67") if dark else Color("c7d1dc")
+	return Color("52738a") if dark else Color("9eb5bd")
 
 static func disabled(dark: bool) -> Color:
-	return Color("202c3f") if dark else Color("e5eaf0")
+	return Color("2a4357") if dark else Color("cbd6d8")
 
 static func game_canvas(game_id: String, dark: bool) -> Color:
 	if not dark:
@@ -45,9 +45,9 @@ static func game_canvas(game_id: String, dark: bool) -> Color:
 			"block_puzzle": return Color("f3f0ff")
 			_: return Color("ecf8f5")
 	match game_id:
-		"water_sort": return Color("06101e")
-		"block_puzzle": return Color("0c0a1b")
-		_: return Color("061411")
+		"water_sort": return Color("173249")
+		"block_puzzle": return Color("241f3d")
+		_: return Color("183a34")
 
 static func box(color: Color, radius: int = 24, edge: Color = Color.TRANSPARENT, edge_width: int = 0, shadow: int = 0, dark: bool = true) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
