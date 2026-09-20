@@ -25,6 +25,12 @@ func _fit_reference_canvas() -> void:
 	if not is_inside_tree():
 		return
 	var available := get_viewport_rect().size
+	var parent_control := get_parent() as Control
+	if parent_control != null and parent_control.size.x > 1.0 and parent_control.size.y > 1.0:
+		# DeviceFit may already have inset the owning top-level surface for a
+		# notch/cutout. Fit inside that actual parent instead of applying a
+		# second full-viewport assumption that would shift the reference frame.
+		available = parent_control.size
 	var factor := minf(available.x / REFERENCE_SIZE.x, available.y / REFERENCE_SIZE.y) * extra_scale
 	scale = Vector2.ONE * factor
 	position = (available - REFERENCE_SIZE * factor) * 0.5
