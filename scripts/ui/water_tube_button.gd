@@ -209,17 +209,3 @@ func _draw_round_rect(rect: Rect2, color: Color, radius: float) -> void:
 	style.corner_radius_bottom_left = int(radius)
 	style.corner_radius_bottom_right = int(radius)
 	draw_style_box(style, rect)
-
-func _draw_round_rect_border(rect: Rect2, color: Color, border: Color, radius: float, width: int) -> void:
-	var style := StyleBoxFlat.new()
-	style.bg_color = color
-	style.corner_radius_top_left = int(radius)
-	style.corner_radius_top_right = int(radius)
-	style.corner_radius_bottom_left = int(radius)
-	style.corner_radius_bottom_right = int(radius)
-	style.border_width_left = width
-	style.border_width_right = width
-	style.border_width_top = width
-	style.border_width_bottom = width
-	style.border_color = border
-	draw_style_box(style, rect)
