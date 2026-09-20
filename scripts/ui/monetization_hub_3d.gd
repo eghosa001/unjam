@@ -6,6 +6,12 @@ const SHOP_DARK_BG_BOTTOM := Color("#29465b")
 const SHOP_DARK_CARD := Color("#223b50")
 const SHOP_DARK_INK := Color("#eef7ff")
 const SHOP_DARK_MUTED := Color("#b6c7d6")
+const SHOP_SCENE_TOP := Color("#1b63c5")
+const SHOP_SCENE_MID := Color("#173f98")
+const SHOP_SCENE_BOTTOM := Color("#0a1d58")
+const SHOP_SCENE_DARK_TOP := Color("#101932")
+const SHOP_SCENE_DARK_MID := Color("#0b1631")
+const SHOP_SCENE_DARK_BOTTOM := Color("#060d22")
 
 var _built_theme := ""
 
@@ -60,26 +66,31 @@ func _build_ui() -> void:
 	overlay.add_child(canvas)
 
 	var bg := PanelContainer.new()
-	var bg_top := SHOP_DARK_BG_TOP if _shop_dark() else Color("#dcebe8")
-	var bg_mid := SHOP_DARK_BG_MID if _shop_dark() else Color("#d4e3e8")
-	var bg_bottom := SHOP_DARK_BG_BOTTOM if _shop_dark() else Color("#c3d2df")
-	var bg_border := Color(0.22,0.36,0.48,0.82) if _shop_dark() else Color("#bad1e3")
+	var bg_top := SHOP_SCENE_DARK_TOP if _shop_dark() else SHOP_SCENE_TOP
+	var bg_mid := SHOP_SCENE_DARK_MID if _shop_dark() else SHOP_SCENE_MID
+	var bg_bottom := SHOP_SCENE_DARK_BOTTOM if _shop_dark() else SHOP_SCENE_BOTTOM
+	var bg_border := Color("#334c78") if _shop_dark() else Color("#5ba6e8")
 	bg.add_theme_stylebox_override("panel",FigmaReferenceCanvas.rounded_gradient3(
 		bg_top,bg_mid,bg_bottom,34,bg_border,1,0.48
 	))
 	FigmaReferenceCanvas.set_rect(bg,0,0,390,844)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(bg)
+	FigmaReferenceCanvas.add_scene_backdrop_layers(canvas, Color("#b078ff"), _shop_dark(), "Shop")
+	var shop_key_light := canvas.get_node_or_null("ShopKeyLight")
+	if shop_key_light != null:
+		shop_key_light.set_meta("unjam_figma_scene_light", true)
 
-	FigmaReferenceCanvas.add_shadow(canvas,Rect2(17,19,52,52),18,Color(0.02,0.15,0.30,0.16),4,Vector2(0,3))
-	var back := FigmaReferenceCanvas.premium_button("‹",27,SHOP_DARK_MUTED if _shop_dark() else Color("#083b78"),Color("#152337") if _shop_dark() else Color("#fffef7"),18,Color(0.30,0.48,0.64,0.82) if _shop_dark() else Color(0.74,0.80,0.95,0.55),1.2)
+	FigmaReferenceCanvas.add_shadow(canvas,Rect2(17,19,52,52),18,Color(0.02,0.15,0.30,0.24),4,Vector2(0,3))
+	var back := FigmaReferenceCanvas.premium_button("‹",27,Color.WHITE,Color("#101a31") if _shop_dark() else Color("#152b52"),18,Color(0.30,0.48,0.64,0.82),1.2)
 	back.name = "ShopBackButton"
 	FigmaReferenceCanvas.set_rect(back,17,19,52,52)
 	back.pressed.connect(_close_shop)
 	canvas.add_child(back)
 
-	_add_text(canvas,"UNJAM SHOP",Rect2(83,21,205,28),23,Color("#123359"))
-	_add_text(canvas,"Useful upgrades • optional rewards",Rect2(83,51,210,15),12,Color("#4f6b85"))
+	var shop_title := _add_text(canvas,"UNJAM SHOP",Rect2(83,21,205,28),23,Color("#fffef7"))
+	FigmaReferenceCanvas.style_display_title(shop_title, Color("#ffb92f"), Color("#071d55"), 2)
+	_add_text(canvas,"Useful upgrades • optional rewards",Rect2(83,51,210,15),12,Color("#c6d9ec"))
 	balance_label = _add_text(canvas,"",Rect2(297,37,60,15),12,Color("#fffef7"))
 	balance_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	FigmaReferenceCanvas.add_shadow(canvas,Rect2(285,21,84,46),23,Color(0.02,0.15,0.30,0.16),3,Vector2(0,2))
@@ -90,6 +101,7 @@ func _build_ui() -> void:
 	wallet.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(wallet)
 	canvas.move_child(wallet,balance_label.get_index())
+	FigmaReferenceCanvas.add_collectible_gem(canvas, Vector2(301,44), 8.0, "ShopCurrencyGem3D")
 
 	_add_product_exact(canvas,StoreManager.PRODUCT_REMOVE_ADS,Rect2(17,91,354,70),"REMOVE ADS","No interstitial interruptions")
 	_add_product_exact(canvas,StoreManager.PRODUCT_STARTER_PACK,Rect2(17,169,354,70),"STARTER PACK","One-time launch boost")
@@ -131,7 +143,7 @@ func _build_ui() -> void:
 	privacy.pressed.connect(PrivacyManager.show_privacy_options)
 	canvas.add_child(privacy)
 
-	status_label = _add_text(canvas,"",Rect2(23,617,342,52),12,Color("#4f6b85"))
+	status_label = _add_text(canvas,"",Rect2(23,617,342,52),12,Color("#c6d9ec"))
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var accent_rail := ColorRect.new()
@@ -210,7 +222,7 @@ func open_shop() -> void:
 
 func _refresh() -> void:
 	if balance_label != null:
-		balance_label.text = "◈ %s" % _compact_coins(EconomyManager.balance())
+		balance_label.text = "   %s" % _compact_coins(EconomyManager.balance())
 
 func _compact_coins(value: int) -> String:
 	if value < 1000:
