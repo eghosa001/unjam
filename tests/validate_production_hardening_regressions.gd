@@ -334,21 +334,32 @@ func _validate_exact_touch_target_floor() -> bool:
 	root.add_child(main)
 	main.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	await _frames(8)
-	main.call("build_settings")
-	await _frames(5)
-	if not _figma_buttons_meet_floor(main, "Settings"):
+	if not _figma_buttons_meet_floor(main, "Home"):
 		main.queue_free(); await process_frame
 		return false
-	main.set("selected_game_id", "block_puzzle")
-	main.call("build_multi_level_select")
-	await _frames(6)
-	if not _figma_buttons_meet_floor(main, "Block level select"):
-		main.queue_free(); await process_frame
-		return false
+
+	for build_name in ["build_daily_games", "build_collection", "build_collection_upgrades", "build_settings"]:
+		main.call(build_name)
+		await _frames(3)
+		if not _figma_buttons_meet_floor(main, String(build_name)):
+			main.queue_free(); await process_frame
+			return false
+
+	for game_id in MultiGameManager.GAME_IDS:
+		main.set("selected_game_id", game_id)
+		if game_id == "rescue_rush":
+			main.call("build_level_select")
+		else:
+			main.call("build_multi_level_select")
+		await _frames(3)
+		if not _figma_buttons_meet_floor(main, "%s level select" % game_id):
+			main.queue_free(); await process_frame
+			return false
+
 	var hub := main.get_node_or_null("MonetizationHub")
 	if hub != null and hub.has_method("open_shop"):
 		hub.call("open_shop")
-		await _frames(5)
+		await _frames(4)
 		if not _figma_buttons_meet_floor(main, "Shop"):
 			main.queue_free(); await process_frame
 			return false
