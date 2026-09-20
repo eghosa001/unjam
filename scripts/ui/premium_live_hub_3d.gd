@@ -106,7 +106,8 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(card)
 
-	_add_text(canvas, title, Rect2(34, rect.position.y + 12.6, 170, 23), 19, OFF_WHITE, true)
+	var game_title := _add_text(canvas, title, Rect2(34, rect.position.y + 12.6, 170, 23), 19, OFF_WHITE, true)
+	RefCanvas.style_display_title(game_title, accent.lightened(0.22), Color("#071d55"), 1)
 	_add_text(canvas, subtitle, Rect2(34, rect.position.y + 39.6, 184, 18), 13, OFF_WHITE, false)
 	var level := maxi(1, MultiGameManager.highest_level(game_id))
 	if level <= 1:
