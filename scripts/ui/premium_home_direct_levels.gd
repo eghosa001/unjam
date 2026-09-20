@@ -202,7 +202,18 @@ func _add_quick_switch(canvas: Control) -> void:
 		var x := float(entry[3])
 		RefCanvas.add_shadow(canvas, Rect2(x, 465, 108, 94), 18, Color(0.02, 0.10, 0.18, 0.13), 4, Vector2(0, 3))
 		var card := PanelContainer.new()
-		card.add_theme_stylebox_override("panel", RefCanvas.solid_box(OFF_WHITE, 18, entry[2], 1.5))
+		card.name = "HomeSwitchCard_%s" % id
+		var accent: Color = entry[2] as Color
+		var card_fill := accent.lightened(0.88) if id == selected_game else OFF_WHITE
+		var border_width := 2.4 if id == selected_game else 1.25
+		card.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(
+			card_fill.lightened(0.04),
+			card_fill,
+			card_fill.darkened(0.035),
+			18,
+			accent,
+			border_width
+		))
 		RefCanvas.set_rect(card, x, 465, 108, 94)
 		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		canvas.add_child(card)
@@ -217,7 +228,7 @@ func _add_quick_switch(canvas: Control) -> void:
 		tap.focus_mode = Control.FOCUS_NONE
 		tap.modulate.a = 0.001
 		RefCanvas.set_rect(tap, x - 4, 459, 116, 106)
-		tap.pressed.connect(_select_and_open_game.bind(id))
+		tap.pressed.connect(_select_home_game.bind(id))
 		canvas.add_child(tap)
 
 func _add_bottom_nav_reference(canvas: Control) -> void:
@@ -228,11 +239,6 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 	RefCanvas.set_rect(shell, 13, 757, 362, 70)
 	shell.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(shell)
-	var active := PanelContainer.new()
-	active.add_theme_stylebox_override("panel", RefCanvas.solid_box(CYAN, 16))
-	RefCanvas.set_rect(active, 15, 767, 62, 48)
-	active.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	canvas.add_child(active)
 	var items := [
 		["HOME", 22.0, Callable(), "HomeNavButton", true],
 		["GAMES", 91.0, Callable(self, "_open_game_selector"), "HomeLevelsNavButton", false],
@@ -241,7 +247,22 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 		["SETTINGS", 298.0, func(): get_parent().call("build_settings"), "HomeSettingsNavButton", false],
 	]
 	for item in items:
-		_add_text(canvas, item[0], Rect2(item[1] - 1.0, 788, 62, 30), 12, Color(0.05, 0.49, 0.86) if item[4] else Color(0.31, 0.43, 0.54), true)
+		var selected: bool = bool(item[4])
+		var nav_color := Color(0.05, 0.49, 0.86) if selected else Color(0.31, 0.43, 0.54)
+		if selected:
+			var dot := PanelContainer.new()
+			dot.name = "HomeNavSelectedDot"
+			dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			dot.add_theme_stylebox_override("panel", RefCanvas.solid_box(CYAN, 4))
+			RefCanvas.set_rect(dot, float(item[1]) + 26.0, 776, 8, 8)
+			canvas.add_child(dot)
+			var underline := PanelContainer.new()
+			underline.name = "HomeNavSelectedUnderline"
+			underline.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			underline.add_theme_stylebox_override("panel", RefCanvas.solid_box(CYAN, 2))
+			RefCanvas.set_rect(underline, float(item[1]) + 12.0, 815, 36, 4)
+			canvas.add_child(underline)
+		_add_text(canvas, item[0], Rect2(item[1] - 1.0, 788, 62, 26), 12, nav_color, true)
 		var hit := Button.new()
 		hit.name = item[3]
 		hit.flat = true
@@ -312,6 +333,18 @@ func _open_daily_games() -> void:
 	if main != null and main.has_method("build_daily_games"):
 		FeedbackManager.tap()
 		main.call("build_daily_games")
+
+func _select_home_game(game_id: String) -> void:
+	if game_id == selected_game:
+		return
+	selected_game = game_id
+	var main := get_parent()
+	if main != null:
+		main.set("selected_game_id", game_id)
+	FeedbackManager.tap()
+	# Re-compose the small reference Home synchronously; cached gradient assets make
+	# this effectively a state swap rather than a costly screen transition.
+	build_home_launcher()
 
 func _select_and_open_game(game_id: String) -> void:
 	selected_game = game_id
