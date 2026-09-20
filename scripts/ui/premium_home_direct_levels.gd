@@ -474,6 +474,7 @@ func _refresh_home_selection() -> void:
 	var title := figma_canvas.get_node_or_null("HomeHeroGameTitle") as Label
 	if title != null:
 		title.text = _short_game_name(selected_game)
+		title.add_theme_font_size_override("font_size", 23 if selected_game == "block_puzzle" else 27)
 		RefCanvas.style_display_title(title, Unjam3DTheme.game_accent(selected_game).lightened(0.18), Color("#071d55"), 2)
 	var meta := figma_canvas.get_node_or_null("HomeHeroGameMeta") as Label
 	if meta != null:
