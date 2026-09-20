@@ -141,12 +141,11 @@ func _draw() -> void:
 	if success_amount > 0.0:
 		rim_color = Color("22c55e")
 
-	# Thick glass lip and base make even a totally empty tube read as an intentional bottle.
+	# Glass lip/base plus the translucent rounded body define the bottle. Avoid
+	# vertical wall strokes inside the silhouette; they read as artificial lines.
 	var lip_center := Vector2(body.get_center().x, body.position.y + 12)
 	draw_arc(lip_center, body.size.x * 0.39, PI, TAU, 36, Color(rim_color, 0.90), 5.5, true)
 	draw_arc(lip_center + Vector2(0, 3), body.size.x * 0.32, PI, TAU, 30, Color(0.92, 0.98, 1.0, 0.40), 2.5, true)
-	draw_line(body.position + Vector2(9, 25), body.position + Vector2(9, body.size.y - 31), Color(rim_color, 0.86), 4.0, true)
-	draw_line(Vector2(body.end.x - 9, body.position.y + 25), Vector2(body.end.x - 9, body.end.y - 31), Color(rim_color, 0.86), 4.0, true)
 	draw_arc(Vector2(body.get_center().x, body.end.y - 31), body.size.x * 0.39, 0, PI, 36, Color(rim_color, 0.88), 4.5, true)
 	draw_arc(Vector2(body.get_center().x, body.end.y - 35), body.size.x * 0.31, 0, PI, 30, Color(0.84, 0.95, 1.0, 0.30), 2.0, true)
 
