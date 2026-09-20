@@ -102,6 +102,7 @@ func pour_start() -> void:
 
 func pour_land() -> void:
 	_play_chime([440.0, 523.25, 659.25], 0.180, 0.070, 0.40)
+	_vibrate(7)
 
 func invalid() -> void:
 	blocked()
