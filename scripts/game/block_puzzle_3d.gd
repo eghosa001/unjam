@@ -57,13 +57,13 @@ func build_ui() -> void:
 
 func _build_figma_block(canvas: Control) -> void:
 	var sky := PanelContainer.new()
-	sky.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient(Color(0.44, 0.36, 0.98), Color(0.94, 0.91, 1.0), 0))
-	FigmaReferenceCanvas.set_rect(sky, 0, 0, 390, 844)
+	sky.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(Color("#705cfa"), Color("#b094ff"), Color("#f0e8ff"), 34, Color("#b8d1e0"), 1, 0.55))
+	FigmaReferenceCanvas.set_rect(sky, -24.88, -128.55, 437.76, 947.35)
 	sky.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(sky)
 	var ground := PanelContainer.new()
-	ground.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient(Color(0.47, 0.31, 0.76), Color(0.14, 0.10, 0.32), 0))
-	FigmaReferenceCanvas.set_rect(ground, 0, 94, 390, 410)
+	ground.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(Color("#784fc2"), Color("#4a3087"), Color("#241a52"), 0, Color.TRANSPARENT, 0, 0.50))
+	FigmaReferenceCanvas.set_rect(ground, -24.88, -23.04, 437.76, 460.20)
 	ground.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(ground)
 	var platform := Polygon2D.new()
@@ -71,54 +71,58 @@ func _build_figma_block(canvas: Control) -> void:
 	platform.color = Color(0.64, 0.43, 0.91, 0.62)
 	canvas.add_child(platform)
 
-	var back := FigmaReferenceCanvas.button("←", 22, Color(0.03,0.23,0.47), Color(0.98,0.96,1.0), 16, Color(0.84,0.68,0.98,0.52), 1)
+	FigmaReferenceCanvas.add_shadow(canvas, Rect2(15,15,54,54), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
+	var back := FigmaReferenceCanvas.premium_button("←", 22, Color(0.03,0.23,0.47), Color(0.98,0.96,1.0), 16, Color(0.84,0.68,0.98,0.52), 1.4)
 	back.name = "BackAction"
-	FigmaReferenceCanvas.set_rect(back, 16, 16, 54, 54)
+	FigmaReferenceCanvas.set_rect(back, 15, 15, 54, 54)
 	back.pressed.connect(_quit)
 	canvas.add_child(back)
-	var retry := FigmaReferenceCanvas.button("↻", 23, Color(0.49,0.13,0.84), Color(0.98,0.96,1.0), 16, Color(0.84,0.68,0.98,0.52), 1)
+	FigmaReferenceCanvas.add_shadow(canvas, Rect2(319,15,54,54), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
+	var retry := FigmaReferenceCanvas.premium_button("↻", 23, Color("#7d21d6"), Color(0.98,0.96,1.0), 16, Color(0.84,0.68,0.98,0.52), 1.4)
 	retry.name = "RetryAction"
-	FigmaReferenceCanvas.set_rect(retry, 320, 16, 54, 54)
+	FigmaReferenceCanvas.set_rect(retry, 319, 15, 54, 54)
 	retry.pressed.connect(restart_level)
 	canvas.add_child(retry)
 
 	title_label = FigmaReferenceCanvas.label("", 20, Color(1,0.995,0.97), true)
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	FigmaReferenceCanvas.set_rect(title_label, 106, 16, 204, 30)
+	FigmaReferenceCanvas.set_rect(title_label, 115, 15, 184, 30)
 	canvas.add_child(title_label)
 	var campaign := FigmaReferenceCanvas.label("CAMPAIGN • HARD", 12, Color(0.92,0.98,1.0), false)
 	campaign.name = "BlockCampaignSubtitle"
 	campaign.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	FigmaReferenceCanvas.set_rect(campaign, 106, 45, 204, 20)
+	FigmaReferenceCanvas.set_rect(campaign, 115, 43, 184, 20)
 	canvas.add_child(campaign)
 
 	var score_card := PanelContainer.new()
 	score_card.name = "BlockScoreCard"
-	score_card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient(Color(0.622,0.321,0.845), Color(0.459,0.172,0.672), 16, Color(0.758,0.566,0.901,0.52), 1))
-	FigmaReferenceCanvas.set_rect(score_card, 18, 86, 354, 58)
+	FigmaReferenceCanvas.add_shadow(canvas, Rect2(17,85,354,58), 16, Color(0.02,0.10,0.18,0.22), 5, Vector2(0,4))
+	score_card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(Color("#9f52d8"), Color("#8f36d1"), Color("#752cab"), 16, Color(0.758,0.566,0.901,0.52), 1.4))
+	FigmaReferenceCanvas.set_rect(score_card, 17, 85, 354, 58)
 	score_card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(score_card)
 	score_label = FigmaReferenceCanvas.label("", 22, Color(1,0.995,0.97), true)
-	FigmaReferenceCanvas.set_rect(score_label, 34, 94, 190, 28)
+	FigmaReferenceCanvas.set_rect(score_label, 33, 96, 190, 28)
 	canvas.add_child(score_label)
 	goal_label = FigmaReferenceCanvas.label("", 12, Color(0.96,0.87,1.0), false)
-	FigmaReferenceCanvas.set_rect(goal_label, 34, 119, 240, 20)
+	FigmaReferenceCanvas.set_rect(goal_label, 33, 120, 240, 20)
 	canvas.add_child(goal_label)
 
-	var hint := FigmaReferenceCanvas.button("💡", 20, Color(1,0.995,0.97), Color(0.78,0.24,1.0), 16, Color(0.89,0.62,1.0,0.56), 1)
+	FigmaReferenceCanvas.add_shadow(canvas, Rect2(303,87,52,52), 16, Color(0.02,0.10,0.18,0.22), 5, Vector2(0,4))
+	var hint := FigmaReferenceCanvas.premium_button("💡", 20, Color(1,0.995,0.97), Color("#c73dff"), 16, Color(0.89,0.62,1.0,0.56), 1.3)
 	hint.name = "HintAction"
-	FigmaReferenceCanvas.set_rect(hint, 304, 88, 52, 52)
+	FigmaReferenceCanvas.set_rect(hint, 303, 87, 52, 52)
 	# HintManager owns the actual paid/rewarded hint signal.
 	canvas.add_child(hint)
 
 	var depth := PanelContainer.new()
-	depth.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color(0.14,0.08,0.27), 20))
-	FigmaReferenceCanvas.set_rect(depth, 32.2, 192.3, 330, 330)
+	depth.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color("#241445"), 20))
+	FigmaReferenceCanvas.set_rect(depth, 31.24, 191.35, 330, 330)
 	canvas.add_child(depth)
 	board_shell = PanelContainer.new()
 	board_shell.name = "BlockBoardShell"
-	board_shell.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient(Color(0.38,0.22,0.58), Color(0.18,0.10,0.33), 20, Color(0.72,0.52,1.0,0.80), 1))
-	FigmaReferenceCanvas.set_rect(board_shell, 30, 180, 330, 330)
+	board_shell.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(Color("#613894"), Color("#452670"), Color("#2e1a54"), 20, Color(0.72,0.52,1.0,0.80), 2))
+	FigmaReferenceCanvas.set_rect(board_shell, 29, 179, 330, 330)
 	canvas.add_child(board_shell)
 	var board_margin := MarginContainer.new()
 	for side in ["left","right","top","bottom"]:
@@ -141,15 +145,16 @@ func _build_figma_block(canvas: Control) -> void:
 
 	var tray := PanelContainer.new()
 	tray.name = "BlockTray"
-	tray.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color(0.985,0.945,1.0,0.97), 18, Color(0.90,0.72,1.0,0.70), 1))
-	FigmaReferenceCanvas.set_rect(tray, 18, 535, 354, 104)
+	FigmaReferenceCanvas.add_shadow(canvas, Rect2(17,534,354,104), 22, Color(0.07,0.03,0.16,0.20), 6, Vector2(0,5))
+	tray.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color("#fbf4ff"), 22, Color(0.88,0.68,1.0,0.75), 1.5))
+	FigmaReferenceCanvas.set_rect(tray, 17, 534, 354, 104)
 	tray.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(tray)
 	piece_row = HBoxContainer.new()
 	piece_row.name = "BlockPieceRow"
 	piece_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	piece_row.add_theme_constant_override("separation", 7)
-	FigmaReferenceCanvas.set_rect(piece_row, 32, 557, 326, 72)
+	FigmaReferenceCanvas.set_rect(piece_row, 31, 556, 326, 72)
 	canvas.add_child(piece_row)
 
 	var status_region := Control.new()
@@ -177,6 +182,14 @@ func _build_figma_block(canvas: Control) -> void:
 	hint_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	FigmaReferenceCanvas.set_rect(hint_label, 0, 0, 354, 20)
 	hint_region.add_child(hint_label)
+
+	var frame_border := PanelContainer.new()
+	frame_border.name = "BlockFrameBorder"
+	frame_border.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame_border.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color.TRANSPARENT, 34, Color("#b8d1e0"), 1))
+	FigmaReferenceCanvas.set_rect(frame_border, 0, 0, 390, 844)
+	frame_border.z_index = 900
+	canvas.add_child(frame_border)
 
 func _tray_piece_button_size() -> Vector2:
 	return Vector2(104, 72)
