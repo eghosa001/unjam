@@ -1,13 +1,26 @@
 extends "res://scripts/game/rescue_rush_motion_final.gd"
 
-func style_button(button: Button, accent: bool = false) -> void:
-	Unjam3DTheme.gloss_button(button, Unjam3DTheme.ORANGE if accent else Unjam3DTheme.WATER_DARK, true, 24)
+const RefCanvas = preload("res://scripts/ui/figma_reference_canvas.gd")
 
+const NAVY := Color(0.03,0.23,0.47)
+const OFF_WHITE := Color(1.0,0.995,0.97)
+const GREEN := Color(0.13,0.78,0.39)
+const BLUE := Color(0.03,0.43,0.78)
+const ORANGE := Color(1.0,0.55,0.12)
+
+var figma_canvas: FigmaReferenceCanvas
+
+func style_button(button: Button, accent: bool = false) -> void:
+	var fill := ORANGE if accent else BLUE
+	var style := RefCanvas.solid_box(fill, 16, fill.lightened(0.30), 1)
+	button.add_theme_stylebox_override("normal", style)
+	button.add_theme_stylebox_override("hover", RefCanvas.solid_box(fill.lightened(0.06), 16, fill.lightened(0.38), 1))
+	button.add_theme_stylebox_override("pressed", RefCanvas.solid_box(fill.darkened(0.08), 16, fill.lightened(0.20), 1))
+	button.add_theme_color_override("font_color", OFF_WHITE)
+	button.add_theme_color_override("font_hover_color", OFF_WHITE)
+	button.add_theme_color_override("font_pressed_color", OFF_WHITE)
 
 func restart_level() -> void:
-	# The scene-owned touch enhancer must survive retries. Detach it while the
-	# inherited restart retires runtime UI, and remove those runtime controls
-	# immediately so old/new screen trees never overlap in the same frame.
 	var enhancer := get_node_or_null("UiTouchEnhancer")
 	if enhancer != null and enhancer.get_parent() == self:
 		remove_child(enhancer)
@@ -20,147 +33,154 @@ func restart_level() -> void:
 
 func build_ui() -> void:
 	clip_contents = true
-	var world: int = int(level_data.get("world", 1))
-	var environment_3d := Unjam3DGameplayStage.new()
-	environment_3d.name = "RescueRush3DEnvironment"
-	environment_3d.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	environment_3d.configure("rescue_rush", Unjam3DTheme.GREEN)
-	environment_3d.z_index = -100
-	add_child(environment_3d)
-	PremiumVisuals.set_accent(Unjam3DTheme.GREEN)
+	PremiumVisuals.set_accent(GREEN)
+	var bg := ColorRect.new()
+	bg.name = "RescueFigmaViewportBackground"
+	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	bg.color = Color(0.10,0.30,0.22)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(bg)
 
-	var viewport_size := get_viewport_rect().size
-	var compact := viewport_size.x < 700.0 or viewport_size.y < 1100.0
-	var outer := MarginContainer.new()
-	outer.name = "RescueOuter"
-	outer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	outer.add_theme_constant_override("margin_left", 16 if compact else 28)
-	outer.add_theme_constant_override("margin_right", 16 if compact else 28)
-	outer.add_theme_constant_override("margin_top", 10 if compact else 20)
-	outer.add_theme_constant_override("margin_bottom", 12 if compact else 24)
-	add_child(outer)
-	var root := VBoxContainer.new()
-	root.name = "RescueRoot"
-	root.add_theme_constant_override("separation", 7 if compact else 11)
-	outer.add_child(root)
+	figma_canvas = RefCanvas.new()
+	figma_canvas.name = "FigmaRescue390x844"
+	add_child(figma_canvas)
+	_build_figma_rescue(figma_canvas)
 
-	var header := HBoxContainer.new()
-	header.name = "RescueHeader"
-	header.custom_minimum_size = Vector2(0, 72 if compact else 86)
-	header.add_theme_constant_override("separation", 8 if compact else 12)
-	root.add_child(header)
-	var back := Button.new()
+func _build_figma_rescue(canvas: Control) -> void:
+	var sky := PanelContainer.new()
+	sky.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient(Color(0.37,0.83,0.69), Color(0.88,0.98,0.83), 0))
+	RefCanvas.set_rect(sky, 0, 0, 390, 844)
+	sky.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(sky)
+	var ground := PanelContainer.new()
+	ground.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient(Color(0.28,0.66,0.45), Color(0.10,0.30,0.22), 0))
+	RefCanvas.set_rect(ground, 0, 100, 390, 400)
+	ground.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(ground)
+	var platform := Polygon2D.new()
+	platform.polygon = PackedVector2Array([Vector2(22,481),Vector2(368,481),Vector2(340,147),Vector2(50,147)])
+	platform.color = Color(0.59,0.78,0.55,0.65)
+	canvas.add_child(platform)
+
+	var back := RefCanvas.button("←",22,NAVY,Color(0.97,1.0,0.96),16,Color(0.67,0.90,0.72,0.55),1)
 	back.name = "RescueBackAction"
-	back.text = "←"
-	back.custom_minimum_size = Vector2(80, 72) if compact else Vector2(92, 78)
-	back.add_theme_font_size_override("font_size", 30 if compact else 34)
-	style_button(back)
+	RefCanvas.set_rect(back,16,16,54,54)
 	back.pressed.connect(_quit)
-	header.add_child(back)
-	var title := Label.new()
-	title.text = "RESCUE RUSH\nLEVEL %d  •  WORLD %d" % [level_number, world]
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 25 if compact else 30)
-	Unjam3DTheme.label_3d(title, Color.WHITE, Unjam3DTheme.NAVY, 5)
-	header.add_child(title)
-	var retry := Button.new()
+	canvas.add_child(back)
+	var retry := RefCanvas.button("↻",23,Color(0.08,0.45,0.25),Color(0.97,1.0,0.96),16,Color(0.67,0.90,0.72,0.55),1)
 	retry.name = "RescueRetryAction"
-	retry.text = "↻"
-	retry.custom_minimum_size = Vector2(80, 72) if compact else Vector2(92, 78)
-	retry.add_theme_font_size_override("font_size", 30 if compact else 34)
-	style_button(retry)
+	RefCanvas.set_rect(retry,320,16,54,54)
 	retry.pressed.connect(restart_level)
-	header.add_child(retry)
+	canvas.add_child(retry)
+	var title := RefCanvas.label("RESCUE RUSH",20,OFF_WHITE,true)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	RefCanvas.set_rect(title,116,16,184,30)
+	canvas.add_child(title)
+	var world := int(level_data.get("world", 1))
+	var subtitle := RefCanvas.label("LEVEL %d • WORLD %d" % [level_number,world],12,Color(0.92,0.98,1.0),false)
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	RefCanvas.set_rect(subtitle,116,44,184,20)
+	canvas.add_child(subtitle)
 
 	var status_panel := PanelContainer.new()
 	status_panel.name = "CompactStatusStrip"
-	status_panel.custom_minimum_size = Vector2(0, 82 if compact else 94)
-	status_panel.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("0760ad"), 30, Color("55cfff"), 3, 10))
-	root.add_child(status_panel)
-	var status := HBoxContainer.new()
-	status.add_theme_constant_override("separation", 12)
-	status_panel.add_child(status)
+	status_panel.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient(Color(0.13,0.56,0.48),Color(0.05,0.40,0.34),14,Color(0.55,1.0,0.72,0.45),1))
+	RefCanvas.set_rect(status_panel,18,82,354,48)
+	status_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(status_panel)
 	moves_label = _status_label(HORIZONTAL_ALIGNMENT_LEFT)
 	rescue_label = _status_label(HORIZONTAL_ALIGNMENT_CENTER)
 	chain_label = _status_label(HORIZONTAL_ALIGNMENT_RIGHT)
-	for label in [moves_label, rescue_label, chain_label]:
-		label.add_theme_font_size_override("font_size", 21 if compact else 24)
-		Unjam3DTheme.label_3d(label, Color.WHITE, Color("043666"), 3)
-		status.add_child(label)
+	var status_row := HBoxContainer.new()
+	status_row.add_theme_constant_override("separation",4)
+	RefCanvas.set_rect(status_row,28,82,334,48)
+	canvas.add_child(status_row)
+	for label in [moves_label,rescue_label,chain_label]:
+		label.add_theme_font_size_override("font_size",12)
+		label.add_theme_color_override("font_color",OFF_WHITE)
+		status_row.add_child(label)
 
 	var objective := PanelContainer.new()
 	objective.name = "RescueObjectiveCard"
-	objective.custom_minimum_size = Vector2(0, 50 if compact else 56)
-	objective.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color(0.96, 0.99, 1.0, 0.94), 25, Color("82dbff"), 2, 6))
-	root.add_child(objective)
-	var objective_label := Label.new()
-	objective_label.text = "🐥  " + objective_instruction().to_upper()
-	objective_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	objective_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	objective.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.96,0.99,1.0,0.94),12,Color(0.61,0.90,0.70,0.60),1))
+	RefCanvas.set_rect(objective,18,138,354,34)
+	objective.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(objective)
+	var objective_label := RefCanvas.label(objective_instruction().to_upper(),16,NAVY,true)
 	objective_label.name = "RescueObjectiveLabel"
-	objective_label.add_theme_font_size_override("font_size", 20 if compact else 23)
-	Unjam3DTheme.label_3d(objective_label, Unjam3DTheme.NAVY, Color.WHITE, 2)
-	objective.add_child(objective_label)
+	objective_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	RefCanvas.set_rect(objective_label,30,138,330,34)
+	canvas.add_child(objective_label)
 
-	var holder := CenterContainer.new()
-	holder.name = "GameplayBoardHolder"
-	holder.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	root.add_child(holder)
+	var depth := PanelContainer.new()
+	depth.add_theme_stylebox_override("panel",RefCanvas.solid_box(Color(0.22,0.28,0.25),22))
+	RefCanvas.set_rect(depth,28.2,196.9,338,338)
+	canvas.add_child(depth)
 	board_panel = PanelContainer.new()
-	# Warm stone frame with pale rim reads more like a toy diorama than a dark app panel.
-	board_panel.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("566b6a"), 38, Color("d7f3e4"), 5, 20))
-	holder.add_child(board_panel)
-	var board_margin := _panel_margin(18, 18, 18, 18)
-	board_panel.add_child(board_margin)
+	board_panel.name = "RescueBoardPanel"
+	board_panel.add_theme_stylebox_override("panel",RefCanvas.rounded_gradient(Color(0.45,0.56,0.50),Color(0.28,0.39,0.35),22,Color(0.84,0.95,0.89),2))
+	RefCanvas.set_rect(board_panel,26,184,338,338)
+	canvas.add_child(board_panel)
+	var margin := MarginContainer.new()
+	for side in ["left","right","top","bottom"]:
+		margin.add_theme_constant_override("margin_%s" % side,20)
+	board_panel.add_child(margin)
 	board_grid = GridContainer.new()
+	board_grid.name = "RescueBoardGrid"
 	board_grid.columns = width
-	board_grid.add_theme_constant_override("h_separation", 8)
-	board_grid.add_theme_constant_override("v_separation", 8)
-	board_margin.add_child(board_grid)
+	board_grid.add_theme_constant_override("h_separation",22)
+	board_grid.add_theme_constant_override("v_separation",22)
+	margin.add_child(board_grid)
 
 	var actions := HBoxContainer.new()
 	actions.name = "CompactGameActions"
-	actions.alignment = BoxContainer.ALIGNMENT_CENTER
-	actions.add_theme_constant_override("separation", 14)
-	root.add_child(actions)
-	var undo := Button.new()
+	actions.add_theme_constant_override("separation",14)
+	RefCanvas.set_rect(actions,22,570,346,60)
+	canvas.add_child(actions)
+	var undo := _action("↶  UNDO",BLUE)
 	undo.name = "RescueUndoAction"
-	undo.text = "↶\nUNDO"
-	undo.custom_minimum_size = Vector2(190, 100) if compact else Vector2(220, 116)
-	undo.add_theme_font_size_override("font_size", 20 if compact else 22)
-	style_button(undo)
 	undo.pressed.connect(undo_move)
 	actions.add_child(undo)
-	var hint := Button.new()
+	var hint := _action("💡  HINT",ORANGE)
 	hint.name = "RescueHintAction"
-	hint.text = "💡\nHINT"
-	hint.custom_minimum_size = Vector2(190, 100) if compact else Vector2(220, 116)
-	hint.add_theme_font_size_override("font_size", 20 if compact else 22)
-	style_button(hint, true)
-	# HintManager is the single owner of paid/rewarded hint delivery.
 	actions.add_child(hint)
-	var restart := Button.new()
+	var restart := _action("↻  RESTART",BLUE)
 	restart.name = "RescueRestartAction"
-	restart.text = "↻\nRESTART"
-	restart.custom_minimum_size = Vector2(190, 100) if compact else Vector2(220, 116)
-	restart.add_theme_font_size_override("font_size", 20 if compact else 22)
-	style_button(restart)
 	restart.pressed.connect(restart_level)
 	actions.add_child(restart)
 
-	hint_label = Label.new()
+	hint_label = RefCanvas.label("",12,NAVY,true)
 	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	hint_label.add_theme_font_size_override("font_size", 20 if compact else 22)
-	hint_label.custom_minimum_size = Vector2(0, 34 if compact else 40)
 	hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	Unjam3DTheme.label_3d(hint_label, Color.WHITE, Unjam3DTheme.NAVY, 3)
-	root.add_child(hint_label)
-	PremiumVisuals.entrance(root, 0.008)
+	RefCanvas.set_rect(hint_label,22,640,346,40)
+	canvas.add_child(hint_label)
 
-func apply_theme_mode(dark: bool) -> void:
-	var environment := get_node_or_null("RescueRush3DEnvironment") as Unjam3DGameplayStage
-	if environment != null:
-		environment.set_dark_mode(dark)
+func _action(text_value: String, fill: Color) -> Button:
+	var result := RefCanvas.button(text_value,12,OFF_WHITE,fill,16,fill.lightened(0.30),1)
+	result.custom_minimum_size = Vector2(106,60)
+	result.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	return result
+
+func _fit_board_to_viewport() -> void:
+	if board_grid == null or board_panel == null:
+		return
+	board_grid.columns = width
+	board_grid.add_theme_constant_override("h_separation",22)
+	board_grid.add_theme_constant_override("v_separation",22)
+	var cell_size := 41
+	if width > 5 or height > 5:
+		var available := 298.0
+		var gap := 10
+		cell_size = int(clampf(floor((available - float(gap * maxi(width - 1,0))) / float(maxi(width,1))),28.0,41.0))
+		board_grid.add_theme_constant_override("h_separation",gap)
+		board_grid.add_theme_constant_override("v_separation",gap)
+	for child in board_grid.get_children():
+		if child is Control:
+			(child as Control).custom_minimum_size = Vector2(cell_size,cell_size)
+			if child.get_child_count() > 0 and child.get_child(0) is Control:
+				(child.get_child(0) as Control).custom_minimum_size = Vector2(cell_size,cell_size)
+	board_panel.custom_minimum_size = Vector2(338,338)
+	board_panel.size = Vector2(338,338)
+
+func apply_theme_mode(_dark: bool) -> void:
+	pass
