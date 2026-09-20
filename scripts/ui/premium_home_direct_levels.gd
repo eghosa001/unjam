@@ -159,7 +159,8 @@ func _add_hero_preview(canvas: Control, game_id: String) -> void:
 	canvas.add_child(preview_root)
 	var stage := PanelContainer.new()
 	stage.name = "FigmaHomeHeroPreview"
-	stage.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.08,0.16,0.25,0.72) if _home_dark() else Color(0.91, 0.99, 1.0, 0.34), 16))
+	var stage_mid := Color(0.12,0.24,0.34,0.78) if _home_dark() else Color(0.87,0.96,0.98,0.62)
+	stage.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(stage_mid.lightened(0.15), stage_mid, stage_mid.darkened(0.12), 16, Color(1,1,1,0.20), 1, 0.40))
 	RefCanvas.set_rect(stage, 219, 144, 125, 136)
 	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	preview_root.add_child(stage)
@@ -288,7 +289,7 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 	RefCanvas.add_shadow(canvas, Rect2(13, 757, 362, 70), 18, Color(0.02, 0.10, 0.18, 0.12), 5, Vector2(0, 4))
 	var nav_fill := Color(0.07,0.10,0.17,0.98) if _home_dark() else Color(0.985, 0.995, 1.0, 0.97)
 	var nav_border := Color(0.23,0.34,0.45,0.90) if _home_dark() else Color(0.78, 0.88, 0.95, 0.75)
-	shell.add_theme_stylebox_override("panel", RefCanvas.solid_box(nav_fill, 18, nav_border, 1))
+	shell.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(nav_fill.lightened(0.12), nav_fill, nav_fill.darkened(0.10), 18, nav_border, 1, 0.40))
 	RefCanvas.set_rect(shell, 13, 757, 362, 70)
 	shell.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(shell)
@@ -330,7 +331,7 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 func _add_pill(canvas: Control, rect: Rect2, fill: Color, text_value: String, font_size: int, text_color: Color) -> PanelContainer:
 	RefCanvas.add_shadow(canvas, rect, rect.size.y * 0.5, Color(0.02, 0.10, 0.18, 0.15), 3, Vector2(0, 2))
 	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", RefCanvas.solid_box(fill, rect.size.y * 0.5))
+	panel.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(fill.lightened(0.16), fill, fill.darkened(0.12), rect.size.y * 0.5, fill.lightened(0.20), 1, 0.40))
 	RefCanvas.set_rect(panel, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(panel)
