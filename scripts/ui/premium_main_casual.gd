@@ -450,7 +450,7 @@ func build_daily_games() -> void:
 	_remove_active_game()
 	var canvas := _figma_surface("daily", Color("#fff6e6"))
 	var bonus := EconomyManager.collection_daily_bonus()
-	_figma_header(canvas, "DAILY GAMES", "Choose one challenge for today", "+%d" % bonus, FIGMA_GOLD)
+	_figma_header(canvas, "DAILY GAMES", "One challenge per game today", "+%d" % bonus, FIGMA_GOLD)
 	_figma_card(canvas, "DailyIntro", Rect2(17,89,354,64), Color("#fffef8"), Color(1.0,0.847,0.55,0.32), 16)
 	_figma_text(canvas, "TODAY • %s" % _figma_today_label(), Rect2(35,106,220,17), 14, FIGMA_INK)
 
@@ -528,7 +528,7 @@ func build_collection() -> void:
 	_figma_header(
 		canvas,
 		"COLLECTION",
-		"Progress, friends and permanent rewards",
+		"Progress • friends • rewards",
 		"◈ +",
 		FIGMA_GREEN,
 		Callable(self,"build_home"),
@@ -629,7 +629,7 @@ func build_collection_upgrades() -> void:
 	_figma_header(
 		canvas,
 		"COLLECTION",
-		"Progress, friends and permanent rewards",
+		"Progress • friends • rewards",
 		"◈ +",
 		FIGMA_GREEN,
 		Callable(self,"build_home"),

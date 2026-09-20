@@ -155,7 +155,8 @@ func _add_hero(canvas: Control) -> void:
 	_add_text(canvas, "CURRENT JOURNEY", Rect2(41, 142, 150, 15), 12, ORANGE, true)
 	var level := _home_current_level(selected_game)
 	var world := MultiGameManager.world_for_game_level(selected_game, level)
-	var game_title := _add_text(canvas, _short_game_name(selected_game), Rect2(41, 167, 180, 34), 27, NAVY, true)
+	var game_title_size := 23 if selected_game == "block_puzzle" else 27
+	var game_title := _add_text(canvas, _short_game_name(selected_game), Rect2(41, 167, 180, 34), game_title_size, NAVY, true)
 	game_title.name = "HomeHeroGameTitle"
 	RefCanvas.style_display_title(game_title, Unjam3DTheme.game_accent(selected_game).lightened(0.18), Color("#071d55"), 2)
 	var game_meta := _add_text(canvas, "LEVEL %d • WORLD %d" % [level, world], Rect2(41, 204, 170, 17), 14, BLUE, true)
@@ -473,6 +474,7 @@ func _refresh_home_selection() -> void:
 	var title := figma_canvas.get_node_or_null("HomeHeroGameTitle") as Label
 	if title != null:
 		title.text = _short_game_name(selected_game)
+		title.add_theme_font_size_override("font_size", 23 if selected_game == "block_puzzle" else 27)
 		RefCanvas.style_display_title(title, Unjam3DTheme.game_accent(selected_game).lightened(0.18), Color("#071d55"), 2)
 	var meta := figma_canvas.get_node_or_null("HomeHeroGameMeta") as Label
 	if meta != null:
