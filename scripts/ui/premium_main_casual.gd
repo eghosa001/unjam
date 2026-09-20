@@ -251,10 +251,10 @@ func _figma_header(canvas: Control, title_text: String, subtitle_text: String, p
 	var back_color := FIGMA_DARK_INK
 	var back_fill := Color("#152b52") if not use_dark else Color("#101a31")
 	_figma_button(canvas, "FigmaBack", "‹", Rect2(17,19,52,52), back_fill, back_callback, back_color, 18, 27)
-	var header_title := _figma_text(canvas, title_text, Rect2(83,21,205,28), 23, heading_color)
+	var header_title := _figma_text(canvas, title_text, Rect2(83,21,194,28), 23, heading_color)
 	header_title.name = "FigmaHeaderTitle"
 	FigmaReferenceCanvas.style_display_title(header_title, pill_fill.lightened(0.28), Color("#071d55"), 2)
-	var subtitle := _figma_text(canvas, subtitle_text, Rect2(83,51,210,30), 12, muted_color)
+	var subtitle := _figma_text(canvas, subtitle_text, Rect2(83,51,194,30), 12, muted_color)
 	subtitle.name = "FigmaHeaderSubtitle"
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	if pill_callback.is_valid():
@@ -274,7 +274,7 @@ func _figma_header(canvas: Control, title_text: String, subtitle_text: String, p
 		else:
 			pill = _figma_solid_card(canvas, "FigmaHeaderPill", Rect2(285,21,84,46), pill_fill, pill_fill.lightened(0.24), 23)
 		pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var pill_label := _figma_text(canvas, pill_text, Rect2(297,29,60,30), 12, FIGMA_OFF_WHITE, true)
+		var pill_text_color := FigmaReferenceCanvas.accessible_text_color(FIGMA_OFF_WHITE, pill_fill)\n\t\tvar pill_label := _figma_text(canvas, pill_text, Rect2(297,29,60,30), 12, pill_text_color, true)
 		pill_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 
 func _on_figma_wallet_balance_changed(new_balance: int, _delta: int, _reason: String) -> void:
@@ -372,7 +372,7 @@ func build_settings() -> void:
 	_figma_text(canvas,"☀  APPEARANCE",Rect2(33,425,150,18),15,Color("#ff8c1f") if not dark_mode else heading_color)
 	_figma_text(canvas,"THEME",Rect2(33,448,210,28),13,muted_color)
 	var theme_fill := FIGMA_ORANGE
-	var theme_text := Color(0.76,0.84,0.90) if dark_mode else FIGMA_OFF_WHITE
+	var theme_text := FIGMA_NAVY
 	var theme_button := _figma_button(canvas,"SettingToggle/Theme",theme_name,Rect2(279,442,72,38),theme_fill,Callable(),theme_text,19,12)
 	theme_button.pressed.connect(func() -> void:
 		if shell != null and shell.has_method("_toggle_theme"):
@@ -419,7 +419,7 @@ func _figma_setting_row(canvas: Control, key: String, label_text: String, toggle
 	_figma_text(canvas,label_text,Rect2(34,label_y-7,210,30),13,text_color)
 	var enabled := bool(SaveManager.data.get(key,default_value))
 	var fill := FIGMA_BLUE if enabled else Color("#b2bfcc")
-	var button_text_color := Color(0.76,0.84,0.90) if dark_mode else FIGMA_OFF_WHITE
+	var button_text_color := FIGMA_OFF_WHITE if enabled else FIGMA_NAVY
 	var state := "ON" if enabled else "OFF"
 	var button := _figma_button(canvas,"SettingToggle/%s" % key.capitalize(),state,Rect2(279,toggle_y,72,38),fill,Callable(),button_text_color,19,12)
 	if reduced_motion:
