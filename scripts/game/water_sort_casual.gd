@@ -169,6 +169,40 @@ func _add_water_identity_emblem(canvas: Control) -> void:
 	RefCanvas.set_rect(rim,84,22,16,2)
 	canvas.add_child(rim)
 
+func _add_water_drop_icon(canvas: Control) -> void:
+	var drop := Polygon2D.new()
+	drop.name = "WaterObjectiveDrop"
+	drop.color = Color("#1aa8ff")
+	drop.polygon = PackedVector2Array([
+		Vector2(0,-8), Vector2(5,-1), Vector2(6,3),
+		Vector2(4,7), Vector2(0,9), Vector2(-4,7),
+		Vector2(-6,3), Vector2(-5,-1)
+	])
+	drop.position = Vector2(74,144)
+	canvas.add_child(drop)
+
+func _add_water_bulb_icon(button: Button) -> void:
+	var bulb := PanelContainer.new()
+	bulb.name = "WaterHintBulb"
+	bulb.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var bulb_style := StyleBoxFlat.new()
+	bulb_style.bg_color = Color("#ffe47a")
+	bulb_style.corner_radius_top_left = 7
+	bulb_style.corner_radius_top_right = 7
+	bulb_style.corner_radius_bottom_left = 7
+	bulb_style.corner_radius_bottom_right = 7
+	bulb.add_theme_stylebox_override("panel", bulb_style)
+	bulb.position = Vector2(16,17)
+	bulb.size = Vector2(14,14)
+	button.add_child(bulb)
+	var base := ColorRect.new()
+	base.name = "WaterHintBulbBase"
+	base.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	base.color = Color("#fff3aa")
+	base.position = Vector2(20,31)
+	base.size = Vector2(6,4)
+	button.add_child(base)
+
 func _action_button(text_value: String, fill: Color) -> Button:
 	var button := RefCanvas.premium_button(text_value, 12, OFF_WHITE, fill, 16, fill.lightened(0.30), 1.3)
 	button.custom_minimum_size = Vector2(106, 60)
