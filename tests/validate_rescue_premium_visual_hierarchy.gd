@@ -9,6 +9,7 @@ func _run() -> void:
 	if packed == null:
 		return _fail("Rescue Rush scene could not be loaded")
 	var game := packed.instantiate() as Control
+	game.set("level_number",1)
 	root.add_child(game)
 	await _frames(10)
 
@@ -16,22 +17,27 @@ func _run() -> void:
 	var board_grid := game.get("board_grid") as GridContainer
 	var objective := game.find_child("RescueObjectiveLabel",true,false) as Label
 	if board_panel == null or board_grid == null or objective == null:
-		return _fail("Rescue Rush Figma gameplay hierarchy is incomplete")
+		return _fail("Rescue Rush gameplay hierarchy is incomplete")
 	if board_panel.size.distance_to(Vector2(348,348)) > 1.0:
 		return _fail("Rescue board is not using the restored 348x348 play area")
-	if board_grid.columns != 5 or board_grid.get_child_count() != 25:
-		return _fail("Rescue board is not a complete 5x5 grid")
-	if board_grid.get_theme_constant("h_separation") != 7 or board_grid.get_theme_constant("v_separation") != 7:
+	var width := int(game.get("width"))
+	var height := int(game.get("height"))
+	if width != 7 or height != 7:
+		return _fail("Opening Rescue campaign level should preserve its 7x7 progression board")
+	if board_grid.columns != width or board_grid.get_child_count() != width * height:
+		return _fail("Rescue board does not render its complete progression grid")
+	if board_grid.get_theme_constant("h_separation") != 5 or board_grid.get_theme_constant("v_separation") != 5:
 		return _fail("Rescue grid gaps are still too large")
+	var minimum_cell := 40.0
 	for child in board_grid.get_children():
-		if child is Control and (child as Control).custom_minimum_size.x < 57.0:
-			return _fail("Rescue arrows/obstacles are still undersized")
-	if objective.text != "CLEAR THE LANE • FREE THE CHICK":
+		if child is Control and (child as Control).custom_minimum_size.x < minimum_cell:
+			return _fail("Rescue grid cells are still undersized")
+	if objective.text != "OPEN A CLEAR LANE AND FREE THE CHICK":
 		return _fail("Rescue objective copy drifted")
 
 	game.queue_free()
 	await process_frame
-	print("Rescue Rush readable 5x5 board hierarchy validated.")
+	print("Rescue Rush dense 7x7 board hierarchy validated.")
 	quit(0)
 
 func _frames(count: int) -> void:
