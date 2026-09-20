@@ -201,10 +201,10 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 		var idle_text := Color(0.62,0.72,0.80) if dark_mode else FIGMA_MUTED
 		if selected:
 			var marker_color := Color(0.32,0.75,1.0) if dark_mode else FIGMA_CYAN
-			_figma_solid_card(canvas, "StdNav/SelectedDot/%s" % String(key), Rect2(float(xs[key])+25.0,776,8,8), marker_color, marker_color, 4, false)
-			_figma_solid_card(canvas, "StdNav/SelectedLine/%s" % String(key), Rect2(float(xs[key])+11.0,815,36,4), marker_color, marker_color, 2, false)
+			_figma_solid_card(canvas, "StdNavSelectedDot_%s" % String(key), Rect2(float(xs[key])+25.0,776,8,8), marker_color, marker_color, 4, false)
+			_figma_solid_card(canvas, "StdNavSelectedLine_%s" % String(key), Rect2(float(xs[key])+11.0,815,36,4), marker_color, marker_color, 2, false)
 		var nav_label := _figma_text(canvas, String(names[key]), Rect2(float(xs[key])-1.0,788,58,26), 12, selected_text if selected else idle_text, true)
-		nav_label.name = "StdNav/Label/%s" % String(key)
+		nav_label.name = "StdNavLabel_%s" % String(key)
 		var hit := Button.new()
 		hit.name = "StdNav/Proto/%s" % String(names[key])
 		hit.flat = true
