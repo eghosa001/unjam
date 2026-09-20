@@ -16,6 +16,7 @@ func _run() -> void:
 	if not await _validate_header_badge_clearance(): return
 	if not await _validate_shop_header_clearance(): return
 	if not await _validate_selector_header_and_navigation(): return
+	if not await _validate_exact_touch_target_floor(): return
 	if not _validate_dead_code_cleanup(): return
 	if not _validate_visual_workflow_installs_plugins(): return
 	if not _validate_main_ci_runs_new_hardening_gates(): return
@@ -323,6 +324,44 @@ func _validate_selector_header_and_navigation() -> bool:
 		return _fail("Choose-a-Game icon navigation lacks descriptive tooltips")
 	main.queue_free()
 	await process_frame
+	return true
+
+func _validate_exact_touch_target_floor() -> bool:
+	root.size = Vector2i(1080, 1920)
+	var packed := load("res://scenes/Main.tscn") as PackedScene
+	var main := packed.instantiate() as Control
+	root.add_child(main)
+	main.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	await _frames(8)
+	main.call("build_settings")
+	await _frames(5)
+	if not _figma_buttons_meet_floor(main, "Settings"):
+		main.queue_free(); await process_frame
+		return false
+	main.set("selected_game_id", "block_puzzle")
+	main.call("build_multi_level_select")
+	await _frames(6)
+	if not _figma_buttons_meet_floor(main, "Block level select"):
+		main.queue_free(); await process_frame
+		return false
+	var hub := main.get_node_or_null("MonetizationHub")
+	if hub != null and hub.has_method("open_shop"):
+		hub.call("open_shop")
+		await _frames(5)
+		if not _figma_buttons_meet_floor(main, "Shop"):
+			main.queue_free(); await process_frame
+			return false
+	main.queue_free()
+	await process_frame
+	return true
+
+func _figma_buttons_meet_floor(node: Node, context: String) -> bool:
+	for found in node.find_children("*", "Button", true, false):
+		var button := found as Button
+		if button == null or not button.visible or not bool(button.get_meta("unjam_figma_exact_geometry", false)):
+			continue
+		if button.size.x + 0.01 < 44.0 or button.size.y + 0.01 < 44.0:
+			return _fail("%s exact button is below 44x44: %s %.1fx%.1f" % [context, button.name, button.size.x, button.size.y])
 	return true
 
 func _validate_dead_code_cleanup() -> bool:
