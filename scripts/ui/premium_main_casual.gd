@@ -597,7 +597,7 @@ func build_collection() -> void:
 	if not can_claim:
 		gift_text = "GARDEN GIFT CLAIMED" if EconomyManager.garden_gift_claimed_today() else "BUY AN UPGRADE IN SHOP"
 	var gift_fill := FIGMA_GREEN if can_claim else Color(0.54,0.64,0.72)
-	var gift := _figma_button(canvas,"CollectionGardenGift",gift_text,Rect2(33,605,250,40),gift_fill,Callable(),FIGMA_OFF_WHITE,16,12)
+	var gift := _figma_button(canvas,"CollectionGardenGift",gift_text,Rect2(33,603,250,44),gift_fill,Callable(),FIGMA_OFF_WHITE,16,12)
 	if can_claim:
 		gift.pressed.connect(_claim_collection_gift)
 	else:
@@ -893,15 +893,15 @@ func _build_figma_level_browser(game_id: String) -> void:
 	if game_id == "block_puzzle":
 		_add_figma_block_modes(canvas)
 
-	var prev := _figma_button(canvas,"LevelPrev","◀ PREV",Rect2(17,page_y,100,38),FIGMA_BLUE,Callable(),FIGMA_OFF_WHITE,13,13)
+	var prev := _figma_button(canvas,"LevelPrev","◀ PREV",Rect2(17,page_y - 3.0,100,44),FIGMA_BLUE,Callable(),FIGMA_OFF_WHITE,13,13)
 	prev.disabled = selected_multi_world <= 1 and selected_multi_page <= 1
 	_style_figma_page_button(prev,FIGMA_BLUE,accent,prev.disabled)
 	if not prev.disabled:
 		prev.pressed.connect(_change_multi_page.bind(-1))
-	var current := _figma_button(canvas,"LevelCurrent","CURRENT",Rect2(125,page_y,118,38),accent,Callable(self,"_jump_multi_current"),FIGMA_OFF_WHITE,13,13)
+	var current := _figma_button(canvas,"LevelCurrent","CURRENT",Rect2(125,page_y - 3.0,118,44),accent,Callable(self,"_jump_multi_current"),FIGMA_OFF_WHITE,13,13)
 	_style_figma_page_button(current,accent,accent,false)
 	var next_disabled := selected_multi_world >= world_count and selected_multi_page >= _multi_page_count(game_id,selected_multi_world)
-	var next := _figma_button(canvas,"LevelNext","NEXT ▶",Rect2(251,page_y,120,38),Color("#fcfeff"),Callable(),FIGMA_MUTED,13,13)
+	var next := _figma_button(canvas,"LevelNext","NEXT ▶",Rect2(251,page_y - 3.0,120,44),Color("#fcfeff"),Callable(),FIGMA_MUTED,13,13)
 	next.disabled = next_disabled
 	_style_figma_page_button(next,Color("#fcfeff"),accent,next_disabled,true)
 	if not next.disabled:
