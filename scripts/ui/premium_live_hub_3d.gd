@@ -316,7 +316,7 @@ func _add_bottom_nav(canvas: Control) -> void:
 	]
 	for item in items:
 		var nav_text := (Color(0.42,0.78,1.0) if item[3] else DARK_MUTED) if _selector_dark() else (Color(0.05, 0.49, 0.86) if item[3] else Color(0.31, 0.43, 0.54))
-		_add_text(canvas, item[0], Rect2(item[1] - 1.0, 788, 62, 30), 12, nav_text, true)
+		_add_text(canvas, item[0], Rect2(item[1] - 1.0, 787, 62, 31), 13, nav_text, true)
 		var hit := Button.new()
 		hit.flat = true
 		hit.focus_mode = Control.FOCUS_NONE
