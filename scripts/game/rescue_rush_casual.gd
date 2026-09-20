@@ -153,13 +153,13 @@ func _build_figma_rescue(canvas: Control) -> void:
 	canvas.add_child(board_panel)
 	var margin := MarginContainer.new()
 	for side in ["left","right","top","bottom"]:
-		margin.add_theme_constant_override("margin_%s" % side,14)
+		margin.add_theme_constant_override("margin_%s" % side,10)
 	board_panel.add_child(margin)
 	board_grid = GridContainer.new()
 	board_grid.name = "RescueBoardGrid"
 	board_grid.columns = width
-	board_grid.add_theme_constant_override("h_separation",7)
-	board_grid.add_theme_constant_override("v_separation",7)
+	board_grid.add_theme_constant_override("h_separation",5)
+	board_grid.add_theme_constant_override("v_separation",5)
 	margin.add_child(board_grid)
 
 	var actions := HBoxContainer.new()
@@ -200,15 +200,15 @@ func _action(text_value: String, fill: Color) -> Button:
 	return result
 
 func _figma_board_gap() -> int:
-	return 7 if width <= 5 and height <= 5 else 8
+	return 6 if width <= 5 and height <= 5 else 5
 
 func _figma_board_cell_size() -> int:
 	if width <= 5 and height <= 5:
 		return 58
-	var available := 320.0
+	var available := 328.0
 	var gap := _figma_board_gap()
 	var span := maxi(width, height)
-	return int(clampf(floor((available - float(gap * maxi(span - 1,0))) / float(maxi(span,1))),28.0,41.0))
+	return int(clampf(floor((available - float(gap * maxi(span - 1,0))) / float(maxi(span,1))),30.0,43.0))
 
 func _make_empty_cell(_cell_size: int, pos: Vector2i, route: Dictionary) -> Control:
 	# The inherited premium renderer sizes its first pass for a much larger board.
