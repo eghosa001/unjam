@@ -349,8 +349,8 @@ func _demo_block(step: int) -> void:
 			_tutorial_demo_root.add_child(well)
 	var occupied := [Vector2i(0,0),Vector2i(1,0),Vector2i(0,1),Vector2i(3,2),Vector2i(3,3)]
 	for pos in occupied:
-		var fx := 59.0 + pos.x*39.0
-		var fy := 21.0 + pos.y*39.0
+		var fx: float = 59.0 + float(pos.x) * 39.0
+		var fy: float = 21.0 + float(pos.y) * 39.0
 		var shadow := ColorRect.new()
 		shadow.color = Color(0.25,0.16,0.43,0.34)
 		FigmaReferenceCanvas.set_rect(shadow,fx+3,fy+25,23,3)
