@@ -3,10 +3,17 @@ extends Node
 var overlay: Control
 var detail_label: Label
 var reward_button: Button
+var _layer: CanvasLayer
+var _built_dark := false
 var _action_name := ""
 var _cost := 0
 var _retry := Callable()
 var _reward_busy := false
+
+func _dark_theme() -> bool:
+	var main := get_parent()
+	var shell := main.get_node_or_null("UXShell") if main != null else null
+	return shell != null and shell.get("theme_mode") != null and String(shell.get("theme_mode")) == "dark"
 
 func _ready() -> void:
 	call_deferred("_build")
@@ -14,17 +21,19 @@ func _ready() -> void:
 func _build() -> void:
 	if overlay != null and is_instance_valid(overlay):
 		return
-	var layer := CanvasLayer.new()
-	layer.name = "InsufficientCoinsLayer"
-	layer.layer = 600
-	add_child(layer)
+	var dark := _dark_theme()
+	_built_dark = dark
+	_layer = CanvasLayer.new()
+	_layer.name = "InsufficientCoinsLayer"
+	_layer.layer = 600
+	add_child(_layer)
 
 	overlay = Control.new()
 	overlay.name = "InsufficientCoinsOverlay"
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	overlay.visible = false
-	layer.add_child(overlay)
+	_layer.add_child(overlay)
 
 	var shade := ColorRect.new()
 	shade.name = "CoinModal/Dim"
@@ -41,7 +50,7 @@ func _build() -> void:
 	var card := PanelContainer.new()
 	card.name = "CoinModal/Card"
 	card.add_theme_stylebox_override("panel",FigmaReferenceCanvas.solid_box(
-		Color("#fbfeff"),26,Color(0.75,0.88,0.96,0.90),1.5
+		Color("#152337") if dark else Color("#fbfeff"),26,Color(0.30,0.48,0.64,0.90) if dark else Color(0.75,0.88,0.96,0.90),1.5
 	))
 	FigmaReferenceCanvas.set_rect(card,26,194,338,410)
 	card.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -60,13 +69,13 @@ func _build() -> void:
 	FigmaReferenceCanvas.set_rect(icon_text,166,236,58,44)
 	canvas.add_child(icon_text)
 
-	var title := FigmaReferenceCanvas.label("MORE COINS NEEDED",23,Color("#143852"),true)
+	var title := FigmaReferenceCanvas.label("MORE COINS NEEDED",23,Color("#eef7ff") if dark else Color("#143852"),true)
 	title.name = "CoinModal/Title"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	FigmaReferenceCanvas.set_rect(title,52,326,286,30)
 	canvas.add_child(title)
 
-	detail_label = FigmaReferenceCanvas.label("",14,Color("#527087"),false)
+	detail_label = FigmaReferenceCanvas.label("",14,Color("#b6c7d6") if dark else Color("#527087"),false)
 	detail_label.name = "CoinModal/Body"
 	detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	detail_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -89,13 +98,21 @@ func _build() -> void:
 	canvas.add_child(shop)
 
 	FigmaReferenceCanvas.add_shadow(canvas,Rect2(202,506,142,52),16,Color(0.02,0.08,0.16,0.15),4,Vector2(0,4))
-	var later := FigmaReferenceCanvas.premium_button("NOT NOW",13,Color("#57738a"),Color("#f5faff"),16,Color("#b8d1e3"),1.2)
+	var later := FigmaReferenceCanvas.premium_button("NOT NOW",13,Color("#c8d7e4") if dark else Color("#57738a"),Color("#24364a") if dark else Color("#f5faff"),16,Color("#3d5870") if dark else Color("#b8d1e3"),1.2)
 	later.name = "CoinModal/Later"
 	FigmaReferenceCanvas.set_rect(later,202,506,142,52)
 	later.pressed.connect(_close)
 	canvas.add_child(later)
 
 func show_for(action_name: String, cost: int, retry: Callable = Callable()) -> void:
+	if overlay != null and is_instance_valid(overlay) and _built_dark != _dark_theme():
+		if _layer != null and is_instance_valid(_layer):
+			remove_child(_layer)
+			_layer.queue_free()
+		_layer = null
+		overlay = null
+		detail_label = null
+		reward_button = null
 	if overlay == null or not is_instance_valid(overlay):
 		_build()
 	_action_name = action_name

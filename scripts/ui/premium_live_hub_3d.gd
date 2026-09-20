@@ -10,8 +10,27 @@ const INK := Color(0.07, 0.20, 0.35)
 const MUTED := Color(0.31, 0.42, 0.52)
 const OFF_WHITE := Color(1.0, 0.995, 0.97)
 const CYAN := Color(0.14, 0.68, 1.0)
+const DARK_TOP := Color("#07111d")
+const DARK_MID := Color("#0b1726")
+const DARK_BOTTOM := Color("#101c2d")
+const DARK_INK := Color("#eef7ff")
+const DARK_MUTED := Color("#b6c7d6")
 
 var figma_canvas: FigmaReferenceCanvas
+
+func _selector_dark() -> bool:
+	return _theme_mode() == "dark"
+
+func _selector_text_color(color: Color) -> Color:
+	if not _selector_dark():
+		return color
+	if color.is_equal_approx(NAVY) or color.is_equal_approx(INK):
+		return DARK_INK
+	if color.is_equal_approx(MUTED):
+		return DARK_MUTED
+	if color.get_luminance() < 0.34:
+		return color.lightened(0.48)
+	return color.lightened(0.06)
 
 func _build() -> void:
 	for child in get_children():
@@ -24,7 +43,7 @@ func _build() -> void:
 	var viewport_bg := ColorRect.new()
 	viewport_bg.name = "FigmaSelectorViewportBackground"
 	viewport_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	viewport_bg.color = BG_BOTTOM
+	viewport_bg.color = DARK_BOTTOM if _selector_dark() else BG_BOTTOM
 	viewport_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(viewport_bg)
 
@@ -35,13 +54,17 @@ func _build() -> void:
 
 func _build_reference_selector(canvas: Control) -> void:
 	var background := PanelContainer.new()
-	background.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(BG_TOP, BG_MID, BG_BOTTOM, 34, Color("#bad1e3"), 1, 0.48))
+	var bg_top := DARK_TOP if _selector_dark() else BG_TOP
+	var bg_mid := DARK_MID if _selector_dark() else BG_MID
+	var bg_bottom := DARK_BOTTOM if _selector_dark() else BG_BOTTOM
+	var bg_border := Color(0.22,0.36,0.48,0.82) if _selector_dark() else Color("#bad1e3")
+	background.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(bg_top, bg_mid, bg_bottom, 34, bg_border, 1, 0.48))
 	RefCanvas.set_rect(background, 0, 0, 390, 844)
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(background)
 
 	RefCanvas.add_shadow(canvas, Rect2(17, 19, 52, 52), 18, Color(0.02,0.15,0.30,0.16), 4, Vector2(0,3))
-	var back := RefCanvas.premium_button("‹", 27, NAVY, OFF_WHITE, 18)
+	var back := RefCanvas.premium_button("‹", 27, DARK_MUTED if _selector_dark() else NAVY, Color("#152337") if _selector_dark() else OFF_WHITE, 18)
 	back.name = "SelectorBackButton"
 	RefCanvas.set_rect(back, 17, 19, 52, 52)
 	back.pressed.connect(_go_home)
@@ -278,7 +301,9 @@ func _add_bottom_nav(canvas: Control) -> void:
 	var shell := PanelContainer.new()
 	shell.name = "SelectorBottomNav"
 	RefCanvas.add_shadow(canvas, Rect2(13, 757, 362, 70), 18, Color(0.02,0.10,0.18,0.12), 5, Vector2(0,4))
-	shell.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.985, 0.995, 1.0, 0.97), 18, Color(0.78, 0.88, 0.95, 0.75), 1))
+	var nav_fill := Color(0.07,0.10,0.17,0.98) if _selector_dark() else Color(0.985, 0.995, 1.0, 0.97)
+	var nav_border := Color(0.23,0.34,0.45,0.90) if _selector_dark() else Color(0.78,0.88,0.95,0.75)
+	shell.add_theme_stylebox_override("panel", RefCanvas.solid_box(nav_fill, 18, nav_border, 1))
 	RefCanvas.set_rect(shell, 13, 757, 362, 70)
 	shell.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(shell)
@@ -295,7 +320,8 @@ func _add_bottom_nav(canvas: Control) -> void:
 		["SETTINGS", 298.0, func(): get_parent().call("build_settings"), false],
 	]
 	for item in items:
-		_add_text(canvas, item[0], Rect2(item[1] - 1.0, 788, 62, 30), 12, Color(0.05, 0.49, 0.86) if item[3] else Color(0.31, 0.43, 0.54), true)
+		var nav_text := (Color(0.42,0.78,1.0) if item[3] else DARK_MUTED) if _selector_dark() else (Color(0.05, 0.49, 0.86) if item[3] else Color(0.31, 0.43, 0.54))
+		_add_text(canvas, item[0], Rect2(item[1] - 1.0, 788, 62, 30), 12, nav_text, true)
 		var hit := Button.new()
 		hit.flat = true
 		hit.focus_mode = Control.FOCUS_NONE
@@ -313,4 +339,4 @@ func _add_text(canvas: Control, text_value: String, rect: Rect2, font_size: int,
 	return label
 
 func _make_label(text_value: String, font_size: int, color: Color, bold: bool) -> Label:
-	return RefCanvas.label(text_value, font_size, color, bold)
+	return RefCanvas.label(text_value, font_size, _selector_text_color(color), bold)

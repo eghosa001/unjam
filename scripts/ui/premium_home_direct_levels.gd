@@ -13,8 +13,28 @@ const CYAN := Color(0.14, 0.68, 1.0)
 const ORANGE := Color(1.0, 0.55, 0.12)
 const GOLD := Color(1.0, 0.84, 0.24)
 const OFF_WHITE := Color(1.0, 0.995, 0.97)
+const DARK_TOP := Color("#07111d")
+const DARK_MID := Color("#0b1726")
+const DARK_BOTTOM := Color("#101c2d")
+const DARK_CARD := Color("#122033")
+const DARK_INK := Color("#eef7ff")
+const DARK_MUTED := Color("#b6c7d6")
 
 var figma_canvas: FigmaReferenceCanvas
+
+func _home_dark() -> bool:
+	return _theme_mode() == "dark"
+
+func _home_text_color(color: Color) -> Color:
+	if not _home_dark():
+		return color
+	if color.is_equal_approx(NAVY) or color.is_equal_approx(INK):
+		return DARK_INK
+	if color.is_equal_approx(MUTED):
+		return DARK_MUTED
+	if color.get_luminance() < 0.34:
+		return color.lightened(0.48)
+	return color.lightened(0.06)
 
 func build_home_launcher() -> void:
 	for child in get_children():
@@ -31,7 +51,7 @@ func build_home_launcher() -> void:
 	var viewport_bg := ColorRect.new()
 	viewport_bg.name = "FigmaHomeViewportBackground"
 	viewport_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	viewport_bg.color = BG_BOTTOM
+	viewport_bg.color = DARK_BOTTOM if _home_dark() else BG_BOTTOM
 	viewport_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(viewport_bg)
 
@@ -61,7 +81,11 @@ func _build_reference_home(canvas: Control) -> void:
 func _add_frame_background(canvas: Control) -> void:
 	var bg := PanelContainer.new()
 	bg.name = "FigmaHomeBackground"
-	bg.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(BG_TOP, BG_MID, BG_BOTTOM, 34, Color("#bad1e3"), 1, 0.48))
+	var top := DARK_TOP if _home_dark() else BG_TOP
+	var middle := DARK_MID if _home_dark() else BG_MID
+	var bottom := DARK_BOTTOM if _home_dark() else BG_BOTTOM
+	var border := Color(0.22,0.36,0.48,0.82) if _home_dark() else Color("#bad1e3")
+	bg.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(top, middle, bottom, 34, border, 1, 0.48))
 	RefCanvas.set_rect(bg, 0, 0, 390, 844)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(bg)
@@ -70,7 +94,10 @@ func _add_hero(canvas: Control) -> void:
 	RefCanvas.add_shadow(canvas, Rect2(21, 121, 346, 224), 20, Color(0.03, 0.12, 0.22, 0.16), 5, Vector2(0, 4))
 	var hero := PanelContainer.new()
 	hero.name = "FigmaHomeHero"
-	hero.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#d7f4ff"), Color("#d1eef9"), Color("#caeaf6"), 20, Color(0.505, 0.769, 0.945, 0.32), 1.2))
+	if _home_dark():
+		hero.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#162a40"), Color("#12243a"), Color("#0f1d30"), 20, Color(0.24,0.62,0.88,0.62), 1.2))
+	else:
+		hero.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#d7f4ff"), Color("#d1eef9"), Color("#caeaf6"), 20, Color(0.505, 0.769, 0.945, 0.32), 1.2))
 	RefCanvas.set_rect(hero, 21, 121, 346, 224)
 	hero.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(hero)
@@ -105,7 +132,7 @@ func _add_hero_preview(canvas: Control, game_id: String) -> void:
 	canvas.add_child(preview_root)
 	var stage := PanelContainer.new()
 	stage.name = "FigmaHomeHeroPreview"
-	stage.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.91, 0.99, 1.0, 0.34), 16))
+	stage.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.08,0.16,0.25,0.72) if _home_dark() else Color(0.91, 0.99, 1.0, 0.34), 16))
 	RefCanvas.set_rect(stage, 219, 144, 125, 136)
 	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	preview_root.add_child(stage)
@@ -233,7 +260,9 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 	var shell := PanelContainer.new()
 	shell.name = "HomeBottomNav3D"
 	RefCanvas.add_shadow(canvas, Rect2(13, 757, 362, 70), 18, Color(0.02, 0.10, 0.18, 0.12), 5, Vector2(0, 4))
-	shell.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.985, 0.995, 1.0, 0.97), 18, Color(0.78, 0.88, 0.95, 0.75), 1))
+	var nav_fill := Color(0.07,0.10,0.17,0.98) if _home_dark() else Color(0.985, 0.995, 1.0, 0.97)
+	var nav_border := Color(0.23,0.34,0.45,0.90) if _home_dark() else Color(0.78, 0.88, 0.95, 0.75)
+	shell.add_theme_stylebox_override("panel", RefCanvas.solid_box(nav_fill, 18, nav_border, 1))
 	RefCanvas.set_rect(shell, 13, 757, 362, 70)
 	shell.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(shell)
@@ -246,7 +275,7 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 	]
 	for item in items:
 		var selected: bool = bool(item[4])
-		var nav_color := Color(0.05, 0.49, 0.86) if selected else Color(0.31, 0.43, 0.54)
+		var nav_color := (Color(0.42,0.78,1.0) if selected else DARK_MUTED) if _home_dark() else (Color(0.05, 0.49, 0.86) if selected else Color(0.31, 0.43, 0.54))
 		if selected:
 			var dot := PanelContainer.new()
 			dot.name = "HomeNavSelectedDot"
@@ -279,7 +308,8 @@ func _add_pill(canvas: Control, rect: Rect2, fill: Color, text_value: String, fo
 	RefCanvas.set_rect(panel, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(panel)
-	var label := _make_label(text_value, font_size, text_color, true)
+	var resolved_text := text_color if fill.get_luminance() > 0.58 else _home_text_color(text_color)
+	var label := RefCanvas.label(text_value, font_size, resolved_text, true)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	RefCanvas.set_rect(label, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	canvas.add_child(label)
@@ -287,7 +317,8 @@ func _add_pill(canvas: Control, rect: Rect2, fill: Color, text_value: String, fo
 
 func _add_action(canvas: Control, rect: Rect2, fill: Color, text_value: String, font_size: int, text_color: Color, callback: Callable, radius: float) -> Button:
 	RefCanvas.add_shadow(canvas, rect, radius, Color(0.02, 0.10, 0.18, 0.20), 5, Vector2(0, 4))
-	var button := RefCanvas.premium_button(text_value, font_size, text_color, fill, radius)
+	var resolved_text := text_color if fill.get_luminance() > 0.58 else _home_text_color(text_color)
+	var button := RefCanvas.premium_button(text_value, font_size, resolved_text, fill, radius)
 	RefCanvas.set_rect(button, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	if callback.is_valid():
 		button.pressed.connect(callback)
@@ -301,7 +332,7 @@ func _add_text(canvas: Control, text_value: String, rect: Rect2, font_size: int,
 	return label
 
 func _make_label(text_value: String, font_size: int, color: Color, bold: bool) -> Label:
-	var label := RefCanvas.label(text_value, font_size, color, bold)
+	var label := RefCanvas.label(text_value, font_size, _home_text_color(color), bold)
 	return label
 
 func _home_current_level(game_id: String) -> int:
@@ -334,7 +365,7 @@ func _open_daily_games() -> void:
 
 func _switch_card_style(game_id: String, accent: Color) -> StyleBox:
 	var selected := game_id == selected_game
-	var card_fill := accent.lightened(0.88) if selected else OFF_WHITE
+	var card_fill := accent.darkened(0.64) if selected and _home_dark() else (DARK_CARD if _home_dark() else (accent.lightened(0.88) if selected else OFF_WHITE))
 	var border_width := 2.4 if selected else 1.25
 	return RefCanvas.rounded_gradient3(
 		card_fill.lightened(0.04),

@@ -17,6 +17,11 @@ var _secondary_button: Button
 var _secondary_shadow: Control
 var _canvas: FigmaReferenceCanvas
 
+func _dark_theme() -> bool:
+	var main := get_tree().current_scene
+	var shell := main.get_node_or_null("UXShell") if main != null else null
+	return shell != null and shell.get("theme_mode") != null and String(shell.get("theme_mode")) == "dark"
+
 func configure(title_value: String, subtitle_value: String, stats_value: String, star_count: int, color: Color, action_text: String = "CONTINUE", badge_value: String = "PUZZLE CLEARED") -> void:
 	title_text = title_value
 	subtitle_text = subtitle_value
@@ -55,6 +60,7 @@ func _ready() -> void:
 	call_deferred("_celebrate")
 
 func _build() -> void:
+	var dark := _dark_theme()
 	var dim := ColorRect.new()
 	dim.name = "ResultDim"
 	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -72,11 +78,11 @@ func _build() -> void:
 	var card := PanelContainer.new()
 	card.name = "ResultCard3D"
 	card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(
-		Color("#fffef8"),
-		Color("#fbfaf4"),
-		Color("#f6f5ef"),
+		Color("#172238") if dark else Color("#fffef8"),
+		Color("#131e31") if dark else Color("#fbfaf4"),
+		Color("#0f1828") if dark else Color("#f6f5ef"),
 		28,
-		Color(accent, 0.32),
+		Color(accent, 0.62 if dark else 0.32),
 		1.2,
 		0.50
 	))
@@ -84,14 +90,14 @@ func _build() -> void:
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_canvas.add_child(card)
 
-	var title := FigmaReferenceCanvas.label(title_text, 26, Unjam3DTheme.NAVY, true)
+	var title := FigmaReferenceCanvas.label(title_text, 26, Color("#eef7ff") if dark else Unjam3DTheme.NAVY, true)
 	title.name = "ResultTitle"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	FigmaReferenceCanvas.set_rect(title, 47, 118, 294, 42)
 	_canvas.add_child(title)
 
-	var subtitle := FigmaReferenceCanvas.label(subtitle_text, 14, Color("45617b"), false)
+	var subtitle := FigmaReferenceCanvas.label(subtitle_text, 14, Color("#b6c7d6") if dark else Color("45617b"), false)
 	subtitle.name = "ResultSubtitle"
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -124,12 +130,12 @@ func _build() -> void:
 	stats_panel.name = "Stats"
 	FigmaReferenceCanvas.add_shadow(_canvas, Rect2(47,356,294,82), 18, Color(0.02,0.14,0.26,0.20), 3, Vector2(0,2))
 	stats_panel.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(
-		Color("#ebfaff"), 18, Color("#1aa8ff"), 1.5
+		Color("#11283a") if dark else Color("#ebfaff"), 18, Color("#1aa8ff"), 1.5
 	))
 	FigmaReferenceCanvas.set_rect(stats_panel, 47, 356, 294, 82)
 	stats_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_canvas.add_child(stats_panel)
-	var stats := FigmaReferenceCanvas.label(stats_text, 15, Unjam3DTheme.NAVY, true)
+	var stats := FigmaReferenceCanvas.label(stats_text, 15, Color("#dceaf5") if dark else Unjam3DTheme.NAVY, true)
 	stats.name = "ResultStatsText"
 	stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	stats.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
