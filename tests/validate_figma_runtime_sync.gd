@@ -81,7 +81,7 @@ func _test_home_and_surfaces(main: Control) -> bool:
 	if not _has_figma_surface(main):
 		return _fail("Daily Games is not using the Figma surface canvas")
 	var daily_canvas := (main.get("content") as Control).find_child("FigmaSurface390x844",true,false) as Control
-	if daily_canvas == null or daily_canvas.find_child("StdNav/SelectedDot/daily",true,false) == null or daily_canvas.find_child("StdNav/SelectedLine/daily",true,false) == null:
+	if daily_canvas == null or daily_canvas.find_child("StdNavSelectedDot_daily",true,false) == null or daily_canvas.find_child("StdNavSelectedLine_daily",true,false) == null:
 		return _fail("Daily nav does not use the fixed dot/underline selected state")
 	if daily_canvas.find_child("StdNav/Active",true,false) != null:
 		return _fail("Legacy moving nav color slab is still present")
