@@ -17,7 +17,7 @@ func _init() -> void:
 	_require("res://scripts/game/water_sort_10000.gd", ["WATER SORT FAILED", "func _has_any_legal_pour", "NO LEGAL POURS"], errors)
 	_require("res://scripts/game/block_puzzle_10000.gd", ["BLOCK PUZZLE FAILED", "func _handle_no_legal_moves", "BlockFailureResult"], errors)
 	_require("res://scripts/game/game.gd", ["RESCUE FAILED", "func _has_any_legal_move", "var failed: bool = false"], errors)
-	_reject("res://scripts/ui/water_tube_button.gd", ["draw_line(body.position + Vector2(31, 43)", "glass_shine", "draw_rect(glass_shine", "var shine: Rect2", "draw_rect(shine"], errors)
+	_reject("res://scripts/ui/water_tube_button.gd", ["draw_line(body.position + Vector2(31, 43)", "glass_shine", "draw_rect(glass_shine", "var shine: Rect2", "draw_rect(shine", "draw_line(body.position + Vector2(9, 25)", "draw_line(Vector2(body.end.x - 9"], errors)
 	_reject("res://scripts/game/block_puzzle_3d.gd", ["No moves — new blocks"], errors)
 	_reject("res://scripts/game/block_puzzle.gd", ["No moves — new blocks", "pieces[0] = SHAPES[0].duplicate()"], errors)
 	_reject("res://scripts/ui/premium_main_casual.gd", ["Daily level %d", "Three fresh challenges every day"], errors)
