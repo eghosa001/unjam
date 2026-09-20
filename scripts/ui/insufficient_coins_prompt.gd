@@ -28,7 +28,7 @@ func _build() -> void:
 
 	var shade := ColorRect.new()
 	shade.name = "CoinModal/Dim"
-	shade.color = Color(0.01,0.025,0.07,0.76)
+	shade.color = Color(0.039,0.090,0.161,0.72)
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	shade.mouse_filter = Control.MOUSE_FILTER_STOP
 	overlay.add_child(shade)
@@ -37,10 +37,11 @@ func _build() -> void:
 	canvas.name = "FigmaInsufficientCoins390x844"
 	overlay.add_child(canvas)
 
+	FigmaReferenceCanvas.add_shadow(canvas,Rect2(26,194,338,410),26,Color(0.012,0.071,0.141,0.32),10,Vector2(0,10))
 	var card := PanelContainer.new()
 	card.name = "CoinModal/Card"
-	card.add_theme_stylebox_override("panel",FigmaReferenceCanvas.rounded_gradient(
-		Color(0.995,0.998,1.0),Color(0.94,0.97,0.99),26,Color("ffd46a"),2
+	card.add_theme_stylebox_override("panel",FigmaReferenceCanvas.solid_box(
+		Color("#fbfeff"),26,Color(0.75,0.88,0.96,0.90),1.5
 	))
 	FigmaReferenceCanvas.set_rect(card,26,194,338,410)
 	card.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -48,24 +49,24 @@ func _build() -> void:
 
 	var icon := PanelContainer.new()
 	icon.name = "CoinModal/Icon"
-	icon.add_theme_stylebox_override("panel",FigmaReferenceCanvas.rounded_gradient(Color("ffd95a"),Color("f3a820"),44,Color("fff1a8"),2))
+	icon.add_theme_stylebox_override("panel",FigmaReferenceCanvas.rounded_gradient3(Color("#fff2a6"),Color("#ffd95a"),Color("#f3a820"),44,Color("#fff1a8"),2,0.50))
 	FigmaReferenceCanvas.set_rect(icon,151,220,88,88)
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(icon)
-	var icon_text := FigmaReferenceCanvas.label("◈",30,Color.WHITE,true)
+	var icon_text := FigmaReferenceCanvas.label("◈",30,Color("#7a4a05"),true)
 	icon_text.name = "CoinModal/IconText"
 	icon_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	icon_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	FigmaReferenceCanvas.set_rect(icon_text,166,236,58,44)
 	canvas.add_child(icon_text)
 
-	var title := FigmaReferenceCanvas.label("MORE COINS NEEDED",23,Color(0.07,0.20,0.35),true)
+	var title := FigmaReferenceCanvas.label("MORE COINS NEEDED",23,Color("#143852"),true)
 	title.name = "CoinModal/Title"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	FigmaReferenceCanvas.set_rect(title,52,326,286,30)
 	canvas.add_child(title)
 
-	detail_label = FigmaReferenceCanvas.label("",14,Color(0.31,0.42,0.52),false)
+	detail_label = FigmaReferenceCanvas.label("",14,Color("#527087"),false)
 	detail_label.name = "CoinModal/Body"
 	detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	detail_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -73,19 +74,22 @@ func _build() -> void:
 	FigmaReferenceCanvas.set_rect(detail_label,54,368,282,48)
 	canvas.add_child(detail_label)
 
-	reward_button = FigmaReferenceCanvas.button("▶  WATCH AD  •  +50 COINS",14,Color.WHITE,Color(0.13,0.78,0.39),16,Color(0.49,0.89,0.63),1)
+	FigmaReferenceCanvas.add_shadow(canvas,Rect2(46,438,298,58),16,Color(0.02,0.08,0.16,0.15),4,Vector2(0,4))
+	reward_button = FigmaReferenceCanvas.premium_button("▶  WATCH AD  •  +50 COINS",14,Color.WHITE,Color("#1fb86b"),16,Color("#54e594"),1.2)
 	reward_button.name = "CoinModal/Rewarded"
 	FigmaReferenceCanvas.set_rect(reward_button,46,438,298,58)
 	reward_button.pressed.connect(_watch_rewarded)
 	canvas.add_child(reward_button)
 
-	var shop := FigmaReferenceCanvas.button("OPEN SHOP",13,Color.WHITE,Color(1.0,0.55,0.12),16,Color(1.0,0.76,0.38),1)
+	FigmaReferenceCanvas.add_shadow(canvas,Rect2(46,506,142,52),16,Color(0.02,0.08,0.16,0.15),4,Vector2(0,4))
+	var shop := FigmaReferenceCanvas.premium_button("OPEN SHOP",13,Color.WHITE,Color("#147ddb"),16,Color("#61bfff"),1.2)
 	shop.name = "CoinModal/Shop"
 	FigmaReferenceCanvas.set_rect(shop,46,506,142,52)
 	shop.pressed.connect(_open_shop)
 	canvas.add_child(shop)
 
-	var later := FigmaReferenceCanvas.button("NOT NOW",13,Color(0.03,0.23,0.47),Color(0.96,0.985,1.0),16,Color(0.66,0.80,0.91),1)
+	FigmaReferenceCanvas.add_shadow(canvas,Rect2(202,506,142,52),16,Color(0.02,0.08,0.16,0.15),4,Vector2(0,4))
+	var later := FigmaReferenceCanvas.premium_button("NOT NOW",13,Color("#57738a"),Color("#f5faff"),16,Color("#b8d1e3"),1.2)
 	later.name = "CoinModal/Later"
 	FigmaReferenceCanvas.set_rect(later,202,506,142,52)
 	later.pressed.connect(_close)
