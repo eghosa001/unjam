@@ -254,10 +254,13 @@ func _figma_header(canvas: Control, title_text: String, subtitle_text: String, p
 	back_button.tooltip_text = "Back"
 	var header_title := _figma_text(canvas, title_text, Rect2(83,21,186,28), 23, heading_color)
 	header_title.name = "FigmaHeaderTitle"
+	header_title.clip_text = true
 	FigmaReferenceCanvas.style_display_title(header_title, pill_fill.lightened(0.28), Color("#071d55"), 2)
 	var subtitle := _figma_text(canvas, subtitle_text, Rect2(83,51,186,30), 12, muted_color)
 	subtitle.name = "FigmaHeaderSubtitle"
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	subtitle.clip_text = true
+	FigmaReferenceCanvas.set_rect(subtitle, 83, 51, 186, 30)
 	if pill_callback.is_valid():
 		var pill_button := _figma_button(canvas, "FigmaHeaderPill", pill_text, Rect2(285,21,84,46), pill_fill, pill_callback, FIGMA_OFF_WHITE, 23, 12)
 		if pill_text.begins_with("◈"):
