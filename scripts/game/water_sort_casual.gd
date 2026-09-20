@@ -239,10 +239,11 @@ func _apply_tube_layout() -> void:
 	var rows := int(ceil(float(count) / float(columns)))
 	var stage_width := 326.0
 	var stage_height := 390.0
-	var h_gap := 12.0 if columns <= 4 else 10.0
+	var h_gap := 12.0 if columns <= 4 else (8.0 if rows == 1 else 9.0)
 	var v_gap := 14.0 if rows <= 2 else 10.0
-	var ratio := 4.7 if rows == 1 else (2.65 if rows == 2 else 2.45)
-	var preferred_width := 55.0 if rows == 1 else (68.0 if rows == 2 else 52.0)
+	# Premium water-sort bottles should read as substantial vessels, not needles.
+	var ratio := 3.8 if rows == 1 else (2.55 if rows == 2 else 2.30)
+	var preferred_width := 60.0 if rows == 1 else (70.0 if rows == 2 else 54.0)
 	var width_limit := floorf((stage_width - h_gap * float(maxi(columns - 1, 0))) / float(columns))
 	var row_height_limit := floorf((stage_height - v_gap * float(maxi(rows - 1, 0))) / float(rows))
 	var height_width_limit := row_height_limit / ratio
