@@ -62,16 +62,16 @@ static func rounded_gradient(top: Color, bottom: Color, radius: float = 16.0, bo
 		for x in range(image_size):
 			var px := float(x) + 0.5
 			var py := float(y) + 0.5
-			var dx := maxf(r - px, 0.0, px - (float(image_size) - r))
-			var dy := maxf(r - py, 0.0, py - (float(image_size) - r))
+			var dx := maxf(maxf(r - px, 0.0), px - (float(image_size) - r))
+			var dy := maxf(maxf(r - py, 0.0), py - (float(image_size) - r))
 			var outside := dx * dx + dy * dy > r * r
 			if outside:
 				image.set_pixel(x, y, Color.TRANSPARENT)
 				continue
 			if bw > 0.0:
 				var inner_r := maxf(0.0, r - bw)
-				var idx := maxf(inner_r - px, 0.0, px - (float(image_size) - inner_r))
-				var idy := maxf(inner_r - py, 0.0, py - (float(image_size) - inner_r))
+				var idx := maxf(maxf(inner_r - px, 0.0), px - (float(image_size) - inner_r))
+				var idy := maxf(maxf(inner_r - py, 0.0), py - (float(image_size) - inner_r))
 				var in_inner := idx * idx + idy * idy <= inner_r * inner_r and px >= bw and py >= bw and px <= image_size - bw and py <= image_size - bw
 				if not in_inner:
 					image.set_pixel(x, y, border_color)
