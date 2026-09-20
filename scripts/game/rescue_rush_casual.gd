@@ -125,7 +125,7 @@ func _build_figma_rescue(canvas: Control) -> void:
 	RefCanvas.set_rect(status_row,27,81,334,48)
 	canvas.add_child(status_row)
 	for label in [moves_label,rescue_label,chain_label]:
-		label.add_theme_font_size_override("font_size",12)
+		label.add_theme_font_size_override("font_size",13)
 		label.add_theme_color_override("font_color",OFF_WHITE)
 		status_row.add_child(label)
 
@@ -179,7 +179,7 @@ func _build_figma_rescue(canvas: Control) -> void:
 	restart.pressed.connect(restart_level)
 	actions.add_child(restart)
 
-	hint_label = RefCanvas.label("",12,NAVY,true)
+	hint_label = RefCanvas.label("",13,NAVY,true)
 	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	RefCanvas.set_rect(hint_label,21,639,346,40)
@@ -194,7 +194,7 @@ func _build_figma_rescue(canvas: Control) -> void:
 	canvas.add_child(frame_border)
 
 func _action(text_value: String, fill: Color) -> Button:
-	var result := RefCanvas.premium_button(text_value,12,OFF_WHITE,fill,16,fill.lightened(0.30),1.3)
+	var result := RefCanvas.premium_button(text_value,13,OFF_WHITE,fill,16,fill.lightened(0.30),1.3)
 	result.custom_minimum_size = Vector2(106,60)
 	result.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	return result
