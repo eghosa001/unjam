@@ -52,7 +52,7 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 func _draw() -> void:
-	var rect := Rect2(Vector2(7, 6), size - Vector2(14, 16))
+	var rect := Rect2(Vector2(3, 3), size - Vector2(6, 8))
 	var center := rect.get_center()
 	var pulse := 0.5 + 0.5 * sin(phase * 3.2)
 	_draw_motion_trail(center, pulse)
@@ -64,7 +64,7 @@ func _draw() -> void:
 		"bomb": _draw_bomb(center)
 		"linked": _draw_linked(center)
 		"blocker": _draw_blocker(center)
-		_: _draw_arrow(center, direction, minf(rect.size.x, rect.size.y) * 0.27)
+		_: _draw_arrow(center, direction, minf(rect.size.x, rect.size.y) * 0.34)
 
 func _draw_motion_trail(center: Vector2, pulse: float) -> void:
 	if piece_type in ["blocker", "gate"] or MotionSystem.reduced():
@@ -135,7 +135,7 @@ func _draw_arrow(center: Vector2, dir: String, scale_value: float) -> void:
 	draw_polyline(points + PackedVector2Array([points[0]]), Color(0.88, 0.98, 1.0, 0.90), 2.0, true)
 
 func _draw_rotate(center: Vector2) -> void:
-	var radius := minf(size.x, size.y) * 0.20
+	var radius := minf(size.x, size.y) * 0.24
 	draw_arc(center + Vector2(0, 3), radius, -2.6, 1.9, 26, Color(0.02, 0.15, 0.26, 0.25), 9.0, true)
 	draw_arc(center, radius, -2.6, 1.9, 26, Color.WHITE, 7.0, true)
 	var tip := center + Vector2(cos(1.9), sin(1.9)) * radius
@@ -145,7 +145,7 @@ func _draw_rotate(center: Vector2) -> void:
 	_draw_arrow(center + Vector2(0, 6), direction, radius * 0.65)
 
 func _draw_key(center: Vector2) -> void:
-	var r := minf(size.x, size.y) * 0.12
+	var r := minf(size.x, size.y) * 0.15
 	draw_circle(center - Vector2(r * 0.75, -3), r, Color(0.02, 0.15, 0.26, 0.25))
 	draw_circle(center - Vector2(r * 0.75, 0), r, Color.WHITE)
 	draw_circle(center - Vector2(r * 0.75, 0), r * 0.48, accent.darkened(0.20))
@@ -154,7 +154,7 @@ func _draw_key(center: Vector2) -> void:
 	draw_line(center + Vector2(r * 1.18, 0), center + Vector2(r * 1.18, r * 0.42), Color.WHITE, 7.0, true)
 
 func _draw_gate(center: Vector2) -> void:
-	var w := minf(size.x, size.y) * 0.40
+	var w := minf(size.x, size.y) * 0.54
 	var h := w * 0.82
 	for offset in [-0.34, 0.0, 0.34]:
 		draw_line(center + Vector2(w * offset, -h * 0.45 + 3), center + Vector2(w * offset, h * 0.45 + 3), Color(0.02, 0.15, 0.26, 0.22), 9.0, true)
@@ -163,7 +163,7 @@ func _draw_gate(center: Vector2) -> void:
 	draw_line(center + Vector2(-w * 0.5, h * 0.45), center + Vector2(w * 0.5, h * 0.45), Color.WHITE, 7.0, true)
 
 func _draw_bomb(center: Vector2) -> void:
-	var r := minf(size.x, size.y) * 0.18
+	var r := minf(size.x, size.y) * 0.22
 	draw_circle(center + Vector2(0, 8), r, Color(0.02, 0.15, 0.26, 0.22))
 	draw_circle(center + Vector2(0, 5), r, Color.WHITE)
 	draw_line(center + Vector2(r * 0.38, -r * 0.75), center + Vector2(r * 0.82, -r * 1.3), Color.WHITE, 6.0, true)
@@ -171,7 +171,7 @@ func _draw_bomb(center: Vector2) -> void:
 	draw_circle(center + Vector2(r * 0.95, -r * 1.45), r * 0.18 * spark, Unjam3DTheme.GOLD)
 
 func _draw_linked(center: Vector2) -> void:
-	var r := minf(size.x, size.y) * 0.13
+	var r := minf(size.x, size.y) * 0.16
 	draw_arc(center - Vector2(r * 0.85, -3), r, 0, TAU, 28, Color(0.02, 0.15, 0.26, 0.22), 9.0, true)
 	draw_arc(center + Vector2(r * 0.85, 3), r, 0, TAU, 28, Color(0.02, 0.15, 0.26, 0.22), 9.0, true)
 	draw_arc(center - Vector2(r * 0.85, 0), r, 0, TAU, 28, Color.WHITE, 7.0, true)
@@ -179,7 +179,7 @@ func _draw_linked(center: Vector2) -> void:
 	draw_line(center - Vector2(r * 0.15, 0), center + Vector2(r * 0.15, 0), Color.WHITE, 7.0, true)
 
 func _draw_blocker(center: Vector2) -> void:
-	var w := minf(size.x, size.y) * 0.48
+	var w := minf(size.x, size.y) * 0.62
 	var rect := Rect2(center - Vector2(w, w) * 0.5, Vector2(w, w))
 	var shadow := Rect2(rect.position + Vector2(0, 5), rect.size)
 	draw_style_box(_rounded(Color("242d38"), w * 0.18, Color("111820"), 2), shadow)
