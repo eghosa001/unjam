@@ -46,7 +46,7 @@ func run() -> void:
 		if hint != null:
 			expect_true("25" in hint.tooltip_text and "160" in hint.tooltip_text, "%s Hint tooltip does not disclose 25-coin cost and live 160 balance" % game_id)
 			if game_id == "block_puzzle":
-				expect_true(hint.text == "✦", "Block Figma hint control must remain a compact icon-only action")
+				expect_true(hint.text.is_empty(), "Block Figma hint control must remain icon-only")\n\t\t\t\texpect_true(hint.find_child("BlockHintBulb", true, false) != null, "Block Figma hint bulb is missing")
 
 		var tube := game.find_child("AddTubeAction", true, false) as Button
 		if game_id == "water_sort":
