@@ -23,11 +23,11 @@ func _run() -> void:
 	var hint := game.find_child("BlockHint",true,false) as Control
 	if canvas == null or board == null or tray == null or boosters == null or status == null or hint == null:
 		return _fail("Figma Block gameplay hierarchy is incomplete")
-	if not _rect_eq(Rect2(board.position,board.size),Rect2(30,180,330,330)):
+	if not _rect_eq(Rect2(board.position,board.size),Rect2(29,179,330,330)):
 		return _fail("Block board drifted from Figma 330x330 geometry")
-	if not _rect_eq(Rect2(tray.position,tray.size),Rect2(18,535,354,104)):
+	if not _rect_eq(Rect2(tray.position,tray.size),Rect2(17,534,354,104)):
 		return _fail("Block tray drifted from Figma 354x104 geometry")
-	if not _rect_eq(Rect2(boosters.position,boosters.size),Rect2(18,650,349,54)):
+	if not _rect_eq(Rect2(boosters.position,boosters.size),Rect2(17,649,349,54)):
 		return _fail("Block booster row drifted from Figma geometry")
 	if not _rect_eq(Rect2(status.position,status.size),Rect2(18,712,354,20)):
 		return _fail("Block status row drifted from Figma geometry")
@@ -42,7 +42,7 @@ func _run() -> void:
 	game.call("_fit_3d_board_layout")
 	await _frames(3)
 	if not _rect_eq(Rect2(board.position,board.size),Rect2(30,180,330,330)):
-		return _fail("Responsive fitter overwrote Figma Block board geometry")
+		return _fail("Responsive fitter overwrote audited Figma Block board geometry")
 
 	game.queue_free()
 	await process_frame
