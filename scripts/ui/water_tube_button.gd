@@ -152,9 +152,8 @@ func _draw() -> void:
 	draw_arc(Vector2(body.get_center().x, body.end.y - 31), body.size.x * 0.39, 0, PI, 36, Color(rim_color, 0.88), 4.5, true)
 	draw_arc(Vector2(body.get_center().x, body.end.y - 35), body.size.x * 0.31, 0, PI, 30, Color(0.84, 0.95, 1.0, 0.30), 2.0, true)
 
-	# One soft edge reflection is enough; avoid an extra internal line that reads as a divider.
-	var glass_shine: Rect2 = Rect2(body.position + Vector2(20, 39), Vector2(7, body.size.y - 88))
-	draw_rect(glass_shine, Color(1, 1, 1, 0.26), true)
+	# Keep the bottle readable through its lip, walls and base only. A vertical
+	# interior reflection reads as an artificial divider once the tube is empty.
 
 	if layers.is_empty():
 		var empty_pulse := 0.5 + 0.5 * sin(bubble_phase * 2.3 + float(tube_index))
