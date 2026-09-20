@@ -122,8 +122,6 @@ func _draw() -> void:
 			_draw_round_rect(slot_rect, Color(liquid, 0.96), 8.0 if slot == 0 else 4.0)
 			var surface_y: float = slot_rect.position.y + 4.0 + wave
 			draw_line(Vector2(slot_rect.position.x + 6, surface_y), Vector2(slot_rect.end.x - 6, surface_y - wave * 0.45), liquid.lightened(0.36), 4.0, true)
-			var shine: Rect2 = Rect2(slot_rect.position + Vector2(8, 9), Vector2(maxf(4.0, slot_rect.size.x * 0.09), maxf(5.0, slot_rect.size.y - 17)))
-			draw_rect(shine, Color(1, 1, 1, 0.18), true)
 			# A tiny shape marker provides an accessibility cue in addition to colour.
 			# It is deliberately subtle so the tubes still look like liquid rather
 			# than labelled containers.
