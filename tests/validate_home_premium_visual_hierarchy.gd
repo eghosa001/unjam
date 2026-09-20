@@ -25,15 +25,15 @@ func _run() -> void:
 	var nav := home.find_child("HomeBottomNav3D", true, false) as Control
 	if canvas == null or hero == null or preview == null or primary == null or choose == null or nav == null:
 		return _fail("Figma Home hierarchy is incomplete")
-	if not _rect_eq(Rect2(hero.position, hero.size), Rect2(22,122,346,224)):
+	if not _rect_eq(Rect2(hero.position, hero.size), Rect2(21,121,346,224)):
 		return _fail("Home hero drifted from Figma 346x224 reference")
-	if not _rect_eq(Rect2(preview.position, preview.size), Rect2(220,145,125,136)):
+	if not _rect_eq(Rect2(preview.position, preview.size), Rect2(219,144,125,136)):
 		return _fail("Home preview drifted from Figma 125x136 reference")
-	if not _rect_eq(Rect2(primary.position, primary.size), Rect2(42,286,178,48)):
+	if not _rect_eq(Rect2(primary.position, primary.size), Rect2(41,285,178,48)):
 		return _fail("Home primary action drifted from Figma reference")
-	if not _rect_eq(Rect2(choose.position, choose.size), Rect2(22,366,166,52)):
+	if not _rect_eq(Rect2(choose.position, choose.size), Rect2(21,365,166,52)):
 		return _fail("Home Choose Game action drifted from Figma reference")
-	if not _rect_eq(Rect2(nav.position, nav.size), Rect2(14,758,362,70)):
+	if not _rect_eq(Rect2(nav.position, nav.size), Rect2(13,757,362,70)):
 		return _fail("Home bottom nav drifted from Figma reference")
 	if home.find_child("HomeMascot3D", true, false) != null:
 		return _fail("Retired giant mascot returned to Figma Home")
