@@ -31,7 +31,7 @@ func _build_shell() -> void:
 
 	var dim := ColorRect.new()
 	dim.name = "TutorialDim"
-	dim.color = Color(0.015,0.025,0.045,0.78)
+	dim.color = Color(Color("#0a4f94"), 0.55)
 	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	dim.visible = false
 	dim.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -42,43 +42,76 @@ func _build_shell() -> void:
 	_tutorial_canvas.visible = false
 	tutorial_layer.add_child(_tutorial_canvas)
 
+	var backdrop := PanelContainer.new()
+	backdrop.name = "TutorialBackdrop"
+	backdrop.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(
+		Color("#f0fcff"), Color("#fafcff"), Color("#e4f8ec"), 34, Color("#b8d1e0"), 1, 0.48
+	))
+	FigmaReferenceCanvas.set_rect(backdrop, 0, 0, 390, 844)
+	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tutorial_canvas.add_child(backdrop)
+
+	var halo := PanelContainer.new()
+	halo.name = "TutorialHalo"
+	halo.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color(0.13,0.78,0.39,0.10), 55))
+	FigmaReferenceCanvas.set_rect(halo, 109, 159, 170, 110)
+	halo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tutorial_canvas.add_child(halo)
+
+	var canvas_dim := ColorRect.new()
+	canvas_dim.name = "TutorialCanvasDim"
+	canvas_dim.color = Color(Color("#0a4f94"), 0.55)
+	canvas_dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	FigmaReferenceCanvas.set_rect(canvas_dim, -1, -1, 390, 844)
+	_tutorial_canvas.add_child(canvas_dim)
+
+	var rail := ColorRect.new()
+	rail.name = "TutorialAccentRail"
+	rail.color = Color(Color("#21c763"), 0.88)
+	rail.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	FigmaReferenceCanvas.set_rect(rail, -1, 11, 5, 820)
+	_tutorial_canvas.add_child(rail)
+
+	FigmaReferenceCanvas.add_shadow(_tutorial_canvas, Rect2(17,53,354,650), 24, Color(0.03,0.11,0.20,0.16), 5, Vector2(0,5))
 	tutorial_panel = PanelContainer.new()
 	tutorial_panel.name = "TutorialPanel"
-	tutorial_panel.add_theme_stylebox_override("panel",FigmaReferenceCanvas.rounded_gradient(
-		Color(0.995,0.998,1.0),Color(0.94,0.98,0.99),24,Color(0.70,0.86,0.95,0.65),1
+	tutorial_panel.add_theme_stylebox_override("panel",FigmaReferenceCanvas.rounded_gradient3(
+		Color("#fffef8"),Color("#fbfaf4"),Color("#f6f5ef"),24,Color(0.13,0.78,0.39,0.32),1.2,0.50
 	))
-	FigmaReferenceCanvas.set_rect(tutorial_panel,18,54,354,650)
+	FigmaReferenceCanvas.set_rect(tutorial_panel,17,53,354,650)
 	tutorial_panel.visible = true
 	tutorial_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	_tutorial_canvas.add_child(tutorial_panel)
 
-	var eyebrow := FigmaReferenceCanvas.label("QUICK PLAY GUIDE",12,Color(0.31,0.42,0.52),true)
+	var eyebrow := FigmaReferenceCanvas.label("QUICK PLAY GUIDE",12,Color("#21c763"),true)
+	eyebrow.name = "TutorialEyebrow"
 	eyebrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	FigmaReferenceCanvas.set_rect(eyebrow,118,76,154,15)
+	FigmaReferenceCanvas.set_rect(eyebrow,117,75,154,15)
 	_tutorial_canvas.add_child(eyebrow)
 
 	tutorial_title = FigmaReferenceCanvas.label("",28,Color(0.03,0.23,0.47),true)
 	tutorial_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	FigmaReferenceCanvas.set_rect(tutorial_title,70,104,250,34)
+	FigmaReferenceCanvas.set_rect(tutorial_title,69,103,250,34)
 	_tutorial_canvas.add_child(tutorial_title)
 
 	tutorial_body = FigmaReferenceCanvas.label("",14,Color(0.31,0.42,0.52),false)
 	tutorial_body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	tutorial_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	FigmaReferenceCanvas.set_rect(tutorial_body,44,150,302,42)
+	FigmaReferenceCanvas.set_rect(tutorial_body,43,149,302,42)
 	_tutorial_canvas.add_child(tutorial_body)
 
+	FigmaReferenceCanvas.add_shadow(_tutorial_canvas, Rect2(43,221,302,190), 20, Color(0.03,0.11,0.20,0.16), 5, Vector2(0,5))
 	var demo_panel := PanelContainer.new()
 	demo_panel.name = "TutorialDemoPanel"
-	demo_panel.add_theme_stylebox_override("panel",FigmaReferenceCanvas.rounded_gradient(
-		Color(0.94,0.98,1.0),Color(0.88,0.95,0.98),20,Color(0.68,0.84,0.94,0.60),1
+	demo_panel.add_theme_stylebox_override("panel",FigmaReferenceCanvas.rounded_gradient3(
+		Color("#e9fdef"),Color("#e3f8e9"),Color("#ddf4e5"),20,Color(0.13,0.78,0.39,0.32),1.2,0.50
 	))
-	FigmaReferenceCanvas.set_rect(demo_panel,44,222,302,190)
+	FigmaReferenceCanvas.set_rect(demo_panel,43,221,302,190)
 	demo_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_tutorial_canvas.add_child(demo_panel)
 	_tutorial_demo_root = Control.new()
 	_tutorial_demo_root.name = "TutorialDemoArt"
-	FigmaReferenceCanvas.set_rect(_tutorial_demo_root,44,222,302,190)
+	FigmaReferenceCanvas.set_rect(_tutorial_demo_root,43,221,302,190)
 	_tutorial_demo_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_tutorial_canvas.add_child(_tutorial_demo_root)
 
@@ -89,29 +122,32 @@ func _build_shell() -> void:
 	tutorial_step_label = FigmaReferenceCanvas.label("",14,Color(0.07,0.20,0.35),false)
 	tutorial_step_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	tutorial_step_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	FigmaReferenceCanvas.set_rect(tutorial_step_label,65,320,260,46)
+	FigmaReferenceCanvas.set_rect(tutorial_step_label,64,319,260,46)
 	_tutorial_canvas.add_child(tutorial_step_label)
 
 	tutorial_progress_label = FigmaReferenceCanvas.label("STEP 1 OF 3",12,Color(0.31,0.42,0.52),true)
 	tutorial_progress_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	FigmaReferenceCanvas.set_rect(tutorial_progress_label,148,438,94,15)
+	FigmaReferenceCanvas.set_rect(tutorial_progress_label,147,437,94,15)
 	_tutorial_canvas.add_child(tutorial_progress_label)
 
-	tutorial_prev_button = FigmaReferenceCanvas.button("‹ BACK",12,Color(0.03,0.23,0.47),Color(0.96,0.985,1.0),16,Color(0.64,0.80,0.92),1)
+	FigmaReferenceCanvas.add_shadow(_tutorial_canvas, Rect2(43,471,142,48), 16, Color(0.03,0.10,0.20,0.22), 4, Vector2(0,4))
+	tutorial_prev_button = FigmaReferenceCanvas.premium_button("‹ BACK",12,Color.WHITE,Color("#c7d6e3"),16,Color("#d0dde7"),1.2)
 	tutorial_prev_button.name = "TutorialPrevious"
-	FigmaReferenceCanvas.set_rect(tutorial_prev_button,44,472,142,48)
+	FigmaReferenceCanvas.set_rect(tutorial_prev_button,43,471,142,48)
 	tutorial_prev_button.pressed.connect(_tutorial_previous)
 	_tutorial_canvas.add_child(tutorial_prev_button)
 
-	tutorial_next_button = FigmaReferenceCanvas.button("NEXT ›",12,Color.WHITE,Color(0.03,0.43,0.78),16,Color(0.48,0.74,0.92),1)
+	FigmaReferenceCanvas.add_shadow(_tutorial_canvas, Rect2(203,471,142,48), 16, Color(0.03,0.10,0.20,0.22), 4, Vector2(0,4))
+	tutorial_next_button = FigmaReferenceCanvas.premium_button("NEXT ›",12,Color.WHITE,Color("#21c763"),16,Color("#74d999"),1.2)
 	tutorial_next_button.name = "TutorialNext"
-	FigmaReferenceCanvas.set_rect(tutorial_next_button,204,472,142,48)
+	FigmaReferenceCanvas.set_rect(tutorial_next_button,203,471,142,48)
 	tutorial_next_button.pressed.connect(_tutorial_next)
 	_tutorial_canvas.add_child(tutorial_next_button)
 
-	var close := FigmaReferenceCanvas.button("PLAY NOW",14,Color.WHITE,Color(0.13,0.78,0.39),17,Color(0.51,0.90,0.64),1)
+	FigmaReferenceCanvas.add_shadow(_tutorial_canvas, Rect2(43,547,302,58), 17, Color(0.03,0.10,0.20,0.22), 4, Vector2(0,4))
+	var close := FigmaReferenceCanvas.premium_button("PLAY NOW",14,Color.WHITE,Color("#21c763"),17,Color("#74d999"),1.2)
 	close.name = "TutorialClose"
-	FigmaReferenceCanvas.set_rect(close,44,548,302,58)
+	FigmaReferenceCanvas.set_rect(close,43,547,302,58)
 	close.pressed.connect(hide_tutorial)
 	_tutorial_canvas.add_child(close)
 
@@ -156,6 +192,7 @@ func show_tutorial(game_id: String = "rescue_rush") -> void:
 		return
 	tutorial_game = game_id
 	tutorial_step_index = 0
+	_apply_figma_tutorial_theme(game_id)
 	tutorial_title.text = _game_name(game_id)
 	match game_id:
 		"water_sort":
@@ -186,6 +223,57 @@ func show_tutorial(game_id: String = "rescue_rush") -> void:
 	tutorial_panel.visible = true
 	help_button.visible = false
 	theme_button.visible = false
+
+func _apply_figma_tutorial_theme(game_id: String) -> void:
+	var accent := Color("#21c763")
+	var bottom := Color("#e4f8ec")
+	var demo_top := Color("#e9fdef")
+	var demo_bottom := Color("#ddf4e5")
+	match game_id:
+		"water_sort":
+			accent = Color("#1aa8ff")
+			bottom = Color("#e3f5ff")
+			demo_top = Color("#e9f8ff")
+			demo_bottom = Color("#ddeff6")
+		"block_puzzle":
+			accent = Color("#c73dff")
+			bottom = Color("#f5eafd")
+			demo_top = Color("#fbefff")
+			demo_bottom = Color("#f1e5f6")
+	var backdrop := _tutorial_canvas.get_node_or_null("TutorialBackdrop") as PanelContainer
+	if backdrop != null:
+		backdrop.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(
+			Color("#f0fcff"), Color("#fafcff"), bottom, 34, Color("#b8d1e0"), 1, 0.48
+		))
+	var halo := _tutorial_canvas.get_node_or_null("TutorialHalo") as PanelContainer
+	if halo != null:
+		halo.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color(accent,0.10),55))
+	var rail := _tutorial_canvas.get_node_or_null("TutorialAccentRail") as ColorRect
+	if rail != null:
+		rail.color = Color(accent,0.88)
+	tutorial_panel.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(
+		Color("#fffef8"), Color("#fbfaf4"), Color("#f6f5ef"), 24, Color(accent,0.32), 1.2, 0.50
+	))
+	var demo_panel := _tutorial_canvas.get_node_or_null("TutorialDemoPanel") as PanelContainer
+	if demo_panel != null:
+		demo_panel.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(
+			demo_top, demo_top.lerp(demo_bottom,0.48), demo_bottom, 20, Color(accent,0.32), 1.2, 0.50
+		))
+	var eyebrow := _tutorial_canvas.get_node_or_null("TutorialEyebrow") as Label
+	if eyebrow != null:
+		eyebrow.add_theme_color_override("font_color",accent)
+	tutorial_progress_label.add_theme_color_override("font_color",accent)
+	_style_figma_tutorial_button(tutorial_next_button,accent)
+	var close := _tutorial_canvas.get_node_or_null("TutorialClose") as Button
+	if close != null:
+		_style_figma_tutorial_button(close,accent)
+
+func _style_figma_tutorial_button(button: Button, fill: Color) -> void:
+	if button == null:
+		return
+	button.add_theme_stylebox_override("normal",FigmaReferenceCanvas.rounded_gradient3(fill.lightened(0.18),fill,fill.darkened(0.18),16,fill.lightened(0.30),1.2))
+	button.add_theme_stylebox_override("hover",FigmaReferenceCanvas.rounded_gradient3(fill.lightened(0.24),fill.lightened(0.05),fill.darkened(0.13),16,fill.lightened(0.38),1.2))
+	button.add_theme_stylebox_override("pressed",FigmaReferenceCanvas.rounded_gradient3(fill,fill.darkened(0.08),fill.darkened(0.25),16,fill.lightened(0.20),1.2))
 
 func _render_tutorial_step() -> void:
 	if tutorial_steps.is_empty() or tutorial_step_label == null:
@@ -218,29 +306,37 @@ func _render_figma_demo(game_id: String, step: int) -> void:
 		_: _demo_rescue(step)
 
 func _demo_water(step: int) -> void:
-	var colors := [Color("ff4f9c"),Color("19a9e8"),Color("f4cf25")]
+	var colors: Array[Color] = [Color("#ff4da3"),Color("#1fabff"),Color("#ff4da3")]
 	for i in range(3):
 		var x := 56.0 + float(i)*74.0
 		var glass := PanelContainer.new()
-		glass.add_theme_stylebox_override("panel",FigmaReferenceCanvas.solid_box(Color(0.92,0.99,1.0,0.20),18,Color("a6e7ff"),1))
-		FigmaReferenceCanvas.set_rect(glass,x,20,44,126)
+		glass.add_theme_stylebox_override("panel",FigmaReferenceCanvas.solid_box(Color(0.92,0.99,1.0,0.12),18,Color(0.74,0.95,1.0,0.96),1.5))
+		FigmaReferenceCanvas.set_rect(glass,x,24,44,126)
 		_tutorial_demo_root.add_child(glass)
 		var liquid_h: float = float([62.0,82.0,36.0][i])
 		if step == 1 and i == 2:
 			liquid_h = 62.0
 		var liquid := ColorRect.new()
 		liquid.color = colors[i]
-		FigmaReferenceCanvas.set_rect(liquid,x+6,138-liquid_h,32,liquid_h)
+		FigmaReferenceCanvas.set_rect(liquid,x+6,142-liquid_h,32,liquid_h)
 		_tutorial_demo_root.add_child(liquid)
 		var meniscus := PanelContainer.new()
 		meniscus.add_theme_stylebox_override("panel",FigmaReferenceCanvas.solid_box(colors[i].lightened(0.08),5))
-		FigmaReferenceCanvas.set_rect(meniscus,x+6,133-liquid_h,32,10)
+		FigmaReferenceCanvas.set_rect(meniscus,x+6,137-liquid_h,32,10)
 		_tutorial_demo_root.add_child(meniscus)
+		var rim := PanelContainer.new()
+		rim.add_theme_stylebox_override("panel",FigmaReferenceCanvas.solid_box(Color(0.90,0.99,1.0,0.92),5))
+		FigmaReferenceCanvas.set_rect(rim,x+4,20,36,10)
+		_tutorial_demo_root.add_child(rim)
+		var highlight := ColorRect.new()
+		highlight.color = Color(1,1,1,0.44)
+		FigmaReferenceCanvas.set_rect(highlight,x+9,36,2.5,94)
+		_tutorial_demo_root.add_child(highlight)
 	if step == 0:
 		var arc := Line2D.new()
 		arc.width = 5
-		arc.default_color = Color("19a9e8")
-		arc.points = PackedVector2Array([Vector2(100,42),Vector2(124,16),Vector2(156,12),Vector2(181,35)])
+		arc.default_color = Color("#1fabff")
+		arc.points = PackedVector2Array([Vector2(93,44),Vector2(117,18),Vector2(149,14),Vector2(174,37)])
 		arc.antialiased = true
 		_tutorial_demo_root.add_child(arc)
 
@@ -248,49 +344,83 @@ func _demo_block(step: int) -> void:
 	for row in range(4):
 		for col in range(4):
 			var well := PanelContainer.new()
-			well.add_theme_stylebox_override("panel",FigmaReferenceCanvas.solid_box(Color(0.18,0.10,0.33),6))
+			well.add_theme_stylebox_override("panel",FigmaReferenceCanvas.solid_box(Color("#3b295e"),6,Color(0.51,0.39,0.67,0.60),1))
 			FigmaReferenceCanvas.set_rect(well,56+col*39,16+row*39,36,36)
 			_tutorial_demo_root.add_child(well)
 	var occupied := [Vector2i(0,0),Vector2i(1,0),Vector2i(0,1),Vector2i(3,2),Vector2i(3,3)]
 	for pos in occupied:
+		var fx := 59.0 + pos.x*39.0
+		var fy := 21.0 + pos.y*39.0
+		var shadow := ColorRect.new()
+		shadow.color = Color(0.25,0.16,0.43,0.34)
+		FigmaReferenceCanvas.set_rect(shadow,fx+3,fy+25,23,3)
+		_tutorial_demo_root.add_child(shadow)
+		var top := Polygon2D.new()
+		top.polygon = PackedVector2Array([Vector2(fx,fy),Vector2(fx+3,fy-3),Vector2(fx+30,fy-3),Vector2(fx+27,fy)])
+		top.color = Color("#b68aff")
+		_tutorial_demo_root.add_child(top)
 		var cell := PanelContainer.new()
-		cell.add_theme_stylebox_override("panel",FigmaReferenceCanvas.rounded_gradient(Color("ff8bd0"),Color("d84cad"),5))
-		FigmaReferenceCanvas.set_rect(cell,59+pos.x*39,21+pos.y*39,27,27)
+		cell.add_theme_stylebox_override("panel",FigmaReferenceCanvas.solid_box(Color("#8c5cf5"),5,Color(0.73,0.54,1.0,0.90),1.2))
+		FigmaReferenceCanvas.set_rect(cell,fx,fy,27,27)
 		_tutorial_demo_root.add_child(cell)
 	var target_row := 2 if step < 2 else 1
 	for col in range(1,4):
 		var footprint := PanelContainer.new()
-		footprint.add_theme_stylebox_override("panel",FigmaReferenceCanvas.solid_box(Color(0.20,0.80,1.0,0.18),6,Color("52d8ff"),1))
+		footprint.add_theme_stylebox_override("panel",FigmaReferenceCanvas.solid_box(Color(0.27,0.43,0.95,0.08),6,Color(0.58,0.72,1.0,0.96),2))
 		FigmaReferenceCanvas.set_rect(footprint,58+col*39,18+target_row*39,32,32)
 		_tutorial_demo_root.add_child(footprint)
+	if step < 2:
+		for col in range(1,4):
+			var gx := 59.0 + col*39.0
+			var gy := 52.0
+			var ghost_shadow := ColorRect.new()
+			ghost_shadow.color = Color(0.12,0.19,0.43,0.34)
+			FigmaReferenceCanvas.set_rect(ghost_shadow,gx+3,gy+25,23,3)
+			_tutorial_demo_root.add_child(ghost_shadow)
+			var ghost_top := Polygon2D.new()
+			ghost_top.polygon = PackedVector2Array([Vector2(gx,gy),Vector2(gx+3,gy-3),Vector2(gx+30,gy-3),Vector2(gx+27,gy)])
+			ghost_top.color = Color("#739cff")
+			_tutorial_demo_root.add_child(ghost_top)
+			var ghost := PanelContainer.new()
+			ghost.add_theme_stylebox_override("panel",FigmaReferenceCanvas.solid_box(Color("#456ef2"),5,Color(0.45,0.61,1.0,0.90),1.2))
+			FigmaReferenceCanvas.set_rect(ghost,gx,gy,27,27)
+			_tutorial_demo_root.add_child(ghost)
 
 func _demo_rescue(step: int) -> void:
-	var colors := [Color("2da5ff"),Color("8b6df0"),Color("3dcc78"),Color("ef5d68")]
-	var positions := [Vector2(41,16),Vector2(100,16),Vector2(41,75),Vector2(159,75),Vector2(41,134),Vector2(100,134),Vector2(159,134)]
+	var colors: Array[Color] = [Color("#26c26b"),Color("#8f5ceb"),Color("#26c26b"),Color("#ff8f1f"),Color("#26c26b"),Color("#8f5ceb"),Color("#ff8f1f")]
+	var positions := [Vector2(39,16),Vector2(98,16),Vector2(39,75),Vector2(157,75),Vector2(39,134),Vector2(98,134),Vector2(157,134)]
 	for i in range(positions.size()):
+		var tint: Color = colors[i]
+		var depth := PanelContainer.new()
+		depth.add_theme_stylebox_override("panel",FigmaReferenceCanvas.solid_box(tint.darkened(0.38),10))
+		FigmaReferenceCanvas.set_rect(depth,positions[i].x+2,positions[i].y+6,50,48)
+		_tutorial_demo_root.add_child(depth)
 		var tile := PanelContainer.new()
-		var tint: Color = colors[i%colors.size()] as Color
-		tile.add_theme_stylebox_override("panel",FigmaReferenceCanvas.rounded_gradient(tint.lightened(0.08),tint.darkened(0.08),10))
+		tile.add_theme_stylebox_override("panel",FigmaReferenceCanvas.rounded_gradient3(tint.lightened(0.28),tint,tint.darkened(0.12),10,Color(1,1,1,0.42),1))
 		FigmaReferenceCanvas.set_rect(tile,positions[i].x,positions[i].y,50,47)
 		_tutorial_demo_root.add_child(tile)
-		var arrow := FigmaReferenceCanvas.label("→" if i%2==0 else "↑",22,Color.WHITE,true)
+		var arrow := FigmaReferenceCanvas.label("→" if i in [0,4,6] else "↑",22,Color.WHITE,true)
 		arrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		FigmaReferenceCanvas.set_rect(arrow,positions[i].x,positions[i].y,50,47)
 		_tutorial_demo_root.add_child(arrow)
+	var chick_shadow := PanelContainer.new()
+	chick_shadow.add_theme_stylebox_override("panel",FigmaReferenceCanvas.solid_box(Color(0.04,0.18,0.12,0.20),8))
+	FigmaReferenceCanvas.set_rect(chick_shadow,110,110,30,9)
+	_tutorial_demo_root.add_child(chick_shadow)
 	var chick := PanelContainer.new()
-	chick.add_theme_stylebox_override("panel",FigmaReferenceCanvas.solid_box(Color("ffd34f"),14))
-	FigmaReferenceCanvas.set_rect(chick,113,87,28,28)
+	chick.add_theme_stylebox_override("panel",FigmaReferenceCanvas.solid_box(Color("#ffd63d"),14,Color("#fff1a0"),1))
+	FigmaReferenceCanvas.set_rect(chick,111,87,28,28)
 	_tutorial_demo_root.add_child(chick)
 	var exit := PanelContainer.new()
-	exit.add_theme_stylebox_override("panel",FigmaReferenceCanvas.solid_box(Color(0.13,0.78,0.39,0.20),12,Color("3dcc78"),2))
-	FigmaReferenceCanvas.set_rect(exit,168,20,30,44)
+	exit.add_theme_stylebox_override("panel",FigmaReferenceCanvas.rounded_gradient3(Color("#80efb0"),Color("#35b96b"),Color("#148b4c"),10))
+	FigmaReferenceCanvas.set_rect(exit,168,21,30,44)
 	_tutorial_demo_root.add_child(exit)
-	var exit_label := FigmaReferenceCanvas.label("EXIT",12,Color("208a4c"),true)
-	FigmaReferenceCanvas.set_rect(exit_label,161,68,44,14)
+	var exit_label := FigmaReferenceCanvas.label("EXIT",12,Color("#1f8c52"),true)
+	FigmaReferenceCanvas.set_rect(exit_label,161,69,44,14)
 	exit_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_tutorial_demo_root.add_child(exit_label)
 	if step == 1:
 		var blocker := PanelContainer.new()
-		blocker.add_theme_stylebox_override("panel",FigmaReferenceCanvas.solid_box(Color("4c5667"),10))
-		FigmaReferenceCanvas.set_rect(blocker,159,75,50,47)
+		blocker.add_theme_stylebox_override("panel",FigmaReferenceCanvas.solid_box(Color("#4c5667"),10))
+		FigmaReferenceCanvas.set_rect(blocker,157,75,50,47)
 		_tutorial_demo_root.add_child(blocker)
