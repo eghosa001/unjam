@@ -309,7 +309,7 @@ func _add_pill(canvas: Control, rect: Rect2, fill: Color, text_value: String, fo
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(panel)
 	var resolved_text := text_color if fill.get_luminance() > 0.58 else _home_text_color(text_color)
-	var label := _make_label(text_value, font_size, resolved_text, true)
+	var label := RefCanvas.label(text_value, font_size, resolved_text, true)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	RefCanvas.set_rect(label, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	canvas.add_child(label)
