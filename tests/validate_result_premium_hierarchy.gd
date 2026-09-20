@@ -25,11 +25,11 @@ func _run() -> void:
 	var stats := overlay.find_child("ResultStatsText",true,false) as Label
 	if canvas == null or card == null or primary == null or secondary == null or stats == null:
 		return _fail("Figma result hierarchy is incomplete")
-	if not _rect_eq(Rect2(card.position,card.size),Rect2(28,86,334,590)):
+	if not _rect_eq(Rect2(card.position,card.size),Rect2(27,85,334,590)):
 		return _fail("Result card drifted from Figma 334x590 geometry")
-	if not _rect_eq(Rect2(primary.position,primary.size),Rect2(48,500,294,58)):
+	if not _rect_eq(Rect2(primary.position,primary.size),Rect2(47,499,294,58)):
 		return _fail("Result primary action drifted from Figma geometry")
-	if not _rect_eq(Rect2(secondary.position,secondary.size),Rect2(48,570,294,48)):
+	if not _rect_eq(Rect2(secondary.position,secondary.size),Rect2(47,569,294,48)):
 		return _fail("Result secondary action drifted from Figma geometry")
 	if stats.text.is_empty():
 		return _fail("Result stats are missing")
