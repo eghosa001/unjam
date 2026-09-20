@@ -37,15 +37,13 @@ func build_ui() -> void:
 	for child in actions.get_children():
 		if child is Button:
 			var existing := child as Button
-			existing.custom_minimum_size.x = 0
+			existing.custom_minimum_size = Vector2(106, 60)
 			existing.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			existing.add_theme_font_size_override("font_size", 26)
-	var add_tube := Button.new()
+			existing.add_theme_font_size_override("font_size", 12)
+	var add_tube := RefCanvas.button("＋  TUBE • 75◈", 12, OFF_WHITE, Color(0.10, 0.66, 1.0), 16, Color(0.55, 0.83, 1.0, 0.56), 1)
 	add_tube.name = "AddTubeAction"
-	add_tube.custom_minimum_size = Vector2(0, 116)
+	add_tube.custom_minimum_size = Vector2(106, 60)
 	add_tube.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	add_tube.add_theme_font_size_override("font_size", 25)
-	Unjam3DTheme.gloss_button(add_tube, Unjam3DTheme.WATER, true, 24)
 	add_tube.pressed.connect(add_extra_tube)
 	actions.add_child(add_tube)
 	if not EconomyManager.balance_changed.is_connected(_on_economy_balance_changed):
@@ -158,5 +156,5 @@ func _refresh_extra_tube_button() -> void:
 		return
 	var balance := EconomyManager.balance()
 	button.disabled = extra_tube_used
-	button.text = "✓  TUBE USED\n◈ %d" % balance if extra_tube_used else "+  TUBE • %d\n◈ %d" % [EXTRA_TUBE_COST, balance]
+	button.text = "✓  TUBE USED" if extra_tube_used else "＋  TUBE • %d◈" % EXTRA_TUBE_COST
 	button.tooltip_text = "Already used this attempt • Balance %d" % balance if extra_tube_used else "Costs %d coins • Balance %d" % [EXTRA_TUBE_COST, balance]
