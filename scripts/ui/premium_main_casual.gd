@@ -263,6 +263,8 @@ func _figma_header(canvas: Control, title_text: String, subtitle_text: String, p
 	if pill_callback.is_valid():
 		var pill_button := _figma_button(canvas, "FigmaHeaderPill", pill_text, Rect2(285,21,84,46), pill_fill, pill_callback, FIGMA_OFF_WHITE, 23, 12)
 		if pill_text.begins_with("◈"):
+			pill_button.text = "   %s" % pill_text.substr(1).strip_edges()
+			FigmaReferenceCanvas.add_collectible_gem(canvas, Vector2(301,44), 8.0, "HeaderCurrencyGem3D")
 			pill_button.set_meta("unjam_figma_wallet_pill", true)
 			pill_button.tooltip_text = "Coins: %d • Open Shop" % EconomyManager.balance()
 			if not EconomyManager.balance_changed.is_connected(_on_figma_wallet_balance_changed):
@@ -493,7 +495,8 @@ func _daily_ui_state(game_id: String, accent: Color) -> Dictionary:
 func _figma_daily_card(canvas: Control, game_id: String, y: float, collection_bonus: int) -> void:
 	var accent := Unjam3DTheme.game_accent(game_id)
 	_figma_card(canvas, "DailyCard/%s" % game_id, Rect2(17,y,354,106), Color("#fffef8"), Color(1.0,0.847,0.55,0.32), 18)
-	_figma_text(canvas, MultiGameManager.display_name(game_id).to_upper(), Rect2(33,y+18,150,21), 17, accent)
+	var daily_title := _figma_text(canvas, MultiGameManager.display_name(game_id).to_upper(), Rect2(33,y+18,150,21), 17, accent)
+	FigmaReferenceCanvas.style_display_title(daily_title, accent.lightened(0.18), Color("#071d55"), 1)
 	var detail := "TODAY’S RESCUE" if game_id == "rescue_rush" else ("TODAY’S SORT" if game_id == "water_sort" else "TODAY’S BLOCK RUN")
 	_figma_text(canvas, detail, Rect2(33,y+48,175,15), 12, FIGMA_MUTED)
 	var reward := "+%d COINS" % (100 + collection_bonus) if game_id == "rescue_rush" else "+%d–%d COINS" % [125 + collection_bonus,175 + collection_bonus]
