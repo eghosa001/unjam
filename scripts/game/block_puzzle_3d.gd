@@ -14,6 +14,28 @@ func _ready() -> void:
 func _queue_board_fit() -> void:
 	call_deferred("_fit_3d_board_layout")
 
+func _add_block_hint_bulb(button: Button) -> void:
+	var bulb := PanelContainer.new()
+	bulb.name = "BlockHintBulb"
+	bulb.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var bulb_style := StyleBoxFlat.new()
+	bulb_style.bg_color = Color("#ffe47a")
+	bulb_style.corner_radius_top_left = 8
+	bulb_style.corner_radius_top_right = 8
+	bulb_style.corner_radius_bottom_left = 8
+	bulb_style.corner_radius_bottom_right = 8
+	bulb.add_theme_stylebox_override("panel", bulb_style)
+	bulb.position = Vector2(18,12)
+	bulb.size = Vector2(16,16)
+	button.add_child(bulb)
+	var base := ColorRect.new()
+	base.name = "BlockHintBulbBase"
+	base.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	base.color = Color("#fff3aa")
+	base.position = Vector2(22,29)
+	base.size = Vector2(8,4)
+	button.add_child(base)
+
 func _add_block_identity_emblem(canvas: Control) -> void:
 	var emblem := PanelContainer.new()
 	emblem.name = "Identity/Block Emblem"
