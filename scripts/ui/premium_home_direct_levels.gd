@@ -316,7 +316,7 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 			underline.add_theme_stylebox_override("panel", RefCanvas.solid_box(CYAN, 2))
 			RefCanvas.set_rect(underline, float(item[1]) + 12.0, 815, 36, 4)
 			canvas.add_child(underline)
-		_add_text(canvas, item[0], Rect2(item[1] - 1.0, 788, 62, 26), 12, nav_color, true)
+		_add_text(canvas, item[0], Rect2(item[1] - 1.0, 788, 62, 26), 13, nav_color, true)
 		var hit := Button.new()
 		hit.name = item[3]
 		hit.flat = true
