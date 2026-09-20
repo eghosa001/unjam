@@ -34,11 +34,6 @@ func coin_balance() -> int:
 	var save := _save()
 	return maxi(0, int(save.data.get("coins", 0))) if save != null else 0
 
-func can_afford_hint() -> bool:
-	var economy := _economy()
-	if economy != null:
-		return bool(economy.call("can_afford", HINT_COST))
-	return coin_balance() >= HINT_COST
 
 func request_hint(placement: String, reveal_hint: Callable, unavailable: Callable = Callable()) -> bool:
 	if not reveal_hint.is_valid():
