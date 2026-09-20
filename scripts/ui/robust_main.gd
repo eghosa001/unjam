@@ -63,44 +63,6 @@ func build_home() -> void:
 		return
 	add_background()
 
-func _add_journey_card(parent: VBoxContainer) -> void:
-	var completed_total := 0
-	var perfect_total := 0
-	for game_id in MultiGameManager.GAME_IDS:
-		var progress := MultiGameManager.progress_for(game_id)
-		completed_total += int(progress.get("levels_completed", 0))
-		perfect_total += int(progress.get("perfect_clears", 0))
-	var journey := add_glass_card(parent, Vector2(0, 142))
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 24)
-	margin.add_theme_constant_override("margin_right", 24)
-	margin.add_theme_constant_override("margin_top", 16)
-	margin.add_theme_constant_override("margin_bottom", 16)
-	journey.add_child(margin)
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 8)
-	margin.add_child(box)
-	var title := Label.new()
-	title.text = "UNJAM JOURNEY"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 19)
-	title.add_theme_color_override("font_color", Color("67e8cf"))
-	box.add_child(title)
-	var summary := Label.new()
-	summary.text = "%d / 30,000 LEVELS CLEARED   •   %d PERFECT CLEARS" % [completed_total, perfect_total]
-	summary.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	summary.add_theme_font_size_override("font_size", 16)
-	summary.add_theme_color_override("font_color", Color("c2cde0"))
-	box.add_child(summary)
-	var progress_bar := ProgressBar.new()
-	progress_bar.max_value = 30000.0
-	progress_bar.value = float(completed_total)
-	progress_bar.show_percentage = false
-	progress_bar.custom_minimum_size = Vector2(0, 18)
-	progress_bar.add_theme_stylebox_override("background", style_box(Color("13243d"), 9))
-	progress_bar.add_theme_stylebox_override("fill", style_box(Color("21c7a8"), 9))
-	box.add_child(progress_bar)
-
 func _add_game_card(parent: VBoxContainer, game_id: String, accent: Color, subtitle_text: String) -> void:
 	var progress := MultiGameManager.progress_for(game_id)
 	var panel := add_glass_card(parent, Vector2(0, 224))
