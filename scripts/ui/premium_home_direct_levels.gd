@@ -78,7 +78,7 @@ func _build_reference_home(canvas: Control) -> void:
 		cleared += int(MultiGameManager.progress_for(game_id).get("levels_completed", 0))
 	var player_level := maxi(1, 1 + int(cleared / 10))
 	_add_pill(canvas, Rect2(21, 64, 78, 40), Color(0.03, 0.43, 0.78), "LV %d" % player_level, 13, OFF_WHITE)
-	home_coin_button = _add_action(canvas, Rect2(107, 64, 112, 40), Color(1.0, 0.55, 0.12), "   %s +" % _compact_number(EconomyManager.balance()), 12, OFF_WHITE, Callable(self, "_open_shop"), 20)
+	home_coin_button = _add_action(canvas, Rect2(107, 62, 112, 44), Color(1.0, 0.55, 0.12), "   %s +" % _compact_number(EconomyManager.balance()), 12, OFF_WHITE, Callable(self, "_open_shop"), 20)
 	home_coin_button.name = "HomeCoinShopButton"
 	RefCanvas.add_collectible_gem(canvas, Vector2(122, 84), 8.0, "HomeCurrencyGem3D")
 	_add_pill(canvas, Rect2(227, 64, 92, 40), GOLD, "   %s" % _compact_number(_total_stars()), 12, NAVY)
