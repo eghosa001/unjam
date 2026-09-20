@@ -81,11 +81,13 @@ func _build_reference_selector(canvas: Control) -> void:
 	back.pressed.connect(_go_home)
 	canvas.add_child(back)
 
-	var selector_title := _add_text(canvas, "CHOOSE A GAME", Rect2(83, 21, 194, 28), 23, OFF_WHITE, true)
+	var selector_title := _add_text(canvas, "CHOOSE A GAME", Rect2(83, 21, 186, 28), 23, OFF_WHITE, true)
 	selector_title.name = "SelectorTitle3D"
+	selector_title.clip_text = true
 	RefCanvas.style_display_title(selector_title, Color("#ffca45"), Color("#071d55"), 2)
-	var selector_subtitle := _add_text(canvas, "THREE PUZZLES • ONE JOURNEY", Rect2(83, 51, 194, 18), 12, Color("#c6d9ec"), false)
+	var selector_subtitle := _add_text(canvas, "THREE PUZZLES • ONE JOURNEY", Rect2(83, 51, 186, 18), 12, Color("#c6d9ec"), false)
 	selector_subtitle.name = "SelectorSubtitle"
+	selector_subtitle.clip_text = true
 
 	RefCanvas.add_shadow(canvas, Rect2(285, 21, 84, 46), 23, Color(0.02,0.15,0.30,0.16), 3, Vector2(0,2))
 	var settings := RefCanvas.premium_button("⚙", 18, OFF_WHITE, Color(0.03, 0.43, 0.78), 23)
