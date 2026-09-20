@@ -165,6 +165,8 @@ func _apply_theme() -> void:
 	if theme_button != null:
 		theme_button.visible = false
 	apply_theme_mode(theme_mode == "dark")
+	if _tutorial_canvas != null and is_instance_valid(_tutorial_canvas):
+		_apply_figma_tutorial_theme(tutorial_game)
 
 func apply_theme_mode(dark: bool) -> void:
 	var main := _main()
@@ -225,6 +227,7 @@ func show_tutorial(game_id: String = "rescue_rush") -> void:
 	theme_button.visible = false
 
 func _apply_figma_tutorial_theme(game_id: String) -> void:
+	var dark := theme_mode == "dark"
 	var accent := Color("#21c763")
 	var bottom := Color("#e4f8ec")
 	var demo_top := Color("#e9fdef")
@@ -242,8 +245,12 @@ func _apply_figma_tutorial_theme(game_id: String) -> void:
 			demo_bottom = Color("#f1e5f6")
 	var backdrop := _tutorial_canvas.get_node_or_null("TutorialBackdrop") as PanelContainer
 	if backdrop != null:
+		var backdrop_top := Color("#07111d") if dark else Color("#f0fcff")
+		var backdrop_mid := Color("#0b1726") if dark else Color("#fafcff")
+		var backdrop_bottom := Color("#101c2d").lerp(accent.darkened(0.58),0.12) if dark else bottom
+		var backdrop_border := Color(0.22,0.36,0.48,0.82) if dark else Color("#b8d1e0")
 		backdrop.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(
-			Color("#f0fcff"), Color("#fafcff"), bottom, 34, Color("#b8d1e0"), 1, 0.48
+			backdrop_top, backdrop_mid, backdrop_bottom, 34, backdrop_border, 1, 0.48
 		))
 	var halo := _tutorial_canvas.get_node_or_null("TutorialHalo") as PanelContainer
 	if halo != null:
@@ -252,17 +259,30 @@ func _apply_figma_tutorial_theme(game_id: String) -> void:
 	if rail != null:
 		rail.color = Color(accent,0.88)
 	tutorial_panel.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(
-		Color("#fffef8"), Color("#fbfaf4"), Color("#f6f5ef"), 24, Color(accent,0.32), 1.2, 0.50
+		Color("#172238") if dark else Color("#fffef8"),
+		Color("#131e31") if dark else Color("#fbfaf4"),
+		Color("#0f1828") if dark else Color("#f6f5ef"),
+		24, Color(accent,0.62 if dark else 0.32), 1.2, 0.50
 	))
 	var demo_panel := _tutorial_canvas.get_node_or_null("TutorialDemoPanel") as PanelContainer
 	if demo_panel != null:
+		var resolved_demo_top := Color("#122b2a").lerp(accent.darkened(0.58),0.16) if dark else demo_top
+		var resolved_demo_bottom := Color("#0c1e22").lerp(accent.darkened(0.68),0.12) if dark else demo_bottom
 		demo_panel.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(
-			demo_top, demo_top.lerp(demo_bottom,0.48), demo_bottom, 20, Color(accent,0.32), 1.2, 0.50
+			resolved_demo_top, resolved_demo_top.lerp(resolved_demo_bottom,0.48), resolved_demo_bottom, 20, Color(accent,0.62 if dark else 0.32), 1.2, 0.50
 		))
 	var eyebrow := _tutorial_canvas.get_node_or_null("TutorialEyebrow") as Label
 	if eyebrow != null:
 		eyebrow.add_theme_color_override("font_color",accent)
-	tutorial_progress_label.add_theme_color_override("font_color",accent)
+	if tutorial_title != null:
+		tutorial_title.add_theme_color_override("font_color", Color("#eef7ff") if dark else Color(0.03,0.23,0.47))
+	if tutorial_body != null:
+		tutorial_body.add_theme_color_override("font_color", Color("#b6c7d6") if dark else Color(0.31,0.42,0.52))
+	if tutorial_step_label != null:
+		tutorial_step_label.add_theme_color_override("font_color", Color("#dceaf5") if dark else Color(0.07,0.20,0.35))
+	if tutorial_progress_label != null:
+		tutorial_progress_label.add_theme_color_override("font_color",accent)
+	_style_figma_tutorial_button(tutorial_prev_button, Color("#24364a") if dark else Color("#c7d6e3"))
 	_style_figma_tutorial_button(tutorial_next_button,accent)
 	var close := _tutorial_canvas.get_node_or_null("TutorialClose") as Button
 	if close != null:
