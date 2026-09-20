@@ -48,7 +48,7 @@ func _add_booster_bar() -> void:
 	bar.name = "CampaignBoosters"
 	bar.alignment = BoxContainer.ALIGNMENT_CENTER
 	bar.add_theme_constant_override("separation", 7)
-	FigmaReferenceCanvas.set_rect(bar, 18, 650, 349, 54)
+	FigmaReferenceCanvas.set_rect(bar, 17, 649, 349, 54)
 	for spec in [
 		["undo", "UNDO", "↶"],
 		["hammer", "HAMMER", "◆"],
@@ -56,14 +56,14 @@ func _add_booster_bar() -> void:
 		["rotate", "ROTATE", "↻"],
 	]:
 		var key := String(spec[0])
-		var button := FigmaReferenceCanvas.button(
+		var button := FigmaReferenceCanvas.premium_button(
 			"%s  %s\n◈ %d" % [String(spec[2]), String(spec[1]), int(BOOSTER_COSTS[key])],
 			12,
 			Color(1, 0.995, 0.97),
-			Color(0.31, 0.13, 0.55),
-			14,
-			Color(0.72, 0.52, 1.0, 0.62),
-			1
+			Color("#7d21d6"),
+			15,
+			Color(0.75, 0.56, 0.92, 0.56),
+			1.3
 		)
 		button.name = "Booster_%s" % key.capitalize()
 		button.custom_minimum_size = Vector2(82, 54)
