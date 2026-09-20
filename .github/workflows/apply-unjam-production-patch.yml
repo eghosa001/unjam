@@ -29,7 +29,8 @@ jobs:
           echo "5d60df0b8f82c5daa253f862e186df9bef930d3155c8c0d5a998587f03ae73b0  /tmp/unjam_fix.patch" | sha256sum -c -
           git apply --check /tmp/unjam_fix.patch
           git apply /tmp/unjam_fix.patch
-          rm -f qa/unjam-fix.part00.b64 qa/unjam-fix.part01.b64 .github/workflows/apply-unjam-production-patch.yml
+          git checkout HEAD -- .github/workflows/godot-ci.yml
+          rm -f qa/unjam-fix.part00.b64 qa/unjam-fix.part01.b64
           git diff --check
           git config user.name "UNJAM QA"
           git config user.email "actions@users.noreply.github.com"
