@@ -109,7 +109,9 @@ func _run() -> void:
 
 	var coin_prompt := main.get_node_or_null("InsufficientCoinsPrompt")
 	if coin_prompt != null and coin_prompt.has_method("show_for"):
-		coin_prompt.call("show_for", "HINT", EconomyManager.balance() + 25)
+		var economy := root.get_node_or_null("EconomyManager")
+		var balance := int(economy.call("balance")) if economy != null and economy.has_method("balance") else 0
+		coin_prompt.call("show_for", "HINT", balance + 25)
 		await _capture("06e-insufficient-coins-dark")
 		root.size = Vector2i(540, 960)
 		await _settle(8)
