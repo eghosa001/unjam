@@ -57,7 +57,8 @@ func build_home_launcher() -> void:
 	var viewport_bg := ColorRect.new()
 	viewport_bg.name = "FigmaHomeViewportBackground"
 	viewport_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	viewport_bg.color = DARK_SCENE_BOTTOM if _home_dark() else SCENE_BOTTOM
+	# The viewport fallback stays neutral for letterboxing; the visible 390x844 scene itself is the rich royal-blue 3D world.
+	viewport_bg.color = DARK_BOTTOM if _home_dark() else BG_BOTTOM
 	viewport_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(viewport_bg)
 
