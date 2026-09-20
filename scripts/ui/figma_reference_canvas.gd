@@ -174,6 +174,8 @@ static func premium_button(text_value: String, font_size: int, text_color: Color
 	result.add_theme_stylebox_override("hover", hover)
 	result.add_theme_stylebox_override("pressed", pressed)
 	result.add_theme_stylebox_override("focus", normal)
+	result.add_theme_stylebox_override("disabled", rounded_gradient3(top.darkened(0.08), fill.darkened(0.10), bottom.darkened(0.10), radius, border.darkened(0.06), border_width))
+	result.add_theme_color_override("font_disabled_color", text_color.lerp(Color(0.82,0.86,0.90), 0.30))
 	return result
 
 static func label(text_value: String, font_size: int, color: Color, bold := false) -> Label:
