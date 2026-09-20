@@ -4,46 +4,53 @@ func _initialize() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
+	root.size = Vector2i(540,960)
 	var packed := load("res://scenes/Main.tscn") as PackedScene
 	if packed == null:
-		push_error("Main scene could not be loaded for tutorial validation")
-		quit(1)
-		return
-	var main := packed.instantiate()
+		return _fail("Main scene could not be loaded for tutorial validation")
+	var main := packed.instantiate() as Control
 	root.add_child(main)
-	await _frames(6)
+	await _frames(8)
 	var shell := main.get_node_or_null("UXShell")
 	if shell == null or not shell.has_method("show_tutorial"):
-		push_error("UXShell tutorial controller is missing")
-		quit(1)
-		return
+		return _fail("UXShell tutorial controller is missing")
 
-	for game_id in ["rescue_rush", "water_sort", "block_puzzle"]:
-		shell.call("show_tutorial", game_id)
+	for game_id in ["rescue_rush","water_sort","block_puzzle"]:
+		shell.call("show_tutorial",game_id)
 		await _frames(3)
-		var panel = shell.get("tutorial_panel") as PanelContainer
-		var body = shell.get("tutorial_body") as Label
-		var demo = shell.get("tutorial_demo") as Label
-		var step = shell.get("tutorial_step_label") as Label
-		var progress = shell.get("tutorial_progress_label") as Label
-		var next = shell.get("tutorial_next_button") as Button
-		var back = shell.get("tutorial_prev_button") as Button
-		if panel == null or not panel.visible:
-			return _fail("Tutorial panel did not open for %s" % game_id)
+		var canvas := shell.find_child("FigmaTutorial390x844",true,false) as Control
+		var panel := shell.get("tutorial_panel") as PanelContainer
+		var body := shell.get("tutorial_body") as Label
+		var step := shell.get("tutorial_step_label") as Label
+		var progress := shell.get("tutorial_progress_label") as Label
+		var next := shell.get("tutorial_next_button") as Button
+		var back := shell.get("tutorial_prev_button") as Button
+		var demo := shell.find_child("TutorialDemoArt",true,false) as Control
+		var close := shell.find_child("TutorialClose",true,false) as Button
+		if canvas == null or not canvas.visible:
+			return _fail("Figma tutorial canvas did not open for %s" % game_id)
+		if panel == null or not _rect_eq(Rect2(panel.position,panel.size),Rect2(18,54,354,650)):
+			return _fail("%s tutorial panel drifted from Figma 354x650 geometry" % game_id)
 		if body == null or body.text.length() > 180:
 			return _fail("%s tutorial reverted to a wall of text" % game_id)
-		if demo == null or demo.text.is_empty() or step == null or step.text.is_empty():
-			return _fail("%s visual tutorial step is missing" % game_id)
+		if demo == null or demo.get_child_count() == 0 or step == null or step.text.is_empty():
+			return _fail("%s gameplay demo art is missing" % game_id)
 		if progress == null or "STEP 1 OF 3" not in progress.text:
 			return _fail("%s tutorial progress indicator is missing" % game_id)
-		if next == null or back == null or next.custom_minimum_size.y < 64.0 or back.custom_minimum_size.y < 64.0:
-			return _fail("%s tutorial navigation touch targets are too small" % game_id)
-		var first_text: String = step.text
-		next.emit_signal("pressed")
+		if next == null or back == null:
+			return _fail("%s tutorial navigation is missing" % game_id)
+		if not _rect_eq(Rect2(back.position,back.size),Rect2(44,472,142,48)):
+			return _fail("%s BACK control drifted from Figma geometry" % game_id)
+		if not _rect_eq(Rect2(next.position,next.size),Rect2(204,472,142,48)):
+			return _fail("%s NEXT control drifted from Figma geometry" % game_id)
+		if close == null or not _rect_eq(Rect2(close.position,close.size),Rect2(44,548,302,58)):
+			return _fail("%s PLAY NOW control drifted from Figma geometry" % game_id)
+		var first_text := step.text
+		next.pressed.emit()
 		await _frames(2)
 		if step.text == first_text or "STEP 2 OF 3" not in progress.text:
-			return _fail("%s tutorial NEXT does not advance the visual step" % game_id)
-		back.emit_signal("pressed")
+			return _fail("%s tutorial NEXT does not advance" % game_id)
+		back.pressed.emit()
 		await _frames(2)
 		if step.text != first_text or "STEP 1 OF 3" not in progress.text:
 			return _fail("%s tutorial BACK does not restore the previous step" % game_id)
@@ -52,8 +59,11 @@ func _run() -> void:
 
 	main.queue_free()
 	await process_frame
-	print("Premium step-based tutorial flow validated.")
+	print("Figma tutorial flow validated.")
 	quit(0)
+
+func _rect_eq(actual: Rect2, expected: Rect2) -> bool:
+	return actual.position.distance_to(expected.position) <= 1.0 and actual.size.distance_to(expected.size) <= 1.0
 
 func _frames(count: int) -> void:
 	for _i in range(count):
