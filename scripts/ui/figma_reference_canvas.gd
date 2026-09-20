@@ -368,7 +368,7 @@ static func premium_button(text_value: String, font_size: int, text_color: Color
 
 	# StyleBoxTexture's nine-slice margins contribute to Button minimum size.
 	# Drawing the gradient in a geometry-neutral child preserves the exact Figma
-	# rectangle (including compact 38px toggles) without giving up the 3D finish.
+	# rectangle (including compact authored controls) without giving up the 3D finish.
 	var top := fill.lightened(0.18)
 	var bottom := fill.darkened(0.18)
 	var gradient := rounded_gradient3(top, fill, bottom, radius, border, border_width)
@@ -388,6 +388,10 @@ static func premium_button(text_value: String, font_size: int, text_color: Color
 	result.add_theme_stylebox_override("disabled", disabled_overlay)
 	var disabled_text := Color(resolved_text.r, resolved_text.g, resolved_text.b, 0.72)
 	result.add_theme_color_override("font_disabled_color", disabled_text)
+	result.button_down.connect(func() -> void:
+		if not result.disabled:
+			MotionSystem.press(result, 0.78)
+	)
 	return result
 
 static func label(text_value: String, font_size: int, color: Color, bold := false) -> Label:
