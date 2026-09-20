@@ -697,7 +697,7 @@ func build_collection_upgrades() -> void:
 			canvas,
 			"CollectionUpgrade/%s" % id,
 			state_text,
-			Rect2(249,y+14,98,38),
+			Rect2(249,y+11,98,44),
 			pill_fill,
 			Callable(),
 			state_text_color,
