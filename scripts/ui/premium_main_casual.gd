@@ -263,7 +263,8 @@ func _figma_header(canvas: Control, title_text: String, subtitle_text: String, p
 	if pill_callback.is_valid():
 		var pill_button := _figma_button(canvas, "FigmaHeaderPill", pill_text, Rect2(285,21,84,46), pill_fill, pill_callback, FIGMA_OFF_WHITE, 23, 12)
 		if pill_text.begins_with("◈"):
-			pill_button.text = "   %s" % pill_text.substr(1).strip_edges()
+			# Preserve the Figma/runtime text contract ("◈ +") for automation and
+			# accessibility while the faceted 3D gem sits directly over the glyph.
 			FigmaReferenceCanvas.add_collectible_gem(canvas, Vector2(301,44), 8.0, "HeaderCurrencyGem3D")
 			pill_button.set_meta("unjam_figma_wallet_pill", true)
 			pill_button.tooltip_text = "Coins: %d • Open Shop" % EconomyManager.balance()
