@@ -296,11 +296,17 @@ func start_daily() -> void:
 
 func start_game_daily(game_id: String) -> void:
 	if _daily_done(game_id):
-		build_daily_games()
+		if has_method("build_daily_games"):
+			call("build_daily_games")
+		else:
+			build_home()
 		return
 	if not MultiGameManager.claim_daily_game(game_id):
 		FeedbackManager.blocked()
-		build_daily_games()
+		if has_method("build_daily_games"):
+			call("build_daily_games")
+		else:
+			build_home()
 		return
 	selected_game_id = game_id
 	# Daily challenges are one-shot daily surfaces, not resumable campaign runs.
