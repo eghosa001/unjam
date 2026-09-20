@@ -124,9 +124,10 @@ static func rounded_gradient3(top: Color, middle: Color, bottom: Color, radius: 
 					continue
 			# Production controls use a restrained inset highlight rather than a
 			# flat fill. Bake it into the nine-slice so scaling keeps the same look.
+			var pixel_fill := fill
 			if py <= bw + 4.0:
-				fill = fill.lerp(Color.WHITE, 0.14)
-			image.set_pixel(x, y, fill)
+				pixel_fill = pixel_fill.lerp(Color.WHITE, 0.14)
+			image.set_pixel(x, y, pixel_fill)
 	var style := StyleBoxTexture.new()
 	style.texture = ImageTexture.create_from_image(image)
 	var margin := maxi(8, int(ceil(r + bw + 2.0)))
