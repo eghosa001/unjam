@@ -40,7 +40,7 @@ func build_ui() -> void:
 			existing.custom_minimum_size = Vector2(106, 60)
 			existing.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			existing.add_theme_font_size_override("font_size", 12)
-	var add_tube := RefCanvas.premium_button("＋  TUBE • 75◈", 12, Color(1.0, 0.995, 0.97), Color(0.10, 0.66, 1.0), 16, Color(0.55, 0.83, 1.0, 0.56), 1.3)
+	var add_tube := RefCanvas.premium_button("+  TUBE • 75◈", 12, Color(1.0, 0.995, 0.97), Color(0.10, 0.66, 1.0), 16, Color(0.55, 0.83, 1.0, 0.56), 1.3)
 	add_tube.name = "AddTubeAction"
 	add_tube.custom_minimum_size = Vector2(106, 60)
 	add_tube.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -156,5 +156,5 @@ func _refresh_extra_tube_button() -> void:
 		return
 	var balance := EconomyManager.balance()
 	button.disabled = extra_tube_used
-	button.text = "✓  TUBE USED" if extra_tube_used else "＋  TUBE • %d◈" % EXTRA_TUBE_COST
+	button.text = "✓  TUBE USED" if extra_tube_used else "+  TUBE • %d◈" % EXTRA_TUBE_COST
 	button.tooltip_text = "Already used this attempt • Balance %d" % balance if extra_tube_used else "Costs %d coins • Balance %d" % [EXTRA_TUBE_COST, balance]
