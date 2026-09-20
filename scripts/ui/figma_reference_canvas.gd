@@ -148,11 +148,20 @@ static func rounded_gradient3(top: Color, middle: Color, bottom: Color, radius: 
 				if not in_inner:
 					image.set_pixel(x, y, border_color)
 					continue
-			# Production controls use a restrained inset highlight rather than a
-			# flat fill. Bake it into the nine-slice so scaling keeps the same look.
+			# Premium casual-game gloss: a broad curved specular rolloff across the
+			# upper third, a crisp inner rim, and a restrained lower shade. It is
+			# baked once into the cached nine-slice, so there is no per-frame shader.
 			var pixel_fill := fill
-			if py <= bw + 4.0:
-				pixel_fill = pixel_fill.lerp(Color.WHITE, 0.14)
+			var fx := float(x) / float(image_size - 1)
+			var center_boost := 1.0 - minf(1.0, absf(fx - 0.5) * 1.7)
+			if fy < 0.34:
+				var sheen := (1.0 - fy / 0.34) * (0.10 + center_boost * 0.08)
+				pixel_fill = pixel_fill.lerp(Color(1, 1, 1, pixel_fill.a), sheen)
+			if py <= bw + 3.0:
+				pixel_fill = pixel_fill.lerp(Color(1, 1, 1, pixel_fill.a), 0.20)
+			if fy > 0.86:
+				var lower_rolloff := ((fy - 0.86) / 0.14) * 0.09
+				pixel_fill = pixel_fill.lerp(Color(0, 0, 0, pixel_fill.a), lower_rolloff)
 			image.set_pixel(x, y, pixel_fill)
 	var style := StyleBoxTexture.new()
 	style.texture = ImageTexture.create_from_image(image)
