@@ -237,6 +237,14 @@ func _fit_board_to_viewport() -> void:
 	for child in board_grid.get_children():
 		if child is Control:
 			(child as Control).custom_minimum_size = Vector2(cell_size,cell_size)
+			if child is PanelContainer:
+				var cell_panel := child as PanelContainer
+				var authored_style := cell_panel.get_theme_stylebox("panel")
+				if authored_style != null:
+					var exact_style := authored_style.duplicate() as StyleBox
+					for side in [SIDE_LEFT,SIDE_TOP,SIDE_RIGHT,SIDE_BOTTOM]:
+						exact_style.set_content_margin(side,0.0)
+					cell_panel.add_theme_stylebox_override("panel",exact_style)
 			if child.get_child_count() > 0 and child.get_child(0) is Control:
 				(child.get_child(0) as Control).custom_minimum_size = Vector2(cell_size,cell_size)
 	board_panel.custom_minimum_size = Vector2(338,338)
