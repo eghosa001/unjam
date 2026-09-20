@@ -1,8 +1,37 @@
 extends "res://scripts/ui/monetization_hub.gd"
 
+const SHOP_DARK_BG_TOP := Color("#07111d")
+const SHOP_DARK_BG_MID := Color("#0b1726")
+const SHOP_DARK_BG_BOTTOM := Color("#121b32")
+const SHOP_DARK_CARD := Color("#111d2d")
+const SHOP_DARK_INK := Color("#eef7ff")
+const SHOP_DARK_MUTED := Color("#b6c7d6")
+
+var _built_theme := ""
+
+func _theme_mode() -> String:
+	var main := get_parent()
+	var shell := main.get_node_or_null("UXShell") if main != null else null
+	if shell != null and shell.get("theme_mode") != null:
+		return String(shell.get("theme_mode"))
+	return "dark"
+
+func _shop_dark() -> bool:
+	return _theme_mode() == "dark"
+
+func _shop_text(color: Color) -> Color:
+	if not _shop_dark():
+		return color
+	if color.get_luminance() < 0.34:
+		return color.lightened(0.55)
+	if color.get_luminance() < 0.62:
+		return color.lightened(0.28)
+	return color
+
 func _build_ui() -> void:
 	if layer != null:
 		return
+	_built_theme = _theme_mode()
 	layer = CanvasLayer.new()
 	layer.layer = 500
 	add_child(layer)
@@ -31,15 +60,19 @@ func _build_ui() -> void:
 	overlay.add_child(canvas)
 
 	var bg := PanelContainer.new()
+	var bg_top := SHOP_DARK_BG_TOP if _shop_dark() else Color("#f0fcff")
+	var bg_mid := SHOP_DARK_BG_MID if _shop_dark() else Color("#fafcff")
+	var bg_bottom := SHOP_DARK_BG_BOTTOM if _shop_dark() else Color("#eeebfd")
+	var bg_border := Color(0.22,0.36,0.48,0.82) if _shop_dark() else Color("#bad1e3")
 	bg.add_theme_stylebox_override("panel",FigmaReferenceCanvas.rounded_gradient3(
-		Color("#f0fcff"),Color("#fafcff"),Color("#eeebfd"),34,Color("#bad1e3"),1,0.48
+		bg_top,bg_mid,bg_bottom,34,bg_border,1,0.48
 	))
 	FigmaReferenceCanvas.set_rect(bg,0,0,390,844)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(bg)
 
 	FigmaReferenceCanvas.add_shadow(canvas,Rect2(17,19,52,52),18,Color(0.02,0.15,0.30,0.16),4,Vector2(0,3))
-	var back := FigmaReferenceCanvas.premium_button("‹",27,Color("#083b78"),Color("#fffef7"),18,Color(0.74,0.80,0.95,0.55),1.2)
+	var back := FigmaReferenceCanvas.premium_button("‹",27,SHOP_DARK_MUTED if _shop_dark() else Color("#083b78"),Color("#152337") if _shop_dark() else Color("#fffef7"),18,Color(0.30,0.48,0.64,0.82) if _shop_dark() else Color(0.74,0.80,0.95,0.55),1.2)
 	back.name = "ShopBackButton"
 	FigmaReferenceCanvas.set_rect(back,17,19,52,52)
 	back.pressed.connect(_close_shop)
@@ -67,7 +100,12 @@ func _build_ui() -> void:
 	FigmaReferenceCanvas.add_shadow(canvas,Rect2(17,457,354,78),16,Color(0.03,0.11,0.20,0.16),5,Vector2(0,5))
 	var reward := PanelContainer.new()
 	reward.name = "ShopFreeCoinsPanel"
-	reward.add_theme_stylebox_override("panel",FigmaReferenceCanvas.rounded_gradient3(Color("#e9fdef"),Color("#e3f8e9"),Color("#ddf4e5"),16,Color(0.55,0.88,0.65,0.55),1.2))
+	reward.add_theme_stylebox_override("panel",FigmaReferenceCanvas.rounded_gradient3(
+		Color("#123126") if _shop_dark() else Color("#e9fdef"),
+		Color("#102a22") if _shop_dark() else Color("#e3f8e9"),
+		Color("#0d211b") if _shop_dark() else Color("#ddf4e5"),
+		16,Color(0.32,0.82,0.54,0.72) if _shop_dark() else Color(0.55,0.88,0.65,0.55),1.2
+	))
 	FigmaReferenceCanvas.set_rect(reward,17,457,354,78)
 	reward.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(reward)
@@ -111,7 +149,10 @@ func _add_product_exact(canvas: Control, product_id: String, rect: Rect2, displa
 	var panel := PanelContainer.new()
 	panel.name = "ShopProduct_%s" % product_id
 	panel.add_theme_stylebox_override("panel",FigmaReferenceCanvas.rounded_gradient3(
-		Color("#fffef8"),Color("#fbfaf4"),Color("#f6f5ef"),16,Color(0.70,0.64,0.96,0.32),1.2,0.50
+		Color("#172238") if _shop_dark() else Color("#fffef8"),
+		Color("#131e31") if _shop_dark() else Color("#fbfaf4"),
+		Color("#0f1828") if _shop_dark() else Color("#f6f5ef"),
+		16,Color(0.55,0.46,0.92,0.68) if _shop_dark() else Color(0.70,0.64,0.96,0.32),1.2,0.50
 	))
 	FigmaReferenceCanvas.set_rect(panel,rect.position.x,rect.position.y,rect.size.x,rect.size.y)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -149,10 +190,23 @@ func _is_owned_product(product_id: String, info: Dictionary) -> bool:
 	return false
 
 func _add_text(canvas: Control, text_value: String, rect: Rect2, font_size: int, color: Color) -> Label:
-	var label := FigmaReferenceCanvas.label(text_value,font_size,color,true)
+	var label := FigmaReferenceCanvas.label(text_value,font_size,_shop_text(color),true)
 	FigmaReferenceCanvas.set_rect(label,rect.position.x,rect.position.y,rect.size.x,rect.size.y)
 	canvas.add_child(label)
 	return label
+
+func open_shop() -> void:
+	if _built_theme != _theme_mode():
+		if layer != null and is_instance_valid(layer):
+			remove_child(layer)
+			layer.queue_free()
+		layer = null
+			overlay = null
+			shop_button = null
+			balance_label = null
+			status_label = null
+		_build_ui()
+	super.open_shop()
 
 func _refresh() -> void:
 	if balance_label != null:
