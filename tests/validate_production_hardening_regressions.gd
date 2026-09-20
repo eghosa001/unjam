@@ -297,9 +297,12 @@ func _validate_shop_header_clearance() -> bool:
 	if title == null or subtitle == null or wallet == null:
 		main.queue_free(); await process_frame
 		return _fail("Shop header diagnostics are incomplete")
-	if title.get_global_rect().intersects(wallet.get_global_rect()) or subtitle.get_global_rect().intersects(wallet.get_global_rect()):
+	var title_rect := title.get_global_rect()
+	var subtitle_rect := subtitle.get_global_rect()
+	var wallet_rect := wallet.get_global_rect()
+	if title_rect.intersects(wallet_rect) or subtitle_rect.intersects(wallet_rect):
 		main.queue_free(); await process_frame
-		return _fail("Shop header title/subtitle intrudes into the wallet pill")
+		return _fail("Shop header title/subtitle intrudes into the wallet pill: title=%s subtitle=%s wallet=%s" % [str(title_rect), str(subtitle_rect), str(wallet_rect)])
 	main.queue_free()
 	await process_frame
 	return true
@@ -320,9 +323,12 @@ func _validate_selector_header_and_navigation() -> bool:
 	if title == null or subtitle == null or settings == null or back == null:
 		main.queue_free(); await process_frame
 		return _fail("Choose-a-Game header/navigation diagnostics are incomplete")
-	if title.get_global_rect().intersects(settings.get_global_rect()) or subtitle.get_global_rect().intersects(settings.get_global_rect()):
+	var title_rect := title.get_global_rect()
+	var subtitle_rect := subtitle.get_global_rect()
+	var settings_rect := settings.get_global_rect()
+	if title_rect.intersects(settings_rect) or subtitle_rect.intersects(settings_rect):
 		main.queue_free(); await process_frame
-		return _fail("Choose-a-Game title/subtitle intrudes into Settings")
+		return _fail("Choose-a-Game title/subtitle intrudes into Settings: title=%s subtitle=%s settings=%s" % [str(title_rect), str(subtitle_rect), str(settings_rect)])
 	if back.tooltip_text.is_empty() or settings.tooltip_text.is_empty():
 		main.queue_free(); await process_frame
 		return _fail("Choose-a-Game icon navigation lacks descriptive tooltips")
