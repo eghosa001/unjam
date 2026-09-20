@@ -152,16 +152,31 @@ func _build_figma_block(canvas: Control) -> void:
 	FigmaReferenceCanvas.set_rect(piece_row, 32, 557, 326, 72)
 	canvas.add_child(piece_row)
 
+	var status_region := Control.new()
+	status_region.name = "BlockStatus"
+	status_region.clip_contents = true
+	FigmaReferenceCanvas.set_rect(status_region, 18, 712, 354, 20)
+	canvas.add_child(status_region)
 	status_label = FigmaReferenceCanvas.label("", 12, Color(1,0.995,0.97), true)
-	status_label.name = "BlockStatus"
+	status_label.name = "BlockStatusText"
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	FigmaReferenceCanvas.set_rect(status_label, 18, 712, 354, 20)
-	canvas.add_child(status_label)
+	status_label.clip_text = true
+	status_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	FigmaReferenceCanvas.set_rect(status_label, 0, 0, 354, 20)
+	status_region.add_child(status_label)
+
+	var hint_region := Control.new()
+	hint_region.name = "BlockHint"
+	hint_region.clip_contents = true
+	FigmaReferenceCanvas.set_rect(hint_region, 18, 734, 354, 20)
+	canvas.add_child(hint_region)
 	hint_label = FigmaReferenceCanvas.label("", 12, Color(1,0.995,0.97), true)
-	hint_label.name = "BlockHint"
+	hint_label.name = "BlockHintText"
 	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	FigmaReferenceCanvas.set_rect(hint_label, 18, 734, 354, 20)
-	canvas.add_child(hint_label)
+	hint_label.clip_text = true
+	hint_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	FigmaReferenceCanvas.set_rect(hint_label, 0, 0, 354, 20)
+	hint_region.add_child(hint_label)
 
 func _tray_piece_button_size() -> Vector2:
 	return Vector2(104, 72)
