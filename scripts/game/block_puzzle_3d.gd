@@ -200,7 +200,10 @@ func _build_figma_block(canvas: Control) -> void:
 	var tray := PanelContainer.new()
 	tray.name = "BlockTray"
 	FigmaReferenceCanvas.add_shadow(canvas, Rect2(17,534,354,104), 22, Color(0.07,0.03,0.16,0.20), 6, Vector2(0,5))
-	tray.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color("#fbf4ff"), 22, Color(0.88,0.68,1.0,0.75), 1.5))
+	tray.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(
+		Color("#fffaff"), Color("#fbf4ff"), Color("#eee1fb"), 22,
+		Color(0.88,0.68,1.0,0.78), 1.5, 0.42
+	))
 	FigmaReferenceCanvas.set_rect(tray, 17, 534, 354, 104)
 	tray.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(tray)
