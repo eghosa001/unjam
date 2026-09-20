@@ -85,9 +85,9 @@ static func rounded_gradient(top: Color, bottom: Color, radius: float = 16.0, bo
 	var cache_key := _style_cache_key("rounded2", [top, bottom], radius, border_color, border_width)
 	if _rounded_gradient_cache.has(cache_key):
 		return _rounded_gradient_cache[cache_key] as StyleBoxTexture
-	var image_size := 96
+	var image_size := 64
 	var image := Image.create(image_size, image_size, false, Image.FORMAT_RGBA8)
-	var r := clampf(radius / 24.0 * 22.0, 0.0, 44.0)
+	var r := clampf(radius / 24.0 * (float(image_size) * 22.0 / 96.0), 0.0, float(image_size) * 44.0 / 96.0)
 	var bw := maxf(0.0, border_width / 4.0 * 4.0)
 	for y in range(image_size):
 		var fy := float(y) / float(image_size - 1)
@@ -124,9 +124,9 @@ static func rounded_gradient3(top: Color, middle: Color, bottom: Color, radius: 
 	var cache_key := _style_cache_key("rounded3", [top, middle, bottom], radius, border_color, border_width, midpoint)
 	if _rounded_gradient3_cache.has(cache_key):
 		return _rounded_gradient3_cache[cache_key] as StyleBoxTexture
-	var image_size := 96
+	var image_size := 64
 	var image := Image.create(image_size, image_size, false, Image.FORMAT_RGBA8)
-	var r := clampf(radius / 24.0 * 22.0, 0.0, 44.0)
+	var r := clampf(radius / 24.0 * (float(image_size) * 22.0 / 96.0), 0.0, float(image_size) * 44.0 / 96.0)
 	var bw := maxf(0.0, border_width / 4.0 * 4.0)
 	var split := clampf(midpoint, 0.08, 0.92)
 	for y in range(image_size):
@@ -167,9 +167,9 @@ static func horizontal_gradient(left: Color, right: Color, radius: float = 0.0, 
 	var cache_key := _style_cache_key("horizontal", [left, right], radius, border_color, border_width)
 	if _horizontal_gradient_cache.has(cache_key):
 		return _horizontal_gradient_cache[cache_key] as StyleBoxTexture
-	var image_size := 96
+	var image_size := 64
 	var image := Image.create(image_size, image_size, false, Image.FORMAT_RGBA8)
-	var r := clampf(radius / 24.0 * 22.0, 0.0, 44.0)
+	var r := clampf(radius / 24.0 * (float(image_size) * 22.0 / 96.0), 0.0, float(image_size) * 44.0 / 96.0)
 	var bw := maxf(0.0, border_width)
 	for y in range(image_size):
 		for x in range(image_size):
