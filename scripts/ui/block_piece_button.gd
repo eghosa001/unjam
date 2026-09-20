@@ -428,10 +428,7 @@ func _draw() -> void:
 	for point in points:
 		max_x = maxi(max_x, point.x)
 		max_y = maxi(max_y, point.y)
-	var fit_cell := minf((size.x - 24.0) / float(max_x + 1), (size.y - 18.0) / float(max_y + 1))
-	# Keep every tray shape on one visual scale. A single-cell piece should read
-	# like one board cell, not inflate to fill the entire tray slot.
-	var cell := clampf(minf(30.0, fit_cell), 16.0, 30.0)
+	var cell := _tray_cell_size(max_x, max_y)
 	var total := Vector2((max_x + 1) * cell, (max_y + 1) * cell)
 	var origin := (size - total) * 0.5
 	for point in points:
@@ -440,6 +437,24 @@ func _draw() -> void:
 	if selected:
 		var pulse := 0.55 + 0.45 * sin(phase * 7.0)
 		draw_arc(size * 0.5, maxf(total.x, total.y) * 0.60, 0.0, TAU, 32, Color(accent.lightened(0.38), 0.20 + pulse * 0.18), 3.0, true)
+
+func tray_visual_cell_size() -> float:
+	if shape.is_empty():
+		return 0.0
+	var max_x := 0
+	var max_y := 0
+	for raw in shape:
+		var point := _as_point(raw)
+		if point.x >= 0 and point.y >= 0:
+			max_x = maxi(max_x, point.x)
+			max_y = maxi(max_y, point.y)
+	return _tray_cell_size(max_x, max_y)
+
+func _tray_cell_size(max_x: int, max_y: int) -> float:
+	var fit_cell := minf((size.x - 24.0) / float(max_x + 1), (size.y - 18.0) / float(max_y + 1))
+	# Keep every tray shape on one visual scale. A single-cell piece should read
+	# like one board cell, not inflate to fill the entire tray slot.
+	return clampf(minf(30.0, fit_cell), 16.0, 30.0)
 
 func _draw_block(rect: Rect2, fill: Color) -> void:
 	# Use real top/right extrusion instead of a second full-size dark rectangle.
