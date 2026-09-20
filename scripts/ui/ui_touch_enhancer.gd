@@ -33,6 +33,8 @@ func _apply_enhancements() -> void:
 	if host == null or not is_instance_valid(host):
 		return
 	_enlarge_buttons(host)
+	if host.find_child("FigmaWater390x844", true, false) != null or host.find_child("FigmaBlock390x844", true, false) != null or host.find_child("FigmaRescue390x844", true, false) != null:
+		return
 	if host.name == "BlockPuzzle":
 		var hint = host.get("hint_label")
 		if hint is Label:
