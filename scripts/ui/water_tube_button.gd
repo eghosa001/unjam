@@ -98,19 +98,32 @@ func _process(delta: float) -> void:
 		queue_redraw()
 
 func _draw() -> void:
-	var rect: Rect2 = Rect2(Vector2(12, 14), size - Vector2(24, 34))
+	# Scale bottle geometry with the allotted slot. Fixed 12px+12px side insets
+	# made late-game 38–55px slots collapse into hairline test tubes.
+	var side_inset := clampf(size.x * 0.10, 4.0, 7.0)
+	var rect: Rect2 = Rect2(Vector2(side_inset, 12), size - Vector2(side_inset * 2.0, 30))
 	var selected_bob: float = sin(pulse_time * 4.4) * 3.5 if is_selected else 0.0
 	var lift: float = (-18.0 + selected_bob) if is_selected else -5.0 * hover_amount
 	var body: Rect2 = Rect2(rect.position + Vector2(0, lift), rect.size)
-	var shadow: Rect2 = Rect2(body.position + Vector2(0, 17), body.size)
+	var shadow: Rect2 = Rect2(body.position + Vector2(0, clampf(body.size.y * 0.065, 8.0, 17.0)), body.size)
 
-	# Premium glass silhouette: translucent shell + darker inner cavity instead of a flat white bottle.
-	_draw_round_rect(shadow, Color(0.01, 0.025, 0.06, 0.34), 34.0)
-	_draw_round_rect(body, Color(0.66, 0.87, 1.0, 0.16), 34.0)
-	var cavity := Rect2(body.position + Vector2(12, 27), body.size - Vector2(24, 53))
-	# Use the cavity only as liquid geometry. Do not paint a darker inner shell:
-	# on empty tubes its vertical contrast edges read as artificial 3D lines.
-	var inner: Rect2 = Rect2(cavity.position + Vector2(5, 12), cavity.size - Vector2(10, 24))
+	var body_radius := clampf(body.size.x * 0.46, 14.0, 30.0)
+	_draw_round_rect(shadow, Color(0.01, 0.025, 0.06, 0.30), body_radius)
+	_draw_round_rect(body, Color(0.66, 0.87, 1.0, 0.17), body_radius)
+	var cavity_side := clampf(body.size.x * 0.13, 4.0, 6.0)
+	var cavity_top := clampf(body.size.y * 0.10, 16.0, 24.0)
+	var cavity_bottom := clampf(body.size.y * 0.11, 18.0, 26.0)
+	var cavity := Rect2(
+		body.position + Vector2(cavity_side, cavity_top),
+		body.size - Vector2(cavity_side * 2.0, cavity_top + cavity_bottom)
+	)
+	# Use the cavity only as liquid geometry. Do not paint a darker inner shell.
+	var inner_side := clampf(cavity.size.x * 0.10, 2.0, 4.0)
+	var inner_vertical := clampf(cavity.size.y * 0.035, 4.0, 9.0)
+	var inner: Rect2 = Rect2(
+		cavity.position + Vector2(inner_side, inner_vertical),
+		cavity.size - Vector2(inner_side * 2.0, inner_vertical * 2.0)
+	)
 	var slot_h: float = inner.size.y / float(CAPACITY)
 	for slot in range(CAPACITY):
 		var y: float = inner.end.y - slot_h * float(slot + 1)
@@ -121,11 +134,12 @@ func _draw() -> void:
 			var liquid: Color = PALETTE[color_index] as Color
 			_draw_round_rect(slot_rect, Color(liquid, 0.96), 8.0 if slot == 0 else 4.0)
 			var surface_y: float = slot_rect.position.y + 4.0 + wave
-			draw_line(Vector2(slot_rect.position.x + 6, surface_y), Vector2(slot_rect.end.x - 6, surface_y - wave * 0.45), liquid.lightened(0.36), 4.0, true)
+			var surface_pad := clampf(slot_rect.size.x * 0.12, 2.5, 6.0)
+			draw_line(Vector2(slot_rect.position.x + surface_pad, surface_y), Vector2(slot_rect.end.x - surface_pad, surface_y - wave * 0.45), liquid.lightened(0.36), clampf(slot_rect.size.x * 0.08, 2.0, 4.0), true)
 			# A tiny shape marker provides an accessibility cue in addition to colour.
 			# It is deliberately subtle so the tubes still look like liquid rather
 			# than labelled containers.
-			var marker_center := Vector2(slot_rect.end.x - 16, slot_rect.get_center().y)
+			var marker_center := Vector2(slot_rect.end.x - clampf(slot_rect.size.x * 0.22, 6.0, 12.0), slot_rect.get_center().y)
 			match color_index % 4:
 				0: draw_circle(marker_center, 4.0, Color(1, 1, 1, 0.62))
 				1: draw_line(marker_center - Vector2(5, 0), marker_center + Vector2(5, 0), Color(1, 1, 1, 0.62), 3.0, true)
@@ -133,7 +147,8 @@ func _draw() -> void:
 				_: draw_line(marker_center - Vector2(4, 4), marker_center + Vector2(4, 4), Color(1, 1, 1, 0.62), 3.0, true)
 		else:
 			# Empty capacity is glass, not opaque grey fill.
-			draw_line(Vector2(slot_rect.position.x + 7, slot_rect.end.y - 2), Vector2(slot_rect.end.x - 7, slot_rect.end.y - 2), Color(0.72, 0.88, 1.0, 0.07), 1.5, true)
+			var empty_pad := clampf(slot_rect.size.x * 0.18, 3.0, 7.0)
+			draw_line(Vector2(slot_rect.position.x + empty_pad, slot_rect.end.y - 2), Vector2(slot_rect.end.x - empty_pad, slot_rect.end.y - 2), Color(0.72, 0.88, 1.0, 0.07), 1.2, true)
 
 	var rim_color: Color = Color("16b8a6") if is_selected else Color("9ccdea").lerp(Color("5da9ff"), hover_amount * 0.55)
 	if invalid_amount > 0.0:
