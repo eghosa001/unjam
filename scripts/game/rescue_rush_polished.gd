@@ -4,7 +4,7 @@ const RescueEscapePiece3D = preload("res://scripts/ui/rescue_piece_3d_button.gd"
 
 # Authoritative board state resolves first; visual ghosts are tracked separately.
 # Completion waits for the actual final escape tween instead of guessing with a timer.
-var _active_escape_visuals: Array[Node] = []
+var _active_escape_visuals: Array = []
 var _speed_line_pool: Array[Line2D] = []
 var _effect_label_pool: Array[Label] = []
 const MAX_SPEED_LINE_POOL := 12
@@ -68,9 +68,17 @@ func _track_escape_visual(node: Node) -> void:
 		_active_escape_visuals.append(node)
 
 func _finish_escape_visual(node: Variant) -> void:
-	_active_escape_visuals.erase(node)
-	if node != null and is_instance_valid(node):
-		node.queue_free()
+	var remaining: Array = []
+	var node_valid := node != null and is_instance_valid(node)
+	for active in _active_escape_visuals:
+		if active == null or not is_instance_valid(active):
+			continue
+		if node_valid and active == node:
+			continue
+		remaining.append(active)
+	_active_escape_visuals = remaining
+	if node_valid:
+		(node as Node).queue_free()
 
 func _wait_for_escape_visuals() -> void:
 	while not _active_escape_visuals.is_empty():
@@ -149,9 +157,11 @@ func _spawn_escape_visual(index: int, route: Array[Vector2i] = []) -> void:
 
 func _acquire_speed_line() -> Line2D:
 	var line: Line2D
-	if not _speed_line_pool.is_empty():
-		line = _speed_line_pool.pop_back()
-	else:
+	while not _speed_line_pool.is_empty() and line == null:
+		var candidate = _speed_line_pool.pop_back()
+		if candidate != null and is_instance_valid(candidate):
+			line = candidate
+	if line == null:
 		line = Line2D.new()
 		line.z_index = 220
 		add_child(line)
@@ -176,9 +186,11 @@ func _release_speed_line(value: Variant) -> void:
 
 func _acquire_effect_label() -> Label:
 	var label: Label
-	if not _effect_label_pool.is_empty():
-		label = _effect_label_pool.pop_back()
-	else:
+	while not _effect_label_pool.is_empty() and label == null:
+		var candidate = _effect_label_pool.pop_back()
+		if candidate != null and is_instance_valid(candidate):
+			label = candidate
+	if label == null:
 		label = Label.new()
 		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(label)
