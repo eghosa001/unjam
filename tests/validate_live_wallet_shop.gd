@@ -20,10 +20,10 @@ func run() -> void:
 	var main := (load("res://scenes/Main.tscn") as PackedScene).instantiate() as Control
 	root.add_child(main)
 	await _frames(5)
-	if main.has_method("build_game_selector"):
-		main.call("build_game_selector")
-	elif main.has_method("build_live"):
-		main.call("build_live")
+	if main.has_method("_open_games_surface"):
+		main.call("_open_games_surface")
+	else:
+		main.set("current_surface", "live")
 	await _frames(5)
 
 	var live := main.get_node_or_null("PremiumLive")
