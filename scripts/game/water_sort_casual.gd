@@ -1,7 +1,6 @@
 extends "res://scripts/game/water_sort_ultra_motion.gd"
 
 const RefCanvas = preload("res://scripts/ui/figma_reference_canvas.gd")
-const MotionTube = preload("res://scripts/ui/water_tube_3d_motion.gd")
 
 const SKY_TOP := Color(0.27, 0.76, 1.0)
 const SKY_MID := Color(0.63, 0.91, 1.0)
