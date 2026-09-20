@@ -268,9 +268,12 @@ func _validate_header_badge_clearance() -> bool:
 	if title == null or subtitle == null or pill == null:
 		main.queue_free(); await process_frame
 		return _fail("Shared Figma header diagnostics are incomplete")
-	if title.get_global_rect().intersects(pill.get_global_rect()) or subtitle.get_global_rect().intersects(pill.get_global_rect()):
+	var title_rect := title.get_global_rect()
+	var subtitle_rect := subtitle.get_global_rect()
+	var pill_rect := pill.get_global_rect()
+	if title_rect.intersects(pill_rect) or subtitle_rect.intersects(pill_rect):
 		main.queue_free(); await process_frame
-		return _fail("Shared Figma header title/subtitle intrudes into the status pill: title=%s subtitle=%s pill=%s" % [str(title.get_global_rect()), str(subtitle.get_global_rect()), str(pill.get_global_rect())])
+		return _fail("Shared Figma header title/subtitle intrudes into the status pill: title=%s subtitle=%s pill=%s" % [str(title_rect), str(subtitle_rect), str(pill_rect)])
 	main.queue_free()
 	await process_frame
 	return true
