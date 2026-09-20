@@ -231,69 +231,56 @@ func _show_current_tutorial() -> void:
 func build_daily_games() -> void:
 	current_surface = "daily"
 	_remove_active_game()
-	var root := _page_root()
+	var canvas := _figma_surface("daily", Color(0.8956,0.9736,0.9268))
 	var bonus := EconomyManager.collection_daily_bonus()
-	_page_header(
-		root,
-		"DAILY GAMES",
-		"Three fresh challenges every day",
-		"+%d COLLECTION BONUS" % bonus if bonus > 0 else "3 CHALLENGES",
-		PremiumDesignSystem.GOLD
+	_figma_header(canvas, "DAILY GAMES", "Three fresh challenges every day", "+%d" % bonus, FIGMA_GOLD)
+	_figma_card(canvas, "DailyIntro", Rect2(18,90,354,64), Color(0.985,0.995,1.0), Color(0.72,0.90,0.79,0.50), 16)
+	_figma_text(canvas, "TODAY • %s" % _figma_today_label(), Rect2(36,107,220,17), 14, FIGMA_INK)
+
+	_figma_daily_card(canvas, "rescue_rush", 172, bonus)
+	_figma_daily_card(canvas, "water_sort", 294, bonus)
+	_figma_daily_card(canvas, "block_puzzle", 416, bonus)
+
+	_figma_card(canvas, "Perks", Rect2(18,540,354,52), Color(0.985,0.995,1.0), Color(0.72,0.90,0.79,0.50), 14)
+	_figma_text(
+		canvas,
+		"COLLECTION BONUS  +%d DAILY   •   GARDEN GIFT +%d" % [bonus, EconomyManager.garden_gift_amount()],
+		Rect2(34,557,322,18),
+		12,
+		FIGMA_MUTED
 	)
+	_figma_bottom_nav(canvas, "daily")
 
-	var intro := _card(root, Vector2(0, 118), true)
-	var intro_margin := _pad(intro, 18)
-	var intro_box := VBoxContainer.new()
-	intro_box.alignment = BoxContainer.ALIGNMENT_CENTER
-	intro_box.add_theme_constant_override("separation", 5)
-	intro_margin.add_child(intro_box)
-	var intro_title := _label("TODAY  •  %s" % DailyChallenge.date_key(), 22, "title", _accent())
-	intro_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	intro_box.add_child(intro_title)
-	var intro_copy := _label(
-		"Complete each puzzle once today. Collection upgrades permanently increase every Daily Game reward.",
-		16,
-		"muted",
-		_accent()
+func _figma_today_label() -> String:
+	var d := Time.get_date_dict_from_system()
+	var months := ["JANUARY","FEBRUARY","MARCH","APRIL","MAY","JUNE","JULY","AUGUST","SEPTEMBER","OCTOBER","NOVEMBER","DECEMBER"]
+	var month := int(d.get("month",1))
+	return "%s %d" % [months[clampi(month - 1,0,11)], int(d.get("day",1))]
+
+func _figma_daily_card(canvas: Control, game_id: String, y: float, collection_bonus: int) -> void:
+	var accent := Unjam3DTheme.game_accent(game_id)
+	_figma_card(canvas, "DailyCard/%s" % game_id, Rect2(18,y,354,106), Color(0.985,0.995,1.0), Color(accent,0.38), 16)
+	_figma_text(canvas, MultiGameManager.display_name(game_id).to_upper(), Rect2(34,y+18,150,21), 17, FIGMA_INK)
+	var detail := "Fresh generated rescue" if game_id == "rescue_rush" else "Daily level %d" % MultiGameManager.daily_level(game_id)
+	_figma_text(canvas, detail, Rect2(34,y+48,175,15), 12, FIGMA_MUTED)
+	var reward := "+%d COINS" % (100 + collection_bonus) if game_id == "rescue_rush" else "+%d–%d COINS" % [125 + collection_bonus,175 + collection_bonus]
+	_figma_text(canvas, reward, Rect2(34,y+72,130,16), 13, FIGMA_ORANGE)
+	var done := _daily_done(game_id)
+	var fill := Color(0.61,0.70,0.78) if done else accent
+	var button := _figma_button(
+		canvas,
+		"DailyPlay/%s" % game_id,
+		"COMPLETED" if done else "PLAY DAILY",
+		Rect2(245,y+42,108,48),
+		fill,
+		Callable(),
+		FIGMA_OFF_WHITE,
+		14,
+		12
 	)
-	intro_copy.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	intro_copy.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	intro_box.add_child(intro_copy)
-
-	var scroll := ScrollContainer.new()
-	scroll.name = "DailyGamesScroll"
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	root.add_child(scroll)
-	var stack := VBoxContainer.new()
-	stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	stack.add_theme_constant_override("separation", 16)
-	scroll.add_child(stack)
-
-	var grid := GridContainer.new()
-	grid.name = "DailyGamesGrid"
-	grid.columns = 3 if get_viewport_rect().size.x >= 900.0 else 1
-	grid.add_theme_constant_override("h_separation", 14)
-	grid.add_theme_constant_override("v_separation", 14)
-	stack.add_child(grid)
-	for game_id in MultiGameManager.GAME_IDS:
-		grid.add_child(_daily_game_card(game_id, bonus))
-
-	var collection_cta := _button(
-		"COLLECTION PERKS  •  +%d PER DAILY GAME  •  GARDEN GIFT +%d" % [
-			bonus,
-			EconomyManager.garden_gift_amount()
-		],
-		Vector2(0, 82),
-		"secondary",
-		"rescue_rush"
-	)
-	collection_cta.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	collection_cta.pressed.connect(build_collection)
-	stack.add_child(collection_cta)
-	PremiumVisuals.entrance(stack, 0.018)
-	_add_surface_diorama("rescue_rush", "DailyGames3DDiorama")
-	_add_secondary_nav("daily")
+	button.disabled = done
+	if not done:
+		button.pressed.connect(start_game_daily.bind(game_id))
 
 func _daily_game_card(game_id: String, collection_bonus: int) -> PanelContainer:
 	var accent := Unjam3DTheme.game_accent(game_id)
