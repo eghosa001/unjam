@@ -10,7 +10,7 @@ var launch_ms := {
 	"water_sort": [],
 	"block_puzzle": [],
 }
-var assist_steps := {
+var save_manager: Node\nvar multi_game_manager: Node\n\nvar assist_steps := {
 	"rescue_rush": 0,
 	"water_sort": 0,
 	"block_puzzle": 0,
@@ -20,7 +20,7 @@ func _initialize() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
-	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT_DIR))
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT_DIR))\n\tsave_manager = root.get_node_or_null("/root/SaveManager")\n\tmulti_game_manager = root.get_node_or_null("/root/MultiGameManager")\n\tif save_manager == null or multi_game_manager == null:\n\t\treturn _fatal("Required SaveManager/MultiGameManager autoloads are unavailable")
 	root.size = VIEWPORT
 	Engine.max_fps = 120
 	Engine.time_scale = 4.0
@@ -68,7 +68,7 @@ func _run() -> void:
 
 func _sweep_rescue(main: Control) -> void:
 	for level in range(1, 101):
-		SaveManager.clear_active_run()
+		var save_data: Dictionary = save_manager.get("data")\n\t\tsave_data["active_run"] = {}\n\t\tsave_manager.set("data", save_data)
 		var started := Time.get_ticks_usec()
 		main.call("start_level", level)
 		await _frames(5)
@@ -108,7 +108,7 @@ func _sweep_rescue(main: Control) -> void:
 func _sweep_multi(main: Control, game_id: String) -> void:
 	var display := "Water Sort" if game_id == "water_sort" else "Block Puzzle"
 	for level in range(1, 101):
-		MultiGameManager.clear_checkpoint(game_id)
+		multi_game_manager.call("clear_checkpoint", game_id)
 		var started := Time.get_ticks_usec()
 		main.call("start_multi_level", game_id, level, false)
 		await _frames(5)
