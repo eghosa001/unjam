@@ -38,8 +38,10 @@ func _initialize() -> void:
 	# Water Sort and Block Puzzle keep their gameplay geometry on flat Controls/
 	# grids. Their dimensional bottles/cubes and scenic background depth remain.
 	_check("res://scripts/game/water_sort_casual.gd", [
-		"stage := PanelContainer.new()",
-		"board = GridContainer.new()"
+		"gameplay_stage = PanelContainer.new()",
+		"gameplay_stage.name = \"GameplayStage\"",
+		"board = GridContainer.new()",
+		"board.name = \"WaterBoard\""
 	], failures)
 	_check("res://scripts/game/block_puzzle_3d.gd", [
 		"board_shell = PanelContainer.new()",

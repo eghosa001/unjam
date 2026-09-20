@@ -43,10 +43,11 @@ func run() -> void:
 		expect_true(overlay != null and overlay.visible, "Shop overlay did not open")
 		if overlay != null:
 			var text := _all_text(overlay)
-			for section in ["REMOVE ADS", "STARTER PACK", "COIN PACKS", "FREE COINS"]:
-				expect_true(section in text, "Shop section missing: %s" % section)
-			for product in ["500 COINS", "1,500 COINS", "4,000 COINS"]:
-				expect_true(product in text, "Shop product missing: %s" % product)
+			for expected in [
+				"REMOVE ADS", "STARTER PACK", "SMALL COINS", "MEDIUM COINS", "LARGE COINS",
+				"WATCH & EARN", "RESTORE PURCHASES", "PRIVACY OPTIONS"
+			]:
+				expect_true(expected in text, "Figma Shop content missing: %s" % expected)
 		var balance_label = hub.get("balance_label") as Label
 		expect_true(balance_label != null and "200" in balance_label.text, "Shop wallet balance missing")
 		if economy != null:

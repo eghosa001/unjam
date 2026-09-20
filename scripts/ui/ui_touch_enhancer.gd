@@ -33,6 +33,8 @@ func _apply_enhancements() -> void:
 	if host == null or not is_instance_valid(host):
 		return
 	_enlarge_buttons(host)
+	if host.find_child("FigmaWater390x844", true, false) != null or host.find_child("FigmaBlock390x844", true, false) != null or host.find_child("FigmaRescue390x844", true, false) != null:
+		return
 	if host.name == "BlockPuzzle":
 		var hint = host.get("hint_label")
 		if hint is Label:
@@ -47,6 +49,8 @@ func _apply_enhancements() -> void:
 			hint.custom_minimum_size = Vector2(0, 44)
 
 func _enlarge_buttons(node: Node) -> void:
+	if node != host and node.has_meta("unjam_figma_reference_root"):
+		return
 	# A nested surface with its own enhancer owns all sizing below that root.
 	# This keeps Main from re-sizing an active game scene a second time.
 	if node != host and node.get_node_or_null("UiTouchEnhancer") != null:
@@ -57,6 +61,8 @@ func _enlarge_buttons(node: Node) -> void:
 		_enlarge_buttons(child)
 
 func _apply_button_size(button: Button) -> void:
+	if button.has_meta("unjam_figma_exact_geometry"):
+		return
 	# Gameplay drawing controls are not ordinary buttons. Enforcing navigation
 	# touch-target sizes on them can blow up an 8x8 board, distort bottles, or
 	# resize Rescue Rush board pieces when Main scans an active game subtree.

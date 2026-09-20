@@ -1,6 +1,7 @@
 extends SceneTree
 
 const CampaignGeneratorScript = preload("res://scripts/core/campaign_generator.gd")
+const WaterProgression = preload("res://scripts/core/water_sort_progression.gd")
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -32,26 +33,20 @@ func _check_rescue() -> bool:
 	return true
 
 func _check_water() -> bool:
-	var packed := load("res://scenes/WaterSort.tscn") as PackedScene
-	if packed == null: return _fail("WaterSort scene missing")
-	var game = packed.instantiate()
-	root.add_child(game)
-	await process_frame
+	# Difficulty progression is data-owned by WaterSortProgression. Test that
+	# production source directly; scene loading/UI inheritance is covered by
+	# import, gameplay, viewport, motion and visual-audit gates.
 	var cases := {
 		1:[3,3], 3:[4,4], 8:[5,5], 20:[5,5],
 		100:[6,7], 500:[7,8], 1000:[7,9], 2500:[9,11],
 		5000:[11,12], 7500:[12,12], 10000:[12,12]
 	}
 	for level in cases.keys():
-		game.set("level_number", int(level))
-		var cfg: Dictionary = game.call("level_config")
+		var cfg: Dictionary = WaterProgression.profile(int(level))
 		var actual := int(cfg.get("colors", -1))
 		var expected: Array = cases[level]
 		if actual < int(expected[0]) or actual > int(expected[1]):
-			game.queue_free()
 			return _fail("Water level %d expected %d..%d colors, got %d" % [level, int(expected[0]), int(expected[1]), actual])
-	game.queue_free()
-	await process_frame
 	return true
 
 func _check_block() -> bool:

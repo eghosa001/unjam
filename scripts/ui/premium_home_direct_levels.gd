@@ -1,11 +1,20 @@
 extends "res://scripts/ui/premium_home_casual.gd"
 
-# UNJAM premium Home redesign.
-#
-# This leaf intentionally changes presentation only. Navigation, game launch,
-# persistence and motion ownership stay in the existing controllers. In
-# particular, MotionDirector remains the sole screen-transition owner and the
-# live 3D mascot/backdrop keep their own animation behavior.
+const RefCanvas = preload("res://scripts/ui/figma_reference_canvas.gd")
+
+const BG_TOP := Color(0.94, 0.99, 1.0)
+const BG_MID := Color(0.98, 0.99, 1.0)
+const BG_BOTTOM := Color(0.892, 0.9496, 0.988)
+const NAVY := Color(0.03, 0.23, 0.47)
+const INK := Color(0.07, 0.20, 0.35)
+const MUTED := Color(0.31, 0.42, 0.52)
+const BLUE := Color(0.03, 0.43, 0.78)
+const CYAN := Color(0.14, 0.68, 1.0)
+const ORANGE := Color(1.0, 0.55, 0.12)
+const GOLD := Color(1.0, 0.84, 0.24)
+const OFF_WHITE := Color(1.0, 0.995, 0.97)
+
+var figma_canvas: FigmaReferenceCanvas
 
 func build_home_launcher() -> void:
 	for child in get_children():
@@ -15,352 +24,266 @@ func build_home_launcher() -> void:
 	built = true
 	visible = true
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	clip_contents = true
 	if not EconomyManager.balance_changed.is_connected(_on_economy_balance_changed):
 		EconomyManager.balance_changed.connect(_on_economy_balance_changed)
 
-	var viewport_size := get_viewport_rect().size
-	var dark_mode := _theme_mode() == "dark"
-	var short_phone := viewport_size.y < 1100.0
-	var compact_height := viewport_size.y < 1250.0
-	var compact_width := viewport_size.x < 700.0
-	clip_contents = true
+	var viewport_bg := ColorRect.new()
+	viewport_bg.name = "FigmaHomeViewportBackground"
+	viewport_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	viewport_bg.color = BG_BOTTOM
+	viewport_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(viewport_bg)
 
-	var backdrop := Unjam3DBackdrop.new()
-	backdrop.name = "HomePremiumBackdrop"
-	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	backdrop.configure(Unjam3DTheme.game_accent(selected_game), dark_mode)
-	add_child(backdrop)
+	figma_canvas = RefCanvas.new()
+	figma_canvas.name = "FigmaHome390x844"
+	add_child(figma_canvas)
+	_build_reference_home(figma_canvas)
 
-	var outer := MarginContainer.new()
-	outer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	outer.add_theme_constant_override("margin_left", 16 if viewport_size.x < 600.0 else (22 if compact_width else 34))
-	outer.add_theme_constant_override("margin_right", 16 if viewport_size.x < 600.0 else (22 if compact_width else 34))
-	outer.add_theme_constant_override("margin_top", 14 if short_phone else (18 if compact_height else 28))
-	outer.add_theme_constant_override("margin_bottom", 110 if short_phone else (116 if compact_height else 132))
-	add_child(outer)
-
-	var root := VBoxContainer.new()
-	root.name = "HomePremiumRoot"
-	root.add_theme_constant_override("separation", 6 if short_phone else (8 if compact_height else 11))
-	outer.add_child(root)
-
-	_make_status_bar(root)
-	_make_brand_logo(root)
-
-	# Keep the hero/action composition centred on very tall phones without
-	# stretching the 3D scene itself.
-	var tall_top_push := maxf(0.0, viewport_size.y - 1920.0) * 0.57
-	if tall_top_push > 0.0:
-		var tall_top_spacer := Control.new()
-		tall_top_spacer.name = "HomeTallTopSpacer"
-		tall_top_spacer.custom_minimum_size = Vector2(0, tall_top_push)
-		root.add_child(tall_top_spacer)
-
-	_make_hero(root)
-
-	var aspect_ratio := viewport_size.y / maxf(1.0, viewport_size.x)
-	var balance_height := maxf(0.0, aspect_ratio - 1.82) * 360.0
-	if balance_height > 0.0:
-		var spacer := Control.new()
-		spacer.name = "HomeUpperBalanceSpacer"
-		spacer.custom_minimum_size = Vector2(0, minf(balance_height, 180.0))
-		root.add_child(spacer)
-
-	var action_cluster := VBoxContainer.new()
-	action_cluster.name = "HomeActionCluster"
-	action_cluster.alignment = BoxContainer.ALIGNMENT_CENTER
-	action_cluster.add_theme_constant_override("separation", 7 if short_phone else (9 if compact_height else 12))
-	root.add_child(action_cluster)
-
-	var current_level := _home_current_level(selected_game)
-	primary_button = Button.new()
-	primary_button.name = "HomePrimaryAction"
-	primary_button.text = "▶  CONTINUE\n%s  •  LEVEL %d" % [_short_game_name(selected_game), current_level]
-	primary_button.tooltip_text = "Continue your current %s campaign" % MultiGameManager.display_name(selected_game)
-	primary_button.custom_minimum_size = Vector2(0, 106 if short_phone else (118 if compact_height else 132))
-	primary_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	primary_button.add_theme_font_size_override("font_size", 27 if viewport_size.x < 600.0 else (30 if compact_width else 35))
-	Unjam3DTheme.gloss_button(primary_button, Unjam3DTheme.game_accent(selected_game), true, 34, dark_mode)
-	primary_button.pressed.connect(_continue_selected_game)
-	action_cluster.add_child(primary_button)
-
-	var quick_row := HBoxContainer.new()
-	quick_row.name = "HomeQuickActions"
-	quick_row.add_theme_constant_override("separation", 8 if compact_width else 10)
-	action_cluster.add_child(quick_row)
-
-	var choose := Button.new()
-	choose.name = "HomeChooseGameButton"
-	choose.text = "◈  ALL GAMES"
-	choose.custom_minimum_size = Vector2(0, 78 if short_phone else (84 if compact_height else 92))
-	choose.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	choose.add_theme_font_size_override("font_size", 18 if compact_width else 22)
-	Unjam3DTheme.gloss_button(choose, Unjam3DTheme.WATER_DARK, false, 24, dark_mode)
-	choose.pressed.connect(_open_game_selector)
-	quick_row.add_child(choose)
-
-	var daily := Button.new()
-	daily.name = "HomeDailyGamesButton"
-	var daily_done := 0
-	for game_id in MultiGameManager.GAME_IDS:
-		var main := get_parent()
-		if main != null and main.has_method("_daily_done") and bool(main.call("_daily_done", game_id)):
-			daily_done += 1
-	daily.text = "☀  DAILY  %d/3" % daily_done
-	daily.tooltip_text = "Play today's three daily challenges"
-	daily.custom_minimum_size = Vector2(0, 78 if short_phone else (84 if compact_height else 92))
-	daily.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	daily.add_theme_font_size_override("font_size", 18 if compact_width else 22)
-	Unjam3DTheme.gloss_button(daily, Unjam3DTheme.GOLD, true, 24, dark_mode)
-	daily.pressed.connect(_open_daily_games)
-	quick_row.add_child(daily)
-
-	_make_game_strip(action_cluster)
-
-	var lower_spacer := Control.new()
-	lower_spacer.name = "HomeLowerBalanceSpacer"
-	lower_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	root.add_child(lower_spacer)
-	_make_bottom_nav()
-	_animate_entry(root)
-
-func _make_status_bar(parent: VBoxContainer) -> void:
-	var viewport_size := get_viewport_rect().size
-	var narrow := viewport_size.x < 600.0
-	var compact := viewport_size.x < 700.0
-	var bar := HBoxContainer.new()
-	bar.name = "HomeStatusBar"
-	bar.custom_minimum_size = Vector2(0, 64 if viewport_size.y < 1100.0 else (70 if viewport_size.y < 1250.0 else 80))
-	bar.add_theme_constant_override("separation", 6 if narrow else 8)
-	parent.add_child(bar)
+func _build_reference_home(canvas: Control) -> void:
+	_add_frame_background(canvas)
+	_add_text(canvas, "UNJAM", Rect2(21, 23, 101, 34), 27, NAVY, true)
 
 	var cleared := 0
 	for game_id in MultiGameManager.GAME_IDS:
 		cleared += int(MultiGameManager.progress_for(game_id).get("levels_completed", 0))
 	var player_level := maxi(1, 1 + int(cleared / 10))
-	var profile := _make_badge("☺  LV %d" % player_level, Unjam3DTheme.WATER_DARK)
-	profile.custom_minimum_size.x = 126 if narrow else (142 if compact else 176)
-	bar.add_child(profile)
+	_add_pill(canvas, Rect2(21, 64, 78, 40), Color(0.03, 0.43, 0.78), "LV %d" % player_level, 13, OFF_WHITE)
+	home_coin_button = _add_action(canvas, Rect2(107, 64, 112, 40), Color(1.0, 0.55, 0.12), "◈ %s +" % _compact_number(EconomyManager.balance()), 12, OFF_WHITE, Callable(self, "_open_shop"), 20)
+	home_coin_button.name = "HomeCoinShopButton"
+	_add_pill(canvas, Rect2(227, 64, 92, 40), GOLD, "★ %s" % _compact_number(_total_stars()), 12, NAVY)
 
-	var spacer := Control.new()
-	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	bar.add_child(spacer)
+	_add_hero(canvas)
+	_add_quick_actions(canvas)
+	_add_quick_switch(canvas)
+	_add_bottom_nav_reference(canvas)
 
-	home_coin_button = _make_shop_badge()
-	home_coin_button.custom_minimum_size.x = 136 if narrow else (150 if compact else 184)
-	bar.add_child(home_coin_button)
+func _add_frame_background(canvas: Control) -> void:
+	var bg := PanelContainer.new()
+	bg.name = "FigmaHomeBackground"
+	bg.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(BG_TOP, BG_MID, BG_BOTTOM, 34, Color("#bad1e3"), 1, 0.48))
+	RefCanvas.set_rect(bg, 0, 0, 390, 844)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(bg)
 
-	var stars := _make_badge("★  %s" % _compact_number(_total_stars()), Unjam3DTheme.GOLD)
-	stars.custom_minimum_size.x = 126 if narrow else (142 if compact else 176)
-	bar.add_child(stars)
-
-func _make_brand_logo(parent: VBoxContainer) -> void:
-	var viewport_size := get_viewport_rect().size
-	var short_phone := viewport_size.y < 1100.0
-	var compact := viewport_size.y < 1250.0
-	var box := VBoxContainer.new()
-	box.name = "HomeBrandLockup"
-	box.custom_minimum_size = Vector2(0, 92 if short_phone else (112 if compact else 140))
-	box.alignment = BoxContainer.ALIGNMENT_CENTER
-	box.add_theme_constant_override("separation", -4)
-	parent.add_child(box)
-
-	# Individual letters create a stronger game identity than a flat wordmark,
-	# while staying fully procedural and resolution-independent.
-	var letters := HBoxContainer.new()
-	letters.name = "HomeLogoLetters"
-	letters.alignment = BoxContainer.ALIGNMENT_CENTER
-	letters.add_theme_constant_override("separation", -10 if viewport_size.x < 600.0 else -14)
-	box.add_child(letters)
-
-	var palette := [Color("ffd52b"), Color("ff8c21"), Color("ff4b83"), Color("c94dff"), Color("27baff")]
-	var text := "UNJAM"
-	var available_width := maxf(320.0, viewport_size.x - (36.0 if viewport_size.x < 600.0 else 86.0))
-	var letter_width := clampf((available_width + 44.0) / 5.0, 62.0, 128.0)
-	for i in range(text.length()):
-		var letter := Label.new()
-		letter.text = text.substr(i, 1)
-		letter.custom_minimum_size = Vector2(letter_width, letter_width * 0.82)
-		letter.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		letter.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		letter.add_theme_font_size_override("font_size", int(letter_width * 0.76))
-		letter.rotation = deg_to_rad(float(i - 2) * 1.25)
-		letter.position.y = absf(float(i - 2)) * 2.5
-		Unjam3DTheme.label_3d(letter, palette[i], Color("06488d"), 8)
-		letters.add_child(letter)
-
-	var strap := Label.new()
-	strap.text = "THREE PUZZLE WORLDS  •  ONE JOURNEY"
-	strap.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	strap.add_theme_font_size_override("font_size", 17 if short_phone else (20 if compact else 23))
-	Unjam3DTheme.label_3d(strap, Color.WHITE, Unjam3DTheme.NAVY, 3)
-	box.add_child(strap)
-
-func _make_hero(parent: VBoxContainer) -> void:
-	var viewport_size := get_viewport_rect().size
-	var hero_height := 228.0 if viewport_size.y < 1100.0 else (320.0 if viewport_size.y < 1250.0 else clampf(viewport_size.y * 0.23, 390.0, 460.0))
+func _add_hero(canvas: Control) -> void:
+	RefCanvas.add_shadow(canvas, Rect2(21, 121, 346, 224), 20, Color(0.03, 0.12, 0.22, 0.16), 5, Vector2(0, 4))
 	var hero := PanelContainer.new()
-	hero.name = "HomeHero3D"
-	hero.custom_minimum_size = Vector2(0, hero_height)
-	hero.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hero.add_theme_stylebox_override(
-		"panel",
-		Unjam3DTheme.panel_3d(
-			Color("102846") if _theme_mode() == "dark" else Color(0.70, 0.94, 1.0, 0.58),
-			42,
-			Color(1, 1, 1, 0.52),
-			3,
-			18
-		)
-	)
-	parent.add_child(hero)
+	hero.name = "FigmaHomeHero"
+	hero.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#d7f4ff"), Color("#d1eef9"), Color("#caeaf6"), 20, Color(0.505, 0.769, 0.945, 0.32), 1.2))
+	RefCanvas.set_rect(hero, 21, 121, 346, 224)
+	hero.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(hero)
 
-	var mascot := Unjam3DMascot.new()
-	mascot.name = "HomeMascot3D"
-	var mascot_width := maxf(640.0, viewport_size.x - 96.0) if viewport_size.x >= 700.0 else maxf(360.0, viewport_size.x - 38.0)
-	mascot.custom_minimum_size = Vector2(mascot_width, maxf(190.0, hero_height - 24.0))
-	mascot.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	hero.add_child(mascot)
-
-	var overlay_margin := MarginContainer.new()
-	overlay_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	overlay_margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	overlay_margin.add_theme_constant_override("margin_left", 18 if viewport_size.x < 600.0 else 26)
-	overlay_margin.add_theme_constant_override("margin_right", 18 if viewport_size.x < 600.0 else 26)
-	overlay_margin.add_theme_constant_override("margin_top", 16 if viewport_size.y < 1100.0 else 22)
-	overlay_margin.add_theme_constant_override("margin_bottom", 14 if viewport_size.y < 1100.0 else 20)
-	hero.add_child(overlay_margin)
-
-	var overlay := VBoxContainer.new()
-	overlay.name = "HomeHeroOverlay"
-	overlay.add_theme_constant_override("separation", 4)
-	overlay_margin.add_child(overlay)
-
-	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", 8)
-	overlay.add_child(header)
-
-	var eyebrow := Label.new()
-	eyebrow.text = "CURRENT JOURNEY"
-	eyebrow.add_theme_font_size_override("font_size", 18 if viewport_size.x < 600.0 else 22)
-	Unjam3DTheme.label_3d(eyebrow, Unjam3DTheme.GOLD, Unjam3DTheme.NAVY, 3)
-	header.add_child(eyebrow)
-
-	var header_spacer := Control.new()
-	header_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header.add_child(header_spacer)
-
+	_add_text(canvas, "CURRENT JOURNEY", Rect2(41, 142, 150, 15), 12, ORANGE, true)
 	var level := _home_current_level(selected_game)
 	var world := MultiGameManager.world_for_game_level(selected_game, level)
-	var world_badge := Label.new()
-	world_badge.text = "WORLD %d" % world
-	world_badge.add_theme_font_size_override("font_size", 17 if viewport_size.x < 600.0 else 20)
-	Unjam3DTheme.label_3d(world_badge, Color.WHITE, Unjam3DTheme.NAVY, 3)
-	header.add_child(world_badge)
+	_add_text(canvas, _short_game_name(selected_game), Rect2(41, 167, 186, 34), 28, NAVY, true)
+	_add_text(canvas, "LEVEL %d • WORLD %d" % [level, world], Rect2(41, 204, 170, 17), 14, BLUE, true)
 
-	var current := Label.new()
-	current.text = "%s\nLEVEL %d" % [MultiGameManager.display_name(selected_game).to_upper(), level]
-	current.add_theme_font_size_override("font_size", 28 if viewport_size.x < 600.0 else (33 if viewport_size.x < 700.0 else 40))
-	Unjam3DTheme.label_3d(current, Color.WHITE, Unjam3DTheme.NAVY, 4)
-	overlay.add_child(current)
+	var continue_button := _add_action(
+		canvas,
+		Rect2(41, 285, 178, 48),
+		BLUE,
+		"CONTINUE • LEVEL %d" % level,
+		13,
+		OFF_WHITE,
+		Callable(self, "_continue_selected_game"),
+		16
+	)
+	continue_button.name = "HomePrimaryAction"
+	primary_button = continue_button
+	_add_hero_preview(canvas, selected_game)
 
-	var push := Control.new()
-	push.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	overlay.add_child(push)
+func _add_hero_preview(canvas: Control, game_id: String) -> void:
+	var stage := PanelContainer.new()
+	stage.name = "FigmaHomeHeroPreview"
+	stage.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.91, 0.99, 1.0, 0.34), 16))
+	RefCanvas.set_rect(stage, 219, 144, 125, 136)
+	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(stage)
+	match game_id:
+		"water_sort":
+			_add_mini_bottle(canvas, Vector2(231, 158), 22, 108, Color("#ff7ebd"), Color("#d64089"), 62.64)
+			_add_mini_bottle(canvas, Vector2(270.5, 162), 22, 103, Color("#5ac1ff"), Color("#158dd6"), 74.16)
+			_add_mini_bottle(canvas, Vector2(310, 158), 22, 108, Color("#5fd78f"), Color("#1ca754"), 47.52)
+		"block_puzzle":
+			_add_mini_block_preview(canvas, Vector2(230, 154))
+		_:
+			_add_mini_rescue_preview(canvas, Vector2(230, 154))
 
-	var caption := Label.new()
-	caption.text = "RELAX • SOLVE • KEEP YOUR STREAK"
-	caption.add_theme_font_size_override("font_size", 17 if viewport_size.x < 600.0 else 22)
-	Unjam3DTheme.label_3d(caption, Color("e8f8ff"), Unjam3DTheme.NAVY, 2)
-	overlay.add_child(caption)
+func _add_mini_bottle(canvas: Control, pos: Vector2, width: float, height: float, liquid_left: Color, liquid_right: Color, liquid_height: float) -> void:
+	var shadow := PanelContainer.new()
+	shadow.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.02, 0.15, 0.26, 0.16), 4))
+	RefCanvas.set_rect(shadow, pos.x, pos.y + height - 3, width, 7)
+	canvas.add_child(shadow)
+	var bottle := PanelContainer.new()
+	bottle.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.90, 0.99, 1.0, 0.10), 9, Color(0.82, 0.98, 1.0, 0.90), 1.3))
+	RefCanvas.set_rect(bottle, pos.x, pos.y, width, height)
+	bottle.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(bottle)
+	var body_y := pos.y + height - liquid_height - 3.0
+	var body := PanelContainer.new()
+	body.add_theme_stylebox_override("panel", RefCanvas.horizontal_gradient(liquid_left, liquid_right, 1))
+	RefCanvas.set_rect(body, pos.x + 3, body_y, width - 6, liquid_height)
+	canvas.add_child(body)
+	var meniscus := PanelContainer.new()
+	meniscus.add_theme_stylebox_override("panel", RefCanvas.horizontal_gradient(liquid_left.lightened(0.08), liquid_right.lightened(0.04), 3))
+	RefCanvas.set_rect(meniscus, pos.x + 3, body_y - 3.0, width - 6, 6)
+	canvas.add_child(meniscus)
+	var hi := ColorRect.new()
+	hi.color = Color(1, 1, 1, 0.48)
+	RefCanvas.set_rect(hi, pos.x + 5, pos.y + 8, 2, height - 16)
+	canvas.add_child(hi)
+	var rim := PanelContainer.new()
+	rim.add_theme_stylebox_override("panel", RefCanvas.horizontal_gradient(Color("#f4fdff"), Color("#cfeffc"), 3, Color(0.82,0.98,1.0,0.90), 0.8))
+	RefCanvas.set_rect(rim, pos.x + 1, pos.y - 2, width - 2, 6)
+	canvas.add_child(rim)
 
-func _make_game_strip(parent: VBoxContainer) -> void:
-	var strip := HBoxContainer.new()
-	strip.name = "HomeGameStrip"
-	var viewport_size := get_viewport_rect().size
-	var short_phone := viewport_size.y < 1100.0
-	var compact := viewport_size.x < 700.0
-	strip.custom_minimum_size = Vector2(0, 92 if short_phone else (112 if viewport_size.y < 1250.0 else 132))
-	strip.alignment = BoxContainer.ALIGNMENT_CENTER
-	strip.add_theme_constant_override("separation", 7 if compact else 10)
-	parent.add_child(strip)
+func _add_mini_block_preview(canvas: Control, origin: Vector2) -> void:
+	var board := PanelContainer.new()
+	board.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.23, 0.16, 0.37), 12, Color(0.72, 0.52, 1.0, 0.55), 1))
+	RefCanvas.set_rect(board, origin.x, origin.y, 105, 105)
+	canvas.add_child(board)
+	var palette := [Color(1, 0.84, 0.24), Color(1, 0.48, 0.82), Color(0.31, 0.96, 0.57), Color(0.28, 0.84, 1)]
+	for y in range(4):
+		for x in range(4):
+			var well := PanelContainer.new()
+			well.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.18, 0.10, 0.33), 4))
+			RefCanvas.set_rect(well, origin.x + 8 + x * 23, origin.y + 8 + y * 23, 19, 19)
+			canvas.add_child(well)
+			if (x + y * 2) % 3 == 0:
+				var fill := ColorRect.new()
+				fill.color = palette[(x + y) % palette.size()]
+				RefCanvas.set_rect(fill, origin.x + 10 + x * 23, origin.y + 10 + y * 23, 15, 15)
+				canvas.add_child(fill)
 
+func _add_mini_rescue_preview(canvas: Control, origin: Vector2) -> void:
+	var board := PanelContainer.new()
+	board.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.55, 0.72, 0.59), 12, Color(0.92, 1.0, 0.86, 0.62), 1))
+	RefCanvas.set_rect(board, origin.x, origin.y, 105, 105)
+	canvas.add_child(board)
+	var colors := [Color(0.20, 0.76, 0.44), Color(0.66, 0.40, 0.86), Color(0.18, 0.67, 1.0), Color(1, 0.57, 0.20)]
+	for i in range(6):
+		var x := i % 3
+		var y := i / 3
+		var tile := PanelContainer.new()
+		tile.add_theme_stylebox_override("panel", RefCanvas.solid_box(colors[i % colors.size()], 4))
+		RefCanvas.set_rect(tile, origin.x + 8 + x * 29, origin.y + 8 + y * 29, 22, 22)
+		canvas.add_child(tile)
+		var arrow := _make_label("→", 14, Color.WHITE, true)
+		RefCanvas.set_rect(arrow, origin.x + 10 + x * 29, origin.y + 8 + y * 29, 18, 22)
+		canvas.add_child(arrow)
+	var chick := PanelContainer.new()
+	chick.add_theme_stylebox_override("panel", RefCanvas.solid_box(GOLD, 9))
+	RefCanvas.set_rect(chick, origin.x + 42, origin.y + 67, 18, 18)
+	canvas.add_child(chick)
+
+func _add_quick_actions(canvas: Control) -> void:
+	var choose := _add_action(canvas, Rect2(21, 365, 166, 52), BLUE, "◈ CHOOSE GAME", 12, OFF_WHITE, Callable(self, "_open_game_selector"), 16)
+	choose.name = "HomeChooseGameButton"
+	var daily_done := 0
+	for game_id in MultiGameManager.GAME_IDS:
+		var main := get_parent()
+		if main != null and main.has_method("_daily_done") and bool(main.call("_daily_done", game_id)):
+			daily_done += 1
+	var daily := _add_action(canvas, Rect2(197, 365, 170, 52), GOLD, "☀ DAILY • %d/3" % daily_done, 12, NAVY, Callable(self, "_open_daily_games"), 16)
+	daily.name = "HomeDailyGamesButton"
+
+func _add_quick_switch(canvas: Control) -> void:
+	_add_text(canvas, "QUICK SWITCH", Rect2(21, 437, 160, 18), 14, INK, true)
 	var games := [
-		["rescue_rush", "RESCUE RUSH", "↗"],
-		["water_sort", "WATER SORT", "◉"],
-		["block_puzzle", "BLOCK PUZZLE", "◆"]
+		["rescue_rush", "↗ RESCUE", Color(0.13, 0.78, 0.39), 21.0],
+		["water_sort", "◉ WATER", Color(0.10, 0.66, 1.0), 137.0],
+		["block_puzzle", "◆ BLOCK", Color(0.78, 0.24, 1.0), 253.0],
 	]
 	for entry in games:
-		var game_id := String(entry[0])
-		var level := _home_current_level(game_id)
-		var stars := MultiGameManager.total_stars(game_id)
-		var button := Button.new()
-		button.name = "HomeDirect_%s" % game_id
-		button.text = "%s  %s\nLV %d  •  ★ %s" % [String(entry[2]), String(entry[1]), level, _compact_number(stars)]
-		button.custom_minimum_size = Vector2(0, 90 if short_phone else (104 if compact else 120))
-		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.add_theme_font_size_override("font_size", 15 if viewport_size.x < 600.0 else (17 if compact else 20))
-		button.tooltip_text = "Open %s journey" % MultiGameManager.display_name(game_id)
-		var accent := Unjam3DTheme.game_accent(game_id)
-		Unjam3DTheme.gloss_button(button, accent, game_id == selected_game, 24, _theme_mode() == "dark")
-		button.pressed.connect(_select_and_open_game.bind(game_id))
-		strip.add_child(button)
+		var id := String(entry[0])
+		var x := float(entry[3])
+		RefCanvas.add_shadow(canvas, Rect2(x, 465, 108, 94), 18, Color(0.02, 0.10, 0.18, 0.13), 4, Vector2(0, 3))
+		var card := PanelContainer.new()
+		card.add_theme_stylebox_override("panel", RefCanvas.solid_box(OFF_WHITE, 18, entry[2], 1.5))
+		RefCanvas.set_rect(card, x, 465, 108, 94)
+		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		canvas.add_child(card)
+		_add_text(canvas, String(entry[1]), Rect2(x + 9, 479, 92, 15), 12, entry[2], true)
+		var level := _home_current_level(id)
+		var stars := MultiGameManager.total_stars(id)
+		_add_text(canvas, "L%d • ★%s" % [level, _compact_number(stars)], Rect2(x + 9, 509, 92, 15), 12, MUTED, false)
+		var tap := Button.new()
+		tap.name = "HomeDirect_%s" % id
+		tap.set_meta("unjam_figma_exact_geometry", true)
+		tap.flat = true
+		tap.focus_mode = Control.FOCUS_NONE
+		tap.modulate.a = 0.001
+		RefCanvas.set_rect(tap, x - 4, 459, 116, 106)
+		tap.pressed.connect(_select_and_open_game.bind(id))
+		canvas.add_child(tap)
 
-func _make_motto(parent: VBoxContainer) -> void:
-	var center := CenterContainer.new()
-	parent.add_child(center)
-	var plaque := PanelContainer.new()
-	plaque.name = "HomeMottoStone"
-	plaque.custom_minimum_size = Vector2(minf(790.0, get_viewport_rect().size.x - 56.0), 74)
-	plaque.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("122741") if _theme_mode() == "dark" else Color(0.94, 0.98, 1.0, 0.92), 28, Color(1, 1, 1, 0.34), 2, 7))
-	center.add_child(plaque)
-	var label := Label.new()
-	label.text = "THREE WORLDS  •  ONE RELAXING JOURNEY"
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 22)
-	Unjam3DTheme.label_3d(label, Color("f2f8ff") if _theme_mode() == "dark" else Unjam3DTheme.NAVY, Color("071a35") if _theme_mode() == "dark" else Color.WHITE, 2)
-	plaque.add_child(label)
-
-func _make_bottom_nav() -> void:
-	var viewport_size := get_viewport_rect().size
-	var nav := PanelContainer.new()
-	nav.name = "HomeBottomNav3D"
-	nav.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	nav.offset_left = 14 if viewport_size.x < 600.0 else 22
-	nav.offset_right = -14 if viewport_size.x < 600.0 else -22
-	nav.offset_top = -110 if viewport_size.y < 1100.0 else -118
-	nav.offset_bottom = -10 if viewport_size.y < 1100.0 else -14
-	nav.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("071a35") if _theme_mode() == "dark" else Color("0756a8"), 30, Color("67d3ff"), 3, 12))
-	add_child(nav)
-
-	var row := HBoxContainer.new()
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override("separation", 3 if viewport_size.x < 600.0 else 5)
-	nav.add_child(row)
-
-	var entries: Array = [
-		["⌂\nHOME", Callable(), "HomeNavButton"],
-		["◈\nGAMES", Callable(self, "_open_game_selector"), "HomeLevelsNavButton"],
-		["☀\nDAILY", Callable(self, "_open_daily_games"), "HomeDailyNavButton"],
-		["★\nCOLLECT", func(): get_parent().call("build_collection"), "HomeCollectionNavButton"],
-		["⚙\nSETTINGS", func(): get_parent().call("build_settings"), "HomeSettingsNavButton"]
+func _add_bottom_nav_reference(canvas: Control) -> void:
+	var shell := PanelContainer.new()
+	shell.name = "HomeBottomNav3D"
+	RefCanvas.add_shadow(canvas, Rect2(13, 757, 362, 70), 18, Color(0.02, 0.10, 0.18, 0.12), 5, Vector2(0, 4))
+	shell.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.985, 0.995, 1.0, 0.97), 18, Color(0.78, 0.88, 0.95, 0.75), 1))
+	RefCanvas.set_rect(shell, 13, 757, 362, 70)
+	shell.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(shell)
+	var active := PanelContainer.new()
+	active.add_theme_stylebox_override("panel", RefCanvas.solid_box(CYAN, 16))
+	RefCanvas.set_rect(active, 15, 767, 62, 48)
+	active.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(active)
+	var items := [
+		["HOME", 22.0, Callable(), "HomeNavButton", true],
+		["GAMES", 91.0, Callable(self, "_open_game_selector"), "HomeLevelsNavButton", false],
+		["DAILY", 160.0, Callable(self, "_open_daily_games"), "HomeDailyNavButton", false],
+		["COLLECT", 229.0, func(): get_parent().call("build_collection"), "HomeCollectionNavButton", false],
+		["SETTINGS", 298.0, func(): get_parent().call("build_settings"), "HomeSettingsNavButton", false],
 	]
-	for i in range(entries.size()):
-		var entry: Array = entries[i]
-		var button := Button.new()
-		button.name = String(entry[2])
-		button.text = String(entry[0])
-		button.custom_minimum_size = Vector2(0, 82 if viewport_size.y < 1100.0 else 88)
-		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.add_theme_font_size_override("font_size", 14 if viewport_size.x < 600.0 else (16 if viewport_size.x < 700.0 else 18))
-		var selected := i == 0
-		var accent := Unjam3DTheme.WATER if selected else Color("0d6dc2")
-		Unjam3DTheme.gloss_button(button, accent, selected, 22, _theme_mode() == "dark")
-		var callback: Callable = entry[1]
-		if callback.is_valid():
-			button.pressed.connect(callback)
-		row.add_child(button)
+	for item in items:
+		_add_text(canvas, item[0], Rect2(item[1] - 1.0, 788, 62, 30), 12, Color(0.05, 0.49, 0.86) if item[4] else Color(0.31, 0.43, 0.54), true)
+		var hit := Button.new()
+		hit.name = item[3]
+		hit.flat = true
+		hit.focus_mode = Control.FOCUS_NONE
+		hit.modulate.a = 0.001
+		RefCanvas.set_rect(hit, item[1] - 9, 753, 74, 78)
+		var cb: Callable = item[2]
+		if cb.is_valid():
+			hit.pressed.connect(cb)
+		canvas.add_child(hit)
+
+func _add_pill(canvas: Control, rect: Rect2, fill: Color, text_value: String, font_size: int, text_color: Color) -> PanelContainer:
+	RefCanvas.add_shadow(canvas, rect, rect.size.y * 0.5, Color(0.02, 0.10, 0.18, 0.15), 3, Vector2(0, 2))
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", RefCanvas.solid_box(fill, rect.size.y * 0.5))
+	RefCanvas.set_rect(panel, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(panel)
+	var label := _make_label(text_value, font_size, text_color, true)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	RefCanvas.set_rect(label, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
+	canvas.add_child(label)
+	return panel
+
+func _add_action(canvas: Control, rect: Rect2, fill: Color, text_value: String, font_size: int, text_color: Color, callback: Callable, radius: float) -> Button:
+	RefCanvas.add_shadow(canvas, rect, radius, Color(0.02, 0.10, 0.18, 0.20), 5, Vector2(0, 4))
+	var button := RefCanvas.premium_button(text_value, font_size, text_color, fill, radius)
+	RefCanvas.set_rect(button, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
+	if callback.is_valid():
+		button.pressed.connect(callback)
+	canvas.add_child(button)
+	return button
+
+func _add_text(canvas: Control, text_value: String, rect: Rect2, font_size: int, color: Color, bold: bool) -> Label:
+	var label := _make_label(text_value, font_size, color, bold)
+	RefCanvas.set_rect(label, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
+	canvas.add_child(label)
+	return label
+
+func _make_label(text_value: String, font_size: int, color: Color, bold: bool) -> Label:
+	var label := RefCanvas.label(text_value, font_size, color, bold)
+	return label
 
 func _home_current_level(game_id: String) -> int:
 	if game_id == "rescue_rush":

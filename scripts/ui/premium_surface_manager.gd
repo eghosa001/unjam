@@ -36,6 +36,12 @@ func _refresh(force: bool) -> void:
 		return
 	if content == null or not is_instance_valid(content):
 		return
+	# Audited Figma surfaces own their complete backdrop, typography, spacing and
+	# navigation chrome. Do not allocate or apply the retired generic skin behind
+	# them; that both changes appearance and wastes render/runtime budget.
+	if (content as Node).find_child("FigmaSurface390x844", true, false) != null:
+		(content as Control).modulate.a = 1.0
+		return
 	var accent := PremiumDesignSystem.accent_for_game(game_id)
 	_configure_background(content, game_id, dark, accent)
 	_polish_tree(content, surface, dark, accent)
@@ -68,6 +74,10 @@ func _script_path(node: Node) -> String:
 	return String(script.resource_path) if script != null else ""
 
 func _is_gameplay_widget(node: Node) -> bool:
+	# Audited Figma controls own both styling and exact geometry. This guard also
+	# protects them if a generic surface pass runs before the Figma root is detected.
+	if node is Button and node.has_meta("unjam_figma_exact_geometry"):
+		return true
 	# Shared navigation owns its own selected/unselected visual state. Treat
 	# preserve-style controls as excluded from generic surface role recolouring.
 	if node is Button and node.has_meta("unjam_preserve_surface_style"):
@@ -77,6 +87,8 @@ func _is_gameplay_widget(node: Node) -> bool:
 
 func _polish_tree(node: Node, surface: String, dark: bool, accent: Color) -> void:
 	if not is_instance_valid(node):
+		return
+	if node.has_meta("unjam_figma_reference_root"):
 		return
 	if node is Button and not _is_gameplay_widget(node):
 		var button := node as Button

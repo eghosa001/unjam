@@ -61,9 +61,20 @@ func _run() -> void:
 	for token in ["HomeDailyGamesButton", "build_daily_games"]:
 		if not home.contains(token):
 			failures.append("Home is missing Daily Games route token: %s" % token)
-	for token in ["func build_daily_games", "DailyGamesGrid", "PLAY DAILY", "PERMANENT REWARD BOOST", "rainbow_bridge"]:
+	for token in [
+		"func build_daily_games",
+		"DailyCard/",
+		"PLAY DAILY",
+		"COLLECTION BONUS",
+		"Proto/ScrollToUpgrades",
+		"func build_collection_upgrades",
+		"CollectionScroll/Upgrade/",
+		"+5 DAILY",
+		"+10 GIFT",
+		"rainbow_bridge"
+	]:
 		if not main.contains(token):
-			failures.append("Premium main is missing Collection/Daily contract token: %s" % token)
+			failures.append("Premium main is missing Figma Collection/Daily contract token: %s" % token)
 	if not live.contains("build_daily_games"):
 		failures.append("Game selector navigation must expose Daily Games")
 	if not rescue.contains("collection_daily_bonus"):

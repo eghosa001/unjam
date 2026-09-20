@@ -49,14 +49,11 @@ func load_level() -> void:
 	)
 
 	if title_label != null:
-		title_label.text = "DAILY SORT" if daily_mode else "WATER SORT · %d" % level_number
+		title_label.text = "DAILY WATER" if daily_mode else "LEVEL %d" % level_number
 	if meta_label != null:
-		var measured := int(generation_meta.get("difficulty_score", -1))
-		var measured_text := " • SCORE %d" % measured if measured >= 0 else ""
-		meta_label.text = "%s • WORLD %d/20%s" % [
+		meta_label.text = "%s • WORLD %d" % [
 			difficulty().to_upper(),
-			int(level_profile.get("world", 1)),
-			measured_text
+			int(level_profile.get("world", 1))
 		]
 	render_board()
 	_refresh_extra_tube_button()
@@ -64,7 +61,7 @@ func load_level() -> void:
 func render_board() -> void:
 	super.render_board()
 	if move_label != null:
-		move_label.text = "MOVES %d   •   3★ ≤ %d   •   %d COLORS" % [moves, par_moves, color_count]
+		move_label.text = "MOVES %d   •   3★ ≤ %d" % [moves, par_moves]
 
 func generate_tubes_with_solution(seed_value: int, colors: int) -> Dictionary:
 	var p := Progression.profile(level_number)

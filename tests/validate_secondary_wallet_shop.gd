@@ -28,29 +28,32 @@ func run() -> void:
 
 	main.call("build_collection")
 	await _frames(3)
-	var collection_wallet := main.find_child("SecondaryCoinShopButton", true, false) as Button
-	expect_true(collection_wallet != null and collection_wallet.visible, "Collection has no visible live coin Shop action")
+	var collection_wallet := main.find_child("FigmaHeaderPill", true, false) as Button
+	expect_true(collection_wallet != null and collection_wallet.visible, "Collection has no Figma coin Shop action")
 	if collection_wallet != null:
-		expect_true("210" in collection_wallet.text, "Collection wallet does not show current balance")
+		expect_true(collection_wallet.text == "◈ +", "Collection coin pill drifted from Figma")
+		expect_true("210" in collection_wallet.tooltip_text, "Collection coin pill does not expose current balance")
 		economy.grant(15, "qa_collection_wallet")
 		await _frames(2)
-		expect_true("225" in collection_wallet.text, "Collection wallet did not update live")
+		expect_true("225" in collection_wallet.tooltip_text, "Collection coin pill did not update live")
 
 	main.call("open_game_campaign", "rescue_rush")
 	await _frames(3)
-	var rescue_wallet := main.find_child("SecondaryCoinShopButton", true, false) as Button
-	expect_true(rescue_wallet != null and rescue_wallet.visible, "Rescue Levels has no visible coin Shop action")
+	var rescue_wallet := main.find_child("FigmaHeaderPill", true, false) as Button
+	expect_true(rescue_wallet != null and rescue_wallet.visible, "Rescue Levels has no Figma coin Shop action")
 	if rescue_wallet != null:
-		expect_true("225" in rescue_wallet.text, "Rescue Levels wallet balance is stale")
+		expect_true(rescue_wallet.text == "◈ +", "Rescue Levels coin pill drifted from Figma")
+		expect_true("225" in rescue_wallet.tooltip_text, "Rescue Levels wallet balance is stale")
 
 	main.call("open_game_campaign", "water_sort")
 	await _frames(3)
-	var water_wallet := main.find_child("SecondaryCoinShopButton", true, false) as Button
-	expect_true(water_wallet != null and water_wallet.visible, "Water Sort Levels has no visible coin Shop action")
+	var water_wallet := main.find_child("FigmaHeaderPill", true, false) as Button
+	expect_true(water_wallet != null and water_wallet.visible, "Water Sort Levels has no Figma coin Shop action")
 	if water_wallet != null:
+		expect_true(water_wallet.text == "◈ +", "Water Levels coin pill drifted from Figma")
 		economy.grant(25, "qa_levels_wallet")
 		await _frames(2)
-		expect_true("250" in water_wallet.text, "Levels wallet did not update live")
+		expect_true("250" in water_wallet.tooltip_text, "Levels wallet did not update live")
 		water_wallet.emit_signal("pressed")
 		await _frames(2)
 		var hub := main.get_node_or_null("MonetizationHub")

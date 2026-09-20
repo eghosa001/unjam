@@ -72,7 +72,8 @@ func _validate_runtime(viewport_size: Vector2i) -> bool:
 
 	var viewport_rect := Rect2(Vector2.ZERO, root.get_visible_rect().size)
 	var critical_names := [
-		"BlockHeader", "BlockScoreCard", "BlockObjectiveCard", "BlockBoardHolder",
+		"FigmaBlock390x844", "BackAction", "RetryAction", "BlockCampaignSubtitle",
+		"BlockScoreCard", "HintAction", "BlockBoardShell", "BlockBoardGrid",
 		"BlockTray", "BlockPieceRow", "CampaignBoosters", "BlockStatus", "BlockHint"
 	]
 	for node_name in critical_names:

@@ -14,193 +14,155 @@ func _build_ui() -> void:
 	layer.add_child(shop_button)
 
 	overlay = Control.new()
+	overlay.name = "ShopOverlay"
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	overlay.visible = false
 	layer.add_child(overlay)
 
-	var backdrop := Unjam3DBackdrop.new()
-	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	backdrop.configure(Unjam3DTheme.ORANGE)
-	overlay.add_child(backdrop)
-	var shade := ColorRect.new()
-	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	shade.color = Color(0.02, 0.25, 0.42, 0.34)
-	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	overlay.add_child(shade)
+	var dim := ColorRect.new()
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	dim.color = Color(0.02,0.12,0.22,0.20)
+	dim.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.add_child(dim)
 
-	var margin := MarginContainer.new()
-	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	var narrow := get_viewport().get_visible_rect().size.x < 650.0
-	margin.add_theme_constant_override("margin_left", 22 if narrow else 44)
-	margin.add_theme_constant_override("margin_right", 22 if narrow else 44)
-	margin.add_theme_constant_override("margin_top", 28 if narrow else 42)
-	margin.add_theme_constant_override("margin_bottom", 28 if narrow else 42)
-	overlay.add_child(margin)
-	var root := VBoxContainer.new()
-	root.add_theme_constant_override("separation", 13)
-	margin.add_child(root)
+	var canvas := FigmaReferenceCanvas.new()
+	canvas.name = "FigmaShop390x844"
+	overlay.add_child(canvas)
 
-	var header := HBoxContainer.new()
-	header.custom_minimum_size = Vector2(0, 86)
-	header.add_theme_constant_override("separation", 12)
-	root.add_child(header)
-	var close := Button.new()
-	close.text = "←"
-	close.custom_minimum_size = Vector2(84 if narrow else 92, 74 if narrow else 78)
-	close.add_theme_font_size_override("font_size", 32)
-	Unjam3DTheme.gloss_button(close, Unjam3DTheme.WATER_DARK, true, 24)
-	close.pressed.connect(_close_shop)
-	header.add_child(close)
-	var title := Label.new()
-	title.text = "UNJAM SHOP"
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 31 if narrow else 38)
-	Unjam3DTheme.label_3d(title, Color.WHITE, Unjam3DTheme.NAVY, 5)
-	header.add_child(title)
-	balance_label = Label.new()
-	balance_label.name = "ShopCoinBalance"
-	balance_label.custom_minimum_size = Vector2(170 if narrow else 220, 74 if narrow else 78)
+	var bg := PanelContainer.new()
+	bg.add_theme_stylebox_override("panel",FigmaReferenceCanvas.rounded_gradient3(
+		Color("#f0fcff"),Color("#fafcff"),Color("#eeebfd"),34,Color("#bad1e3"),1,0.48
+	))
+	FigmaReferenceCanvas.set_rect(bg,0,0,390,844)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(bg)
+
+	FigmaReferenceCanvas.add_shadow(canvas,Rect2(17,19,52,52),18,Color(0.02,0.15,0.30,0.16),4,Vector2(0,3))
+	var back := FigmaReferenceCanvas.premium_button("‹",27,Color("#083b78"),Color("#fffef7"),18,Color(0.74,0.80,0.95,0.55),1.2)
+	back.name = "ShopBackButton"
+	FigmaReferenceCanvas.set_rect(back,17,19,52,52)
+	back.pressed.connect(_close_shop)
+	canvas.add_child(back)
+
+	_add_text(canvas,"UNJAM SHOP",Rect2(83,21,205,28),23,Color("#123359"))
+	_add_text(canvas,"Useful upgrades • optional rewards",Rect2(83,51,210,15),12,Color("#4f6b85"))
+	balance_label = _add_text(canvas,"",Rect2(297,37,60,15),12,Color("#fffef7"))
 	balance_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	balance_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	balance_label.add_theme_font_size_override("font_size", 22 if narrow else 24)
-	Unjam3DTheme.label_3d(balance_label, Unjam3DTheme.GOLD, Unjam3DTheme.NAVY, 3)
-	header.add_child(balance_label)
+	FigmaReferenceCanvas.add_shadow(canvas,Rect2(285,21,84,46),23,Color(0.02,0.15,0.30,0.16),3,Vector2(0,2))
+	var wallet := PanelContainer.new()
+	wallet.name = "ShopCoinPill"
+	wallet.add_theme_stylebox_override("panel",FigmaReferenceCanvas.rounded_gradient3(Color("#ffa550"),Color("#ff8c1f"),Color("#cc7018"),23,Color(1.0,0.78,0.38,0.55),1.2))
+	FigmaReferenceCanvas.set_rect(wallet,285,21,84,46)
+	wallet.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(wallet)
+	canvas.move_child(wallet,balance_label.get_index())
 
-	var scroll := ScrollContainer.new()
-	scroll.name = "ShopCatalogScroll"
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	root.add_child(scroll)
-	var products := VBoxContainer.new()
-	products.name = "ShopCatalog"
-	products.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	products.add_theme_constant_override("separation", 12)
-	scroll.add_child(products)
+	_add_product_exact(canvas,StoreManager.PRODUCT_REMOVE_ADS,Rect2(17,91,354,70),"REMOVE ADS","No interstitial interruptions")
+	_add_product_exact(canvas,StoreManager.PRODUCT_STARTER_PACK,Rect2(17,169,354,70),"STARTER PACK","One-time launch boost")
+	_add_product_exact(canvas,StoreManager.PRODUCT_COINS_SMALL,Rect2(17,247,354,60),"SMALL COINS","500 coins")
+	_add_product_exact(canvas,StoreManager.PRODUCT_COINS_MEDIUM,Rect2(17,315,354,60),"MEDIUM COINS","1,500 coins")
+	_add_product_exact(canvas,StoreManager.PRODUCT_COINS_LARGE,Rect2(17,383,354,60),"LARGE COINS","4,000 coins")
 
-	_add_section_title(products, "REMOVE ADS", "Play without interstitial interruptions")
-	_add_product(products, StoreManager.PRODUCT_REMOVE_ADS)
-	_add_section_title(products, "STARTER PACK", "One-time launch boost")
-	_add_product(products, StoreManager.PRODUCT_STARTER_PACK)
-	_add_section_title(products, "COIN PACKS", "Use coins for hints, extra tubes and collection upgrades")
-	_add_product(products, StoreManager.PRODUCT_COINS_SMALL)
-	_add_product(products, StoreManager.PRODUCT_COINS_MEDIUM)
-	_add_product(products, StoreManager.PRODUCT_COINS_LARGE)
-	_add_section_title(products, "FREE COINS", "Optional rewarded ad • no purchase required")
-	_add_reward_panel(products)
+	FigmaReferenceCanvas.add_shadow(canvas,Rect2(17,457,354,78),16,Color(0.03,0.11,0.20,0.16),5,Vector2(0,5))
+	var reward := PanelContainer.new()
+	reward.name = "ShopFreeCoinsPanel"
+	reward.add_theme_stylebox_override("panel",FigmaReferenceCanvas.rounded_gradient3(Color("#e9fdef"),Color("#e3f8e9"),Color("#ddf4e5"),16,Color(0.55,0.88,0.65,0.55),1.2))
+	FigmaReferenceCanvas.set_rect(reward,17,457,354,78)
+	reward.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(reward)
+	_add_text(canvas,"WATCH & EARN",Rect2(33,473,150,18),15,Color("#088c3d"))
+	_add_text(canvas,"Optional • +50 coins",Rect2(33,500,160,15),12,Color("#4f6b85"))
+	FigmaReferenceCanvas.add_shadow(canvas,Rect2(237,471,116,48),25,Color(0.02,0.15,0.30,0.16),3,Vector2(0,2))
+	var watch := FigmaReferenceCanvas.premium_button("▶ +50 COINS",12,Color.WHITE,Color("#ff8c1f"),25,Color("#ffbd64"),1.2)
+	watch.name = "ShopRewardedCoinsButton"
+	FigmaReferenceCanvas.set_rect(watch,237,471,116,48)
+	watch.pressed.connect(_watch_rewarded.bind(watch))
+	canvas.add_child(watch)
 
-	var utility_row := HBoxContainer.new()
-	utility_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	utility_row.add_theme_constant_override("separation", 12)
-	root.add_child(utility_row)
-	var restore := Button.new()
-	restore.text = "RESTORE PURCHASES"
-	restore.custom_minimum_size = Vector2(0, 72 if narrow else 76)
-	restore.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	Unjam3DTheme.gloss_button(restore, Unjam3DTheme.WATER_DARK, false, 24)
+	FigmaReferenceCanvas.add_shadow(canvas,Rect2(17,557,170,46),16,Color(0.03,0.10,0.20,0.22),4,Vector2(0,4))
+	var restore := FigmaReferenceCanvas.premium_button("RESTORE PURCHASES",12,Color.WHITE,Color("#086ec7"),16,Color("#70b9ef"),1.2)
+	restore.name = "ShopRestorePurchases"
+	FigmaReferenceCanvas.set_rect(restore,17,557,170,46)
 	restore.pressed.connect(_restore_purchases)
-	utility_row.add_child(restore)
-	var privacy := Button.new()
-	privacy.text = "PRIVACY OPTIONS"
-	privacy.custom_minimum_size = Vector2(0, 72 if narrow else 76)
-	privacy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	Unjam3DTheme.gloss_button(privacy, Unjam3DTheme.WATER_DARK, false, 24)
+	canvas.add_child(restore)
+	FigmaReferenceCanvas.add_shadow(canvas,Rect2(201,557,170,46),16,Color(0.03,0.10,0.20,0.22),4,Vector2(0,4))
+	var privacy := FigmaReferenceCanvas.premium_button("PRIVACY OPTIONS",12,Color.WHITE,Color("#086ec7"),16,Color("#70b9ef"),1.2)
+	privacy.name = "ShopPrivacyOptions"
+	FigmaReferenceCanvas.set_rect(privacy,201,557,170,46)
 	privacy.pressed.connect(PrivacyManager.show_privacy_options)
-	utility_row.add_child(privacy)
-	status_label = Label.new()
+	canvas.add_child(privacy)
+
+	status_label = _add_text(canvas,"",Rect2(23,617,342,52),12,Color("#4f6b85"))
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	status_label.add_theme_font_size_override("font_size", 21 if narrow else 22)
 	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	Unjam3DTheme.label_3d(status_label, Color.WHITE, Unjam3DTheme.NAVY, 3)
-	root.add_child(status_label)
+	var accent_rail := ColorRect.new()
+	accent_rail.name = "ShopAccentRail"
+	accent_rail.color = Color(0.46,0.34,0.92,0.88)
+	accent_rail.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	FigmaReferenceCanvas.set_rect(accent_rail,17,103,5,58)
+	canvas.add_child(accent_rail)
+
 	_refresh()
 
-func _add_section_title(parent: VBoxContainer, title_text: String, subtitle_text: String) -> void:
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 2)
-	parent.add_child(box)
-	var title := Label.new()
-	title.text = title_text
-	title.add_theme_font_size_override("font_size", 23)
-	Unjam3DTheme.label_3d(title, Color.WHITE, Unjam3DTheme.NAVY, 4)
-	box.add_child(title)
-	var subtitle := Label.new()
-	subtitle.text = subtitle_text
-	subtitle.add_theme_font_size_override("font_size", 20)
-	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	Unjam3DTheme.label_3d(subtitle, Color("d9efff"), Unjam3DTheme.NAVY, 2)
-	box.add_child(subtitle)
+func _add_product_exact(canvas: Control, product_id: String, rect: Rect2, display_title: String, display_subtitle: String) -> void:
+	var info: Dictionary = StoreManager.PRODUCTS[product_id]
+	FigmaReferenceCanvas.add_shadow(canvas,rect,16,Color(0.03,0.11,0.20,0.16),5,Vector2(0,5))
+	var panel := PanelContainer.new()
+	panel.name = "ShopProduct_%s" % product_id
+	panel.add_theme_stylebox_override("panel",FigmaReferenceCanvas.rounded_gradient3(
+		Color("#fffef8"),Color("#fbfaf4"),Color("#f6f5ef"),16,Color(0.70,0.64,0.96,0.32),1.2,0.50
+	))
+	FigmaReferenceCanvas.set_rect(panel,rect.position.x,rect.position.y,rect.size.x,rect.size.y)
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(panel)
+	_add_text(canvas,display_title,Rect2(33,rect.position.y+14,180,17),14,Color("#123359"))
+	_add_text(canvas,display_subtitle,Rect2(33,rect.position.y+32,190,15),12,Color("#4f6b85"))
 
-func _add_reward_panel(parent: VBoxContainer) -> void:
-	var reward_panel := PanelContainer.new()
-	reward_panel.name = "ShopFreeCoinsPanel"
-	reward_panel.custom_minimum_size = Vector2(0, 126)
-	reward_panel.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("25c96b"), 32, Color("88f3aa"), 3, 11))
-	parent.add_child(reward_panel)
-	var reward_row := HBoxContainer.new()
-	reward_row.add_theme_constant_override("separation", 18)
-	reward_panel.add_child(reward_row)
-	var reward_text := Label.new()
-	reward_text.text = "WATCH & EARN\nGet 50 coins for an optional rewarded ad"
-	reward_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	reward_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	reward_text.add_theme_font_size_override("font_size", 22)
-	reward_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	Unjam3DTheme.label_3d(reward_text, Color.WHITE, Color("08723a"), 3)
-	reward_row.add_child(reward_text)
-	var watch := Button.new()
-	watch.name = "ShopRewardedCoinsButton"
-	watch.text = "▶  +50 COINS"
-	watch.custom_minimum_size = Vector2(270, 88)
-	watch.add_theme_font_size_override("font_size", 20)
-	Unjam3DTheme.gloss_button(watch, Unjam3DTheme.ORANGE, true, 27)
-	watch.pressed.connect(_watch_rewarded.bind(watch))
-	reward_row.add_child(watch)
+	var buy_text := StoreManager.price_text(product_id)
+	var disabled := false
+	if _is_owned_product(product_id,info):
+		buy_text = "OWNED"
+		disabled = true
+	elif StoreManager.is_purchase_pending(product_id):
+		buy_text = "PENDING"
+		disabled = true
+	FigmaReferenceCanvas.add_shadow(canvas,Rect2(275,rect.position.y+18,78,46),23,Color(0.02,0.15,0.30,0.16),3,Vector2(0,2))
+	var buy := FigmaReferenceCanvas.premium_button(buy_text,12,Color.WHITE,Color("#ff8c1f"),23,Color("#ffbd64"),1.2)
+	buy.name = "Buy_%s" % product_id
+	FigmaReferenceCanvas.set_rect(buy,275,rect.position.y+18,78,46)
+	buy.disabled = disabled
+	if not disabled:
+		buy.pressed.connect(_purchase.bind(product_id,buy))
+	canvas.add_child(buy)
 
 func _is_owned_product(product_id: String, info: Dictionary) -> bool:
-	if not bool(info.get("non_consumable", false)):
+	if not bool(info.get("non_consumable",false)):
 		return false
-	var purchased: Array = SaveManager.data.get("purchased_products", [])
+	var purchased: Array = SaveManager.data.get("purchased_products",[])
 	if product_id in purchased:
 		return true
 	if product_id == StoreManager.PRODUCT_REMOVE_ADS:
-		return bool(SaveManager.data.get("remove_ads", false))
+		return bool(SaveManager.data.get("remove_ads",false))
 	if product_id == StoreManager.PRODUCT_STARTER_PACK:
-		return bool(SaveManager.data.get("starter_pack_purchased", false))
+		return bool(SaveManager.data.get("starter_pack_purchased",false))
 	return false
 
-func _add_product(parent: VBoxContainer, product_id: String) -> void:
-	var info: Dictionary = StoreManager.PRODUCTS[product_id]
-	var panel := PanelContainer.new()
-	panel.name = "ShopProduct_%s" % product_id
-	panel.custom_minimum_size = Vector2(0, 112)
-	panel.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("f7fcff"), 28, Color("9cddff"), 2, 7))
-	parent.add_child(panel)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 18)
-	panel.add_child(row)
-	var text := Label.new()
-	text.text = "%s\n%s" % [String(info.get("title", product_id)), String(info.get("subtitle", ""))]
-	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	text.add_theme_font_size_override("font_size", 22)
-	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	Unjam3DTheme.label_3d(text, Unjam3DTheme.NAVY, Color.WHITE, 2)
-	row.add_child(text)
-	var buy := Button.new()
-	buy.name = "Buy_%s" % product_id
-	buy.custom_minimum_size = Vector2(250, 82)
-	buy.add_theme_font_size_override("font_size", 18)
-	if _is_owned_product(product_id, info):
-		buy.text = "OWNED"
-		buy.disabled = true
-	elif StoreManager.is_purchase_pending(product_id):
-		buy.text = "PENDING"
-		buy.disabled = true
-	else:
-		buy.text = StoreManager.price_text(product_id)
-		buy.pressed.connect(_purchase.bind(product_id, buy))
-	Unjam3DTheme.gloss_button(buy, Unjam3DTheme.ORANGE, true, 25)
-	row.add_child(buy)
+func _add_text(canvas: Control, text_value: String, rect: Rect2, font_size: int, color: Color) -> Label:
+	var label := FigmaReferenceCanvas.label(text_value,font_size,color,true)
+	FigmaReferenceCanvas.set_rect(label,rect.position.x,rect.position.y,rect.size.x,rect.size.y)
+	canvas.add_child(label)
+	return label
+
+func _refresh() -> void:
+	if balance_label != null:
+		balance_label.text = "◈ %s" % _compact_coins(EconomyManager.balance())
+
+func _compact_coins(value: int) -> String:
+	if value < 1000:
+		return str(value)
+	if value < 1000000:
+		var whole := int(value / 1000)
+		var rem := int((value % 1000) / 100)
+		return "%d.%dK" % [whole,rem] if rem > 0 else "%dK" % whole
+	return "%.1fM" % (float(value)/1000000.0)

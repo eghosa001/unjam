@@ -1,5 +1,24 @@
 extends "res://scripts/ui/premium_main.gd"
 
+const FIGMA_LEVEL_PAGE_SIZE := 20
+const FIGMA_BG_TOP := Color(0.94, 0.99, 1.0)
+const FIGMA_BG_MID := Color("#fafcff")
+const FIGMA_BG_BOTTOM := Color(0.892, 0.9496, 0.988)
+const FIGMA_NAVY := Color(0.03, 0.23, 0.47)
+const FIGMA_INK := Color(0.07, 0.20, 0.35)
+const FIGMA_MUTED := Color(0.31, 0.42, 0.52)
+const FIGMA_OFF_WHITE := Color(1.0, 0.995, 0.97)
+const FIGMA_BLUE := Color(0.03, 0.43, 0.78)
+const FIGMA_GREEN := Color(0.13, 0.78, 0.39)
+const FIGMA_CYAN := Color(0.14, 0.68, 1.0)
+const FIGMA_ORANGE := Color(1.0, 0.55, 0.12)
+const FIGMA_GOLD := Color(1.0, 0.84, 0.24)
+const FIGMA_PURPLE := Color(0.78, 0.24, 1.0)
+
+var _collection_scroll_tracking := false
+var _collection_scroll_origin_y := 0.0
+
+
 func _sync_persistent_surfaces_now(surface: String) -> void:
 	var home := get_node_or_null("PremiumHome")
 	if home != null and home.has_method("_on_surface_changed"):
@@ -58,99 +77,239 @@ func _page_root() -> VBoxContainer:
 	outer.add_child(root)
 	return root
 
+func _figma_surface(active: String, bottom_tint: Color = FIGMA_BG_BOTTOM, top_tint: Color = FIGMA_BG_TOP) -> FigmaReferenceCanvas:
+	clear_content()
+	content.visible = true
+	content.mouse_filter = Control.MOUSE_FILTER_STOP
+	var viewport_bg := ColorRect.new()
+	viewport_bg.name = "FigmaSurfaceViewportBackground"
+	viewport_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	viewport_bg.color = bottom_tint
+	viewport_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content.add_child(viewport_bg)
+	var canvas := FigmaReferenceCanvas.new()
+	canvas.name = "FigmaSurface390x844"
+	content.add_child(canvas)
+	var bg := PanelContainer.new()
+	bg.name = "FigmaSurfaceBackground"
+	var mid_tint := FIGMA_BG_MID if not _dark() else top_tint.lerp(bottom_tint, 0.48)
+	bg.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(top_tint, mid_tint, bottom_tint, 34, Color("#bad1e3") if not _dark() else Color(0.22,0.36,0.48,0.72), 1, 0.48))
+	FigmaReferenceCanvas.set_rect(bg, 0, 0, 390, 844)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(bg)
+	return canvas
+
+func _figma_text(canvas: Control, text_value: String, rect: Rect2, font_size: int, color: Color = FIGMA_INK, center := false) -> Label:
+	var label := FigmaReferenceCanvas.label(text_value, font_size, color, true)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER if center else HORIZONTAL_ALIGNMENT_LEFT
+	FigmaReferenceCanvas.set_rect(label, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
+	canvas.add_child(label)
+	return label
+
+func _figma_button(canvas: Control, name_value: String, text_value: String, rect: Rect2, fill: Color, callback: Callable, text_color: Color = FIGMA_OFF_WHITE, radius: float = 14.0, font_size: int = 12) -> Button:
+	FigmaReferenceCanvas.add_shadow(canvas, rect, radius, Color(0.02,0.10,0.18,0.16), 4, Vector2(0,3))
+	var button := FigmaReferenceCanvas.premium_button(text_value, font_size, text_color, fill, radius, fill.lightened(0.24), 1.2)
+	button.name = name_value
+	FigmaReferenceCanvas.set_rect(button, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
+	if callback.is_valid():
+		button.pressed.connect(callback)
+	canvas.add_child(button)
+	return button
+
+func _figma_card(canvas: Control, name_value: String, rect: Rect2, tint: Color = Color(1.0, 0.995, 0.97), accent: Color = Color(0.70, 0.88, 0.96, 0.45), radius: float = 16.0) -> PanelContainer:
+	FigmaReferenceCanvas.add_shadow(canvas, rect, radius, Color(0.03,0.11,0.20,0.16), 5, Vector2(0,4))
+	var card := PanelContainer.new()
+	card.name = name_value
+	card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(tint, tint.lerp(tint.darkened(0.035),0.48), tint.darkened(0.035), radius, accent, 1.2, 0.48))
+	FigmaReferenceCanvas.set_rect(card, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
+	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(card)
+	return card
+
+func _figma_solid_card(canvas: Control, name_value: String, rect: Rect2, tint: Color, border: Color, radius: float = 16.0, with_shadow: bool = true) -> PanelContainer:
+	if with_shadow:
+		FigmaReferenceCanvas.add_shadow(canvas, rect, radius, Color(0.03,0.11,0.20,0.14), 4, Vector2(0,3))
+	var card := PanelContainer.new()
+	card.name = name_value
+	card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(tint, radius, border, 1))
+	FigmaReferenceCanvas.set_rect(card, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
+	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(card)
+	return card
+
+func _figma_header(canvas: Control, title_text: String, subtitle_text: String, pill_text: String, pill_fill: Color, back_callback: Callable = Callable(self, "build_home"), pill_callback: Callable = Callable(), dark_mode: bool = false) -> void:
+	var heading_color := Color(0.91,0.97,1.0) if dark_mode else FIGMA_INK
+	var muted_color := Color(0.76,0.84,0.90) if dark_mode else FIGMA_MUTED
+	var back_color := muted_color if dark_mode else FIGMA_NAVY
+	_figma_button(canvas, "FigmaBack", "‹", Rect2(17,19,52,52), Color(1.0,0.995,0.97), back_callback, back_color, 18, 27)
+	var header_title := _figma_text(canvas, title_text, Rect2(83,21,205,28), 23, heading_color)
+	header_title.name = "FigmaHeaderTitle"
+	var subtitle := _figma_text(canvas, subtitle_text, Rect2(83,51,210,30), 12, muted_color)
+	subtitle.name = "FigmaHeaderSubtitle"
+	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	if pill_callback.is_valid():
+		var pill_button := _figma_button(canvas, "FigmaHeaderPill", pill_text, Rect2(285,21,84,46), pill_fill, pill_callback, FIGMA_OFF_WHITE if not dark_mode else muted_color, 23, 12)
+		if pill_text.begins_with("◈"):
+			pill_button.set_meta("unjam_figma_wallet_pill", true)
+			pill_button.tooltip_text = "Coins: %d • Open Shop" % EconomyManager.balance()
+			if not EconomyManager.balance_changed.is_connected(_on_figma_wallet_balance_changed):
+				EconomyManager.balance_changed.connect(_on_figma_wallet_balance_changed)
+	else:
+		var pill: PanelContainer
+		if dark_mode:
+			pill = _figma_solid_card(canvas, "FigmaHeaderPill", Rect2(285,21,84,46), pill_fill, pill_fill, 23)
+		else:
+			pill = _figma_solid_card(canvas, "FigmaHeaderPill", Rect2(285,21,84,46), pill_fill, pill_fill.lightened(0.24), 23)
+		pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var pill_label := _figma_text(canvas, pill_text, Rect2(297,29,60,30), 12, muted_color if dark_mode else FIGMA_OFF_WHITE, true)
+		pill_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+
+func _on_figma_wallet_balance_changed(new_balance: int, _delta: int, _reason: String) -> void:
+	if content == null or not is_instance_valid(content):
+		return
+	for node in content.find_children("*", "Button", true, false):
+		var button := node as Button
+		if button != null and bool(button.get_meta("unjam_figma_wallet_pill", false)):
+			button.tooltip_text = "Coins: %d • Open Shop" % new_balance
+
+func _figma_open_shop() -> void:
+	var hub := get_node_or_null("MonetizationHub")
+	if hub != null and hub.has_method("open_shop"):
+		FeedbackManager.tap()
+		hub.call("open_shop")
+
+func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false) -> void:
+	var bar_fill := Color(0.07,0.10,0.17,0.98) if dark_mode else Color(0.985,0.995,1.0)
+	var bar_border := Color(0.23,0.34,0.45,0.90) if dark_mode else Color(0.78,0.88,0.95,0.75)
+	if dark_mode:
+		_figma_solid_card(canvas, "StdNav/Bar", Rect2(13,757,362,70), bar_fill, bar_border, 18)
+	else:
+		_figma_card(canvas, "StdNav/Bar", Rect2(13,757,362,70), bar_fill, bar_border, 18)
+	var xs := {"home":22.0, "games":91.0, "daily":160.0, "collection":229.0, "settings":298.0}
+	var names := {"home":"HOME", "games":"GAMES", "daily":"DAILY", "collection":"COLLECT", "settings":"SETTINGS"}
+	var callbacks := {
+		"home": Callable(self,"build_home"),
+		"games": Callable(self,"_open_games_surface"),
+		"daily": Callable(self,"build_daily_games"),
+		"collection": Callable(self,"build_collection"),
+		"settings": Callable(self,"build_settings"),
+	}
+	var hit_x := {"home":14.0, "games":84.0, "daily":153.0, "collection":222.0, "settings":291.0}
+	if xs.has(active):
+		var active_fill := Color(0.08,0.34,0.53) if dark_mode else FIGMA_CYAN
+		_figma_solid_card(canvas, "StdNav/Active", Rect2(float(hit_x[active]),767,62,48), active_fill, active_fill, 14, false)
+	for key in ["home","games","daily","collection","settings"]:
+		var selected: bool = String(key) == active
+		var selected_text := Color(0.42,0.78,1.0) if dark_mode else Color(0.05,0.49,0.86)
+		var idle_text := Color(0.62,0.72,0.80) if dark_mode else FIGMA_MUTED
+		_figma_text(canvas, String(names[key]), Rect2(float(xs[key])-1.0,788,58,30), 12, selected_text if selected else idle_text)
+		var hit := Button.new()
+		hit.name = "StdNav/Proto/%s" % String(names[key])
+		hit.flat = true
+		hit.focus_mode = Control.FOCUS_NONE
+		hit.modulate.a = 0.001
+		FigmaReferenceCanvas.set_rect(hit, float(hit_x[key])-1.0,753,74 if key != "settings" else 80,78)
+		if not selected:
+			var cb: Callable = callbacks[key]
+			hit.pressed.connect(cb)
+		else:
+			hit.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		canvas.add_child(hit)
+
 func build_settings() -> void:
 	current_surface = "settings"
 	_remove_active_game()
-	var root := _page_root()
-	var accent := _accent()
-	_page_header(root, "SETTINGS", "Make UNJAM feel right for you", "AUTO-SAVE", PremiumDesignSystem.SUCCESS)
-
-	var scroll := ScrollContainer.new()
-	scroll.name = "SettingsScroll"
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	root.add_child(scroll)
-	var stack := VBoxContainer.new()
-	stack.name = "PremiumSettingsStack"
-	stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	stack.add_theme_constant_override("separation", 16)
-	scroll.add_child(stack)
-
-	var audio := _card(stack, Vector2(0, 0), true)
-	var audio_margin := _pad(audio, 20)
-	var audio_box := VBoxContainer.new()
-	audio_box.add_theme_constant_override("separation", 10)
-	audio_margin.add_child(audio_box)
-	audio_box.add_child(_label("♫  SOUND & FEEL", 24, "title", accent))
-	audio_box.add_child(_label("Choose how every tap, move and celebration responds.", 17, "muted", accent))
-	for setting in [
-		["sound", "🔊  SOUND EFFECTS", "Moves, taps and rewards", true],
-		["music", "♫  MUSIC", "Calm background soundtrack", true],
-		["vibration", "◉  HAPTICS", "Touch vibration feedback", true]
-	]:
-		var key := String(setting[0])
-		var enabled := bool(SaveManager.data.get(key, bool(setting[3])))
-		var button := _setting_button(String(setting[1]), String(setting[2]), enabled, accent)
-		button.pressed.connect(_toggle_setting.bind(key))
-		audio_box.add_child(button)
-
-	var comfort := _card(stack, Vector2(0, 0), false)
-	var comfort_margin := _pad(comfort, 20)
-	var comfort_box := VBoxContainer.new()
-	comfort_box.add_theme_constant_override("separation", 10)
-	comfort_margin.add_child(comfort_box)
-	comfort_box.add_child(_label("✦  COMFORT", 24, "title", accent))
-	comfort_box.add_child(_label("Large touch targets are always on. Adjust motion speed here.", 17, "muted", accent))
-	var reduced := bool(SaveManager.data.get("reduce_motion", false))
-	var reduced_button := _setting_button("◌  REDUCED MOTION", "Minimise decorative movement", reduced, accent)
-	reduced_button.pressed.connect(_toggle_reduced_motion)
-	comfort_box.add_child(reduced_button)
-	var fast := bool(SaveManager.data.get("fast_animation", false))
-	var fast_button := _setting_button("»  FAST ANIMATION", "Quicker gameplay transitions", fast, accent)
-	fast_button.pressed.connect(_toggle_setting.bind("fast_animation"))
-	comfort_box.add_child(fast_button)
-
-	var appearance_card := _card(stack, Vector2(0, 0), true)
-	var appearance_margin := _pad(appearance_card, 20)
-	var appearance_box := VBoxContainer.new()
-	appearance_box.add_theme_constant_override("separation", 10)
-	appearance_margin.add_child(appearance_box)
-	appearance_box.add_child(_label("☀  APPEARANCE", 24, "title", accent))
 	var shell := get_node_or_null("UXShell")
 	var theme_name := "LIGHT"
 	if shell != null and shell.get("theme_mode") != null:
 		theme_name = String(shell.get("theme_mode")).to_upper()
-	var appearance := _button("THEME  •  %s\nTap to switch appearance" % theme_name, Vector2(0, 92), "secondary")
-	appearance.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	appearance.add_theme_font_size_override("font_size", 20)
-	appearance.pressed.connect(func() -> void:
+	var dark_mode := theme_name == "DARK"
+
+	var canvas := _figma_surface(
+		"settings",
+		Color(0.09,0.12,0.20) if dark_mode else FIGMA_BG_BOTTOM,
+		Color(0.055,0.08,0.14) if dark_mode else FIGMA_BG_TOP
+	)
+	_figma_header(canvas, "SETTINGS", "Make UNJAM feel right for you", "AUTO-SAVE", Color("#1aa8ff"), Callable(self,"build_home"), Callable(), dark_mode)
+	if not dark_mode:
+		var settings_title := canvas.get_node_or_null("FigmaHeaderTitle") as Label
+		if settings_title != null:
+			settings_title.add_theme_color_override("font_color",Color("#0d7ddb"))
+
+	var card_fill := Color(0.09,0.13,0.21,0.96) if dark_mode else Color("#fffef8")
+	var card_border := Color(0.22,0.36,0.48,0.72) if dark_mode else Color(0.51,0.77,0.95,0.32)
+	var heading_color := Color(0.91,0.97,1.0) if dark_mode else FIGMA_INK
+	var muted_color := Color(0.76,0.84,0.90) if dark_mode else FIGMA_INK
+
+	_figma_settings_card(canvas,"SettingsCard/Sound",Rect2(17,91,354,170),card_fill,card_border,dark_mode)
+	_figma_text(canvas,"♫  SOUND & FEEL",Rect2(33,107,160,18),15,Color("#086ec7") if not dark_mode else heading_color)
+	_figma_setting_row(canvas,"sound","SOUND EFFECTS",130,142,true,false,dark_mode)
+	_figma_setting_row(canvas,"music","MUSIC",178,190,true,false,dark_mode)
+	_figma_setting_row(canvas,"vibration","HAPTICS",226,238,true,false,dark_mode)
+
+	_figma_settings_card(canvas,"SettingsCard/Comfort",Rect2(17,275,354,120),card_fill,card_border,dark_mode)
+	_figma_text(canvas,"✦  COMFORT",Rect2(33,291,130,18),15,Color("#088c3d") if not dark_mode else heading_color)
+	_figma_setting_row(canvas,"reduce_motion","REDUCED MOTION",314,326,false,true,dark_mode)
+	_figma_setting_row(canvas,"fast_animation","FAST ANIMATION",358,370,false,false,dark_mode)
+
+	_figma_settings_card(canvas,"SettingsCard/Appearance",Rect2(17,409,354,76),card_fill,card_border,dark_mode)
+	_figma_text(canvas,"☀  APPEARANCE",Rect2(33,425,150,18),15,Color("#ff8c1f") if not dark_mode else heading_color)
+	_figma_text(canvas,"THEME",Rect2(33,448,210,28),13,muted_color)
+	var theme_fill := FIGMA_ORANGE
+	var theme_text := Color(0.76,0.84,0.90) if dark_mode else FIGMA_OFF_WHITE
+	var theme_button := _figma_button(canvas,"SettingToggle/Theme",theme_name,Rect2(279,442,72,38),theme_fill,Callable(),theme_text,19,12)
+	theme_button.pressed.connect(func() -> void:
 		if shell != null and shell.has_method("_toggle_theme"):
 			shell.call("_toggle_theme")
 		call_deferred("build_settings")
 	)
-	appearance_box.add_child(appearance)
 
-	var help_card := _card(stack, Vector2(0, 0), false)
-	var help_margin := _pad(help_card, 20)
-	var help_box := VBoxContainer.new()
-	help_box.add_theme_constant_override("separation", 10)
-	help_margin.add_child(help_box)
-	help_box.add_child(_label("?  HELP & PRIVACY", 24, "title", accent))
-	var how_to := _button("HOW TO PLAY\nQuick visual guide for the current game", Vector2(0, 88), "utility")
-	how_to.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var help_card: PanelContainer
+	if dark_mode:
+		help_card = _figma_solid_card(canvas,"HelpPrivacy",Rect2(17,499,354,94),card_fill,card_border,18)
+	else:
+		help_card = _figma_solid_card(canvas,"HelpPrivacy",Rect2(17,499,354,94),Color("#fffef7"),Color("#1aa8ff"),18)
+		help_card.modulate.a = 0.70
+	_figma_text(canvas,"?  HELP & PRIVACY",Rect2(33,515,170,18),15,Color("#086ec7") if not dark_mode else heading_color)
+	var utility_fill := Color(0.12,0.18,0.28,0.96) if dark_mode else FIGMA_BLUE
+	var utility_border := Color(0.26,0.43,0.57,0.72) if dark_mode else utility_fill.lightened(0.24)
+	var utility_text := Color(0.76,0.84,0.90) if dark_mode else FIGMA_OFF_WHITE
+	FigmaReferenceCanvas.add_shadow(canvas, Rect2(33,543,144,42), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
+	var how_to := FigmaReferenceCanvas.premium_button("HOW TO PLAY",12,utility_text,Color("#086ec7") if not dark_mode else utility_fill,16,utility_border,1.2)
+	how_to.name = "SettingsHowToPlay"
+	FigmaReferenceCanvas.set_rect(how_to,33,543,144,42)
 	how_to.pressed.connect(_show_current_tutorial)
-	help_box.add_child(how_to)
-	var privacy := _button("PRIVACY OPTIONS\nReview consent and privacy controls", Vector2(0, 88), "utility")
-	privacy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	canvas.add_child(how_to)
+	FigmaReferenceCanvas.add_shadow(canvas, Rect2(193,543,158,42), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
+	var privacy := FigmaReferenceCanvas.premium_button("PRIVACY OPTIONS",12,utility_text,Color("#086ec7") if not dark_mode else utility_fill,16,utility_border,1.2)
+	privacy.name = "SettingsPrivacy"
+	FigmaReferenceCanvas.set_rect(privacy,193,543,158,42)
 	privacy.pressed.connect(PrivacyManager.show_privacy_options)
-	help_box.add_child(privacy)
+	canvas.add_child(privacy)
 
-	var note := _label("Your progress saves automatically.", 16, "muted", accent)
-	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	stack.add_child(note)
-	PremiumVisuals.entrance(stack, 0.018)
-	_add_surface_diorama(selected_game_id, "Settings3DDiorama")
-	_add_secondary_nav("settings")
+	_figma_bottom_nav(canvas,"settings",dark_mode)
+
+func _figma_settings_card(canvas: Control, name_value: String, rect: Rect2, fill: Color, border: Color, dark_mode: bool) -> PanelContainer:
+	var card: PanelContainer
+	if dark_mode:
+		card = _figma_solid_card(canvas,name_value,rect,fill,border,18)
+	else:
+		card = _figma_card(canvas,name_value,rect,fill,border,18)
+		card.modulate.a = 0.70
+	return card
+
+func _figma_setting_row(canvas: Control, key: String, label_text: String, toggle_y: float, label_y: float, default_value: bool = true, reduced_motion: bool = false, dark_mode: bool = false) -> void:
+	var text_color := Color(0.76,0.84,0.90) if dark_mode else FIGMA_INK
+	_figma_text(canvas,label_text,Rect2(34,label_y-7,210,30),13,text_color)
+	var enabled := bool(SaveManager.data.get(key,default_value))
+	var fill := FIGMA_BLUE if enabled else Color("#b2bfcc")
+	var button_text_color := Color(0.76,0.84,0.90) if dark_mode else FIGMA_OFF_WHITE
+	var state := "ON" if enabled else "OFF"
+	var button := _figma_button(canvas,"SettingToggle/%s" % key.capitalize(),state,Rect2(279,toggle_y,72,38),fill,Callable(),button_text_color,19,12)
+	if reduced_motion:
+		button.pressed.connect(_toggle_reduced_motion)
+	else:
+		button.pressed.connect(_toggle_setting.bind(key))
 
 func _setting_button(title_text: String, detail_text: String, enabled: bool, accent: Color) -> Button:
 	var state := "ON" if enabled else "OFF"
@@ -177,69 +336,56 @@ func _show_current_tutorial() -> void:
 func build_daily_games() -> void:
 	current_surface = "daily"
 	_remove_active_game()
-	var root := _page_root()
+	var canvas := _figma_surface("daily", Color("#fff6e6"))
 	var bonus := EconomyManager.collection_daily_bonus()
-	_page_header(
-		root,
-		"DAILY GAMES",
-		"Three fresh challenges every day",
-		"+%d COLLECTION BONUS" % bonus if bonus > 0 else "3 CHALLENGES",
-		PremiumDesignSystem.GOLD
+	_figma_header(canvas, "DAILY GAMES", "Three fresh challenges every day", "+%d" % bonus, FIGMA_GOLD)
+	_figma_card(canvas, "DailyIntro", Rect2(17,89,354,64), Color("#fffef8"), Color(1.0,0.847,0.55,0.32), 16)
+	_figma_text(canvas, "TODAY • %s" % _figma_today_label(), Rect2(35,106,220,17), 14, FIGMA_INK)
+
+	_figma_daily_card(canvas, "rescue_rush", 171, bonus)
+	_figma_daily_card(canvas, "water_sort", 293, bonus)
+	_figma_daily_card(canvas, "block_puzzle", 415, bonus)
+
+	_figma_card(canvas, "Perks", Rect2(17,539,354,52), Color("#fffef8"), Color(1.0,0.847,0.55,0.32), 16)
+	_figma_text(
+		canvas,
+		"COLLECTION BONUS  +%d DAILY   •   GARDEN GIFT +%d" % [bonus, EconomyManager.garden_gift_amount()],
+		Rect2(33,556,322,18),
+		12,
+		FIGMA_MUTED
 	)
+	_figma_bottom_nav(canvas, "daily")
 
-	var intro := _card(root, Vector2(0, 118), true)
-	var intro_margin := _pad(intro, 18)
-	var intro_box := VBoxContainer.new()
-	intro_box.alignment = BoxContainer.ALIGNMENT_CENTER
-	intro_box.add_theme_constant_override("separation", 5)
-	intro_margin.add_child(intro_box)
-	var intro_title := _label("TODAY  •  %s" % DailyChallenge.date_key(), 22, "title", _accent())
-	intro_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	intro_box.add_child(intro_title)
-	var intro_copy := _label(
-		"Complete each puzzle once today. Collection upgrades permanently increase every Daily Game reward.",
-		16,
-		"muted",
-		_accent()
+func _figma_today_label() -> String:
+	var d := Time.get_date_dict_from_system()
+	var months := ["JANUARY","FEBRUARY","MARCH","APRIL","MAY","JUNE","JULY","AUGUST","SEPTEMBER","OCTOBER","NOVEMBER","DECEMBER"]
+	var month := int(d.get("month",1))
+	return "%s %d" % [months[clampi(month - 1,0,11)], int(d.get("day",1))]
+
+func _figma_daily_card(canvas: Control, game_id: String, y: float, collection_bonus: int) -> void:
+	var accent := Unjam3DTheme.game_accent(game_id)
+	_figma_card(canvas, "DailyCard/%s" % game_id, Rect2(17,y,354,106), Color("#fffef8"), Color(1.0,0.847,0.55,0.32), 18)
+	_figma_text(canvas, MultiGameManager.display_name(game_id).to_upper(), Rect2(33,y+18,150,21), 17, accent)
+	var detail := "Fresh generated rescue" if game_id == "rescue_rush" else "Daily level %d" % MultiGameManager.daily_level(game_id)
+	_figma_text(canvas, detail, Rect2(33,y+48,175,15), 12, FIGMA_MUTED)
+	var reward := "+%d COINS" % (100 + collection_bonus) if game_id == "rescue_rush" else "+%d–%d COINS" % [125 + collection_bonus,175 + collection_bonus]
+	_figma_text(canvas, reward, Rect2(33,y+72,130,16), 13, FIGMA_ORANGE)
+	var done := _daily_done(game_id)
+	var fill := FIGMA_GREEN if done else accent
+	var button := _figma_button(
+		canvas,
+		"DailyPlay/%s" % game_id,
+		"COMPLETED" if done else "PLAY DAILY",
+		Rect2(244,y+42,108,48),
+		fill,
+		Callable(),
+		FIGMA_OFF_WHITE,
+		14,
+		12
 	)
-	intro_copy.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	intro_copy.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	intro_box.add_child(intro_copy)
-
-	var scroll := ScrollContainer.new()
-	scroll.name = "DailyGamesScroll"
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	root.add_child(scroll)
-	var stack := VBoxContainer.new()
-	stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	stack.add_theme_constant_override("separation", 16)
-	scroll.add_child(stack)
-
-	var grid := GridContainer.new()
-	grid.name = "DailyGamesGrid"
-	grid.columns = 3 if get_viewport_rect().size.x >= 900.0 else 1
-	grid.add_theme_constant_override("h_separation", 14)
-	grid.add_theme_constant_override("v_separation", 14)
-	stack.add_child(grid)
-	for game_id in MultiGameManager.GAME_IDS:
-		grid.add_child(_daily_game_card(game_id, bonus))
-
-	var collection_cta := _button(
-		"COLLECTION PERKS  •  +%d PER DAILY GAME  •  GARDEN GIFT +%d" % [
-			bonus,
-			EconomyManager.garden_gift_amount()
-		],
-		Vector2(0, 82),
-		"secondary",
-		"rescue_rush"
-	)
-	collection_cta.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	collection_cta.pressed.connect(build_collection)
-	stack.add_child(collection_cta)
-	PremiumVisuals.entrance(stack, 0.018)
-	_add_surface_diorama("rescue_rush", "DailyGames3DDiorama")
-	_add_secondary_nav("daily")
+	button.disabled = done
+	if not done:
+		button.pressed.connect(start_game_daily.bind(game_id))
 
 func _daily_game_card(game_id: String, collection_bonus: int) -> PanelContainer:
 	var accent := Unjam3DTheme.game_accent(game_id)
@@ -300,165 +446,271 @@ func _claim_collection_gift() -> void:
 func build_collection() -> void:
 	current_surface = "collection"
 	_remove_active_game()
-	var root := _page_root()
-	var accent := _accent("rescue_rush")
-	_page_header(root, "COLLECTION", "Progress, friends and permanent rewards", "◈  %d" % int(SaveManager.data.get("coins", 0)), PremiumDesignSystem.GOLD)
-	var scroll := ScrollContainer.new()
-	scroll.name = "CollectionScroll"
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	root.add_child(scroll)
-	var stack := VBoxContainer.new()
-	stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	stack.add_theme_constant_override("separation", 18)
-	scroll.add_child(stack)
+	var canvas := _figma_surface("collection", Color("#e6f7ef"))
+	_figma_header(
+		canvas,
+		"COLLECTION",
+		"Progress, friends and permanent rewards",
+		"◈ +",
+		FIGMA_GREEN,
+		Callable(self,"build_home"),
+		Callable(self,"_figma_open_shop")
+	)
+
 	var total_completed := 0
 	var total_stars := 0
 	var total_perfect := 0
 	var total_badges := 0
 	for game_id in MultiGameManager.GAME_IDS:
-		var progress := MultiGameManager.progress_for(game_id)
-		total_completed += int(progress.get("levels_completed", 0))
+		var p := MultiGameManager.progress_for(game_id)
+		total_completed += int(p.get("levels_completed",0))
 		total_stars += MultiGameManager.total_stars(game_id)
-		total_perfect += int(progress.get("perfect_clears", 0))
-		total_badges += (progress.get("world_badges", []) as Array).size()
-	var overview := _card(stack, Vector2(0, 184), true)
-	var overview_margin := _pad(overview, 20)
-	var overview_box := VBoxContainer.new()
-	overview_box.add_theme_constant_override("separation", 12)
-	overview_margin.add_child(overview_box)
-	var overview_title := _label("YOUR UNJAM JOURNEY", 28, "title", accent)
-	overview_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	overview_box.add_child(overview_title)
-	var metrics := GridContainer.new()
-	metrics.columns = 4 if get_viewport_rect().size.x >= 760.0 else 2
-	metrics.add_theme_constant_override("h_separation", 10)
-	metrics.add_theme_constant_override("v_separation", 10)
-	overview_box.add_child(metrics)
-	for metric in [["LEVELS", total_completed], ["STARS", total_stars], ["PERFECT", total_perfect], ["BADGES", total_badges]]:
-		var chip := _journey_metric(String(metric[0]), int(metric[1]), accent)
-		metrics.add_child(chip)
-	var games_title := _label("THREE PUZZLE WORLDS", 25, "title", accent)
-	stack.add_child(games_title)
-	var game_grid := GridContainer.new()
-	game_grid.columns = 2 if get_viewport_rect().size.x >= 720.0 else 1
-	game_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	game_grid.add_theme_constant_override("h_separation", 14)
-	game_grid.add_theme_constant_override("v_separation", 14)
-	stack.add_child(game_grid)
-	for game_id in MultiGameManager.GAME_IDS:
-		game_grid.add_child(_collection_game_card(game_id))
-	var achievement_card := _card(stack, Vector2(0, 150), false)
-	var achievement_margin := _pad(achievement_card, 20)
-	var achievement_box := VBoxContainer.new()
-	achievement_box.add_theme_constant_override("separation", 8)
-	achievement_margin.add_child(achievement_box)
-	achievement_box.add_child(_label("★  ACHIEVEMENT CABINET", 24, "title", Unjam3DTheme.GOLD))
-	var achievement_lines: Array[String] = []
-	for game_id in MultiGameManager.GAME_IDS:
-		var unlocked := MultiGameManager.unlocked_achievements(game_id)
-		achievement_lines.append("%s  •  %d / %d" % [MultiGameManager.display_name(game_id), unlocked.size(), MultiGameManager.achievement_definitions(game_id).size()])
-	var achievements := _label("\n".join(achievement_lines), 18, "body", accent)
-	achievements.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	achievement_box.add_child(achievements)
-	var garden := _card(stack, Vector2(0, 260), true, "rescue_rush")
-	var garden_margin := _pad(garden, 22)
-	var garden_box := VBoxContainer.new()
-	garden_box.add_theme_constant_override("separation", 10)
-	garden_margin.add_child(garden_box)
-	garden_box.add_child(_label("♥  RESCUE GARDEN", 26, "title", accent))
-	var rescued: Array = SaveManager.data.get("rescued", [])
-	var friends := _label(_friend_roster_text(rescued), 20, "body", accent)
-	friends.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	garden_box.add_child(friends)
-	var garden_status := _label(_garden_status_text(), 18, "muted", accent)
-	garden_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	garden_box.add_child(garden_status)
-	var progress := ProgressBar.new()
-	progress.max_value = 6.0
-	progress.value = float(SaveManager.data.get("decorations", []).size())
-	progress.show_percentage = false
-	progress.custom_minimum_size = Vector2(0, 22)
-	progress.add_theme_stylebox_override("background", PremiumDesignSystem.box(PremiumDesignSystem.surface_3(_dark()), 10, Color.TRANSPARENT, 0, 0, _dark()))
-	progress.add_theme_stylebox_override("fill", PremiumDesignSystem.box(accent, 10, accent.lightened(0.12), 1, 0, _dark()))
-	garden_box.add_child(progress)
-	var value_card := _card(stack, Vector2(0, 210), true, "rescue_rush")
-	var value_margin := _pad(value_card, 20)
-	var value_box := VBoxContainer.new()
-	value_box.add_theme_constant_override("separation", 8)
-	value_margin.add_child(value_box)
-	var owned_count := EconomyManager.collection_owned_count()
-	value_box.add_child(_label("✦  PERMANENT REWARD BOOST  •  %d / 6" % owned_count, 24, "title", PremiumDesignSystem.GOLD))
-	var value_copy := _label(
-		"Each upgrade permanently adds +5 coins to every Daily Game and strengthens your once-per-day Garden Gift.",
-		18,
-		"body",
-		accent
-	)
-	value_copy.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	value_box.add_child(value_copy)
-	var current_value := _label(
-		"CURRENT VALUE  •  +%d EACH DAILY GAME  •  +%d DAILY GARDEN GIFT" % [
-			EconomyManager.collection_daily_bonus(),
-			EconomyManager.garden_gift_amount()
-		],
-		18,
-		"accent",
-		PremiumDesignSystem.GOLD
-	)
-	current_value.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	value_box.add_child(current_value)
-	var gift := _button(
-		"NO GIFT YET  •  BUY AN UPGRADE" if owned_count <= 0 else (
-			"GARDEN GIFT CLAIMED TODAY" if EconomyManager.garden_gift_claimed_today()
-			else "CLAIM DAILY GARDEN GIFT  •  +%d COINS" % EconomyManager.garden_gift_amount()
-		),
-		Vector2(0, 64),
-		"success" if EconomyManager.can_claim_garden_gift() else "secondary",
-		"rescue_rush"
-	)
-	gift.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	gift.disabled = not EconomyManager.can_claim_garden_gift()
-	gift.pressed.connect(_claim_collection_gift)
-	value_box.add_child(gift)
+		total_perfect += int(p.get("perfect_clears",0))
+		var badges = p.get("world_badges",[])
+		if badges is Array:
+			total_badges += (badges as Array).size()
 
-	var shop_title := _label("GARDEN UPGRADES  •  PERMANENT", 23, "title", accent)
-	stack.add_child(shop_title)
-	var shop := GridContainer.new()
-	shop.columns = 2 if get_viewport_rect().size.x >= 720.0 else 1
-	shop.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	shop.add_theme_constant_override("h_separation", 14)
-	shop.add_theme_constant_override("v_separation", 14)
-	stack.add_child(shop)
-	var collection_items := [
-		["tree", "CANOPY TREE", 100, "SHADE"],
-		["bench", "GARDEN BENCH", 150, "REST"],
-		["fountain", "CRYSTAL FOUNTAIN", 250, "SPARKLE"],
-		["lanterns", "LANTERN PATH", 350, "GLOW"],
-		["cottage", "RESCUE COTTAGE", 500, "HOME"],
-		["rainbow_bridge", "RAINBOW BRIDGE", 750, "WONDER"]
+	_figma_card(canvas,"Journey",Rect2(17,89,354,96),Color("#fffef8"),Color(0.55,0.86,0.71,0.32),18)
+	_figma_text(canvas,"YOUR UNJAM JOURNEY",Rect2(33,107,210,19),16,Color("#088c3d"))
+	var metrics := [
+		[total_completed,"LEVELS",35.0],
+		[total_stars,"STARS",119.0],
+		[total_perfect,"PERFECT",203.0],
+		[total_badges,"BADGES",287.0]
 	]
-	for item in collection_items:
-		var id := String(item[0])
-		var owned: bool = id in SaveManager.data.get("decorations", [])
-		var state_text := "OWNED" if owned else "%d COINS" % int(item[2])
-		var button := _button(
-			"%s\n%s  •  %s\nPERMANENT +5 DAILY  •  +10 GIFT" % [
-				String(item[1]),
-				String(item[3]),
-				state_text
-			],
-			Vector2(0, 148),
-			"success" if owned else "secondary",
-			"rescue_rush"
+	for metric in metrics:
+		_figma_text(canvas,_compact_stat(int(metric[0])),Rect2(float(metric[2]),136,62,26),18,FIGMA_INK)
+		_figma_text(canvas,String(metric[1]),Rect2(float(metric[2])-3,161,70,20),12,FIGMA_MUTED)
+
+	_figma_text(canvas,"THREE PUZZLE WORLDS",Rect2(17,204,190,18),15,FIGMA_INK)
+	_figma_collection_progress(canvas,"rescue_rush",17)
+	_figma_collection_progress(canvas,"water_sort",135)
+	_figma_collection_progress(canvas,"block_puzzle",253)
+
+	_figma_card(canvas,"Achievements",Rect2(17,339,354,76),Color("#fffef8"),Color(0.55,0.86,0.71,0.32),18)
+	_figma_text(canvas,"★  ACHIEVEMENT CABINET",Rect2(33,355,220,18),15,FIGMA_ORANGE)
+	var achievement_parts: Array[String] = []
+	for game_id in MultiGameManager.GAME_IDS:
+		var unlocked := MultiGameManager.unlocked_achievements(game_id).size()
+		var total := MultiGameManager.achievement_definitions(game_id).size()
+		achievement_parts.append("%s %d/%d" % [_figma_short_game(game_id),unlocked,total])
+	_figma_text(canvas," • ".join(achievement_parts),Rect2(33,384,310,22),12,FIGMA_MUTED)
+
+	var decorations: Array = SaveManager.data.get("decorations",[])
+	var rescued: Array = SaveManager.data.get("rescued",[])
+	var owned := decorations.size()
+	_figma_card(canvas,"Garden",Rect2(17,429,354,96),Color("#fffef8"),Color(0.55,0.86,0.71,0.32),18)
+	_figma_text(canvas,"♥  RESCUE GARDEN",Rect2(33,445,180,19),16,Color("#088c3d"))
+	_figma_text(canvas,"%d friends home • %d / 6 upgrades" % [rescued.size(),owned],Rect2(33,476,240,20),13,FIGMA_MUTED)
+	_figma_text(canvas,"%d / 6 upgrades  •  +%d Daily  •  +%d Gift" % [owned,EconomyManager.collection_daily_bonus(),EconomyManager.garden_gift_amount()],Rect2(33,501,310,20),12,FIGMA_MUTED)
+
+	_figma_card(canvas,"Boost",Rect2(17,539,354,92),Color("#fffef8"),Color(0.55,0.86,0.71,0.32),18)
+	_figma_text(canvas,"PERMANENT BOOST",Rect2(33,555,180,18),15,FIGMA_ORANGE)
+	_figma_text(canvas,"+5 per Daily Game • +10 Garden Gift per upgrade",Rect2(33,583,310,20),12,FIGMA_MUTED)
+
+	# Figma state transition: swipe upward through the Garden/Boost region to
+	# reveal the dedicated six-upgrade Collection state.
+	var scroll_to_upgrades := Control.new()
+	scroll_to_upgrades.name = "Proto/ScrollToUpgrades"
+	scroll_to_upgrades.mouse_filter = Control.MOUSE_FILTER_PASS
+	FigmaReferenceCanvas.set_rect(scroll_to_upgrades,12,420,366,320)
+	scroll_to_upgrades.gui_input.connect(_collection_summary_scroll_input.bind(scroll_to_upgrades))
+	canvas.add_child(scroll_to_upgrades)
+
+	var can_claim := EconomyManager.can_claim_garden_gift()
+	var gift_text := "CLAIM GARDEN GIFT • +%d" % EconomyManager.garden_gift_amount()
+	if not can_claim:
+		gift_text = "GARDEN GIFT CLAIMED" if EconomyManager.garden_gift_claimed_today() else "BUY AN UPGRADE IN SHOP"
+	var gift_fill := FIGMA_GREEN if can_claim else Color(0.54,0.64,0.72)
+	var gift := _figma_button(canvas,"CollectionGardenGift",gift_text,Rect2(33,605,250,40),gift_fill,Callable(),FIGMA_OFF_WHITE,16,12)
+	if can_claim:
+		gift.pressed.connect(_claim_collection_gift)
+	else:
+		gift.pressed.connect(_figma_open_shop)
+
+	_figma_bottom_nav(canvas,"collection")
+
+func _figma_collection_progress(canvas: Control, game_id: String, x: float) -> void:
+	var accent := Unjam3DTheme.game_accent(game_id)
+	_figma_card(canvas,"ProgressCard/%s" % game_id,Rect2(x,231,110,86),Color("#fffef7"),Color(accent,0.70),16)
+	_figma_text(canvas,_figma_short_game(game_id),Rect2(x+12,245,86,15),12,accent)
+	var level := _highest_level_for_game(game_id)
+	var stars := MultiGameManager.total_stars(game_id)
+	_figma_text(canvas,"L%d • ★ %s" % [level,_compact_stat(stars)],Rect2(x+12,273,92,20),12,FIGMA_MUTED)
+
+func _figma_short_game(game_id: String) -> String:
+	match game_id:
+		"water_sort": return "WATER"
+		"block_puzzle": return "BLOCK"
+		_: return "RESCUE"
+
+func build_collection_upgrades() -> void:
+	current_surface = "collection"
+	_remove_active_game()
+	var canvas := _figma_surface("collection",Color("#e6f7ef"))
+	_figma_header(
+		canvas,
+		"COLLECTION",
+		"Progress, friends and permanent rewards",
+		"◈ +",
+		FIGMA_GREEN,
+		Callable(self,"build_home"),
+		Callable(self,"_figma_open_shop")
+	)
+
+	# Add the swipe-return region first so live purchase pills painted afterward
+	# remain the top-most touch owners.
+	var scroll_to_summary := Control.new()
+	scroll_to_summary.name = "Proto/ScrollToSummary"
+	scroll_to_summary.mouse_filter = Control.MOUSE_FILTER_PASS
+	FigmaReferenceCanvas.set_rect(scroll_to_summary,11,87,366,650)
+	scroll_to_summary.gui_input.connect(_collection_upgrades_scroll_input.bind(scroll_to_summary))
+	canvas.add_child(scroll_to_summary)
+
+	var owned_count := EconomyManager.collection_owned_count()
+	_figma_text(canvas,"GARDEN UPGRADES",Rect2(23,99,342,28),22,Color("#1c8552"))
+	_figma_text(canvas,"Permanent value • %d / 6 owned" % owned_count,Rect2(23,131,342,18),13,Color("#597a8f"))
+	_figma_solid_card(canvas,"CollectionScroll/Boost",Rect2(23,163,342,60),Color("#f0fff5"),Color(0.30,0.78,0.48,0.42),16,false)
+	var boost_text := _figma_text(
+		canvas,
+		"+%d EVERY DAILY GAME   •   +%d GARDEN GIFT" % [EconomyManager.collection_daily_bonus(),EconomyManager.garden_gift_amount()],
+		Rect2(33,184,322,18),
+		12,
+		Color("#1f8a52"),
+		true
+	)
+	boost_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+
+	var upgrades := [
+		["tree","CANOPY TREE","SHADE",100],
+		["bench","GARDEN BENCH","REST",150],
+		["fountain","CRYSTAL FOUNTAIN","SPARKLE",250],
+		["lanterns","LANTERN PATH","GLOW",350],
+		["cottage","RESCUE COTTAGE","HOME",500],
+		["rainbow_bridge","RAINBOW BRIDGE","WONDER",750],
+	]
+	var owned_decorations: Array = SaveManager.data.get("decorations",[])
+	for i in range(upgrades.size()):
+		var spec: Array = upgrades[i]
+		var id := String(spec[0])
+		var display_name := String(spec[1])
+		var flavor := String(spec[2])
+		var cost := int(spec[3])
+		var y := 239.0 + float(i)*76.0
+		var owned := id in owned_decorations
+		var card_fill := Color("#f0fff5") if owned else Color("#fcfaff")
+		var card_border := Color(0.32,0.78,0.49,0.46) if owned else Color(0.72,0.58,0.90,0.46)
+		var title_color := Color("#1f854f") if owned else Color("#4d3373")
+		_figma_solid_card(
+			canvas,
+			"CollectionScroll/Upgrade/%d" % i,
+			Rect2(23,y,342,66),
+			card_fill,
+			card_border,
+			16,
+			false
 		)
-		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.disabled = owned
-		button.pressed.connect(_buy_decoration.bind(id, int(item[2])))
-		shop.add_child(button)
-	PremiumVisuals.entrance(stack, 0.018)
-	_add_surface_diorama("rescue_rush", "Collection3DDiorama")
-	_add_secondary_nav("collection")
+		_figma_text(canvas,display_name,Rect2(37,y+11,184,18),13,title_color)
+		_figma_text(canvas,"%s  •  +5 DAILY  •  +10 GIFT" % flavor,Rect2(37,y+36,206,16),12,Color("#6b8091"))
+		var state_text := "OWNED" if owned else "%d COINS" % cost
+		var pill_fill := Color("#e0f2e5") if owned else Color("#7a57e0")
+		var state_text_color := Color("#4d7a59") if owned else Color.WHITE
+		var state := _figma_button(
+			canvas,
+			"CollectionUpgrade/%s" % id,
+			state_text,
+			Rect2(249,y+14,98,38),
+			pill_fill,
+			Callable(),
+			state_text_color,
+			12,
+			12
+		)
+		state.disabled = owned
+		if owned:
+			var owned_style := FigmaReferenceCanvas.solid_box(Color("#e0f2e5"),12,Color.TRANSPARENT,0)
+			state.add_theme_stylebox_override("disabled",owned_style)
+			state.add_theme_color_override("font_disabled_color",Color("#4d7a59"))
+			state.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		else:
+			state.pressed.connect(_buy_collection_upgrade.bind(id,cost))
+
+	var return_hint := _figma_text(canvas,"Swipe up to return to your Collection summary",Rect2(37,710,314,18),12,Color("#6e8596"),true)
+	return_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_figma_bottom_nav(canvas,"collection")
+
+func _collection_summary_scroll_input(event: InputEvent, owner: Control) -> void:
+	_collection_scroll_input(event,owner,true)
+
+func _collection_upgrades_scroll_input(event: InputEvent, owner: Control) -> void:
+	_collection_scroll_input(event,owner,false)
+
+func _collection_scroll_input(event: InputEvent, owner: Control, toward_upgrades: bool) -> void:
+	if event is InputEventScreenTouch:
+		var touch := event as InputEventScreenTouch
+		if touch.pressed:
+			_collection_scroll_tracking = true
+			_collection_scroll_origin_y = touch.position.y
+		else:
+			_collection_scroll_tracking = false
+		return
+	if event is InputEventScreenDrag and _collection_scroll_tracking:
+		var drag := event as InputEventScreenDrag
+		var delta_y := drag.position.y - _collection_scroll_origin_y
+		if (toward_upgrades and delta_y <= -42.0) or ((not toward_upgrades) and delta_y >= 42.0):
+			_collection_scroll_tracking = false
+			owner.accept_event()
+			FeedbackManager.tap()
+			if toward_upgrades:
+				build_collection_upgrades()
+			else:
+				build_collection()
+		return
+	if event is InputEventMouseButton:
+		var mouse := event as InputEventMouseButton
+		if mouse.button_index == MOUSE_BUTTON_WHEEL_DOWN and toward_upgrades and mouse.pressed:
+			owner.accept_event()
+			build_collection_upgrades()
+		elif mouse.button_index == MOUSE_BUTTON_WHEEL_UP and not toward_upgrades and mouse.pressed:
+			owner.accept_event()
+			build_collection()
+
+func _buy_collection_upgrade(id: String, cost: int) -> bool:
+	if id in SaveManager.data.get("decorations",[]):
+		return true
+	if EconomyManager.unlock_collection_item(id,cost):
+		FeedbackManager.effect()
+		PremiumVisuals.burst(Vector2(get_viewport_rect().size.x*0.5,get_viewport_rect().size.y*0.45),FIGMA_GOLD,18)
+		build_collection_upgrades()
+		return true
+	var prompt := get_node_or_null("InsufficientCoinsPrompt")
+	if prompt != null and prompt.has_method("show_for"):
+		prompt.call(
+			"show_for",
+			display_name_for_upgrade(id),
+			cost,
+			Callable(self,"_retry_collection_upgrade").bind(id,cost)
+		)
+	else:
+		FeedbackManager.blocked()
+	return false
+
+func _retry_collection_upgrade(id: String, cost: int) -> bool:
+	if EconomyManager.unlock_collection_item(id,cost):
+		FeedbackManager.effect()
+		build_collection_upgrades()
+		return true
+	return false
+
+func display_name_for_upgrade(id: String) -> String:
+	match id:
+		"tree": return "CANOPY TREE"
+		"bench": return "GARDEN BENCH"
+		"fountain": return "CRYSTAL FOUNTAIN"
+		"lanterns": return "LANTERN PATH"
+		"cottage": return "RESCUE COTTAGE"
+		"rainbow_bridge": return "RAINBOW BRIDGE"
+		_: return id.replace("_"," ").to_upper()
 
 func _open_games_surface() -> void:
 	_remove_active_game()
@@ -534,7 +786,7 @@ func _restyle_secondary_nav(active: String) -> void:
 		var button := nav.find_child(String(mapping[key]), true, false) as Button
 		if button == null:
 			continue
-		var selected := String(key) == active
+		var selected: bool = String(key) == active
 		button.disabled = false
 		button.mouse_filter = Control.MOUSE_FILTER_IGNORE if selected else Control.MOUSE_FILTER_STOP
 		button.set_meta("unjam_selected_nav", selected)
@@ -615,21 +867,221 @@ func _compact_stat(value: int) -> String:
 		return "%.1fK" % (float(value) / 1000.0)
 	return str(value)
 
+func _multi_page_count(game_id: String, world: int) -> int:
+	var first := MultiGameManager.first_level_in_game_world(game_id,world)
+	var last := MultiGameManager.last_level_in_game_world(game_id,world)
+	return maxi(1,ceili(float(last-first+1)/float(FIGMA_LEVEL_PAGE_SIZE)))
+
+func _multi_page_for_level(game_id: String, level: int) -> int:
+	var world := MultiGameManager.world_for_game_level(game_id,level)
+	var first := MultiGameManager.first_level_in_game_world(game_id,world)
+	return clampi(int((level-first)/FIGMA_LEVEL_PAGE_SIZE)+1,1,_multi_page_count(game_id,world))
+
+func _multi_page_bounds(game_id: String, world: int, page: int) -> Vector2i:
+	var world_first := MultiGameManager.first_level_in_game_world(game_id,world)
+	var world_last := MultiGameManager.last_level_in_game_world(game_id,world)
+	var safe_page := clampi(page,1,_multi_page_count(game_id,world))
+	var first := world_first + (safe_page-1)*FIGMA_LEVEL_PAGE_SIZE
+	return Vector2i(first,mini(first+FIGMA_LEVEL_PAGE_SIZE-1,world_last))
+
 func build_level_select() -> void:
-	super.build_level_select()
-	_inject_game_tabs("rescue_rush")
-	_inject_journey_summary("rescue_rush")
-	_upgrade_level_browser("rescue_rush")
-	_add_surface_diorama("rescue_rush", "Levels3DDiorama")
+	selected_game_id = "rescue_rush"
+	selected_multi_world = clampi(selected_multi_world,1,MultiGameManager.world_count_for(selected_game_id))
+	if selected_multi_world <= 0:
+		selected_multi_world = MultiGameManager.highest_unlocked_game_world(selected_game_id)
+	selected_multi_page = clampi(selected_multi_page,1,_multi_page_count(selected_game_id,selected_multi_world))
+	_build_figma_level_browser(selected_game_id)
 
 func build_multi_level_select() -> void:
-	super.build_multi_level_select()
-	_inject_game_tabs(selected_game_id)
-	if selected_game_id == "block_puzzle":
-		_inject_block_modes()
-	_inject_journey_summary(selected_game_id)
-	_upgrade_level_browser(selected_game_id)
-	_add_surface_diorama(selected_game_id, "Levels3DDiorama")
+	selected_multi_world = clampi(selected_multi_world,1,MultiGameManager.world_count_for(selected_game_id))
+	selected_multi_page = clampi(selected_multi_page,1,_multi_page_count(selected_game_id,selected_multi_world))
+	_build_figma_level_browser(selected_game_id)
+
+func _build_figma_level_browser(game_id: String) -> void:
+	current_surface = "levels"
+	_remove_active_game()
+	var bottom_tint := Color("#e4f8ec") if game_id == "rescue_rush" else (Color("#e3f2fc") if game_id == "water_sort" else Color("#f5eafd"))
+	var canvas := _figma_surface("games",bottom_tint)
+	var accent := Unjam3DTheme.game_accent(game_id)
+	var title := MultiGameManager.display_name(game_id).to_upper()
+	var world_count := MultiGameManager.world_count_for(game_id)
+	_figma_header(
+		canvas,
+		title,
+		"WORLD %d / %d" % [selected_multi_world,world_count],
+		"◈ +",
+		accent,
+		Callable(self,"_open_games_surface"),
+		Callable(self,"_figma_open_shop")
+	)
+	_style_figma_level_header(canvas,accent)
+	_figma_level_tabs(canvas,game_id)
+
+	var bounds := _multi_page_bounds(game_id,selected_multi_world,selected_multi_page)
+	var world_name := MultiGameManager.world_name(game_id,selected_multi_world).to_upper()
+	_figma_card(canvas,"JourneyHero",Rect2(17,149,354,94),Color("#fffef8"),Color(accent,0.42),15)
+	_figma_text(canvas,world_name,Rect2(35,145,250,23),19,accent)
+	_figma_text(canvas,"LEVELS %d–%d • SET %d/%d" % [bounds.x,bounds.y,selected_multi_page,_multi_page_count(game_id,selected_multi_world)],Rect2(35,175,210,16),13,FIGMA_MUTED)
+
+	var accent_rail := ColorRect.new()
+	accent_rail.name = "ScreenPolish/AccentRail"
+	accent_rail.color = Color(accent,0.88)
+	accent_rail.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	FigmaReferenceCanvas.set_rect(accent_rail,17,161,5,70)
+	canvas.add_child(accent_rail)
+
+	var page_y := 243.0 if game_id == "block_puzzle" else 222.0
+	var grid_y := 304.0 if game_id == "block_puzzle" else 269.0
+	if game_id == "block_puzzle":
+		_add_figma_block_modes(canvas)
+
+	var prev := _figma_button(canvas,"LevelPrev","◀ PREV",Rect2(17,page_y,100,38),FIGMA_BLUE,Callable(),FIGMA_OFF_WHITE,13,13)
+	prev.disabled = selected_multi_world <= 1 and selected_multi_page <= 1
+	_style_figma_page_button(prev,FIGMA_BLUE,accent,prev.disabled)
+	if not prev.disabled:
+		prev.pressed.connect(_change_multi_page.bind(-1))
+	var current := _figma_button(canvas,"LevelCurrent","CURRENT",Rect2(125,page_y,118,38),accent,Callable(self,"_jump_multi_current"),FIGMA_OFF_WHITE,13,13)
+	_style_figma_page_button(current,accent,accent,false)
+	var next_disabled := selected_multi_world >= world_count and selected_multi_page >= _multi_page_count(game_id,selected_multi_world)
+	var next := _figma_button(canvas,"LevelNext","NEXT ▶",Rect2(251,page_y,120,38),Color("#fcfeff"),Callable(),FIGMA_MUTED,13,13)
+	next.disabled = next_disabled
+	_style_figma_page_button(next,Color("#fcfeff"),accent,next_disabled,true)
+	if not next.disabled:
+		next.pressed.connect(_change_multi_page.bind(1))
+
+	var current_level := _highest_level_for_game(game_id)
+	var index := 0
+	for level_number in range(bounds.x,bounds.y+1):
+		var col := index % 4
+		var row := int(index/4)
+		var x := 17.0 + float(col)*89.0
+		var y := grid_y + float(row)*80.0
+		var unlocked := MultiGameManager.is_level_unlocked(game_id,level_number)
+		var stars := MultiGameManager.get_stars(game_id,level_number)
+		var is_current := unlocked and level_number == current_level
+		var milestone := level_number % 25 == 0
+		var fill := Color("#fefefa")
+		var border := Color(accent,0.40)
+		var text_color := FIGMA_INK
+		if not unlocked:
+			fill = Color("#dee5eb")
+			border = Color("#b8c4cf",0.45)
+			text_color = Color("#8c9ca8")
+		elif is_current:
+			fill = accent
+			border = Color(accent.lightened(0.24),0.75)
+			text_color = FIGMA_OFF_WHITE
+		elif milestone:
+			border = Color(FIGMA_GOLD,0.85)
+		var card := _figma_button(canvas,"Level/%d" % level_number,str(level_number),Rect2(x,y,80,68),fill,Callable(),text_color,15,15)
+		card.disabled = not unlocked
+		_style_figma_level_card(card,accent,border,unlocked,is_current)
+		if unlocked:
+			if game_id == "rescue_rush":
+				card.pressed.connect(start_level.bind(level_number))
+			else:
+				card.pressed.connect(start_multi_level.bind(game_id,level_number,false))
+		var star_text := "LOCK" if not unlocked else ("★".repeat(stars) if stars > 0 else "···")
+		var star_color := Color("#8c9ca8") if not unlocked else FIGMA_MUTED
+		_figma_text(canvas,star_text,Rect2(x+9,y+38,64,18),12,star_color,true)
+		index += 1
+
+func _figma_level_tabs(canvas: Control, active_game_id: String) -> void:
+	var active_accent := Unjam3DTheme.game_accent(active_game_id)
+	var specs := [
+		["rescue_rush","RESCUE",17.0],
+		["water_sort","WATER",133.0],
+		["block_puzzle","BLOCK",249.0],
+	]
+	for spec in specs:
+		var game_id := String(spec[0])
+		var active := game_id == active_game_id
+		var fill := active_accent if active else Color("#fcfeff")
+		var text_color := FIGMA_OFF_WHITE if active else FIGMA_MUTED
+		var button := _figma_button(canvas,"LevelGameTab/%s" % game_id,String(spec[1]),Rect2(float(spec[2]),83,108,40),fill,Callable(),text_color,14,12)
+		_style_figma_level_tab(button,active_accent,active)
+		if active:
+			button.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		else:
+			button.pressed.connect(_figma_switch_level_game.bind(game_id))
+
+func _style_figma_level_header(canvas: Control, accent: Color) -> void:
+	var back := canvas.get_node_or_null("FigmaBack") as Button
+	if back != null:
+		back.add_theme_stylebox_override("normal",FigmaReferenceCanvas.rounded_gradient3(Color("#fcfeff"),Color("#fcfeff"),Color("#e2e4e5"),16,Color(accent,0.55),1.2,0.58))
+		back.add_theme_stylebox_override("hover",FigmaReferenceCanvas.rounded_gradient3(Color.WHITE,Color("#fcfeff"),Color("#e9ebec"),16,Color(accent,0.68),1.2,0.58))
+		back.add_theme_stylebox_override("pressed",FigmaReferenceCanvas.rounded_gradient3(Color("#f2f5f6"),Color("#edf0f1"),Color("#d8dcde"),16,Color(accent,0.55),1.2,0.58))
+	var pill := canvas.get_node_or_null("FigmaHeaderPill") as Button
+	if pill != null:
+		pill.add_theme_stylebox_override("normal",FigmaReferenceCanvas.rounded_gradient3(accent.lightened(0.15),accent,accent.darkened(0.10),16,Color(accent.lightened(0.28),0.55),1.2))
+		pill.add_theme_stylebox_override("hover",FigmaReferenceCanvas.rounded_gradient3(accent.lightened(0.20),accent.lightened(0.04),accent.darkened(0.06),16,Color(accent.lightened(0.34),0.62),1.2))
+		pill.add_theme_stylebox_override("pressed",FigmaReferenceCanvas.rounded_gradient3(accent,accent.darkened(0.06),accent.darkened(0.18),16,Color(accent.lightened(0.20),0.55),1.2))
+
+func _style_figma_level_tab(button: Button, accent: Color, active: bool) -> void:
+	if active:
+		button.add_theme_stylebox_override("normal",FigmaReferenceCanvas.rounded_gradient3(accent.lightened(0.15),accent,accent.darkened(0.10),14,Color(accent.lightened(0.28),0.55),1.2))
+		button.add_theme_stylebox_override("hover",button.get_theme_stylebox("normal"))
+		button.add_theme_stylebox_override("pressed",button.get_theme_stylebox("normal"))
+	else:
+		var normal := FigmaReferenceCanvas.rounded_gradient3(Color("#fcfeff"),Color("#fcfeff"),Color("#e2e4e5"),14,Color(accent,0.55),1.2,0.58)
+		button.add_theme_stylebox_override("normal",normal)
+		button.add_theme_stylebox_override("hover",FigmaReferenceCanvas.rounded_gradient3(Color.WHITE,Color("#fcfeff"),Color("#eaeced"),14,Color(accent,0.68),1.2,0.58))
+		button.add_theme_stylebox_override("pressed",FigmaReferenceCanvas.rounded_gradient3(Color("#f1f4f5"),Color("#eceff0"),Color("#d9dddf"),14,Color(accent,0.55),1.2,0.58))
+
+func _style_figma_page_button(button: Button, fill: Color, accent: Color, disabled: bool, light_surface: bool = false) -> void:
+	if light_surface or disabled:
+		var normal := FigmaReferenceCanvas.rounded_gradient3(Color("#fcfeff"),Color("#fcfeff"),Color("#e2e4e5"),13,Color(accent,0.55),1.2,0.58)
+		button.add_theme_stylebox_override("normal",normal)
+		button.add_theme_stylebox_override("hover",FigmaReferenceCanvas.rounded_gradient3(Color.WHITE,Color("#fcfeff"),Color("#eaeced"),13,Color(accent,0.68),1.2,0.58))
+		button.add_theme_stylebox_override("pressed",FigmaReferenceCanvas.rounded_gradient3(Color("#f1f4f5"),Color("#eceff0"),Color("#d9dddf"),13,Color(accent,0.55),1.2,0.58))
+		button.add_theme_stylebox_override("disabled",normal)
+		button.add_theme_color_override("font_disabled_color",FIGMA_MUTED)
+		button.add_theme_color_override("font_color",FIGMA_MUTED)
+	else:
+		button.add_theme_stylebox_override("normal",FigmaReferenceCanvas.rounded_gradient3(fill.lightened(0.15),fill,fill.darkened(0.10),13,Color(fill.lightened(0.28),0.55),1.2))
+		button.add_theme_stylebox_override("hover",FigmaReferenceCanvas.rounded_gradient3(fill.lightened(0.20),fill.lightened(0.04),fill.darkened(0.06),13,Color(fill.lightened(0.34),0.62),1.2))
+		button.add_theme_stylebox_override("pressed",FigmaReferenceCanvas.rounded_gradient3(fill,fill.darkened(0.06),fill.darkened(0.18),13,Color(fill.lightened(0.20),0.55),1.2))
+
+func _style_figma_level_card(button: Button, accent: Color, border: Color, unlocked: bool, current: bool) -> void:
+	if not unlocked:
+		var locked := FigmaReferenceCanvas.rounded_gradient3(Color("#dfe7eb"),Color("#dee5eb"),Color("#d3dadf"),15,Color("#b8c4cf",0.45),1.4,0.58)
+		button.add_theme_stylebox_override("normal",locked)
+		button.add_theme_stylebox_override("hover",locked)
+		button.add_theme_stylebox_override("pressed",locked)
+		button.add_theme_stylebox_override("disabled",locked)
+		button.add_theme_color_override("font_disabled_color",Color("#8c9ca8"))
+		return
+	if current:
+		button.add_theme_stylebox_override("normal",FigmaReferenceCanvas.rounded_gradient3(accent.lightened(0.14),accent,accent.darkened(0.10),15,border,1.4))
+		button.add_theme_stylebox_override("hover",FigmaReferenceCanvas.rounded_gradient3(accent.lightened(0.20),accent.lightened(0.04),accent.darkened(0.06),15,border,1.4))
+		button.add_theme_stylebox_override("pressed",FigmaReferenceCanvas.rounded_gradient3(accent,accent.darkened(0.06),accent.darkened(0.18),15,border,1.4))
+		return
+	button.add_theme_stylebox_override("normal",FigmaReferenceCanvas.rounded_gradient3(Color("#fefefa"),Color("#fefefa"),Color("#e9e9e6"),15,border,1.4,0.58))
+	button.add_theme_stylebox_override("hover",FigmaReferenceCanvas.rounded_gradient3(Color.WHITE,Color("#fffefb"),Color("#efefec"),15,border.lightened(0.08),1.4,0.58))
+	button.add_theme_stylebox_override("pressed",FigmaReferenceCanvas.rounded_gradient3(Color("#f7f7f4"),Color("#f4f4f1"),Color("#e2e2df"),15,border,1.4,0.58))
+
+func _add_figma_block_modes(canvas: Control) -> void:
+	var specs := [
+		["campaign","CAMPAIGN",17.0,Color("#c73dff")],
+		["endless","ENDLESS",105.0,FIGMA_BLUE],
+		["zen","ZEN",193.0,FIGMA_GREEN],
+		["extreme","EXTREME",281.0,FIGMA_ORANGE],
+	]
+	for spec in specs:
+		var mode := String(spec[0])
+		var fill: Color = spec[3] as Color
+		var button := _figma_button(canvas,"BlockMode/%s" % mode,String(spec[1]),Rect2(float(spec[2]),201,82,36),fill,Callable(),FIGMA_OFF_WHITE,13,12)
+		_style_figma_page_button(button,fill,fill,false)
+		if mode == "campaign":
+			button.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		else:
+			button.pressed.connect(start_block_mode.bind(mode))
+
+func _figma_switch_level_game(game_id: String) -> void:
+	selected_game_id = game_id
+	selected_multi_world = MultiGameManager.highest_unlocked_game_world(game_id)
+	selected_multi_page = _multi_page_for_level(game_id,_highest_level_for_game(game_id))
+	build_multi_level_select()
 
 func _inject_game_tabs(active_game_id: String) -> void:
 	var root := _find_page_root()

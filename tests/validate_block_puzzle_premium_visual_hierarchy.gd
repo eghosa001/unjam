@@ -4,74 +4,48 @@ func _initialize() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
+	root.size = Vector2i(540,960)
 	var packed := load("res://scenes/BlockPuzzle.tscn") as PackedScene
 	if packed == null:
-		push_error("Block Puzzle scene could not be loaded")
-		quit(1)
-		return
-	var game := packed.instantiate()
+		return _fail("Block Puzzle scene could not be loaded")
+	var game := packed.instantiate() as Control
 	root.add_child(game)
-	await process_frame
-	await process_frame
+	await _frames(10)
 
-	var failures: Array[String] = []
-	var board_shell = game.get("board_shell") as PanelContainer
-	var piece_row = game.get("piece_row") as HBoxContainer
-	if board_shell == null:
-		failures.append("Block Puzzle has no board shell")
-	else:
-		var style := board_shell.get_theme_stylebox("panel") as StyleBoxFlat
-		if style == null or style.shadow_size < 20:
-			failures.append("Block Puzzle board frame does not have premium depth")
-	if piece_row == null or piece_row.custom_minimum_size.y < 176.0:
-		failures.append("Block Puzzle tray is too shallow for large readable pieces")
-
-	var stage := game.get_node_or_null("BlockPuzzle3DEnvironment") as Unjam3DGameplayStage
-	if stage == null or stage.stage == null:
-		failures.append("Block Puzzle 3D environment is missing")
-	else:
-		var world_environment := _find_world_environment(stage.stage)
-		if world_environment == null or world_environment.environment == null:
-			failures.append("Block Puzzle 3D environment has no world environment")
-		else:
-			if world_environment.environment.background_color != Color("a56cff"):
-				failures.append("Block Puzzle background is not using the brighter candy-sky palette")
-			if world_environment.environment.ambient_light_energy < 1.30:
-				failures.append("Block Puzzle ambient lighting is too flat/dim")
-
-	var objective := _find_label_with(game, "DRAG")
-	if objective == null:
-		failures.append("Block Puzzle objective label is missing")
-	else:
-		if objective.text != "▦  DRAG • PLACE • CLEAR":
-			failures.append("Block Puzzle objective copy is still visually overloaded")
-		if objective.get_theme_font_size("font_size") < 20:
-			failures.append("Block Puzzle objective is still too small")
+	var canvas := game.find_child("FigmaBlock390x844",true,false) as Control
+	var board_shell := game.get("board_shell") as PanelContainer
+	var piece_row := game.get("piece_row") as HBoxContainer
+	var board_grid := game.get("board_grid") as GridContainer
+	var tray := game.find_child("BlockTray",true,false) as Control
+	if canvas == null or board_shell == null or piece_row == null or board_grid == null or tray == null:
+		return _fail("Block Figma hierarchy is incomplete")
+	if board_grid.columns != 8:
+		return _fail("Block board is no longer the required 8x8 grid")
+	if board_grid.get_child_count() != 64:
+		return _fail("Block board does not expose 64 runtime cells")
+	if board_shell.size.distance_to(Vector2(330,330)) > 1.0:
+		return _fail("Block board is not the Figma 330x330 surface")
+	if tray.size.distance_to(Vector2(354,104)) > 1.0:
+		return _fail("Block tray is not the Figma 354x104 surface")
+	if piece_row.custom_minimum_size.y < 71.0 or piece_row.custom_minimum_size.y > 73.0:
+		return _fail("Block piece row drifted from the 72px Figma tray slot height")
+	if game.find_child("BlockPuzzle3DEnvironment",true,false) != null:
+		return _fail("Retired oversized Block 3D environment returned above Figma composition")
+	for booster_name in ["Booster_Undo","Booster_Hammer","Booster_Shuffle","Booster_Rotate"]:
+		var booster := game.find_child(booster_name,true,false) as Button
+		if booster == null or booster.custom_minimum_size.distance_to(Vector2(82,54)) > 1.0:
+			return _fail("%s is missing or not Figma-sized" % booster_name)
 
 	game.queue_free()
 	await process_frame
-	if not failures.is_empty():
-		for failure in failures:
-			push_error(failure)
-		quit(1)
-		return
-	print("Block Puzzle premium visual hierarchy validated.")
+	print("Block Puzzle Figma visual hierarchy validated.")
 	quit(0)
 
-func _find_world_environment(node: Node) -> WorldEnvironment:
-	if node is WorldEnvironment:
-		return node as WorldEnvironment
-	for child in node.get_children():
-		var found := _find_world_environment(child)
-		if found != null:
-			return found
-	return null
+func _frames(count: int) -> void:
+	for _i in range(count):
+		await process_frame
 
-func _find_label_with(node: Node, fragment: String) -> Label:
-	if node is Label and fragment in (node as Label).text:
-		return node as Label
-	for child in node.get_children():
-		var found := _find_label_with(child, fragment)
-		if found != null:
-			return found
-	return null
+func _fail(message: String) -> bool:
+	push_error(message)
+	quit(1)
+	return false

@@ -171,11 +171,14 @@ func _on_balance_changed(_new_balance: int, _delta: int, _reason: String) -> voi
 	_refresh()
 
 func _watch_rewarded(button: Button) -> void:
+	var idle_text := button.text
 	button.disabled = true
+	button.text = "LOADING…"
 	if status_label != null:
 		status_label.text = "Loading rewarded ad…"
 	if not AdManager.reward_coins("shop_coins", 50):
 		button.disabled = false
+		button.text = idle_text
 		if status_label != null:
 			status_label.text = "Rewarded ad is not available right now."
 
@@ -265,10 +268,21 @@ func _on_puzzle_finished(_level_number: int, game_id: String) -> void:
 		AdManager.show_interstitial()
 
 func _restore_purchases() -> void:
+	var restore_button: Button = null
+	if overlay != null and is_instance_valid(overlay):
+		restore_button = overlay.find_child("ShopRestorePurchases", true, false) as Button
+	var idle_text := restore_button.text if restore_button != null else "RESTORE PURCHASES"
+	if restore_button != null:
+		restore_button.disabled = true
+		restore_button.text = "CHECKING…"
 	if status_label != null:
 		status_label.text = "Checking Google Play purchases…"
-	if not StoreManager.restore_purchases() and status_label != null:
-		status_label.text = "Restore request could not start right now."
+	if not StoreManager.restore_purchases():
+		if restore_button != null:
+			restore_button.disabled = false
+			restore_button.text = idle_text
+		if status_label != null:
+			status_label.text = "Restore request could not start right now."
 
 func _box(color: Color, radius: int, border: Color = Color.TRANSPARENT, border_width: int = 0) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()

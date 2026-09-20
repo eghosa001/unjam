@@ -1,20 +1,17 @@
 extends "res://scripts/ui/premium_live_hub.gd"
 
-const GAME_CARD_TAP_SLOP := 28.0
-var _game_card_presses: Dictionary = {}
+const RefCanvas = preload("res://scripts/ui/figma_reference_canvas.gd")
 
-# Premium game selector. Visual hierarchy only: game launch/navigation contracts,
-# progression data and all gameplay motion systems remain unchanged.
+const BG_TOP := Color(0.94, 0.99, 1.0)
+const BG_MID := Color(0.98, 0.99, 1.0)
+const BG_BOTTOM := Color(0.892, 0.9496, 0.988)
+const NAVY := Color(0.03, 0.23, 0.47)
+const INK := Color(0.07, 0.20, 0.35)
+const MUTED := Color(0.31, 0.42, 0.52)
+const OFF_WHITE := Color(1.0, 0.995, 0.97)
+const CYAN := Color(0.14, 0.68, 1.0)
 
-func _button(text_value: String, minimum: Vector2, accent: Color, strong := false) -> Button:
-	var button := Button.new()
-	button.text = text_value
-	button.clip_text = true
-	button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	button.custom_minimum_size = minimum
-	button.add_theme_font_size_override("font_size", 25)
-	Unjam3DTheme.gloss_button(button, accent, strong, 26, _theme_mode() == "dark")
-	return button
+var figma_canvas: FigmaReferenceCanvas
 
 func _build() -> void:
 	for child in get_children():
@@ -22,369 +19,298 @@ func _build() -> void:
 		child.queue_free()
 	built = true
 	last_theme = _theme_mode()
-
 	clip_contents = true
-	var dark_mode := _theme_mode() == "dark"
-	var viewport_size := get_viewport_rect().size
-	var narrow := viewport_size.x < 600.0
-	var phone_width := viewport_size.x <= 1120.0
-	var compact := viewport_size.x <= 1120.0
-	var short := viewport_size.y < 1100.0
-	var medium_height := viewport_size.y < 1500.0
-	var nav_height := 86.0 if short else (94.0 if medium_height else 102.0)
-	var nav_bottom := 10.0 if short else 16.0
-	var nav_side := 12.0 if narrow else (20.0 if phone_width else 28.0)
-	var nav_reserve := nav_height + nav_bottom + (12.0 if short else 20.0)
 
-	var bg := Unjam3DBackdrop.new()
-	bg.name = "GameSelectorBackdrop"
-	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	bg.configure(Unjam3DTheme.WATER, dark_mode)
-	add_child(bg)
+	var viewport_bg := ColorRect.new()
+	viewport_bg.name = "FigmaSelectorViewportBackground"
+	viewport_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	viewport_bg.color = BG_BOTTOM
+	viewport_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(viewport_bg)
 
-	var outer := MarginContainer.new()
-	outer.name = "GameSelectorOuter"
-	outer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	outer.add_theme_constant_override("margin_left", 12 if narrow else (20 if phone_width else 34))
-	outer.add_theme_constant_override("margin_right", 12 if narrow else (20 if phone_width else 34))
-	outer.add_theme_constant_override("margin_top", 10 if short else (18 if medium_height else 28))
-	outer.add_theme_constant_override("margin_bottom", int(nav_reserve))
-	add_child(outer)
+	figma_canvas = RefCanvas.new()
+	figma_canvas.name = "FigmaSelector390x844"
+	add_child(figma_canvas)
+	_build_reference_selector(figma_canvas)
 
-	var root := VBoxContainer.new()
-	root.name = "GameSelectorRoot"
-	root.add_theme_constant_override("separation", 6 if short else (9 if medium_height else 14))
-	outer.add_child(root)
+func _build_reference_selector(canvas: Control) -> void:
+	var background := PanelContainer.new()
+	background.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(BG_TOP, BG_MID, BG_BOTTOM, 34, Color("#bad1e3"), 1, 0.48))
+	RefCanvas.set_rect(background, 0, 0, 390, 844)
+	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(background)
 
-	_make_selector_header(root, narrow, phone_width, short, medium_height)
-	_make_selector_wallet(root, narrow, short)
-
-	var scroll := ScrollContainer.new()
-	scroll.name = "GameSelectorScroll"
-	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	root.add_child(scroll)
-
-	var stack := VBoxContainer.new()
-	stack.name = "GameSelectorStack"
-	stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	stack.add_theme_constant_override("separation", 10 if short else (14 if medium_height else 18))
-	scroll.add_child(stack)
-
-	for game_id in ["rescue_rush", "water_sort", "block_puzzle"]:
-		_add_game_card(stack, game_id)
-
-	_add_bottom_nav(nav_height, nav_bottom, nav_side)
-
-func _make_selector_header(parent: VBoxContainer, narrow: bool, phone_width: bool, short: bool, medium_height: bool) -> void:
-	var header := HBoxContainer.new()
-	header.name = "GameSelectorHeader"
-	header.custom_minimum_size = Vector2(0, 84 if short else (94 if medium_height else 106))
-	header.add_theme_constant_override("separation", 6 if narrow else (8 if phone_width else 12))
-	parent.add_child(header)
-
-	var side_button_size := Vector2(72, 82) if short else (Vector2(78, 90) if phone_width else Vector2(92, 96))
-	var back := _button("←", side_button_size, Unjam3DTheme.WATER_DARK, true)
-	back.name = "GameSelectorBack"
-	back.add_theme_font_size_override("font_size", 30)
+	RefCanvas.add_shadow(canvas, Rect2(17, 19, 52, 52), 18, Color(0.02,0.15,0.30,0.16), 4, Vector2(0,3))
+	var back := RefCanvas.premium_button("‹", 27, NAVY, OFF_WHITE, 18)
+	back.name = "SelectorBackButton"
+	RefCanvas.set_rect(back, 17, 19, 52, 52)
 	back.pressed.connect(_go_home)
-	header.add_child(back)
+	canvas.add_child(back)
 
-	var titles := VBoxContainer.new()
-	titles.name = "GameSelectorTitles"
-	titles.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	titles.alignment = BoxContainer.ALIGNMENT_CENTER
-	titles.clip_contents = true
-	titles.add_theme_constant_override("separation", 0 if short else 2)
-	header.add_child(titles)
+	_add_text(canvas, "CHOOSE A GAME", Rect2(83, 21, 205, 28), 23, INK, true)
+	_add_text(canvas, "THREE PUZZLES • ONE JOURNEY", Rect2(83, 51, 210, 15), 12, MUTED, false)
 
-	var title := Label.new()
-	title.name = "GameSelectorTitle"
-	title.text = "CHOOSE A GAME"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title.clip_text = true
-	title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	title.add_theme_font_size_override("font_size", 29 if narrow else (35 if phone_width else 42))
-	Unjam3DTheme.label_3d(title, Color.WHITE, Unjam3DTheme.NAVY, 4 if phone_width else 5)
-	titles.add_child(title)
-
-	var subtitle := Label.new()
-	subtitle.name = "GameSelectorSubtitle"
-	subtitle.text = "PICK YOUR PUZZLE  •  PROGRESS SAVES IN EVERY WORLD"
-	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	subtitle.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	subtitle.clip_text = true
-	subtitle.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	subtitle.add_theme_font_size_override("font_size", 18 if narrow else (21 if phone_width else 24))
-	Unjam3DTheme.label_3d(subtitle, Color("e9fbff"), Unjam3DTheme.NAVY, 2)
-	titles.add_child(subtitle)
-
-	var settings := _button("⚙", side_button_size, Unjam3DTheme.WATER_DARK, true)
-	settings.name = "GameSelectorSettings"
-	settings.add_theme_font_size_override("font_size", 28)
+	RefCanvas.add_shadow(canvas, Rect2(285, 21, 84, 46), 23, Color(0.02,0.15,0.30,0.16), 3, Vector2(0,2))
+	var settings := RefCanvas.premium_button("⚙", 18, OFF_WHITE, Color(0.03, 0.43, 0.78), 23)
+	settings.name = "SelectorSettingsButton"
+	RefCanvas.set_rect(settings, 285, 21, 84, 46)
 	settings.pressed.connect(func(): get_parent().call("build_settings"))
-	header.add_child(settings)
+	canvas.add_child(settings)
 
-func _make_selector_wallet(parent: VBoxContainer, narrow: bool, short: bool) -> void:
-	var wallet := HBoxContainer.new()
-	wallet.name = "GameSelectorWallet"
-	wallet.custom_minimum_size.y = 44.0 if short else 54.0
-	wallet.alignment = BoxContainer.ALIGNMENT_CENTER
-	wallet.add_theme_constant_override("separation", 10 if narrow else 16)
-	parent.add_child(wallet)
+	_add_game_card(canvas, "rescue_rush", Rect2(17, 111, 354, 160), Color("#21c763"), Color("#49d17f"), "RESCUE RUSH", "Tap arrows. Clear the lane.", 76)
+	_add_game_card(canvas, "water_sort", Rect2(17, 285, 354, 160), Color("#1aa8ff"), Color("#43b8ff"), "WATER SORT", "Pour colours into matching tubes.", 128)
+	_add_game_card(canvas, "block_puzzle", Rect2(17, 459, 354, 160), Color("#c73dff"), Color("#d160ff"), "BLOCK PUZZLE", "Drag pieces. Clear lines.", 92)
+	_add_bottom_nav(canvas)
 
-	var coins := Label.new()
-	coins.text = "●  %d COINS" % int(SaveManager.data.get("coins", 0))
-	coins.add_theme_font_size_override("font_size", 20 if narrow else 24)
-	Unjam3DTheme.label_3d(coins, Unjam3DTheme.GOLD, Unjam3DTheme.NAVY, 2)
-	wallet.add_child(coins)
+func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color, highlight: Color, title: String, subtitle: String, figma_fallback_level: int) -> void:
+	RefCanvas.add_shadow(canvas, rect, 20, Color(0.03,0.10,0.20,0.22), 8, Vector2(0,6))
+	var card := PanelContainer.new()
+	card.name = "GameCard3D_%s" % game_id
+	card.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(highlight, accent, accent.darkened(0.18), 20, highlight.lightened(0.35), 1.6, 0.55))
+	RefCanvas.set_rect(card, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
+	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(card)
 
-	var divider := Label.new()
-	divider.text = "•"
-	divider.add_theme_font_size_override("font_size", 20)
-	Unjam3DTheme.label_3d(divider, Color("d9f5ff"), Unjam3DTheme.NAVY, 2)
-	wallet.add_child(divider)
+	_add_text(canvas, title, Rect2(34, rect.position.y + 12.6, 170, 23), 19, OFF_WHITE, true)
+	_add_text(canvas, subtitle, Rect2(34, rect.position.y + 39.6, 184, 18), 13, OFF_WHITE, false)
+	var level := maxi(1, MultiGameManager.highest_level(game_id))
+	if level <= 1:
+		level = figma_fallback_level
+	RefCanvas.add_shadow(canvas, Rect2(33, rect.position.y + 100.7, 112, 36), 13, Color(0.02,0.10,0.20,0.16), 3, Vector2(0,2))
+	var level_pill := PanelContainer.new()
+	level_pill.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.04, 0.30, 0.55), 13))
+	RefCanvas.set_rect(level_pill, 33, rect.position.y + 100.7, 112, 36)
+	level_pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(level_pill)
+	_add_text(canvas, "LEVEL %d" % level, Rect2(45, rect.position.y + 111, 88, 16), 13, OFF_WHITE, true)
+	_add_card_preview(canvas, game_id, rect.position.y)
 
-	var stars := Label.new()
-	stars.text = "★  %d STARS" % _total_stars()
-	stars.add_theme_font_size_override("font_size", 20 if narrow else 24)
-	Unjam3DTheme.label_3d(stars, Color.WHITE, Unjam3DTheme.NAVY, 2)
-	wallet.add_child(stars)
+	var tap := Button.new()
+	tap.name = "SelectorCardHit_%s" % game_id
+	tap.flat = true
+	tap.focus_mode = Control.FOCUS_NONE
+	tap.modulate.a = 0.001
+	RefCanvas.set_rect(tap, rect.position.x - 2, rect.position.y - 5, rect.size.x + 4, rect.size.y + 10)
+	tap.pressed.connect(_play.bind(game_id))
+	canvas.add_child(tap)
 
-func _add_game_card(parent: VBoxContainer, game_id: String) -> void:
-	var accent := Unjam3DTheme.game_accent(game_id)
-	var dark := Unjam3DTheme.game_dark(game_id)
-	var progress := MultiGameManager.progress_for(game_id)
-	var highest := clampi(int(progress.get("highest_level", 1)), 1, MultiGameManager.CAMPAIGN_LEVELS)
-	var level_in_world := ((highest - 1) % 100) + 1
-	var world := MultiGameManager.world_for_game_level(game_id, highest)
-
-	var viewport_size := get_viewport_rect().size
-	var narrow := viewport_size.x < 600.0
-	var compact := viewport_size.x <= 1120.0
-	var short := viewport_size.y < 1100.0
-	var medium_height := viewport_size.y < 1500.0
-	var card_height := 352.0 if short else (420.0 if medium_height else 470.0)
-	if not compact:
-		card_height = clampf(viewport_size.y * 0.215, 340.0, 490.0)
-
-	var panel := PanelContainer.new()
-	panel.name = "GameCard3D_%s" % game_id
-	panel.mouse_filter = Control.MOUSE_FILTER_PASS
-	panel.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	panel.custom_minimum_size = Vector2(0, card_height)
-	var fill := accent.darkened(0.44) if _theme_mode() == "dark" else accent.lightened(0.04)
-	panel.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(fill, 30 if compact else 38, accent.lightened(0.42), 4, 18))
-	parent.add_child(panel)
-
-	var margin := MarginContainer.new()
-	var side_margin := 10 if narrow else (14 if compact else 20)
-	margin.add_theme_constant_override("margin_left", side_margin)
-	margin.add_theme_constant_override("margin_right", side_margin)
-	margin.add_theme_constant_override("margin_top", 10 if short else 14)
-	margin.add_theme_constant_override("margin_bottom", 10 if short else 14)
-	panel.add_child(margin)
-
-	var composition: BoxContainer = VBoxContainer.new() if compact else HBoxContainer.new()
-	composition.add_theme_constant_override("separation", 8 if short else (12 if compact else 18))
-	margin.add_child(composition)
-
-	var art_shell := _make_game_art_shell(game_id, compact, short, medium_height, card_height)
-	var info := _make_game_info(game_id, highest, world, level_in_world, compact, narrow, short, accent, dark)
-
-	# On phones the artwork leads the card, like a premium casual-game poster.
-	# Wide layouts use text left / artwork right for faster scanning.
-	if compact:
-		composition.add_child(art_shell)
-		composition.add_child(info)
-	else:
-		composition.add_child(info)
-		composition.add_child(art_shell)
-	_set_game_card_visuals_noninteractive(panel)
-	panel.gui_input.connect(_on_game_card_gui_input.bind(game_id))
-
-func _set_game_card_visuals_noninteractive(node: Node) -> void:
-	for child in node.get_children():
-		if child is Control:
-			(child as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_set_game_card_visuals_noninteractive(child)
-
-func _on_game_card_gui_input(event: InputEvent, game_id: String) -> void:
-	var key := ""
-	var position := Vector2.ZERO
-	var pressed := false
-	var released := false
-	if event is InputEventScreenTouch:
-		key = "touch_%d" % (event as InputEventScreenTouch).index
-		position = (event as InputEventScreenTouch).position
-		pressed = (event as InputEventScreenTouch).pressed
-		released = not pressed
-	elif event is InputEventMouseButton and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
-		key = "mouse"
-		position = (event as InputEventMouseButton).position
-		pressed = (event as InputEventMouseButton).pressed
-		released = not pressed
-	else:
-		return
-	if pressed:
-		_game_card_presses[key] = {"game_id": game_id, "position": position}
-		return
-	if not released or not _game_card_presses.has(key):
-		return
-	var start: Dictionary = _game_card_presses[key]
-	_game_card_presses.erase(key)
-	if String(start.get("game_id", "")) != game_id:
-		return
-	if position.distance_to(start.get("position", position)) > GAME_CARD_TAP_SLOP:
-		return
-	FeedbackManager.tap()
-	_play(game_id)
-	get_viewport().set_input_as_handled()
-
-func _make_game_art_shell(game_id: String, compact: bool, short: bool, medium_height: bool, card_height: float) -> PanelContainer:
-	var art_shell := PanelContainer.new()
-	art_shell.name = "GameArtShell_%s" % game_id
-	var art_height := 118.0 if short else (154.0 if medium_height else 182.0)
-	art_shell.custom_minimum_size = Vector2(0 if compact else 360, art_height if compact else minf(card_height - 30.0, 310.0))
-	art_shell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	art_shell.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	art_shell.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color(1, 1, 1, 0.18), 24 if compact else 30, Color(1, 1, 1, 0.54), 3, 10))
-
-	var art_margin := MarginContainer.new()
-	for side in ["left", "right", "top", "bottom"]:
-		art_margin.add_theme_constant_override("margin_%s" % side, 6)
-	art_shell.add_child(art_margin)
-
-	var art := Unjam3DGameArt.new()
-	art.custom_minimum_size = Vector2(0 if compact else 340, maxf(96.0, art_shell.custom_minimum_size.y - 12.0))
-	art.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	art.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	art.configure(game_id)
-	art_margin.add_child(art)
-	return art_shell
-
-func _make_game_info(game_id: String, highest: int, world: int, level_in_world: int, compact: bool, narrow: bool, short: bool, accent: Color, dark: Color) -> VBoxContainer:
-	var info := VBoxContainer.new()
-	info.custom_minimum_size = Vector2(0 if compact else 410, 0)
-	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	info.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	info.add_theme_constant_override("separation", 3 if short else 6)
-
-	var heading := HBoxContainer.new()
-	heading.add_theme_constant_override("separation", 8)
-	info.add_child(heading)
-
-	var name := Label.new()
-	name.text = MultiGameManager.display_name(game_id).to_upper()
-	name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name.add_theme_font_size_override("font_size", 29 if narrow else (34 if compact else 44))
-	Unjam3DTheme.label_3d(name, Color.WHITE, dark.darkened(0.34), 4 if compact else 5)
-	heading.add_child(name)
-
-	var world_label := Label.new()
-	world_label.text = "WORLD %d" % world
-	world_label.add_theme_font_size_override("font_size", 18 if narrow else 21)
-	Unjam3DTheme.label_3d(world_label, Color("fff2a0"), dark.darkened(0.34), 2)
-	heading.add_child(world_label)
-
-	var desc := Label.new()
-	desc.text = _reference_card_copy(game_id)
-	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	desc.add_theme_font_size_override("font_size", 22 if narrow else (24 if compact else 26))
-	Unjam3DTheme.label_3d(desc, Color.WHITE, dark.darkened(0.34), 2)
-	info.add_child(desc)
-
-	var spacer := Control.new()
-	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	info.add_child(spacer)
-
-	var footer: Container = GridContainer.new() if compact else HBoxContainer.new()
-	if footer is GridContainer:
-		(footer as GridContainer).columns = 3
-	footer.custom_minimum_size = Vector2(0, 92 if short else (104 if compact else 72))
-	footer.add_theme_constant_override("h_separation", 7)
-	footer.add_theme_constant_override("v_separation", 7)
-	info.add_child(footer)
-
-	var footer_height := 54.0 if short else (62.0 if compact else 70.0)
-	var level_chip := PanelContainer.new()
-	level_chip.custom_minimum_size = Vector2(0 if compact else 118, footer_height)
-	level_chip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	level_chip.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(dark, 18 if compact else 22, accent.lightened(0.35), 2, 4))
-	footer.add_child(level_chip)
-
-	var level_label := Label.new()
-	level_label.text = "LEVEL %d" % highest
-	level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	level_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	level_label.add_theme_font_size_override("font_size", 20 if narrow else 23)
-	Unjam3DTheme.label_3d(level_label, Color.WHITE, dark.darkened(0.35), 2)
-	level_chip.add_child(level_label)
-
-	var progress_bar := ProgressBar.new()
-	progress_bar.name = "WorldProgress"
-	progress_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	progress_bar.custom_minimum_size = Vector2(0 if compact else 160, 24 if short else 30)
-	progress_bar.max_value = 100.0
-	progress_bar.value = float(level_in_world)
-	progress_bar.show_percentage = false
-	progress_bar.add_theme_stylebox_override("background", Unjam3DTheme.panel_3d(dark.darkened(0.16), 12, Color(dark.lightened(0.18), 0.7), 1, 2))
-	progress_bar.add_theme_stylebox_override("fill", Unjam3DTheme.panel_3d(Color("42e58a") if game_id == "rescue_rush" else accent.lightened(0.22), 12, Color.WHITE, 1, 3))
-	footer.add_child(progress_bar)
-
-	var star_label := Label.new()
-	star_label.text = "★ %d" % MultiGameManager.total_stars(game_id)
-	star_label.custom_minimum_size = Vector2(0 if compact else 88, footer_height)
-	star_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	star_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	star_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	star_label.add_theme_font_size_override("font_size", 20 if narrow else 23)
-	Unjam3DTheme.label_3d(star_label, Color("fff2a0"), dark.darkened(0.38), 2)
-	footer.add_child(star_label)
-
-	return info
-
-func _reference_card_copy(game_id: String) -> String:
+func _add_card_preview(canvas: Control, game_id: String, card_y: float) -> void:
+	var origin_y := card_y + 22.5
+	var stage := PanelContainer.new()
+	stage.add_theme_stylebox_override("panel", RefCanvas.solid_box(
+		Color(0.92, 1.0, 0.86, 0.38) if game_id == "rescue_rush" else (Color(0.91, 0.99, 1.0, 0.42) if game_id == "water_sort" else Color(0.94, 0.91, 1.0, 0.34)),
+		16
+	))
+	RefCanvas.set_rect(stage, 243, origin_y, 104, 112)
+	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(stage)
 	match game_id:
-		"water_sort": return "Sort the colors. Find the perfect flow."
-		"block_puzzle": return "Drag. Place. Clear. Build satisfying combos."
-		_: return "Clear the lane. Rescue the chick. Make the escape."
+		"rescue_rush": _preview_rescue(canvas, origin_y)
+		"water_sort": _preview_water(canvas, origin_y)
+		_: _preview_block(canvas, origin_y)
 
-func _add_bottom_nav(nav_height: float = 92.0, nav_bottom: float = 16.0, nav_side: float = 28.0) -> void:
-	var nav := PanelContainer.new()
-	nav.name = "GameSelectorBottomNav"
-	nav.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	nav.offset_left = nav_side
-	nav.offset_right = -nav_side
-	nav.offset_top = -(nav_height + nav_bottom)
-	nav.offset_bottom = -nav_bottom
-	nav.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("071a35") if _theme_mode() == "dark" else Color("0756a8"), 24 if nav_height < 90.0 else 30, Color("56c8ff"), 3, 10))
-	add_child(nav)
-
-	var row := HBoxContainer.new()
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override("separation", 4 if get_viewport_rect().size.x < 600.0 else 8)
-	nav.add_child(row)
-
-	var entries: Array = [
-		["⌂\nHOME", Callable(self, "_go_home")],
-		["●\nGAMES", Callable()],
-		["☀\nDAILY", func(): get_parent().call("build_daily_games")],
-		["★\nCOLLECT", func(): get_parent().call("build_collection")],
-		["⚙\nSETTINGS", func(): get_parent().call("build_settings")]
+func _preview_rescue(canvas: Control, y: float) -> void:
+	var board_depth := PanelContainer.new()
+	board_depth.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color("#173d33"), 12))
+	RefCanvas.set_rect(board_depth, 253, y + 15.3, 84, 90)
+	canvas.add_child(board_depth)
+	var board := PanelContainer.new()
+	board.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#a9d3ad"), Color("#8cb896"), Color("#759d80"), 12, Color(0.92, 1.0, 0.86, 0.62), 1))
+	RefCanvas.set_rect(board, 253, y + 10.8, 84, 90)
+	canvas.add_child(board)
+	var specs := [
+		[Vector2(258.0, y + 13.5), Color("#1c9c5a"), "→"],
+		[Vector2(282.7, y + 13.5), Color("#8942c1"), "↓"],
+		[Vector2(258.0, y + 35.7), Color("#158dd6"), "←"],
+		[Vector2(307.3, y + 35.7), Color("#8942c1"), "↑"],
+		[Vector2(258.0, y + 57.9), Color("#d6761a"), "→"],
+		[Vector2(307.3, y + 57.9), Color("#1c9c5a"), "↓"],
 	]
-	var narrow := get_viewport_rect().size.x < 600.0
-	for i in range(entries.size()):
-		var entry: Array = entries[i]
-		var button := _button(String(entry[0]), Vector2(0, maxf(54.0, nav_height - 10.0)), Unjam3DTheme.WATER if i == 1 else Color("0d6dc2"), i == 1)
-		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.add_theme_font_size_override("font_size", 16 if narrow else (19 if nav_height < 100.0 else 21))
-		var callback: Callable = entry[1]
+	for spec in specs:
+		var pos: Vector2 = spec[0]
+		var fill: Color = spec[1]
+		var depth := PanelContainer.new()
+		depth.add_theme_stylebox_override("panel", RefCanvas.solid_box(fill.darkened(0.34), 4))
+		RefCanvas.set_rect(depth, pos.x + 1.5, pos.y + 3.1, 21.7, 21.7)
+		canvas.add_child(depth)
+		var tile := PanelContainer.new()
+		tile.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(fill.lightened(0.33), fill, fill.darkened(0.14), 4))
+		RefCanvas.set_rect(tile, pos.x, pos.y, 21.7, 21.7)
+		canvas.add_child(tile)
+		var arrow := _make_label(String(spec[2]), 13, Color.WHITE, true)
+		arrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		RefCanvas.set_rect(arrow, pos.x, pos.y, 21.7, 21.7)
+		canvas.add_child(arrow)
+	var chick := PanelContainer.new()
+	chick.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color("#ffd63d"), 8, Color("#fff1a0"), 1))
+	RefCanvas.set_rect(chick, 287.5, y + 39.0, 15, 15)
+	canvas.add_child(chick)
+	var eye := ColorRect.new()
+	eye.color = Color("#183b42")
+	RefCanvas.set_rect(eye, 296.0, y + 44.9, 2, 2.5)
+	canvas.add_child(eye)
+	var exit := PanelContainer.new()
+	exit.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#80efb0"), Color("#35b96b"), Color("#148b4c"), 5))
+	RefCanvas.set_rect(exit, 329, y + 21.6, 11, 30)
+	canvas.add_child(exit)
+
+func _preview_water(canvas: Control, y: float) -> void:
+	var specs := [
+		[255.0,12.56,84.0,Color("#ff7ebd"),Color("#d64089"),41.57,48.72,38.88,19.75,68.0,10.76,85.37],
+		[284.0,16.15,79.0,Color("#5ac1ff"),Color("#158dd6"),33.34,56.88,30.64,23.34,63.0,14.35,84.47],
+		[313.0,12.56,84.0,Color("#5fd78f"),Color("#1ca754"),52.14,36.96,49.45,19.75,68.0,10.76,85.37],
+	]
+	for spec in specs:
+		var x := float(spec[0])
+		var top := y + float(spec[1])
+		var h := float(spec[2])
+		var left: Color = spec[3] as Color
+		var right: Color = spec[4] as Color
+		var shadow := PanelContainer.new()
+		shadow.add_theme_stylebox_override("panel",RefCanvas.solid_box(Color(0.02,0.15,0.26,0.16),4))
+		RefCanvas.set_rect(shadow,x,y+float(spec[11]),22,7)
+		canvas.add_child(shadow)
+		var bottle := PanelContainer.new()
+		bottle.add_theme_stylebox_override("panel",RefCanvas.solid_box(Color(0.90,0.99,1.0,0.10),9,Color(0.82,0.98,1.0,0.90),1.3))
+		RefCanvas.set_rect(bottle,x,top,22,h)
+		canvas.add_child(bottle)
+		var liquid := PanelContainer.new()
+		liquid.add_theme_stylebox_override("panel",RefCanvas.horizontal_gradient(left,right,2))
+		RefCanvas.set_rect(liquid,x+3,y+float(spec[5]),16,float(spec[6]))
+		canvas.add_child(liquid)
+		var meniscus := PanelContainer.new()
+		meniscus.add_theme_stylebox_override("panel",RefCanvas.horizontal_gradient(left.lightened(0.08),right.lightened(0.04),3))
+		RefCanvas.set_rect(meniscus,x+3,y+float(spec[7]),16,6)
+		canvas.add_child(meniscus)
+		var hi := ColorRect.new()
+		hi.color = Color(1,1,1,0.48)
+		RefCanvas.set_rect(hi,x+5,y+float(spec[8]),2,float(spec[9]))
+		canvas.add_child(hi)
+		var rim := PanelContainer.new()
+		rim.add_theme_stylebox_override("panel",RefCanvas.horizontal_gradient(Color("#f4fdff"),Color("#cfeffc"),3,Color(0.82,0.98,1.0,0.90),0.8))
+		RefCanvas.set_rect(rim,x+1,y+float(spec[10]),20,6)
+		canvas.add_child(rim)
+
+func _preview_block(canvas: Control, y: float) -> void:
+	var depth := PanelContainer.new()
+	depth.add_theme_stylebox_override("panel",RefCanvas.solid_box(Color("#241447"),12))
+	RefCanvas.set_rect(depth,253,y+15.25,84,90)
+	canvas.add_child(depth)
+	var board := PanelContainer.new()
+	board.add_theme_stylebox_override("panel",RefCanvas.solid_box(Color("#4f307d"),12,Color(0.72,0.52,1.0,0.55),1))
+	RefCanvas.set_rect(board,253,y+10.76,84,90)
+	canvas.add_child(board)
+
+	var cube_specs := {
+		0:[Color("#b89af9"),Color("#764dce"),Color(0.263,0.173,0.463,0.40)],
+		1:[Color("#71c9ff"),Color("#158dd6"),Color(0.047,0.318,0.478,0.40)],
+		5:[Color("#71c9ff"),Color("#158dd6"),Color(0.047,0.318,0.478,0.40)],
+		6:[Color("#75dc9f"),Color("#1ca754"),Color(0.063,0.373,0.188,0.40)],
+		9:[Color("#71c9ff"),Color("#158dd6"),Color(0.047,0.318,0.478,0.40)],
+		10:[Color("#75dc9f"),Color("#1ca754"),Color(0.063,0.373,0.188,0.40)],
+		11:[Color("#ffb874"),Color("#d6761a"),Color(0.478,0.263,0.059,0.40)],
+		14:[Color("#75dc9f"),Color("#1ca754"),Color(0.063,0.373,0.188,0.40)],
+	}
+	for row in range(4):
+		for col in range(4):
+			var index := row*4+col
+			var wx := 257.0+float(col)*19.0
+			var wy := y+12.56+float(row)*17.08
+			var well := PanelContainer.new()
+			well.add_theme_stylebox_override("panel",RefCanvas.solid_box(Color("#291a47"),3,Color(0.52,0.39,0.68,0.34),0.7))
+			RefCanvas.set_rect(well,wx,wy,17,17)
+			canvas.add_child(well)
+			if cube_specs.has(index):
+				var spec: Array = cube_specs[index]
+				var top_color: Color = spec[0] as Color
+				var bottom_color: Color = spec[1] as Color
+				var shadow_color: Color = spec[2] as Color
+				var cube_shadow := PanelContainer.new()
+				cube_shadow.add_theme_stylebox_override("panel",RefCanvas.solid_box(shadow_color,3))
+				RefCanvas.set_rect(cube_shadow,wx+1.5,wy+4.04,14,14)
+				canvas.add_child(cube_shadow)
+				var cube := PanelContainer.new()
+				cube.add_theme_stylebox_override("panel",RefCanvas.rounded_gradient3(top_color,top_color.lerp(bottom_color,0.48),bottom_color,3))
+				RefCanvas.set_rect(cube,wx+0.5,wy+2.24,14,14)
+				canvas.add_child(cube)
+
+	var tray := PanelContainer.new()
+	tray.name = "SelectorBlockTray"
+	tray.add_theme_stylebox_override("panel",RefCanvas.solid_box(Color(0.969,0.929,1.0,0.95),6,Color(0.72,0.55,0.94,0.48),0.8))
+	RefCanvas.set_rect(tray,251,y+85.5,88,20)
+	canvas.add_child(tray)
+	_add_selector_tray_piece(canvas,[Vector2(257,y+94),Vector2(267,y+94),Vector2(277,y+94)],Color("#466df2"),Color("#749bff"))
+	_add_selector_tray_piece(canvas,[Vector2(293,y+90),Vector2(293,y+100),Vector2(303,y+100)],Color("#38df63"),Color("#66ff91"))
+	_add_selector_tray_piece(canvas,[Vector2(321,y+90),Vector2(331,y+90),Vector2(321,y+100),Vector2(331,y+100)],Color("#f4b83d"),Color("#ffe66b"))
+
+	# The small silhouettes below the tray are part of the audited selector polish.
+	for px in [251.0,257.0,263.0]:
+		_add_selector_flat_bit(canvas,Vector2(px,y+117.5),Color("#4ad175"))
+	for pos in [Vector2(281,y+114.5),Vector2(281,y+120.5),Vector2(287,y+120.5)]:
+		_add_selector_flat_bit(canvas,pos,Color("#4a8cfa"))
+	for pos in [Vector2(313,y+114.5),Vector2(319,y+114.5),Vector2(313,y+120.5),Vector2(319,y+120.5)]:
+		_add_selector_flat_bit(canvas,pos,Color("#f57a3d"))
+
+func _add_selector_tray_piece(canvas: Control, cells: Array, fill: Color, edge: Color) -> void:
+	for value in cells:
+		var pos: Vector2 = value as Vector2
+		var top := Polygon2D.new()
+		top.polygon = PackedVector2Array([
+			Vector2(pos.x,pos.y),
+			Vector2(pos.x+2.5,pos.y-2.5),
+			Vector2(pos.x+9.0,pos.y-2.5),
+			Vector2(pos.x+6.5,pos.y),
+		])
+		top.color = fill.lightened(0.28)
+		canvas.add_child(top)
+		var front := PanelContainer.new()
+		front.add_theme_stylebox_override("panel",RefCanvas.solid_box(fill,3,Color(edge,0.85),0.8))
+		RefCanvas.set_rect(front,pos.x,pos.y,6.5,6.5)
+		canvas.add_child(front)
+
+func _add_selector_flat_bit(canvas: Control, pos: Vector2, fill: Color) -> void:
+	var bit := PanelContainer.new()
+	bit.add_theme_stylebox_override("panel",RefCanvas.solid_box(fill,1.2))
+	RefCanvas.set_rect(bit,pos.x,pos.y,5,5)
+	canvas.add_child(bit)
+
+func _add_bottom_nav(canvas: Control) -> void:
+	var shell := PanelContainer.new()
+	shell.name = "SelectorBottomNav"
+	RefCanvas.add_shadow(canvas, Rect2(13, 757, 362, 70), 18, Color(0.02,0.10,0.18,0.12), 5, Vector2(0,4))
+	shell.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.985, 0.995, 1.0, 0.97), 18, Color(0.78, 0.88, 0.95, 0.75), 1))
+	RefCanvas.set_rect(shell, 13, 757, 362, 70)
+	shell.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(shell)
+	var active := PanelContainer.new()
+	active.add_theme_stylebox_override("panel", RefCanvas.solid_box(CYAN, 16))
+	RefCanvas.set_rect(active, 84, 767, 62, 48)
+	active.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(active)
+	var items := [
+		["HOME", 22.0, Callable(self, "_go_home"), false],
+		["GAMES", 91.0, Callable(), true],
+		["DAILY", 160.0, func(): get_parent().call("build_daily_games"), false],
+		["COLLECT", 229.0, func(): get_parent().call("build_collection"), false],
+		["SETTINGS", 298.0, func(): get_parent().call("build_settings"), false],
+	]
+	for item in items:
+		_add_text(canvas, item[0], Rect2(item[1] - 1.0, 788, 62, 30), 12, Color(0.05, 0.49, 0.86) if item[3] else Color(0.31, 0.43, 0.54), true)
+		var hit := Button.new()
+		hit.flat = true
+		hit.focus_mode = Control.FOCUS_NONE
+		hit.modulate.a = 0.001
+		RefCanvas.set_rect(hit, item[1] - 9, 753, 74, 78)
+		var callback: Callable = item[2]
 		if callback.is_valid():
-			button.pressed.connect(callback)
-		row.add_child(button)
+			hit.pressed.connect(callback)
+		canvas.add_child(hit)
+
+func _add_text(canvas: Control, text_value: String, rect: Rect2, font_size: int, color: Color, bold: bool) -> Label:
+	var label := _make_label(text_value, font_size, color, bold)
+	RefCanvas.set_rect(label, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
+	canvas.add_child(label)
+	return label
+
+func _make_label(text_value: String, font_size: int, color: Color, bold: bool) -> Label:
+	return RefCanvas.label(text_value, font_size, color, bold)
