@@ -15,8 +15,32 @@ const FIGMA_ORANGE := Color(1.0, 0.55, 0.12)
 const FIGMA_GOLD := Color(1.0, 0.84, 0.24)
 const FIGMA_PURPLE := Color(0.78, 0.24, 1.0)
 
+const FIGMA_DARK_TOP := Color("#07111d")
+const FIGMA_DARK_MID := Color("#0b1726")
+const FIGMA_DARK_BOTTOM := Color("#101c2d")
+const FIGMA_DARK_CARD := Color("#111d2d")
+const FIGMA_DARK_INK := Color("#eef7ff")
+const FIGMA_DARK_MUTED := Color("#b6c7d6")
+
 var _collection_scroll_tracking := false
 var _collection_scroll_origin_y := 0.0
+
+
+func _figma_theme_text(color: Color) -> Color:
+	if not _dark():
+		return color
+	if color.is_equal_approx(FIGMA_INK) or color.is_equal_approx(FIGMA_NAVY):
+		return FIGMA_DARK_INK
+	if color.is_equal_approx(FIGMA_MUTED):
+		return FIGMA_DARK_MUTED
+	if color.get_luminance() < 0.34:
+		return color.lightened(0.48)
+	return color.lightened(0.06)
+
+
+func _figma_theme_card(accent: Color, fallback: Color = FIGMA_DARK_CARD) -> Color:
+	var opaque_accent := Color(accent.r, accent.g, accent.b, 1.0)
+	return fallback.lerp(opaque_accent.darkened(0.38), 0.12)
 
 
 func _sync_persistent_surfaces_now(surface: String) -> void:
@@ -81,10 +105,17 @@ func _figma_surface(active: String, bottom_tint: Color = FIGMA_BG_BOTTOM, top_ti
 	clear_content()
 	content.visible = true
 	content.mouse_filter = Control.MOUSE_FILTER_STOP
+	var resolved_bottom := bottom_tint
+	var resolved_top := top_tint
+	if _dark() and (bottom_tint.get_luminance() > 0.35 or top_tint.get_luminance() > 0.35):
+		var bottom_hint := Color(bottom_tint.r, bottom_tint.g, bottom_tint.b, 1.0).darkened(0.62)
+		var top_hint := Color(top_tint.r, top_tint.g, top_tint.b, 1.0).darkened(0.68)
+		resolved_bottom = FIGMA_DARK_BOTTOM.lerp(bottom_hint, 0.22)
+		resolved_top = FIGMA_DARK_TOP.lerp(top_hint, 0.18)
 	var viewport_bg := ColorRect.new()
 	viewport_bg.name = "FigmaSurfaceViewportBackground"
 	viewport_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	viewport_bg.color = bottom_tint
+	viewport_bg.color = resolved_bottom
 	viewport_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	content.add_child(viewport_bg)
 	var canvas := FigmaReferenceCanvas.new()
@@ -92,23 +123,28 @@ func _figma_surface(active: String, bottom_tint: Color = FIGMA_BG_BOTTOM, top_ti
 	content.add_child(canvas)
 	var bg := PanelContainer.new()
 	bg.name = "FigmaSurfaceBackground"
-	var mid_tint := FIGMA_BG_MID if not _dark() else top_tint.lerp(bottom_tint, 0.48)
-	bg.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(top_tint, mid_tint, bottom_tint, 34, Color("#bad1e3") if not _dark() else Color(0.22,0.36,0.48,0.72), 1, 0.48))
+	var mid_tint := FIGMA_BG_MID if not _dark() else resolved_top.lerp(resolved_bottom, 0.48)
+	bg.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(resolved_top, mid_tint, resolved_bottom, 34, Color("#bad1e3") if not _dark() else Color(0.22,0.36,0.48,0.82), 1, 0.48))
 	FigmaReferenceCanvas.set_rect(bg, 0, 0, 390, 844)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(bg)
 	return canvas
 
 func _figma_text(canvas: Control, text_value: String, rect: Rect2, font_size: int, color: Color = FIGMA_INK, center := false) -> Label:
-	var label := FigmaReferenceCanvas.label(text_value, font_size, color, true)
+	var label := FigmaReferenceCanvas.label(text_value, font_size, _figma_theme_text(color), true)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER if center else HORIZONTAL_ALIGNMENT_LEFT
 	FigmaReferenceCanvas.set_rect(label, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	canvas.add_child(label)
 	return label
 
 func _figma_button(canvas: Control, name_value: String, text_value: String, rect: Rect2, fill: Color, callback: Callable, text_color: Color = FIGMA_OFF_WHITE, radius: float = 14.0, font_size: int = 12) -> Button:
-	FigmaReferenceCanvas.add_shadow(canvas, rect, radius, Color(0.02,0.10,0.18,0.16), 4, Vector2(0,3))
-	var button := FigmaReferenceCanvas.premium_button(text_value, font_size, text_color, fill, radius, fill.lightened(0.24), 1.2)
+	FigmaReferenceCanvas.add_shadow(canvas, rect, radius, Color(0.02,0.10,0.18,0.20 if _dark() else 0.16), 4, Vector2(0,3))
+	var resolved_fill := fill
+	var resolved_text := text_color
+	if _dark() and fill.get_luminance() > 0.82:
+		resolved_fill = _figma_theme_card(fill, Color("#152337"))
+		resolved_text = FIGMA_DARK_INK
+	var button := FigmaReferenceCanvas.premium_button(text_value, font_size, resolved_text, resolved_fill, radius, resolved_fill.lightened(0.20), 1.2)
 	button.name = name_value
 	FigmaReferenceCanvas.set_rect(button, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	if callback.is_valid():
@@ -117,10 +153,12 @@ func _figma_button(canvas: Control, name_value: String, text_value: String, rect
 	return button
 
 func _figma_card(canvas: Control, name_value: String, rect: Rect2, tint: Color = Color(1.0, 0.995, 0.97), accent: Color = Color(0.70, 0.88, 0.96, 0.45), radius: float = 16.0) -> PanelContainer:
-	FigmaReferenceCanvas.add_shadow(canvas, rect, radius, Color(0.03,0.11,0.20,0.16), 5, Vector2(0,4))
+	FigmaReferenceCanvas.add_shadow(canvas, rect, radius, Color(0.01,0.04,0.08,0.30 if _dark() else 0.16), 5, Vector2(0,4))
 	var card := PanelContainer.new()
 	card.name = name_value
-	card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(tint, tint.lerp(tint.darkened(0.035),0.48), tint.darkened(0.035), radius, accent, 1.2, 0.48))
+	var resolved_tint := _figma_theme_card(accent) if _dark() else tint
+	var resolved_accent := Color(accent.r, accent.g, accent.b, 0.78) if _dark() else accent
+	card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(resolved_tint.lightened(0.025), resolved_tint, resolved_tint.darkened(0.07), radius, resolved_accent, 1.2, 0.48))
 	FigmaReferenceCanvas.set_rect(card, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(card)
@@ -128,27 +166,34 @@ func _figma_card(canvas: Control, name_value: String, rect: Rect2, tint: Color =
 
 func _figma_solid_card(canvas: Control, name_value: String, rect: Rect2, tint: Color, border: Color, radius: float = 16.0, with_shadow: bool = true) -> PanelContainer:
 	if with_shadow:
-		FigmaReferenceCanvas.add_shadow(canvas, rect, radius, Color(0.03,0.11,0.20,0.14), 4, Vector2(0,3))
+		FigmaReferenceCanvas.add_shadow(canvas, rect, radius, Color(0.01,0.04,0.08,0.28 if _dark() else 0.14), 4, Vector2(0,3))
 	var card := PanelContainer.new()
 	card.name = name_value
-	card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(tint, radius, border, 1))
+	var resolved_tint := tint
+	var resolved_border := border
+	if _dark() and tint.get_luminance() > 0.72:
+		resolved_tint = _figma_theme_card(border, Color("#132033"))
+		resolved_border = Color(border.r, border.g, border.b, 0.78)
+	card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(resolved_tint, radius, resolved_border, 1))
 	FigmaReferenceCanvas.set_rect(card, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(card)
 	return card
 
 func _figma_header(canvas: Control, title_text: String, subtitle_text: String, pill_text: String, pill_fill: Color, back_callback: Callable = Callable(self, "build_home"), pill_callback: Callable = Callable(), dark_mode: bool = false) -> void:
-	var heading_color := Color(0.91,0.97,1.0) if dark_mode else FIGMA_INK
-	var muted_color := Color(0.76,0.84,0.90) if dark_mode else FIGMA_MUTED
-	var back_color := muted_color if dark_mode else FIGMA_NAVY
-	_figma_button(canvas, "FigmaBack", "‹", Rect2(17,19,52,52), Color(1.0,0.995,0.97), back_callback, back_color, 18, 27)
+	var use_dark := dark_mode or _dark()
+	var heading_color := FIGMA_DARK_INK if use_dark else FIGMA_INK
+	var muted_color := FIGMA_DARK_MUTED if use_dark else FIGMA_MUTED
+	var back_color := muted_color if use_dark else FIGMA_NAVY
+	var back_fill := Color("#152337") if use_dark else Color(1.0,0.995,0.97)
+	_figma_button(canvas, "FigmaBack", "‹", Rect2(17,19,52,52), back_fill, back_callback, back_color, 18, 27)
 	var header_title := _figma_text(canvas, title_text, Rect2(83,21,205,28), 23, heading_color)
 	header_title.name = "FigmaHeaderTitle"
 	var subtitle := _figma_text(canvas, subtitle_text, Rect2(83,51,210,30), 12, muted_color)
 	subtitle.name = "FigmaHeaderSubtitle"
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	if pill_callback.is_valid():
-		var pill_button := _figma_button(canvas, "FigmaHeaderPill", pill_text, Rect2(285,21,84,46), pill_fill, pill_callback, FIGMA_OFF_WHITE if not dark_mode else muted_color, 23, 12)
+		var pill_button := _figma_button(canvas, "FigmaHeaderPill", pill_text, Rect2(285,21,84,46), pill_fill, pill_callback, FIGMA_DARK_INK if use_dark else FIGMA_OFF_WHITE, 23, 12)
 		if pill_text.begins_with("◈"):
 			pill_button.set_meta("unjam_figma_wallet_pill", true)
 			pill_button.tooltip_text = "Coins: %d • Open Shop" % EconomyManager.balance()
@@ -156,12 +201,12 @@ func _figma_header(canvas: Control, title_text: String, subtitle_text: String, p
 				EconomyManager.balance_changed.connect(_on_figma_wallet_balance_changed)
 	else:
 		var pill: PanelContainer
-		if dark_mode:
+		if use_dark:
 			pill = _figma_solid_card(canvas, "FigmaHeaderPill", Rect2(285,21,84,46), pill_fill, pill_fill, 23)
 		else:
 			pill = _figma_solid_card(canvas, "FigmaHeaderPill", Rect2(285,21,84,46), pill_fill, pill_fill.lightened(0.24), 23)
 		pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var pill_label := _figma_text(canvas, pill_text, Rect2(297,29,60,30), 12, muted_color if dark_mode else FIGMA_OFF_WHITE, true)
+		var pill_label := _figma_text(canvas, pill_text, Rect2(297,29,60,30), 12, FIGMA_DARK_INK if use_dark else FIGMA_OFF_WHITE, true)
 		pill_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 
 func _on_figma_wallet_balance_changed(new_balance: int, _delta: int, _reason: String) -> void:
@@ -179,9 +224,10 @@ func _figma_open_shop() -> void:
 		hub.call("open_shop")
 
 func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false) -> void:
-	var bar_fill := Color(0.07,0.10,0.17,0.98) if dark_mode else Color(0.985,0.995,1.0)
-	var bar_border := Color(0.23,0.34,0.45,0.90) if dark_mode else Color(0.78,0.88,0.95,0.75)
-	if dark_mode:
+	var use_dark := dark_mode or _dark()
+	var bar_fill := Color(0.07,0.10,0.17,0.98) if use_dark else Color(0.985,0.995,1.0)
+	var bar_border := Color(0.23,0.34,0.45,0.90) if use_dark else Color(0.78,0.88,0.95,0.75)
+	if use_dark:
 		_figma_solid_card(canvas, "StdNav/Bar", Rect2(13,757,362,70), bar_fill, bar_border, 18)
 	else:
 		_figma_card(canvas, "StdNav/Bar", Rect2(13,757,362,70), bar_fill, bar_border, 18)
@@ -197,10 +243,10 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 	var hit_x := {"home":14.0, "games":84.0, "daily":153.0, "collection":222.0, "settings":291.0}
 	for key in ["home","games","daily","collection","settings"]:
 		var selected: bool = String(key) == active
-		var selected_text := Color(0.42,0.78,1.0) if dark_mode else Color(0.05,0.49,0.86)
-		var idle_text := Color(0.62,0.72,0.80) if dark_mode else FIGMA_MUTED
+		var selected_text := Color(0.42,0.78,1.0) if use_dark else Color(0.05,0.49,0.86)
+		var idle_text := Color(0.62,0.72,0.80) if use_dark else FIGMA_MUTED
 		if selected:
-			var marker_color := Color(0.32,0.75,1.0) if dark_mode else FIGMA_CYAN
+			var marker_color := Color(0.32,0.75,1.0) if use_dark else FIGMA_CYAN
 			_figma_solid_card(canvas, "StdNavSelectedDot_%s" % String(key), Rect2(float(xs[key])+25.0,776,8,8), marker_color, marker_color, 4, false)
 			_figma_solid_card(canvas, "StdNavSelectedLine_%s" % String(key), Rect2(float(xs[key])+11.0,815,36,4), marker_color, marker_color, 2, false)
 		var nav_label := _figma_text(canvas, String(names[key]), Rect2(float(xs[key])-1.0,788,58,26), 12, selected_text if selected else idle_text, true)
