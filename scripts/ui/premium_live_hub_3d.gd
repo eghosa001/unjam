@@ -3,6 +3,7 @@ extends "res://scripts/ui/premium_live_hub.gd"
 const RefCanvas = preload("res://scripts/ui/figma_reference_canvas.gd")
 
 const BG_TOP := Color(0.94, 0.99, 1.0)
+const BG_MID := Color(0.98, 0.99, 1.0)
 const BG_BOTTOM := Color(0.892, 0.9496, 0.988)
 const NAVY := Color(0.03, 0.23, 0.47)
 const INK := Color(0.07, 0.20, 0.35)
@@ -34,35 +35,38 @@ func _build() -> void:
 
 func _build_reference_selector(canvas: Control) -> void:
 	var background := PanelContainer.new()
-	background.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient(BG_TOP, BG_BOTTOM, 0))
+	background.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(BG_TOP, BG_MID, BG_BOTTOM, 34, Color("#bad1e3"), 1, 0.48))
 	RefCanvas.set_rect(background, 0, 0, 390, 844)
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(background)
 
-	var back := RefCanvas.button("‹", 27, NAVY, OFF_WHITE, 18)
+	RefCanvas.add_shadow(canvas, Rect2(17, 19, 52, 52), 18, Color(0.02,0.15,0.30,0.16), 4, Vector2(0,3))
+	var back := RefCanvas.premium_button("‹", 27, NAVY, OFF_WHITE, 18)
 	back.name = "SelectorBackButton"
-	RefCanvas.set_rect(back, 18, 20, 52, 52)
+	RefCanvas.set_rect(back, 17, 19, 52, 52)
 	back.pressed.connect(_go_home)
 	canvas.add_child(back)
 
-	_add_text(canvas, "CHOOSE A GAME", Rect2(84, 22, 205, 28), 23, INK, true)
-	_add_text(canvas, "THREE PUZZLES • ONE JOURNEY", Rect2(84, 52, 210, 15), 12, MUTED, false)
+	_add_text(canvas, "CHOOSE A GAME", Rect2(83, 21, 205, 28), 23, INK, true)
+	_add_text(canvas, "THREE PUZZLES • ONE JOURNEY", Rect2(83, 51, 210, 15), 12, MUTED, false)
 
-	var settings := RefCanvas.button("⚙", 18, OFF_WHITE, Color(0.03, 0.43, 0.78), 23)
+	RefCanvas.add_shadow(canvas, Rect2(285, 21, 84, 46), 23, Color(0.02,0.15,0.30,0.16), 3, Vector2(0,2))
+	var settings := RefCanvas.premium_button("⚙", 18, OFF_WHITE, Color(0.03, 0.43, 0.78), 23)
 	settings.name = "SelectorSettingsButton"
-	RefCanvas.set_rect(settings, 286, 22, 84, 46)
+	RefCanvas.set_rect(settings, 285, 21, 84, 46)
 	settings.pressed.connect(func(): get_parent().call("build_settings"))
 	canvas.add_child(settings)
 
-	_add_game_card(canvas, "rescue_rush", Rect2(18, 112, 354, 160), Color(0.13, 0.78, 0.39), Color(0.2866, 0.8196, 0.4998), "RESCUE RUSH", "Tap arrows. Clear the lane.", 76)
-	_add_game_card(canvas, "water_sort", Rect2(18, 286, 354, 160), Color(0.10, 0.66, 1.0), Color(0.262, 0.7212, 1.0), "WATER SORT", "Pour colours into matching tubes.", 128)
-	_add_game_card(canvas, "block_puzzle", Rect2(18, 460, 354, 160), Color(0.78, 0.24, 1.0), Color(0.8196, 0.3768, 1.0), "BLOCK PUZZLE", "Drag pieces. Clear lines.", 92)
+	_add_game_card(canvas, "rescue_rush", Rect2(17, 111, 354, 160), Color("#21c763"), Color("#49d17f"), "RESCUE RUSH", "Tap arrows. Clear the lane.", 76)
+	_add_game_card(canvas, "water_sort", Rect2(17, 285, 354, 160), Color("#1aa8ff"), Color("#43b8ff"), "WATER SORT", "Pour colours into matching tubes.", 128)
+	_add_game_card(canvas, "block_puzzle", Rect2(17, 459, 354, 160), Color("#c73dff"), Color("#d160ff"), "BLOCK PUZZLE", "Drag pieces. Clear lines.", 92)
 	_add_bottom_nav(canvas)
 
 func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color, highlight: Color, title: String, subtitle: String, figma_fallback_level: int) -> void:
+	RefCanvas.add_shadow(canvas, rect, 20, Color(0.03,0.10,0.20,0.22), 8, Vector2(0,6))
 	var card := PanelContainer.new()
 	card.name = "GameCard3D_%s" % game_id
-	card.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient(highlight, accent.darkened(0.18), 20, highlight.lightened(0.35), 1))
+	card.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(highlight, accent, accent.darkened(0.18), 20, highlight.lightened(0.35), 1.6, 0.55))
 	RefCanvas.set_rect(card, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(card)
@@ -72,12 +76,13 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 	var level := maxi(1, MultiGameManager.highest_level(game_id))
 	if level <= 1:
 		level = figma_fallback_level
+	RefCanvas.add_shadow(canvas, Rect2(33, rect.position.y + 100.7, 112, 36), 13, Color(0.02,0.10,0.20,0.16), 3, Vector2(0,2))
 	var level_pill := PanelContainer.new()
 	level_pill.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.04, 0.30, 0.55), 13))
-	RefCanvas.set_rect(level_pill, 34, rect.position.y + 100.7, 112, 36)
+	RefCanvas.set_rect(level_pill, 33, rect.position.y + 100.7, 112, 36)
 	level_pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(level_pill)
-	_add_text(canvas, "LEVEL %d" % level, Rect2(46, rect.position.y + 111, 88, 16), 13, OFF_WHITE, true)
+	_add_text(canvas, "LEVEL %d" % level, Rect2(45, rect.position.y + 111, 88, 16), 13, OFF_WHITE, true)
 	_add_card_preview(canvas, game_id, rect.position.y)
 
 	var tap := Button.new()
@@ -96,7 +101,7 @@ func _add_card_preview(canvas: Control, game_id: String, card_y: float) -> void:
 		Color(0.92, 1.0, 0.86, 0.38) if game_id == "rescue_rush" else (Color(0.91, 0.99, 1.0, 0.42) if game_id == "water_sort" else Color(0.94, 0.91, 1.0, 0.34)),
 		16
 	))
-	RefCanvas.set_rect(stage, 244, origin_y, 104, 112)
+	RefCanvas.set_rect(stage, 243, origin_y, 104, 112)
 	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(stage)
 	match game_id:
@@ -105,83 +110,140 @@ func _add_card_preview(canvas: Control, game_id: String, card_y: float) -> void:
 		_: _preview_block(canvas, origin_y)
 
 func _preview_rescue(canvas: Control, y: float) -> void:
+	var board_depth := PanelContainer.new()
+	board_depth.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color("#173d33"), 12))
+	RefCanvas.set_rect(board_depth, 253, y + 15.3, 84, 90)
+	canvas.add_child(board_depth)
 	var board := PanelContainer.new()
-	board.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.55, 0.72, 0.59), 12, Color(0.92, 1, 0.86, 0.62), 1))
-	RefCanvas.set_rect(board, 254, y + 10.8, 84, 90)
+	board.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#a9d3ad"), Color("#8cb896"), Color("#759d80"), 12, Color(0.92, 1.0, 0.86, 0.62), 1))
+	RefCanvas.set_rect(board, 253, y + 10.8, 84, 90)
 	canvas.add_child(board)
-	var colors := [Color(0.11, 0.61, 0.35), Color(0.54, 0.26, 0.76), Color(0.084, 0.55, 0.84), Color(0.84, 0.46, 0.10)]
-	var spots := [Vector2(259, y + 13.5), Vector2(283.7, y + 13.5), Vector2(259, y + 35.6), Vector2(308.3, y + 35.6), Vector2(259, y + 57.8), Vector2(308.3, y + 57.8)]
-	for i in range(spots.size()):
+	var specs := [
+		[Vector2(258.0, y + 13.5), Color("#1c9c5a"), "→"],
+		[Vector2(282.7, y + 13.5), Color("#8942c1"), "↓"],
+		[Vector2(258.0, y + 35.7), Color("#158dd6"), "←"],
+		[Vector2(307.3, y + 35.7), Color("#8942c1"), "↑"],
+		[Vector2(258.0, y + 57.9), Color("#d6761a"), "→"],
+		[Vector2(307.3, y + 57.9), Color("#1c9c5a"), "↓"],
+	]
+	for spec in specs:
+		var pos: Vector2 = spec[0]
+		var fill: Color = spec[1]
+		var depth := PanelContainer.new()
+		depth.add_theme_stylebox_override("panel", RefCanvas.solid_box(fill.darkened(0.34), 4))
+		RefCanvas.set_rect(depth, pos.x + 1.5, pos.y + 3.1, 21.7, 21.7)
+		canvas.add_child(depth)
 		var tile := PanelContainer.new()
-		tile.add_theme_stylebox_override("panel", RefCanvas.solid_box(colors[i % colors.size()].lightened(0.08), 4))
-		RefCanvas.set_rect(tile, spots[i].x, spots[i].y, 21.7, 21.7)
+		tile.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(fill.lightened(0.33), fill, fill.darkened(0.14), 4))
+		RefCanvas.set_rect(tile, pos.x, pos.y, 21.7, 21.7)
 		canvas.add_child(tile)
-		var arrow := _make_label("→", 13, Color.WHITE, true)
+		var arrow := _make_label(String(spec[2]), 13, Color.WHITE, true)
 		arrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		RefCanvas.set_rect(arrow, spots[i].x, spots[i].y, 21.7, 21.7)
+		RefCanvas.set_rect(arrow, pos.x, pos.y, 21.7, 21.7)
 		canvas.add_child(arrow)
 	var chick := PanelContainer.new()
-	chick.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(1, 0.80, 0.12), 8))
-	RefCanvas.set_rect(chick, 288.5, y + 39, 15, 15)
+	chick.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color("#ffd63d"), 8, Color("#fff1a0"), 1))
+	RefCanvas.set_rect(chick, 287.5, y + 39.0, 15, 15)
 	canvas.add_child(chick)
+	var eye := ColorRect.new()
+	eye.color = Color("#183b42")
+	RefCanvas.set_rect(eye, 296.0, y + 44.9, 2, 2.5)
+	canvas.add_child(eye)
+	var exit := PanelContainer.new()
+	exit.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#80efb0"), Color("#35b96b"), Color("#148b4c"), 5))
+	RefCanvas.set_rect(exit, 329, y + 21.6, 11, 30)
+	canvas.add_child(exit)
 
 func _preview_water(canvas: Control, y: float) -> void:
 	var specs := [
-		[256.0, 12.6, 84.0, Color(1.0, 0.30, 0.64), 48.7],
-		[285.0, 16.2, 79.0, Color(0.10, 0.66, 1.0), 56.9],
-		[314.0, 12.6, 84.0, Color(1.0, 0.84, 0.24), 48.7],
+		[255.0, 12.6, 84.0, Color("#ffd63d"), 48.7],
+		[284.0, 16.2, 79.0, Color("#ff4da3"), 56.9],
+		[313.0, 12.6, 84.0, Color("#1aa8ff"), 48.7],
 	]
 	for spec in specs:
 		var x := float(spec[0])
 		var top := y + float(spec[1])
 		var h := float(spec[2])
+		RefCanvas.add_shadow(canvas, Rect2(x, top, 22, h), 9, Color(0.02,0.15,0.26,0.18), 3, Vector2(0,3))
 		var bottle := PanelContainer.new()
-		bottle.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.90, 0.99, 1.0, 0.10), 9, Color(0.82, 0.98, 1.0, 0.90), 1))
+		bottle.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color(0.96,1.0,1.0,0.18), Color(0.82,0.97,1.0,0.08), Color(0.66,0.90,1.0,0.12), 9, Color(0.82,0.98,1.0,0.90), 1))
 		RefCanvas.set_rect(bottle, x, top, 22, h)
 		canvas.add_child(bottle)
 		var liquid_h := float(spec[4])
-		var liquid := ColorRect.new()
-		liquid.color = spec[3]
+		var liquid := PanelContainer.new()
+		liquid.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color(spec[3]).lightened(0.08), Color(spec[3]), Color(spec[3]).darkened(0.10), 6))
 		RefCanvas.set_rect(liquid, x + 3, top + h - liquid_h - 5, 16, liquid_h)
 		canvas.add_child(liquid)
-		var meniscus := ColorRect.new()
-		meniscus.color = Color(spec[3]).lightened(0.07)
+		var meniscus := PanelContainer.new()
+		meniscus.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(spec[3]).lightened(0.10), 5))
 		RefCanvas.set_rect(meniscus, x + 3, top + h - liquid_h - 7, 16, 5)
 		canvas.add_child(meniscus)
+		var rim := ColorRect.new()
+		rim.color = Color(0.93, 0.995, 1.0, 0.92)
+		RefCanvas.set_rect(rim, x - 1, top + 1, 24, 2)
+		canvas.add_child(rim)
+		var hi := ColorRect.new()
+		hi.color = Color(1,1,1,0.46)
+		RefCanvas.set_rect(hi, x + 4, top + 8, 2, h - 18)
+		canvas.add_child(hi)
 
 func _preview_block(canvas: Control, y: float) -> void:
+	var board_depth := PanelContainer.new()
+	board_depth.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color("#241445"), 10))
+	RefCanvas.set_rect(board_depth, 253.8, y + 10.5, 84, 74)
+	canvas.add_child(board_depth)
 	var board := PanelContainer.new()
-	board.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.23, 0.16, 0.37), 12, Color(0.72, 0.52, 1.0, 0.60), 1))
-	RefCanvas.set_rect(board, 254, y + 8, 84, 78)
+	board.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#613894"), Color("#452670"), Color("#2e1a54"), 10, Color(0.72,0.52,1.0,0.60), 1))
+	RefCanvas.set_rect(board, 253, y + 7, 84, 74)
 	canvas.add_child(board)
-	var palette := [Color(1, 0.84, 0.24), Color(1, 0.48, 0.82), Color(0.31, 0.96, 0.57), Color(0.28, 0.84, 1)]
-	for row in range(4):
-		for col in range(4):
+	var palette := [Color("#ffd63d"), Color("#ff7acb"), Color("#50e889"), Color("#47c8ff")]
+	var occupied := [1,5,8,9,14,18,23,24,31,35,36,42,47,49,54,61]
+	var cell := 7.0
+	var gap := 2.0
+	for row in range(8):
+		for col in range(8):
+			var px := 258.0 + col * (cell + gap)
+			var py := y + 11.0 + row * (cell + gap)
 			var well := PanelContainer.new()
-			well.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.18, 0.10, 0.33), 3))
-			RefCanvas.set_rect(well, 260 + col * 18, y + 14 + row * 16, 14, 13)
+			well.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.23,0.16,0.37,0.98), 2, Color(0.51,0.39,0.67,0.72), 1))
+			RefCanvas.set_rect(well, px, py, cell, cell)
 			canvas.add_child(well)
-			if (row + col * 2) % 3 == 0:
-				var cell := ColorRect.new()
-				cell.color = palette[(row + col) % palette.size()]
-				RefCanvas.set_rect(cell, 262 + col * 18, y + 16 + row * 16, 10, 9)
-				canvas.add_child(cell)
+			var idx := row * 8 + col
+			if idx in occupied:
+				var fill := palette[(row + col) % palette.size()]
+				var depth := ColorRect.new()
+				depth.color = fill.darkened(0.34)
+				RefCanvas.set_rect(depth, px + 1, py + 2, cell - 1, cell - 1)
+				canvas.add_child(depth)
+				var top := ColorRect.new()
+				top.color = fill
+				RefCanvas.set_rect(top, px, py, cell - 1, cell - 2)
+				canvas.add_child(top)
+	# Three genuine tray shapes rather than decorative bars.
+	var tray_shapes := [
+		[Vector2i(0,0),Vector2i(1,0),Vector2i(2,0)],
+		[Vector2i(0,0),Vector2i(0,1),Vector2i(1,1)],
+		[Vector2i(0,0),Vector2i(1,0),Vector2i(1,1),Vector2i(2,1)],
+	]
+	var starts := [Vector2(258,y+88),Vector2(286,y+87),Vector2(313,y+87)]
 	for i in range(3):
-		var tray := ColorRect.new()
-		tray.color = palette[(i + 1) % palette.size()]
-		RefCanvas.set_rect(tray, 262 + i * 23, y + 93, 16, 6)
-		canvas.add_child(tray)
+		for p in tray_shapes[i]:
+			var bit := PanelContainer.new()
+			bit.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(palette[i].lightened(0.30), palette[i], palette[i].darkened(0.18), 2))
+			RefCanvas.set_rect(bit, starts[i].x + p.x * 6, starts[i].y + p.y * 6, 6, 6)
+			canvas.add_child(bit)
 
 func _add_bottom_nav(canvas: Control) -> void:
 	var shell := PanelContainer.new()
 	shell.name = "SelectorBottomNav"
+	RefCanvas.add_shadow(canvas, Rect2(13, 757, 362, 70), 18, Color(0.02,0.10,0.18,0.12), 5, Vector2(0,4))
 	shell.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.985, 0.995, 1.0, 0.97), 18, Color(0.78, 0.88, 0.95, 0.75), 1))
-	RefCanvas.set_rect(shell, 14, 758, 362, 70)
+	RefCanvas.set_rect(shell, 13, 757, 362, 70)
 	shell.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(shell)
 	var active := PanelContainer.new()
 	active.add_theme_stylebox_override("panel", RefCanvas.solid_box(CYAN, 16))
-	RefCanvas.set_rect(active, 85, 768, 62, 48)
+	RefCanvas.set_rect(active, 84, 767, 62, 48)
 	active.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(active)
 	var items := [
@@ -192,12 +254,12 @@ func _add_bottom_nav(canvas: Control) -> void:
 		["SETTINGS", 298.0, func(): get_parent().call("build_settings"), false],
 	]
 	for item in items:
-		_add_text(canvas, item[0], Rect2(item[1], 789, 62, 30), 12, Color(0.05, 0.49, 0.86) if item[3] else Color(0.31, 0.43, 0.54), true)
+		_add_text(canvas, item[0], Rect2(item[1] - 1.0, 788, 62, 30), 12, Color(0.05, 0.49, 0.86) if item[3] else Color(0.31, 0.43, 0.54), true)
 		var hit := Button.new()
 		hit.flat = true
 		hit.focus_mode = Control.FOCUS_NONE
 		hit.modulate.a = 0.001
-		RefCanvas.set_rect(hit, item[1] - 8, 754, 74, 78)
+		RefCanvas.set_rect(hit, item[1] - 9, 753, 74, 78)
 		var callback: Callable = item[2]
 		if callback.is_valid():
 			hit.pressed.connect(callback)
