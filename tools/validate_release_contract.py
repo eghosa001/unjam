@@ -15,6 +15,7 @@ REQUIRED_RELEASE_TESTS = (
     'validate_gameplay_interactions',
     'validate_progression_transitions',
     'validate_theme_integrity',
+    'validate_decorative_3d_frame_budget',
     'validate_water_constructive_solvability',
 )
 
