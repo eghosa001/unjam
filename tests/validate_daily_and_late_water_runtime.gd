@@ -16,14 +16,15 @@ func _run() -> void:
 	data["daily_game_choices"] = {}
 	save_manager.set("data", data)
 	multi_game_manager.call("ensure_state")
+	for game_id in ["water_sort", "block_puzzle", "rescue_rush"]:
+		if not bool(multi_game_manager.call("claim_daily_game", game_id)):
+			return _fail(save_manager, original, "Daily game should be independently playable: %s" % game_id)
+	var started: Array = multi_game_manager.call("daily_started_games")
+	for game_id in ["water_sort", "block_puzzle", "rescue_rush"]:
+		if game_id not in started:
+			return _fail(save_manager, original, "Daily start state did not preserve %s" % game_id)
 	if not bool(multi_game_manager.call("claim_daily_game", "water_sort")):
-		return _fail(save_manager, original, "Could not claim first daily game")
-	if String(multi_game_manager.call("daily_selected_game")) != "water_sort":
-		return _fail(save_manager, original, "Daily selection was not persisted")
-	if bool(multi_game_manager.call("claim_daily_game", "block_puzzle")):
-		return _fail(save_manager, original, "A second daily game was allowed on the same date")
-	if not bool(multi_game_manager.call("claim_daily_game", "water_sort")):
-		return _fail(save_manager, original, "Re-entering the chosen daily game should remain allowed")
+		return _fail(save_manager, original, "Re-entering an unfinished daily game should remain allowed")
 
 	root.size = Vector2i(540, 960)
 	var packed := load("res://scenes/WaterSort.tscn") as PackedScene
