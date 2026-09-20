@@ -225,7 +225,7 @@ func _demo_water(step: int) -> void:
 		glass.add_theme_stylebox_override("panel",FigmaReferenceCanvas.solid_box(Color(0.92,0.99,1.0,0.20),18,Color("a6e7ff"),1))
 		FigmaReferenceCanvas.set_rect(glass,x,20,44,126)
 		_tutorial_demo_root.add_child(glass)
-		var liquid_h := [62.0,82.0,36.0][i]
+		var liquid_h: float = float([62.0,82.0,36.0][i])
 		if step == 1 and i == 2:
 			liquid_h = 62.0
 		var liquid := ColorRect.new()
@@ -269,7 +269,7 @@ func _demo_rescue(step: int) -> void:
 	var positions := [Vector2(41,16),Vector2(100,16),Vector2(41,75),Vector2(159,75),Vector2(41,134),Vector2(100,134),Vector2(159,134)]
 	for i in range(positions.size()):
 		var tile := PanelContainer.new()
-		var tint := colors[i%colors.size()]
+		var tint: Color = colors[i%colors.size()] as Color
 		tile.add_theme_stylebox_override("panel",FigmaReferenceCanvas.rounded_gradient(tint.lightened(0.08),tint.darkened(0.08),10))
 		FigmaReferenceCanvas.set_rect(tile,positions[i].x,positions[i].y,50,47)
 		_tutorial_demo_root.add_child(tile)
