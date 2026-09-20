@@ -6,6 +6,25 @@ const REFERENCE_SIZE := Vector2(390.0, 844.0)
 
 var extra_scale := 1.0
 
+# Screen navigation rebuilds many Figma-authored controls. Re-generating the
+# same 96x96 gradient images on every tap was expensive enough to be visible as
+# navigation hitching on device. Cache immutable StyleBoxTexture instances by
+# their authored visual parameters so later screen builds reuse GPU-ready data.
+static var _rounded_gradient_cache: Dictionary = {}
+static var _rounded_gradient3_cache: Dictionary = {}
+static var _horizontal_gradient_cache: Dictionary = {}
+
+static func _style_cache_key(kind: String, colors: Array[Color], radius: float, border_color: Color, border_width: float, midpoint: float = -1.0) -> String:
+	var parts := PackedStringArray([kind])
+	for color in colors:
+		parts.append(color.to_html(true))
+	parts.append("%.3f" % radius)
+	parts.append(border_color.to_html(true))
+	parts.append("%.3f" % border_width)
+	if midpoint >= 0.0:
+		parts.append("%.3f" % midpoint)
+	return "|".join(parts)
+
 func _ready() -> void:
 	set_meta("unjam_figma_reference_root", true)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -63,6 +82,9 @@ static func solid_box(color: Color, radius: float = 0.0, border_color: Color = C
 	return style
 
 static func rounded_gradient(top: Color, bottom: Color, radius: float = 16.0, border_color: Color = Color.TRANSPARENT, border_width: float = 0.0) -> StyleBoxTexture:
+	var cache_key := _style_cache_key("rounded2", [top, bottom], radius, border_color, border_width)
+	if _rounded_gradient_cache.has(cache_key):
+		return _rounded_gradient_cache[cache_key] as StyleBoxTexture
 	var image_size := 96
 	var image := Image.create(image_size, image_size, false, Image.FORMAT_RGBA8)
 	var r := clampf(radius / 24.0 * 22.0, 0.0, 44.0)
@@ -95,9 +117,13 @@ static func rounded_gradient(top: Color, bottom: Color, radius: float = 16.0, bo
 		style.set_texture_margin(side, margin)
 		# Nine-slice texture margins define rendering, not layout padding.
 		style.set_content_margin(side, 0.0)
+	_rounded_gradient_cache[cache_key] = style
 	return style
 
 static func rounded_gradient3(top: Color, middle: Color, bottom: Color, radius: float = 16.0, border_color: Color = Color.TRANSPARENT, border_width: float = 0.0, midpoint: float = 0.55) -> StyleBoxTexture:
+	var cache_key := _style_cache_key("rounded3", [top, middle, bottom], radius, border_color, border_width, midpoint)
+	if _rounded_gradient3_cache.has(cache_key):
+		return _rounded_gradient3_cache[cache_key] as StyleBoxTexture
 	var image_size := 96
 	var image := Image.create(image_size, image_size, false, Image.FORMAT_RGBA8)
 	var r := clampf(radius / 24.0 * 22.0, 0.0, 44.0)
@@ -134,9 +160,13 @@ static func rounded_gradient3(top: Color, middle: Color, bottom: Color, radius: 
 	for side in [SIDE_LEFT, SIDE_TOP, SIDE_RIGHT, SIDE_BOTTOM]:
 		style.set_texture_margin(side, margin)
 		style.set_content_margin(side, 0.0)
+	_rounded_gradient3_cache[cache_key] = style
 	return style
 
 static func horizontal_gradient(left: Color, right: Color, radius: float = 0.0, border_color: Color = Color.TRANSPARENT, border_width: float = 0.0) -> StyleBoxTexture:
+	var cache_key := _style_cache_key("horizontal", [left, right], radius, border_color, border_width)
+	if _horizontal_gradient_cache.has(cache_key):
+		return _horizontal_gradient_cache[cache_key] as StyleBoxTexture
 	var image_size := 96
 	var image := Image.create(image_size, image_size, false, Image.FORMAT_RGBA8)
 	var r := clampf(radius / 24.0 * 22.0, 0.0, 44.0)
@@ -166,6 +196,7 @@ static func horizontal_gradient(left: Color, right: Color, radius: float = 0.0, 
 	for side in [SIDE_LEFT, SIDE_TOP, SIDE_RIGHT, SIDE_BOTTOM]:
 		style.set_texture_margin(side, margin)
 		style.set_content_margin(side, 0.0)
+	_horizontal_gradient_cache[cache_key] = style
 	return style
 
 static func vertical_gradient(top: Color, bottom: Color, radius: float = 0.0, border_color: Color = Color.TRANSPARENT, border_width: float = 0.0) -> StyleBoxTexture:
