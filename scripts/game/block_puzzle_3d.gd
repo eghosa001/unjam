@@ -162,11 +162,12 @@ func _build_figma_block(canvas: Control) -> void:
 	canvas.add_child(goal_label)
 
 	FigmaReferenceCanvas.add_shadow(canvas, Rect2(303,87,52,52), 16, Color(0.02,0.10,0.18,0.22), 5, Vector2(0,4))
-	var hint := FigmaReferenceCanvas.premium_button("✦", 22, Color("#ffe47a"), Color("#c73dff"), 16, Color(0.89,0.62,1.0,0.56), 1.3)
+	var hint := FigmaReferenceCanvas.premium_button("", 20, Color(1,0.995,0.97), Color("#c73dff"), 16, Color(0.89,0.62,1.0,0.56), 1.3)
 	hint.name = "HintAction"
 	FigmaReferenceCanvas.set_rect(hint, 303, 87, 52, 52)
 	# HintManager owns the actual paid/rewarded hint signal.
 	canvas.add_child(hint)
+	_add_block_hint_bulb(hint)
 
 	var depth := PanelContainer.new()
 	depth.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color("#241445"), 20))
