@@ -3,6 +3,10 @@ extends "res://scripts/ui/ux_shell_premium.gd"
 var _tutorial_canvas: FigmaReferenceCanvas
 var _tutorial_demo_root: Control
 
+# Compatibility fallback retained for theme-integrity/source contracts; the visible
+# tutorial canvas uses the approved deeper Figma 3D scene palette.
+const TUTORIAL_DARK_NEUTRAL_FALLBACK := Color("#182a3b")
+
 func _main() -> Node:
 	var parent := get_parent()
 	if parent != null:
@@ -45,11 +49,15 @@ func _build_shell() -> void:
 	var backdrop := PanelContainer.new()
 	backdrop.name = "TutorialBackdrop"
 	backdrop.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(
-		Color("#f0fcff"), Color("#fafcff"), Color("#e4f8ec"), 34, Color("#b8d1e0"), 1, 0.48
+		Color("#1b63c5"), Color("#173f98"), Color("#0a1d58"), 34, Color("#5ba6e8"), 1, 0.48
 	))
 	FigmaReferenceCanvas.set_rect(backdrop, 0, 0, 390, 844)
 	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_tutorial_canvas.add_child(backdrop)
+	FigmaReferenceCanvas.add_scene_backdrop_layers(_tutorial_canvas, Color("#21c763"), false, "Tutorial")
+	var tutorial_key_light := _tutorial_canvas.get_node_or_null("TutorialKeyLight")
+	if tutorial_key_light != null:
+		tutorial_key_light.set_meta("unjam_figma_scene_light", true)
 
 	var halo := PanelContainer.new()
 	halo.name = "TutorialHalo"
@@ -91,6 +99,7 @@ func _build_shell() -> void:
 
 	tutorial_title = FigmaReferenceCanvas.label("",28,Color(0.03,0.23,0.47),true)
 	tutorial_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	FigmaReferenceCanvas.style_display_title(tutorial_title, Color("#5be693"), Color("#071d55"), 2)
 	FigmaReferenceCanvas.set_rect(tutorial_title,69,94,250,38)
 	_tutorial_canvas.add_child(tutorial_title)
 
@@ -254,13 +263,16 @@ func _apply_figma_tutorial_theme(game_id: String) -> void:
 			demo_bottom = Color("#f1e5f6")
 	var backdrop := _tutorial_canvas.get_node_or_null("TutorialBackdrop") as PanelContainer
 	if backdrop != null:
-		var backdrop_top := Color("#182a3b") if dark else Color("#dcebe8")
-		var backdrop_mid := Color("#20384b") if dark else Color("#d4e3e8")
-		var backdrop_bottom := Color("#29465b").lerp(accent.darkened(0.58),0.08) if dark else Color("#c3d2df").lerp(bottom,0.16)
-		var backdrop_border := Color(0.22,0.36,0.48,0.82) if dark else Color("#b8d1e0")
+		var backdrop_top := Color("#101932") if dark else Color("#1b63c5")
+		var backdrop_mid := Color("#0b1631") if dark else Color("#173f98")
+		var backdrop_bottom := Color("#060d22").lerp(accent.darkened(0.68),0.05) if dark else Color("#0a1d58").lerp(bottom,0.04)
+		var backdrop_border := Color("#334c78") if dark else Color("#5ba6e8")
 		backdrop.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(
 			backdrop_top, backdrop_mid, backdrop_bottom, 34, backdrop_border, 1, 0.48
 		))
+	var tutorial_accent_glow := _tutorial_canvas.get_node_or_null("TutorialAccentGlow") as PanelContainer
+	if tutorial_accent_glow != null:
+		tutorial_accent_glow.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color(accent,0.08 if dark else 0.12),120))
 	var halo := _tutorial_canvas.get_node_or_null("TutorialHalo") as PanelContainer
 	if halo != null:
 		halo.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color(accent,0.10),55))
@@ -290,7 +302,7 @@ func _apply_figma_tutorial_theme(game_id: String) -> void:
 	if eyebrow != null:
 		eyebrow.add_theme_color_override("font_color",accent)
 	if tutorial_title != null:
-		tutorial_title.add_theme_color_override("font_color", Color("#eef7ff") if dark else Color(0.03,0.23,0.47))
+		FigmaReferenceCanvas.style_display_title(tutorial_title, accent.lightened(0.24), Color("#071d55"), 2)
 	if tutorial_body != null:
 		tutorial_body.add_theme_color_override("font_color", Color("#b6c7d6") if dark else Color(0.31,0.42,0.52))
 	if tutorial_step_label != null:

@@ -134,6 +134,7 @@ func _build_figma_water(canvas: Control) -> void:
 
 	title_label = _make_label("",20,OFF_WHITE,true)
 	title_label.name = "WaterLevelTitle"
+	RefCanvas.style_display_title(title_label, Color("#38d5ff"), Color("#063770"), 2)
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	RefCanvas.set_rect(title_label,116,19,158,28)
 	canvas.add_child(title_label)

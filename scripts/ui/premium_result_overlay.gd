@@ -71,6 +71,10 @@ func _build() -> void:
 	_canvas = FigmaReferenceCanvas.new()
 	_canvas.name = "FigmaResult390x844"
 	add_child(_canvas)
+	FigmaReferenceCanvas.add_scene_backdrop_layers(_canvas, accent, dark, "Result")
+	var result_key_light := _canvas.get_node_or_null("ResultKeyLight")
+	if result_key_light != null:
+		result_key_light.set_meta("unjam_figma_scene_light", true)
 
 	var has_secondary := not secondary_text.is_empty()
 	var card_rect := Rect2(27,76,334,570 if has_secondary else 500)
@@ -92,6 +96,7 @@ func _build() -> void:
 
 	var title := FigmaReferenceCanvas.label(title_text, 26, Color("#eef7ff") if dark else Unjam3DTheme.NAVY, true)
 	title.name = "ResultTitle"
+	FigmaReferenceCanvas.style_display_title(title, accent.lightened(0.22), Color("#071d55"), 2)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	FigmaReferenceCanvas.set_rect(title, 47, 100, 294, 44)
@@ -125,10 +130,13 @@ func _build() -> void:
 		FigmaReferenceCanvas.set_rect(star_card, x, 306, 78, 72)
 		star_card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_canvas.add_child(star_card)
-		var star := FigmaReferenceCanvas.label("★" if earned else "☆", 38, Unjam3DTheme.GOLD if earned else Color("8faabc"), true)
-		star.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		FigmaReferenceCanvas.set_rect(star, x, 306, 78, 72)
-		_canvas.add_child(star)
+		FigmaReferenceCanvas.add_collectible_star(
+			_canvas,
+			Vector2(x + 39.0, 342.0),
+			20.0,
+			earned,
+			"ResultStar3D_%d" % i
+		)
 
 	var stats_panel := PanelContainer.new()
 	stats_panel.name = "Stats"

@@ -138,6 +138,7 @@ func _build_figma_block(canvas: Control) -> void:
 	_add_block_identity_emblem(canvas)
 
 	title_label = FigmaReferenceCanvas.label("", 20, Color(1,0.995,0.97), true)
+	FigmaReferenceCanvas.style_display_title(title_label, Color("#d5a0ff"), Color("#42106f"), 2)
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	FigmaReferenceCanvas.set_rect(title_label, 115, 15, 184, 30)
 	canvas.add_child(title_label)

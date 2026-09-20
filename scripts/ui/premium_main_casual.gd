@@ -21,6 +21,12 @@ const FIGMA_DARK_BOTTOM := Color("#29465b")
 const FIGMA_DARK_CARD := Color("#223b50")
 const FIGMA_DARK_INK := Color("#eef7ff")
 const FIGMA_DARK_MUTED := Color("#b6c7d6")
+const FIGMA_SCENE_TOP := Color("#1b63c5")
+const FIGMA_SCENE_MID := Color("#173f98")
+const FIGMA_SCENE_BOTTOM := Color("#0a1d58")
+const FIGMA_SCENE_DARK_TOP := Color("#101932")
+const FIGMA_SCENE_DARK_MID := Color("#0b1631")
+const FIGMA_SCENE_DARK_BOTTOM := Color("#060d22")
 
 var _collection_scroll_tracking := false
 var _collection_scroll_origin_y := 0.0
@@ -110,12 +116,14 @@ func _figma_surface(active: String, bottom_tint: Color = FIGMA_BG_BOTTOM, top_ti
 	# keeping game-specific greens/blues/purples visually dominant.
 	var opaque_bottom := Color(bottom_tint.r, bottom_tint.g, bottom_tint.b, 1.0)
 	var opaque_top := Color(top_tint.r, top_tint.g, top_tint.b, 1.0)
-	var resolved_bottom := FIGMA_DARK_BOTTOM.lerp(opaque_bottom, 0.07) if _dark() else FIGMA_BG_BOTTOM.lerp(opaque_bottom, 0.16)
-	var resolved_top := FIGMA_DARK_TOP.lerp(opaque_top, 0.06) if _dark() else FIGMA_BG_TOP.lerp(opaque_top, 0.12)
+	var resolved_bottom := FIGMA_SCENE_DARK_BOTTOM.lerp(opaque_bottom.darkened(0.46), 0.05) if _dark() else FIGMA_SCENE_BOTTOM.lerp(opaque_bottom, 0.04)
+	var resolved_top := FIGMA_SCENE_DARK_TOP.lerp(opaque_top.darkened(0.42), 0.04) if _dark() else FIGMA_SCENE_TOP.lerp(opaque_top, 0.04)
+	var resolved_mid := FIGMA_SCENE_DARK_MID if _dark() else FIGMA_SCENE_MID
 	var viewport_bg := ColorRect.new()
 	viewport_bg.name = "FigmaSurfaceViewportBackground"
 	viewport_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	viewport_bg.color = resolved_bottom
+	# Keep letterbox/fallback pixels inside the established light/dark readability range; the authored canvas below carries the deep 3D scene.
+	viewport_bg.color = FIGMA_DARK_BOTTOM if _dark() else FIGMA_BG_BOTTOM
 	viewport_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	content.add_child(viewport_bg)
 	var canvas := FigmaReferenceCanvas.new()
@@ -123,11 +131,25 @@ func _figma_surface(active: String, bottom_tint: Color = FIGMA_BG_BOTTOM, top_ti
 	content.add_child(canvas)
 	var bg := PanelContainer.new()
 	bg.name = "FigmaSurfaceBackground"
-	var mid_tint := FIGMA_BG_MID if not _dark() else resolved_top.lerp(resolved_bottom, 0.48)
-	bg.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(resolved_top, mid_tint, resolved_bottom, 34, Color("#bad1e3") if not _dark() else Color(0.22,0.36,0.48,0.82), 1, 0.48))
+	var mid_tint := resolved_mid
+	bg.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(resolved_top, mid_tint, resolved_bottom, 34, Color("#5ba6e8") if not _dark() else Color("#334c78"), 1, 0.48))
 	FigmaReferenceCanvas.set_rect(bg, 0, 0, 390, 844)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(bg)
+	var scene_accent := FIGMA_GOLD
+	match active:
+		"games": scene_accent = _accent()
+		"daily": scene_accent = FIGMA_GOLD
+		"collection": scene_accent = FIGMA_GREEN
+		"settings": scene_accent = FIGMA_CYAN
+		_: scene_accent = _accent()
+	FigmaReferenceCanvas.add_scene_backdrop_layers(canvas, scene_accent, _dark(), "Surface")
+	var surface_key_light := canvas.get_node_or_null("SurfaceKeyLight")
+	var surface_accent_glow := canvas.get_node_or_null("SurfaceAccentGlow")
+	if surface_key_light != null:
+		surface_key_light.set_meta("unjam_figma_scene_light", true)
+	if surface_accent_glow != null:
+		surface_accent_glow.set_meta("unjam_figma_scene_light", true)
 
 	var halo_top := PanelContainer.new()
 	halo_top.name = "SurfaceBackdropHaloTop"
@@ -227,19 +249,23 @@ func _figma_solid_card(canvas: Control, name_value: String, rect: Rect2, tint: C
 
 func _figma_header(canvas: Control, title_text: String, subtitle_text: String, pill_text: String, pill_fill: Color, back_callback: Callable = Callable(self, "build_home"), pill_callback: Callable = Callable(), dark_mode: bool = false) -> void:
 	var use_dark := dark_mode or _dark()
-	var heading_color := FIGMA_DARK_INK if use_dark else FIGMA_INK
-	var muted_color := FIGMA_DARK_MUTED if use_dark else FIGMA_MUTED
-	var back_color := muted_color if use_dark else FIGMA_NAVY
-	var back_fill := Color("#152337") if use_dark else Color(1.0,0.995,0.97)
+	var heading_color := FIGMA_DARK_INK
+	var muted_color := Color("#c6d9ec") if not use_dark else FIGMA_DARK_MUTED
+	var back_color := FIGMA_DARK_INK
+	var back_fill := Color("#152b52") if not use_dark else Color("#101a31")
 	_figma_button(canvas, "FigmaBack", "‹", Rect2(17,19,52,52), back_fill, back_callback, back_color, 18, 27)
 	var header_title := _figma_text(canvas, title_text, Rect2(83,21,205,28), 23, heading_color)
 	header_title.name = "FigmaHeaderTitle"
+	FigmaReferenceCanvas.style_display_title(header_title, pill_fill.lightened(0.28), Color("#071d55"), 2)
 	var subtitle := _figma_text(canvas, subtitle_text, Rect2(83,51,210,30), 12, muted_color)
 	subtitle.name = "FigmaHeaderSubtitle"
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	if pill_callback.is_valid():
-		var pill_button := _figma_button(canvas, "FigmaHeaderPill", pill_text, Rect2(285,21,84,46), pill_fill, pill_callback, FIGMA_DARK_INK if use_dark else FIGMA_OFF_WHITE, 23, 12)
+		var pill_button := _figma_button(canvas, "FigmaHeaderPill", pill_text, Rect2(285,21,84,46), pill_fill, pill_callback, FIGMA_OFF_WHITE, 23, 12)
 		if pill_text.begins_with("◈"):
+			# Preserve the Figma/runtime text contract ("◈ +") for automation and
+			# accessibility while the faceted 3D gem sits directly over the glyph.
+			FigmaReferenceCanvas.add_collectible_gem(canvas, Vector2(301,44), 8.0, "HeaderCurrencyGem3D")
 			pill_button.set_meta("unjam_figma_wallet_pill", true)
 			pill_button.tooltip_text = "Coins: %d • Open Shop" % EconomyManager.balance()
 			if not EconomyManager.balance_changed.is_connected(_on_figma_wallet_balance_changed):
@@ -251,7 +277,7 @@ func _figma_header(canvas: Control, title_text: String, subtitle_text: String, p
 		else:
 			pill = _figma_solid_card(canvas, "FigmaHeaderPill", Rect2(285,21,84,46), pill_fill, pill_fill.lightened(0.24), 23)
 		pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var pill_label := _figma_text(canvas, pill_text, Rect2(297,29,60,30), 12, FIGMA_DARK_INK if use_dark else FIGMA_OFF_WHITE, true)
+		var pill_label := _figma_text(canvas, pill_text, Rect2(297,29,60,30), 12, FIGMA_OFF_WHITE, true)
 		pill_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 
 func _on_figma_wallet_balance_changed(new_balance: int, _delta: int, _reason: String) -> void:
@@ -470,7 +496,8 @@ func _daily_ui_state(game_id: String, accent: Color) -> Dictionary:
 func _figma_daily_card(canvas: Control, game_id: String, y: float, collection_bonus: int) -> void:
 	var accent := Unjam3DTheme.game_accent(game_id)
 	_figma_card(canvas, "DailyCard/%s" % game_id, Rect2(17,y,354,106), Color("#fffef8"), Color(1.0,0.847,0.55,0.32), 18)
-	_figma_text(canvas, MultiGameManager.display_name(game_id).to_upper(), Rect2(33,y+18,150,21), 17, accent)
+	var daily_title := _figma_text(canvas, MultiGameManager.display_name(game_id).to_upper(), Rect2(33,y+18,150,21), 17, accent)
+	FigmaReferenceCanvas.style_display_title(daily_title, accent.lightened(0.18), Color("#071d55"), 1)
 	var detail := "TODAY’S RESCUE" if game_id == "rescue_rush" else ("TODAY’S SORT" if game_id == "water_sort" else "TODAY’S BLOCK RUN")
 	_figma_text(canvas, detail, Rect2(33,y+48,175,15), 12, FIGMA_MUTED)
 	var reward := "+%d COINS" % (100 + collection_bonus) if game_id == "rescue_rush" else "+%d–%d COINS" % [125 + collection_bonus,175 + collection_bonus]

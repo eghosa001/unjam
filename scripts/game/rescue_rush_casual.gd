@@ -101,6 +101,7 @@ func _build_figma_rescue(canvas: Control) -> void:
 	canvas.add_child(retry)
 	_add_rescue_identity_emblem(canvas)
 	var title := RefCanvas.label("RESCUE RUSH",20,OFF_WHITE,true)
+	RefCanvas.style_display_title(title, Color("#67f2a1"), Color("#06452c"), 2)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	RefCanvas.set_rect(title,115,15,184,30)
 	canvas.add_child(title)

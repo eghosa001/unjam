@@ -15,6 +15,12 @@ const DARK_MID := Color("#20384b")
 const DARK_BOTTOM := Color("#29465b")
 const DARK_INK := Color("#eef7ff")
 const DARK_MUTED := Color("#b6c7d6")
+const SCENE_TOP := Color("#1b63c5")
+const SCENE_MID := Color("#173f98")
+const SCENE_BOTTOM := Color("#0a1d58")
+const DARK_SCENE_TOP := Color("#101932")
+const DARK_SCENE_MID := Color("#0b1631")
+const DARK_SCENE_BOTTOM := Color("#060d22")
 
 var figma_canvas: FigmaReferenceCanvas
 
@@ -54,24 +60,30 @@ func _build() -> void:
 
 func _build_reference_selector(canvas: Control) -> void:
 	var background := PanelContainer.new()
-	var bg_top := DARK_TOP if _selector_dark() else BG_TOP
-	var bg_mid := DARK_MID if _selector_dark() else BG_MID
-	var bg_bottom := DARK_BOTTOM if _selector_dark() else BG_BOTTOM
-	var bg_border := Color(0.22,0.36,0.48,0.82) if _selector_dark() else Color("#bad1e3")
+	var bg_top := DARK_SCENE_TOP if _selector_dark() else SCENE_TOP
+	var bg_mid := DARK_SCENE_MID if _selector_dark() else SCENE_MID
+	var bg_bottom := DARK_SCENE_BOTTOM if _selector_dark() else SCENE_BOTTOM
+	var bg_border := Color("#334c78") if _selector_dark() else Color("#5ba6e8")
 	background.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(bg_top, bg_mid, bg_bottom, 34, bg_border, 1, 0.48))
 	RefCanvas.set_rect(background, 0, 0, 390, 844)
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(background)
+	RefCanvas.add_scene_backdrop_layers(canvas, Color("#ffd34e"), _selector_dark(), "Selector")
+	var selector_key_light := canvas.get_node_or_null("SelectorKeyLight")
+	if selector_key_light != null:
+		selector_key_light.set_meta("unjam_figma_scene_light", true)
 
-	RefCanvas.add_shadow(canvas, Rect2(17, 19, 52, 52), 18, Color(0.02,0.15,0.30,0.16), 4, Vector2(0,3))
-	var back := RefCanvas.premium_button("‹", 27, DARK_MUTED if _selector_dark() else NAVY, Color("#152337") if _selector_dark() else OFF_WHITE, 18)
+	RefCanvas.add_shadow(canvas, Rect2(17, 19, 52, 52), 18, Color(0.02,0.15,0.30,0.24), 4, Vector2(0,3))
+	var back := RefCanvas.premium_button("‹", 27, OFF_WHITE, Color("#101a31") if _selector_dark() else Color("#152b52"), 18)
 	back.name = "SelectorBackButton"
 	RefCanvas.set_rect(back, 17, 19, 52, 52)
 	back.pressed.connect(_go_home)
 	canvas.add_child(back)
 
-	_add_text(canvas, "CHOOSE A GAME", Rect2(83, 21, 205, 28), 23, INK, true)
-	_add_text(canvas, "THREE PUZZLES • ONE JOURNEY", Rect2(83, 51, 210, 15), 12, MUTED, false)
+	var selector_title := _add_text(canvas, "CHOOSE A GAME", Rect2(83, 21, 205, 28), 23, OFF_WHITE, true)
+	selector_title.name = "SelectorTitle3D"
+	RefCanvas.style_display_title(selector_title, Color("#ffca45"), Color("#071d55"), 2)
+	_add_text(canvas, "THREE PUZZLES • ONE JOURNEY", Rect2(83, 51, 210, 15), 12, Color("#c6d9ec"), false)
 
 	RefCanvas.add_shadow(canvas, Rect2(285, 21, 84, 46), 23, Color(0.02,0.15,0.30,0.16), 3, Vector2(0,2))
 	var settings := RefCanvas.premium_button("⚙", 18, OFF_WHITE, Color(0.03, 0.43, 0.78), 23)
@@ -94,7 +106,8 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(card)
 
-	_add_text(canvas, title, Rect2(34, rect.position.y + 12.6, 170, 23), 19, OFF_WHITE, true)
+	var game_title := _add_text(canvas, title, Rect2(34, rect.position.y + 12.6, 170, 23), 19, OFF_WHITE, true)
+	RefCanvas.style_display_title(game_title, accent.lightened(0.22), Color("#071d55"), 1)
 	_add_text(canvas, subtitle, Rect2(34, rect.position.y + 39.6, 184, 18), 13, OFF_WHITE, false)
 	var level := maxi(1, MultiGameManager.highest_level(game_id))
 	if level <= 1:
