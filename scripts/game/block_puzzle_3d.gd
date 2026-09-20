@@ -158,10 +158,14 @@ func _build_figma_block(canvas: Control) -> void:
 	score_card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(score_card)
 	score_label = FigmaReferenceCanvas.label("", 22, Color(1,0.995,0.97), true)
-	FigmaReferenceCanvas.set_rect(score_label, 33, 96, 190, 28)
+	score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	FigmaReferenceCanvas.set_rect(score_label, 33, 94, 52, 44)
 	canvas.add_child(score_label)
-	goal_label = FigmaReferenceCanvas.label("", 13, Color(0.96,0.87,1.0), false)
-	FigmaReferenceCanvas.set_rect(goal_label, 33, 120, 240, 20)
+	goal_label = FigmaReferenceCanvas.label("", 12, Color(0.96,0.87,1.0), false)
+	goal_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	goal_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	goal_label.clip_text = true
+	FigmaReferenceCanvas.set_rect(goal_label, 92, 94, 198, 44)
 	canvas.add_child(goal_label)
 
 	FigmaReferenceCanvas.add_shadow(canvas, Rect2(303,87,52,52), 16, Color(0.02,0.10,0.18,0.22), 5, Vector2(0,4))
