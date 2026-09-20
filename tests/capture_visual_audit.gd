@@ -66,6 +66,25 @@ func _run() -> void:
 	root.size = Vector2i(1080, 1920)
 	await _settle(8)
 
+	main.call("build_daily_games")
+	await _capture("05c-daily-dark")
+	root.size = Vector2i(540, 960)
+	await _settle(8)
+	main.call("build_daily_games")
+	await _capture("05d-daily-540x960-dark")
+	root.size = Vector2i(1080, 1920)
+	await _settle(8)
+
+	if main.has_method("build_collection_upgrades"):
+		main.call("build_collection_upgrades")
+		await _capture("05e-collection-upgrades-dark")
+		root.size = Vector2i(540, 960)
+		await _settle(8)
+		main.call("build_collection_upgrades")
+		await _capture("05f-collection-upgrades-540x960-dark")
+		root.size = Vector2i(1080, 1920)
+		await _settle(8)
+
 	main.call("build_settings")
 	await _capture("06-settings-dark")
 	root.size = Vector2i(540, 960)
@@ -87,6 +106,19 @@ func _run() -> void:
 		if shop.has_method("_close_shop"):
 			shop.call("_close_shop")
 			await _settle(4)
+
+	var coin_prompt := main.get_node_or_null("InsufficientCoinsPrompt")
+	if coin_prompt != null and coin_prompt.has_method("show_for"):
+		coin_prompt.call("show_for", "HINT", EconomyManager.balance() + 25)
+		await _capture("06e-insufficient-coins-dark")
+		root.size = Vector2i(540, 960)
+		await _settle(8)
+		await _capture("06f-insufficient-coins-540x960-dark")
+		var coin_overlay = coin_prompt.get("overlay")
+		if coin_overlay != null and is_instance_valid(coin_overlay):
+			coin_overlay.visible = false
+		root.size = Vector2i(1080, 1920)
+		await _settle(6)
 
 	await _set_theme(shell, "light")
 	main.call("build_home")
