@@ -56,6 +56,10 @@ static func solid_box(color: Color, radius: float = 0.0, border_color: Color = C
 		style.border_width_top = w
 		style.border_width_bottom = w
 		style.border_color = border_color
+	# Figma geometry is authoritative. Borders are visual only and must never
+	# enlarge PanelContainer/Button minimum sizes beyond the audited rectangle.
+	for side in [SIDE_LEFT, SIDE_TOP, SIDE_RIGHT, SIDE_BOTTOM]:
+		style.set_content_margin(side, 0.0)
 	return style
 
 static func rounded_gradient(top: Color, bottom: Color, radius: float = 16.0, border_color: Color = Color.TRANSPARENT, border_width: float = 0.0) -> StyleBoxTexture:
@@ -89,6 +93,8 @@ static func rounded_gradient(top: Color, bottom: Color, radius: float = 16.0, bo
 	var margin := maxi(8, int(ceil(r + bw + 2.0)))
 	for side in [SIDE_LEFT, SIDE_TOP, SIDE_RIGHT, SIDE_BOTTOM]:
 		style.set_texture_margin(side, margin)
+		# Nine-slice texture margins define rendering, not layout padding.
+		style.set_content_margin(side, 0.0)
 	return style
 
 static func vertical_gradient(top: Color, bottom: Color, radius: float = 0.0, border_color: Color = Color.TRANSPARENT, border_width: float = 0.0) -> StyleBoxTexture:
