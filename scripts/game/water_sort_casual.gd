@@ -70,10 +70,10 @@ func _build_figma_water(canvas: Control) -> void:
 	RefCanvas.set_rect(info, 17, 79, 354, 42)
 	info.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(info)
-	meta_label = _make_label("", 12, Color(0.92, 0.98, 1.0), true)
+	meta_label = _make_label("", 13, Color(0.92, 0.98, 1.0), true)
 	RefCanvas.set_rect(meta_label, 37, 91, 135, 20)
 	canvas.add_child(meta_label)
-	move_label = _make_label("", 12, OFF_WHITE, true)
+	move_label = _make_label("", 13, OFF_WHITE, true)
 	move_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	RefCanvas.set_rect(move_label, 173, 91, 180, 20)
 	canvas.add_child(move_label)
@@ -108,10 +108,10 @@ func _build_figma_water(canvas: Control) -> void:
 	RefCanvas.set_rect(board, 37, 201.73, 294, 251)
 	canvas.add_child(board)
 
-	status_label = _make_label("READY", 12, NAVY, true)
+	status_label = _make_label("READY", 13, NAVY, true)
 	RefCanvas.set_rect(status_label, 17, 599, 354, 20)
 	canvas.add_child(status_label)
-	hint_label = _make_label("", 12, ORANGE, true)
+	hint_label = _make_label("", 13, ORANGE, true)
 	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	RefCanvas.set_rect(hint_label, 119, 599, 252, 20)
 	canvas.add_child(hint_label)
@@ -207,7 +207,7 @@ func _add_water_bulb_icon(button: Button) -> void:
 	button.add_child(base)
 
 func _action_button(text_value: String, fill: Color) -> Button:
-	var button := RefCanvas.premium_button(text_value, 12, OFF_WHITE, fill, 16, fill.lightened(0.30), 1.3)
+	var button := RefCanvas.premium_button(text_value, 13, OFF_WHITE, fill, 16, fill.lightened(0.30), 1.3)
 	button.custom_minimum_size = Vector2(106, 60)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	return button
@@ -239,10 +239,11 @@ func _apply_tube_layout() -> void:
 	var rows := int(ceil(float(count) / float(columns)))
 	var stage_width := 326.0
 	var stage_height := 390.0
-	var h_gap := 12.0 if columns <= 4 else 10.0
+	var h_gap := 12.0 if columns <= 4 else (8.0 if rows == 1 else 9.0)
 	var v_gap := 14.0 if rows <= 2 else 10.0
-	var ratio := 4.7 if rows == 1 else (2.65 if rows == 2 else 2.45)
-	var preferred_width := 52.0 if rows == 1 else (68.0 if rows == 2 else 52.0)
+	# Premium water-sort bottles should read as substantial vessels, not needles.
+	var ratio := 3.8 if rows == 1 else (2.55 if rows == 2 else 2.30)
+	var preferred_width := 60.0 if rows == 1 else (70.0 if rows == 2 else 54.0)
 	var width_limit := floorf((stage_width - h_gap * float(maxi(columns - 1, 0))) / float(columns))
 	var row_height_limit := floorf((stage_height - v_gap * float(maxi(rows - 1, 0))) / float(rows))
 	var height_width_limit := row_height_limit / ratio

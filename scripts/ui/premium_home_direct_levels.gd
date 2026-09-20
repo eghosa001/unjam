@@ -76,6 +76,7 @@ func _build_reference_home(canvas: Control) -> void:
 	_add_hero(canvas)
 	_add_quick_actions(canvas)
 	_add_quick_switch(canvas)
+	_add_world_progress(canvas)
 	_add_bottom_nav_reference(canvas)
 
 func _add_frame_background(canvas: Control) -> void:
@@ -193,10 +194,6 @@ func _add_mini_bottle(canvas: Control, pos: Vector2, width: float, height: float
 	meniscus.add_theme_stylebox_override("panel", RefCanvas.horizontal_gradient(liquid_left.lightened(0.08), liquid_right.lightened(0.04), 3))
 	RefCanvas.set_rect(meniscus, pos.x + 3, body_y - 3.0, width - 6, 6)
 	canvas.add_child(meniscus)
-	var hi := ColorRect.new()
-	hi.color = Color(1, 1, 1, 0.48)
-	RefCanvas.set_rect(hi, pos.x + 5, pos.y + 8, 2, height - 16)
-	canvas.add_child(hi)
 	var rim := PanelContainer.new()
 	rim.add_theme_stylebox_override("panel", RefCanvas.horizontal_gradient(Color("#f4fdff"), Color("#cfeffc"), 3, Color(0.82,0.98,1.0,0.90), 0.8))
 	RefCanvas.set_rect(rim, pos.x + 1, pos.y - 2, width - 2, 6)
@@ -283,6 +280,38 @@ func _add_quick_switch(canvas: Control) -> void:
 		tap.pressed.connect(_select_home_game.bind(id))
 		canvas.add_child(tap)
 
+func _add_world_progress(canvas: Control) -> void:
+	var highest := MultiGameManager.highest_level(selected_game)
+	var completed_level := clampi(highest - 1, 0, MultiGameManager.CAMPAIGN_LEVELS)
+	var world_level := maxi(1, mini(highest, MultiGameManager.CAMPAIGN_LEVELS))
+	var world := MultiGameManager.world_for_game_level(selected_game, world_level)
+	var first := MultiGameManager.first_level_in_game_world(selected_game, world)
+	var last := MultiGameManager.last_level_in_game_world(selected_game, world)
+	var total := maxi(1, last - first + 1)
+	var completed_in_world := clampi(completed_level - first + 1, 0, total)
+
+	var panel := PanelContainer.new()
+	panel.name = "HomeWorldProgress"
+	var fill := Color("#20384b") if _home_dark() else Color("#e4eeec")
+	var edge := Color(0.42,0.66,0.74,0.55) if _home_dark() else Color(0.40,0.62,0.68,0.38)
+	panel.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(fill.lightened(0.12), fill, fill.darkened(0.10), 16, edge, 1, 0.40))
+	RefCanvas.set_rect(panel, 21, 590, 346, 74)
+	canvas.add_child(panel)
+
+	_add_text(canvas, "WORLD %d PROGRESS" % world, Rect2(37, 604, 175, 18), 12, OFF_WHITE if _home_dark() else NAVY, true)
+	_add_text(canvas, "%d / %d" % [completed_in_world, total], Rect2(274, 604, 72, 18), 12, BLUE, true)
+
+	var progress := ProgressBar.new()
+	progress.name = "HomeWorldProgressBar"
+	progress.show_percentage = false
+	progress.min_value = 0
+	progress.max_value = total
+	progress.value = completed_in_world
+	progress.add_theme_stylebox_override("background", RefCanvas.solid_box(Color(0.06,0.16,0.23,0.55) if _home_dark() else Color(0.72,0.82,0.83,0.72), 6))
+	progress.add_theme_stylebox_override("fill", RefCanvas.rounded_gradient3(BLUE.lightened(0.20), BLUE, BLUE.darkened(0.12), 6, Color.TRANSPARENT, 0, 0.40))
+	RefCanvas.set_rect(progress, 37, 636, 309, 10)
+	canvas.add_child(progress)
+
 func _add_bottom_nav_reference(canvas: Control) -> void:
 	var shell := PanelContainer.new()
 	shell.name = "HomeBottomNav3D"
@@ -316,7 +345,7 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 			underline.add_theme_stylebox_override("panel", RefCanvas.solid_box(CYAN, 2))
 			RefCanvas.set_rect(underline, float(item[1]) + 12.0, 815, 36, 4)
 			canvas.add_child(underline)
-		_add_text(canvas, item[0], Rect2(item[1] - 1.0, 788, 62, 26), 12, nav_color, true)
+		_add_text(canvas, item[0], Rect2(item[1] - 1.0, 788, 62, 26), 13, nav_color, true)
 		var hit := Button.new()
 		hit.name = item[3]
 		hit.flat = true

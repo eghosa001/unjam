@@ -451,10 +451,10 @@ func tray_visual_cell_size() -> float:
 	return _tray_cell_size(max_x, max_y)
 
 func _tray_cell_size(max_x: int, max_y: int) -> float:
-	var fit_cell := minf((size.x - 24.0) / float(max_x + 1), (size.y - 18.0) / float(max_y + 1))
-	# Keep every tray shape on one visual scale. A single-cell piece should read
-	# like one board cell, not inflate to fill the entire tray slot.
-	return clampf(minf(30.0, fit_cell), 16.0, 30.0)
+	var fit_cell := minf((size.x - 10.0) / float(max_x + 1), (size.y - 10.0) / float(max_y + 1))
+	# Tray pieces should be immediately legible and close to the 32.6px board
+	# cells, while still fitting the tallest three-cell shapes without clipping.
+	return clampf(minf(32.0, fit_cell), 18.0, 32.0)
 
 func _draw_block(rect: Rect2, fill: Color) -> void:
 	# Use real top/right extrusion instead of a second full-size dark rectangle.

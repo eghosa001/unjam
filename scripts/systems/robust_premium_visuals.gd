@@ -5,6 +5,7 @@ const MATERIALS_SCRIPT = preload("res://scripts/ui/procedural_materials.gd")
 var quality_scale := 1.0
 var sample_time := 0.0
 var low_fps_samples := 0
+var medium_fps_samples := 0
 var high_fps_samples := 0
 var _materials = MATERIALS_SCRIPT.new()
 
@@ -30,17 +31,29 @@ func _process(delta: float) -> void:
 	var fps := Engine.get_frames_per_second()
 	if fps > 0 and fps < 45:
 		low_fps_samples += 1
+		medium_fps_samples += 1
 		high_fps_samples = 0
-	elif fps >= 57:
+	elif fps > 0 and fps < 53:
+		medium_fps_samples += 1
+		low_fps_samples = maxi(0, low_fps_samples - 1)
+		high_fps_samples = 0
+	elif fps >= 58:
 		high_fps_samples += 1
 		low_fps_samples = 0
+		medium_fps_samples = 0
 	else:
 		low_fps_samples = maxi(0, low_fps_samples - 1)
+		medium_fps_samples = maxi(0, medium_fps_samples - 1)
 		high_fps_samples = maxi(0, high_fps_samples - 1)
-	if low_fps_samples >= 3 and quality_scale > 0.55:
-		_set_quality(0.55)
+
+	# Step effects down before the device is visibly struggling. Gameplay logic,
+	# board geometry and touch response never change—only decorative budgets.
+	if low_fps_samples >= 2 and quality_scale > 0.50:
+		_set_quality(0.50)
+	elif medium_fps_samples >= 3 and quality_scale > 0.75:
+		_set_quality(0.75)
 	elif high_fps_samples >= 6 and quality_scale < 1.0:
-		_set_quality(1.0)
+		_set_quality(0.75 if quality_scale < 0.75 else 1.0)
 
 func _set_quality(value: float) -> void:
 	quality_scale = clampf(value, 0.45, 1.0)
@@ -48,6 +61,7 @@ func _set_quality(value: float) -> void:
 	SaveManager.save()
 	ambient_sparkles(_ambient_count())
 	low_fps_samples = 0
+	medium_fps_samples = 0
 	high_fps_samples = 0
 
 func _ambient_count() -> int:

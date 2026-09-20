@@ -11,8 +11,9 @@ func _initialize() -> void:
 	var source := file.get_as_text()
 	for token in [
 		"const SFX_POOL_SIZE := 5",
-		"const MUSIC_DURATION := 24.0",
+		"const MUSIC_DURATION := 32.0",
 		"func _play_chime",
+		"func snap()",
 		"func _chime_stream",
 		"func _build_calm_ambient_loop",
 		"Fmaj7 -> Dm7 -> Bbmaj7 -> Cadd9",

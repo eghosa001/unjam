@@ -204,10 +204,6 @@ func _preview_water(canvas: Control, y: float) -> void:
 		meniscus.add_theme_stylebox_override("panel",RefCanvas.horizontal_gradient(left.lightened(0.08),right.lightened(0.04),3))
 		RefCanvas.set_rect(meniscus,x+3,y+float(spec[7]),16,6)
 		canvas.add_child(meniscus)
-		var hi := ColorRect.new()
-		hi.color = Color(1,1,1,0.48)
-		RefCanvas.set_rect(hi,x+5,y+float(spec[8]),2,float(spec[9]))
-		canvas.add_child(hi)
 		var rim := PanelContainer.new()
 		rim.add_theme_stylebox_override("panel",RefCanvas.horizontal_gradient(Color("#f4fdff"),Color("#cfeffc"),3,Color(0.82,0.98,1.0,0.90),0.8))
 		RefCanvas.set_rect(rim,x+1,y+float(spec[10]),20,6)
@@ -320,7 +316,7 @@ func _add_bottom_nav(canvas: Control) -> void:
 	]
 	for item in items:
 		var nav_text := (Color(0.42,0.78,1.0) if item[3] else DARK_MUTED) if _selector_dark() else (Color(0.05, 0.49, 0.86) if item[3] else Color(0.31, 0.43, 0.54))
-		_add_text(canvas, item[0], Rect2(item[1] - 1.0, 788, 62, 30), 12, nav_text, true)
+		_add_text(canvas, item[0], Rect2(item[1] - 1.0, 787, 62, 31), 13, nav_text, true)
 		var hit := Button.new()
 		hit.flat = true
 		hit.focus_mode = Control.FOCUS_NONE

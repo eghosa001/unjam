@@ -282,11 +282,6 @@ func _restore_checkpoint() -> void:
 	selected_piece = clampi(int(checkpoint.get("selected", -1)), -1, pieces.size() - 1)
 	if selected_piece >= 0 and pieces[selected_piece].is_empty(): selected_piece = -1
 	score = maxi(0, int(checkpoint.get("score", 0))); lines_cleared = maxi(0, int(checkpoint.get("lines", 0))); placements = maxi(0, int(checkpoint.get("placements", 0))); piece_batch = maxi(0, int(checkpoint.get("batch", piece_batch))); rng.state = int(checkpoint.get("rng_state", rng.state)); history.clear()
-	if not any_move_available():
-		for i in range(pieces.size()):
-			if pieces[i].is_empty(): continue
-			pieces[i] = [Vector2i(0,0)]; piece_colors[i] = PIECE_COLORS[posmod(i, PIECE_COLORS.size())]
-			if any_move_available(): break
 
 func render_pieces() -> void:
 	for child in piece_row.get_children(): child.queue_free()

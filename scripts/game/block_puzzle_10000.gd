@@ -82,7 +82,7 @@ func _add_booster_bar() -> void:
 		var key := String(spec[0])
 		var button := FigmaReferenceCanvas.premium_button(
 			"%s  %s\n◈ %d" % [String(spec[2]), String(spec[1]), int(BOOSTER_COSTS[key])],
-			12,
+			13,
 			Color(1, 0.995, 0.97),
 			Color("#7d21d6"),
 			15,
@@ -206,12 +206,15 @@ func load_level() -> void:
 		refill_pieces()
 		render()
 		_save_checkpoint()
+		if not any_move_available():
+			call_deferred("_handle_no_legal_moves")
 	else:
 		render()
 		if play_mode in ["campaign", "extreme"] and campaign_move_limit > 0 and placements >= campaign_move_limit and not reached_goal():
 			call_deferred("_fail_campaign", "MOVE LIMIT REACHED")
-		elif play_mode in ["campaign", "extreme"] and not any_move_available():
-			call_deferred("_fail_campaign", "NO LEGAL MOVES")
+		elif not any_move_available():
+			call_deferred("_handle_no_legal_moves")
+	call_deferred("_show_level_intro")
 	AnalyticsManager.track("block_puzzle_attempt_started", {
 		"level": level_number,
 		"mode": play_mode,
@@ -220,6 +223,17 @@ func load_level() -> void:
 		"restarts": attempt_restarts,
 		"difficulty_score": int(campaign_profile.get("difficulty_score", -1))
 	})
+
+func _show_level_intro() -> void:
+	if daily_mode or premium_feedback == null or not is_instance_valid(premium_feedback) or campaign_profile.is_empty():
+		return
+	var milestone := String(campaign_profile.get("milestone", "normal"))
+	if milestone == "normal":
+		return
+	var label := milestone.replace("_", " ").to_upper()
+	var accent := Color("#ffd166") if milestone in ["boss", "world_finale", "mastery", "finale", "extreme"] else Color("#c084fc")
+	var view := get_viewport_rect().size
+	premium_feedback.show_banner(label, accent, Vector2(view.x * 0.5, view.y * 0.22), 176.0)
 
 func refill_pieces() -> void:
 	if daily_mode:
@@ -741,8 +755,6 @@ func _refill_free_mode() -> void:
 		pieces.append(CampaignGenerator.SHAPES[shape_index].duplicate())
 		piece_colors.append(COLOR_PALETTE[random.randi_range(0, COLOR_PALETTE.size() - 1)])
 	selected_piece = -1
-	if not any_move_available():
-		pieces[0] = CampaignGenerator.SHAPES[0].duplicate()
 
 func _apply_free_mode_board() -> void:
 	if play_mode == "zen":

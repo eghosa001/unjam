@@ -163,22 +163,9 @@ func _build_glass_3d() -> void:
 	base_rim.material_override = _material_3d(Color(0.80, 0.96, 1.0, 0.56), 0.0, 0.065)
 	stage_3d.add_child(base_rim)
 
-	var highlight_mesh := BoxMesh.new()
-	highlight_mesh.size = Vector3(0.055, 2.46, 0.055)
-	var highlight := MeshInstance3D.new()
-	highlight.mesh = highlight_mesh
-	highlight.position = Vector3(-0.34, 0.05, 0.51)
-	highlight.material_override = _material_3d(Color(1, 1, 1, 0.72), 0.0, 0.035)
-	stage_3d.add_child(highlight)
-
-	var secondary_highlight_mesh := BoxMesh.new()
-	secondary_highlight_mesh.size = Vector3(0.035, 1.62, 0.035)
-	var secondary_highlight := MeshInstance3D.new()
-	secondary_highlight.name = "GlassSecondaryHighlight"
-	secondary_highlight.mesh = secondary_highlight_mesh
-	secondary_highlight.position = Vector3(0.31, 0.34, 0.50)
-	secondary_highlight.material_override = _material_3d(Color(1, 1, 1, 0.38), 0.0, 0.03)
-	stage_3d.add_child(secondary_highlight)
+	# The glass gets its depth from the real cylindrical geometry, rim, clearcoat
+	# and lighting. Avoid vertical white bars: on a small phone they read as
+	# artificial divider lines rather than premium reflections.
 
 	var shadow_mesh := CylinderMesh.new()
 	shadow_mesh.top_radius = 0.72

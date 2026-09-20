@@ -39,8 +39,9 @@ func _run() -> void:
 	var single := BlockPieceButton.new()
 	single.size = Vector2(104,72)
 	single.configure([Vector2i.ZERO],false,Color("8b7cf6"),0)
-	if single.tray_visual_cell_size() > 30.1:
-		return _fail("Single Block tray piece is still enlarged")
+	var tray_cell := single.tray_visual_cell_size()
+	if tray_cell < 31.5 or tray_cell > 32.1:
+		return _fail("Single Block tray piece no longer matches the premium board-scale target: %.2f" % tray_cell)
 	single.queue_free()
 
 	game.queue_free()

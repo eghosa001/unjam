@@ -226,7 +226,7 @@ func load_level() -> void:
 	moves = 0
 	history.clear()
 	status_label.text = ""
-	hint_label.text = "Tap a tube, then tap where you want to pour"
+	hint_label.text = "Tap a tube, then a destination"
 	var config := level_config()
 	color_count = int(config.get("colors", 4))
 	par_moves = int(config.get("par", 20))

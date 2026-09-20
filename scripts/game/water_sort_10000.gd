@@ -74,6 +74,18 @@ func load_level() -> void:
 	render_board()
 	_refresh_extra_tube_button()
 	call_deferred("_check_no_legal_pours")
+	call_deferred("_show_level_intro")
+
+func _show_level_intro() -> void:
+	if daily_mode or premium_feedback == null or not is_instance_valid(premium_feedback):
+		return
+	var milestone := String(level_profile.get("milestone", "normal"))
+	if milestone == "normal":
+		return
+	var label := milestone.replace("_", " ").to_upper()
+	var accent := Color("#ffd166") if milestone in ["boss", "world_finale", "mastery", "finale"] else Color("#5da9ff")
+	var view := get_viewport_rect().size
+	premium_feedback.show_banner(label, accent, Vector2(view.x * 0.5, view.y * 0.23), 176.0)
 
 func render_board() -> void:
 	super.render_board()

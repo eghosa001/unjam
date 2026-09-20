@@ -12,7 +12,7 @@ extends Node
 const SAMPLE_RATE := 22050
 const MUSIC_RATE := 16000
 const SFX_POOL_SIZE := 5
-const MUSIC_DURATION := 24.0
+const MUSIC_DURATION := 32.0
 
 var player: AudioStreamPlayer
 var sfx_players: Array[AudioStreamPlayer] = []
@@ -91,11 +91,18 @@ func lift() -> void:
 func drop() -> void:
 	_play_chime([329.63, 261.63], 0.145, 0.095, 0.34)
 
+func snap() -> void:
+	# Magnetic placement confirmation: lighter than a drop/clear, but tactile
+	# enough that players feel the valid cell lock without looking away.
+	_play_chime([493.88, 659.25], 0.090, 0.036, 0.28)
+	_vibrate(8)
+
 func pour_start() -> void:
 	_play_chime([349.23, 440.0], 0.135, 0.058, 0.26)
 
 func pour_land() -> void:
 	_play_chime([440.0, 523.25, 659.25], 0.180, 0.070, 0.40)
+	_vibrate(7)
 
 func invalid() -> void:
 	blocked()
@@ -143,6 +150,8 @@ func escape(chain: int = 1) -> void:
 	var notes := [392.0, 440.0, 493.88, 523.25, 587.33, 659.25, 698.46, 783.99]
 	var root := float(notes[tier - 1])
 	_play_chime([root, root * 1.5], 0.165, 0.075, 0.45)
+	if tier >= 3:
+		_vibrate(8 + mini(8, tier))
 
 func effect() -> void:
 	_play_chime([523.25, 659.25, 783.99], 0.260, 0.085, 0.58)
@@ -213,22 +222,21 @@ func _chime_stream(notes: Array, duration: float, volume: float, brightness: flo
 # ---------------------------------------------------------------------------
 
 func _build_calm_ambient_loop() -> AudioStreamWAV:
-	# 24-second original ambient loop inspired by the qualities that work best in
-	# calm puzzle audio: slow F-major/D-minor-family pads, sparse kalimba-like
-	# notes, no drums, no sharp lead, and enough harmonic movement to avoid a
-	# short obvious loop.
+	# 32-second original ambient loop: slow F-major/D-minor-family pads, sparse
+	# kalimba-like notes, no drums, no sharp lead, and deliberately longer phrase
+	# spacing so a multi-level session does not expose an obvious short loop.
 	var frames := int(MUSIC_RATE * MUSIC_DURATION)
 	var bytes := PackedByteArray()
 	bytes.resize(frames * 4)
 
-	# Fmaj7 -> Dm7 -> Bbmaj7 -> Cadd9, each held for six seconds.
+	# Fmaj7 -> Dm7 -> Bbmaj7 -> Cadd9, each held for eight seconds.
 	var chords := [
 		[87.31, 110.00, 130.81, 164.81],
 		[73.42, 87.31, 110.00, 130.81],
 		[58.27, 73.42, 87.31, 110.00],
 		[65.41, 98.00, 130.81, 146.83],
 	]
-	var melody := [349.23, 440.00, 523.25, 440.00, 293.66, 349.23, 440.00, 523.25, 349.23, 392.00, 523.25, 587.33]
+	var melody := [349.23, 440.00, 523.25, 440.00, 293.66, 349.23, 440.00, 523.25, 349.23, 392.00, 523.25, 587.33, 440.00, 392.00, 349.23, 293.66]
 	var section_length := MUSIC_DURATION / 4.0
 
 	for i in range(frames):
