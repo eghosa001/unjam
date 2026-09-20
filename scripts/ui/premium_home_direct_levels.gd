@@ -50,6 +50,7 @@ func _build_reference_home(canvas: Control) -> void:
 	var player_level := maxi(1, 1 + int(cleared / 10))
 	_add_pill(canvas, Rect2(22, 65, 78, 40), Color(0.03, 0.43, 0.78), "LV %d" % player_level, 13, OFF_WHITE)
 	home_coin_button = _add_action(canvas, Rect2(108, 65, 112, 40), Color(1.0, 0.55, 0.12), "◈ %s +" % _compact_number(EconomyManager.balance()), 12, OFF_WHITE, Callable(self, "_open_shop"), 20)
+	home_coin_button.name = "HomeCoinShopButton"
 	_add_pill(canvas, Rect2(228, 65, 92, 40), GOLD, "★ %s" % _compact_number(_total_stars()), 12, NAVY)
 
 	_add_hero(canvas)
