@@ -157,8 +157,9 @@ func _run() -> void:
 	if rescue_game != null and is_instance_valid(rescue_game):
 		var rescue_feedback: Control = rescue_game.find_child("RescuePremiumFeedback", true, false) as Control
 		if rescue_feedback != null:
-			rescue_feedback.call("show_banner", "FLOW ×3", Color("#21c763"), Vector2(270,300), 184.0)
-			rescue_feedback.call("show_ring", Vector2(270,470), 120.0, Color("#67e8ff"))
+			var rescue_center: Vector2 = rescue_feedback.size * 0.5
+			rescue_feedback.call("show_banner", "FLOW ×3", Color("#21c763"), Vector2(rescue_center.x, rescue_feedback.size.y * 0.30), 184.0)
+			rescue_feedback.call("show_ring", Vector2(rescue_center.x, rescue_feedback.size.y * 0.49), 120.0, Color("#67e8ff"))
 			await _settle(2)
 			await _capture("09e-game-rescue-premium-feedback-540x960")
 
@@ -203,8 +204,9 @@ func _run() -> void:
 	if water_game != null and is_instance_valid(water_game):
 		var water_feedback: Control = water_game.find_child("WaterPremiumFeedback", true, false) as Control
 		if water_feedback != null:
-			water_feedback.call("show_banner", "PERFECT TUBE", Color("#19b9ff"), Vector2(270,300), 194.0)
-			water_feedback.call("show_ring", Vector2(270,470), 104.0, Color("#67e8ff"))
+			var water_center: Vector2 = water_feedback.size * 0.5
+			water_feedback.call("show_banner", "PERFECT TUBE", Color("#19b9ff"), Vector2(water_center.x, water_feedback.size.y * 0.30), 194.0)
+			water_feedback.call("show_ring", Vector2(water_center.x, water_feedback.size.y * 0.49), 104.0, Color("#67e8ff"))
 			await _settle(2)
 			await _capture("10e-game-water-premium-feedback-540x960")
 
@@ -230,8 +232,13 @@ func _run() -> void:
 	if block_game != null and is_instance_valid(block_game):
 		var block_feedback: Control = block_game.find_child("BlockPremiumFeedback", true, false) as Control
 		if block_feedback != null:
-			block_feedback.call("show_banner", "COMBO ×3", Color("#ffd166"), Vector2(270,250), 184.0)
-			block_feedback.call("show_sweep", Rect2(70,300,400,320), Color("#ff7a66"))
+			var block_center: Vector2 = block_feedback.size * 0.5
+			var block_sweep_rect := Rect2(
+				Vector2(block_feedback.size.x * 0.15, block_feedback.size.y * 0.30),
+				Vector2(block_feedback.size.x * 0.70, block_feedback.size.y * 0.34)
+			)
+			block_feedback.call("show_banner", "COMBO ×3", Color("#ffd166"), Vector2(block_center.x, block_feedback.size.y * 0.24), 184.0)
+			block_feedback.call("show_sweep", block_sweep_rect, Color("#ff7a66"))
 			await _settle(2)
 			await _capture("11c-game-block-premium-feedback-540x960")
 	root.size = Vector2i(1080, 1920)
