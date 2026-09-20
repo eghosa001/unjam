@@ -959,7 +959,7 @@ func _figma_level_tabs(canvas: Control, active_game_id: String) -> void:
 		var active := game_id == active_game_id
 		var fill := active_accent if active else (Color("#20384b") if _dark() else Color("#fcfeff"))
 		var text_color := FIGMA_OFF_WHITE if active else (FIGMA_DARK_MUTED if _dark() else FIGMA_MUTED)
-		var button := _figma_button(canvas,"LevelGameTab/%s" % game_id,String(spec[1]),Rect2(float(spec[2]),83,108,40),fill,Callable(),text_color,14,12)
+		var button := _figma_button(canvas,"LevelGameTab/%s" % game_id,String(spec[1]),Rect2(float(spec[2]),81,108,44),fill,Callable(),text_color,14,12)
 		_style_figma_level_tab(button,active_accent,active)
 		if active:
 			button.mouse_filter = Control.MOUSE_FILTER_IGNORE
