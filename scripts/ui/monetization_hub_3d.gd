@@ -83,11 +83,13 @@ func _build_ui() -> void:
 	back.pressed.connect(_close_shop)
 	canvas.add_child(back)
 
-	var shop_title := _add_text(canvas,"UNJAM SHOP",Rect2(83,21,194,28),23,Color("#fffef7"))
+	var shop_title := _add_text(canvas,"UNJAM SHOP",Rect2(83,21,186,28),23,Color("#fffef7"))
 	shop_title.name = "ShopTitle3D"
+	shop_title.clip_text = true
 	FigmaReferenceCanvas.style_display_title(shop_title, Color("#ffb92f"), Color("#071d55"), 2)
-	var shop_subtitle := _add_text(canvas,"Useful upgrades • optional rewards",Rect2(83,51,194,18),13,Color("#c6d9ec"))
+	var shop_subtitle := _add_text(canvas,"Useful upgrades • optional rewards",Rect2(83,51,186,18),13,Color("#c6d9ec"))
 	shop_subtitle.name = "ShopSubtitle"
+	shop_subtitle.clip_text = true
 	balance_label = _add_text(canvas,"",Rect2(297,37,60,15),12,FigmaReferenceCanvas.accessible_text_color(Color("#fffef7"),Color("#ff8c1f")))
 	balance_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	FigmaReferenceCanvas.add_shadow(canvas,Rect2(285,21,84,46),23,Color(0.02,0.15,0.30,0.16),3,Vector2(0,2))
