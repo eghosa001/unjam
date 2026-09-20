@@ -14,6 +14,9 @@ const FIGMA_ORANGE := Color(1.0, 0.55, 0.12)
 const FIGMA_GOLD := Color(1.0, 0.84, 0.24)
 const FIGMA_PURPLE := Color(0.78, 0.24, 1.0)
 
+var _collection_scroll_tracking := false
+var _collection_scroll_origin_y := 0.0
+
 
 func _sync_persistent_surfaces_now(surface: String) -> void:
 	var home := get_node_or_null("PremiumHome")
@@ -468,6 +471,16 @@ func build_collection() -> void:
 	_figma_card(canvas,"Boost",Rect2(18,540,354,92),Color(0.985,0.995,1.0),Color(0.95,0.80,0.42,0.50),16)
 	_figma_text(canvas,"PERMANENT BOOST",Rect2(34,556,180,18),15,FIGMA_INK)
 	_figma_text(canvas,"+5 per Daily Game • +10 Garden Gift per upgrade",Rect2(34,580,310,20),12,FIGMA_MUTED)
+
+	# Figma state transition: swipe upward through the Garden/Boost region to
+	# reveal the dedicated six-upgrade Collection state.
+	var scroll_to_upgrades := Control.new()
+	scroll_to_upgrades.name = "Proto/ScrollToUpgrades"
+	scroll_to_upgrades.mouse_filter = Control.MOUSE_FILTER_PASS
+	FigmaReferenceCanvas.set_rect(scroll_to_upgrades,12,420,366,320)
+	scroll_to_upgrades.gui_input.connect(_collection_summary_scroll_input.bind(scroll_to_upgrades))
+	canvas.add_child(scroll_to_upgrades)
+
 	var can_claim := EconomyManager.can_claim_garden_gift()
 	var gift_text := "CLAIM GARDEN GIFT • +%d" % EconomyManager.garden_gift_amount()
 	if not can_claim:
@@ -494,6 +507,163 @@ func _figma_short_game(game_id: String) -> String:
 		"water_sort": return "WATER"
 		"block_puzzle": return "BLOCK"
 		_: return "RESCUE"
+
+func build_collection_upgrades() -> void:
+	current_surface = "collection"
+	_remove_active_game()
+	var canvas := _figma_surface("collection",Color(0.8956,0.9736,0.9268))
+	_figma_header(
+		canvas,
+		"COLLECTION",
+		"Progress, friends and permanent rewards",
+		"◈ +",
+		FIGMA_ORANGE,
+		Callable(self,"build_home"),
+		Callable(self,"_figma_open_shop")
+	)
+
+	# Add the swipe-return region first so live purchase pills painted afterward
+	# remain the top-most touch owners.
+	var scroll_to_summary := Control.new()
+	scroll_to_summary.name = "Proto/ScrollToSummary"
+	scroll_to_summary.mouse_filter = Control.MOUSE_FILTER_PASS
+	FigmaReferenceCanvas.set_rect(scroll_to_summary,12,88,366,650)
+	scroll_to_summary.gui_input.connect(_collection_upgrades_scroll_input.bind(scroll_to_summary))
+	canvas.add_child(scroll_to_summary)
+
+	var owned_count := EconomyManager.collection_owned_count()
+	_figma_text(canvas,"GARDEN UPGRADES",Rect2(24,100,342,28),22,FIGMA_INK)
+	_figma_text(canvas,"Permanent value • %d / 6 owned" % owned_count,Rect2(24,132,342,18),13,FIGMA_MUTED)
+	_figma_card(canvas,"CollectionScroll/Boost",Rect2(24,164,342,60),Color(0.985,0.995,1.0),Color(0.64,0.91,0.73,0.54),15)
+	_figma_text(
+		canvas,
+		"+%d EVERY DAILY GAME   •   +%d GARDEN GIFT" % [EconomyManager.collection_daily_bonus(),EconomyManager.garden_gift_amount()],
+		Rect2(34,185,322,18),
+		12,
+		FIGMA_GREEN
+	)
+
+	var upgrades := [
+		["tree","CANOPY TREE","SHADE",100],
+		["bench","GARDEN BENCH","REST",150],
+		["fountain","CRYSTAL FOUNTAIN","SPARKLE",250],
+		["lanterns","LANTERN PATH","GLOW",350],
+		["cottage","RESCUE COTTAGE","HOME",500],
+		["rainbow_bridge","RAINBOW BRIDGE","WONDER",750],
+	]
+	var owned_decorations: Array = SaveManager.data.get("decorations",[])
+	for i in range(upgrades.size()):
+		var spec: Array = upgrades[i]
+		var id := String(spec[0])
+		var display_name := String(spec[1])
+		var flavor := String(spec[2])
+		var cost := int(spec[3])
+		var y := 240.0 + float(i)*76.0
+		var owned := id in owned_decorations
+		_figma_card(
+			canvas,
+			"CollectionScroll/Upgrade/%d" % i,
+			Rect2(24,y,342,66),
+			Color(0.985,0.995,1.0),
+			Color(0.64,0.91,0.73,0.46),
+			15
+		)
+		_figma_text(canvas,display_name,Rect2(38,y+11,184,18),13,FIGMA_INK)
+		_figma_text(canvas,"%s  •  +5 DAILY  •  +10 GIFT" % flavor,Rect2(38,y+36,206,16),12,FIGMA_MUTED)
+		var state_text := "OWNED" if owned else "%d COINS" % cost
+		var pill_fill := FIGMA_GREEN if owned else FIGMA_ORANGE
+		var state := _figma_button(
+			canvas,
+			"CollectionUpgrade/%s" % id,
+			state_text,
+			Rect2(250,y+14,98,38),
+			pill_fill,
+			Callable(),
+			FIGMA_OFF_WHITE,
+			13,
+			12
+		)
+		state.disabled = owned
+		if owned:
+			state.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		else:
+			state.pressed.connect(_buy_collection_upgrade.bind(id,cost))
+
+	_figma_text(canvas,"Swipe down to return to your Collection summary",Rect2(38,711,314,18),12,FIGMA_MUTED)
+	_figma_bottom_nav(canvas,"collection")
+
+func _collection_summary_scroll_input(event: InputEvent, owner: Control) -> void:
+	_collection_scroll_input(event,owner,true)
+
+func _collection_upgrades_scroll_input(event: InputEvent, owner: Control) -> void:
+	_collection_scroll_input(event,owner,false)
+
+func _collection_scroll_input(event: InputEvent, owner: Control, toward_upgrades: bool) -> void:
+	if event is InputEventScreenTouch:
+		var touch := event as InputEventScreenTouch
+		if touch.pressed:
+			_collection_scroll_tracking = true
+			_collection_scroll_origin_y = touch.position.y
+		else:
+			_collection_scroll_tracking = false
+		return
+	if event is InputEventScreenDrag and _collection_scroll_tracking:
+		var drag := event as InputEventScreenDrag
+		var delta_y := drag.position.y - _collection_scroll_origin_y
+		if (toward_upgrades and delta_y <= -42.0) or ((not toward_upgrades) and delta_y >= 42.0):
+			_collection_scroll_tracking = false
+			owner.accept_event()
+			FeedbackManager.tap()
+			if toward_upgrades:
+				build_collection_upgrades()
+			else:
+				build_collection()
+		return
+	if event is InputEventMouseButton:
+		var mouse := event as InputEventMouseButton
+		if mouse.button_index == MOUSE_BUTTON_WHEEL_DOWN and toward_upgrades and mouse.pressed:
+			owner.accept_event()
+			build_collection_upgrades()
+		elif mouse.button_index == MOUSE_BUTTON_WHEEL_UP and not toward_upgrades and mouse.pressed:
+			owner.accept_event()
+			build_collection()
+
+func _buy_collection_upgrade(id: String, cost: int) -> bool:
+	if id in SaveManager.data.get("decorations",[]):
+		return true
+	if SaveManager.unlock_decoration(id,cost):
+		FeedbackManager.effect()
+		PremiumVisuals.burst(Vector2(get_viewport_rect().size.x*0.5,get_viewport_rect().size.y*0.45),FIGMA_GOLD,18)
+		build_collection_upgrades()
+		return true
+	var prompt := get_node_or_null("InsufficientCoinsPrompt")
+	if prompt != null and prompt.has_method("show_for"):
+		prompt.call(
+			"show_for",
+			display_name_for_upgrade(id),
+			cost,
+			Callable(self,"_retry_collection_upgrade").bind(id,cost)
+		)
+	else:
+		FeedbackManager.blocked()
+	return false
+
+func _retry_collection_upgrade(id: String, cost: int) -> bool:
+	if SaveManager.unlock_decoration(id,cost):
+		FeedbackManager.effect()
+		build_collection_upgrades()
+		return true
+	return false
+
+func display_name_for_upgrade(id: String) -> String:
+	match id:
+		"tree": return "CANOPY TREE"
+		"bench": return "GARDEN BENCH"
+		"fountain": return "CRYSTAL FOUNTAIN"
+		"lanterns": return "LANTERN PATH"
+		"cottage": return "RESCUE COTTAGE"
+		"rainbow_bridge": return "RAINBOW BRIDGE"
+		_: return id.replace("_"," ").to_upper()
 
 func _open_games_surface() -> void:
 	_remove_active_game()
