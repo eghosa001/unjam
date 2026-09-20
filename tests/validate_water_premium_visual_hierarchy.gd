@@ -16,9 +16,17 @@ func _run() -> void:
 	var stage := game.find_child("GameplayStage",true,false) as Control
 	var board := game.get("board") as GridContainer
 	var objective := game.find_child("WaterObjective",true,false) as Control
-	var emblem := game.find_child("Identity/Water Emblem",true,false) as Control
-	if canvas == null or stage == null or board == null or objective == null or emblem == null:
-		return _fail("Water Sort Figma hierarchy is incomplete")
+	var emblem := game.find_child("*Water*Emblem*",true,false) as Control
+	if canvas == null:
+		return _fail("Water Sort Figma canvas is missing")
+	if stage == null:
+		return _fail("Water Sort Figma gameplay stage is missing")
+	if board == null:
+		return _fail("Water Sort board reference is missing")
+	if objective == null:
+		return _fail("Water Sort Figma objective is missing")
+	if emblem == null:
+		return _fail("Water Sort Figma identity emblem is missing")
 	if not _rect_eq(Rect2(stage.position,stage.size),Rect2(17,169,354,420)):
 		return _fail("Water gameplay stage drifted from Figma 354x420 geometry")
 	if not _rect_eq(Rect2(objective.position,objective.size),Rect2(17,129,354,30)):
