@@ -104,37 +104,41 @@ func _add_hero_preview(canvas: Control, game_id: String) -> void:
 	canvas.add_child(stage)
 	match game_id:
 		"water_sort":
-			_add_mini_bottle(canvas, Vector2(231, 158), 22, 108, Color(1.0, 0.30, 0.64), 62.6)
-			_add_mini_bottle(canvas, Vector2(270.5, 162), 22, 103, Color(0.10, 0.66, 1.0), 74.2)
-			_add_mini_bottle(canvas, Vector2(310, 158), 22, 108, Color(0.37, 0.84, 0.56), 47.5)
+			_add_mini_bottle(canvas, Vector2(231, 158), 22, 108, Color("#ff7ebd"), Color("#d64089"), 62.64)
+			_add_mini_bottle(canvas, Vector2(270.5, 162), 22, 103, Color("#5ac1ff"), Color("#158dd6"), 74.16)
+			_add_mini_bottle(canvas, Vector2(310, 158), 22, 108, Color("#5fd78f"), Color("#1ca754"), 47.52)
 		"block_puzzle":
 			_add_mini_block_preview(canvas, Vector2(230, 154))
 		_:
 			_add_mini_rescue_preview(canvas, Vector2(230, 154))
 
-func _add_mini_bottle(canvas: Control, pos: Vector2, width: float, height: float, liquid: Color, liquid_height: float) -> void:
-	var shadow := ColorRect.new()
-	shadow.color = Color(0.02, 0.15, 0.26, 0.16)
+func _add_mini_bottle(canvas: Control, pos: Vector2, width: float, height: float, liquid_left: Color, liquid_right: Color, liquid_height: float) -> void:
+	var shadow := PanelContainer.new()
+	shadow.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.02, 0.15, 0.26, 0.16), 4))
 	RefCanvas.set_rect(shadow, pos.x, pos.y + height - 3, width, 7)
 	canvas.add_child(shadow)
 	var bottle := PanelContainer.new()
-	bottle.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.90, 0.99, 1.0, 0.10), 9, Color(0.82, 0.98, 1.0, 0.90), 1))
+	bottle.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.90, 0.99, 1.0, 0.10), 9, Color(0.82, 0.98, 1.0, 0.90), 1.3))
 	RefCanvas.set_rect(bottle, pos.x, pos.y, width, height)
 	bottle.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(bottle)
-	var y := pos.y + height - liquid_height - 7
-	var body := ColorRect.new()
-	body.color = liquid.darkened(0.08)
-	RefCanvas.set_rect(body, pos.x + 3, y, width - 6, liquid_height)
+	var body_y := pos.y + height - liquid_height - 3.0
+	var body := PanelContainer.new()
+	body.add_theme_stylebox_override("panel", RefCanvas.horizontal_gradient(liquid_left, liquid_right, 1))
+	RefCanvas.set_rect(body, pos.x + 3, body_y, width - 6, liquid_height)
 	canvas.add_child(body)
-	var meniscus := ColorRect.new()
-	meniscus.color = liquid.lightened(0.08)
-	RefCanvas.set_rect(meniscus, pos.x + 3, y - 2, width - 6, 5)
+	var meniscus := PanelContainer.new()
+	meniscus.add_theme_stylebox_override("panel", RefCanvas.horizontal_gradient(liquid_left.lightened(0.08), liquid_right.lightened(0.04), 3))
+	RefCanvas.set_rect(meniscus, pos.x + 3, body_y - 3.0, width - 6, 6)
 	canvas.add_child(meniscus)
 	var hi := ColorRect.new()
 	hi.color = Color(1, 1, 1, 0.48)
-	RefCanvas.set_rect(hi, pos.x + 5, pos.y + 8, 2, height - 18)
+	RefCanvas.set_rect(hi, pos.x + 5, pos.y + 8, 2, height - 16)
 	canvas.add_child(hi)
+	var rim := PanelContainer.new()
+	rim.add_theme_stylebox_override("panel", RefCanvas.horizontal_gradient(Color("#f4fdff"), Color("#cfeffc"), 3, Color(0.82,0.98,1.0,0.90), 0.8))
+	RefCanvas.set_rect(rim, pos.x + 1, pos.y - 2, width - 2, 6)
+	canvas.add_child(rim)
 
 func _add_mini_block_preview(canvas: Control, origin: Vector2) -> void:
 	var board := PanelContainer.new()
