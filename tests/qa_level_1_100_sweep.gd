@@ -29,8 +29,8 @@ func _run() -> void:
 	if save_manager == null or multi_game_manager == null:
 		return _fatal("Required SaveManager/MultiGameManager autoloads are unavailable")
 	root.size = VIEWPORT
-	Engine.max_fps = 120
-	Engine.time_scale = 4.0
+	Engine.max_fps = 240
+	Engine.time_scale = 12.0
 
 	var packed := load("res://scenes/Main.tscn") as PackedScene
 	if packed == null:
@@ -75,6 +75,8 @@ func _run() -> void:
 
 func _sweep_rescue(main: Control) -> void:
 	for level in range(1, 101):
+		if level == 1 or level % 10 == 0:
+			print("QA rescue level %d" % level)
 		var save_data: Dictionary = save_manager.get("data")
 		save_data["active_run"] = {}
 		save_manager.set("data", save_data)
@@ -93,7 +95,7 @@ func _sweep_rescue(main: Control) -> void:
 		var steps := 0
 		while is_instance_valid(game) and not bool(game.get("rescued")) and steps < 160:
 			if bool(game.get("board_locked")):
-				if not await _wait_rescue_ready(game, 360):
+				if not await _wait_rescue_ready(game, 120):
 					_fail("Rescue Rush L%d stayed locked" % level)
 					break
 			if bool(game.get("rescued")):
@@ -104,7 +106,7 @@ func _sweep_rescue(main: Control) -> void:
 			game.call("show_hint")
 			steps += 1
 			assist_steps["rescue_rush"] = int(assist_steps["rescue_rush"]) + 1
-			if not await _wait_rescue_progress(game, 360):
+			if not await _wait_rescue_progress(game, 120):
 				_fail("Rescue Rush L%d assist produced no progress" % level)
 				break
 			if level in CHECKPOINTS and steps == 1:
@@ -117,6 +119,8 @@ func _sweep_rescue(main: Control) -> void:
 func _sweep_multi(main: Control, game_id: String) -> void:
 	var display := "Water Sort" if game_id == "water_sort" else "Block Puzzle"
 	for level in range(1, 101):
+		if level == 1 or level % 10 == 0:
+			print("QA %s level %d" % [game_id, level])
 		multi_game_manager.call("clear_checkpoint", game_id)
 		var started := Time.get_ticks_usec()
 		main.call("start_multi_level", game_id, level, false)
@@ -134,7 +138,7 @@ func _sweep_multi(main: Control, game_id: String) -> void:
 		if level in CHECKPOINTS:
 			await _capture("%s-%03d-initial" % [game_id, level])
 		var steps := 0
-		var max_steps := 360 if game_id == "water_sort" else 220
+		var max_steps := 200 if game_id == "water_sort" else 160
 		while is_instance_valid(game) and not bool(game.get("completed")) and steps < max_steps:
 			if game_id == "water_sort":
 				if not await _water_step(game, level):
@@ -153,7 +157,7 @@ func _sweep_multi(main: Control, game_id: String) -> void:
 
 func _water_step(game: Node, level: int) -> bool:
 	if game.has_method("_has_active_pours") and bool(game.call("_has_active_pours")):
-		if not await _wait_water_idle(game, 480):
+		if not await _wait_water_idle(game, 160):
 			_fail("Water Sort L%d pour did not settle" % level)
 			return false
 	if bool(game.get("completed")):
@@ -163,7 +167,7 @@ func _water_step(game: Node, level: int) -> bool:
 		return false
 	var before := int(game.get("moves"))
 	game.call("show_hint")
-	for _i in range(480):
+	for _i in range(160):
 		if not is_instance_valid(game):
 			return true
 		if bool(game.get("completed")):
@@ -177,7 +181,7 @@ func _water_step(game: Node, level: int) -> bool:
 
 func _block_step(game: Node, level: int) -> bool:
 	if bool(game.get("_clear_transition_active")):
-		for _i in range(360):
+		for _i in range(120):
 			if not is_instance_valid(game) or bool(game.get("completed")) or not bool(game.get("_clear_transition_active")):
 				break
 			await process_frame
@@ -185,7 +189,7 @@ func _block_step(game: Node, level: int) -> bool:
 		return true
 	var before := int(game.get("placements"))
 	game.call("show_hint")
-	for _i in range(360):
+	for _i in range(120):
 		if not is_instance_valid(game):
 			return true
 		if bool(game.get("completed")):
