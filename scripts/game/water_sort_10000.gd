@@ -61,7 +61,7 @@ func load_level() -> void:
 func render_board() -> void:
 	super.render_board()
 	if move_label != null:
-		move_label.text = "MOVES %d   •   3★ ≤ %d   •   %d COLORS" % [moves, par_moves, color_count]
+		move_label.text = "MOVES %d   •   3★ ≤ %d" % [moves, par_moves]
 
 func generate_tubes_with_solution(seed_value: int, colors: int) -> Dictionary:
 	var p := Progression.profile(level_number)
