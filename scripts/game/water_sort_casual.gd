@@ -123,8 +123,10 @@ func _build_figma_water(canvas: Control) -> void:
 	# HintManager is the single owner of hint cost/reward handling.
 	actions.add_child(hint)
 
-	title_label = Label.new()
-	title_label.visible = false
+	title_label = _make_label("",20,OFF_WHITE,true)
+	title_label.name = "WaterLevelTitle"
+	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	RefCanvas.set_rect(title_label,116,20,158,28)
 	canvas.add_child(title_label)
 
 func _action_button(text_value: String, fill: Color) -> Button:
