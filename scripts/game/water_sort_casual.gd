@@ -242,7 +242,7 @@ func _apply_tube_layout() -> void:
 	var h_gap := 12.0 if columns <= 4 else 10.0
 	var v_gap := 14.0 if rows <= 2 else 10.0
 	var ratio := 4.7 if rows == 1 else (2.65 if rows == 2 else 2.45)
-	var preferred_width := 52.0 if rows == 1 else (68.0 if rows == 2 else 52.0)
+	var preferred_width := 55.0 if rows == 1 else (68.0 if rows == 2 else 52.0)
 	var width_limit := floorf((stage_width - h_gap * float(maxi(columns - 1, 0))) / float(columns))
 	var row_height_limit := floorf((stage_height - v_gap * float(maxi(rows - 1, 0))) / float(rows))
 	var height_width_limit := row_height_limit / ratio
