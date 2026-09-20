@@ -192,50 +192,87 @@ func _preview_water(canvas: Control, y: float) -> void:
 		canvas.add_child(rim)
 
 func _preview_block(canvas: Control, y: float) -> void:
-	var board_depth := PanelContainer.new()
-	board_depth.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color("#241445"), 10))
-	RefCanvas.set_rect(board_depth, 253.8, y + 10.5, 84, 74)
-	canvas.add_child(board_depth)
+	var depth := PanelContainer.new()
+	depth.add_theme_stylebox_override("panel",RefCanvas.solid_box(Color("#241447"),12))
+	RefCanvas.set_rect(depth,253,y+15.25,84,90)
+	canvas.add_child(depth)
 	var board := PanelContainer.new()
-	board.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#613894"), Color("#452670"), Color("#2e1a54"), 10, Color(0.72,0.52,1.0,0.60), 1))
-	RefCanvas.set_rect(board, 253, y + 7, 84, 74)
+	board.add_theme_stylebox_override("panel",RefCanvas.solid_box(Color("#4f307d"),12,Color(0.72,0.52,1.0,0.55),1))
+	RefCanvas.set_rect(board,253,y+10.76,84,90)
 	canvas.add_child(board)
-	var palette: Array[Color] = [Color("#ffd63d"), Color("#ff7acb"), Color("#50e889"), Color("#47c8ff")]
-	var occupied := [1,5,8,9,14,18,23,24,31,35,36,42,47,49,54,61]
-	var cell := 7.0
-	var gap := 2.0
-	for row in range(8):
-		for col in range(8):
-			var px := 258.0 + col * (cell + gap)
-			var py := y + 11.0 + row * (cell + gap)
+
+	var cube_specs := {
+		0:[Color("#b89af9"),Color("#764dce"),Color(0.263,0.173,0.463,0.40)],
+		1:[Color("#71c9ff"),Color("#158dd6"),Color(0.047,0.318,0.478,0.40)],
+		5:[Color("#71c9ff"),Color("#158dd6"),Color(0.047,0.318,0.478,0.40)],
+		6:[Color("#75dc9f"),Color("#1ca754"),Color(0.063,0.373,0.188,0.40)],
+		9:[Color("#71c9ff"),Color("#158dd6"),Color(0.047,0.318,0.478,0.40)],
+		10:[Color("#75dc9f"),Color("#1ca754"),Color(0.063,0.373,0.188,0.40)],
+		11:[Color("#ffb874"),Color("#d6761a"),Color(0.478,0.263,0.059,0.40)],
+		14:[Color("#75dc9f"),Color("#1ca754"),Color(0.063,0.373,0.188,0.40)],
+	}
+	for row in range(4):
+		for col in range(4):
+			var index := row*4+col
+			var wx := 257.0+float(col)*19.0
+			var wy := y+12.56+float(row)*17.08
 			var well := PanelContainer.new()
-			well.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.23,0.16,0.37,0.98), 2, Color(0.51,0.39,0.67,0.72), 1))
-			RefCanvas.set_rect(well, px, py, cell, cell)
+			well.add_theme_stylebox_override("panel",RefCanvas.solid_box(Color("#291a47"),3,Color(0.52,0.39,0.68,0.34),0.7))
+			RefCanvas.set_rect(well,wx,wy,17,17)
 			canvas.add_child(well)
-			var idx := row * 8 + col
-			if idx in occupied:
-				var fill: Color = palette[(row + col) % palette.size()]
-				var depth := ColorRect.new()
-				depth.color = fill.darkened(0.34)
-				RefCanvas.set_rect(depth, px + 1, py + 2, cell - 1, cell - 1)
-				canvas.add_child(depth)
-				var top := ColorRect.new()
-				top.color = fill
-				RefCanvas.set_rect(top, px, py, cell - 1, cell - 2)
-				canvas.add_child(top)
-	# Three genuine tray shapes rather than decorative bars.
-	var tray_shapes := [
-		[Vector2i(0,0),Vector2i(1,0),Vector2i(2,0)],
-		[Vector2i(0,0),Vector2i(0,1),Vector2i(1,1)],
-		[Vector2i(0,0),Vector2i(1,0),Vector2i(1,1),Vector2i(2,1)],
-	]
-	var starts := [Vector2(258,y+88),Vector2(286,y+87),Vector2(313,y+87)]
-	for i in range(3):
-		for p in tray_shapes[i]:
-			var bit := PanelContainer.new()
-			bit.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(palette[i].lightened(0.30), palette[i], palette[i].darkened(0.18), 2))
-			RefCanvas.set_rect(bit, starts[i].x + p.x * 6, starts[i].y + p.y * 6, 6, 6)
-			canvas.add_child(bit)
+			if cube_specs.has(index):
+				var spec: Array = cube_specs[index]
+				var top_color: Color = spec[0] as Color
+				var bottom_color: Color = spec[1] as Color
+				var shadow_color: Color = spec[2] as Color
+				var cube_shadow := PanelContainer.new()
+				cube_shadow.add_theme_stylebox_override("panel",RefCanvas.solid_box(shadow_color,3))
+				RefCanvas.set_rect(cube_shadow,wx+1.5,wy+4.04,14,14)
+				canvas.add_child(cube_shadow)
+				var cube := PanelContainer.new()
+				cube.add_theme_stylebox_override("panel",RefCanvas.rounded_gradient3(top_color,top_color.lerp(bottom_color,0.48),bottom_color,3))
+				RefCanvas.set_rect(cube,wx+0.5,wy+2.24,14,14)
+				canvas.add_child(cube)
+
+	var tray := PanelContainer.new()
+	tray.name = "SelectorBlockTray"
+	tray.add_theme_stylebox_override("panel",RefCanvas.solid_box(Color(0.969,0.929,1.0,0.95),6,Color(0.72,0.55,0.94,0.48),0.8))
+	RefCanvas.set_rect(tray,251,y+85.5,88,20)
+	canvas.add_child(tray)
+	_add_selector_tray_piece(canvas,[Vector2(257,y+94),Vector2(267,y+94),Vector2(277,y+94)],Color("#466df2"),Color("#749bff"))
+	_add_selector_tray_piece(canvas,[Vector2(293,y+90),Vector2(293,y+100),Vector2(303,y+100)],Color("#38df63"),Color("#66ff91"))
+	_add_selector_tray_piece(canvas,[Vector2(321,y+90),Vector2(331,y+90),Vector2(321,y+100),Vector2(331,y+100)],Color("#f4b83d"),Color("#ffe66b"))
+
+	# The small silhouettes below the tray are part of the audited selector polish.
+	for px in [251.0,257.0,263.0]:
+		_add_selector_flat_bit(canvas,Vector2(px,y+117.5),Color("#4ad175"))
+	for pos in [Vector2(281,y+114.5),Vector2(281,y+120.5),Vector2(287,y+120.5)]:
+		_add_selector_flat_bit(canvas,pos,Color("#4a8cfa"))
+	for pos in [Vector2(313,y+114.5),Vector2(319,y+114.5),Vector2(313,y+120.5),Vector2(319,y+120.5)]:
+		_add_selector_flat_bit(canvas,pos,Color("#f57a3d"))
+
+func _add_selector_tray_piece(canvas: Control, cells: Array, fill: Color, edge: Color) -> void:
+	for value in cells:
+		var pos: Vector2 = value as Vector2
+		var top := Polygon2D.new()
+		top.polygon = PackedVector2Array([
+			Vector2(pos.x,pos.y),
+			Vector2(pos.x+2.5,pos.y-2.5),
+			Vector2(pos.x+9.0,pos.y-2.5),
+			Vector2(pos.x+6.5,pos.y),
+		])
+		top.color = fill.lightened(0.28)
+		canvas.add_child(top)
+		var front := PanelContainer.new()
+		front.add_theme_stylebox_override("panel",RefCanvas.solid_box(fill,3,Color(edge,0.85),0.8))
+		RefCanvas.set_rect(front,pos.x,pos.y,6.5,6.5)
+		canvas.add_child(front)
+
+func _add_selector_flat_bit(canvas: Control, pos: Vector2, fill: Color) -> void:
+	var bit := PanelContainer.new()
+	bit.add_theme_stylebox_override("panel",RefCanvas.solid_box(fill,1.2))
+	RefCanvas.set_rect(bit,pos.x,pos.y,5,5)
+	canvas.add_child(bit)
 
 func _add_bottom_nav(canvas: Control) -> void:
 	var shell := PanelContainer.new()
