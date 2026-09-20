@@ -74,6 +74,10 @@ func _script_path(node: Node) -> String:
 	return String(script.resource_path) if script != null else ""
 
 func _is_gameplay_widget(node: Node) -> bool:
+	# Audited Figma controls own both styling and exact geometry. This guard also
+	# protects them if a generic surface pass runs before the Figma root is detected.
+	if node is Button and node.has_meta("unjam_figma_exact_geometry"):
+		return true
 	# Shared navigation owns its own selected/unselected visual state. Treat
 	# preserve-style controls as excluded from generic surface role recolouring.
 	if node is Button and node.has_meta("unjam_preserve_surface_style"):
