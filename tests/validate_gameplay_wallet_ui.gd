@@ -46,13 +46,13 @@ func run() -> void:
 		if hint != null:
 			expect_true("25" in hint.tooltip_text and "160" in hint.tooltip_text, "%s Hint tooltip does not disclose 25-coin cost and live 160 balance" % game_id)
 			if game_id == "block_puzzle":
-				expect_true(hint.text == "💡", "Block Figma hint control was expanded beyond its icon-only design")
+				expect_true(hint.text == "✦", "Block Figma hint control must remain a compact icon-only action")
 
 		var tube := game.find_child("AddTubeAction", true, false) as Button
 		if game_id == "water_sort":
 			expect_true(tube != null, "Water Sort Extra Tube button missing")
 			if tube != null:
-				expect_true(tube.text == "＋  TUBE • 75◈", "Extra Tube text drifted from the compact Figma action")
+				expect_true(tube.text == "+  TUBE • 75◈", "Extra Tube text drifted from the compact Figma action")
 				expect_true("75" in tube.tooltip_text and "160" in tube.tooltip_text, "Extra Tube tooltip does not disclose 75-coin cost and live balance")
 
 		economy.grant(10, "qa_gameplay_wallet", {"game": game_id})
