@@ -308,21 +308,21 @@ func _show_current_tutorial() -> void:
 func build_daily_games() -> void:
 	current_surface = "daily"
 	_remove_active_game()
-	var canvas := _figma_surface("daily", Color(0.8956,0.9736,0.9268))
+	var canvas := _figma_surface("daily", Color("#fff6e6"))
 	var bonus := EconomyManager.collection_daily_bonus()
 	_figma_header(canvas, "DAILY GAMES", "Three fresh challenges every day", "+%d" % bonus, FIGMA_GOLD)
-	_figma_card(canvas, "DailyIntro", Rect2(18,90,354,64), Color(0.985,0.995,1.0), Color(0.72,0.90,0.79,0.50), 16)
-	_figma_text(canvas, "TODAY • %s" % _figma_today_label(), Rect2(36,107,220,17), 14, FIGMA_INK)
+	_figma_card(canvas, "DailyIntro", Rect2(17,89,354,64), Color("#fffef8"), Color(1.0,0.847,0.55,0.32), 16)
+	_figma_text(canvas, "TODAY • %s" % _figma_today_label(), Rect2(35,106,220,17), 14, FIGMA_INK)
 
-	_figma_daily_card(canvas, "rescue_rush", 172, bonus)
-	_figma_daily_card(canvas, "water_sort", 294, bonus)
-	_figma_daily_card(canvas, "block_puzzle", 416, bonus)
+	_figma_daily_card(canvas, "rescue_rush", 171, bonus)
+	_figma_daily_card(canvas, "water_sort", 293, bonus)
+	_figma_daily_card(canvas, "block_puzzle", 415, bonus)
 
-	_figma_card(canvas, "Perks", Rect2(18,540,354,52), Color(0.985,0.995,1.0), Color(0.72,0.90,0.79,0.50), 14)
+	_figma_card(canvas, "Perks", Rect2(17,539,354,52), Color("#fffef8"), Color(1.0,0.847,0.55,0.32), 16)
 	_figma_text(
 		canvas,
 		"COLLECTION BONUS  +%d DAILY   •   GARDEN GIFT +%d" % [bonus, EconomyManager.garden_gift_amount()],
-		Rect2(34,557,322,18),
+		Rect2(33,556,322,18),
 		12,
 		FIGMA_MUTED
 	)
@@ -336,19 +336,19 @@ func _figma_today_label() -> String:
 
 func _figma_daily_card(canvas: Control, game_id: String, y: float, collection_bonus: int) -> void:
 	var accent := Unjam3DTheme.game_accent(game_id)
-	_figma_card(canvas, "DailyCard/%s" % game_id, Rect2(18,y,354,106), Color(0.985,0.995,1.0), Color(accent,0.38), 16)
-	_figma_text(canvas, MultiGameManager.display_name(game_id).to_upper(), Rect2(34,y+18,150,21), 17, FIGMA_INK)
+	_figma_card(canvas, "DailyCard/%s" % game_id, Rect2(17,y,354,106), Color("#fffef8"), Color(1.0,0.847,0.55,0.32), 18)
+	_figma_text(canvas, MultiGameManager.display_name(game_id).to_upper(), Rect2(33,y+18,150,21), 17, accent)
 	var detail := "Fresh generated rescue" if game_id == "rescue_rush" else "Daily level %d" % MultiGameManager.daily_level(game_id)
-	_figma_text(canvas, detail, Rect2(34,y+48,175,15), 12, FIGMA_MUTED)
+	_figma_text(canvas, detail, Rect2(33,y+48,175,15), 12, FIGMA_MUTED)
 	var reward := "+%d COINS" % (100 + collection_bonus) if game_id == "rescue_rush" else "+%d–%d COINS" % [125 + collection_bonus,175 + collection_bonus]
-	_figma_text(canvas, reward, Rect2(34,y+72,130,16), 13, FIGMA_ORANGE)
+	_figma_text(canvas, reward, Rect2(33,y+72,130,16), 13, FIGMA_ORANGE)
 	var done := _daily_done(game_id)
-	var fill := Color(0.61,0.70,0.78) if done else accent
+	var fill := FIGMA_GREEN if done else accent
 	var button := _figma_button(
 		canvas,
 		"DailyPlay/%s" % game_id,
 		"COMPLETED" if done else "PLAY DAILY",
-		Rect2(245,y+42,108,48),
+		Rect2(244,y+42,108,48),
 		fill,
 		Callable(),
 		FIGMA_OFF_WHITE,
@@ -418,13 +418,13 @@ func _claim_collection_gift() -> void:
 func build_collection() -> void:
 	current_surface = "collection"
 	_remove_active_game()
-	var canvas := _figma_surface("collection", Color(0.8956,0.9736,0.9268))
+	var canvas := _figma_surface("collection", Color("#e6f7ef"))
 	_figma_header(
 		canvas,
 		"COLLECTION",
 		"Progress, friends and permanent rewards",
 		"◈ +",
-		FIGMA_ORANGE,
+		FIGMA_GREEN,
 		Callable(self,"build_home"),
 		Callable(self,"_figma_open_shop")
 	)
@@ -442,43 +442,43 @@ func build_collection() -> void:
 		if badges is Array:
 			total_badges += (badges as Array).size()
 
-	_figma_card(canvas,"Journey",Rect2(18,90,354,96),Color(0.985,0.995,1.0),Color(0.72,0.90,0.79,0.50),16)
-	_figma_text(canvas,"YOUR UNJAM JOURNEY",Rect2(34,108,210,19),16,FIGMA_INK)
+	_figma_card(canvas,"Journey",Rect2(17,89,354,96),Color("#fffef8"),Color(0.55,0.86,0.71,0.32),18)
+	_figma_text(canvas,"YOUR UNJAM JOURNEY",Rect2(33,107,210,19),16,Color("#088c3d"))
 	var metrics := [
-		[total_completed,"LEVELS",36.0],
-		[total_stars,"STARS",120.0],
-		[total_perfect,"PERFECT",204.0],
-		[total_badges,"BADGES",288.0]
+		[total_completed,"LEVELS",35.0],
+		[total_stars,"STARS",119.0],
+		[total_perfect,"PERFECT",203.0],
+		[total_badges,"BADGES",287.0]
 	]
 	for metric in metrics:
 		_figma_text(canvas,_compact_stat(int(metric[0])),Rect2(float(metric[2]),136,62,26),18,FIGMA_INK)
 		_figma_text(canvas,String(metric[1]),Rect2(float(metric[2])-3,161,70,20),12,FIGMA_MUTED)
 
-	_figma_text(canvas,"THREE PUZZLE WORLDS",Rect2(18,205,190,18),15,FIGMA_INK)
-	_figma_collection_progress(canvas,"rescue_rush",18)
-	_figma_collection_progress(canvas,"water_sort",136)
-	_figma_collection_progress(canvas,"block_puzzle",254)
+	_figma_text(canvas,"THREE PUZZLE WORLDS",Rect2(17,204,190,18),15,FIGMA_INK)
+	_figma_collection_progress(canvas,"rescue_rush",17)
+	_figma_collection_progress(canvas,"water_sort",135)
+	_figma_collection_progress(canvas,"block_puzzle",253)
 
-	_figma_card(canvas,"Achievements",Rect2(18,340,354,76),Color(0.985,0.995,1.0),Color(0.84,0.73,0.96,0.48),16)
-	_figma_text(canvas,"★  ACHIEVEMENT CABINET",Rect2(34,356,220,18),15,FIGMA_INK)
+	_figma_card(canvas,"Achievements",Rect2(17,339,354,76),Color("#fffef8"),Color(0.55,0.86,0.71,0.32),18)
+	_figma_text(canvas,"★  ACHIEVEMENT CABINET",Rect2(33,355,220,18),15,FIGMA_ORANGE)
 	var achievement_parts: Array[String] = []
 	for game_id in MultiGameManager.GAME_IDS:
 		var unlocked := MultiGameManager.unlocked_achievements(game_id).size()
 		var total := MultiGameManager.achievement_definitions(game_id).size()
 		achievement_parts.append("%s %d/%d" % [_figma_short_game(game_id),unlocked,total])
-	_figma_text(canvas," • ".join(achievement_parts),Rect2(34,382,310,22),12,FIGMA_MUTED)
+	_figma_text(canvas," • ".join(achievement_parts),Rect2(33,384,310,22),12,FIGMA_MUTED)
 
 	var decorations: Array = SaveManager.data.get("decorations",[])
 	var rescued: Array = SaveManager.data.get("rescued",[])
 	var owned := decorations.size()
-	_figma_card(canvas,"Garden",Rect2(18,430,354,96),Color(0.985,0.995,1.0),Color(0.64,0.91,0.73,0.54),16)
-	_figma_text(canvas,"♥  RESCUE GARDEN",Rect2(34,446,180,19),16,FIGMA_GREEN)
-	_figma_text(canvas,"%d friends home • %d / 6 upgrades" % [rescued.size(),owned],Rect2(34,473,240,20),13,FIGMA_MUTED)
-	_figma_text(canvas,"%d / 6 upgrades  •  +%d Daily  •  +%d Gift" % [owned,EconomyManager.collection_daily_bonus(),EconomyManager.garden_gift_amount()],Rect2(34,498,310,20),12,FIGMA_MUTED)
+	_figma_card(canvas,"Garden",Rect2(17,429,354,96),Color("#fffef8"),Color(0.55,0.86,0.71,0.32),18)
+	_figma_text(canvas,"♥  RESCUE GARDEN",Rect2(33,445,180,19),16,Color("#088c3d"))
+	_figma_text(canvas,"%d friends home • %d / 6 upgrades" % [rescued.size(),owned],Rect2(33,476,240,20),13,FIGMA_MUTED)
+	_figma_text(canvas,"%d / 6 upgrades  •  +%d Daily  •  +%d Gift" % [owned,EconomyManager.collection_daily_bonus(),EconomyManager.garden_gift_amount()],Rect2(33,501,310,20),12,FIGMA_MUTED)
 
-	_figma_card(canvas,"Boost",Rect2(18,540,354,92),Color(0.985,0.995,1.0),Color(0.95,0.80,0.42,0.50),16)
-	_figma_text(canvas,"PERMANENT BOOST",Rect2(34,556,180,18),15,FIGMA_INK)
-	_figma_text(canvas,"+5 per Daily Game • +10 Garden Gift per upgrade",Rect2(34,580,310,20),12,FIGMA_MUTED)
+	_figma_card(canvas,"Boost",Rect2(17,539,354,92),Color("#fffef8"),Color(0.55,0.86,0.71,0.32),18)
+	_figma_text(canvas,"PERMANENT BOOST",Rect2(33,555,180,18),15,FIGMA_ORANGE)
+	_figma_text(canvas,"+5 per Daily Game • +10 Garden Gift per upgrade",Rect2(33,583,310,20),12,FIGMA_MUTED)
 
 	# Figma state transition: swipe upward through the Garden/Boost region to
 	# reveal the dedicated six-upgrade Collection state.
@@ -494,7 +494,7 @@ func build_collection() -> void:
 	if not can_claim:
 		gift_text = "GARDEN GIFT CLAIMED" if EconomyManager.garden_gift_claimed_today() else "BUY AN UPGRADE IN SHOP"
 	var gift_fill := FIGMA_GREEN if can_claim else Color(0.54,0.64,0.72)
-	var gift := _figma_button(canvas,"CollectionGardenGift",gift_text,Rect2(34,606,250,40),gift_fill,Callable(),FIGMA_OFF_WHITE,13,12)
+	var gift := _figma_button(canvas,"CollectionGardenGift",gift_text,Rect2(33,605,250,40),gift_fill,Callable(),FIGMA_OFF_WHITE,16,12)
 	if can_claim:
 		gift.pressed.connect(_claim_collection_gift)
 	else:
@@ -504,11 +504,11 @@ func build_collection() -> void:
 
 func _figma_collection_progress(canvas: Control, game_id: String, x: float) -> void:
 	var accent := Unjam3DTheme.game_accent(game_id)
-	_figma_card(canvas,"ProgressCard/%s" % game_id,Rect2(x,232,110,86),Color(0.985,0.995,1.0),Color(accent,0.40),16)
-	_figma_text(canvas,_figma_short_game(game_id),Rect2(x+12,246,86,15),12,accent)
+	_figma_card(canvas,"ProgressCard/%s" % game_id,Rect2(x,231,110,86),Color("#fffef7"),Color(accent,0.70),16)
+	_figma_text(canvas,_figma_short_game(game_id),Rect2(x+12,245,86,15),12,accent)
 	var level := _highest_level_for_game(game_id)
 	var stars := MultiGameManager.total_stars(game_id)
-	_figma_text(canvas,"L%d • ★ %s" % [level,_compact_stat(stars)],Rect2(x+12,272,92,20),12,FIGMA_MUTED)
+	_figma_text(canvas,"L%d • ★ %s" % [level,_compact_stat(stars)],Rect2(x+12,273,92,20),12,FIGMA_MUTED)
 
 func _figma_short_game(game_id: String) -> String:
 	match game_id:
@@ -519,7 +519,7 @@ func _figma_short_game(game_id: String) -> String:
 func build_collection_upgrades() -> void:
 	current_surface = "collection"
 	_remove_active_game()
-	var canvas := _figma_surface("collection",Color(0.8956,0.9736,0.9268))
+	var canvas := _figma_surface("collection",Color("#e6f7ef"))
 	_figma_header(
 		canvas,
 		"COLLECTION",
