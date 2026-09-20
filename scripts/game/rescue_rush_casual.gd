@@ -10,6 +10,32 @@ const ORANGE := Color(1.0,0.55,0.12)
 
 var figma_canvas: FigmaReferenceCanvas
 
+func _add_rescue_identity_emblem(canvas: Control) -> void:
+	var emblem := PanelContainer.new()
+	emblem.name = "Identity/Rescue Emblem"
+	emblem.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	emblem.add_theme_stylebox_override("panel",RefCanvas.rounded_gradient3(Color("#6be28e"),Color("#21c763"),Color("#0d9545"),9,Color(0.73,1.0,0.82,0.55),1))
+	RefCanvas.set_rect(emblem,77,17,30,30)
+	canvas.add_child(emblem)
+	var chick := PanelContainer.new()
+	chick.name = "Mark/Chick"
+	chick.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	chick.add_theme_stylebox_override("panel",RefCanvas.solid_box(Color("#ffd63d"),6,Color("#fff1a0"),1))
+	RefCanvas.set_rect(chick,84,25,13,13)
+	canvas.add_child(chick)
+	var eye := ColorRect.new()
+	eye.name = "Mark/Eye"
+	eye.color = Color("#183b42")
+	eye.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	RefCanvas.set_rect(eye,92,29,2,2)
+	canvas.add_child(eye)
+	var arrow := RefCanvas.label("↗",11,Color.WHITE,true)
+	arrow.name = "Mark/Arrow"
+	arrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	arrow.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	RefCanvas.set_rect(arrow,94,18,11,11)
+	canvas.add_child(arrow)
+
 func style_button(button: Button, accent: bool = false) -> void:
 	var fill := ORANGE if accent else BLUE
 	button.add_theme_stylebox_override("normal", RefCanvas.rounded_gradient3(fill.lightened(0.18), fill, fill.darkened(0.18), 16, fill.lightened(0.30), 1.3))
@@ -73,6 +99,7 @@ func _build_figma_rescue(canvas: Control) -> void:
 	RefCanvas.set_rect(retry,319,15,54,54)
 	retry.pressed.connect(restart_level)
 	canvas.add_child(retry)
+	_add_rescue_identity_emblem(canvas)
 	var title := RefCanvas.label("RESCUE RUSH",20,OFF_WHITE,true)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	RefCanvas.set_rect(title,115,15,184,30)
