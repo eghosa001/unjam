@@ -14,6 +14,33 @@ func _ready() -> void:
 func _queue_board_fit() -> void:
 	call_deferred("_fit_3d_board_layout")
 
+func _add_block_identity_emblem(canvas: Control) -> void:
+	var emblem := PanelContainer.new()
+	emblem.name = "Identity/Block Emblem"
+	emblem.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	emblem.add_theme_stylebox_override("panel",FigmaReferenceCanvas.rounded_gradient3(Color("#c77cff"),Color("#a855f7"),Color("#7a2cc2"),9,Color(0.88,0.73,1.0,0.55),1))
+	FigmaReferenceCanvas.set_rect(emblem,77,17,30,30)
+	canvas.add_child(emblem)
+	var blocks := [
+		[Rect2(83,31,8,8),Color.WHITE,"Mark/Block A"],
+		[Rect2(92,31,8,8),Color("#f5e9ff"),"Mark/Block B"],
+		[Rect2(88,23,8,8),Color.WHITE,"Mark/Block C"],
+	]
+	for spec in blocks:
+		var tile := PanelContainer.new()
+		tile.name = String(spec[2])
+		tile.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		tile.add_theme_stylebox_override("panel",FigmaReferenceCanvas.solid_box(spec[1] as Color,2))
+		var rect: Rect2 = spec[0] as Rect2
+		FigmaReferenceCanvas.set_rect(tile,rect.position.x,rect.position.y,rect.size.x,rect.size.y)
+		canvas.add_child(tile)
+	var highlight := PanelContainer.new()
+	highlight.name = "Mark/Highlight"
+	highlight.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	highlight.add_theme_stylebox_override("panel",FigmaReferenceCanvas.solid_box(Color(1,1,1,0.55),1))
+	FigmaReferenceCanvas.set_rect(highlight,89,24,6,2)
+	canvas.add_child(highlight)
+
 func _fit_3d_board_layout() -> void:
 	_fit_figma_board_layout()
 
@@ -83,6 +110,8 @@ func _build_figma_block(canvas: Control) -> void:
 	FigmaReferenceCanvas.set_rect(retry, 319, 15, 54, 54)
 	retry.pressed.connect(restart_level)
 	canvas.add_child(retry)
+
+	_add_block_identity_emblem(canvas)
 
 	title_label = FigmaReferenceCanvas.label("", 20, Color(1,0.995,0.97), true)
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
