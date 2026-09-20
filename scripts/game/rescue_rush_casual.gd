@@ -12,10 +12,9 @@ var figma_canvas: FigmaReferenceCanvas
 
 func style_button(button: Button, accent: bool = false) -> void:
 	var fill := ORANGE if accent else BLUE
-	var style := RefCanvas.solid_box(fill, 16, fill.lightened(0.30), 1)
-	button.add_theme_stylebox_override("normal", style)
-	button.add_theme_stylebox_override("hover", RefCanvas.solid_box(fill.lightened(0.06), 16, fill.lightened(0.38), 1))
-	button.add_theme_stylebox_override("pressed", RefCanvas.solid_box(fill.darkened(0.08), 16, fill.lightened(0.20), 1))
+	button.add_theme_stylebox_override("normal", RefCanvas.rounded_gradient3(fill.lightened(0.18), fill, fill.darkened(0.18), 16, fill.lightened(0.30), 1.3))
+	button.add_theme_stylebox_override("hover", RefCanvas.rounded_gradient3(fill.lightened(0.24), fill.lightened(0.05), fill.darkened(0.13), 16, fill.lightened(0.38), 1.3))
+	button.add_theme_stylebox_override("pressed", RefCanvas.rounded_gradient3(fill, fill.darkened(0.08), fill.darkened(0.25), 16, fill.lightened(0.20), 1.3))
 	button.add_theme_color_override("font_color", OFF_WHITE)
 	button.add_theme_color_override("font_hover_color", OFF_WHITE)
 	button.add_theme_color_override("font_pressed_color", OFF_WHITE)
@@ -48,13 +47,13 @@ func build_ui() -> void:
 
 func _build_figma_rescue(canvas: Control) -> void:
 	var sky := PanelContainer.new()
-	sky.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient(Color(0.37,0.83,0.69), Color(0.88,0.98,0.83), 0))
-	RefCanvas.set_rect(sky, 0, 0, 390, 844)
+	sky.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#45ccff"), Color("#a8f0f2"), Color("#e0fad4"), 34, Color("#b8d1e0"), 1, 0.55))
+	RefCanvas.set_rect(sky, -15.9, -58.12, 419.81, 908.51)
 	sky.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(sky)
 	var ground := PanelContainer.new()
-	ground.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient(Color(0.28,0.66,0.45), Color(0.10,0.30,0.22), 0))
-	RefCanvas.set_rect(ground, 0, 100, 390, 400)
+	ground.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#78d16e"), Color("#33a861"), Color("#146e4f"), 0, Color.TRANSPARENT, 0, 0.50))
+	RefCanvas.set_rect(ground, -15.9, 43.06, 419.81, 441.34)
 	ground.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(ground)
 	var platform := Polygon2D.new()
@@ -62,30 +61,33 @@ func _build_figma_rescue(canvas: Control) -> void:
 	platform.color = Color(0.59,0.78,0.55,0.65)
 	canvas.add_child(platform)
 
-	var back := RefCanvas.button("←",22,NAVY,Color(0.97,1.0,0.96),16,Color(0.67,0.90,0.72,0.55),1)
+	RefCanvas.add_shadow(canvas, Rect2(15,15,54,54), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
+	var back := RefCanvas.premium_button("←",22,NAVY,Color(0.97,1.0,0.96),16,Color(0.67,0.90,0.72,0.55),1.4)
 	back.name = "RescueBackAction"
-	RefCanvas.set_rect(back,16,16,54,54)
+	RefCanvas.set_rect(back,15,15,54,54)
 	back.pressed.connect(_quit)
 	canvas.add_child(back)
-	var retry := RefCanvas.button("↻",23,Color(0.08,0.45,0.25),Color(0.97,1.0,0.96),16,Color(0.67,0.90,0.72,0.55),1)
+	RefCanvas.add_shadow(canvas, Rect2(319,15,54,54), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
+	var retry := RefCanvas.premium_button("↻",23,Color("#088c3d"),Color(0.97,1.0,0.96),16,Color(0.67,0.90,0.72,0.55),1.4)
 	retry.name = "RescueRetryAction"
-	RefCanvas.set_rect(retry,320,16,54,54)
+	RefCanvas.set_rect(retry,319,15,54,54)
 	retry.pressed.connect(restart_level)
 	canvas.add_child(retry)
 	var title := RefCanvas.label("RESCUE RUSH",20,OFF_WHITE,true)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	RefCanvas.set_rect(title,116,16,184,30)
+	RefCanvas.set_rect(title,115,15,184,30)
 	canvas.add_child(title)
 	var world := int(level_data.get("world", 1))
 	var subtitle := RefCanvas.label("LEVEL %d • WORLD %d" % [level_number,world],12,Color(0.92,0.98,1.0),false)
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	RefCanvas.set_rect(subtitle,116,44,184,20)
+	RefCanvas.set_rect(subtitle,115,43,184,20)
 	canvas.add_child(subtitle)
 
 	var status_panel := PanelContainer.new()
 	status_panel.name = "CompactStatusStrip"
-	status_panel.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient(Color(0.13,0.56,0.48),Color(0.05,0.40,0.34),14,Color(0.55,1.0,0.72,0.45),1))
-	RefCanvas.set_rect(status_panel,18,82,354,48)
+	RefCanvas.add_shadow(canvas, Rect2(17,81,354,48), 15, Color(0.02,0.10,0.18,0.22), 5, Vector2(0,4))
+	status_panel.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#2c82bd"),Color("#0a6eb2"),Color("#085a92"),15,Color(0.47,0.69,0.84,0.52),1.4))
+	RefCanvas.set_rect(status_panel,17,81,354,48)
 	status_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(status_panel)
 	moves_label = _status_label(HORIZONTAL_ALIGNMENT_LEFT)
@@ -93,7 +95,7 @@ func _build_figma_rescue(canvas: Control) -> void:
 	chain_label = _status_label(HORIZONTAL_ALIGNMENT_RIGHT)
 	var status_row := HBoxContainer.new()
 	status_row.add_theme_constant_override("separation",4)
-	RefCanvas.set_rect(status_row,28,82,334,48)
+	RefCanvas.set_rect(status_row,27,81,334,48)
 	canvas.add_child(status_row)
 	for label in [moves_label,rescue_label,chain_label]:
 		label.add_theme_font_size_override("font_size",12)
@@ -102,24 +104,25 @@ func _build_figma_rescue(canvas: Control) -> void:
 
 	var objective := PanelContainer.new()
 	objective.name = "RescueObjectiveCard"
-	objective.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.96,0.99,1.0,0.94),12,Color(0.61,0.90,0.70,0.60),1))
-	RefCanvas.set_rect(objective,18,138,354,34)
+	RefCanvas.add_shadow(canvas, Rect2(17,137,354,34), 12, Color(0.02,0.10,0.18,0.14), 3, Vector2(0,3))
+	objective.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color(1,1,1,0.98),Color(0.97,1.0,0.98,0.98),Color("#ebfaf1"),12,Color(0.55,0.89,0.68,0.45),1.2))
+	RefCanvas.set_rect(objective,17,137,354,34)
 	objective.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(objective)
-	var objective_label := RefCanvas.label(objective_instruction().to_upper(),16,NAVY,true)
+	var objective_label := RefCanvas.label(objective_instruction().to_upper(),16,Color("#088c3d"),true)
 	objective_label.name = "RescueObjectiveLabel"
 	objective_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	RefCanvas.set_rect(objective_label,30,138,330,34)
+	RefCanvas.set_rect(objective_label,29,137,330,34)
 	canvas.add_child(objective_label)
 
 	var depth := PanelContainer.new()
-	depth.add_theme_stylebox_override("panel",RefCanvas.solid_box(Color(0.22,0.28,0.25),22))
-	RefCanvas.set_rect(depth,28.2,196.9,338,338)
+	depth.add_theme_stylebox_override("panel",RefCanvas.rounded_gradient3(Color("#335257"),Color("#25434b"),Color("#1a3340"),26))
+	RefCanvas.set_rect(depth,27.15,195.92,338,338)
 	canvas.add_child(depth)
 	board_panel = PanelContainer.new()
 	board_panel.name = "RescueBoardPanel"
-	board_panel.add_theme_stylebox_override("panel",RefCanvas.rounded_gradient(Color(0.45,0.56,0.50),Color(0.28,0.39,0.35),22,Color(0.84,0.95,0.89),2))
-	RefCanvas.set_rect(board_panel,26,184,338,338)
+	board_panel.add_theme_stylebox_override("panel",RefCanvas.rounded_gradient3(Color("#d1ebc2"),Color("#99c4ab"),Color("#5e8c85"),26,Color(0.94,1.0,0.88,0.72),2,0.45))
+	RefCanvas.set_rect(board_panel,25,183,338,338)
 	canvas.add_child(board_panel)
 	var margin := MarginContainer.new()
 	for side in ["left","right","top","bottom"]:
@@ -135,9 +138,9 @@ func _build_figma_rescue(canvas: Control) -> void:
 	var actions := HBoxContainer.new()
 	actions.name = "CompactGameActions"
 	actions.add_theme_constant_override("separation",14)
-	RefCanvas.set_rect(actions,22,570,346,60)
+	RefCanvas.set_rect(actions,21,569,346,60)
 	canvas.add_child(actions)
-	var undo := _action("↶  UNDO",BLUE)
+	var undo := _action("↶  UNDO",Color("#088c3d"))
 	undo.name = "RescueUndoAction"
 	undo.pressed.connect(undo_move)
 	actions.add_child(undo)
@@ -152,11 +155,19 @@ func _build_figma_rescue(canvas: Control) -> void:
 	hint_label = RefCanvas.label("",12,NAVY,true)
 	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	RefCanvas.set_rect(hint_label,22,640,346,40)
+	RefCanvas.set_rect(hint_label,21,639,346,40)
 	canvas.add_child(hint_label)
 
+	var frame_border := PanelContainer.new()
+	frame_border.name = "RescueFrameBorder"
+	frame_border.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame_border.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color.TRANSPARENT, 34, Color("#b8d1e0"), 1))
+	RefCanvas.set_rect(frame_border, 0, 0, 390, 844)
+	frame_border.z_index = 900
+	canvas.add_child(frame_border)
+
 func _action(text_value: String, fill: Color) -> Button:
-	var result := RefCanvas.button(text_value,12,OFF_WHITE,fill,16,fill.lightened(0.30),1)
+	var result := RefCanvas.premium_button(text_value,12,OFF_WHITE,fill,16,fill.lightened(0.30),1.3)
 	result.custom_minimum_size = Vector2(106,60)
 	result.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	return result
