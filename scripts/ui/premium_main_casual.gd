@@ -392,16 +392,16 @@ func build_settings() -> void:
 	var utility_fill := Color(0.12,0.18,0.28,0.96) if dark_mode else FIGMA_BLUE
 	var utility_border := Color(0.26,0.43,0.57,0.72) if dark_mode else utility_fill.lightened(0.24)
 	var utility_text := Color(0.76,0.84,0.90) if dark_mode else FIGMA_OFF_WHITE
-	FigmaReferenceCanvas.add_shadow(canvas, Rect2(33,543,144,42), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
+	FigmaReferenceCanvas.add_shadow(canvas, Rect2(33,541,144,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
 	var how_to := FigmaReferenceCanvas.premium_button("HOW TO PLAY",12,utility_text,Color("#086ec7") if not dark_mode else utility_fill,16,utility_border,1.2)
 	how_to.name = "SettingsHowToPlay"
-	FigmaReferenceCanvas.set_rect(how_to,33,543,144,42)
+	FigmaReferenceCanvas.set_rect(how_to,33,541,144,46)
 	how_to.pressed.connect(_show_current_tutorial)
 	canvas.add_child(how_to)
-	FigmaReferenceCanvas.add_shadow(canvas, Rect2(193,543,158,42), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
+	FigmaReferenceCanvas.add_shadow(canvas, Rect2(193,541,158,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
 	var privacy := FigmaReferenceCanvas.premium_button("PRIVACY OPTIONS",12,utility_text,Color("#086ec7") if not dark_mode else utility_fill,16,utility_border,1.2)
 	privacy.name = "SettingsPrivacy"
-	FigmaReferenceCanvas.set_rect(privacy,193,543,158,42)
+	FigmaReferenceCanvas.set_rect(privacy,193,541,158,46)
 	privacy.pressed.connect(PrivacyManager.show_privacy_options)
 	canvas.add_child(privacy)
 
@@ -1062,8 +1062,8 @@ func _build_figma_level_browser(game_id: String) -> void:
 	FigmaReferenceCanvas.set_rect(accent_rail,17,161,5,70)
 	canvas.add_child(accent_rail)
 
-	var page_y := 243.0 if game_id == "block_puzzle" else 222.0
-	var grid_y := 304.0 if game_id == "block_puzzle" else 269.0
+	var page_y := 247.0 if game_id == "block_puzzle" else 222.0
+	var grid_y := 308.0 if game_id == "block_puzzle" else 269.0
 	if game_id == "block_puzzle":
 		_add_figma_block_modes(canvas)
 
@@ -1227,7 +1227,7 @@ func _add_figma_block_modes(canvas: Control) -> void:
 	for spec in specs:
 		var mode := String(spec[0])
 		var fill: Color = spec[3] as Color
-		var button := _figma_button(canvas,"BlockMode/%s" % mode,String(spec[1]),Rect2(float(spec[2]),201,82,36),fill,Callable(),FIGMA_OFF_WHITE,13,12)
+		var button := _figma_button(canvas,"BlockMode/%s" % mode,String(spec[1]),Rect2(float(spec[2]),197,82,44),fill,Callable(),FIGMA_OFF_WHITE,13,12)
 		_style_figma_page_button(button,fill,fill,false)
 		if mode == "campaign":
 			button.mouse_filter = Control.MOUSE_FILTER_IGNORE
