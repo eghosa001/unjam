@@ -211,6 +211,8 @@ func _add_quick_switch(canvas: Control) -> void:
 		var stars := MultiGameManager.total_stars(id)
 		_add_text(canvas, "L%d • ★%s" % [level, _compact_number(stars)], Rect2(x + 9, 509, 92, 15), 12, MUTED, false)
 		var tap := Button.new()
+		tap.name = "HomeDirect_%s" % id
+		tap.set_meta("unjam_figma_exact_geometry", true)
 		tap.flat = true
 		tap.focus_mode = Control.FOCUS_NONE
 		tap.modulate.a = 0.001
