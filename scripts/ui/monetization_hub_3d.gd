@@ -201,10 +201,10 @@ func open_shop() -> void:
 			remove_child(layer)
 			layer.queue_free()
 		layer = null
-			overlay = null
-			shop_button = null
-			balance_label = null
-			status_label = null
+		overlay = null
+		shop_button = null
+		balance_label = null
+		status_label = null
 		_build_ui()
 	super.open_shop()
 
