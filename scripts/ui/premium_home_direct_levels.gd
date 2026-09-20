@@ -300,8 +300,7 @@ func _add_world_showcase(canvas: Control) -> void:
 	_add_text(root, "WORLD SPOTLIGHT", Rect2(235, 599, 118, 16), 11, accent, true)
 	_add_text(root, _short_game_name(selected_game), Rect2(235, 620, 118, 25), 18, NAVY, true)
 	_add_text(root, "WORLD %d • LEVEL %d" % [world, level], Rect2(235, 651, 118, 16), 11, MUTED, true)
-	_add_text(root, "NEXT MILESTONE • %d" % next_milestone, Rect2(235, 679, 118, 16), 10, ORANGE, true)
-	_add_text(root, "One journey • three worlds" if selected_game == "rescue_rush" else "Keep the streak moving", Rect2(235, 704, 118, 14), 9, MUTED, false)
+	_add_text(root, "NEXT MILESTONE • %d" % next_milestone, Rect2(235, 683, 118, 18), 11, ORANGE, true)
 
 
 func _add_bottom_nav_reference(canvas: Control) -> void:
