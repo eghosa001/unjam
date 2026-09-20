@@ -2,6 +2,7 @@ extends "res://scripts/ui/premium_main.gd"
 
 const FIGMA_LEVEL_PAGE_SIZE := 20
 const FIGMA_BG_TOP := Color(0.94, 0.99, 1.0)
+const FIGMA_BG_MID := Color("#fafcff")
 const FIGMA_BG_BOTTOM := Color(0.892, 0.9496, 0.988)
 const FIGMA_NAVY := Color(0.03, 0.23, 0.47)
 const FIGMA_INK := Color(0.07, 0.20, 0.35)
@@ -91,7 +92,8 @@ func _figma_surface(active: String, bottom_tint: Color = FIGMA_BG_BOTTOM, top_ti
 	content.add_child(canvas)
 	var bg := PanelContainer.new()
 	bg.name = "FigmaSurfaceBackground"
-	bg.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient(top_tint, bottom_tint, 0))
+	var mid_tint := FIGMA_BG_MID if not _dark() else top_tint.lerp(bottom_tint, 0.48)
+	bg.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(top_tint, mid_tint, bottom_tint, 34, Color("#bad1e3") if not _dark() else Color(0.22,0.36,0.48,0.72), 1, 0.48))
 	FigmaReferenceCanvas.set_rect(bg, 0, 0, 390, 844)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(bg)
@@ -105,7 +107,8 @@ func _figma_text(canvas: Control, text_value: String, rect: Rect2, font_size: in
 	return label
 
 func _figma_button(canvas: Control, name_value: String, text_value: String, rect: Rect2, fill: Color, callback: Callable, text_color: Color = FIGMA_OFF_WHITE, radius: float = 14.0, font_size: int = 12) -> Button:
-	var button := FigmaReferenceCanvas.button(text_value, font_size, text_color, fill, radius, fill.lightened(0.24), 1)
+	FigmaReferenceCanvas.add_shadow(canvas, rect, radius, Color(0.02,0.10,0.18,0.16), 4, Vector2(0,3))
+	var button := FigmaReferenceCanvas.premium_button(text_value, font_size, text_color, fill, radius, fill.lightened(0.24), 1.2)
 	button.name = name_value
 	FigmaReferenceCanvas.set_rect(button, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	if callback.is_valid():
@@ -114,15 +117,18 @@ func _figma_button(canvas: Control, name_value: String, text_value: String, rect
 	return button
 
 func _figma_card(canvas: Control, name_value: String, rect: Rect2, tint: Color = Color(1.0, 0.995, 0.97), accent: Color = Color(0.70, 0.88, 0.96, 0.45), radius: float = 16.0) -> PanelContainer:
+	FigmaReferenceCanvas.add_shadow(canvas, rect, radius, Color(0.03,0.11,0.20,0.16), 5, Vector2(0,4))
 	var card := PanelContainer.new()
 	card.name = name_value
-	card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient(tint, tint.darkened(0.035), radius, accent, 1))
+	card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(tint, tint.lerp(tint.darkened(0.035),0.48), tint.darkened(0.035), radius, accent, 1.2, 0.48))
 	FigmaReferenceCanvas.set_rect(card, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(card)
 	return card
 
-func _figma_solid_card(canvas: Control, name_value: String, rect: Rect2, tint: Color, border: Color, radius: float = 16.0) -> PanelContainer:
+func _figma_solid_card(canvas: Control, name_value: String, rect: Rect2, tint: Color, border: Color, radius: float = 16.0, with_shadow: bool = true) -> PanelContainer:
+	if with_shadow:
+		FigmaReferenceCanvas.add_shadow(canvas, rect, radius, Color(0.03,0.11,0.20,0.14), 4, Vector2(0,3))
 	var card := PanelContainer.new()
 	card.name = name_value
 	card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(tint, radius, border, 1))
@@ -135,20 +141,20 @@ func _figma_header(canvas: Control, title_text: String, subtitle_text: String, p
 	var heading_color := Color(0.91,0.97,1.0) if dark_mode else FIGMA_INK
 	var muted_color := Color(0.76,0.84,0.90) if dark_mode else FIGMA_MUTED
 	var back_color := muted_color if dark_mode else FIGMA_NAVY
-	_figma_button(canvas, "FigmaBack", "‹", Rect2(18,20,52,52), Color(1.0,0.995,0.97), back_callback, back_color, 16, 27)
-	_figma_text(canvas, title_text, Rect2(84,22,205,28), 23, heading_color)
-	var subtitle := _figma_text(canvas, subtitle_text, Rect2(84,52,210,30), 12, muted_color)
+	_figma_button(canvas, "FigmaBack", "‹", Rect2(17,19,52,52), Color(1.0,0.995,0.97), back_callback, back_color, 18, 27)
+	_figma_text(canvas, title_text, Rect2(83,21,205,28), 23, heading_color)
+	var subtitle := _figma_text(canvas, subtitle_text, Rect2(83,51,210,30), 12, muted_color)
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	if pill_callback.is_valid():
-		_figma_button(canvas, "FigmaHeaderPill", pill_text, Rect2(286,22,84,46), pill_fill, pill_callback, FIGMA_OFF_WHITE if not dark_mode else muted_color, 16, 12)
+		_figma_button(canvas, "FigmaHeaderPill", pill_text, Rect2(285,21,84,46), pill_fill, pill_callback, FIGMA_OFF_WHITE if not dark_mode else muted_color, 23, 12)
 	else:
 		var pill: PanelContainer
 		if dark_mode:
-			pill = _figma_solid_card(canvas, "FigmaHeaderPill", Rect2(286,22,84,46), pill_fill, pill_fill, 16)
+			pill = _figma_solid_card(canvas, "FigmaHeaderPill", Rect2(285,21,84,46), pill_fill, pill_fill, 23)
 		else:
-			pill = _figma_card(canvas, "FigmaHeaderPill", Rect2(286,22,84,46), pill_fill, pill_fill.lightened(0.24), 16)
+			pill = _figma_solid_card(canvas, "FigmaHeaderPill", Rect2(285,21,84,46), pill_fill, pill_fill.lightened(0.24), 23)
 		pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var pill_label := _figma_text(canvas, pill_text, Rect2(298,30,60,30), 12, muted_color if dark_mode else FIGMA_OFF_WHITE, true)
+		var pill_label := _figma_text(canvas, pill_text, Rect2(297,29,60,30), 12, muted_color if dark_mode else FIGMA_OFF_WHITE, true)
 		pill_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 
 func _figma_open_shop() -> void:
@@ -161,9 +167,9 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 	var bar_fill := Color(0.07,0.10,0.17,0.98) if dark_mode else Color(0.985,0.995,1.0)
 	var bar_border := Color(0.23,0.34,0.45,0.90) if dark_mode else Color(0.78,0.88,0.95,0.75)
 	if dark_mode:
-		_figma_solid_card(canvas, "StdNav/Bar", Rect2(14,758,362,70), bar_fill, bar_border, 18)
+		_figma_solid_card(canvas, "StdNav/Bar", Rect2(13,757,362,70), bar_fill, bar_border, 18)
 	else:
-		_figma_card(canvas, "StdNav/Bar", Rect2(14,758,362,70), bar_fill, bar_border, 18)
+		_figma_card(canvas, "StdNav/Bar", Rect2(13,757,362,70), bar_fill, bar_border, 18)
 	var xs := {"home":22.0, "games":91.0, "daily":160.0, "collection":229.0, "settings":298.0}
 	var names := {"home":"HOME", "games":"GAMES", "daily":"DAILY", "collection":"COLLECT", "settings":"SETTINGS"}
 	var callbacks := {
@@ -176,18 +182,18 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 	var hit_x := {"home":14.0, "games":84.0, "daily":153.0, "collection":222.0, "settings":291.0}
 	if xs.has(active):
 		var active_fill := Color(0.08,0.34,0.53) if dark_mode else FIGMA_CYAN
-		_figma_solid_card(canvas, "StdNav/Active", Rect2(float(hit_x[active])+1.0,768,62,48), active_fill, active_fill, 16)
+		_figma_solid_card(canvas, "StdNav/Active", Rect2(float(hit_x[active])+1.0,767,62,48), active_fill, active_fill, 16, false)
 	for key in ["home","games","daily","collection","settings"]:
 		var selected: bool = String(key) == active
 		var selected_text := Color(0.42,0.78,1.0) if dark_mode else Color(0.05,0.49,0.86)
 		var idle_text := Color(0.62,0.72,0.80) if dark_mode else FIGMA_MUTED
-		_figma_text(canvas, String(names[key]), Rect2(float(xs[key]),789,58,30), 12, selected_text if selected else idle_text)
+		_figma_text(canvas, String(names[key]), Rect2(float(xs[key])-1.0,788,58,30), 12, selected_text if selected else idle_text)
 		var hit := Button.new()
 		hit.name = "StdNav/Proto/%s" % String(names[key])
 		hit.flat = true
 		hit.focus_mode = Control.FOCUS_NONE
 		hit.modulate.a = 0.001
-		FigmaReferenceCanvas.set_rect(hit, float(hit_x[key]),754,74 if key != "settings" else 80,78)
+		FigmaReferenceCanvas.set_rect(hit, float(hit_x[key])-1.0,753,74 if key != "settings" else 80,78)
 		if not selected:
 			var cb: Callable = callbacks[key]
 			hit.pressed.connect(cb)
@@ -244,12 +250,14 @@ func build_settings() -> void:
 	var utility_fill := Color(0.12,0.18,0.28,0.96) if dark_mode else FIGMA_BLUE
 	var utility_border := Color(0.26,0.43,0.57,0.72) if dark_mode else utility_fill.lightened(0.24)
 	var utility_text := Color(0.76,0.84,0.90) if dark_mode else FIGMA_OFF_WHITE
-	var how_to := FigmaReferenceCanvas.button("HOW TO PLAY",12,utility_text,utility_fill,14,utility_border,1)
+	FigmaReferenceCanvas.add_shadow(canvas, Rect2(34,544,144,42), 14, Color(0.02,0.10,0.18,0.15), 4, Vector2(0,3))
+	var how_to := FigmaReferenceCanvas.premium_button("HOW TO PLAY",12,utility_text,utility_fill,14,utility_border,1.2)
 	how_to.name = "SettingsHowToPlay"
 	FigmaReferenceCanvas.set_rect(how_to,34,544,144,42)
 	how_to.pressed.connect(_show_current_tutorial)
 	canvas.add_child(how_to)
-	var privacy := FigmaReferenceCanvas.button("PRIVACY OPTIONS",12,utility_text,utility_fill,14,utility_border,1)
+	FigmaReferenceCanvas.add_shadow(canvas, Rect2(194,544,158,42), 14, Color(0.02,0.10,0.18,0.15), 4, Vector2(0,3))
+	var privacy := FigmaReferenceCanvas.premium_button("PRIVACY OPTIONS",12,utility_text,utility_fill,14,utility_border,1.2)
 	privacy.name = "SettingsPrivacy"
 	FigmaReferenceCanvas.set_rect(privacy,194,544,158,42)
 	privacy.pressed.connect(PrivacyManager.show_privacy_options)
