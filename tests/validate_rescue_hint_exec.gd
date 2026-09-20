@@ -6,7 +6,7 @@ func _initialize() -> void:
 func _active_count(pieces: Array) -> int:
 	var count := 0
 	for raw in pieces:
-		if raw is Dictionary and bool((raw as Dictionary).get("active",true)):
+		if raw is Dictionary and bool((raw as Dictionary).get("active", true)):
 			count += 1
 	return count
 
@@ -15,37 +15,53 @@ func _run() -> void:
 	if save_manager != null:
 		var save_data: Dictionary = save_manager.get("data")
 		save_data["active_run"] = {}
-		save_manager.set("data",save_data)
+		save_manager.set("data", save_data)
 
 	var scene := load("res://scenes/Game.tscn") as PackedScene
 	if scene == null:
-		return _fail("Rescue scene failed to load")
-	var game := scene.instantiate()
-	game.set("level_number",5)
+		push_error("Rescue scene failed to load")
+		quit(1)
+		return
+
+	var game = scene.instantiate()
+	game.set("level_number", 5)
 	root.add_child(game)
-	await _frames(4)
+	await process_frame
+	await process_frame
 
-	var before := _active_count(game.get("pieces") as Array)
-	var before_moves := int(game.get("moves"))
+	var before: int = _active_count(game.get("pieces") as Array)
+	var before_moves: int = int(game.get("moves"))
+	var before_hints: int = int(game.get("hints_used_this_level"))
+	if not bool(game.call("can_show_hint")):
+		push_error("Rescue test level has no verified removable hint arrow")
+		game.queue_free()
+		quit(1)
+		return
+
 	game.call("show_hint")
-	await _frames(24)
-	var after := _active_count(game.get("pieces") as Array)
-	var after_moves := int(game.get("moves"))
-	if after >= before:
-		return _fail("Rescue Hint did not remove an arrow: %d -> %d" % [before,after])
-	if after_moves != before_moves:
-		return _fail("Rescue Hint consumed a player move: %d -> %d" % [before_moves,after_moves])
+	for _i in range(60):
+		await process_frame
 
-	print("RESCUE_HINT_REMOVAL_OK active=%d->%d moves=%d" % [before,after,after_moves])
+	var after: int = _active_count(game.get("pieces") as Array)
+	var after_moves: int = int(game.get("moves"))
+	var after_hints: int = int(game.get("hints_used_this_level"))
+	if after >= before:
+		push_error("Rescue Hint did not remove an arrow: active %d->%d" % [before, after])
+		game.queue_free()
+		quit(1)
+		return
+	if after_moves != before_moves:
+		push_error("Rescue Hint must not consume a player move: %d->%d" % [before_moves, after_moves])
+		game.queue_free()
+		quit(1)
+		return
+	if after_hints != before_hints + 1:
+		push_error("Rescue Hint usage was not recorded exactly once: %d->%d" % [before_hints, after_hints])
+		game.queue_free()
+		quit(1)
+		return
+
+	print("RESCUE_HINT_REMOVAL_OK active=%d->%d moves=%d->%d hints=%d->%d" % [before, after, before_moves, after_moves, before_hints, after_hints])
 	game.queue_free()
 	await process_frame
 	quit(0)
-
-func _frames(count: int) -> void:
-	for _i in range(count):
-		await process_frame
-
-func _fail(message: String) -> bool:
-	push_error(message)
-	quit(1)
-	return false
