@@ -159,96 +159,52 @@ func _figma_bottom_nav(canvas: Control, active: String) -> void:
 func build_settings() -> void:
 	current_surface = "settings"
 	_remove_active_game()
-	var root := _page_root()
-	var accent := _accent()
-	_page_header(root, "SETTINGS", "Make UNJAM feel right for you", "AUTO-SAVE", PremiumDesignSystem.SUCCESS)
+	var canvas := _figma_surface("settings")
+	_figma_header(canvas, "SETTINGS", "Make UNJAM feel right for you", "AUTO-SAVE", FIGMA_BLUE)
 
-	var scroll := ScrollContainer.new()
-	scroll.name = "SettingsScroll"
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	root.add_child(scroll)
-	var stack := VBoxContainer.new()
-	stack.name = "PremiumSettingsStack"
-	stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	stack.add_theme_constant_override("separation", 16)
-	scroll.add_child(stack)
+	_figma_card(canvas, "SettingsCard/Sound", Rect2(18,92,354,170), Color(0.985,0.995,1.0), Color(0.72,0.88,0.96,0.52), 16)
+	_figma_text(canvas, "♫  SOUND & FEEL", Rect2(34,108,160,18), 15, FIGMA_INK)
+	_figma_setting_row(canvas, "sound", "SOUND EFFECTS", 131, 142)
+	_figma_setting_row(canvas, "music", "MUSIC", 179, 190)
+	_figma_setting_row(canvas, "vibration", "HAPTICS", 227, 238)
 
-	var audio := _card(stack, Vector2(0, 0), true)
-	var audio_margin := _pad(audio, 20)
-	var audio_box := VBoxContainer.new()
-	audio_box.add_theme_constant_override("separation", 10)
-	audio_margin.add_child(audio_box)
-	audio_box.add_child(_label("♫  SOUND & FEEL", 24, "title", accent))
-	audio_box.add_child(_label("Choose how every tap, move and celebration responds.", 17, "muted", accent))
-	for setting in [
-		["sound", "🔊  SOUND EFFECTS", "Moves, taps and rewards", true],
-		["music", "♫  MUSIC", "Calm background soundtrack", true],
-		["vibration", "◉  HAPTICS", "Touch vibration feedback", true]
-	]:
-		var key := String(setting[0])
-		var enabled := bool(SaveManager.data.get(key, bool(setting[3])))
-		var button := _setting_button(String(setting[1]), String(setting[2]), enabled, accent)
-		button.pressed.connect(_toggle_setting.bind(key))
-		audio_box.add_child(button)
+	_figma_card(canvas, "SettingsCard/Comfort", Rect2(18,276,354,120), Color(0.985,0.995,1.0), Color(0.72,0.88,0.96,0.52), 16)
+	_figma_text(canvas, "✦  COMFORT", Rect2(34,292,130,18), 15, FIGMA_INK)
+	_figma_setting_row(canvas, "reduce_motion", "REDUCED MOTION", 315, 326, false, true)
+	_figma_setting_row(canvas, "fast_animation", "FAST ANIMATION", 359, 370, false)
 
-	var comfort := _card(stack, Vector2(0, 0), false)
-	var comfort_margin := _pad(comfort, 20)
-	var comfort_box := VBoxContainer.new()
-	comfort_box.add_theme_constant_override("separation", 10)
-	comfort_margin.add_child(comfort_box)
-	comfort_box.add_child(_label("✦  COMFORT", 24, "title", accent))
-	comfort_box.add_child(_label("Large touch targets are always on. Adjust motion speed here.", 17, "muted", accent))
-	var reduced := bool(SaveManager.data.get("reduce_motion", false))
-	var reduced_button := _setting_button("◌  REDUCED MOTION", "Minimise decorative movement", reduced, accent)
-	reduced_button.pressed.connect(_toggle_reduced_motion)
-	comfort_box.add_child(reduced_button)
-	var fast := bool(SaveManager.data.get("fast_animation", false))
-	var fast_button := _setting_button("»  FAST ANIMATION", "Quicker gameplay transitions", fast, accent)
-	fast_button.pressed.connect(_toggle_setting.bind("fast_animation"))
-	comfort_box.add_child(fast_button)
-
-	var appearance_card := _card(stack, Vector2(0, 0), true)
-	var appearance_margin := _pad(appearance_card, 20)
-	var appearance_box := VBoxContainer.new()
-	appearance_box.add_theme_constant_override("separation", 10)
-	appearance_margin.add_child(appearance_box)
-	appearance_box.add_child(_label("☀  APPEARANCE", 24, "title", accent))
+	_figma_card(canvas, "SettingsCard/Appearance", Rect2(18,410,354,76), Color(0.985,0.995,1.0), Color(0.72,0.88,0.96,0.52), 16)
+	_figma_text(canvas, "☀  APPEARANCE", Rect2(34,426,150,18), 15, FIGMA_INK)
+	_figma_text(canvas, "THEME", Rect2(34,448,210,28), 13, FIGMA_INK)
 	var shell := get_node_or_null("UXShell")
 	var theme_name := "LIGHT"
 	if shell != null and shell.get("theme_mode") != null:
 		theme_name = String(shell.get("theme_mode")).to_upper()
-	var appearance := _button("THEME  •  %s\nTap to switch appearance" % theme_name, Vector2(0, 92), "secondary")
-	appearance.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	appearance.add_theme_font_size_override("font_size", 20)
-	appearance.pressed.connect(func() -> void:
+	var theme_fill := FIGMA_BLUE if theme_name == "DARK" else FIGMA_GREEN
+	var theme_button := _figma_button(canvas, "SettingToggle/Theme", theme_name, Rect2(280,443,72,38), theme_fill, Callable(), FIGMA_OFF_WHITE, 19, 12)
+	theme_button.pressed.connect(func() -> void:
 		if shell != null and shell.has_method("_toggle_theme"):
 			shell.call("_toggle_theme")
 		call_deferred("build_settings")
 	)
-	appearance_box.add_child(appearance)
 
-	var help_card := _card(stack, Vector2(0, 0), false)
-	var help_margin := _pad(help_card, 20)
-	var help_box := VBoxContainer.new()
-	help_box.add_theme_constant_override("separation", 10)
-	help_margin.add_child(help_box)
-	help_box.add_child(_label("?  HELP & PRIVACY", 24, "title", accent))
-	var how_to := _button("HOW TO PLAY\nQuick visual guide for the current game", Vector2(0, 88), "utility")
-	how_to.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	how_to.pressed.connect(_show_current_tutorial)
-	help_box.add_child(how_to)
-	var privacy := _button("PRIVACY OPTIONS\nReview consent and privacy controls", Vector2(0, 88), "utility")
-	privacy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	privacy.pressed.connect(PrivacyManager.show_privacy_options)
-	help_box.add_child(privacy)
+	_figma_card(canvas, "HelpPrivacy", Rect2(18,500,354,94), Color(0.985,0.995,1.0), Color(0.72,0.88,0.96,0.52), 16)
+	_figma_text(canvas, "?  HELP & PRIVACY", Rect2(34,516,170,18), 15, FIGMA_INK)
+	_figma_button(canvas, "SettingsHowToPlay", "HOW TO PLAY", Rect2(34,544,144,42), FIGMA_BLUE, Callable(self,"_show_current_tutorial"), FIGMA_OFF_WHITE, 14, 12)
+	_figma_button(canvas, "SettingsPrivacy", "PRIVACY OPTIONS", Rect2(194,544,158,42), Color(0.18,0.54,0.82), Callable(PrivacyManager,"show_privacy_options"), FIGMA_OFF_WHITE, 14, 12)
 
-	var note := _label("Your progress saves automatically.", 16, "muted", accent)
-	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	stack.add_child(note)
-	PremiumVisuals.entrance(stack, 0.018)
-	_add_surface_diorama(selected_game_id, "Settings3DDiorama")
-	_add_secondary_nav("settings")
+	_figma_bottom_nav(canvas, "settings")
+
+func _figma_setting_row(canvas: Control, key: String, label_text: String, toggle_y: float, label_y: float, default_value: bool = true, reduced_motion: bool = false) -> void:
+	_figma_text(canvas, label_text, Rect2(34,label_y - 7,210,30), 13, FIGMA_INK)
+	var enabled := bool(SaveManager.data.get(key, default_value))
+	var fill := FIGMA_GREEN if enabled else Color(0.72,0.78,0.84)
+	var state := "ON" if enabled else "OFF"
+	var button := _figma_button(canvas, "SettingToggle/%s" % key.capitalize(), state, Rect2(280,toggle_y,72,38), fill, Callable(), FIGMA_OFF_WHITE, 19, 12)
+	if reduced_motion:
+		button.pressed.connect(_toggle_reduced_motion)
+	else:
+		button.pressed.connect(_toggle_setting.bind(key))
 
 func _setting_button(title_text: String, detail_text: String, enabled: bool, accent: Color) -> Button:
 	var state := "ON" if enabled else "OFF"
