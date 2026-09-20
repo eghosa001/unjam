@@ -3,14 +3,17 @@ extends Node
 # One vocabulary for every transition/gameplay tween. Keep this deliberately
 # small: consistency reads as quality more than having dozens of curves.
 const DURATIONS := {
-	&"micro": 0.07,
-	&"press": 0.10,
-	&"travel": 0.22,
-	&"settle": 0.14,
-	&"celebrate": 0.34,
-	&"screen": 0.14,
-	&"pour": 0.28,
-	&"reflow": 0.16,
+	# Premium puzzle controls should acknowledge input inside a single visual beat.
+	# These values keep motion readable while removing the small "wait" between
+	# touch, travel, settle and the next available decision.
+	&"micro": 0.055,
+	&"press": 0.085,
+	&"travel": 0.19,
+	&"settle": 0.12,
+	&"celebrate": 0.30,
+	&"screen": 0.12,
+	&"pour": 0.235,
+	&"reflow": 0.135,
 }
 const FAST_SCALE := 0.62
 const REDUCED_SCALE := 0.28
