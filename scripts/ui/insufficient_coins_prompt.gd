@@ -18,6 +18,7 @@ func _build() -> void:
 	layer.name = "InsufficientCoinsLayer"
 	layer.layer = 600
 	add_child(layer)
+
 	overlay = Control.new()
 	overlay.name = "InsufficientCoinsOverlay"
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -26,73 +27,75 @@ func _build() -> void:
 	layer.add_child(overlay)
 
 	var shade := ColorRect.new()
-	shade.color = Color(0.01, 0.025, 0.07, 0.82)
+	shade.name = "CoinModal/Dim"
+	shade.color = Color(0.01,0.025,0.07,0.76)
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	shade.mouse_filter = Control.MOUSE_FILTER_STOP
 	overlay.add_child(shade)
-	var center := CenterContainer.new()
-	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	overlay.add_child(center)
-	var panel := PanelContainer.new()
-	panel.name = "InsufficientCoinsCard"
-	var visible_size := get_viewport().get_visible_rect().size
-	panel.custom_minimum_size = Vector2(minf(620.0, maxf(300.0, visible_size.x - 48.0)), minf(520.0, maxf(420.0, visible_size.y - 80.0)))
-	panel.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("f8fbff"), 38, Color("ffd46a"), 4, 12))
-	center.add_child(panel)
-	var margin := MarginContainer.new()
-	for side in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_%s" % side, 24 if visible_size.x < 600.0 else 30)
-	panel.add_child(margin)
-	var box := VBoxContainer.new()
-	box.alignment = BoxContainer.ALIGNMENT_CENTER
-	box.add_theme_constant_override("separation", 14 if visible_size.y < 900.0 else 18)
-	margin.add_child(box)
 
-	var title := Label.new()
-	title.text = "MORE COINS NEEDED"
+	var canvas := FigmaReferenceCanvas.new()
+	canvas.name = "FigmaInsufficientCoins390x844"
+	overlay.add_child(canvas)
+
+	var card := PanelContainer.new()
+	card.name = "CoinModal/Card"
+	card.add_theme_stylebox_override("panel",FigmaReferenceCanvas.rounded_gradient(
+		Color(0.995,0.998,1.0),Color(0.94,0.97,0.99),26,Color("ffd46a"),2
+	))
+	FigmaReferenceCanvas.set_rect(card,26,194,338,410)
+	card.mouse_filter = Control.MOUSE_FILTER_STOP
+	canvas.add_child(card)
+
+	var icon := PanelContainer.new()
+	icon.name = "CoinModal/Icon"
+	icon.add_theme_stylebox_override("panel",FigmaReferenceCanvas.rounded_gradient(Color("ffd95a"),Color("f3a820"),44,Color("fff1a8"),2))
+	FigmaReferenceCanvas.set_rect(icon,151,220,88,88)
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(icon)
+	var icon_text := FigmaReferenceCanvas.label("◈",30,Color.WHITE,true)
+	icon_text.name = "CoinModal/IconText"
+	icon_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	icon_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	FigmaReferenceCanvas.set_rect(icon_text,166,236,58,44)
+	canvas.add_child(icon_text)
+
+	var title := FigmaReferenceCanvas.label("MORE COINS NEEDED",23,Color(0.07,0.20,0.35),true)
+	title.name = "CoinModal/Title"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 28 if visible_size.x < 600.0 else 34)
-	Unjam3DTheme.label_3d(title, Unjam3DTheme.ORANGE, Unjam3DTheme.NAVY, 5)
-	box.add_child(title)
-	detail_label = Label.new()
+	FigmaReferenceCanvas.set_rect(title,52,326,286,30)
+	canvas.add_child(title)
+
+	detail_label = FigmaReferenceCanvas.label("",14,Color(0.31,0.42,0.52),false)
+	detail_label.name = "CoinModal/Body"
 	detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	detail_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	detail_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	detail_label.add_theme_font_size_override("font_size", 18 if visible_size.x < 600.0 else 20)
-	Unjam3DTheme.label_3d(detail_label, Unjam3DTheme.NAVY, Color.WHITE, 2)
-	box.add_child(detail_label)
+	FigmaReferenceCanvas.set_rect(detail_label,54,368,282,48)
+	canvas.add_child(detail_label)
 
-	var shop := Button.new()
-	shop.name = "InsufficientCoinsShopButton"
-	shop.text = "OPEN SHOP"
-	shop.custom_minimum_size = Vector2(0, 82 if visible_size.y < 900.0 else 92)
-	shop.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	shop.add_theme_font_size_override("font_size", 21 if visible_size.x < 600.0 else 23)
-	Unjam3DTheme.gloss_button(shop, Unjam3DTheme.ORANGE, true, 30)
-	shop.pressed.connect(_open_shop)
-	box.add_child(shop)
-
-	reward_button = Button.new()
-	reward_button.name = "InsufficientCoinsRewardButton"
-	reward_button.text = "▶  WATCH AD  •  +50 COINS"
-	reward_button.custom_minimum_size = Vector2(0, 82 if visible_size.y < 900.0 else 92)
-	reward_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	reward_button.add_theme_font_size_override("font_size", 18 if visible_size.x < 600.0 else 21)
-	Unjam3DTheme.gloss_button(reward_button, Color("24ba68"), true, 30)
+	reward_button = FigmaReferenceCanvas.button("▶  WATCH AD  •  +50 COINS",14,Color.WHITE,Color(0.13,0.78,0.39),16,Color(0.49,0.89,0.63),1)
+	reward_button.name = "CoinModal/Rewarded"
+	FigmaReferenceCanvas.set_rect(reward_button,46,438,298,58)
 	reward_button.pressed.connect(_watch_rewarded)
-	box.add_child(reward_button)
+	canvas.add_child(reward_button)
 
-	var close := Button.new()
-	close.text = "NOT NOW"
-	close.custom_minimum_size = Vector2(0, 66 if visible_size.y < 900.0 else 72)
-	close.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	Unjam3DTheme.gloss_button(close, Unjam3DTheme.WATER_DARK, false, 26)
-	close.pressed.connect(_close)
-	box.add_child(close)
+	var shop := FigmaReferenceCanvas.button("OPEN SHOP",13,Color.WHITE,Color(1.0,0.55,0.12),16,Color(1.0,0.76,0.38),1)
+	shop.name = "CoinModal/Shop"
+	FigmaReferenceCanvas.set_rect(shop,46,506,142,52)
+	shop.pressed.connect(_open_shop)
+	canvas.add_child(shop)
+
+	var later := FigmaReferenceCanvas.button("NOT NOW",13,Color(0.03,0.23,0.47),Color(0.96,0.985,1.0),16,Color(0.66,0.80,0.91),1)
+	later.name = "CoinModal/Later"
+	FigmaReferenceCanvas.set_rect(later,202,506,142,52)
+	later.pressed.connect(_close)
+	canvas.add_child(later)
 
 func show_for(action_name: String, cost: int, retry: Callable = Callable()) -> void:
 	if overlay == null or not is_instance_valid(overlay):
 		_build()
 	_action_name = action_name
-	_cost = maxi(1, cost)
+	_cost = maxi(1,cost)
 	_retry = retry
 	_reward_busy = false
 	if reward_button != null:
@@ -105,8 +108,8 @@ func _refresh_detail(extra: String = "") -> void:
 	if detail_label == null:
 		return
 	var balance := EconomyManager.balance()
-	var missing := maxi(0, _cost - balance)
-	var text := "%s costs %d coins.\nYou have %d • Need %d more." % [_action_name, _cost, balance, missing]
+	var missing := maxi(0,_cost-balance)
+	var text := "%s costs %d coins\nYou have %d • Need %d more" % [_action_name,_cost,balance,missing]
 	if not extra.is_empty():
 		text += "\n" + extra
 	detail_label.text = text
@@ -126,7 +129,7 @@ func _watch_rewarded() -> void:
 	_reward_busy = true
 	reward_button.disabled = true
 	reward_button.text = "LOADING…"
-	var accepted := AdManager.reward_coins("assist_coin_recovery", 50, Callable(self, "_on_reward_granted"), Callable(self, "_on_reward_failed"))
+	var accepted := AdManager.reward_coins("assist_coin_recovery",50,Callable(self,"_on_reward_granted"),Callable(self,"_on_reward_failed"))
 	if not accepted and _reward_busy:
 		_on_reward_failed("Rewarded ad is unavailable right now")
 
