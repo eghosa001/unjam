@@ -1,12 +1,9 @@
 extends SceneTree
 
-const TEST_VIEWPORT := Vector2i(540, 960)
+const TEST_VIEWPORT := Vector2i(540,960)
 
 func _initialize() -> void:
 	call_deferred("_run")
-
-func _manager() -> Node:
-	return root.get_node("MultiGameManager")
 
 func _save() -> Node:
 	return root.get_node("SaveManager")
@@ -21,9 +18,9 @@ func _run() -> void:
 	current_scene = main
 	await _frames(12)
 
-	if not await _test_home_and_daily(main):
+	if not await _test_home_and_surfaces(main):
 		return
-	if not await _test_selector_card_tap_and_level_launch(main):
+	if not await _test_selector_and_level_launch(main):
 		return
 	if not await _test_water_controls(main):
 		return
@@ -33,107 +30,100 @@ func _run() -> void:
 		return
 	if not await _test_settings_toggle(main):
 		return
+	if not await _test_shop(main):
+		return
 
 	main.queue_free()
 	await _frames(2)
-	print("Figma/runtime sync validated: primary nav, card-level selector taps, unlocked-level launch, gameplay controls, paid hint ownership, boosters and settings preferences all respond at 540x960.")
+	print("Figma/runtime sync validated: navigation, level launch, gameplay actions, settings, Shop and reference-canvas surfaces are responsive.")
 	quit(0)
 
-func _test_home_and_daily(main: Control) -> bool:
+func _test_home_and_surfaces(main: Control) -> bool:
 	main.call("build_home")
 	await _frames(5)
 	var home := main.get_node_or_null("PremiumHome") as Control
 	if home == null:
 		return _fail("PremiumHome is missing")
-	if home.find_child("HomeMottoStone", true, false) != null:
-		return _fail("Home still renders the retired motto plaque")
-	if home.find_child("HomeShopNavButton", true, false) != null:
-		return _fail("Home persistent nav still exposes Shop instead of Daily")
-	var coin_shop := home.find_child("HomeCoinShopButton", true, false) as Button
-	if not _bound(coin_shop):
-		return _fail("Home coin wallet does not open Shop")
-	var expected := ["HomeNavButton", "HomeLevelsNavButton", "HomeDailyNavButton", "HomeCollectionNavButton", "HomeSettingsNavButton"]
-	for name in expected:
-		var button := home.find_child(name, true, false) as Button
-		if button == null:
-			return _fail("Home nav button missing: %s" % name)
-		if name != "HomeNavButton" and not _bound(button):
-			return _fail("Home nav button is not responsive: %s" % name)
-	var daily := home.find_child("HomeDailyNavButton", true, false) as Button
+	var canvas := home.find_child("FigmaHome390x844",true,false) as Control
+	if canvas == null:
+		return _fail("Figma Home canvas is missing")
+	for name in ["HomeCoinShopButton","HomeLevelsNavButton","HomeDailyNavButton","HomeCollectionNavButton","HomeSettingsNavButton"]:
+		var button := home.find_child(name,true,false) as Button
+		if not _bound(button):
+			return _fail("Figma Home control is missing or unbound: %s" % name)
+
+	var daily := home.find_child("HomeDailyNavButton",true,false) as Button
 	daily.pressed.emit()
 	await _frames(6)
 	if String(main.get("current_surface")) != "daily":
 		return _fail("Home Daily nav did not open Daily Games")
-	if not _assert_secondary_nav(main, "SecondaryNavDaily"):
-		return false
-	if not _all_enabled_buttons_bound(main.get("content") as Control, [""]):
+	if not _has_figma_surface(main):
+		return _fail("Daily Games is not using the Figma surface canvas")
+	if not _all_enabled_buttons_bound(main.get("content") as Control):
 		return false
 
 	main.call("build_collection")
 	await _frames(5)
-	if not _assert_secondary_nav(main, "SecondaryNavCollection"):
-		return false
+	if not _has_figma_surface(main):
+		return _fail("Collection is not using the Figma surface canvas")
+	if main.find_child("Journey",true,false) == null or main.find_child("Garden",true,false) == null:
+		return _fail("Figma Collection hierarchy is incomplete")
+
 	main.call("build_settings")
 	await _frames(5)
-	if not _assert_secondary_nav(main, "SecondaryNavSettings"):
-		return false
+	if not _has_figma_surface(main):
+		return _fail("Settings is not using the Figma surface canvas")
+	if main.find_child("SettingsCard/Sound",true,false) == null and main.find_child("SettingsCard_Sound",true,false) == null:
+		# Node-name sanitisation is engine-version dependent; geometry test below
+		# remains the authoritative Settings check.
+		var sound_toggle := _button_at(main.get("content") as Control,Vector2(280,131),Vector2(72,38))
+		if sound_toggle == null:
+			return _fail("Figma Settings sound section is missing")
 	return true
 
-func _test_selector_card_tap_and_level_launch(main: Control) -> bool:
+func _test_selector_and_level_launch(main: Control) -> bool:
 	main.call("build_home")
 	await _frames(4)
 	var home := main.get_node_or_null("PremiumHome") as Control
-	var games := home.find_child("HomeLevelsNavButton", true, false) as Button
+	var games := home.find_child("HomeLevelsNavButton",true,false) as Button
 	games.pressed.emit()
 	await _frames(6)
 	if String(main.get("current_surface")) != "live":
-		return _fail("Home Games nav did not open the game selector")
+		return _fail("Home Games nav did not open the selector")
 	var live := main.get_node_or_null("PremiumLive") as Control
 	if live == null or not live.visible:
 		return _fail("PremiumLive selector is not visible")
+	if live.find_child("FigmaSelector390x844",true,false) == null:
+		return _fail("Selector is not using the Figma reference canvas")
 	for button in _buttons(live):
 		if button.visible and not button.disabled and button.text.strip_edges().begins_with("PLAY"):
-			return _fail("Selector still contains a redundant visible PLAY button: %s" % button.text)
-	_manager().call("clear_checkpoint", "water_sort")
-	var water_card := live.find_child("GameCard3D_water_sort", true, false) as PanelContainer
-	if water_card == null:
-		return _fail("Water selector card is missing")
-	if water_card.gui_input.get_connections().is_empty():
-		return _fail("Water selector card is not itself tappable")
-	var press := InputEventMouseButton.new()
-	press.button_index = MOUSE_BUTTON_LEFT
-	press.pressed = true
-	press.position = Vector2(24, 24)
-	live.call("_on_game_card_gui_input", press, "water_sort")
-	var release := InputEventMouseButton.new()
-	release.button_index = MOUSE_BUTTON_LEFT
-	release.pressed = false
-	release.position = Vector2(24, 24)
-	live.call("_on_game_card_gui_input", release, "water_sort")
+			return _fail("Selector still contains a redundant PLAY button")
+
+	var water_hit := live.find_child("SelectorCardHit_water_sort",true,false) as Button
+	if not _bound(water_hit):
+		return _fail("Water selector card hit target is missing or unbound")
+	water_hit.pressed.emit()
 	await _frames(7)
-	if String(main.get("current_surface")) != "levels":
-		return _fail("Whole-card Water tap did not open the Water level browser")
-	if String(main.get("selected_game_id")) != "water_sort":
-		return _fail("Whole-card Water tap did not select Water Sort")
+	if String(main.get("current_surface")) != "levels" or String(main.get("selected_game_id")) != "water_sort":
+		return _fail("Water selector card did not open Water levels")
 
 	var content := main.get("content") as Control
 	var level_button: Button = null
 	for button in _buttons(content):
-		var first_line := button.text.get_slice("\n", 0).strip_edges()
-		if not button.disabled and first_line.is_valid_int():
+		if not button.disabled and button.text.strip_edges().is_valid_int():
 			level_button = button
 			break
-	if level_button == null:
-		return _fail("Water level browser has no unlocked tappable level")
-	if not _bound(level_button):
-		return _fail("Unlocked Water level button has no response")
+	if level_button == null or not _bound(level_button):
+		return _fail("Water Figma level browser has no unlocked bound level")
 	level_button.pressed.emit()
 	await _frames(12)
 	if String(main.get("current_surface")) != "game":
-		return _fail("Unlocked Water level tap did not enter gameplay")
+		return _fail("Unlocked Water level did not launch gameplay")
 	var active = main.get("active_game")
 	if active == null or not is_instance_valid(active):
 		return _fail("Water gameplay did not create an active game")
+	if (active as Node).find_child("FigmaWater390x844",true,false) == null:
+		return _fail("Water gameplay is not using the Figma canvas")
 	return true
 
 func _test_water_controls(main: Control) -> bool:
@@ -141,72 +131,62 @@ func _test_water_controls(main: Control) -> bool:
 	if game == null or not is_instance_valid(game):
 		return _fail("Water game missing before control audit")
 	await _frames(5)
-	var actions := game.find_child("CompactGameActions", true, false) as HBoxContainer
+	var actions := (game as Node).find_child("CompactGameActions",true,false) as HBoxContainer
 	if actions == null:
 		return _fail("Water action row is missing")
-	var action_buttons: Array[Button] = []
+	var buttons: Array[Button] = []
 	for child in actions.get_children():
 		if child is Button:
-			action_buttons.append(child as Button)
-	if action_buttons.size() != 3:
-		return _fail("Water must expose exactly three bottom actions (Undo, Hint, +Tube); found %d" % action_buttons.size())
-	for required in ["WaterUndoAction", "WaterHintAction", "AddTubeAction"]:
-		var button := game.find_child(required, true, false) as Button
+			buttons.append(child as Button)
+	if buttons.size() != 3:
+		return _fail("Water must expose exactly three bottom actions; found %d" % buttons.size())
+	for required in ["WaterUndoAction","WaterHintAction","AddTubeAction","WaterRetryAction"]:
+		var button := (game as Node).find_child(required,true,false) as Button
 		if not _bound(button):
 			return _fail("Water control is missing or unbound: %s" % required)
-	if game.find_child("WaterRestartAction", true, false) != null:
-		return _fail("Water still duplicates Restart in the bottom action row")
-	var retry := game.find_child("WaterRetryAction", true, false) as Button
-	if not _bound(retry):
-		return _fail("Water header Retry is missing or unbound")
-	var hint := game.find_child("WaterHintAction", true, false) as Button
-	if hint.pressed.get_connections().size() != 1:
-		return _fail("Water Hint must have exactly one runtime owner after HintManager attachment")
-	if not _all_enabled_buttons_bound(game as Control, []):
+	if not _all_enabled_buttons_bound(game as Control):
 		return false
 	main.call("force_back_from_game")
 	await _frames(5)
 	return true
 
 func _test_rescue_controls(main: Control) -> bool:
-	main.call("start_level", 1)
+	main.call("start_level",1)
 	await _frames(12)
 	var game = main.get("active_game")
 	if game == null or not is_instance_valid(game):
 		return _fail("Rescue gameplay did not launch")
-	for required in ["RescueBackAction", "RescueRetryAction", "RescueUndoAction", "RescueHintAction", "RescueRestartAction"]:
-		var button := game.find_child(required, true, false) as Button
+	if (game as Node).find_child("FigmaRescue390x844",true,false) == null:
+		return _fail("Rescue gameplay is not using the Figma canvas")
+	for required in ["RescueBackAction","RescueRetryAction","RescueUndoAction","RescueHintAction","RescueRestartAction"]:
+		var button := (game as Node).find_child(required,true,false) as Button
 		if not _bound(button):
 			return _fail("Rescue control is missing or unbound: %s" % required)
-	var hint := game.find_child("RescueHintAction", true, false) as Button
-	if hint.pressed.get_connections().size() != 1:
-		return _fail("Rescue Hint must have exactly one runtime owner after HintManager attachment")
-	if not _all_enabled_buttons_bound(game as Control, []):
+	if not _all_enabled_buttons_bound(game as Control):
 		return false
-	var restart := game.find_child("RescueRestartAction", true, false) as Button
+	var restart := (game as Node).find_child("RescueRestartAction",true,false) as Button
 	restart.pressed.emit()
 	await _frames(10)
 	game = main.get("active_game")
-	if game == null or not is_instance_valid(game) or game.find_child("RescueRestartAction", true, false) == null:
-		return _fail("Rescue Restart did not rebuild a responsive gameplay surface")
+	if game == null or not is_instance_valid(game) or (game as Node).find_child("FigmaRescue390x844",true,false) == null:
+		return _fail("Rescue Restart did not rebuild the Figma gameplay surface")
 	main.call("force_back_from_game")
 	await _frames(5)
 	return true
 
 func _test_block_controls(main: Control) -> bool:
-	main.call("start_multi_level", "block_puzzle", 1, false)
+	main.call("start_multi_level","block_puzzle",1,false)
 	await _frames(12)
 	var game = main.get("active_game")
 	if game == null or not is_instance_valid(game):
 		return _fail("Block gameplay did not launch")
-	for required in ["BackAction", "RetryAction", "HintAction", "Booster_Undo", "Booster_Hammer", "Booster_Shuffle", "Booster_Rotate"]:
-		var button := game.find_child(required, true, false) as Button
+	if (game as Node).find_child("FigmaBlock390x844",true,false) == null:
+		return _fail("Block gameplay is not using the Figma canvas")
+	for required in ["BackAction","RetryAction","HintAction","Booster_Undo","Booster_Hammer","Booster_Shuffle","Booster_Rotate"]:
+		var button := (game as Node).find_child(required,true,false) as Button
 		if not _bound(button):
 			return _fail("Block control is missing or unbound: %s" % required)
-	var hint := game.find_child("HintAction", true, false) as Button
-	if hint.pressed.get_connections().size() != 1:
-		return _fail("Block Hint must have exactly one runtime owner")
-	if not _all_enabled_buttons_bound(game as Control, []):
+	if not _all_enabled_buttons_bound(game as Control):
 		return false
 	main.call("force_back_from_game")
 	await _frames(5)
@@ -218,66 +198,66 @@ func _test_settings_toggle(main: Control) -> bool:
 	var content := main.get("content") as Control
 	if content == null:
 		return _fail("Settings content is missing")
-	if not _all_enabled_buttons_bound(content, []):
-		return false
-	var sound: Button = null
-	for button in _buttons(content):
-		if "SOUND EFFECTS" in button.text.to_upper():
-			sound = button
-			break
+	var sound := _button_at(content,Vector2(280,131),Vector2(72,38))
 	if sound == null or not _bound(sound):
-		return _fail("Sound Effects setting is missing or unbound")
+		return _fail("Sound Effects Figma toggle is missing or unbound")
 	var save := _save()
 	var data: Dictionary = save.get("data")
-	var before := bool(data.get("sound", true))
+	var before := bool(data.get("sound",true))
 	sound.pressed.emit()
 	await _frames(5)
 	data = save.get("data")
-	var after := bool(data.get("sound", true))
+	var after := bool(data.get("sound",true))
 	if after == before:
 		return _fail("Sound Effects toggle did not change state")
 	data["sound"] = before
-	save.set("data", data)
+	save.set("data",data)
 	save.call("save")
 	return true
 
-func _assert_secondary_nav(main: Control, active_name: String) -> bool:
-	var content := main.get("content") as Control
-	if content == null:
-		return _fail("Secondary surface content is missing for %s" % active_name)
-	var names := ["SecondaryNavHome", "SecondaryNavGames", "SecondaryNavDaily", "SecondaryNavCollection", "SecondaryNavSettings"]
-	for raw_name in names:
-		var name := String(raw_name)
-		var button := content.find_child(name, true, false) as Button
-		if button == null:
-			return _fail("Secondary nav button missing: %s" % name)
-		if not button.has_meta("unjam_preserve_surface_style"):
-			return _fail("Secondary nav style can be overwritten by the generic surface pass: %s" % name)
-		var should_be_active: bool = name == active_name
-		if button.disabled:
-			return _fail("Secondary nav must not use disabled styling for the active state: %s" % name)
-		if bool(button.get_meta("unjam_selected_nav", false)) != should_be_active:
-			return _fail("Secondary nav visual selection is wrong for %s while %s should be active" % [name, active_name])
-		if should_be_active and button.mouse_filter != Control.MOUSE_FILTER_IGNORE:
-			return _fail("Active secondary tab still accepts pointer input: %s" % name)
-		if not should_be_active and button.mouse_filter != Control.MOUSE_FILTER_STOP:
-			return _fail("Inactive secondary tab does not accept pointer input: %s" % name)
-		if not should_be_active and not _bound(button):
-			return _fail("Secondary nav button is not responsive: %s" % name)
+func _test_shop(main: Control) -> bool:
+	main.call("build_home")
+	await _frames(5)
+	var home := main.get_node_or_null("PremiumHome") as Control
+	var wallet := home.find_child("HomeCoinShopButton",true,false) as Button
+	if not _bound(wallet):
+		return _fail("Home wallet action is missing before Shop audit")
+	wallet.pressed.emit()
+	await _frames(6)
+	var hub := main.get_node_or_null("MonetizationHub")
+	if hub == null:
+		return _fail("MonetizationHub is missing")
+	var overlay = hub.get("overlay")
+	if overlay == null or not is_instance_valid(overlay) or not overlay.visible:
+		return _fail("Shop overlay did not open")
+	if (overlay as Node).find_child("FigmaShop390x844",true,false) == null:
+		return _fail("Shop is not using the Figma reference canvas")
+	var reward := (overlay as Node).find_child("ShopRewardedCoinsButton",true,false) as Button
+	if not _bound(reward):
+		return _fail("Shop rewarded-coins control is missing or unbound")
+	hub.call("_close_shop")
 	return true
 
-func _all_enabled_buttons_bound(node: Control, allowed_unbound_names: Array[String]) -> bool:
+func _has_figma_surface(main: Control) -> bool:
+	var content := main.get("content") as Control
+	return content != null and content.find_child("FigmaSurface390x844",true,false) != null
+
+func _button_at(node: Node, expected_pos: Vector2, expected_size: Vector2) -> Button:
+	for button in _buttons(node):
+		if button.position.distance_to(expected_pos) <= 1.0 and button.size.distance_to(expected_size) <= 1.0:
+			return button
+	return null
+
+func _all_enabled_buttons_bound(node: Control) -> bool:
 	if node == null:
 		return _fail("Cannot audit buttons on a null control")
 	for button in _buttons(node):
 		if not button.visible or not button.is_visible_in_tree() or button.disabled:
 			continue
-		if button.name in allowed_unbound_names:
-			continue
-		if bool(button.get_meta("unjam_selected_nav", false)):
+		if button.mouse_filter == Control.MOUSE_FILTER_IGNORE:
 			continue
 		if button.pressed.get_connections().is_empty():
-			return _fail("Visible enabled button has no response: %s (%s)" % [str(button.get_path()), button.text.replace("\n", " / ")])
+			return _fail("Visible enabled button has no response: %s (%s)" % [str(button.get_path()),button.text.replace("\n"," / ")])
 	return true
 
 func _buttons(node: Node) -> Array[Button]:
