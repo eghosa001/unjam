@@ -1,34 +1,37 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="432" height="432" viewBox="0 0 432 432">
-  <!-- Foreground artwork stays inside the adaptive-icon safe zone. -->
-  <defs>
-    <linearGradient id="rim" x1="118" y1="105" x2="310" y2="334" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#F8FDFF"/>
-      <stop offset="0.22" stop-color="#A8F7FF"/>
-      <stop offset="0.56" stop-color="#43D8D0"/>
-      <stop offset="1" stop-color="#6D63F2"/>
-    </linearGradient>
-    <linearGradient id="inner" x1="160" y1="126" x2="280" y2="300" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#1AE8C6"/>
-      <stop offset="0.5" stop-color="#42B8FF"/>
-      <stop offset="1" stop-color="#9264FF"/>
-    </linearGradient>
-    <linearGradient id="gold" x1="255" y1="180" x2="342" y2="252" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#FFF3A3"/>
-      <stop offset="0.5" stop-color="#FFD25F"/>
-      <stop offset="1" stop-color="#F59D33"/>
-    </linearGradient>
-  </defs>
-  <circle cx="216" cy="216" r="139" fill="#081C43" opacity="0.82" stroke="#A6F2FF" stroke-opacity="0.22" stroke-width="3"/>
-  <circle cx="216" cy="216" r="123" fill="#0B2B63" opacity="0.78" stroke="#FFFFFF" stroke-opacity="0.10" stroke-width="2"/>
-  <path d="M134 128H185V235C185 263 195 275 216 275C237 275 247 263 247 235V128H298V241C298 293 265 323 216 323C167 323 134 293 134 241V128Z" fill="url(#rim)"/>
-  <path d="M152 146H179V237C179 271 193 289 216 289C239 289 253 271 253 237V146H280V237C280 279 256 304 216 304C176 304 152 279 152 237V146Z" fill="url(#inner)"/>
-  <path d="M242 190H296V168L342 211L296 254V232H242Z" fill="url(#gold)"/>
-  <path d="M259 202H302" stroke="#FFF7C8" stroke-width="7" stroke-linecap="round" opacity="0.68"/>
-  <path d="M206 77C206 77 182 107 182 131C182 150 197 165 216 165C235 165 250 150 250 131C250 107 226 77 226 77L216 65L206 77Z" fill="#66EBFF"/>
-  <path d="M199 116C204 100 212 92 218 84" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round" opacity="0.72"/>
-  <g>
-    <path d="M122 270L154 250L186 270L154 290L122 270Z" fill="#E2CAFF"/>
-    <path d="M122 270L154 290V329L122 309V270Z" fill="#9568F2"/>
-    <path d="M186 270L154 290V329L186 309V270Z" fill="#5937B8"/>
+<defs>
+  <linearGradient id="rim" x1="100" y1="60" x2="332" y2="364" gradientUnits="userSpaceOnUse"><stop stop-color="#FFFFFF"/><stop offset=".35" stop-color="#E9F4FF"/><stop offset=".72" stop-color="#FFF0CC"/><stop offset="1" stop-color="#B9C7FF"/></linearGradient>
+  <linearGradient id="water" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#23D9FF"/><stop offset="1" stop-color="#006CFF"/></linearGradient>
+  <linearGradient id="yellow" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#FFF63B"/><stop offset="1" stop-color="#FFB000"/></linearGradient>
+  <linearGradient id="pink" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#FF66D5"/><stop offset="1" stop-color="#F50072"/></linearGradient>
+  <linearGradient id="green" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#6AF838"/><stop offset="1" stop-color="#00B842"/></linearGradient>
+  <linearGradient id="blueBlock" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#31C7FF"/><stop offset="1" stop-color="#0068EA"/></linearGradient>
+  <linearGradient id="redBlock" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FF5A54"/><stop offset="1" stop-color="#E5002D"/></linearGradient>
+  <linearGradient id="goldBlock" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#FFF43D"/><stop offset="1" stop-color="#FFB500"/></linearGradient>
+  <linearGradient id="wood" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FF9B23"/><stop offset=".55" stop-color="#C7550B"/><stop offset="1" stop-color="#73310A"/></linearGradient>
+  <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur in="SourceAlpha" stdDeviation="8"/><feOffset dy="8"/><feColorMatrix values="0 0 0 0 0.02 0 0 0 0 0.04 0 0 0 0 0.25 0 0 0 .55 0"/><feBlend in="SourceGraphic"/></filter>
+  <clipPath id="left"><path d="M132 105H185V238C185 280 198 297 216 297V338C161 336 132 302 132 244Z"/></clipPath>
+  <clipPath id="right"><path d="M247 105H300V244C300 302 271 336 216 338V297C234 297 247 280 247 238Z"/></clipPath>
+</defs>
+<g>
+  <path d="M111 82H191V236C191 262 198 272 216 272C234 272 241 262 241 236V82H321V246C321 322 278 365 216 365C154 365 111 322 111 246Z" fill="#07164F" opacity=".55" transform="translate(0 8)"/>
+  <path d="M109 78H194V237C194 263 200 272 216 272C232 272 238 263 238 237V78H323V246C323 320 279 359 216 359C153 359 109 320 109 246Z" fill="url(#rim)" filter="url(#shadow)"/>
+  <path d="M128 99H181V239C181 278 195 297 216 297C237 297 251 278 251 239V99H304V243C304 300 270 337 216 337C162 337 128 300 128 243Z" fill="#112A58"/>
+  <g clip-path="url(#left)">
+    <rect x="128" y="98" width="92" height="62" fill="url(#water)"/>
+    <path d="M128 154C151 140 166 168 188 151C199 143 207 144 220 151V198H128Z" fill="url(#yellow)"/>
+    <path d="M128 194C150 181 167 207 190 193C201 187 209 188 220 196V244H128Z" fill="url(#pink)"/>
+    <path d="M128 240C148 227 169 250 191 237C202 231 211 232 220 240V337H128Z" fill="url(#green)"/>
+    <circle cx="159" cy="126" r="6" fill="#B7FBFF"/><circle cx="174" cy="115" r="8" fill="#6EF3FF" stroke="#fff" stroke-width="2"/>
   </g>
+  <g clip-path="url(#right)">
+    <rect x="247" y="98" width="66" height="244" fill="#8B3C0A"/>
+    <g fill="url(#wood)" stroke="#FFB24C" stroke-width="2.5"><rect x="253" y="105" width="52" height="39" rx="8"/><rect x="254" y="269" width="53" height="49" rx="8"/><rect x="255" y="160" width="19" height="48" rx="7"/><rect x="286" y="210" width="19" height="51" rx="7"/></g>
+    <g stroke="#7A3208" stroke-width="4" opacity=".8"><path d="M260 112l38 26M298 111l-37 27"/><path d="M261 276l39 35M300 276l-39 35"/></g>
+    <g fill="#FFF7EA" stroke="#F6D8BE" stroke-width="2"><circle cx="281" cy="191" r="15"/><path d="M274 206C263 214 259 228 256 241L269 244L277 226L289 235L298 254L310 248L299 221C294 209 286 202 274 206Z"/></g>
+    <path d="M283 174H303V161L327 186L303 211V198H283Z" fill="#fff"/>
+  </g>
+  <g filter="url(#shadow)"><path d="M160 274L193 258L226 274V327L193 341L160 327Z" fill="url(#blueBlock)" stroke="#63E7FF" stroke-width="3"/><path d="M210 274L243 258L276 274L293 327L260 341L226 327Z" fill="url(#redBlock)" stroke="#FF9D91" stroke-width="3"/><rect x="190" y="301" width="58" height="38" rx="10" fill="url(#goldBlock)" stroke="#FFF59D" stroke-width="3"/></g>
+  <path d="M121 92C138 87 160 87 183 88M248 88C270 87 290 89 312 94" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" opacity=".72"/>
+</g>
 </svg>
