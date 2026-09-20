@@ -9,6 +9,7 @@ var target_scale := Vector2.ONE
 var board_valid := true
 var has_target := false
 var board_cell_size := 0.0
+var last_snap_msec := -1000
 
 func configure(value: Array, color := Color("8b7cf6"), cell_size_override: float = 0.0) -> void:
 	shape = value.duplicate(true)
@@ -27,11 +28,22 @@ func _ready() -> void:
 	set_process(true)
 
 func set_drag_target(value: Vector2, valid := true) -> void:
+	var became_valid := has_target and valid and not board_valid
 	target_position = value
 	board_valid = valid
 	if not has_target:
 		position = value
 		has_target = true
+	if became_valid:
+		var now := Time.get_ticks_msec()
+		if now - last_snap_msec >= 90:
+			last_snap_msec = now
+			var feedback := get_node_or_null("/root/FeedbackManager")
+			if feedback != null and feedback.has_method("snap"):
+				feedback.call("snap")
+			target_scale = Vector2(1.20, 1.20)
+			var settle := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+			settle.tween_method(func(v: float) -> void: target_scale = Vector2.ONE * v, 1.20, 1.16, 0.09)
 	queue_redraw()
 
 func set_drag_scale(value: Vector2) -> void:
