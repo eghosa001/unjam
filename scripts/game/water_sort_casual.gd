@@ -85,7 +85,7 @@ func _build_figma_water(canvas: Control) -> void:
 	RefCanvas.set_rect(objective, 17, 129, 354, 30)
 	objective.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(objective)
-	var objective_label := _make_label("💧  SORT • POUR • SOLVE", 16, NAVY, true)
+	var objective_label := _make_label("◉  SORT • POUR • SOLVE", 16, NAVY, true)
 	objective_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	RefCanvas.set_rect(objective_label, 17, 129, 354, 30)
 	canvas.add_child(objective_label)
@@ -124,7 +124,7 @@ func _build_figma_water(canvas: Control) -> void:
 	undo.name = "WaterUndoAction"
 	undo.pressed.connect(undo_move)
 	actions.add_child(undo)
-	var hint := _action_button("💡  HINT", ORANGE)
+	var hint := _action_button("✦  HINT", ORANGE)
 	hint.name = "WaterHintAction"
 	# HintManager is the single owner of hint cost/reward handling.
 	actions.add_child(hint)
