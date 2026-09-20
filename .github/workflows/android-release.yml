@@ -165,7 +165,7 @@ jobs:
         run: |
           set -euxo pipefail
           godot --headless --path . --editor --quit
-          for t in validate_motion_quality validate_monetization validate_admob_production validate_billing_production validate_premium_ux validate_visual_quality_contract validate_production_completion validate_uiux_regressions validate_viewport_fit validate_retention validate_robustness validate_production_hardening_regressions; do
+          for t in validate_motion_quality validate_monetization validate_admob_production validate_billing_production validate_premium_ux validate_visual_quality_contract validate_production_completion validate_uiux_regressions validate_theme_integrity validate_viewport_fit validate_retention validate_robustness validate_production_hardening_regressions; do
             timeout 60s godot --headless --path . --script "res://tests/$t.gd"
           done
       - name: Run focused release gameplay and campaign gates
@@ -218,6 +218,8 @@ jobs:
           "$AAPT" dump permissions "$APK" | tee build/android/release-apk-permissions.txt
           "$AAPT" dump xmltree "$APK" AndroidManifest.xml | tee build/android/release-apk-manifest.txt
           grep -F "package: name='com.eghosa.unjamgam'" build/android/release-apk-badging.txt
+          grep -F "targetSdkVersion:'36'" build/android/release-apk-badging.txt
+          grep -F "native-code: 'arm64-v8a'" build/android/release-apk-badging.txt
           grep -F "android.permission.INTERNET" build/android/release-apk-permissions.txt
           grep -F "android.permission.ACCESS_NETWORK_STATE" build/android/release-apk-permissions.txt
           grep -F "com.google.android.gms.permission.AD_ID" build/android/release-apk-permissions.txt
