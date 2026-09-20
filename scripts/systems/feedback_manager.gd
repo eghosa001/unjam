@@ -31,14 +31,14 @@ func _ready() -> void:
 	for i in range(SFX_POOL_SIZE):
 		var sfx := AudioStreamPlayer.new()
 		sfx.name = "CalmSfx%02d" % (i + 1)
-		sfx.volume_db = -5.5
+		sfx.volume_db = -1.5
 		add_child(sfx)
 		sfx_players.append(sfx)
 	player = sfx_players[0]
 
 	music_player = AudioStreamPlayer.new()
 	music_player.name = "CalmAmbientMusic"
-	music_player.volume_db = -24.5
+	music_player.volume_db = -15.5
 	add_child(music_player)
 	music_stream = _build_calm_ambient_loop()
 	music_player.stream = music_stream

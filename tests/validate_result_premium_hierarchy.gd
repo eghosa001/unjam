@@ -27,17 +27,22 @@ func _run() -> void:
 	var stats := overlay.find_child("ResultStatsText",true,false) as Label
 	if card == null or title == null or subtitle == null or primary == null or secondary == null or secondary_shadow == null or stats == null:
 		return _fail("Result hierarchy is incomplete")
-	if not _rect_eq(Rect2(card.position,card.size),Rect2(27,96,334,510)):
+	if not _rect_eq(Rect2(card.position,card.size),Rect2(27,76,334,570)):
 		return _fail("Result card geometry drifted")
-	if not _rect_eq(Rect2(primary.position,primary.size),Rect2(47,458,294,58)):
+	if not _rect_eq(Rect2(primary.position,primary.size),Rect2(47,498,294,58)):
 		return _fail("Result primary geometry drifted")
-	if not _rect_eq(Rect2(secondary.position,secondary.size),Rect2(47,528,294,48)):
+	if not _rect_eq(Rect2(secondary.position,secondary.size),Rect2(47,568,294,48)):
 		return _fail("Result secondary geometry drifted")
 	if not secondary_shadow.visible:
 		return _fail("Visible secondary action lost its shadow")
 	if title.get_rect().intersects(subtitle.get_rect()):
 		return _fail("Result title overlaps subtitle")
 	var stats_panel := overlay.find_child("Stats",true,false) as Control
+	var first_star := overlay.find_child("StarCard",true,false) as Control
+	if first_star != null and subtitle.get_rect().intersects(first_star.get_rect()):
+		return _fail("Result subtitle overlaps star row")
+	if stats_panel != null and primary.get_rect().intersects(stats_panel.get_rect()):
+		return _fail("Result stats overlap primary action")
 	for node in overlay.find_children("StarCard","PanelContainer",true,false):
 		if stats_panel != null and (node as Control).get_rect().intersects(stats_panel.get_rect()):
 			return _fail("Result stars overlap stats panel")
@@ -63,7 +68,7 @@ func _run() -> void:
 	var hidden_shadow := block_result.find_child("SecondaryActionShadow",true,false) as Control
 	if block_card == null or hidden_secondary == null or hidden_shadow == null:
 		return _fail("Block result hierarchy is incomplete")
-	if not _rect_eq(Rect2(block_card.position,block_card.size),Rect2(27,96,334,452)):
+	if not _rect_eq(Rect2(block_card.position,block_card.size),Rect2(27,76,334,500)):
 		return _fail("Result without secondary action did not collapse its empty slot")
 	if hidden_secondary.visible or hidden_shadow.visible:
 		return _fail("Hidden secondary result action still leaves a visible placeholder")

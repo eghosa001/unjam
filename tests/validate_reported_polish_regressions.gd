@@ -15,6 +15,13 @@ func _init() -> void:
 	_require_source("res://scripts/game/rescue_rush_casual.gd", ["func apply_theme_mode"], "Rescue Rush immediate dark theme", errors)
 	_require_source("res://scripts/game/water_sort_casual.gd", ["func apply_theme_mode"], "Water Sort immediate dark theme", errors)
 	_require_source("res://scripts/game/block_puzzle_final_polish.gd", ["func apply_theme_mode", "BlockPuzzle3DEnvironment"], "Block Puzzle immediate dark theme", errors)
+	_require_source("res://scripts/ui/premium_home_direct_levels.gd", ["HomeWorldProgressTitle", "HomeWorldProgressValue", "progress_bar.max_value = total", "progress_accent"], "Home Quick Switch world-progress synchronization", errors)
+	_require_source("res://scripts/ui/premium_main_casual.gd", ["SurfaceGlossSweep", "DONE TODAY", "TODAY: %s", "FIGMA_DARK_INK if _dark() else FIGMA_INK"], "gloss/Daily/dark-level readability", errors)
+	_require_source("res://scripts/ui/ux_shell_casual.gd", ["TutorialStepCard", "Rect2(43,409,302,76)", "Rect2(43,598,302,58)"], "tutorial collision-safe layout", errors)
+	_require_source("res://scripts/ui/premium_result_overlay.gd", ["Rect2(27,76,334,570 if has_secondary else 500)", "Rect2(47,568,294,48)"], "result collision-safe layout", errors)
+	_require_source("res://scripts/game/game.gd", ["moves > par_moves", "moves > par_moves + 3", "assist_penalty"], "Rescue star move/assist scoring", errors)
+	_require_source("res://scripts/game/water_sort_10000.gd", ["moves <= par_moves", "moves <= two_star_moves"], "Water Sort star move scoring", errors)
+	_require_source("res://scripts/game/block_puzzle.gd", ["placements <= par_placements", "placements <= par_placements + 6"], "Block Puzzle star placement scoring", errors)
 
 	if not errors.is_empty():
 		for error in errors:

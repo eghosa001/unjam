@@ -292,14 +292,17 @@ func _add_world_progress(canvas: Control) -> void:
 
 	var panel := PanelContainer.new()
 	panel.name = "HomeWorldProgress"
+	var accent := Unjam3DTheme.game_accent(selected_game)
 	var fill := Color("#20384b") if _home_dark() else Color("#e4eeec")
-	var edge := Color(0.42,0.66,0.74,0.55) if _home_dark() else Color(0.40,0.62,0.68,0.38)
-	panel.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(fill.lightened(0.12), fill, fill.darkened(0.10), 16, edge, 1, 0.40))
+	var edge := Color(accent,0.70 if _home_dark() else 0.46)
+	panel.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(fill.lightened(0.16), fill, fill.darkened(0.12), 16, edge, 1.2, 0.38))
 	RefCanvas.set_rect(panel, 21, 590, 346, 74)
 	canvas.add_child(panel)
 
-	_add_text(canvas, "WORLD %d PROGRESS" % world, Rect2(37, 604, 175, 18), 12, OFF_WHITE if _home_dark() else NAVY, true)
-	_add_text(canvas, "%d / %d" % [completed_in_world, total], Rect2(274, 604, 72, 18), 12, BLUE, true)
+	var world_title := _add_text(canvas, "WORLD %d PROGRESS" % world, Rect2(37, 604, 175, 18), 12, OFF_WHITE if _home_dark() else NAVY, true)
+	world_title.name = "HomeWorldProgressTitle"
+	var world_value := _add_text(canvas, "%d / %d" % [completed_in_world, total], Rect2(274, 604, 72, 18), 12, accent, true)
+	world_value.name = "HomeWorldProgressValue"
 
 	var progress := ProgressBar.new()
 	progress.name = "HomeWorldProgressBar"
@@ -308,7 +311,7 @@ func _add_world_progress(canvas: Control) -> void:
 	progress.max_value = total
 	progress.value = completed_in_world
 	progress.add_theme_stylebox_override("background", RefCanvas.solid_box(Color(0.06,0.16,0.23,0.55) if _home_dark() else Color(0.72,0.82,0.83,0.72), 6))
-	progress.add_theme_stylebox_override("fill", RefCanvas.rounded_gradient3(BLUE.lightened(0.20), BLUE, BLUE.darkened(0.12), 6, Color.TRANSPARENT, 0, 0.40))
+	progress.add_theme_stylebox_override("fill", RefCanvas.rounded_gradient3(accent.lightened(0.22), accent, accent.darkened(0.14), 6, Color.TRANSPARENT, 0, 0.36))
 	RefCanvas.set_rect(progress, 37, 636, 309, 10)
 	canvas.add_child(progress)
 
@@ -451,6 +454,35 @@ func _refresh_home_selection() -> void:
 		figma_canvas.remove_child(old_preview)
 		old_preview.queue_free()
 	_add_hero_preview(figma_canvas, selected_game)
+
+	# Quick Switch must refresh the progress card as well as the hero. Otherwise
+	# the selected game changes while WORLD progress still shows the previous game.
+	var highest := MultiGameManager.highest_level(selected_game)
+	var completed_level := clampi(highest - 1, 0, MultiGameManager.CAMPAIGN_LEVELS)
+	var world_level := maxi(1, mini(highest, MultiGameManager.CAMPAIGN_LEVELS))
+	var progress_world := MultiGameManager.world_for_game_level(selected_game, world_level)
+	var first := MultiGameManager.first_level_in_game_world(selected_game, progress_world)
+	var last := MultiGameManager.last_level_in_game_world(selected_game, progress_world)
+	var total := maxi(1, last - first + 1)
+	var completed_in_world := clampi(completed_level - first + 1, 0, total)
+	var progress_accent := Unjam3DTheme.game_accent(selected_game)
+	var world_title := figma_canvas.get_node_or_null("HomeWorldProgressTitle") as Label
+	if world_title != null:
+		world_title.text = "WORLD %d PROGRESS" % progress_world
+	var world_value := figma_canvas.get_node_or_null("HomeWorldProgressValue") as Label
+	if world_value != null:
+		world_value.text = "%d / %d" % [completed_in_world, total]
+		world_value.add_theme_color_override("font_color", progress_accent)
+	var progress_bar := figma_canvas.get_node_or_null("HomeWorldProgressBar") as ProgressBar
+	if progress_bar != null:
+		progress_bar.max_value = total
+		progress_bar.value = completed_in_world
+		progress_bar.add_theme_stylebox_override("fill", RefCanvas.rounded_gradient3(progress_accent.lightened(0.22), progress_accent, progress_accent.darkened(0.14), 6, Color.TRANSPARENT, 0, 0.36))
+	var progress_panel := figma_canvas.get_node_or_null("HomeWorldProgress") as PanelContainer
+	if progress_panel != null:
+		var progress_fill := Color("#20384b") if _home_dark() else Color("#e4eeec")
+		progress_panel.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(progress_fill.lightened(0.16), progress_fill, progress_fill.darkened(0.12), 16, Color(progress_accent,0.70 if _home_dark() else 0.46), 1.2, 0.38))
+
 	var accents := {
 		"rescue_rush": Color(0.13, 0.78, 0.39),
 		"water_sort": Color(0.10, 0.66, 1.0),

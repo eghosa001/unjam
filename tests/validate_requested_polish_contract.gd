@@ -4,7 +4,7 @@ func _init() -> void:
 	var errors: Array[String] = []
 	_require("res://scripts/ui/premium_home_direct_levels.gd", ["RESCUE RUSH", "WATER SORT", "BLOCK PUZZLE", "daily_selected_game", "#dcebe8", "#29465b"], errors)
 	_require("res://scripts/ui/premium_home_overhaul.gd", ["Progress, stars, wallet", "_sync()"], errors)
-	_require("res://scripts/ui/premium_main_casual.gd", ["Choose one challenge for today", "LOCKED TODAY", "TODAY’S SORT", "SurfaceBackdropHaloTop"], errors)
+	_require("res://scripts/ui/premium_main_casual.gd", ["Choose one challenge for today", "DONE TODAY", "TODAY: %s", "TODAY’S SORT", "SurfaceBackdropHaloTop", "SurfaceGlossSweep"], errors)
 	_require("res://scripts/ui/premium_design_system.gd", ["PremiumGlossBackdrop", "func _gloss_style", "func _install_gloss"], errors)
 	_require("res://scripts/ui/figma_reference_canvas.gd", ["Premium casual-game gloss", "lower_rolloff", "center_boost"], errors)
 	_require("res://scripts/ui/premium_home_direct_levels.gd", ["rounded_gradient3(stage_mid", "rounded_gradient3(nav_fill", "rounded_gradient3(fill.lightened"], errors)

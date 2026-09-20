@@ -154,13 +154,18 @@ static func rounded_gradient3(top: Color, middle: Color, bottom: Color, radius: 
 			var pixel_fill := fill
 			var fx := float(x) / float(image_size - 1)
 			var center_boost := 1.0 - minf(1.0, absf(fx - 0.5) * 1.7)
-			if fy < 0.34:
-				var sheen := (1.0 - fy / 0.34) * (0.10 + center_boost * 0.08)
+			if fy < 0.42:
+				var sheen := (1.0 - fy / 0.42) * (0.17 + center_boost * 0.14)
 				pixel_fill = pixel_fill.lerp(Color(1, 1, 1, pixel_fill.a), sheen)
+			# A second, narrow specular band makes large cards read like lacquered
+			# casual-game surfaces rather than simple vertical gradients.
+			if fy >= 0.10 and fy <= 0.22:
+				var band := 1.0 - absf(fy - 0.16) / 0.06
+				pixel_fill = pixel_fill.lerp(Color(1, 1, 1, pixel_fill.a), maxf(0.0, band) * (0.07 + center_boost * 0.05))
 			if py <= bw + 3.0:
-				pixel_fill = pixel_fill.lerp(Color(1, 1, 1, pixel_fill.a), 0.20)
-			if fy > 0.86:
-				var lower_rolloff := ((fy - 0.86) / 0.14) * 0.09
+				pixel_fill = pixel_fill.lerp(Color(1, 1, 1, pixel_fill.a), 0.30)
+			if fy > 0.82:
+				var lower_rolloff := ((fy - 0.82) / 0.18) * 0.14
 				pixel_fill = pixel_fill.lerp(Color(0, 0, 0, pixel_fill.a), lower_rolloff)
 			image.set_pixel(x, y, pixel_fill)
 	var style := StyleBoxTexture.new()

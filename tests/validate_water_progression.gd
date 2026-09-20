@@ -24,6 +24,15 @@ func _run() -> void:
 	var first_level := Progression.profile(1)
 	if int(first_level.colors) != 3:
 		return _fail("Level 1 must start at 3 colors")
+	var previous_opening_moves := int(Progression.profile(1).target_moves)
+	for level in range(2, 101):
+		var opening_moves := int(Progression.profile(level).target_moves)
+		if abs(opening_moves - previous_opening_moves) > 4:
+			return _fail("Opening Water Sort move curve jumps too sharply at %d: %d -> %d" % [level, previous_opening_moves, opening_moves])
+		previous_opening_moves = opening_moves
+	if int(Progression.profile(10).target_moves) > int(Progression.profile(11).target_moves) + 2:
+		return _fail("Water Sort tutorial handoff regresses too sharply from level 10 to 11")
+
 	var final_level := Progression.profile(10000)
 	if int(final_level.colors) != 12 or int(final_level.empty_bottles) != 1:
 		return _fail("Level 10000 must use 12 colors and one strategic empty bottle")
