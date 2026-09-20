@@ -106,9 +106,9 @@ func _draw() -> void:
 
 	# Premium glass silhouette: translucent shell + darker inner cavity instead of a flat white bottle.
 	_draw_round_rect(shadow, Color(0.01, 0.025, 0.06, 0.34), 34.0)
-	_draw_round_rect_border(body, Color(0.66, 0.87, 1.0, 0.13), Color(0.82, 0.94, 1.0, 0.76), 34.0, 4)
+	_draw_round_rect(body, Color(0.66, 0.87, 1.0, 0.16), 34.0)
 	var cavity := Rect2(body.position + Vector2(12, 27), body.size - Vector2(24, 53))
-	_draw_round_rect_border(cavity, Color(0.025, 0.075, 0.14, 0.34), Color(0.78, 0.92, 1.0, 0.16), 24.0, 2)
+	_draw_round_rect(cavity, Color(0.025, 0.075, 0.14, 0.22), 24.0)
 
 	var inner: Rect2 = Rect2(cavity.position + Vector2(5, 12), cavity.size - Vector2(10, 24))
 	var slot_h: float = inner.size.y / float(CAPACITY)
