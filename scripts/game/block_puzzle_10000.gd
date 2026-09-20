@@ -38,19 +38,17 @@ func build_ui() -> void:
 	_add_booster_bar()
 
 func _add_booster_bar() -> void:
-	if status_label == null:
+	var canvas := find_child("FigmaBlock390x844", true, false) as Control
+	if canvas == null:
 		return
-	var root := status_label.get_parent() as VBoxContainer
-	if root == null:
-		return
-	var existing := root.get_node_or_null("CampaignBoosters")
+	var existing := canvas.get_node_or_null("CampaignBoosters")
 	if existing != null:
 		return
 	var bar := HBoxContainer.new()
 	bar.name = "CampaignBoosters"
-	bar.custom_minimum_size = Vector2(0, 68)
 	bar.alignment = BoxContainer.ALIGNMENT_CENTER
-	bar.add_theme_constant_override("separation", 8)
+	bar.add_theme_constant_override("separation", 7)
+	FigmaReferenceCanvas.set_rect(bar, 18, 650, 349, 54)
 	for spec in [
 		["undo", "UNDO", "↶"],
 		["hammer", "HAMMER", "◆"],
@@ -58,18 +56,22 @@ func _add_booster_bar() -> void:
 		["rotate", "ROTATE", "↻"],
 	]:
 		var key := String(spec[0])
-		var button := Button.new()
+		var button := FigmaReferenceCanvas.button(
+			"%s  %s\n◈ %d" % [String(spec[2]), String(spec[1]), int(BOOSTER_COSTS[key])],
+			12,
+			Color(1, 0.995, 0.97),
+			Color(0.31, 0.13, 0.55),
+			14,
+			Color(0.72, 0.52, 1.0, 0.62),
+			1
+		)
 		button.name = "Booster_%s" % key.capitalize()
-		button.text = "%s %s\n◈ %d" % [String(spec[2]), String(spec[1]), int(BOOSTER_COSTS[key])]
-		button.custom_minimum_size = Vector2(0, 66)
-		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.add_theme_font_size_override("font_size", 20)
-		Unjam3DTheme.gloss_button(button, Unjam3DTheme.PURPLE_DARK, false, 18)
+		button.custom_minimum_size = Vector2(82, 54)
+		button.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 		button.pressed.connect(_use_booster.bind(key))
 		bar.add_child(button)
 		booster_buttons[key] = button
-	root.add_child(bar)
-	root.move_child(bar, maxi(0, status_label.get_index()))
+	canvas.add_child(bar)
 	_refresh_booster_buttons()
 	call_deferred("_fit_3d_board_layout")
 
