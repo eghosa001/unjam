@@ -2,7 +2,6 @@ extends "res://scripts/ui/premium_main.gd"
 
 const FIGMA_LEVEL_PAGE_SIZE := 20
 const FIGMA_BG_TOP := Color("#dcebe8")
-const FIGMA_BG_MID := Color("#d4e3e8")
 const FIGMA_BG_BOTTOM := Color("#c3d2df")
 const FIGMA_NAVY := Color(0.03, 0.23, 0.47)
 const FIGMA_INK := Color(0.07, 0.20, 0.35)
@@ -13,10 +12,8 @@ const FIGMA_GREEN := Color(0.13, 0.78, 0.39)
 const FIGMA_CYAN := Color(0.14, 0.68, 1.0)
 const FIGMA_ORANGE := Color(1.0, 0.55, 0.12)
 const FIGMA_GOLD := Color(1.0, 0.84, 0.24)
-const FIGMA_PURPLE := Color(0.78, 0.24, 1.0)
 
 const FIGMA_DARK_TOP := Color("#182a3b")
-const FIGMA_DARK_MID := Color("#20384b")
 const FIGMA_DARK_BOTTOM := Color("#29465b")
 const FIGMA_DARK_CARD := Color("#223b50")
 const FIGMA_DARK_INK := Color("#eef7ff")
