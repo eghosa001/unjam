@@ -36,6 +36,12 @@ func _refresh(force: bool) -> void:
 		return
 	if content == null or not is_instance_valid(content):
 		return
+	# Audited Figma surfaces own their complete backdrop, typography, spacing and
+	# navigation chrome. Do not allocate or apply the retired generic skin behind
+	# them; that both changes appearance and wastes render/runtime budget.
+	if (content as Node).find_child("FigmaSurface390x844", true, false) != null:
+		(content as Control).modulate.a = 1.0
+		return
 	var accent := PremiumDesignSystem.accent_for_game(game_id)
 	_configure_background(content, game_id, dark, accent)
 	_polish_tree(content, surface, dark, accent)
