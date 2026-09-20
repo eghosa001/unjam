@@ -345,7 +345,7 @@ func _validate_exact_touch_target_floor() -> bool:
 			main.queue_free(); await process_frame
 			return false
 
-	for game_id in MultiGameManager.GAME_IDS:
+	for game_id in ["rescue_rush", "water_sort", "block_puzzle"]:
 		main.set("selected_game_id", game_id)
 		if game_id == "rescue_rush":
 			main.call("build_level_select")
