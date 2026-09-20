@@ -108,8 +108,8 @@ func _draw() -> void:
 	_draw_round_rect(shadow, Color(0.01, 0.025, 0.06, 0.34), 34.0)
 	_draw_round_rect(body, Color(0.66, 0.87, 1.0, 0.16), 34.0)
 	var cavity := Rect2(body.position + Vector2(12, 27), body.size - Vector2(24, 53))
-	_draw_round_rect(cavity, Color(0.025, 0.075, 0.14, 0.22), 24.0)
-
+	# Use the cavity only as liquid geometry. Do not paint a darker inner shell:
+	# on empty tubes its vertical contrast edges read as artificial 3D lines.
 	var inner: Rect2 = Rect2(cavity.position + Vector2(5, 12), cavity.size - Vector2(10, 24))
 	var slot_h: float = inner.size.y / float(CAPACITY)
 	for slot in range(CAPACITY):
