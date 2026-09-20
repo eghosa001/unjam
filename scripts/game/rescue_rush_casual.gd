@@ -165,7 +165,7 @@ func _build_figma_rescue(canvas: Control) -> void:
 	var actions := HBoxContainer.new()
 	actions.name = "CompactGameActions"
 	actions.add_theme_constant_override("separation",14)
-	RefCanvas.set_rect(actions,21,569,346,60)
+	RefCanvas.set_rect(actions,21,638,346,62)
 	canvas.add_child(actions)
 	var undo := _action("↶  UNDO",Color("#088c3d"))
 	undo.name = "RescueUndoAction"
@@ -182,7 +182,7 @@ func _build_figma_rescue(canvas: Control) -> void:
 	hint_label = RefCanvas.label("",13,NAVY,true)
 	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	RefCanvas.set_rect(hint_label,21,639,346,40)
+	RefCanvas.set_rect(hint_label,21,710,346,42)
 	canvas.add_child(hint_label)
 
 	var frame_border := PanelContainer.new()
