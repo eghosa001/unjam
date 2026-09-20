@@ -876,7 +876,7 @@ func build_multi_level_select() -> void:
 func _build_figma_level_browser(game_id: String) -> void:
 	current_surface = "levels"
 	_remove_active_game()
-	var bottom_tint := Color(0.8956,0.9736,0.9268) if game_id == "rescue_rush" else (Color(0.892,0.9496,0.988) if game_id == "water_sort" else Color(0.947,0.914,0.988))
+	var bottom_tint := Color("#e4f8ec") if game_id == "rescue_rush" else (Color("#e3f2fc") if game_id == "water_sort" else Color("#f5eafd"))
 	var canvas := _figma_surface("games",bottom_tint)
 	var accent := Unjam3DTheme.game_accent(game_id)
 	var title := MultiGameManager.display_name(game_id).to_upper()
@@ -890,22 +890,38 @@ func _build_figma_level_browser(game_id: String) -> void:
 		Callable(self,"_open_games_surface"),
 		Callable(self,"_figma_open_shop")
 	)
+	_style_figma_level_header(canvas,accent)
 	_figma_level_tabs(canvas,game_id)
 
 	var bounds := _multi_page_bounds(game_id,selected_multi_world,selected_multi_page)
 	var world_name := MultiGameManager.world_name(game_id,selected_multi_world).to_upper()
-	_figma_card(canvas,"JourneyHero",Rect2(18,150,354,94),Color(1.0,0.9956,0.974),Color(accent,0.42),15)
-	_figma_text(canvas,world_name,Rect2(36,146,250,23),19,accent)
-	_figma_text(canvas,"LEVELS %d–%d • SET %d/%d" % [bounds.x,bounds.y,selected_multi_page,_multi_page_count(game_id,selected_multi_world)],Rect2(36,176,210,16),13,FIGMA_MUTED)
+	_figma_card(canvas,"JourneyHero",Rect2(17,149,354,94),Color("#fffef8"),Color(accent,0.42),15)
+	_figma_text(canvas,world_name,Rect2(35,145,250,23),19,accent)
+	_figma_text(canvas,"LEVELS %d–%d • SET %d/%d" % [bounds.x,bounds.y,selected_multi_page,_multi_page_count(game_id,selected_multi_world)],Rect2(35,175,210,16),13,FIGMA_MUTED)
 
-	var prev := _figma_button(canvas,"LevelPrev","◀ PREV",Rect2(18,223,100,38),FIGMA_BLUE,Callable(),FIGMA_OFF_WHITE,13,13)
+	var accent_rail := ColorRect.new()
+	accent_rail.name = "ScreenPolish/AccentRail"
+	accent_rail.color = Color(accent,0.88)
+	accent_rail.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	FigmaReferenceCanvas.set_rect(accent_rail,17,161,5,70)
+	canvas.add_child(accent_rail)
+
+	var page_y := 243.0 if game_id == "block_puzzle" else 222.0
+	var grid_y := 304.0 if game_id == "block_puzzle" else 269.0
+	if game_id == "block_puzzle":
+		_add_figma_block_modes(canvas)
+
+	var prev := _figma_button(canvas,"LevelPrev","◀ PREV",Rect2(17,page_y,100,38),FIGMA_BLUE,Callable(),FIGMA_OFF_WHITE,13,13)
 	prev.disabled = selected_multi_world <= 1 and selected_multi_page <= 1
+	_style_figma_page_button(prev,FIGMA_BLUE,accent,prev.disabled)
 	if not prev.disabled:
 		prev.pressed.connect(_change_multi_page.bind(-1))
-	var current := _figma_button(canvas,"LevelCurrent","CURRENT",Rect2(126,223,118,38),accent,Callable(self,"_jump_multi_current"),FIGMA_OFF_WHITE,13,13)
-	var next_fill := Color(0.44,0.55,0.65) if selected_multi_world >= world_count and selected_multi_page >= _multi_page_count(game_id,selected_multi_world) else FIGMA_BLUE
-	var next := _figma_button(canvas,"LevelNext","NEXT ▶",Rect2(252,223,120,38),next_fill,Callable(),FIGMA_OFF_WHITE,13,13)
-	next.disabled = selected_multi_world >= world_count and selected_multi_page >= _multi_page_count(game_id,selected_multi_world)
+	var current := _figma_button(canvas,"LevelCurrent","CURRENT",Rect2(125,page_y,118,38),accent,Callable(self,"_jump_multi_current"),FIGMA_OFF_WHITE,13,13)
+	_style_figma_page_button(current,accent,accent,false)
+	var next_disabled := selected_multi_world >= world_count and selected_multi_page >= _multi_page_count(game_id,selected_multi_world)
+	var next := _figma_button(canvas,"LevelNext","NEXT ▶",Rect2(251,page_y,120,38),Color("#fcfeff"),Callable(),FIGMA_MUTED,13,13)
+	next.disabled = next_disabled
+	_style_figma_page_button(next,Color("#fcfeff"),accent,next_disabled,true)
 	if not next.disabled:
 		next.pressed.connect(_change_multi_page.bind(1))
 
@@ -914,54 +930,128 @@ func _build_figma_level_browser(game_id: String) -> void:
 	for level_number in range(bounds.x,bounds.y+1):
 		var col := index % 4
 		var row := int(index/4)
-		var x := 18.0 + float(col)*89.0
-		var y := 270.0 + float(row)*80.0
+		var x := 17.0 + float(col)*89.0
+		var y := grid_y + float(row)*80.0
 		var unlocked := MultiGameManager.is_level_unlocked(game_id,level_number)
 		var stars := MultiGameManager.get_stars(game_id,level_number)
 		var is_current := unlocked and level_number == current_level
 		var milestone := level_number % 25 == 0
-		var fill := Color(0.995,0.995,0.982)
+		var fill := Color("#fefefa")
 		var border := Color(accent,0.40)
 		var text_color := FIGMA_INK
 		if not unlocked:
-			fill = Color(0.91,0.92,0.93)
-			border = Color(0.73,0.77,0.80,0.42)
-			text_color = Color(0.48,0.55,0.61)
+			fill = Color("#dee5eb")
+			border = Color("#b8c4cf",0.45)
+			text_color = Color("#8c9ca8")
 		elif is_current:
 			fill = accent
-			border = accent.lightened(0.22)
+			border = Color(accent.lightened(0.24),0.75)
 			text_color = FIGMA_OFF_WHITE
 		elif milestone:
-			border = FIGMA_GOLD
+			border = Color(FIGMA_GOLD,0.85)
 		var card := _figma_button(canvas,"Level/%d" % level_number,str(level_number),Rect2(x,y,80,68),fill,Callable(),text_color,15,15)
 		card.disabled = not unlocked
+		_style_figma_level_card(card,accent,border,unlocked,is_current)
 		if unlocked:
 			if game_id == "rescue_rush":
 				card.pressed.connect(start_level.bind(level_number))
 			else:
 				card.pressed.connect(start_multi_level.bind(game_id,level_number,false))
 		var star_text := "LOCK" if not unlocked else ("★".repeat(stars) if stars > 0 else "···")
-		var star_color := FIGMA_OFF_WHITE if is_current else FIGMA_MUTED
+		var star_color := Color("#8c9ca8") if not unlocked else FIGMA_MUTED
 		_figma_text(canvas,star_text,Rect2(x+9,y+38,64,18),12,star_color,true)
 		index += 1
 
 func _figma_level_tabs(canvas: Control, active_game_id: String) -> void:
+	var active_accent := Unjam3DTheme.game_accent(active_game_id)
 	var specs := [
-		["rescue_rush","RESCUE",18.0],
-		["water_sort","WATER",134.0],
-		["block_puzzle","BLOCK",250.0],
+		["rescue_rush","RESCUE",17.0],
+		["water_sort","WATER",133.0],
+		["block_puzzle","BLOCK",249.0],
 	]
 	for spec in specs:
 		var game_id := String(spec[0])
 		var active := game_id == active_game_id
-		var accent := Unjam3DTheme.game_accent(game_id)
-		var fill := accent if active else Color(0.987,0.996,1.0)
+		var fill := active_accent if active else Color("#fcfeff")
 		var text_color := FIGMA_OFF_WHITE if active else FIGMA_MUTED
-		var button := _figma_button(canvas,"LevelGameTab/%s" % game_id,String(spec[1]),Rect2(float(spec[2]),84,108,40),fill,Callable(),text_color,14,12)
+		var button := _figma_button(canvas,"LevelGameTab/%s" % game_id,String(spec[1]),Rect2(float(spec[2]),83,108,40),fill,Callable(),text_color,14,12)
+		_style_figma_level_tab(button,active_accent,active)
 		if active:
 			button.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		else:
 			button.pressed.connect(_figma_switch_level_game.bind(game_id))
+
+func _style_figma_level_header(canvas: Control, accent: Color) -> void:
+	var back := canvas.get_node_or_null("FigmaBack") as Button
+	if back != null:
+		back.add_theme_stylebox_override("normal",FigmaReferenceCanvas.rounded_gradient3(Color("#fcfeff"),Color("#fcfeff"),Color("#e2e4e5"),16,Color(accent,0.55),1.2,0.58))
+		back.add_theme_stylebox_override("hover",FigmaReferenceCanvas.rounded_gradient3(Color.WHITE,Color("#fcfeff"),Color("#e9ebec"),16,Color(accent,0.68),1.2,0.58))
+		back.add_theme_stylebox_override("pressed",FigmaReferenceCanvas.rounded_gradient3(Color("#f2f5f6"),Color("#edf0f1"),Color("#d8dcde"),16,Color(accent,0.55),1.2,0.58))
+	var pill := canvas.get_node_or_null("FigmaHeaderPill") as Button
+	if pill != null:
+		pill.add_theme_stylebox_override("normal",FigmaReferenceCanvas.rounded_gradient3(accent.lightened(0.15),accent,accent.darkened(0.10),16,Color(accent.lightened(0.28),0.55),1.2))
+		pill.add_theme_stylebox_override("hover",FigmaReferenceCanvas.rounded_gradient3(accent.lightened(0.20),accent.lightened(0.04),accent.darkened(0.06),16,Color(accent.lightened(0.34),0.62),1.2))
+		pill.add_theme_stylebox_override("pressed",FigmaReferenceCanvas.rounded_gradient3(accent,accent.darkened(0.06),accent.darkened(0.18),16,Color(accent.lightened(0.20),0.55),1.2))
+
+func _style_figma_level_tab(button: Button, accent: Color, active: bool) -> void:
+	if active:
+		button.add_theme_stylebox_override("normal",FigmaReferenceCanvas.rounded_gradient3(accent.lightened(0.15),accent,accent.darkened(0.10),14,Color(accent.lightened(0.28),0.55),1.2))
+		button.add_theme_stylebox_override("hover",button.get_theme_stylebox("normal"))
+		button.add_theme_stylebox_override("pressed",button.get_theme_stylebox("normal"))
+	else:
+		var normal := FigmaReferenceCanvas.rounded_gradient3(Color("#fcfeff"),Color("#fcfeff"),Color("#e2e4e5"),14,Color(accent,0.55),1.2,0.58)
+		button.add_theme_stylebox_override("normal",normal)
+		button.add_theme_stylebox_override("hover",FigmaReferenceCanvas.rounded_gradient3(Color.WHITE,Color("#fcfeff"),Color("#eaeced"),14,Color(accent,0.68),1.2,0.58))
+		button.add_theme_stylebox_override("pressed",FigmaReferenceCanvas.rounded_gradient3(Color("#f1f4f5"),Color("#eceff0"),Color("#d9dddf"),14,Color(accent,0.55),1.2,0.58))
+
+func _style_figma_page_button(button: Button, fill: Color, accent: Color, disabled: bool, light_surface: bool = false) -> void:
+	if light_surface or disabled:
+		var normal := FigmaReferenceCanvas.rounded_gradient3(Color("#fcfeff"),Color("#fcfeff"),Color("#e2e4e5"),13,Color(accent,0.55),1.2,0.58)
+		button.add_theme_stylebox_override("normal",normal)
+		button.add_theme_stylebox_override("hover",FigmaReferenceCanvas.rounded_gradient3(Color.WHITE,Color("#fcfeff"),Color("#eaeced"),13,Color(accent,0.68),1.2,0.58))
+		button.add_theme_stylebox_override("pressed",FigmaReferenceCanvas.rounded_gradient3(Color("#f1f4f5"),Color("#eceff0"),Color("#d9dddf"),13,Color(accent,0.55),1.2,0.58))
+		button.add_theme_stylebox_override("disabled",normal)
+		button.add_theme_color_override("font_disabled_color",FIGMA_MUTED)
+		button.add_theme_color_override("font_color",FIGMA_MUTED)
+	else:
+		button.add_theme_stylebox_override("normal",FigmaReferenceCanvas.rounded_gradient3(fill.lightened(0.15),fill,fill.darkened(0.10),13,Color(fill.lightened(0.28),0.55),1.2))
+		button.add_theme_stylebox_override("hover",FigmaReferenceCanvas.rounded_gradient3(fill.lightened(0.20),fill.lightened(0.04),fill.darkened(0.06),13,Color(fill.lightened(0.34),0.62),1.2))
+		button.add_theme_stylebox_override("pressed",FigmaReferenceCanvas.rounded_gradient3(fill,fill.darkened(0.06),fill.darkened(0.18),13,Color(fill.lightened(0.20),0.55),1.2))
+
+func _style_figma_level_card(button: Button, accent: Color, border: Color, unlocked: bool, current: bool) -> void:
+	if not unlocked:
+		var locked := FigmaReferenceCanvas.rounded_gradient3(Color("#dfe7eb"),Color("#dee5eb"),Color("#d3dadf"),15,Color("#b8c4cf",0.45),1.4,0.58)
+		button.add_theme_stylebox_override("normal",locked)
+		button.add_theme_stylebox_override("hover",locked)
+		button.add_theme_stylebox_override("pressed",locked)
+		button.add_theme_stylebox_override("disabled",locked)
+		button.add_theme_color_override("font_disabled_color",Color("#8c9ca8"))
+		return
+	if current:
+		button.add_theme_stylebox_override("normal",FigmaReferenceCanvas.rounded_gradient3(accent.lightened(0.14),accent,accent.darkened(0.10),15,border,1.4))
+		button.add_theme_stylebox_override("hover",FigmaReferenceCanvas.rounded_gradient3(accent.lightened(0.20),accent.lightened(0.04),accent.darkened(0.06),15,border,1.4))
+		button.add_theme_stylebox_override("pressed",FigmaReferenceCanvas.rounded_gradient3(accent,accent.darkened(0.06),accent.darkened(0.18),15,border,1.4))
+		return
+	button.add_theme_stylebox_override("normal",FigmaReferenceCanvas.rounded_gradient3(Color("#fefefa"),Color("#fefefa"),Color("#e9e9e6"),15,border,1.4,0.58))
+	button.add_theme_stylebox_override("hover",FigmaReferenceCanvas.rounded_gradient3(Color.WHITE,Color("#fffefb"),Color("#efefec"),15,border.lightened(0.08),1.4,0.58))
+	button.add_theme_stylebox_override("pressed",FigmaReferenceCanvas.rounded_gradient3(Color("#f7f7f4"),Color("#f4f4f1"),Color("#e2e2df"),15,border,1.4,0.58))
+
+func _add_figma_block_modes(canvas: Control) -> void:
+	var specs := [
+		["campaign","CAMPAIGN",17.0,Color("#c73dff")],
+		["endless","ENDLESS",105.0,FIGMA_BLUE],
+		["zen","ZEN",193.0,FIGMA_GREEN],
+		["extreme","EXTREME",281.0,FIGMA_ORANGE],
+	]
+	for spec in specs:
+		var mode := String(spec[0])
+		var fill: Color = spec[3]
+		var button := _figma_button(canvas,"BlockMode/%s" % mode,String(spec[1]),Rect2(float(spec[2]),201,82,36),fill,Callable(),FIGMA_OFF_WHITE,13,12)
+		_style_figma_page_button(button,fill,fill,false)
+		if mode == "campaign":
+			button.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		else:
+			button.pressed.connect(start_block_mode.bind(mode))
 
 func _figma_switch_level_game(game_id: String) -> void:
 	selected_game_id = game_id
