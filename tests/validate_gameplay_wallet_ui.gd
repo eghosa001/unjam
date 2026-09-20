@@ -52,14 +52,15 @@ func run() -> void:
 		if game_id == "water_sort":
 			expect_true(tube != null, "Water Sort Extra Tube button missing")
 			if tube != null:
-				expect_true("75" in tube.text and "160" in tube.text, "Extra Tube does not disclose 75-coin cost and live balance")
+				expect_true(tube.text == "＋  TUBE • 75◈", "Extra Tube text drifted from the compact Figma action")
+				expect_true("75" in tube.tooltip_text and "160" in tube.tooltip_text, "Extra Tube tooltip does not disclose 75-coin cost and live balance")
 
 		economy.grant(10, "qa_gameplay_wallet", {"game": game_id})
 		await _frames(2)
 		if hint != null:
 			expect_true("170" in hint.tooltip_text, "%s Hint wallet tooltip did not update after shared coin grant" % game_id)
 		if tube != null:
-			expect_true("170" in tube.text, "Extra Tube wallet did not update after shared coin grant")
+			expect_true("170" in tube.tooltip_text, "Extra Tube wallet tooltip did not update after shared coin grant")
 
 		game.queue_free()
 		await _frames(2)
