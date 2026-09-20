@@ -52,6 +52,27 @@ func _test_home_and_surfaces(main: Control) -> bool:
 		if not _bound(button):
 			return _fail("Figma Home control is missing or unbound: %s" % name)
 
+	if home.find_child("HomeNavSelectedDot",true,false) == null or home.find_child("HomeNavSelectedUnderline",true,false) == null:
+		return _fail("Home nav selection still lacks the fixed dot/underline treatment")
+	var water_switch := home.find_child("HomeDirect_water_sort",true,false) as Button
+	var block_switch := home.find_child("HomeDirect_block_puzzle",true,false) as Button
+	var rescue_switch := home.find_child("HomeDirect_rescue_rush",true,false) as Button
+	if not _bound(water_switch) or not _bound(block_switch) or not _bound(rescue_switch):
+		return _fail("Home quick-switch controls are missing or unbound")
+	water_switch.pressed.emit()
+	await _frames(2)
+	var hero_title := home.find_child("HomeHeroGameTitle",true,false) as Label
+	if String(main.get("current_surface")) != "home" or String(main.get("selected_game_id")) != "water_sort" or hero_title == null or hero_title.text != "WATER SORT":
+		return _fail("Home quick switch did not update the hero to Water Sort in place")
+	block_switch.pressed.emit()
+	await _frames(2)
+	if String(main.get("selected_game_id")) != "block_puzzle" or hero_title.text != "BLOCK PUZZLE":
+		return _fail("Home quick switch did not update the hero to Block Puzzle")
+	rescue_switch.pressed.emit()
+	await _frames(2)
+	if String(main.get("selected_game_id")) != "rescue_rush" or hero_title.text != "RESCUE RUSH":
+		return _fail("Home quick switch did not restore Rescue Rush")
+
 	var daily := home.find_child("HomeDailyNavButton",true,false) as Button
 	daily.pressed.emit()
 	await _frames(6)
@@ -59,6 +80,11 @@ func _test_home_and_surfaces(main: Control) -> bool:
 		return _fail("Home Daily nav did not open Daily Games")
 	if not _has_figma_surface(main):
 		return _fail("Daily Games is not using the Figma surface canvas")
+	var daily_canvas := (main.get("content") as Control).find_child("FigmaSurface390x844",true,false) as Control
+	if daily_canvas == null or daily_canvas.find_child("StdNav/SelectedDot/daily",true,false) == null or daily_canvas.find_child("StdNav/SelectedLine/daily",true,false) == null:
+		return _fail("Daily nav does not use the fixed dot/underline selected state")
+	if daily_canvas.find_child("StdNav/Active",true,false) != null:
+		return _fail("Legacy moving nav color slab is still present")
 	if not _all_enabled_buttons_bound(main.get("content") as Control):
 		return false
 
@@ -164,6 +190,15 @@ func _test_rescue_controls(main: Control) -> bool:
 			return _fail("Rescue control is missing or unbound: %s" % required)
 	if not _all_enabled_buttons_bound(game as Control):
 		return false
+	var active_before := _active_piece_count(game as Node)
+	var moves_before := int((game as Node).get("moves"))
+	(game as Node).call("show_hint")
+	await _frames(18)
+	var active_after := _active_piece_count(game as Node)
+	if active_after >= active_before:
+		return _fail("Rescue Hint did not remove an arrow")
+	if int((game as Node).get("moves")) != moves_before:
+		return _fail("Rescue Hint incorrectly counted its automatic arrow removal as a player move")
 	var restart := (game as Node).find_child("RescueRestartAction",true,false) as Button
 	restart.pressed.emit()
 	await _frames(10)
@@ -241,6 +276,16 @@ func _test_shop(main: Control) -> bool:
 		return _fail("Shop rewarded-coins control is missing or unbound")
 	hub.call("_close_shop")
 	return true
+
+func _active_piece_count(game: Node) -> int:
+	var pieces = game.get("pieces")
+	if not pieces is Array:
+		return 0
+	var count := 0
+	for raw in pieces:
+		if raw is Dictionary and bool((raw as Dictionary).get("active",true)):
+			count += 1
+	return count
 
 func _has_figma_surface(main: Control) -> bool:
 	var content := main.get("content") as Control
