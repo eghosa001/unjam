@@ -1,0 +1,48 @@
+name: QA Level 1-100 Sweep
+
+on:
+  push:
+    branches:
+      - qa/level-100-sweep-20260920
+
+permissions:
+  contents: read
+
+concurrency:
+  group: qa-level-100-sweep
+  cancel-in-progress: true
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Godot 4.7.2
+        uses: solarlabyrinth/action-setup-godot@v3
+        with:
+          version: 4.7.2-stable
+      - name: Import project
+        shell: bash
+        run: |
+          set -o pipefail
+          godot --headless --path . --editor --quit 2>&1 | tee import.log
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" import.log; then exit 1; fi
+      - name: Play and inspect levels 1-100 in all three games
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p build/level100-qa
+          xvfb-run -a godot --path . --rendering-method gl_compatibility --script res://tests/qa_level_1_100_sweep.gd 2>&1 | tee build/level100-qa/sweep.log
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" build/level100-qa/sweep.log; then exit 1; fi
+          grep -F "LEVEL_1_100_SWEEP_OK" build/level100-qa/sweep.log
+      - name: Upload QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unjam-level-1-100-qa
+          path: |
+            build/level100-qa/**
+            import.log
+          if-no-files-found: warn
+          retention-days: 7
