@@ -61,6 +61,8 @@ func _enlarge_buttons(node: Node) -> void:
 		_enlarge_buttons(child)
 
 func _apply_button_size(button: Button) -> void:
+	if button.has_meta("unjam_figma_exact_geometry"):
+		return
 	# Gameplay drawing controls are not ordinary buttons. Enforcing navigation
 	# touch-target sizes on them can blow up an 8x8 board, distort bottles, or
 	# resize Rescue Rush board pieces when Main scans an active game subtree.
