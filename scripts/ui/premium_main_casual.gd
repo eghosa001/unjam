@@ -148,7 +148,12 @@ func _figma_header(canvas: Control, title_text: String, subtitle_text: String, p
 	subtitle.name = "FigmaHeaderSubtitle"
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	if pill_callback.is_valid():
-		_figma_button(canvas, "FigmaHeaderPill", pill_text, Rect2(285,21,84,46), pill_fill, pill_callback, FIGMA_OFF_WHITE if not dark_mode else muted_color, 23, 12)
+		var pill_button := _figma_button(canvas, "FigmaHeaderPill", pill_text, Rect2(285,21,84,46), pill_fill, pill_callback, FIGMA_OFF_WHITE if not dark_mode else muted_color, 23, 12)
+		if pill_text.begins_with("◈"):
+			pill_button.set_meta("unjam_figma_wallet_pill", true)
+			pill_button.tooltip_text = "Coins: %d • Open Shop" % EconomyManager.balance()
+			if not EconomyManager.balance_changed.is_connected(_on_figma_wallet_balance_changed):
+				EconomyManager.balance_changed.connect(_on_figma_wallet_balance_changed)
 	else:
 		var pill: PanelContainer
 		if dark_mode:
@@ -158,6 +163,14 @@ func _figma_header(canvas: Control, title_text: String, subtitle_text: String, p
 		pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var pill_label := _figma_text(canvas, pill_text, Rect2(297,29,60,30), 12, muted_color if dark_mode else FIGMA_OFF_WHITE, true)
 		pill_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+
+func _on_figma_wallet_balance_changed(new_balance: int, _delta: int, _reason: String) -> void:
+	if content == null or not is_instance_valid(content):
+		return
+	for node in content.find_children("*", "Button", true, false):
+		var button := node as Button
+		if button != null and bool(button.get_meta("unjam_figma_wallet_pill", false)):
+			button.tooltip_text = "Coins: %d • Open Shop" % new_balance
 
 func _figma_open_shop() -> void:
 	var hub := get_node_or_null("MonetizationHub")
