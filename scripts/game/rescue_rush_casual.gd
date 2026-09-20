@@ -199,19 +199,41 @@ func _action(text_value: String, fill: Color) -> Button:
 	result.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	return result
 
+func _figma_board_gap() -> int:
+	return 22 if width <= 5 and height <= 5 else 10
+
+func _figma_board_cell_size() -> int:
+	if width <= 5 and height <= 5:
+		return 41
+	var available := 298.0
+	var gap := _figma_board_gap()
+	var span := maxi(width, height)
+	return int(clampf(floor((available - float(gap * maxi(span - 1,0))) / float(maxi(span,1))),28.0,41.0))
+
+func _make_empty_cell(_cell_size: int, pos: Vector2i, route: Dictionary) -> Control:
+	# The inherited premium renderer sizes its first pass for a much larger board.
+	# On the audited 390x844 Figma board, the two-line EXIT label from that pass
+	# forced one GridContainer column/row wider than the 41px reference tiles.
+	# Build empty cells at the final Figma size and use the single portal arrow
+	# shown by the production design so child minimums cannot expand the pedestal.
+	var slot := super._make_empty_cell(_figma_board_cell_size(), pos, route)
+	for child in slot.get_children():
+		if child is Label:
+			var label := child as Label
+			if "EXIT" in label.text:
+				label.text = _escape_arrow(Vector2i(route.get("direction", Vector2i.RIGHT)))
+				label.add_theme_font_size_override("font_size",20)
+				label.custom_minimum_size = Vector2.ZERO
+	return slot
+
 func _fit_board_to_viewport() -> void:
 	if board_grid == null or board_panel == null:
 		return
 	board_grid.columns = width
-	board_grid.add_theme_constant_override("h_separation",22)
-	board_grid.add_theme_constant_override("v_separation",22)
-	var cell_size := 41
-	if width > 5 or height > 5:
-		var available := 298.0
-		var gap := 10
-		cell_size = int(clampf(floor((available - float(gap * maxi(width - 1,0))) / float(maxi(width,1))),28.0,41.0))
-		board_grid.add_theme_constant_override("h_separation",gap)
-		board_grid.add_theme_constant_override("v_separation",gap)
+	var gap := _figma_board_gap()
+	board_grid.add_theme_constant_override("h_separation",gap)
+	board_grid.add_theme_constant_override("v_separation",gap)
+	var cell_size := _figma_board_cell_size()
 	for child in board_grid.get_children():
 		if child is Control:
 			(child as Control).custom_minimum_size = Vector2(cell_size,cell_size)
