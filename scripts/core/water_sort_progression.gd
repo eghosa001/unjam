@@ -62,9 +62,9 @@ static func profile(raw_level: int) -> Dictionary:
 		# Early campaign progression should feel like a controlled ramp with small
 		# relief levels, not the former 24 -> 18 -> 13 move-budget cliff. Difficulty
 		# rank still creates meaningful challenge variation, but within a bounded arc.
-		var early_progress := float(level - 11) / 89.0
-		var early_base := roundi(lerpf(16.0, 26.0, early_progress))
-		var early_bonus := [0, 2, 4, 6, 8, 10][clampi(rank, 0, 5)]
+		var early_progress: float = float(level - 11) / 89.0
+		var early_base: int = roundi(lerpf(16.0, 26.0, early_progress))
+		var early_bonus: int = int([0, 2, 4, 6, 8, 10][clampi(rank, 0, 5)])
 		target_moves = clampi(early_base + early_bonus, 16, 36)
 
 	if level == MAX_LEVEL:
