@@ -22,8 +22,10 @@ func _run() -> void:
 	var preview := home.find_child("FigmaHomeHeroPreview", true, false) as Control
 	var primary := home.find_child("HomePrimaryAction", true, false) as Button
 	var choose := home.find_child("HomeChooseGameButton", true, false) as Button
+	var showcase := home.find_child("HomeWorldShowcasePanel", true, false) as Control
+	var showcase_3d := home.find_child("HomeWorldShowcase3D", true, false) as SubViewportContainer
 	var nav := home.find_child("HomeBottomNav3D", true, false) as Control
-	if canvas == null or hero == null or preview == null or primary == null or choose == null or nav == null:
+	if canvas == null or hero == null or preview == null or primary == null or choose == null or showcase == null or showcase_3d == null or nav == null:
 		return _fail("Figma Home hierarchy is incomplete")
 	if not _rect_eq(Rect2(hero.position, hero.size), Rect2(21,121,346,224)):
 		return _fail("Home hero drifted from Figma 346x224 reference")
@@ -33,6 +35,12 @@ func _run() -> void:
 		return _fail("Home primary action drifted from Figma reference")
 	if not _rect_eq(Rect2(choose.position, choose.size), Rect2(21,365,166,52)):
 		return _fail("Home Choose Game action drifted from Figma reference")
+	if not _rect_eq(Rect2(showcase.position, showcase.size), Rect2(21,584,346,148)):
+		return _fail("Home 3D world showcase does not fill the intended dead-space region")
+	if not _rect_eq(Rect2(showcase_3d.position, showcase_3d.size), Rect2(31,594,194,128)):
+		return _fail("Home 3D world showcase viewport drifted from its compact render budget")
+	if showcase_3d.get_script() == null or not String(showcase_3d.get_script().resource_path).ends_with("unjam_3d_game_art.gd"):
+		return _fail("Home showcase is not using the one-shot 3D game-art renderer")
 	if not _rect_eq(Rect2(nav.position, nav.size), Rect2(13,757,362,70)):
 		return _fail("Home bottom nav drifted from Figma reference")
 	if home.find_child("HomeMascot3D", true, false) != null:
@@ -42,7 +50,7 @@ func _run() -> void:
 
 	main.queue_free()
 	await _frames(2)
-	print("Home Figma visual hierarchy validated.")
+	print("Home Figma visual hierarchy validated with compact one-shot 3D world showcase.")
 	quit(0)
 
 func _rect_eq(actual: Rect2, expected: Rect2) -> bool:
