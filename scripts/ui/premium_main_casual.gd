@@ -153,6 +153,23 @@ func _figma_surface(active: String, bottom_tint: Color = FIGMA_BG_BOTTOM, top_ti
 	ribbon.color = Color("#7198a4", 0.065 if not _dark() else 0.085)
 	canvas.add_child(ribbon)
 	canvas.move_child(ribbon, 1)
+
+	# Large-scale specular sweep: premium casual games use a readable light roll
+	# across whole screens in addition to glossy cards. Keep it static and subtle
+	# so it adds lacquer/depth without costing frames on low-end phones.
+	var gloss_sweep := Polygon2D.new()
+	gloss_sweep.name = "SurfaceGlossSweep"
+	gloss_sweep.polygon = PackedVector2Array([Vector2(-45,118),Vector2(435,22),Vector2(435,118),Vector2(-45,226)])
+	gloss_sweep.color = Color(1,1,1,0.050 if _dark() else 0.085)
+	canvas.add_child(gloss_sweep)
+	canvas.move_child(gloss_sweep, 2)
+
+	var lower_depth := Polygon2D.new()
+	lower_depth.name = "SurfaceLowerDepth"
+	lower_depth.polygon = PackedVector2Array([Vector2(-30,692),Vector2(430,604),Vector2(430,844),Vector2(-30,844)])
+	lower_depth.color = Color(0.01,0.06,0.10,0.055 if _dark() else 0.035)
+	canvas.add_child(lower_depth)
+	canvas.move_child(lower_depth, 2)
 	return canvas
 
 func _figma_text(canvas: Control, text_value: String, rect: Rect2, font_size: int, color: Color = FIGMA_INK, center := false) -> Label:
@@ -438,6 +455,18 @@ func _figma_today_label() -> String:
 	var month := int(d.get("month",1))
 	return "%s %d" % [months[clampi(month - 1,0,11)], int(d.get("day",1))]
 
+func _daily_ui_state(game_id: String, accent: Color) -> Dictionary:
+	var chosen := MultiGameManager.daily_selected_game()
+	var own_done := _daily_done(game_id)
+	var chosen_done := not chosen.is_empty() and _daily_done(chosen)
+	if chosen_done:
+		return {"text":"DONE TODAY", "fill":FIGMA_GREEN, "disabled":true, "done":true}
+	if own_done:
+		return {"text":"DONE TODAY", "fill":FIGMA_GREEN, "disabled":true, "done":true}
+	if not chosen.is_empty() and chosen != game_id:
+		return {"text":"TODAY: %s" % _figma_short_game(chosen), "fill":Color("#718696"), "disabled":true, "done":false}
+	return {"text":"PLAY TODAY", "fill":accent, "disabled":false, "done":false}
+
 func _figma_daily_card(canvas: Control, game_id: String, y: float, collection_bonus: int) -> void:
 	var accent := Unjam3DTheme.game_accent(game_id)
 	_figma_card(canvas, "DailyCard/%s" % game_id, Rect2(17,y,354,106), Color("#fffef8"), Color(1.0,0.847,0.55,0.32), 18)
@@ -446,11 +475,9 @@ func _figma_daily_card(canvas: Control, game_id: String, y: float, collection_bo
 	_figma_text(canvas, detail, Rect2(33,y+48,175,15), 12, FIGMA_MUTED)
 	var reward := "+%d COINS" % (100 + collection_bonus) if game_id == "rescue_rush" else "+%d–%d COINS" % [125 + collection_bonus,175 + collection_bonus]
 	_figma_text(canvas, reward, Rect2(33,y+72,130,16), 13, FIGMA_ORANGE)
-	var done := _daily_done(game_id)
-	var chosen := MultiGameManager.daily_selected_game()
-	var locked := not chosen.is_empty() and chosen != game_id
-	var fill := FIGMA_GREEN if done else (Color("#718696") if locked else accent)
-	var button_text := "COMPLETED" if done else ("LOCKED TODAY" if locked else "PLAY TODAY")
+	var daily_state := _daily_ui_state(game_id, accent)
+	var fill: Color = daily_state.get("fill", accent)
+	var button_text := String(daily_state.get("text", "PLAY TODAY"))
 	var button := _figma_button(
 		canvas,
 		"DailyPlay/%s" % game_id,
@@ -462,8 +489,8 @@ func _figma_daily_card(canvas: Control, game_id: String, y: float, collection_bo
 		14,
 		11
 	)
-	button.disabled = done or locked
-	if not done and not locked:
+	button.disabled = bool(daily_state.get("disabled", false))
+	if not button.disabled:
 		button.pressed.connect(start_game_daily.bind(game_id))
 
 func _daily_game_card(game_id: String, collection_bonus: int) -> PanelContainer:
@@ -504,13 +531,12 @@ func _daily_game_card(game_id: String, collection_bonus: int) -> PanelContainer:
 	perk.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	box.add_child(perk)
 
-	var chosen := MultiGameManager.daily_selected_game()
-	var locked := not chosen.is_empty() and chosen != game_id
-	var play_text := "COMPLETED TODAY" if done else ("LOCKED TODAY" if locked else "PLAY TODAY")
-	var play := _button(play_text, Vector2(0, 68), "success" if done else "primary", game_id)
+	var daily_state := _daily_ui_state(game_id, accent)
+	var play_text := String(daily_state.get("text", "PLAY TODAY"))
+	var play := _button(play_text, Vector2(0, 68), "success" if bool(daily_state.get("done", false)) else "primary", game_id)
 	play.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	play.disabled = done or locked
-	if not done and not locked:
+	play.disabled = bool(daily_state.get("disabled", false))
+	if not play.disabled:
 		play.pressed.connect(start_game_daily.bind(game_id))
 	box.add_child(play)
 	return card
@@ -1040,13 +1066,13 @@ func _build_figma_level_browser(game_id: String) -> void:
 		var stars := MultiGameManager.get_stars(game_id,level_number)
 		var is_current := unlocked and level_number == current_level
 		var milestone := level_number % 25 == 0
-		var fill := Color("#fefefa")
-		var border := Color(accent,0.40)
-		var text_color := FIGMA_INK
+		var fill := Color("#20384b") if _dark() else Color("#fefefa")
+		var border := Color(accent,0.62 if _dark() else 0.40)
+		var text_color := FIGMA_DARK_INK if _dark() else FIGMA_INK
 		if not unlocked:
-			fill = Color("#dee5eb")
-			border = Color("#b8c4cf",0.45)
-			text_color = Color("#8c9ca8")
+			fill = Color("#1a2938") if _dark() else Color("#dee5eb")
+			border = Color("#52687a",0.72) if _dark() else Color("#b8c4cf",0.45)
+			text_color = Color("#8296a8") if _dark() else Color("#8c9ca8")
 		elif is_current:
 			fill = accent
 			border = Color(accent.lightened(0.24),0.75)
@@ -1062,7 +1088,7 @@ func _build_figma_level_browser(game_id: String) -> void:
 			else:
 				card.pressed.connect(start_multi_level.bind(game_id,level_number,false))
 		var star_text := "LOCK" if not unlocked else ("★".repeat(stars) if stars > 0 else "···")
-		var star_color := Color("#8c9ca8") if not unlocked else FIGMA_MUTED
+		var star_color := (Color("#8296a8") if _dark() else Color("#8c9ca8")) if not unlocked else (FIGMA_DARK_MUTED if _dark() else FIGMA_MUTED)
 		_figma_text(canvas,star_text,Rect2(x+9,y+38,64,18),12,star_color,true)
 		index += 1
 
@@ -1076,8 +1102,8 @@ func _figma_level_tabs(canvas: Control, active_game_id: String) -> void:
 	for spec in specs:
 		var game_id := String(spec[0])
 		var active := game_id == active_game_id
-		var fill := active_accent if active else Color("#fcfeff")
-		var text_color := FIGMA_OFF_WHITE if active else FIGMA_MUTED
+		var fill := active_accent if active else (Color("#20384b") if _dark() else Color("#fcfeff"))
+		var text_color := FIGMA_OFF_WHITE if active else (FIGMA_DARK_MUTED if _dark() else FIGMA_MUTED)
 		var button := _figma_button(canvas,"LevelGameTab/%s" % game_id,String(spec[1]),Rect2(float(spec[2]),83,108,40),fill,Callable(),text_color,14,12)
 		_style_figma_level_tab(button,active_accent,active)
 		if active:
@@ -1088,9 +1114,13 @@ func _figma_level_tabs(canvas: Control, active_game_id: String) -> void:
 func _style_figma_level_header(canvas: Control, accent: Color) -> void:
 	var back := canvas.get_node_or_null("FigmaBack") as Button
 	if back != null:
-		back.add_theme_stylebox_override("normal",FigmaReferenceCanvas.rounded_gradient3(Color("#fcfeff"),Color("#fcfeff"),Color("#e2e4e5"),16,Color(accent,0.55),1.2,0.58))
-		back.add_theme_stylebox_override("hover",FigmaReferenceCanvas.rounded_gradient3(Color.WHITE,Color("#fcfeff"),Color("#e9ebec"),16,Color(accent,0.68),1.2,0.58))
-		back.add_theme_stylebox_override("pressed",FigmaReferenceCanvas.rounded_gradient3(Color("#f2f5f6"),Color("#edf0f1"),Color("#d8dcde"),16,Color(accent,0.55),1.2,0.58))
+		var back_top := Color("#2b455b") if _dark() else Color("#fcfeff")
+		var back_mid := Color("#20384b") if _dark() else Color("#fcfeff")
+		var back_bottom := Color("#15293b") if _dark() else Color("#e2e4e5")
+		back.add_theme_stylebox_override("normal",FigmaReferenceCanvas.rounded_gradient3(back_top,back_mid,back_bottom,16,Color(accent,0.70 if _dark() else 0.55),1.2,0.50))
+		back.add_theme_stylebox_override("hover",FigmaReferenceCanvas.rounded_gradient3(back_top.lightened(0.08),back_mid.lightened(0.06),back_bottom.lightened(0.04),16,Color(accent,0.82),1.2,0.50))
+		back.add_theme_stylebox_override("pressed",FigmaReferenceCanvas.rounded_gradient3(back_mid,back_bottom,back_bottom.darkened(0.08),16,Color(accent,0.70),1.2,0.50))
+		back.add_theme_color_override("font_color", FIGMA_DARK_INK if _dark() else FIGMA_NAVY)
 	var pill := canvas.get_node_or_null("FigmaHeaderPill") as Button
 	if pill != null:
 		pill.add_theme_stylebox_override("normal",FigmaReferenceCanvas.rounded_gradient3(accent.lightened(0.15),accent,accent.darkened(0.10),16,Color(accent.lightened(0.28),0.55),1.2))
@@ -1103,20 +1133,27 @@ func _style_figma_level_tab(button: Button, accent: Color, active: bool) -> void
 		button.add_theme_stylebox_override("hover",button.get_theme_stylebox("normal"))
 		button.add_theme_stylebox_override("pressed",button.get_theme_stylebox("normal"))
 	else:
-		var normal := FigmaReferenceCanvas.rounded_gradient3(Color("#fcfeff"),Color("#fcfeff"),Color("#e2e4e5"),14,Color(accent,0.55),1.2,0.58)
+		var tab_top := Color("#2b455b") if _dark() else Color("#fcfeff")
+		var tab_mid := Color("#20384b") if _dark() else Color("#fcfeff")
+		var tab_bottom := Color("#15293b") if _dark() else Color("#e2e4e5")
+		var normal := FigmaReferenceCanvas.rounded_gradient3(tab_top,tab_mid,tab_bottom,14,Color(accent,0.70 if _dark() else 0.55),1.2,0.50)
 		button.add_theme_stylebox_override("normal",normal)
-		button.add_theme_stylebox_override("hover",FigmaReferenceCanvas.rounded_gradient3(Color.WHITE,Color("#fcfeff"),Color("#eaeced"),14,Color(accent,0.68),1.2,0.58))
-		button.add_theme_stylebox_override("pressed",FigmaReferenceCanvas.rounded_gradient3(Color("#f1f4f5"),Color("#eceff0"),Color("#d9dddf"),14,Color(accent,0.55),1.2,0.58))
+		button.add_theme_stylebox_override("hover",FigmaReferenceCanvas.rounded_gradient3(tab_top.lightened(0.08),tab_mid.lightened(0.06),tab_bottom.lightened(0.04),14,Color(accent,0.82),1.2,0.50))
+		button.add_theme_stylebox_override("pressed",FigmaReferenceCanvas.rounded_gradient3(tab_mid,tab_bottom,tab_bottom.darkened(0.08),14,Color(accent,0.70),1.2,0.50))
+		button.add_theme_color_override("font_color", FIGMA_DARK_MUTED if _dark() else FIGMA_MUTED)
 
 func _style_figma_page_button(button: Button, fill: Color, accent: Color, disabled: bool, light_surface: bool = false) -> void:
 	if light_surface or disabled:
-		var normal := FigmaReferenceCanvas.rounded_gradient3(Color("#fcfeff"),Color("#fcfeff"),Color("#e2e4e5"),13,Color(accent,0.55),1.2,0.58)
+		var page_top := Color("#2b455b") if _dark() else Color("#fcfeff")
+		var page_mid := Color("#20384b") if _dark() else Color("#fcfeff")
+		var page_bottom := Color("#15293b") if _dark() else Color("#e2e4e5")
+		var normal := FigmaReferenceCanvas.rounded_gradient3(page_top,page_mid,page_bottom,13,Color(accent,0.70 if _dark() else 0.55),1.2,0.50)
 		button.add_theme_stylebox_override("normal",normal)
-		button.add_theme_stylebox_override("hover",FigmaReferenceCanvas.rounded_gradient3(Color.WHITE,Color("#fcfeff"),Color("#eaeced"),13,Color(accent,0.68),1.2,0.58))
-		button.add_theme_stylebox_override("pressed",FigmaReferenceCanvas.rounded_gradient3(Color("#f1f4f5"),Color("#eceff0"),Color("#d9dddf"),13,Color(accent,0.55),1.2,0.58))
+		button.add_theme_stylebox_override("hover",FigmaReferenceCanvas.rounded_gradient3(page_top.lightened(0.08),page_mid.lightened(0.06),page_bottom.lightened(0.04),13,Color(accent,0.82),1.2,0.50))
+		button.add_theme_stylebox_override("pressed",FigmaReferenceCanvas.rounded_gradient3(page_mid,page_bottom,page_bottom.darkened(0.08),13,Color(accent,0.70),1.2,0.50))
 		button.add_theme_stylebox_override("disabled",normal)
-		button.add_theme_color_override("font_disabled_color",FIGMA_MUTED)
-		button.add_theme_color_override("font_color",FIGMA_MUTED)
+		button.add_theme_color_override("font_disabled_color",FIGMA_DARK_MUTED if _dark() else FIGMA_MUTED)
+		button.add_theme_color_override("font_color",FIGMA_DARK_MUTED if _dark() else FIGMA_MUTED)
 	else:
 		button.add_theme_stylebox_override("normal",FigmaReferenceCanvas.rounded_gradient3(fill.lightened(0.15),fill,fill.darkened(0.10),13,Color(fill.lightened(0.28),0.55),1.2))
 		button.add_theme_stylebox_override("hover",FigmaReferenceCanvas.rounded_gradient3(fill.lightened(0.20),fill.lightened(0.04),fill.darkened(0.06),13,Color(fill.lightened(0.34),0.62),1.2))
@@ -1124,21 +1161,35 @@ func _style_figma_page_button(button: Button, fill: Color, accent: Color, disabl
 
 func _style_figma_level_card(button: Button, accent: Color, border: Color, unlocked: bool, current: bool) -> void:
 	if not unlocked:
-		var locked := FigmaReferenceCanvas.rounded_gradient3(Color("#dfe7eb"),Color("#dee5eb"),Color("#d3dadf"),15,Color("#b8c4cf",0.45),1.4,0.58)
+		var locked := FigmaReferenceCanvas.rounded_gradient3(
+			Color("#253746") if _dark() else Color("#dfe7eb"),
+			Color("#1d2d3b") if _dark() else Color("#dee5eb"),
+			Color("#142330") if _dark() else Color("#d3dadf"),
+			15, Color("#52687a",0.72) if _dark() else Color("#b8c4cf",0.45), 1.4, 0.48
+		)
 		button.add_theme_stylebox_override("normal",locked)
 		button.add_theme_stylebox_override("hover",locked)
 		button.add_theme_stylebox_override("pressed",locked)
 		button.add_theme_stylebox_override("disabled",locked)
-		button.add_theme_color_override("font_disabled_color",Color("#8c9ca8"))
+		button.add_theme_color_override("font_disabled_color",Color("#8296a8") if _dark() else Color("#8c9ca8"))
 		return
 	if current:
-		button.add_theme_stylebox_override("normal",FigmaReferenceCanvas.rounded_gradient3(accent.lightened(0.14),accent,accent.darkened(0.10),15,border,1.4))
-		button.add_theme_stylebox_override("hover",FigmaReferenceCanvas.rounded_gradient3(accent.lightened(0.20),accent.lightened(0.04),accent.darkened(0.06),15,border,1.4))
-		button.add_theme_stylebox_override("pressed",FigmaReferenceCanvas.rounded_gradient3(accent,accent.darkened(0.06),accent.darkened(0.18),15,border,1.4))
+		button.add_theme_stylebox_override("normal",FigmaReferenceCanvas.rounded_gradient3(accent.lightened(0.20),accent,accent.darkened(0.16),15,border,1.6,0.40))
+		button.add_theme_stylebox_override("hover",FigmaReferenceCanvas.rounded_gradient3(accent.lightened(0.28),accent.lightened(0.05),accent.darkened(0.10),15,border.lightened(0.10),1.6,0.40))
+		button.add_theme_stylebox_override("pressed",FigmaReferenceCanvas.rounded_gradient3(accent,accent.darkened(0.08),accent.darkened(0.22),15,border,1.6,0.40))
+		button.add_theme_color_override("font_color", FIGMA_OFF_WHITE)
 		return
-	button.add_theme_stylebox_override("normal",FigmaReferenceCanvas.rounded_gradient3(Color("#fefefa"),Color("#fefefa"),Color("#e9e9e6"),15,border,1.4,0.58))
-	button.add_theme_stylebox_override("hover",FigmaReferenceCanvas.rounded_gradient3(Color.WHITE,Color("#fffefb"),Color("#efefec"),15,border.lightened(0.08),1.4,0.58))
-	button.add_theme_stylebox_override("pressed",FigmaReferenceCanvas.rounded_gradient3(Color("#f7f7f4"),Color("#f4f4f1"),Color("#e2e2df"),15,border,1.4,0.58))
+	if _dark():
+		button.add_theme_stylebox_override("normal",FigmaReferenceCanvas.rounded_gradient3(Color("#2a4559"),Color("#20384b"),Color("#162a3b"),15,border,1.4,0.42))
+		button.add_theme_stylebox_override("hover",FigmaReferenceCanvas.rounded_gradient3(Color("#35566e"),Color("#29485f"),Color("#1b3347"),15,border.lightened(0.10),1.4,0.42))
+		button.add_theme_stylebox_override("pressed",FigmaReferenceCanvas.rounded_gradient3(Color("#20384b"),Color("#192f41"),Color("#112536"),15,border,1.4,0.42))
+		button.add_theme_color_override("font_color",FIGMA_DARK_INK)
+		button.add_theme_color_override("font_hover_color",Color.WHITE)
+		button.add_theme_color_override("font_pressed_color",FIGMA_DARK_INK)
+	else:
+		button.add_theme_stylebox_override("normal",FigmaReferenceCanvas.rounded_gradient3(Color("#fefefa"),Color("#fefefa"),Color("#e9e9e6"),15,border,1.4,0.52))
+		button.add_theme_stylebox_override("hover",FigmaReferenceCanvas.rounded_gradient3(Color.WHITE,Color("#fffefb"),Color("#efefec"),15,border.lightened(0.08),1.4,0.52))
+		button.add_theme_stylebox_override("pressed",FigmaReferenceCanvas.rounded_gradient3(Color("#f7f7f4"),Color("#f4f4f1"),Color("#e2e2df"),15,border,1.4,0.52))
 
 func _add_figma_block_modes(canvas: Control) -> void:
 	var specs := [
