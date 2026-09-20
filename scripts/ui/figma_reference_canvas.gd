@@ -197,16 +197,27 @@ static func premium_button(text_value: String, font_size: int, text_color: Color
 	result.add_theme_color_override("font_color", text_color)
 	result.add_theme_color_override("font_hover_color", text_color)
 	result.add_theme_color_override("font_pressed_color", text_color)
+
+	# StyleBoxTexture's nine-slice margins contribute to Button minimum size.
+	# Drawing the gradient in a geometry-neutral child preserves the exact Figma
+	# rectangle (including compact 38px toggles) without giving up the 3D finish.
 	var top := fill.lightened(0.18)
 	var bottom := fill.darkened(0.18)
-	var normal := rounded_gradient3(top, fill, bottom, radius, border, border_width)
-	var hover := rounded_gradient3(top.lightened(0.05), fill.lightened(0.045), bottom.lightened(0.04), radius, border.lightened(0.05), border_width)
-	var pressed := rounded_gradient3(fill, fill.darkened(0.07), bottom.darkened(0.08), radius, border, border_width)
-	result.add_theme_stylebox_override("normal", normal)
-	result.add_theme_stylebox_override("hover", hover)
-	result.add_theme_stylebox_override("pressed", pressed)
-	result.add_theme_stylebox_override("focus", normal)
-	result.add_theme_stylebox_override("disabled", rounded_gradient3(top.darkened(0.08), fill.darkened(0.10), bottom.darkened(0.10), radius, border.darkened(0.06), border_width))
+	var gradient := rounded_gradient3(top, fill, bottom, radius, border, border_width)
+	var backdrop := FigmaButtonBackdrop.new()
+	backdrop.name = "FigmaButtonGradient"
+	backdrop.configure(gradient)
+	result.add_child(backdrop)
+
+	var clear := solid_box(Color.TRANSPARENT, 0)
+	var hover_overlay := solid_box(Color(1,1,1,0.055), radius)
+	var pressed_overlay := solid_box(Color(0,0,0,0.075), radius)
+	var disabled_overlay := solid_box(Color(0.10,0.13,0.16,0.16), radius)
+	result.add_theme_stylebox_override("normal", clear)
+	result.add_theme_stylebox_override("hover", hover_overlay)
+	result.add_theme_stylebox_override("pressed", pressed_overlay)
+	result.add_theme_stylebox_override("focus", clear)
+	result.add_theme_stylebox_override("disabled", disabled_overlay)
 	result.add_theme_color_override("font_disabled_color", text_color.lerp(Color(0.82,0.86,0.90), 0.30))
 	return result
 
