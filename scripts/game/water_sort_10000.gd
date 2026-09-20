@@ -1,10 +1,19 @@
 extends "res://scripts/game/water_sort_assisted.gd"
 
 const Progression = preload("res://scripts/core/water_sort_progression.gd")
+const PremiumGameplayFeedbackLayer = preload("res://scripts/ui/premium_gameplay_feedback.gd")
 
+var premium_feedback: PremiumGameplayFeedback
+var _pour_flow_streak := 0
 var level_profile: Dictionary = {}
 var generation_meta: Dictionary = {}
 var two_star_moves := 0
+
+func build_ui() -> void:
+	super.build_ui()
+	premium_feedback = PremiumGameplayFeedbackLayer.new()
+	premium_feedback.name = "WaterPremiumFeedback"
+	add_child(premium_feedback)
 
 func difficulty() -> String:
 	return String(_profile().get("difficulty_label", "normal-hard"))
@@ -24,6 +33,7 @@ func level_config() -> Dictionary:
 	}
 
 func load_level() -> void:
+	_pour_flow_streak = 0
 	level_profile = Progression.profile(level_number)
 	generation_meta = {}
 	two_star_moves = 0
@@ -62,6 +72,40 @@ func render_board() -> void:
 	super.render_board()
 	if move_label != null:
 		move_label.text = "MOVES %d   •   3★ ≤ %d" % [moves, par_moves]
+
+func _tube_is_solved(values: Array) -> bool:
+	if values.size() != CAPACITY:
+		return false
+	var first := int(values[0])
+	for value in values:
+		if int(value) != first:
+			return false
+	return true
+
+func _play_premium_concurrent_pour(source_values: Array, target_values: Array, from_rect: Rect2, to_rect: Rect2, color_index: int, amount: int, source_index: int, target_index: int) -> void:
+	var merged_into_matching_color := not target_values.is_empty()
+	await super._play_premium_concurrent_pour(source_values, target_values, from_rect, to_rect, color_index, amount, source_index, target_index)
+	if not is_inside_tree() or target_index < 0 or target_index >= tubes.size():
+		return
+	var solved := _tube_is_solved(tubes[target_index] as Array)
+	if solved:
+		_pour_flow_streak = maxi(2, _pour_flow_streak + 1)
+	elif merged_into_matching_color:
+		_pour_flow_streak += 1
+	else:
+		_pour_flow_streak = 0
+	var accent := MotionTube.PALETTE[clampi(color_index, 0, MotionTube.PALETTE.size() - 1)]
+	if premium_feedback != null and is_instance_valid(premium_feedback):
+		var center := to_rect.get_center()
+		premium_feedback.show_ring(center, maxf(62.0, minf(to_rect.size.x, to_rect.size.y) * 0.72), accent)
+		if solved:
+			premium_feedback.show_banner("PERFECT TUBE", accent, Vector2(center.x, maxf(184.0, center.y - 86.0)), 194.0)
+		elif _pour_flow_streak >= 2:
+			premium_feedback.show_banner("FLOW ×%d" % _pour_flow_streak, accent, Vector2(center.x, maxf(184.0, center.y - 74.0)), 176.0)
+	if solved or _pour_flow_streak >= 2:
+		FeedbackManager.combo(_pour_flow_streak)
+	if move_label != null:
+		MotionSystem.local_punch(move_label, 0.72)
 
 func generate_tubes_with_solution(seed_value: int, colors: int) -> Dictionary:
 	var p := Progression.profile(level_number)
