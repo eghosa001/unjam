@@ -1045,7 +1045,7 @@ func _add_figma_block_modes(canvas: Control) -> void:
 	]
 	for spec in specs:
 		var mode := String(spec[0])
-		var fill: Color = spec[3]
+		var fill: Color = spec[3] as Color
 		var button := _figma_button(canvas,"BlockMode/%s" % mode,String(spec[1]),Rect2(float(spec[2]),201,82,36),fill,Callable(),FIGMA_OFF_WHITE,13,12)
 		_style_figma_page_button(button,fill,fill,false)
 		if mode == "campaign":
