@@ -3,6 +3,8 @@ extends Node
 var overlay: Control
 var detail_label: Label
 var reward_button: Button
+var _layer: CanvasLayer
+var _built_dark := false
 var _action_name := ""
 var _cost := 0
 var _retry := Callable()
@@ -20,17 +22,18 @@ func _build() -> void:
 	if overlay != null and is_instance_valid(overlay):
 		return
 	var dark := _dark_theme()
-	var layer := CanvasLayer.new()
-	layer.name = "InsufficientCoinsLayer"
-	layer.layer = 600
-	add_child(layer)
+	_built_dark = dark
+	_layer = CanvasLayer.new()
+	_layer.name = "InsufficientCoinsLayer"
+	_layer.layer = 600
+	add_child(_layer)
 
 	overlay = Control.new()
 	overlay.name = "InsufficientCoinsOverlay"
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	overlay.visible = false
-	layer.add_child(overlay)
+	_layer.add_child(overlay)
 
 	var shade := ColorRect.new()
 	shade.name = "CoinModal/Dim"
@@ -102,6 +105,14 @@ func _build() -> void:
 	canvas.add_child(later)
 
 func show_for(action_name: String, cost: int, retry: Callable = Callable()) -> void:
+	if overlay != null and is_instance_valid(overlay) and _built_dark != _dark_theme():
+		if _layer != null and is_instance_valid(_layer):
+			remove_child(_layer)
+			_layer.queue_free()
+		_layer = null
+		overlay = null
+		detail_label = null
+		reward_button = null
 	if overlay == null or not is_instance_valid(overlay):
 		_build()
 	_action_name = action_name
