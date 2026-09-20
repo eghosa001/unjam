@@ -78,14 +78,17 @@ func _build_ui() -> void:
 	FigmaReferenceCanvas.add_shadow(canvas,Rect2(17,19,52,52),18,Color(0.02,0.15,0.30,0.24),4,Vector2(0,3))
 	var back := FigmaReferenceCanvas.premium_button("‹",27,Color.WHITE,Color("#101a31") if _shop_dark() else Color("#152b52"),18,Color(0.30,0.48,0.64,0.82),1.2)
 	back.name = "ShopBackButton"
+	back.tooltip_text = "Back"
 	FigmaReferenceCanvas.set_rect(back,17,19,52,52)
 	back.pressed.connect(_close_shop)
 	canvas.add_child(back)
 
-	var shop_title := _add_text(canvas,"UNJAM SHOP",Rect2(83,21,205,28),23,Color("#fffef7"))
+	var shop_title := _add_text(canvas,"UNJAM SHOP",Rect2(83,21,194,28),23,Color("#fffef7"))
+	shop_title.name = "ShopTitle3D"
 	FigmaReferenceCanvas.style_display_title(shop_title, Color("#ffb92f"), Color("#071d55"), 2)
-	_add_text(canvas,"Useful upgrades • optional rewards",Rect2(83,51,210,15),12,Color("#c6d9ec"))
-	balance_label = _add_text(canvas,"",Rect2(297,37,60,15),12,Color("#fffef7"))
+	var shop_subtitle := _add_text(canvas,"Useful upgrades • optional rewards",Rect2(83,51,194,18),13,Color("#c6d9ec"))
+	shop_subtitle.name = "ShopSubtitle"
+	balance_label = _add_text(canvas,"",Rect2(297,37,60,15),12,FigmaReferenceCanvas.accessible_text_color(Color("#fffef7"),Color("#ff8c1f")))
 	balance_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	FigmaReferenceCanvas.add_shadow(canvas,Rect2(285,21,84,46),23,Color(0.02,0.15,0.30,0.16),3,Vector2(0,2))
 	var wallet := PanelContainer.new()
@@ -116,7 +119,7 @@ func _build_ui() -> void:
 	reward.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(reward)
 	_add_text(canvas,"WATCH & EARN",Rect2(33,473,150,18),15,Color("#088c3d"))
-	_add_text(canvas,"Optional • +50 coins",Rect2(33,500,160,15),12,Color("#4f6b85"))
+	_add_text(canvas,"Optional • +50 coins",Rect2(33,499,170,18),13,Color("#4f6b85"))
 	FigmaReferenceCanvas.add_shadow(canvas,Rect2(237,471,116,48),25,Color(0.02,0.15,0.30,0.16),3,Vector2(0,2))
 	var watch := FigmaReferenceCanvas.premium_button("▶ +50 COINS",12,Color.WHITE,Color("#ff8c1f"),25,Color("#ffbd64"),1.2)
 	watch.name = "ShopRewardedCoinsButton"
@@ -163,8 +166,8 @@ func _add_product_exact(canvas: Control, product_id: String, rect: Rect2, displa
 	FigmaReferenceCanvas.set_rect(panel,rect.position.x,rect.position.y,rect.size.x,rect.size.y)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(panel)
-	_add_text(canvas,display_title,Rect2(33,rect.position.y+14,180,17),14,Color("#123359"))
-	_add_text(canvas,display_subtitle,Rect2(33,rect.position.y+32,190,15),12,Color("#4f6b85"))
+	_add_text(canvas,display_title,Rect2(33,rect.position.y+12,180,19),15,Color("#123359"))
+	_add_text(canvas,display_subtitle,Rect2(33,rect.position.y+33,190,17),13,Color("#4f6b85"))
 
 	var buy_text := StoreManager.price_text(product_id)
 	var disabled := false
