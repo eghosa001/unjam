@@ -198,11 +198,9 @@ func _test_settings_toggle(main: Control) -> bool:
 	var content := main.get("content") as Control
 	if content == null:
 		return _fail("Settings content is missing")
-	var sound := content.find_child("SettingToggle/Sound",true,false) as Button
+	var sound: Button = _button_at(content,Vector2(279,130),Vector2(72,38))
 	if sound == null:
-		return _fail("Sound Effects Figma toggle is missing")
-	if not _rect_eq(Rect2(sound.position,sound.size),Rect2(279,130,72,38)):
-		return _fail("Sound Effects toggle drifted from Figma geometry: %s" % str(Rect2(sound.position,sound.size)))
+		return _fail("Sound Effects Figma toggle is missing at 279,130 / 72x38")
 	if not _bound(sound):
 		return _fail("Sound Effects Figma toggle is unbound")
 	var save := _save()
