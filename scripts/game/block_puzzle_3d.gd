@@ -54,9 +54,11 @@ func _fit_figma_board_layout() -> void:
 		if child is Control:
 			(child as Control).custom_minimum_size = Vector2(32.6, 32.6)
 	board_shell.custom_minimum_size = Vector2(330, 330)
+	board_shell.position = Vector2(29, 179)
 	board_shell.size = Vector2(330, 330)
 	if piece_row != null:
 		piece_row.custom_minimum_size = Vector2(326, 72)
+		piece_row.position = Vector2(31, 556)
 		piece_row.size = Vector2(326, 72)
 		piece_row.add_theme_constant_override("separation", 7)
 
