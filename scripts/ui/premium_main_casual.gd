@@ -142,8 +142,10 @@ func _figma_header(canvas: Control, title_text: String, subtitle_text: String, p
 	var muted_color := Color(0.76,0.84,0.90) if dark_mode else FIGMA_MUTED
 	var back_color := muted_color if dark_mode else FIGMA_NAVY
 	_figma_button(canvas, "FigmaBack", "‹", Rect2(17,19,52,52), Color(1.0,0.995,0.97), back_callback, back_color, 18, 27)
-	_figma_text(canvas, title_text, Rect2(83,21,205,28), 23, heading_color)
+	var header_title := _figma_text(canvas, title_text, Rect2(83,21,205,28), 23, heading_color)
+	header_title.name = "FigmaHeaderTitle"
 	var subtitle := _figma_text(canvas, subtitle_text, Rect2(83,51,210,30), 12, muted_color)
+	subtitle.name = "FigmaHeaderSubtitle"
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	if pill_callback.is_valid():
 		_figma_button(canvas, "FigmaHeaderPill", pill_text, Rect2(285,21,84,46), pill_fill, pill_callback, FIGMA_OFF_WHITE if not dark_mode else muted_color, 23, 12)
@@ -182,7 +184,7 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 	var hit_x := {"home":14.0, "games":84.0, "daily":153.0, "collection":222.0, "settings":291.0}
 	if xs.has(active):
 		var active_fill := Color(0.08,0.34,0.53) if dark_mode else FIGMA_CYAN
-		_figma_solid_card(canvas, "StdNav/Active", Rect2(float(hit_x[active])+1.0,767,62,48), active_fill, active_fill, 16, false)
+		_figma_solid_card(canvas, "StdNav/Active", Rect2(float(hit_x[active]),767,62,48), active_fill, active_fill, 14, false)
 	for key in ["home","games","daily","collection","settings"]:
 		var selected: bool = String(key) == active
 		var selected_text := Color(0.42,0.78,1.0) if dark_mode else Color(0.05,0.49,0.86)
@@ -215,69 +217,82 @@ func build_settings() -> void:
 		Color(0.09,0.12,0.20) if dark_mode else FIGMA_BG_BOTTOM,
 		Color(0.055,0.08,0.14) if dark_mode else FIGMA_BG_TOP
 	)
-	_figma_header(canvas, "SETTINGS", "Make UNJAM feel right for you", "AUTO-SAVE", FIGMA_BLUE, Callable(self,"build_home"), Callable(), dark_mode)
+	_figma_header(canvas, "SETTINGS", "Make UNJAM feel right for you", "AUTO-SAVE", Color("#1aa8ff"), Callable(self,"build_home"), Callable(), dark_mode)
+	if not dark_mode:
+		var settings_title := canvas.get_node_or_null("FigmaHeaderTitle") as Label
+		if settings_title != null:
+			settings_title.add_theme_color_override("font_color",Color("#0d7ddb"))
 
-	var card_fill := Color(0.09,0.13,0.21,0.96) if dark_mode else Color(0.985,0.995,1.0)
-	var card_border := Color(0.22,0.36,0.48,0.72) if dark_mode else Color(0.72,0.88,0.96,0.52)
+	var card_fill := Color(0.09,0.13,0.21,0.96) if dark_mode else Color("#fffef8")
+	var card_border := Color(0.22,0.36,0.48,0.72) if dark_mode else Color(0.51,0.77,0.95,0.32)
 	var heading_color := Color(0.91,0.97,1.0) if dark_mode else FIGMA_INK
 	var muted_color := Color(0.76,0.84,0.90) if dark_mode else FIGMA_INK
 
-	_figma_settings_card(canvas,"SettingsCard/Sound",Rect2(18,92,354,170),card_fill,card_border,dark_mode)
-	_figma_text(canvas,"♫  SOUND & FEEL",Rect2(34,108,160,18),15,heading_color)
-	_figma_setting_row(canvas,"sound","SOUND EFFECTS",131,142,true,false,dark_mode)
-	_figma_setting_row(canvas,"music","MUSIC",179,190,true,false,dark_mode)
-	_figma_setting_row(canvas,"vibration","HAPTICS",227,238,true,false,dark_mode)
+	_figma_settings_card(canvas,"SettingsCard/Sound",Rect2(17,91,354,170),card_fill,card_border,dark_mode)
+	_figma_text(canvas,"♫  SOUND & FEEL",Rect2(33,107,160,18),15,Color("#086ec7") if not dark_mode else heading_color)
+	_figma_setting_row(canvas,"sound","SOUND EFFECTS",130,142,true,false,dark_mode)
+	_figma_setting_row(canvas,"music","MUSIC",178,190,true,false,dark_mode)
+	_figma_setting_row(canvas,"vibration","HAPTICS",226,238,true,false,dark_mode)
 
-	_figma_settings_card(canvas,"SettingsCard/Comfort",Rect2(18,276,354,120),card_fill,card_border,dark_mode)
-	_figma_text(canvas,"✦  COMFORT",Rect2(34,292,130,18),15,heading_color)
-	_figma_setting_row(canvas,"reduce_motion","REDUCED MOTION",315,326,false,true,dark_mode)
-	_figma_setting_row(canvas,"fast_animation","FAST ANIMATION",359,370,false,false,dark_mode)
+	_figma_settings_card(canvas,"SettingsCard/Comfort",Rect2(17,275,354,120),card_fill,card_border,dark_mode)
+	_figma_text(canvas,"✦  COMFORT",Rect2(33,291,130,18),15,Color("#088c3d") if not dark_mode else heading_color)
+	_figma_setting_row(canvas,"reduce_motion","REDUCED MOTION",314,326,false,true,dark_mode)
+	_figma_setting_row(canvas,"fast_animation","FAST ANIMATION",358,370,false,false,dark_mode)
 
-	_figma_settings_card(canvas,"SettingsCard/Appearance",Rect2(18,410,354,76),card_fill,card_border,dark_mode)
-	_figma_text(canvas,"☀  APPEARANCE",Rect2(34,426,150,18),15,heading_color)
-	_figma_text(canvas,"THEME",Rect2(34,448,210,28),13,muted_color)
-	var theme_fill := FIGMA_ORANGE if dark_mode else FIGMA_GREEN
+	_figma_settings_card(canvas,"SettingsCard/Appearance",Rect2(17,409,354,76),card_fill,card_border,dark_mode)
+	_figma_text(canvas,"☀  APPEARANCE",Rect2(33,425,150,18),15,Color("#ff8c1f") if not dark_mode else heading_color)
+	_figma_text(canvas,"THEME",Rect2(33,448,210,28),13,muted_color)
+	var theme_fill := FIGMA_ORANGE
 	var theme_text := Color(0.76,0.84,0.90) if dark_mode else FIGMA_OFF_WHITE
-	var theme_button := _figma_button(canvas,"SettingToggle/Theme",theme_name,Rect2(280,443,72,38),theme_fill,Callable(),theme_text,19,12)
+	var theme_button := _figma_button(canvas,"SettingToggle/Theme",theme_name,Rect2(279,442,72,38),theme_fill,Callable(),theme_text,19,12)
 	theme_button.pressed.connect(func() -> void:
 		if shell != null and shell.has_method("_toggle_theme"):
 			shell.call("_toggle_theme")
 		call_deferred("build_settings")
 	)
 
-	_figma_settings_card(canvas,"HelpPrivacy",Rect2(18,500,354,94),card_fill,card_border,dark_mode)
-	_figma_text(canvas,"?  HELP & PRIVACY",Rect2(34,516,170,18),15,heading_color)
+	var help_card: PanelContainer
+	if dark_mode:
+		help_card = _figma_solid_card(canvas,"HelpPrivacy",Rect2(17,499,354,94),card_fill,card_border,18)
+	else:
+		help_card = _figma_solid_card(canvas,"HelpPrivacy",Rect2(17,499,354,94),Color("#fffef7"),Color("#1aa8ff"),18)
+		help_card.modulate.a = 0.70
+	_figma_text(canvas,"?  HELP & PRIVACY",Rect2(33,515,170,18),15,Color("#086ec7") if not dark_mode else heading_color)
 	var utility_fill := Color(0.12,0.18,0.28,0.96) if dark_mode else FIGMA_BLUE
 	var utility_border := Color(0.26,0.43,0.57,0.72) if dark_mode else utility_fill.lightened(0.24)
 	var utility_text := Color(0.76,0.84,0.90) if dark_mode else FIGMA_OFF_WHITE
-	FigmaReferenceCanvas.add_shadow(canvas, Rect2(34,544,144,42), 14, Color(0.02,0.10,0.18,0.15), 4, Vector2(0,3))
-	var how_to := FigmaReferenceCanvas.premium_button("HOW TO PLAY",12,utility_text,utility_fill,14,utility_border,1.2)
+	FigmaReferenceCanvas.add_shadow(canvas, Rect2(33,543,144,42), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
+	var how_to := FigmaReferenceCanvas.premium_button("HOW TO PLAY",12,utility_text,Color("#086ec7") if not dark_mode else utility_fill,16,utility_border,1.2)
 	how_to.name = "SettingsHowToPlay"
-	FigmaReferenceCanvas.set_rect(how_to,34,544,144,42)
+	FigmaReferenceCanvas.set_rect(how_to,33,543,144,42)
 	how_to.pressed.connect(_show_current_tutorial)
 	canvas.add_child(how_to)
-	FigmaReferenceCanvas.add_shadow(canvas, Rect2(194,544,158,42), 14, Color(0.02,0.10,0.18,0.15), 4, Vector2(0,3))
-	var privacy := FigmaReferenceCanvas.premium_button("PRIVACY OPTIONS",12,utility_text,utility_fill,14,utility_border,1.2)
+	FigmaReferenceCanvas.add_shadow(canvas, Rect2(193,543,158,42), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
+	var privacy := FigmaReferenceCanvas.premium_button("PRIVACY OPTIONS",12,utility_text,Color("#086ec7") if not dark_mode else utility_fill,16,utility_border,1.2)
 	privacy.name = "SettingsPrivacy"
-	FigmaReferenceCanvas.set_rect(privacy,194,544,158,42)
+	FigmaReferenceCanvas.set_rect(privacy,193,543,158,42)
 	privacy.pressed.connect(PrivacyManager.show_privacy_options)
 	canvas.add_child(privacy)
 
 	_figma_bottom_nav(canvas,"settings",dark_mode)
 
 func _figma_settings_card(canvas: Control, name_value: String, rect: Rect2, fill: Color, border: Color, dark_mode: bool) -> PanelContainer:
+	var card: PanelContainer
 	if dark_mode:
-		return _figma_solid_card(canvas,name_value,rect,fill,border,16)
-	return _figma_card(canvas,name_value,rect,fill,border,16)
+		card = _figma_solid_card(canvas,name_value,rect,fill,border,18)
+	else:
+		card = _figma_card(canvas,name_value,rect,fill,border,18)
+		card.modulate.a = 0.70
+	return card
 
 func _figma_setting_row(canvas: Control, key: String, label_text: String, toggle_y: float, label_y: float, default_value: bool = true, reduced_motion: bool = false, dark_mode: bool = false) -> void:
 	var text_color := Color(0.76,0.84,0.90) if dark_mode else FIGMA_INK
 	_figma_text(canvas,label_text,Rect2(34,label_y-7,210,30),13,text_color)
 	var enabled := bool(SaveManager.data.get(key,default_value))
-	var fill := (FIGMA_BLUE if dark_mode else FIGMA_GREEN) if enabled else Color(0.70,0.75,0.80)
+	var fill := FIGMA_BLUE if enabled else Color("#b2bfcc")
 	var button_text_color := Color(0.76,0.84,0.90) if dark_mode else FIGMA_OFF_WHITE
 	var state := "ON" if enabled else "OFF"
-	var button := _figma_button(canvas,"SettingToggle/%s" % key.capitalize(),state,Rect2(280,toggle_y,72,38),fill,Callable(),button_text_color,19,12)
+	var button := _figma_button(canvas,"SettingToggle/%s" % key.capitalize(),state,Rect2(279,toggle_y,72,38),fill,Callable(),button_text_color,19,12)
 	if reduced_motion:
 		button.pressed.connect(_toggle_reduced_motion)
 	else:
