@@ -199,9 +199,12 @@ func _validate_primary_visual_occupancy() -> bool:
 	if hero.get_global_rect().size.x < 760.0 or hero.get_global_rect().size.y < 480.0:
 		main.queue_free(); await process_frame
 		return _fail("Figma Home hero no longer has dominant physical presence on 1080x1920")
-	if hero.get_global_rect().intersects(primary.get_global_rect()):
+	# In the audited Figma composition the primary CTA is intentionally embedded
+	# inside the hero card (x41..219, y285..333) rather than sitting below it.
+	# Guard containment instead of applying the retired non-overlap rule.
+	if not hero.get_global_rect().encloses(primary.get_global_rect()):
 		main.queue_free(); await process_frame
-		return _fail("Figma Home hero overlaps its primary action")
+		return _fail("Figma Home primary action escapes its hero card")
 
 	main.call("start_multi_level", "water_sort", 1, false)
 	await _frames(10)
