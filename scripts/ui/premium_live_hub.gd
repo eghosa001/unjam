@@ -2,12 +2,6 @@ extends Control
 
 # Shared Live/Game-select state and navigation only. Retired presentation code
 # is gone; premium_live_hub_3d.gd owns the active visual implementation.
-const DESCRIPTIONS := {
-	"rescue_rush": "Clear the lane, trigger chain reactions and rescue the trapped character.",
-	"water_sort": "Sort every colour into clean tubes with the fewest possible pours.",
-	"block_puzzle": "Place pieces, preserve space and clear satisfying lines."
-}
-
 var built := false
 var last_theme := ""
 var _responsive_rebuild_pending := false
