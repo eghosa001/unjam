@@ -81,7 +81,7 @@ func run() -> void:
 		var hint_button := _find_hint_button(game)
 		expect_true(hint_button != null, "Gameplay hint button missing")
 		if hint_button != null:
-			expect_true("25" in hint_button.text, "Hint button does not disclose its coin cost")
+			expect_true("25" in hint_button.tooltip_text, "Hint control does not disclose its coin cost")
 
 			# Simulate the exact invalid state that previously lost 25 coins.
 			save_manager.data.coins = int(hint_manager.HINT_COST)
