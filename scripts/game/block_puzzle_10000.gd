@@ -230,7 +230,8 @@ func _show_level_intro() -> void:
 		return
 	var label := milestone.replace("_", " ").to_upper()
 	var accent := Color("#ffd166") if milestone in ["boss", "world_finale", "mastery", "finale", "extreme"] else Color("#c084fc")
-	premium_feedback.show_banner(label, accent, Vector2(195, 170), 210.0)
+	var view := get_viewport_rect().size
+	premium_feedback.show_banner(label, accent, Vector2(view.x * 0.5, view.y * 0.22), 176.0)
 
 func refill_pieces() -> void:
 	if daily_mode:
