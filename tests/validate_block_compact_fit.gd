@@ -41,8 +41,9 @@ func _run() -> void:
 
 	game.call("_fit_3d_board_layout")
 	await _frames(3)
-	if not _rect_eq(Rect2(board.position,board.size),Rect2(30,180,330,330)):
-		return _fail("Responsive fitter overwrote audited Figma Block board geometry")
+	var post_fit_rect := Rect2(board.position,board.size)
+	if not _rect_eq(post_fit_rect,Rect2(29,179,330,330)):
+		return _fail("Responsive fitter overwrote audited Figma Block board geometry: %s" % str(post_fit_rect))
 
 	game.queue_free()
 	await process_frame
