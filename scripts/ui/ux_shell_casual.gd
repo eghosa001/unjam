@@ -196,17 +196,6 @@ func apply_theme_mode(dark: bool) -> void:
 	if game != null and game.has_method("apply_theme_mode"):
 		game.call("apply_theme_mode",dark)
 
-func _layout_tutorial_panel() -> void:
-	# Reference canvas owns all geometry and viewport scaling.
-	pass
-
-func _layout_help_button() -> void:
-	if help_button != null:
-		help_button.visible = false
-
-func _restyle_3d_shell() -> void:
-	pass
-
 func show_tutorial(game_id: String = "rescue_rush") -> void:
 	if tutorial_panel == null or _tutorial_canvas == null:
 		return
