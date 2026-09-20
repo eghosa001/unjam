@@ -389,8 +389,11 @@ static func premium_button(text_value: String, font_size: int, text_color: Color
 	var disabled_text := Color(resolved_text.r, resolved_text.g, resolved_text.b, 0.72)
 	result.add_theme_color_override("font_disabled_color", disabled_text)
 	result.button_down.connect(func() -> void:
-		if not result.disabled:
-			MotionSystem.press(result, 0.78)
+		if result.disabled:
+			return
+		var motion := result.get_node_or_null("/root/MotionSystem")
+		if motion != null and motion.has_method("press"):
+			motion.call("press", result, 0.78)
 	)
 	return result
 
