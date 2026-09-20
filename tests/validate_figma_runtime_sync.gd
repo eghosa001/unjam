@@ -102,7 +102,7 @@ func _test_home_and_surfaces(main: Control) -> bool:
 	if main.find_child("SettingsCard/Sound",true,false) == null and main.find_child("SettingsCard_Sound",true,false) == null:
 		# Node-name sanitisation is engine-version dependent; geometry test below
 		# remains the authoritative Settings check.
-		var sound_toggle := _button_at(main.get("content") as Control,Vector2(279,130),Vector2(72,38))
+		var sound_toggle := _button_at(main.get("content") as Control,Vector2(279,127),Vector2(72,44))
 		if sound_toggle == null:
 			return _fail("Figma Settings sound section is missing")
 	return true
@@ -236,7 +236,7 @@ func _test_settings_toggle(main: Control) -> bool:
 	var sound := content.find_child("SettingToggle*Sound",true,false) as Button
 	if sound == null:
 		return _fail("Sound Effects Figma toggle is missing")
-	if not _rect_eq(Rect2(sound.position,sound.size),Rect2(279,130,72,38)):
+	if not _rect_eq(Rect2(sound.position,sound.size),Rect2(279,127,72,44)):
 		return _fail("Sound Effects toggle drifted from Figma geometry: %s | custom=%s | minimum=%s | font=%d | exact=%s" % [str(Rect2(sound.position,sound.size)), str(sound.custom_minimum_size), str(sound.get_combined_minimum_size()), sound.get_theme_font_size("font_size"), str(sound.has_meta("unjam_figma_exact_geometry"))])
 	if not _bound(sound):
 		return _fail("Sound Effects Figma toggle is unbound")
