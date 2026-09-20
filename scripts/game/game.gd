@@ -395,6 +395,8 @@ func _fail_and_restart(message: String) -> void:
 		hint_label.text = message
 	_clear_checkpoint(true)
 	FeedbackManager.blocked()
+	if not daily_mode:
+		RetentionManager.record_level_fail()
 	AnalyticsManager.track("rescue_attempt_failed", {"level": level_number, "reason": message, "daily": daily_mode})
 	var result := PremiumResultOverlay.new()
 	result.configure(
@@ -605,7 +607,6 @@ func complete_level() -> void:
 		SaveManager.complete_daily(String(level_data.get("daily_key", DailyChallenge.date_key())), 100)
 	else:
 		completion_rewards = SaveManager.complete_level(level_number, stars, rescue_id, 25 * stars)
-		RetentionManager.record_level_complete(level_number, stars, moves, par_moves, chain_count, rescue_id, hints_used_this_level)
 	AdManager.note_level_completed()
 	AnalyticsManager.level_completed(level_number, moves, stars)
 	AnalyticsManager.track("rescue_level_difficulty", {
