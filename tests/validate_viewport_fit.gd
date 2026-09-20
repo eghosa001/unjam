@@ -180,8 +180,9 @@ func _assert_game(main: Control, canvas_name: String, viewport_size: Vector2i, l
 	if game == null or not is_instance_valid(game):
 		return _fail("%s active game missing" % label)
 	var control := game as Control
-	if not _rect_inside(control.get_global_rect(),Rect2(Vector2.ZERO,viewport_size)):
-		return _fail("%s root spills outside %s" % [label,str(viewport_size)])
+	var logical_screen := _logical_screen(control)
+	if not _rect_inside(control.get_global_rect(),logical_screen):
+		return _fail("%s root spills outside logical viewport %s for window %s: %s" % [label,str(logical_screen.size),str(viewport_size),str(control.get_global_rect())])
 	return _assert_canvas(game as Node,canvas_name,viewport_size,label)
 
 func _assert_canvas(owner: Node, canvas_name: String, viewport_size: Vector2i, label: String) -> bool:
@@ -194,10 +195,14 @@ func _assert_canvas(owner: Node, canvas_name: String, viewport_size: Vector2i, l
 		return _fail("%s reference canvas local size changed: %s" % [label,str(canvas.size)])
 	if absf(canvas.scale.x-canvas.scale.y) > 0.001 or canvas.scale.x <= 0.0:
 		return _fail("%s reference canvas scale is not uniform" % label)
-	var screen := Rect2(Vector2.ZERO,viewport_size)
+	var screen := _logical_screen(canvas)
 	if not _rect_inside(canvas.get_global_rect(),screen):
-		return _fail("%s reference canvas spills outside %s: %s" % [label,str(viewport_size),str(canvas.get_global_rect())])
+		return _fail("%s reference canvas spills outside logical viewport %s for window %s: %s" % [label,str(screen.size),str(viewport_size),str(canvas.get_global_rect())])
 	return true
+
+func _logical_screen(node: Node) -> Rect2:
+	var viewport := node.get_viewport() if node != null else root
+	return viewport.get_visible_rect() if viewport != null else Rect2(Vector2.ZERO,root.size)
 
 func _hide_tutorial(main: Control) -> void:
 	var shell := main.get_node_or_null("UXShell")
