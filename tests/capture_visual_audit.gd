@@ -190,6 +190,16 @@ func _run() -> void:
 		if active_after >= active_before:
 			push_error("Rescue visual audit hint did not remove an arrow")
 		await _capture("09d-game-rescue-hint-removal-540x960")
+	# Endgame Rescue Rush must remain readable on a compact phone. Capture the
+	# actual Level 10,000 board and its milestone treatment, not only Level 1.
+	main.call("start_level", 10000)
+	await _settle(3)
+	_hide_tutorial(shell)
+	await _capture("09f-game-rescue-level10000-540x960")
+	await _settle(8)
+	var late_rescue = main.get("active_game")
+	if late_rescue == null or not is_instance_valid(late_rescue):
+		push_error("Late Rescue Rush did not launch for visual audit")
 	root.size = Vector2i(1080, 1920)
 	await _settle(6)
 
@@ -254,6 +264,17 @@ func _run() -> void:
 			block_feedback.call("show_sweep", block_sweep_rect, Color("#ff7a66"))
 			await _settle(2)
 			await _capture("11c-game-block-premium-feedback-540x960")
+	# Block Puzzle late-game boards add occupancy/objective pressure. Keep a
+	# compact Level 10,000 frame so tray, boosters, board and milestone banner are
+	# reviewed together under maximum progression complexity.
+	main.call("start_multi_level", "block_puzzle", 10000, false)
+	await _settle(3)
+	_hide_tutorial(shell)
+	await _capture("11d-game-block-level10000-540x960")
+	await _settle(8)
+	var late_block = main.get("active_game")
+	if late_block == null or not is_instance_valid(late_block):
+		push_error("Late Block Puzzle did not launch for visual audit")
 	root.size = Vector2i(1080, 1920)
 	await _settle(6)
 
