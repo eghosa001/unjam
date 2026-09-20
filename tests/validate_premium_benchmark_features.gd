@@ -60,6 +60,22 @@ func _run() -> void:
 	if not water_base_source.contains("Tap a tube, then a destination"):
 		return _fail("Compact Water Sort guidance was not shortened for phone readability")
 
+	var water_ui_source := _read("res://scripts/game/water_sort_casual.gd")
+	if not water_ui_source.contains("ratio := 3.8") or not water_ui_source.contains("preferred_width := 60.0"):
+		return _fail("Water Sort still lacks premium chunkier bottle proportions")
+	var tube_source := _read("res://scripts/ui/water_tube_button.gd")
+	if not tube_source.contains("side_inset := clampf(size.x * 0.10") or not tube_source.contains("cavity_side := clampf"):
+		return _fail("Water bottle geometry is not scaling with compact/late-game slot width")
+	var tray_source := _read("res://scripts/ui/block_piece_button.gd")
+	if not tray_source.contains("minf(32.0, fit_cell)") or not tray_source.contains("size.x - 10.0"):
+		return _fail("Block Puzzle tray pieces are still undersized against the board")
+	var rescue_ui_source := _read("res://scripts/game/rescue_rush_casual.gd")
+	if not rescue_ui_source.contains("set_rect(actions,21,638,346,62)"):
+		return _fail("Rescue controls are not in the premium thumb-zone position")
+	var performance_source := _read("res://scripts/systems/robust_premium_visuals.gd")
+	if not performance_source.contains("_set_quality(0.75)") or not performance_source.contains("_set_quality(0.50)") or not performance_source.contains("fps < 53"):
+		return _fail("Three-tier low-end effects scaling is missing")
+
 	var water_source := _read("res://scripts/game/water_sort_10000.gd")
 	if not water_source.contains("PERFECT TUBE") or not water_source.contains("_pour_flow_streak") or not water_source.contains("_show_level_intro"):
 		return _fail("Water Sort premium flow/milestone feature is missing")
