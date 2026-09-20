@@ -122,7 +122,8 @@ func _figma_surface(active: String, bottom_tint: Color = FIGMA_BG_BOTTOM, top_ti
 	var viewport_bg := ColorRect.new()
 	viewport_bg.name = "FigmaSurfaceViewportBackground"
 	viewport_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	viewport_bg.color = resolved_bottom
+	# Keep letterbox/fallback pixels inside the established light/dark readability range; the authored canvas below carries the deep 3D scene.
+	viewport_bg.color = FIGMA_DARK_BOTTOM if _dark() else FIGMA_BG_BOTTOM
 	viewport_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	content.add_child(viewport_bg)
 	var canvas := FigmaReferenceCanvas.new()
