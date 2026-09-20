@@ -31,6 +31,8 @@ func _hide_legacy_backdrops(node: Node) -> void:
 func _polish_tree(node: Node, surface: String, dark: bool, accent: Color) -> void:
 	if not is_instance_valid(node):
 		return
+	if node.has_meta("unjam_figma_reference_root"):
+		return
 	if node is Button and not _is_gameplay_widget(node):
 		var button := node as Button
 		button.custom_minimum_size.y = maxf(button.custom_minimum_size.y, 96.0)
