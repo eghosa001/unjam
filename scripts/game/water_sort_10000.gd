@@ -84,7 +84,8 @@ func _show_level_intro() -> void:
 		return
 	var label := milestone.replace("_", " ").to_upper()
 	var accent := Color("#ffd166") if milestone in ["boss", "world_finale", "mastery", "finale"] else Color("#5da9ff")
-	premium_feedback.show_banner(label, accent, Vector2(195, 182), 210.0)
+	var view := get_viewport_rect().size
+	premium_feedback.show_banner(label, accent, Vector2(view.x * 0.5, view.y * 0.23), 176.0)
 
 func render_board() -> void:
 	super.render_board()
