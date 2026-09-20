@@ -23,6 +23,22 @@ func _run() -> void:
 
 	main.call("build_home")
 	await _capture("01-home-dark")
+	var home := main.get_node_or_null("PremiumHome")
+	if home != null:
+		var water_switch := home.find_child("HomeDirect_water_sort",true,false) as Button
+		if water_switch != null:
+			water_switch.pressed.emit()
+			await _settle(3)
+			await _capture("01b-home-water-dark")
+		var block_switch := home.find_child("HomeDirect_block_puzzle",true,false) as Button
+		if block_switch != null:
+			block_switch.pressed.emit()
+			await _settle(3)
+			await _capture("01c-home-block-dark")
+		var rescue_switch := home.find_child("HomeDirect_rescue_rush",true,false) as Button
+		if rescue_switch != null:
+			rescue_switch.pressed.emit()
+			await _settle(2)
 
 	main.set("current_surface", "live")
 	await _capture("02-live-dark")
@@ -152,6 +168,19 @@ func _run() -> void:
 			else:
 				push_error("Rescue motion capture never exposed RescueEscapeGhost")
 			await _wait_until_rescue_unlocked(rescue_game)
+		var active_before := 0
+		for raw in (rescue_game.get("pieces") as Array):
+			if raw is Dictionary and bool((raw as Dictionary).get("active",true)):
+				active_before += 1
+		rescue_game.call("show_hint")
+		await _settle(14)
+		var active_after := 0
+		for raw in (rescue_game.get("pieces") as Array):
+			if raw is Dictionary and bool((raw as Dictionary).get("active",true)):
+				active_after += 1
+		if active_after >= active_before:
+			push_error("Rescue visual audit hint did not remove an arrow")
+		await _capture("09d-game-rescue-hint-removal-540x960")
 	root.size = Vector2i(1080, 1920)
 	await _settle(6)
 
