@@ -14,8 +14,8 @@ func _initialize() -> void:
 func _run() -> void:
 	var failures: Array[String] = []
 	root.size = TALL_VIEWPORT
-	await _check_game_scene("res://scenes/WaterSort.tscn","FigmaWater390x844","GameplayStage",Rect2(18,170,354,420),"CompactGameActions",Rect2(22,628,346,60),failures)
-	await _check_game_scene("res://scenes/Game.tscn","FigmaRescue390x844","RescueBoardPanel",Rect2(26,184,338,338),"CompactGameActions",Rect2(22,570,346,60),failures)
+	await _check_game_scene("res://scenes/WaterSort.tscn","FigmaWater390x844","GameplayStage",Rect2(17,169,354,420),"CompactGameActions",Rect2(21,627,346,60),failures)
+	await _check_game_scene("res://scenes/Game.tscn","FigmaRescue390x844","RescueBoardPanel",Rect2(25,183,338,338),"CompactGameActions",Rect2(21,569,346,60),failures)
 	for viewport_size in SELECTOR_VIEWPORTS:
 		await _check_selector(viewport_size,failures)
 	if failures.is_empty():
@@ -83,12 +83,12 @@ func _check_selector(viewport_size: Vector2i, failures: Array[String]) -> void:
 		var screen := Rect2(Vector2.ZERO,root.get_visible_rect().size)
 		if not _inside(nav.get_global_rect(),screen):
 			failures.append("Selector bottom nav spills outside %s" % str(viewport_size))
-		if not _rect_eq(Rect2(nav.position,nav.size),Rect2(14,758,362,70)):
+		if not _rect_eq(Rect2(nav.position,nav.size),Rect2(13,757,362,70)):
 			failures.append("Selector bottom nav drifted from Figma geometry")
 		var specs := {
-			"rescue_rush": Rect2(18,112,354,160),
-			"water_sort": Rect2(18,286,354,160),
-			"block_puzzle": Rect2(18,460,354,160)
+			"rescue_rush": Rect2(17,111,354,160),
+			"water_sort": Rect2(17,285,354,160),
+			"block_puzzle": Rect2(17,459,354,160)
 		}
 		for game_id in specs.keys():
 			var card := live.find_child("GameCard3D_%s" % game_id,true,false) as Control
