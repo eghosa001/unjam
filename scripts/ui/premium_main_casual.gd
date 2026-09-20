@@ -347,165 +347,93 @@ func _claim_collection_gift() -> void:
 func build_collection() -> void:
 	current_surface = "collection"
 	_remove_active_game()
-	var root := _page_root()
-	var accent := _accent("rescue_rush")
-	_page_header(root, "COLLECTION", "Progress, friends and permanent rewards", "◈  %d" % int(SaveManager.data.get("coins", 0)), PremiumDesignSystem.GOLD)
-	var scroll := ScrollContainer.new()
-	scroll.name = "CollectionScroll"
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	root.add_child(scroll)
-	var stack := VBoxContainer.new()
-	stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	stack.add_theme_constant_override("separation", 18)
-	scroll.add_child(stack)
+	var canvas := _figma_surface("collection", Color(0.8956,0.9736,0.9268))
+	_figma_header(
+		canvas,
+		"COLLECTION",
+		"Progress, friends and permanent rewards",
+		"◈ +",
+		FIGMA_ORANGE,
+		Callable(self,"build_home"),
+		Callable(self,"_figma_open_shop")
+	)
+
 	var total_completed := 0
 	var total_stars := 0
 	var total_perfect := 0
 	var total_badges := 0
 	for game_id in MultiGameManager.GAME_IDS:
-		var progress := MultiGameManager.progress_for(game_id)
-		total_completed += int(progress.get("levels_completed", 0))
+		var p := MultiGameManager.progress_for(game_id)
+		total_completed += int(p.get("levels_completed",0))
 		total_stars += MultiGameManager.total_stars(game_id)
-		total_perfect += int(progress.get("perfect_clears", 0))
-		total_badges += (progress.get("world_badges", []) as Array).size()
-	var overview := _card(stack, Vector2(0, 184), true)
-	var overview_margin := _pad(overview, 20)
-	var overview_box := VBoxContainer.new()
-	overview_box.add_theme_constant_override("separation", 12)
-	overview_margin.add_child(overview_box)
-	var overview_title := _label("YOUR UNJAM JOURNEY", 28, "title", accent)
-	overview_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	overview_box.add_child(overview_title)
-	var metrics := GridContainer.new()
-	metrics.columns = 4 if get_viewport_rect().size.x >= 760.0 else 2
-	metrics.add_theme_constant_override("h_separation", 10)
-	metrics.add_theme_constant_override("v_separation", 10)
-	overview_box.add_child(metrics)
-	for metric in [["LEVELS", total_completed], ["STARS", total_stars], ["PERFECT", total_perfect], ["BADGES", total_badges]]:
-		var chip := _journey_metric(String(metric[0]), int(metric[1]), accent)
-		metrics.add_child(chip)
-	var games_title := _label("THREE PUZZLE WORLDS", 25, "title", accent)
-	stack.add_child(games_title)
-	var game_grid := GridContainer.new()
-	game_grid.columns = 2 if get_viewport_rect().size.x >= 720.0 else 1
-	game_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	game_grid.add_theme_constant_override("h_separation", 14)
-	game_grid.add_theme_constant_override("v_separation", 14)
-	stack.add_child(game_grid)
-	for game_id in MultiGameManager.GAME_IDS:
-		game_grid.add_child(_collection_game_card(game_id))
-	var achievement_card := _card(stack, Vector2(0, 150), false)
-	var achievement_margin := _pad(achievement_card, 20)
-	var achievement_box := VBoxContainer.new()
-	achievement_box.add_theme_constant_override("separation", 8)
-	achievement_margin.add_child(achievement_box)
-	achievement_box.add_child(_label("★  ACHIEVEMENT CABINET", 24, "title", Unjam3DTheme.GOLD))
-	var achievement_lines: Array[String] = []
-	for game_id in MultiGameManager.GAME_IDS:
-		var unlocked := MultiGameManager.unlocked_achievements(game_id)
-		achievement_lines.append("%s  •  %d / %d" % [MultiGameManager.display_name(game_id), unlocked.size(), MultiGameManager.achievement_definitions(game_id).size()])
-	var achievements := _label("\n".join(achievement_lines), 18, "body", accent)
-	achievements.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	achievement_box.add_child(achievements)
-	var garden := _card(stack, Vector2(0, 260), true, "rescue_rush")
-	var garden_margin := _pad(garden, 22)
-	var garden_box := VBoxContainer.new()
-	garden_box.add_theme_constant_override("separation", 10)
-	garden_margin.add_child(garden_box)
-	garden_box.add_child(_label("♥  RESCUE GARDEN", 26, "title", accent))
-	var rescued: Array = SaveManager.data.get("rescued", [])
-	var friends := _label(_friend_roster_text(rescued), 20, "body", accent)
-	friends.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	garden_box.add_child(friends)
-	var garden_status := _label(_garden_status_text(), 18, "muted", accent)
-	garden_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	garden_box.add_child(garden_status)
-	var progress := ProgressBar.new()
-	progress.max_value = 6.0
-	progress.value = float(SaveManager.data.get("decorations", []).size())
-	progress.show_percentage = false
-	progress.custom_minimum_size = Vector2(0, 22)
-	progress.add_theme_stylebox_override("background", PremiumDesignSystem.box(PremiumDesignSystem.surface_3(_dark()), 10, Color.TRANSPARENT, 0, 0, _dark()))
-	progress.add_theme_stylebox_override("fill", PremiumDesignSystem.box(accent, 10, accent.lightened(0.12), 1, 0, _dark()))
-	garden_box.add_child(progress)
-	var value_card := _card(stack, Vector2(0, 210), true, "rescue_rush")
-	var value_margin := _pad(value_card, 20)
-	var value_box := VBoxContainer.new()
-	value_box.add_theme_constant_override("separation", 8)
-	value_margin.add_child(value_box)
-	var owned_count := EconomyManager.collection_owned_count()
-	value_box.add_child(_label("✦  PERMANENT REWARD BOOST  •  %d / 6" % owned_count, 24, "title", PremiumDesignSystem.GOLD))
-	var value_copy := _label(
-		"Each upgrade permanently adds +5 coins to every Daily Game and strengthens your once-per-day Garden Gift.",
-		18,
-		"body",
-		accent
-	)
-	value_copy.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	value_box.add_child(value_copy)
-	var current_value := _label(
-		"CURRENT VALUE  •  +%d EACH DAILY GAME  •  +%d DAILY GARDEN GIFT" % [
-			EconomyManager.collection_daily_bonus(),
-			EconomyManager.garden_gift_amount()
-		],
-		18,
-		"accent",
-		PremiumDesignSystem.GOLD
-	)
-	current_value.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	value_box.add_child(current_value)
-	var gift := _button(
-		"NO GIFT YET  •  BUY AN UPGRADE" if owned_count <= 0 else (
-			"GARDEN GIFT CLAIMED TODAY" if EconomyManager.garden_gift_claimed_today()
-			else "CLAIM DAILY GARDEN GIFT  •  +%d COINS" % EconomyManager.garden_gift_amount()
-		),
-		Vector2(0, 64),
-		"success" if EconomyManager.can_claim_garden_gift() else "secondary",
-		"rescue_rush"
-	)
-	gift.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	gift.disabled = not EconomyManager.can_claim_garden_gift()
-	gift.pressed.connect(_claim_collection_gift)
-	value_box.add_child(gift)
+		total_perfect += int(p.get("perfect_clears",0))
+		var badges = p.get("world_badges",[])
+		if badges is Array:
+			total_badges += (badges as Array).size()
 
-	var shop_title := _label("GARDEN UPGRADES  •  PERMANENT", 23, "title", accent)
-	stack.add_child(shop_title)
-	var shop := GridContainer.new()
-	shop.columns = 2 if get_viewport_rect().size.x >= 720.0 else 1
-	shop.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	shop.add_theme_constant_override("h_separation", 14)
-	shop.add_theme_constant_override("v_separation", 14)
-	stack.add_child(shop)
-	var collection_items := [
-		["tree", "CANOPY TREE", 100, "SHADE"],
-		["bench", "GARDEN BENCH", 150, "REST"],
-		["fountain", "CRYSTAL FOUNTAIN", 250, "SPARKLE"],
-		["lanterns", "LANTERN PATH", 350, "GLOW"],
-		["cottage", "RESCUE COTTAGE", 500, "HOME"],
-		["rainbow_bridge", "RAINBOW BRIDGE", 750, "WONDER"]
+	_figma_card(canvas,"Journey",Rect2(18,90,354,96),Color(0.985,0.995,1.0),Color(0.72,0.90,0.79,0.50),16)
+	_figma_text(canvas,"YOUR UNJAM JOURNEY",Rect2(34,108,210,19),16,FIGMA_INK)
+	var metrics := [
+		[total_completed,"LEVELS",36.0],
+		[total_stars,"STARS",120.0],
+		[total_perfect,"PERFECT",204.0],
+		[total_badges,"BADGES",288.0]
 	]
-	for item in collection_items:
-		var id := String(item[0])
-		var owned: bool = id in SaveManager.data.get("decorations", [])
-		var state_text := "OWNED" if owned else "%d COINS" % int(item[2])
-		var button := _button(
-			"%s\n%s  •  %s\nPERMANENT +5 DAILY  •  +10 GIFT" % [
-				String(item[1]),
-				String(item[3]),
-				state_text
-			],
-			Vector2(0, 148),
-			"success" if owned else "secondary",
-			"rescue_rush"
-		)
-		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.disabled = owned
-		button.pressed.connect(_buy_decoration.bind(id, int(item[2])))
-		shop.add_child(button)
-	PremiumVisuals.entrance(stack, 0.018)
-	_add_surface_diorama("rescue_rush", "Collection3DDiorama")
-	_add_secondary_nav("collection")
+	for metric in metrics:
+		_figma_text(canvas,_compact_stat(int(metric[0])),Rect2(float(metric[2]),136,62,26),18,FIGMA_INK)
+		_figma_text(canvas,String(metric[1]),Rect2(float(metric[2])-3,161,70,20),12,FIGMA_MUTED)
+
+	_figma_text(canvas,"THREE PUZZLE WORLDS",Rect2(18,205,190,18),15,FIGMA_INK)
+	_figma_collection_progress(canvas,"rescue_rush",18)
+	_figma_collection_progress(canvas,"water_sort",136)
+	_figma_collection_progress(canvas,"block_puzzle",254)
+
+	_figma_card(canvas,"Achievements",Rect2(18,340,354,76),Color(0.985,0.995,1.0),Color(0.84,0.73,0.96,0.48),16)
+	_figma_text(canvas,"★  ACHIEVEMENT CABINET",Rect2(34,356,220,18),15,FIGMA_INK)
+	var achievement_parts: Array[String] = []
+	for game_id in MultiGameManager.GAME_IDS:
+		var unlocked := MultiGameManager.unlocked_achievements(game_id).size()
+		var total := MultiGameManager.achievement_definitions(game_id).size()
+		achievement_parts.append("%s %d/%d" % [_figma_short_game(game_id),unlocked,total])
+	_figma_text(canvas," • ".join(achievement_parts),Rect2(34,382,310,22),12,FIGMA_MUTED)
+
+	var decorations: Array = SaveManager.data.get("decorations",[])
+	var rescued: Array = SaveManager.data.get("rescued",[])
+	var owned := decorations.size()
+	_figma_card(canvas,"Garden",Rect2(18,430,354,96),Color(0.985,0.995,1.0),Color(0.64,0.91,0.73,0.54),16)
+	_figma_text(canvas,"♥  RESCUE GARDEN",Rect2(34,446,180,19),16,FIGMA_GREEN)
+	_figma_text(canvas,"%d friends home • %d / 6 upgrades" % [rescued.size(),owned],Rect2(34,473,240,20),13,FIGMA_MUTED)
+	_figma_text(canvas,"%d / 6 upgrades  •  +%d Daily  •  +%d Gift" % [owned,EconomyManager.collection_daily_bonus(),EconomyManager.garden_gift_amount()],Rect2(34,498,310,20),12,FIGMA_MUTED)
+
+	_figma_card(canvas,"Boost",Rect2(18,540,354,92),Color(0.985,0.995,1.0),Color(0.95,0.80,0.42,0.50),16)
+	_figma_text(canvas,"PERMANENT BOOST",Rect2(34,556,180,18),15,FIGMA_INK)
+	_figma_text(canvas,"+5 per Daily Game • +10 Garden Gift per upgrade",Rect2(34,580,310,20),12,FIGMA_MUTED)
+	var can_claim := EconomyManager.can_claim_garden_gift()
+	var gift_text := "CLAIM GARDEN GIFT • +%d" % EconomyManager.garden_gift_amount()
+	if not can_claim:
+		gift_text = "GARDEN GIFT CLAIMED" if EconomyManager.garden_gift_claimed_today() else "BUY AN UPGRADE IN SHOP"
+	var gift_fill := FIGMA_GREEN if can_claim else Color(0.54,0.64,0.72)
+	var gift := _figma_button(canvas,"CollectionGardenGift",gift_text,Rect2(34,606,250,40),gift_fill,Callable(),FIGMA_OFF_WHITE,13,12)
+	if can_claim:
+		gift.pressed.connect(_claim_collection_gift)
+	else:
+		gift.pressed.connect(_figma_open_shop)
+
+	_figma_bottom_nav(canvas,"collection")
+
+func _figma_collection_progress(canvas: Control, game_id: String, x: float) -> void:
+	var accent := Unjam3DTheme.game_accent(game_id)
+	_figma_card(canvas,"ProgressCard/%s" % game_id,Rect2(x,232,110,86),Color(0.985,0.995,1.0),Color(accent,0.40),16)
+	_figma_text(canvas,_figma_short_game(game_id),Rect2(x+12,246,86,15),12,accent)
+	var level := _highest_level_for_game(game_id)
+	var stars := MultiGameManager.total_stars(game_id)
+	_figma_text(canvas,"L%d • ★ %s" % [level,_compact_stat(stars)],Rect2(x+12,272,92,20),12,FIGMA_MUTED)
+
+func _figma_short_game(game_id: String) -> String:
+	match game_id:
+		"water_sort": return "WATER"
+		"block_puzzle": return "BLOCK"
+		_: return "RESCUE"
 
 func _open_games_surface() -> void:
 	_remove_active_game()
