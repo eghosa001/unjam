@@ -36,10 +36,10 @@ func run() -> void:
 		await _frames(2)
 		var overlay = prompt.get("overlay") as Control
 		expect_true(overlay != null and overlay.visible, "Insufficient coin prompt did not become visible")
-		var shop_button := prompt.find_child("InsufficientCoinsShopButton", true, false) as Button
-		var reward_button := prompt.find_child("InsufficientCoinsRewardButton", true, false) as Button
-		expect_true(shop_button != null, "Prompt has no Open Shop action")
-		expect_true(reward_button != null and "+50" in reward_button.text, "Prompt has no +50 rewarded coin action")
+		var shop_button := prompt.find_child("*Shop", true, false) as Button
+		var reward_button := prompt.find_child("*Rewarded", true, false) as Button
+		expect_true(shop_button != null, "Figma coin prompt has no Open Shop action")
+		expect_true(reward_button != null and "+50" in reward_button.text, "Figma coin prompt has no +50 rewarded coin action")
 		if shop_button != null and hub != null:
 			shop_button.emit_signal("pressed")
 			await _frames(2)
