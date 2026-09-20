@@ -465,7 +465,7 @@ func _draw_block(rect: Rect2, fill: Color) -> void:
 		Vector2(front.position.x + 3.0, front.end.y + 1.0),
 		Vector2(maxf(2.0, front.size.x - 4.0), maxf(3.0, depth * 0.65))
 	)
-	draw_style_box(_style(Color(fill.darkened(0.52), 0.42), Color.TRANSPARENT, 0, 4), bottom_shadow)
+	draw_style_box(_style(Color("#1f2940", 0.28), Color.TRANSPARENT, 0, 4), bottom_shadow)
 	var top_face := PackedVector2Array([
 		front.position,
 		front.position + Vector2(depth, -depth),
@@ -478,8 +478,10 @@ func _draw_block(rect: Rect2, fill: Color) -> void:
 		Vector2(front.end.x + depth, front.end.y - depth),
 		Vector2(front.end.x, front.end.y)
 	])
-	draw_colored_polygon(top_face, fill.lightened(0.34))
-	draw_colored_polygon(right_face, fill.darkened(0.24))
+	draw_colored_polygon(top_face, fill.lightened(0.24))
+	draw_colored_polygon(right_face, fill.darkened(0.10))
+	var right_face_outline := PackedVector2Array([right_face[0], right_face[1], right_face[2], right_face[3], right_face[0]])
+	draw_polyline(right_face_outline, Color(fill.lightened(0.22), 0.64), 1.4, true)
 	draw_style_box(_style(fill, fill.lightened(0.28), 2, 6), front)
 	var inner := front.grow(-3.0)
 	draw_style_box(_style(Color(fill.lightened(0.10), 0.20), Color(1, 1, 1, 0.08), 1, 4), inner)

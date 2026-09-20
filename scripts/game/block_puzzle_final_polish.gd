@@ -97,8 +97,6 @@ func refill_pieces() -> void:
 		pieces.append(SHAPES[shape_index].duplicate())
 		piece_colors.append(COLOR_PALETTE[rng.randi_range(0, COLOR_PALETTE.size() - 1)])
 	selected_piece = -1
-	if not any_move_available():
-		pieces[0] = SHAPES[0].duplicate()
 
 func show_hint() -> void:
 	if completed or _clear_transition_active:

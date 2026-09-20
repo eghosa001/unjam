@@ -350,8 +350,11 @@ func place_selected(origin: Vector2i) -> void:
 	if all_pieces_used():
 		refill_pieces()
 	if not any_move_available():
-		status_label.text = "No moves — new blocks"
-		refill_pieces()
+		if has_method("_handle_no_legal_moves"):
+			call("_handle_no_legal_moves")
+		else:
+			status_label.text = "No legal moves"
+		return
 	selected_piece = -1
 	render()
 	_save_checkpoint()

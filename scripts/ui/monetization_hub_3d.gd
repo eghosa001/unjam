@@ -1,9 +1,9 @@
 extends "res://scripts/ui/monetization_hub.gd"
 
-const SHOP_DARK_BG_TOP := Color("#07111d")
-const SHOP_DARK_BG_MID := Color("#0b1726")
-const SHOP_DARK_BG_BOTTOM := Color("#121b32")
-const SHOP_DARK_CARD := Color("#111d2d")
+const SHOP_DARK_BG_TOP := Color("#182a3b")
+const SHOP_DARK_BG_MID := Color("#20384b")
+const SHOP_DARK_BG_BOTTOM := Color("#29465b")
+const SHOP_DARK_CARD := Color("#223b50")
 const SHOP_DARK_INK := Color("#eef7ff")
 const SHOP_DARK_MUTED := Color("#b6c7d6")
 
@@ -60,9 +60,9 @@ func _build_ui() -> void:
 	overlay.add_child(canvas)
 
 	var bg := PanelContainer.new()
-	var bg_top := SHOP_DARK_BG_TOP if _shop_dark() else Color("#f0fcff")
-	var bg_mid := SHOP_DARK_BG_MID if _shop_dark() else Color("#fafcff")
-	var bg_bottom := SHOP_DARK_BG_BOTTOM if _shop_dark() else Color("#eeebfd")
+	var bg_top := SHOP_DARK_BG_TOP if _shop_dark() else Color("#dcebe8")
+	var bg_mid := SHOP_DARK_BG_MID if _shop_dark() else Color("#d4e3e8")
+	var bg_bottom := SHOP_DARK_BG_BOTTOM if _shop_dark() else Color("#c3d2df")
 	var bg_border := Color(0.22,0.36,0.48,0.82) if _shop_dark() else Color("#bad1e3")
 	bg.add_theme_stylebox_override("panel",FigmaReferenceCanvas.rounded_gradient3(
 		bg_top,bg_mid,bg_bottom,34,bg_border,1,0.48

@@ -188,10 +188,6 @@ func refill_pieces() -> void:
 		pieces.append((ADVANCED_SHAPES[shape_index] as Array).duplicate())
 		piece_colors.append(PIECE_COLORS[posmod(piece_batch * 3 + i + tier, PIECE_COLORS.size())])
 	selected_piece = -1
-	if not any_move_available():
-		pieces[0] = (ADVANCED_SHAPES[rng.randi_range(0, 2)] as Array).duplicate()
-		piece_colors[0] = PIECE_COLORS[posmod(piece_batch * 3 + tier, PIECE_COLORS.size())]
-		if not any_move_available(): pieces[0] = [Vector2i(0,0)]
 
 func _checkpoint_point(raw: Variant) -> Vector2i:
 	if raw is Vector2i: return raw

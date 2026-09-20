@@ -245,9 +245,9 @@ func _apply_figma_tutorial_theme(game_id: String) -> void:
 			demo_bottom = Color("#f1e5f6")
 	var backdrop := _tutorial_canvas.get_node_or_null("TutorialBackdrop") as PanelContainer
 	if backdrop != null:
-		var backdrop_top := Color("#07111d") if dark else Color("#f0fcff")
-		var backdrop_mid := Color("#0b1726") if dark else Color("#fafcff")
-		var backdrop_bottom := Color("#101c2d").lerp(accent.darkened(0.58),0.12) if dark else bottom
+		var backdrop_top := Color("#182a3b") if dark else Color("#dcebe8")
+		var backdrop_mid := Color("#20384b") if dark else Color("#d4e3e8")
+		var backdrop_bottom := Color("#29465b").lerp(accent.darkened(0.58),0.08) if dark else Color("#c3d2df").lerp(bottom,0.16)
 		var backdrop_border := Color(0.22,0.36,0.48,0.82) if dark else Color("#b8d1e0")
 		backdrop.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(
 			backdrop_top, backdrop_mid, backdrop_bottom, 34, backdrop_border, 1, 0.48

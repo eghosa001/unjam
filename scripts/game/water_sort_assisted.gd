@@ -129,7 +129,7 @@ func _best_water_move() -> Vector2i:
 	return WaterSolver.best_move(tubes, 40000)
 
 func _save_checkpoint() -> void:
-	if completed:
+	if daily_mode or completed:
 		return
 	MultiGameManager.save_checkpoint(GAME_ID, {
 		"level": level_number,
@@ -141,6 +141,8 @@ func _save_checkpoint() -> void:
 	})
 
 func _restore_checkpoint() -> void:
+	if daily_mode:
+		return
 	super._restore_checkpoint()
 	var checkpoint := MultiGameManager.checkpoint(GAME_ID)
 	if checkpoint.is_empty() or int(checkpoint.get("level", -1)) != level_number or bool(checkpoint.get("daily", false)) != daily_mode:

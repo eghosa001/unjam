@@ -243,7 +243,7 @@ func _draw_extruded_cube(rect: Rect2, fill: Color) -> void:
 	# authoritative 8x8 board into a costly 3D voxel simulation.
 	var depth := clampf(rect.size.x * 0.11, 4.0, 8.0)
 	var shadow_rect := Rect2(rect.position + Vector2(1.0, depth + 5.0), rect.size - Vector2(depth, depth))
-	_draw_box(shadow_rect, Color(fill.darkened(0.48), 0.48), 6, Color.TRANSPARENT, 0)
+	_draw_box(shadow_rect, Color("#1f2940", 0.30), 6, Color.TRANSPARENT, 0)
 
 	var front := Rect2(rect.position + Vector2(0.0, depth), rect.size - Vector2(depth, depth))
 	var top_face := PackedVector2Array([
@@ -258,8 +258,10 @@ func _draw_extruded_cube(rect: Rect2, fill: Color) -> void:
 		Vector2(front.end.x + depth, front.end.y - depth),
 		Vector2(front.end.x, front.end.y)
 	])
-	draw_colored_polygon(top_face, fill.lightened(0.34))
-	draw_colored_polygon(right_face, fill.darkened(0.25))
+	draw_colored_polygon(top_face, fill.lightened(0.24))
+	draw_colored_polygon(right_face, fill.darkened(0.10))
+	var right_face_outline := PackedVector2Array([right_face[0], right_face[1], right_face[2], right_face[3], right_face[0]])
+	draw_polyline(right_face_outline, Color(fill.lightened(0.22), 0.64), 1.4, true)
 	_draw_box(front, fill, 7, fill.lightened(0.24), 2)
 
 	var bevel := front.grow(-3.0)

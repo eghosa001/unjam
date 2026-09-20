@@ -49,8 +49,16 @@ func _build() -> void:
 	FigmaReferenceCanvas.add_shadow(canvas,Rect2(26,194,338,410),26,Color(0.012,0.071,0.141,0.32),10,Vector2(0,10))
 	var card := PanelContainer.new()
 	card.name = "CoinModal/Card"
-	card.add_theme_stylebox_override("panel",FigmaReferenceCanvas.solid_box(
-		Color("#152337") if dark else Color("#fbfeff"),26,Color(0.30,0.48,0.64,0.90) if dark else Color(0.75,0.88,0.96,0.90),1.5
+	var card_mid := Color("#20384d") if dark else Color("#e7f1f1")
+	var card_edge := Color(0.30,0.48,0.64,0.90) if dark else Color(0.62,0.76,0.79,0.90)
+	card.add_theme_stylebox_override("panel",FigmaReferenceCanvas.rounded_gradient3(
+		card_mid.lightened(0.14 if dark else 0.10),
+		card_mid,
+		card_mid.darkened(0.14 if dark else 0.08),
+		26,
+		card_edge,
+		1.5,
+		0.40
 	))
 	FigmaReferenceCanvas.set_rect(card,26,194,338,410)
 	card.mouse_filter = Control.MOUSE_FILTER_STOP

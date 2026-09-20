@@ -36,8 +36,14 @@ func _run() -> void:
 	var tube := board.get_child(0) as Control
 	if tube == null:
 		return _fail("Water Sort first bottle is missing")
-	if tube.custom_minimum_size.x < 49.0 or tube.custom_minimum_size.y < 250.0:
-		return _fail("Water Sort bottle no longer fills the audited Figma play stage")
+	var board_rect := Rect2(board.position, board.size)
+	var board_bounds := Rect2(31.0, 169.0, 326.0, 420.0)
+	if board_rect.position.x < board_bounds.position.x - 1.0 or board_rect.end.x > board_bounds.end.x + 1.0:
+		return _fail("Water Sort board exceeds the audited stage width")
+	if board_rect.position.y < board_bounds.position.y - 1.0 or board_rect.end.y > board_bounds.end.y + 1.0:
+		return _fail("Water Sort board exceeds the audited stage height")
+	if tube.custom_minimum_size.x < 38.0 or tube.custom_minimum_size.y < 90.0:
+		return _fail("Water Sort bottles became too small for reliable compact-phone play")
 	var objective_label := _find_label_with(game,"SORT • POUR • SOLVE")
 	if objective_label == null:
 		return _fail("Water Sort objective label is missing")

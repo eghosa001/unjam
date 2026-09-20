@@ -106,10 +106,10 @@ func _draw() -> void:
 
 	# Premium glass silhouette: translucent shell + darker inner cavity instead of a flat white bottle.
 	_draw_round_rect(shadow, Color(0.01, 0.025, 0.06, 0.34), 34.0)
-	_draw_round_rect_border(body, Color(0.66, 0.87, 1.0, 0.13), Color(0.82, 0.94, 1.0, 0.76), 34.0, 4)
+	_draw_round_rect(body, Color(0.66, 0.87, 1.0, 0.16), 34.0)
 	var cavity := Rect2(body.position + Vector2(12, 27), body.size - Vector2(24, 53))
-	_draw_round_rect_border(cavity, Color(0.025, 0.075, 0.14, 0.34), Color(0.78, 0.92, 1.0, 0.16), 24.0, 2)
-
+	# Use the cavity only as liquid geometry. Do not paint a darker inner shell:
+	# on empty tubes its vertical contrast edges read as artificial 3D lines.
 	var inner: Rect2 = Rect2(cavity.position + Vector2(5, 12), cavity.size - Vector2(10, 24))
 	var slot_h: float = inner.size.y / float(CAPACITY)
 	for slot in range(CAPACITY):
@@ -122,8 +122,6 @@ func _draw() -> void:
 			_draw_round_rect(slot_rect, Color(liquid, 0.96), 8.0 if slot == 0 else 4.0)
 			var surface_y: float = slot_rect.position.y + 4.0 + wave
 			draw_line(Vector2(slot_rect.position.x + 6, surface_y), Vector2(slot_rect.end.x - 6, surface_y - wave * 0.45), liquid.lightened(0.36), 4.0, true)
-			var shine: Rect2 = Rect2(slot_rect.position + Vector2(8, 9), Vector2(maxf(4.0, slot_rect.size.x * 0.09), maxf(5.0, slot_rect.size.y - 17)))
-			draw_rect(shine, Color(1, 1, 1, 0.18), true)
 			# A tiny shape marker provides an accessibility cue in addition to colour.
 			# It is deliberately subtle so the tubes still look like liquid rather
 			# than labelled containers.
@@ -143,19 +141,16 @@ func _draw() -> void:
 	if success_amount > 0.0:
 		rim_color = Color("22c55e")
 
-	# Thick glass lip and base make even a totally empty tube read as an intentional bottle.
+	# Glass lip/base plus the translucent rounded body define the bottle. Avoid
+	# vertical wall strokes inside the silhouette; they read as artificial lines.
 	var lip_center := Vector2(body.get_center().x, body.position.y + 12)
 	draw_arc(lip_center, body.size.x * 0.39, PI, TAU, 36, Color(rim_color, 0.90), 5.5, true)
 	draw_arc(lip_center + Vector2(0, 3), body.size.x * 0.32, PI, TAU, 30, Color(0.92, 0.98, 1.0, 0.40), 2.5, true)
-	draw_line(body.position + Vector2(9, 25), body.position + Vector2(9, body.size.y - 31), Color(rim_color, 0.86), 4.0, true)
-	draw_line(Vector2(body.end.x - 9, body.position.y + 25), Vector2(body.end.x - 9, body.end.y - 31), Color(rim_color, 0.86), 4.0, true)
 	draw_arc(Vector2(body.get_center().x, body.end.y - 31), body.size.x * 0.39, 0, PI, 36, Color(rim_color, 0.88), 4.5, true)
 	draw_arc(Vector2(body.get_center().x, body.end.y - 35), body.size.x * 0.31, 0, PI, 30, Color(0.84, 0.95, 1.0, 0.30), 2.0, true)
 
-	# Multiple glass reflections give depth without textures.
-	var glass_shine: Rect2 = Rect2(body.position + Vector2(20, 39), Vector2(7, body.size.y - 88))
-	draw_rect(glass_shine, Color(1, 1, 1, 0.26), true)
-	draw_line(body.position + Vector2(31, 43), body.position + Vector2(31, body.size.y * 0.47), Color(1, 1, 1, 0.10), 3.0, true)
+	# Keep the bottle readable through its lip, walls and base only. A vertical
+	# interior reflection reads as an artificial divider once the tube is empty.
 
 	if layers.is_empty():
 		var empty_pulse := 0.5 + 0.5 * sin(bubble_phase * 2.3 + float(tube_index))

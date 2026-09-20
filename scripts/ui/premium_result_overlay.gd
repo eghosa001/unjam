@@ -26,7 +26,7 @@ func configure(title_value: String, subtitle_value: String, stats_value: String,
 	title_text = title_value
 	subtitle_text = subtitle_value
 	stats_text = stats_value
-	stars = clampi(star_count, 1, 3)
+	stars = clampi(star_count, 0, 3)
 	accent = color
 	button_text = action_text
 	badge_text = badge_value
@@ -112,11 +112,15 @@ func _build() -> void:
 		star_card.name = "StarCard"
 		var earned := i < stars
 		FigmaReferenceCanvas.add_shadow(_canvas, Rect2(x,272,78,72), 30, Color(0.02,0.14,0.26,0.20), 4, Vector2(0,3))
-		star_card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(
-			Color("#fff2b2") if earned else Color("#e3edf3"),
+		var star_mid := Color("#fff2b2") if earned else Color("#e3edf3")
+		star_card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(
+			star_mid.lightened(0.13),
+			star_mid,
+			star_mid.darkened(0.13),
 			30,
 			Color("#ffd63d") if earned else Color("#a9bac5"),
-			1.5
+			1.5,
+			0.40
 		))
 		FigmaReferenceCanvas.set_rect(star_card, x, 272, 78, 72)
 		star_card.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -129,8 +133,15 @@ func _build() -> void:
 	var stats_panel := PanelContainer.new()
 	stats_panel.name = "Stats"
 	FigmaReferenceCanvas.add_shadow(_canvas, Rect2(47,356,294,82), 18, Color(0.02,0.14,0.26,0.20), 3, Vector2(0,2))
-	stats_panel.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(
-		Color("#11283a") if dark else Color("#ebfaff"), 18, Color("#1aa8ff"), 1.5
+	var stats_mid := Color("#1a384d") if dark else Color("#ebfaff")
+	stats_panel.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(
+		stats_mid.lightened(0.14 if dark else 0.07),
+		stats_mid,
+		stats_mid.darkened(0.16 if dark else 0.08),
+		18,
+		Color("#1aa8ff"),
+		1.5,
+		0.40
 	))
 	FigmaReferenceCanvas.set_rect(stats_panel, 47, 356, 294, 82)
 	stats_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE

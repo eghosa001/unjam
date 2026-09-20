@@ -1,0 +1,49 @@
+extends SceneTree
+
+func _init() -> void:
+	var errors: Array[String] = []
+	_require("res://scripts/ui/premium_home_direct_levels.gd", ["RESCUE RUSH", "WATER SORT", "BLOCK PUZZLE", "daily_selected_game", "#dcebe8", "#29465b"], errors)
+	_require("res://scripts/ui/premium_home_overhaul.gd", ["Progress, stars, wallet", "_sync()"], errors)
+	_require("res://scripts/ui/premium_main_casual.gd", ["Choose one challenge for today", "LOCKED TODAY", "TODAY’S SORT", "SurfaceBackdropHaloTop"], errors)
+	_require("res://scripts/ui/premium_design_system.gd", ["PremiumGlossBackdrop", "func _gloss_style", "func _install_gloss"], errors)
+	_require("res://scripts/ui/figma_reference_canvas.gd", ["Premium casual-game gloss", "lower_rolloff", "center_boost"], errors)
+	_require("res://scripts/ui/premium_home_direct_levels.gd", ["rounded_gradient3(stage_mid", "rounded_gradient3(nav_fill", "rounded_gradient3(fill.lightened"], errors)
+	_require("res://scripts/ui/premium_live_hub_3d.gd", ["rounded_gradient3(pill_mid", "rounded_gradient3(stage_mid", "rounded_gradient3(nav_fill"], errors)
+	_require("res://scripts/ui/insufficient_coins_prompt.gd", ["card_mid", "rounded_gradient3"], errors)
+	_require("res://scripts/game/rescue_rush_casual.gd", ["rounded_gradient3"], errors)
+	_require("res://scripts/game/water_sort_casual.gd", ["rounded_gradient3"], errors)
+	_require("res://scripts/core/multi_game_manager.gd", ["func daily_selected_game", "func claim_daily_game", "daily_game_choices"], errors)
+	_require("res://scripts/game/water_sort_casual.gd", ["stage_height := 390.0", "count <= 12 else 5", "height_width_limit"], errors)
+	_require("res://scripts/game/water_sort_10000.gd", ["WATER SORT FAILED", "func _has_any_legal_pour", "NO LEGAL POURS"], errors)
+	_require("res://scripts/game/block_puzzle_10000.gd", ["BLOCK PUZZLE FAILED", "func _handle_no_legal_moves", "BlockFailureResult"], errors)
+	_require("res://scripts/game/game.gd", ["RESCUE FAILED", "func _has_any_legal_move", "var failed: bool = false"], errors)
+	_reject("res://scripts/ui/water_tube_button.gd", ["draw_line(body.position + Vector2(31, 43)", "glass_shine", "draw_rect(glass_shine", "var shine: Rect2", "draw_rect(shine", "draw_line(body.position + Vector2(9, 25)", "draw_line(Vector2(body.end.x - 9", "_draw_round_rect(cavity, Color(0.025, 0.075, 0.14"], errors)
+	_reject("res://scripts/game/block_puzzle_3d.gd", ["No moves — new blocks"], errors)
+	_reject("res://scripts/game/block_puzzle.gd", ["No moves — new blocks", "pieces[0] = SHAPES[0].duplicate()"], errors)
+	_reject("res://scripts/ui/premium_main_casual.gd", ["Daily level %d", "Three fresh challenges every day"], errors)
+	if not errors.is_empty():
+		for error in errors:
+			printerr(error)
+		quit(1)
+		return
+	print("REQUESTED_POLISH_CONTRACT_OK")
+	quit(0)
+
+func _read(path: String) -> String:
+	var file := FileAccess.open(path, FileAccess.READ)
+	return "" if file == null else file.get_as_text()
+
+func _require(path: String, tokens: Array[String], errors: Array[String]) -> void:
+	var source := _read(path)
+	if source.is_empty():
+		errors.append("Missing source: %s" % path)
+		return
+	for token in tokens:
+		if not source.contains(token):
+			errors.append("%s missing %s" % [path, token])
+
+func _reject(path: String, tokens: Array[String], errors: Array[String]) -> void:
+	var source := _read(path)
+	for token in tokens:
+		if source.contains(token):
+			errors.append("%s still contains retired behavior: %s" % [path, token])

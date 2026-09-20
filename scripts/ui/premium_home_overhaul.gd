@@ -28,9 +28,10 @@ func _on_surface_changed(surface: String) -> void:
 	var current = main.get("selected_game_id")
 	if current != null and String(current) in MultiGameManager.GAME_IDS:
 		selected_game = String(current)
-	var mode := _theme_mode()
-	if not built or mode != last_theme:
-		_sync()
+	# Progress, stars, wallet and selected-game metadata can change while Home is
+	# hidden. Rebuild the lightweight fixed-reference launcher whenever Home
+	# becomes visible so the top LV/★ pills and quick-switch cards are never stale.
+	_sync()
 
 func _sync() -> void:
 	var main := get_parent()

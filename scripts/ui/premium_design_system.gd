@@ -21,22 +21,22 @@ static func muted(dark: bool) -> Color:
 	return Color("b6c3d4") if dark else Color("6f7f92")
 
 static func canvas(dark: bool) -> Color:
-	return Color("0b1220") if dark else Color("eef2f5")
+	return Color("183149") if dark else Color("d5e2e5")
 
 static func surface(dark: bool) -> Color:
-	return Color("121a29") if dark else Color("f8fafc")
+	return Color("223c52") if dark else Color("e4eeec")
 
 static func surface_2(dark: bool) -> Color:
-	return Color("182538") if dark else Color("e9eef3")
+	return Color("29485f") if dark else Color("d6e5e5")
 
 static func surface_3(dark: bool) -> Color:
-	return Color("22304a") if dark else Color("dfe6ed")
+	return Color("31536b") if dark else Color("cadadd")
 
 static func border(dark: bool) -> Color:
-	return Color("334a67") if dark else Color("c7d1dc")
+	return Color("52738a") if dark else Color("9eb5bd")
 
 static func disabled(dark: bool) -> Color:
-	return Color("202c3f") if dark else Color("e5eaf0")
+	return Color("2a4357") if dark else Color("cbd6d8")
 
 static func game_canvas(game_id: String, dark: bool) -> Color:
 	if not dark:
@@ -45,9 +45,9 @@ static func game_canvas(game_id: String, dark: bool) -> Color:
 			"block_puzzle": return Color("f3f0ff")
 			_: return Color("ecf8f5")
 	match game_id:
-		"water_sort": return Color("06101e")
-		"block_puzzle": return Color("0c0a1b")
-		_: return Color("061411")
+		"water_sort": return Color("173249")
+		"block_puzzle": return Color("241f3d")
+		_: return Color("183a34")
 
 static func box(color: Color, radius: int = 24, edge: Color = Color.TRANSPARENT, edge_width: int = 0, shadow: int = 0, dark: bool = true) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
@@ -67,6 +67,22 @@ static func box(color: Color, radius: int = 24, edge: Color = Color.TRANSPARENT,
 		style.shadow_size = shadow
 		style.shadow_offset = Vector2(0, maxf(1.0, shadow * 0.42))
 	return style
+
+static func _gloss_style(fill: Color, radius: int, dark: bool) -> StyleBoxTexture:
+	var top_strength := 0.22 if dark else 0.16
+	var bottom_strength := 0.16 if dark else 0.11
+	var top := fill.lightened(top_strength)
+	var middle := fill.lightened(0.025)
+	var bottom := fill.darkened(bottom_strength)
+	return FigmaReferenceCanvas.rounded_gradient3(top, middle, bottom, radius, Color.TRANSPARENT, 0.0, 0.40)
+
+static func _install_gloss(control: Control, style: StyleBoxTexture) -> void:
+	var backdrop := control.get_node_or_null("PremiumGlossBackdrop") as FigmaButtonBackdrop
+	if backdrop == null:
+		backdrop = FigmaButtonBackdrop.new()
+		backdrop.name = "PremiumGlossBackdrop"
+		control.add_child(backdrop)
+	backdrop.configure(style)
 
 static func role_for_button(button: Button) -> String:
 	var text := button.text.strip_edges().to_upper()
@@ -134,11 +150,14 @@ static func apply_button(button: Button, dark: bool, accent: Color, role: String
 		_:
 			normal = Color(surface_2(dark), 0.98)
 			edge = border(dark)
-	button.add_theme_stylebox_override("normal", box(normal, radius, edge, 2, shadow, dark))
-	button.add_theme_stylebox_override("hover", box(normal.lightened(0.055), radius, accent, 2, max(3, shadow), dark))
-	button.add_theme_stylebox_override("pressed", box(normal.darkened(0.08), radius, accent.lightened(0.14), 2, 1, dark))
+	_install_gloss(button, _gloss_style(normal, radius, dark))
+	# The parent keeps only edge/shadow/state overlays. The glossy fill is drawn by
+	# a cached nine-slice child behind the button, preserving text sharpness.
+	button.add_theme_stylebox_override("normal", box(Color(0, 0, 0, 0.001), radius, edge, 2, shadow, dark))
+	button.add_theme_stylebox_override("hover", box(Color(1, 1, 1, 0.075), radius, accent, 2, max(3, shadow), dark))
+	button.add_theme_stylebox_override("pressed", box(Color(0, 0, 0, 0.105), radius, accent.lightened(0.14), 2, 1, dark))
 	button.add_theme_stylebox_override("focus", box(Color.TRANSPARENT, radius, accent, 3, 0, dark))
-	button.add_theme_stylebox_override("disabled", box(disabled(dark), radius, Color(border(dark), 0.5), 1, 0, dark))
+	button.add_theme_stylebox_override("disabled", box(Color(0.10, 0.13, 0.16, 0.18), radius, Color(border(dark), 0.5), 1, 0, dark))
 	button.add_theme_color_override("font_color", text_color)
 	button.add_theme_color_override("font_hover_color", text_color)
 	button.add_theme_color_override("font_pressed_color", text_color)
@@ -147,7 +166,8 @@ static func apply_button(button: Button, dark: bool, accent: Color, role: String
 static func apply_panel(panel: PanelContainer, dark: bool, accent: Color, emphasis: bool = false, radius: int = 28) -> void:
 	var fill := Color(surface(dark), 0.97)
 	var edge := Color(accent, 0.44) if emphasis else border(dark)
-	panel.add_theme_stylebox_override("panel", box(fill, radius, edge, 2 if emphasis else 1, 10 if emphasis else 4, dark))
+	_install_gloss(panel, _gloss_style(fill, radius, dark))
+	panel.add_theme_stylebox_override("panel", box(Color(0, 0, 0, 0.001), radius, edge, 2 if emphasis else 1, 10 if emphasis else 4, dark))
 
 static func apply_label(label: Label, dark: bool, kind: String = "body", accent: Color = Color.WHITE) -> void:
 	match kind:

@@ -64,7 +64,8 @@ func _run() -> void:
 	for token in [
 		"func build_daily_games",
 		"DailyCard/",
-		"PLAY DAILY",
+		"PLAY TODAY",
+		"LOCKED TODAY",
 		"COLLECTION BONUS",
 		"Proto/ScrollToUpgrades",
 		"func build_collection_upgrades",

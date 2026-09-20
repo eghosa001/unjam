@@ -2,9 +2,9 @@ extends "res://scripts/ui/premium_home_casual.gd"
 
 const RefCanvas = preload("res://scripts/ui/figma_reference_canvas.gd")
 
-const BG_TOP := Color(0.94, 0.99, 1.0)
-const BG_MID := Color(0.98, 0.99, 1.0)
-const BG_BOTTOM := Color(0.892, 0.9496, 0.988)
+const BG_TOP := Color("#dcebe8")
+const BG_MID := Color("#d4e3e8")
+const BG_BOTTOM := Color("#c3d2df")
 const NAVY := Color(0.03, 0.23, 0.47)
 const INK := Color(0.07, 0.20, 0.35)
 const MUTED := Color(0.31, 0.42, 0.52)
@@ -13,10 +13,10 @@ const CYAN := Color(0.14, 0.68, 1.0)
 const ORANGE := Color(1.0, 0.55, 0.12)
 const GOLD := Color(1.0, 0.84, 0.24)
 const OFF_WHITE := Color(1.0, 0.995, 0.97)
-const DARK_TOP := Color("#07111d")
-const DARK_MID := Color("#0b1726")
-const DARK_BOTTOM := Color("#101c2d")
-const DARK_CARD := Color("#122033")
+const DARK_TOP := Color("#182a3b")
+const DARK_MID := Color("#20384b")
+const DARK_BOTTOM := Color("#29465b")
+const DARK_CARD := Color("#223b50")
 const DARK_INK := Color("#eef7ff")
 const DARK_MUTED := Color("#b6c7d6")
 
@@ -90,6 +90,33 @@ func _add_frame_background(canvas: Control) -> void:
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(bg)
 
+	# Low-saturation sea-glass/slate depth layers add composition without borrowing
+	# any gameplay accent. They are static, cheap, and stay behind all controls.
+	var halo_a := PanelContainer.new()
+	halo_a.name = "HomeBackdropHaloTop"
+	halo_a.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	halo_a.modulate.a = 0.22 if not _home_dark() else 0.18
+	halo_a.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color("#8fb9bd") if not _home_dark() else Color("#52758a"), 110))
+	RefCanvas.set_rect(halo_a, 252, -72, 208, 208)
+	canvas.add_child(halo_a)
+	canvas.move_child(halo_a, 1)
+
+	var halo_b := PanelContainer.new()
+	halo_b.name = "HomeBackdropHaloBottom"
+	halo_b.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	halo_b.modulate.a = 0.18 if not _home_dark() else 0.15
+	halo_b.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color("#9fb2c7") if not _home_dark() else Color("#476579"), 105))
+	RefCanvas.set_rect(halo_b, -72, 610, 194, 194)
+	canvas.add_child(halo_b)
+	canvas.move_child(halo_b, 1)
+
+	var ribbon := Polygon2D.new()
+	ribbon.name = "HomeBackdropRibbon"
+	ribbon.polygon = PackedVector2Array([Vector2(-30,310),Vector2(420,210),Vector2(420,280),Vector2(-30,380)])
+	ribbon.color = Color("#6f98a3", 0.075 if not _home_dark() else 0.10)
+	canvas.add_child(ribbon)
+	canvas.move_child(ribbon, 1)
+
 func _add_hero(canvas: Control) -> void:
 	RefCanvas.add_shadow(canvas, Rect2(21, 121, 346, 224), 20, Color(0.03, 0.12, 0.22, 0.16), 5, Vector2(0, 4))
 	var hero := PanelContainer.new()
@@ -132,7 +159,8 @@ func _add_hero_preview(canvas: Control, game_id: String) -> void:
 	canvas.add_child(preview_root)
 	var stage := PanelContainer.new()
 	stage.name = "FigmaHomeHeroPreview"
-	stage.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.08,0.16,0.25,0.72) if _home_dark() else Color(0.91, 0.99, 1.0, 0.34), 16))
+	var stage_mid := Color(0.12,0.24,0.34,0.78) if _home_dark() else Color(0.87,0.96,0.98,0.62)
+	stage.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(stage_mid.lightened(0.15), stage_mid, stage_mid.darkened(0.12), 16, Color(1,1,1,0.20), 1, 0.40))
 	RefCanvas.set_rect(stage, 219, 144, 125, 136)
 	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	preview_root.add_child(stage)
@@ -216,20 +244,19 @@ func _add_mini_rescue_preview(canvas: Control, origin: Vector2) -> void:
 func _add_quick_actions(canvas: Control) -> void:
 	var choose := _add_action(canvas, Rect2(21, 365, 166, 52), BLUE, "◈ CHOOSE GAME", 12, OFF_WHITE, Callable(self, "_open_game_selector"), 16)
 	choose.name = "HomeChooseGameButton"
-	var daily_done := 0
-	for game_id in MultiGameManager.GAME_IDS:
-		var main := get_parent()
-		if main != null and main.has_method("_daily_done") and bool(main.call("_daily_done", game_id)):
-			daily_done += 1
-	var daily := _add_action(canvas, Rect2(197, 365, 170, 52), GOLD, "☀ DAILY • %d/3" % daily_done, 12, NAVY, Callable(self, "_open_daily_games"), 16)
+	var daily_choice := MultiGameManager.daily_selected_game()
+	var main := get_parent()
+	var daily_complete := not daily_choice.is_empty() and main != null and main.has_method("_daily_done") and bool(main.call("_daily_done", daily_choice))
+	var daily_label := "☀ DAILY • DONE" if daily_complete else ("☀ DAILY • PICKED" if not daily_choice.is_empty() else "☀ DAILY • 1 PICK")
+	var daily := _add_action(canvas, Rect2(197, 365, 170, 52), GOLD, daily_label, 11, NAVY, Callable(self, "_open_daily_games"), 16)
 	daily.name = "HomeDailyGamesButton"
 
 func _add_quick_switch(canvas: Control) -> void:
 	_add_text(canvas, "QUICK SWITCH", Rect2(21, 437, 160, 18), 14, INK, true)
 	var games := [
-		["rescue_rush", "↗ RESCUE", Color(0.13, 0.78, 0.39), 21.0],
-		["water_sort", "◉ WATER", Color(0.10, 0.66, 1.0), 137.0],
-		["block_puzzle", "◆ BLOCK", Color(0.78, 0.24, 1.0), 253.0],
+		["rescue_rush", "RESCUE RUSH", Color(0.13, 0.78, 0.39), 21.0],
+		["water_sort", "WATER SORT", Color(0.10, 0.66, 1.0), 137.0],
+		["block_puzzle", "BLOCK PUZZLE", Color(0.78, 0.24, 1.0), 253.0],
 	]
 	for entry in games:
 		var id := String(entry[0])
@@ -242,7 +269,7 @@ func _add_quick_switch(canvas: Control) -> void:
 		RefCanvas.set_rect(card, x, 465, 108, 94)
 		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		canvas.add_child(card)
-		_add_text(canvas, String(entry[1]), Rect2(x + 9, 479, 92, 15), 12, entry[2], true)
+		_add_text(canvas, String(entry[1]), Rect2(x + 7, 478, 96, 18), 10, entry[2], true)
 		var level := _home_current_level(id)
 		var stars := MultiGameManager.total_stars(id)
 		_add_text(canvas, "L%d • ★%s" % [level, _compact_number(stars)], Rect2(x + 9, 509, 92, 15), 12, MUTED, false)
@@ -262,7 +289,7 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 	RefCanvas.add_shadow(canvas, Rect2(13, 757, 362, 70), 18, Color(0.02, 0.10, 0.18, 0.12), 5, Vector2(0, 4))
 	var nav_fill := Color(0.07,0.10,0.17,0.98) if _home_dark() else Color(0.985, 0.995, 1.0, 0.97)
 	var nav_border := Color(0.23,0.34,0.45,0.90) if _home_dark() else Color(0.78, 0.88, 0.95, 0.75)
-	shell.add_theme_stylebox_override("panel", RefCanvas.solid_box(nav_fill, 18, nav_border, 1))
+	shell.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(nav_fill.lightened(0.12), nav_fill, nav_fill.darkened(0.10), 18, nav_border, 1, 0.40))
 	RefCanvas.set_rect(shell, 13, 757, 362, 70)
 	shell.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(shell)
@@ -304,7 +331,7 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 func _add_pill(canvas: Control, rect: Rect2, fill: Color, text_value: String, font_size: int, text_color: Color) -> PanelContainer:
 	RefCanvas.add_shadow(canvas, rect, rect.size.y * 0.5, Color(0.02, 0.10, 0.18, 0.15), 3, Vector2(0, 2))
 	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", RefCanvas.solid_box(fill, rect.size.y * 0.5))
+	panel.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(fill.lightened(0.16), fill, fill.darkened(0.12), rect.size.y * 0.5, fill.lightened(0.20), 1, 0.40))
 	RefCanvas.set_rect(panel, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(panel)

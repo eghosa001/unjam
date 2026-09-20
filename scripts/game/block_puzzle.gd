@@ -274,8 +274,6 @@ func refill_pieces() -> void:
 		pieces.append(SHAPES[shape_index].duplicate())
 		piece_colors.append(COLOR_PALETTE[rng.randi_range(0, COLOR_PALETTE.size() - 1)])
 	selected_piece = -1
-	if not any_move_available():
-		pieces[0] = SHAPES[0].duplicate()
 
 func render() -> void:
 	for y in range(GRID_SIZE):
@@ -354,8 +352,8 @@ func place_selected(origin: Vector2i) -> void:
 	if all_pieces_used():
 		refill_pieces()
 	if not any_move_available():
-		status_label.text = "No moves — new blocks"
-		refill_pieces()
+		status_label.text = "No legal moves"
+		return
 	selected_piece = -1
 	render()
 	_save_checkpoint()
