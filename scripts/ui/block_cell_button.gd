@@ -157,13 +157,15 @@ func _process(delta: float) -> void:
 
 func _draw() -> void:
 	var rect := Rect2(Vector2(1.5, 1.5), size - Vector2(3, 3))
-	var board_fill := Color("4b3770")
+	var board_fill := Color(0.23, 0.16, 0.37, 0.98)
 	if hover_amount > 0.01 and not occupied:
-		board_fill = board_fill.lightened(0.065 * hover_amount)
-	_draw_box(Rect2(rect.position + Vector2(0, 3), rect.size), Color("31234d"), 6, Color.TRANSPARENT, 0)
-	_draw_box(rect, board_fill, 6, Color("8264aa"), 1)
-	var inner_well := rect.grow(-3.0)
-	_draw_box(inner_well, Color(0.23, 0.16, 0.37, 0.72), 5, Color(1,1,1,0.045), 1)
+		board_fill = board_fill.lightened(0.045 * hover_amount)
+	_draw_box(Rect2(rect.position + Vector2(0, 3), rect.size), Color("#241445"), 6, Color.TRANSPARENT, 0)
+	_draw_box(rect, board_fill, 6, Color(0.51, 0.39, 0.67, 0.72), 1)
+	# Production wells are recessed, not raised cubes. A dark inner edge gives the
+	# same inset read without adding another visible block layer.
+	var inner_well := rect.grow(-2.5)
+	_draw_box(inner_well, Color(0.23, 0.16, 0.37, 0.98), 5, Color(0.07, 0.03, 0.14, 0.22), 1)
 	var inset := rect.grow(-3.0)
 	if occupied or preview:
 		var fill := Color(accent, 0.52) if preview else accent
