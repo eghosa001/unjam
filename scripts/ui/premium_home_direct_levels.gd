@@ -42,16 +42,16 @@ func build_home_launcher() -> void:
 
 func _build_reference_home(canvas: Control) -> void:
 	_add_frame_background(canvas)
-	_add_text(canvas, "UNJAM", Rect2(22, 24, 101, 33), 27, NAVY, true)
+	_add_text(canvas, "UNJAM", Rect2(21, 23, 101, 34), 27, NAVY, true)
 
 	var cleared := 0
 	for game_id in MultiGameManager.GAME_IDS:
 		cleared += int(MultiGameManager.progress_for(game_id).get("levels_completed", 0))
 	var player_level := maxi(1, 1 + int(cleared / 10))
-	_add_pill(canvas, Rect2(22, 65, 78, 40), Color(0.03, 0.43, 0.78), "LV %d" % player_level, 13, OFF_WHITE)
-	home_coin_button = _add_action(canvas, Rect2(108, 65, 112, 40), Color(1.0, 0.55, 0.12), "◈ %s +" % _compact_number(EconomyManager.balance()), 12, OFF_WHITE, Callable(self, "_open_shop"), 20)
+	_add_pill(canvas, Rect2(21, 64, 78, 40), Color(0.03, 0.43, 0.78), "LV %d" % player_level, 13, OFF_WHITE)
+	home_coin_button = _add_action(canvas, Rect2(107, 64, 112, 40), Color(1.0, 0.55, 0.12), "◈ %s +" % _compact_number(EconomyManager.balance()), 12, OFF_WHITE, Callable(self, "_open_shop"), 20)
 	home_coin_button.name = "HomeCoinShopButton"
-	_add_pill(canvas, Rect2(228, 65, 92, 40), GOLD, "★ %s" % _compact_number(_total_stars()), 12, NAVY)
+	_add_pill(canvas, Rect2(227, 64, 92, 40), GOLD, "★ %s" % _compact_number(_total_stars()), 12, NAVY)
 
 	_add_hero(canvas)
 	_add_quick_actions(canvas)
@@ -61,28 +61,29 @@ func _build_reference_home(canvas: Control) -> void:
 func _add_frame_background(canvas: Control) -> void:
 	var bg := PanelContainer.new()
 	bg.name = "FigmaHomeBackground"
-	bg.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient(BG_TOP, BG_BOTTOM, 0))
+	bg.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(BG_TOP, BG_MID, BG_BOTTOM, 34, Color("#bad1e3"), 1, 0.48))
 	RefCanvas.set_rect(bg, 0, 0, 390, 844)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(bg)
 
 func _add_hero(canvas: Control) -> void:
+	RefCanvas.add_shadow(canvas, Rect2(21, 121, 346, 224), 20, Color(0.03, 0.12, 0.22, 0.16), 5, Vector2(0, 4))
 	var hero := PanelContainer.new()
 	hero.name = "FigmaHomeHero"
-	hero.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient(Color(0.8416, 0.956, 1.0), Color(0.7913, 0.91675, 0.965), 20, Color(0.505, 0.769, 0.945, 0.32), 1.2))
-	RefCanvas.set_rect(hero, 22, 122, 346, 224)
+	hero.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#d7f4ff"), Color("#d1eef9"), Color("#caeaf6"), 20, Color(0.505, 0.769, 0.945, 0.32), 1.2))
+	RefCanvas.set_rect(hero, 21, 121, 346, 224)
 	hero.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(hero)
 
-	_add_text(canvas, "CURRENT JOURNEY", Rect2(42, 143, 150, 15), 12, ORANGE, true)
+	_add_text(canvas, "CURRENT JOURNEY", Rect2(41, 142, 150, 15), 12, ORANGE, true)
 	var level := _home_current_level(selected_game)
 	var world := MultiGameManager.world_for_game_level(selected_game, level)
-	_add_text(canvas, _short_game_name(selected_game), Rect2(42, 168, 186, 34), 28, NAVY, true)
-	_add_text(canvas, "LEVEL %d • WORLD %d" % [level, world], Rect2(42, 205, 170, 17), 14, BLUE, true)
+	_add_text(canvas, _short_game_name(selected_game), Rect2(41, 167, 186, 34), 28, NAVY, true)
+	_add_text(canvas, "LEVEL %d • WORLD %d" % [level, world], Rect2(41, 204, 170, 17), 14, BLUE, true)
 
 	var continue_button := _add_action(
 		canvas,
-		Rect2(42, 286, 178, 48),
+		Rect2(41, 285, 178, 48),
 		BLUE,
 		"CONTINUE • LEVEL %d" % level,
 		13,
@@ -98,14 +99,14 @@ func _add_hero_preview(canvas: Control, game_id: String) -> void:
 	var stage := PanelContainer.new()
 	stage.name = "FigmaHomeHeroPreview"
 	stage.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.91, 0.99, 1.0, 0.34), 16))
-	RefCanvas.set_rect(stage, 220, 145, 125, 136)
+	RefCanvas.set_rect(stage, 219, 144, 125, 136)
 	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(stage)
 	match game_id:
 		"water_sort":
-			_add_mini_bottle(canvas, Vector2(232, 159), 22, 108, Color(1.0, 0.30, 0.64), 62.6)
-			_add_mini_bottle(canvas, Vector2(271.5, 163), 22, 103, Color(0.10, 0.66, 1.0), 74.2)
-			_add_mini_bottle(canvas, Vector2(311, 159), 22, 108, Color(0.78, 0.24, 1.0), 47.5)
+			_add_mini_bottle(canvas, Vector2(231, 158), 22, 108, Color(1.0, 0.30, 0.64), 62.6)
+			_add_mini_bottle(canvas, Vector2(270.5, 162), 22, 103, Color(0.10, 0.66, 1.0), 74.2)
+			_add_mini_bottle(canvas, Vector2(310, 158), 22, 108, Color(0.37, 0.84, 0.56), 47.5)
 		"block_puzzle":
 			_add_mini_block_preview(canvas, Vector2(230, 154))
 		_:
@@ -175,53 +176,55 @@ func _add_mini_rescue_preview(canvas: Control, origin: Vector2) -> void:
 	canvas.add_child(chick)
 
 func _add_quick_actions(canvas: Control) -> void:
-	var choose := _add_action(canvas, Rect2(22, 366, 166, 52), BLUE, "◈ CHOOSE GAME", 12, OFF_WHITE, Callable(self, "_open_game_selector"), 16)
+	var choose := _add_action(canvas, Rect2(21, 365, 166, 52), BLUE, "◈ CHOOSE GAME", 12, OFF_WHITE, Callable(self, "_open_game_selector"), 16)
 	choose.name = "HomeChooseGameButton"
 	var daily_done := 0
 	for game_id in MultiGameManager.GAME_IDS:
 		var main := get_parent()
 		if main != null and main.has_method("_daily_done") and bool(main.call("_daily_done", game_id)):
 			daily_done += 1
-	var daily := _add_action(canvas, Rect2(198, 366, 170, 52), GOLD, "☀ DAILY • %d/3" % daily_done, 12, NAVY, Callable(self, "_open_daily_games"), 16)
+	var daily := _add_action(canvas, Rect2(197, 365, 170, 52), GOLD, "☀ DAILY • %d/3" % daily_done, 12, NAVY, Callable(self, "_open_daily_games"), 16)
 	daily.name = "HomeDailyGamesButton"
 
 func _add_quick_switch(canvas: Control) -> void:
-	_add_text(canvas, "QUICK SWITCH", Rect2(22, 438, 160, 18), 14, INK, true)
+	_add_text(canvas, "QUICK SWITCH", Rect2(21, 437, 160, 18), 14, INK, true)
 	var games := [
-		["rescue_rush", "↗ RESCUE", Color(0.13, 0.78, 0.39), 22.0],
-		["water_sort", "◉ WATER", Color(0.10, 0.66, 1.0), 138.0],
-		["block_puzzle", "◆ BLOCK", Color(0.78, 0.24, 1.0), 254.0],
+		["rescue_rush", "↗ RESCUE", Color(0.13, 0.78, 0.39), 21.0],
+		["water_sort", "◉ WATER", Color(0.10, 0.66, 1.0), 137.0],
+		["block_puzzle", "◆ BLOCK", Color(0.78, 0.24, 1.0), 253.0],
 	]
 	for entry in games:
 		var id := String(entry[0])
 		var x := float(entry[3])
+		RefCanvas.add_shadow(canvas, Rect2(x, 465, 108, 94), 18, Color(0.02, 0.10, 0.18, 0.13), 4, Vector2(0, 3))
 		var card := PanelContainer.new()
 		card.add_theme_stylebox_override("panel", RefCanvas.solid_box(OFF_WHITE, 18, entry[2], 1.5))
-		RefCanvas.set_rect(card, x, 466, 108, 94)
+		RefCanvas.set_rect(card, x, 465, 108, 94)
 		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		canvas.add_child(card)
-		_add_text(canvas, String(entry[1]), Rect2(x + 9, 480, 92, 15), 12, entry[2], true)
+		_add_text(canvas, String(entry[1]), Rect2(x + 9, 479, 92, 15), 12, entry[2], true)
 		var level := _home_current_level(id)
 		var stars := MultiGameManager.total_stars(id)
-		_add_text(canvas, "L%d • ★%s" % [level, _compact_number(stars)], Rect2(x + 9, 510, 92, 15), 12, MUTED, false)
+		_add_text(canvas, "L%d • ★%s" % [level, _compact_number(stars)], Rect2(x + 9, 509, 92, 15), 12, MUTED, false)
 		var tap := Button.new()
 		tap.flat = true
 		tap.focus_mode = Control.FOCUS_NONE
 		tap.modulate.a = 0.001
-		RefCanvas.set_rect(tap, x - 4, 460, 116, 106)
+		RefCanvas.set_rect(tap, x - 4, 459, 116, 106)
 		tap.pressed.connect(_select_and_open_game.bind(id))
 		canvas.add_child(tap)
 
 func _add_bottom_nav_reference(canvas: Control) -> void:
 	var shell := PanelContainer.new()
 	shell.name = "HomeBottomNav3D"
+	RefCanvas.add_shadow(canvas, Rect2(13, 757, 362, 70), 18, Color(0.02, 0.10, 0.18, 0.12), 5, Vector2(0, 4))
 	shell.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.985, 0.995, 1.0, 0.97), 18, Color(0.78, 0.88, 0.95, 0.75), 1))
-	RefCanvas.set_rect(shell, 14, 758, 362, 70)
+	RefCanvas.set_rect(shell, 13, 757, 362, 70)
 	shell.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(shell)
 	var active := PanelContainer.new()
 	active.add_theme_stylebox_override("panel", RefCanvas.solid_box(CYAN, 16))
-	RefCanvas.set_rect(active, 16, 768, 62, 48)
+	RefCanvas.set_rect(active, 15, 767, 62, 48)
 	active.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(active)
 	var items := [
@@ -232,19 +235,20 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 		["SETTINGS", 298.0, func(): get_parent().call("build_settings"), "HomeSettingsNavButton", false],
 	]
 	for item in items:
-		_add_text(canvas, item[0], Rect2(item[1], 789, 62, 30), 12, Color(0.05, 0.49, 0.86) if item[4] else Color(0.31, 0.43, 0.54), true)
+		_add_text(canvas, item[0], Rect2(item[1] - 1.0, 788, 62, 30), 12, Color(0.05, 0.49, 0.86) if item[4] else Color(0.31, 0.43, 0.54), true)
 		var hit := Button.new()
 		hit.name = item[3]
 		hit.flat = true
 		hit.focus_mode = Control.FOCUS_NONE
 		hit.modulate.a = 0.001
-		RefCanvas.set_rect(hit, item[1] - 8, 754, 74, 78)
+		RefCanvas.set_rect(hit, item[1] - 9, 753, 74, 78)
 		var cb: Callable = item[2]
 		if cb.is_valid():
 			hit.pressed.connect(cb)
 		canvas.add_child(hit)
 
 func _add_pill(canvas: Control, rect: Rect2, fill: Color, text_value: String, font_size: int, text_color: Color) -> PanelContainer:
+	RefCanvas.add_shadow(canvas, rect, rect.size.y * 0.5, Color(0.02, 0.10, 0.18, 0.15), 3, Vector2(0, 2))
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", RefCanvas.solid_box(fill, rect.size.y * 0.5))
 	RefCanvas.set_rect(panel, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
@@ -257,7 +261,8 @@ func _add_pill(canvas: Control, rect: Rect2, fill: Color, text_value: String, fo
 	return panel
 
 func _add_action(canvas: Control, rect: Rect2, fill: Color, text_value: String, font_size: int, text_color: Color, callback: Callable, radius: float) -> Button:
-	var button := RefCanvas.button(text_value, font_size, text_color, fill, radius)
+	RefCanvas.add_shadow(canvas, rect, radius, Color(0.02, 0.10, 0.18, 0.20), 5, Vector2(0, 4))
+	var button := RefCanvas.premium_button(text_value, font_size, text_color, fill, radius)
 	RefCanvas.set_rect(button, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	if callback.is_valid():
 		button.pressed.connect(callback)
