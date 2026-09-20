@@ -33,14 +33,14 @@ func build_ui() -> void:
 func _build_figma_water(canvas: Control) -> void:
 	var sky := PanelContainer.new()
 	sky.name = "WaterScenicSky"
-	sky.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient(SKY_TOP, SKY_BOTTOM, 0))
+	sky.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(SKY_TOP, SKY_MID, SKY_BOTTOM, 34, Color("#b8d1e0"), 1, 0.58))
 	RefCanvas.set_rect(sky, 0, 0, 390, 844)
 	sky.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(sky)
 	var ground := PanelContainer.new()
 	ground.name = "WaterScenicGround"
-	ground.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient(Color(0.20, 0.76, 0.88), Color(0.04, 0.39, 0.67), 0))
-	RefCanvas.set_rect(ground, 0, 94, 390, 410)
+	ground.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#33c2e0"), Color("#1494c7"), Color("#0a63ab"), 0, Color.TRANSPARENT, 0, 0.55))
+	RefCanvas.set_rect(ground, 0, 93, 390, 410)
 	ground.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(ground)
 	var platform := Polygon2D.new()
@@ -49,46 +49,51 @@ func _build_figma_water(canvas: Control) -> void:
 	platform.color = Color(0.45, 0.89, 0.95, 0.72)
 	canvas.add_child(platform)
 
-	var back := RefCanvas.button("←", 22, NAVY, Color(0.96, 0.99, 1.0, 0.98), 16, Color(0.57, 0.84, 1.0, 0.52), 1)
+	RefCanvas.add_shadow(canvas, Rect2(15,15,54,54), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
+	var back := RefCanvas.premium_button("←", 22, NAVY, Color(0.96, 0.99, 1.0, 0.98), 16, Color(0.57, 0.84, 1.0, 0.52), 1.4)
 	back.name = "WaterBackAction"
-	RefCanvas.set_rect(back, 16, 16, 54, 54)
+	RefCanvas.set_rect(back, 15, 15, 54, 54)
 	back.pressed.connect(_quit)
 	canvas.add_child(back)
-	var retry := RefCanvas.button("↻", 23, NAVY, Color(0.96, 0.99, 1.0, 0.98), 16, Color(0.57, 0.84, 1.0, 0.52), 1)
+	RefCanvas.add_shadow(canvas, Rect2(319,15,54,54), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
+	var retry := RefCanvas.premium_button("↻", 23, NAVY, Color(0.96, 0.99, 1.0, 0.98), 16, Color(0.57, 0.84, 1.0, 0.52), 1.4)
 	retry.name = "WaterRetryAction"
-	RefCanvas.set_rect(retry, 320, 16, 54, 54)
+	RefCanvas.set_rect(retry, 319, 15, 54, 54)
 	retry.pressed.connect(restart_level)
 	canvas.add_child(retry)
 
 	var info := PanelContainer.new()
 	info.name = "WaterInfo"
-	info.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient(Color(0.166, 0.510, 0.811), Color(0.025, 0.353, 0.640), 14, Color(0.47, 0.69, 0.88, 0.52), 1))
-	RefCanvas.set_rect(info, 18, 80, 354, 42)
+	RefCanvas.add_shadow(canvas, Rect2(17,79,354,42), 14, Color(0.02,0.10,0.18,0.22), 5, Vector2(0,4))
+	info.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#2a82cf"), Color("#086ec7"), Color("#065aa3"), 14, Color(0.47, 0.69, 0.88, 0.52), 1.4))
+	RefCanvas.set_rect(info, 17, 79, 354, 42)
 	info.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(info)
 	meta_label = _make_label("", 12, Color(0.92, 0.98, 1.0), true)
-	RefCanvas.set_rect(meta_label, 38, 92, 135, 20)
+	RefCanvas.set_rect(meta_label, 37, 91, 135, 20)
 	canvas.add_child(meta_label)
 	move_label = _make_label("", 12, OFF_WHITE, true)
 	move_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	RefCanvas.set_rect(move_label, 174, 92, 180, 20)
+	RefCanvas.set_rect(move_label, 173, 91, 180, 20)
 	canvas.add_child(move_label)
 
 	var objective := PanelContainer.new()
 	objective.name = "WaterObjective"
-	objective.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient(Color.WHITE, Color(0.919, 0.9694, 1.0), 12, Color(0.532, 0.823, 1.0, 0.45), 1))
-	RefCanvas.set_rect(objective, 18, 130, 354, 30)
+	RefCanvas.add_shadow(canvas, Rect2(17,129,354,30), 12, Color(0.02,0.10,0.18,0.14), 3, Vector2(0,3))
+	objective.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color(1,1,1,0.98), Color(0.96,0.99,1.0,0.98), Color(0.919, 0.9694, 1.0,0.98), 12, Color(0.532, 0.823, 1.0, 0.45), 1.2))
+	RefCanvas.set_rect(objective, 17, 129, 354, 30)
 	objective.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(objective)
 	var objective_label := _make_label("💧  SORT • POUR • SOLVE", 16, NAVY, true)
 	objective_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	RefCanvas.set_rect(objective_label, 18, 130, 354, 30)
+	RefCanvas.set_rect(objective_label, 17, 129, 354, 30)
 	canvas.add_child(objective_label)
 
 	gameplay_stage = PanelContainer.new()
 	gameplay_stage.name = "GameplayStage"
-	gameplay_stage.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.90, 0.99, 1.0, 0.38), 20, Color(0.55, 0.91, 1.0, 0.80), 1))
-	RefCanvas.set_rect(gameplay_stage, 18, 170, 354, 420)
+	RefCanvas.add_shadow(canvas, Rect2(17,169,354,420), 20, Color(0.01,0.12,0.23,0.18), 8, Vector2(0,7))
+	gameplay_stage.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color(0.94,1.0,1.0,0.40), Color(0.90,0.99,1.0,0.38), Color(0.82,0.95,1.0,0.34), 20, Color(0.55, 0.91, 1.0, 0.80), 1.5))
+	RefCanvas.set_rect(gameplay_stage, 17, 169, 354, 420)
 	gameplay_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(gameplay_stage)
 
@@ -97,21 +102,21 @@ func _build_figma_water(canvas: Control) -> void:
 	board.columns = 5
 	board.add_theme_constant_override("h_separation", 11)
 	board.add_theme_constant_override("v_separation", 14)
-	RefCanvas.set_rect(board, 38, 202.7, 294, 251)
+	RefCanvas.set_rect(board, 37, 201.73, 294, 251)
 	canvas.add_child(board)
 
 	status_label = _make_label("READY", 12, NAVY, true)
-	RefCanvas.set_rect(status_label, 18, 597, 354, 20)
+	RefCanvas.set_rect(status_label, 17, 599, 354, 20)
 	canvas.add_child(status_label)
 	hint_label = _make_label("", 12, ORANGE, true)
 	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	RefCanvas.set_rect(hint_label, 120, 597, 252, 20)
+	RefCanvas.set_rect(hint_label, 119, 599, 252, 20)
 	canvas.add_child(hint_label)
 
 	var actions := HBoxContainer.new()
 	actions.name = "CompactGameActions"
 	actions.add_theme_constant_override("separation", 14)
-	RefCanvas.set_rect(actions, 22, 628, 346, 60)
+	RefCanvas.set_rect(actions, 21, 627, 346, 60)
 	canvas.add_child(actions)
 
 	var undo := _action_button("↶  UNDO", BLUE)
@@ -126,11 +131,19 @@ func _build_figma_water(canvas: Control) -> void:
 	title_label = _make_label("",20,OFF_WHITE,true)
 	title_label.name = "WaterLevelTitle"
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	RefCanvas.set_rect(title_label,116,20,158,28)
+	RefCanvas.set_rect(title_label,116,19,158,28)
 	canvas.add_child(title_label)
 
+	var frame_border := PanelContainer.new()
+	frame_border.name = "WaterFrameBorder"
+	frame_border.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame_border.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color.TRANSPARENT, 34, Color("#b8d1e0"), 1))
+	RefCanvas.set_rect(frame_border, 0, 0, 390, 844)
+	frame_border.z_index = 900
+	canvas.add_child(frame_border)
+
 func _action_button(text_value: String, fill: Color) -> Button:
-	var button := RefCanvas.button(text_value, 12, OFF_WHITE, fill, 16, fill.lightened(0.30), 1)
+	var button := RefCanvas.premium_button(text_value, 12, OFF_WHITE, fill, 16, fill.lightened(0.30), 1.3)
 	button.custom_minimum_size = Vector2(106, 60)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	return button
@@ -182,7 +195,7 @@ func _apply_tube_layout() -> void:
 	var content_h := tube_size.y * rows + float(v_gap * maxi(rows - 1, 0))
 	board.size = Vector2(content_w, content_h)
 	board.custom_minimum_size = Vector2(content_w, content_h)
-	board.position = Vector2(195.0 - content_w * 0.5, 170.0 + (420.0 - content_h) * 0.5)
+	board.position = Vector2(194.0 - content_w * 0.5, 169.0 + (420.0 - content_h) * 0.5)
 
 func apply_theme_mode(_dark: bool) -> void:
 	# Production Figma gameplay is intentionally bright; Settings owns the
