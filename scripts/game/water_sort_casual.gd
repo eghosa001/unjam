@@ -9,6 +9,7 @@ const NAVY := Color(0.03, 0.23, 0.47)
 const OFF_WHITE := Color(1.0, 0.995, 0.97)
 const BLUE := Color(0.03, 0.43, 0.78)
 const ORANGE := Color(1.0, 0.55, 0.12)
+const GUIDANCE_ORANGE := Color("#8a3b00")
 
 var figma_canvas: Control
 var gameplay_stage: PanelContainer
