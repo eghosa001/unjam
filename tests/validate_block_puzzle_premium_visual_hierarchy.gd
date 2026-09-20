@@ -36,6 +36,13 @@ func _run() -> void:
 		if booster == null or booster.custom_minimum_size.distance_to(Vector2(82,54)) > 1.0:
 			return _fail("%s is missing or not Figma-sized" % booster_name)
 
+	var single := BlockPieceButton.new()
+	single.size = Vector2(104,72)
+	single.configure([Vector2i.ZERO],false,Color("8b7cf6"),0)
+	if single.tray_visual_cell_size() > 30.1:
+		return _fail("Single Block tray piece is still enlarged")
+	single.queue_free()
+
 	game.queue_free()
 	await process_frame
 	print("Block Puzzle Figma visual hierarchy validated.")
