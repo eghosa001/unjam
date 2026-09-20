@@ -119,12 +119,18 @@ func _figma_card(canvas: Control, name_value: String, rect: Rect2, tint: Color =
 	canvas.add_child(card)
 	return card
 
-func _figma_header(canvas: Control, title_text: String, subtitle_text: String, pill_text: String, pill_fill: Color, back_callback: Callable = Callable(self, "build_home")) -> void:
+func _figma_header(canvas: Control, title_text: String, subtitle_text: String, pill_text: String, pill_fill: Color, back_callback: Callable = Callable(self, "build_home"), pill_callback: Callable = Callable()) -> void:
 	_figma_button(canvas, "FigmaBack", "‹", Rect2(18, 20, 52, 52), Color(0.987, 0.996, 1.0), back_callback, FIGMA_NAVY, 16, 27)
 	_figma_text(canvas, title_text, Rect2(84, 22, 205, 28), 23, FIGMA_INK)
 	var subtitle := _figma_text(canvas, subtitle_text, Rect2(84, 52, 210, 30), 12, FIGMA_MUTED)
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_figma_button(canvas, "FigmaHeaderPill", pill_text, Rect2(286, 22, 84, 46), pill_fill, Callable(), FIGMA_OFF_WHITE, 16, 12)
+	_figma_button(canvas, "FigmaHeaderPill", pill_text, Rect2(286, 22, 84, 46), pill_fill, pill_callback, FIGMA_OFF_WHITE, 16, 12)
+
+func _figma_open_shop() -> void:
+	var hub := get_node_or_null("MonetizationHub")
+	if hub != null and hub.has_method("open_shop"):
+		FeedbackManager.tap()
+		hub.call("open_shop")
 
 func _figma_bottom_nav(canvas: Control, active: String) -> void:
 	_figma_card(canvas, "StdNav/Bar", Rect2(14, 758, 362, 70), Color(0.985, 0.995, 1.0), Color(0.78, 0.88, 0.95, 0.75), 18)
