@@ -49,6 +49,11 @@ func _run() -> void:
 	var restore_source := _read("res://scripts/game/block_puzzle_polished.gd")
 	if restore_source.contains("pieces[i] = [Vector2i(0,0)]"):
 		return _fail("Block Puzzle checkpoint restore still fabricates a rescue piece")
+	var block_campaign_source := _read("res://scripts/game/block_puzzle_10000.gd")
+	if block_campaign_source.contains("pieces[0] = CampaignGenerator.SHAPES[0].duplicate()"):
+		return _fail("Block Puzzle free modes still fabricate a rescue piece after a dead end")
+	if not block_campaign_source.contains('call_deferred("_handle_no_legal_moves")'):
+		return _fail("Block Puzzle free-mode dead ends are not routed to the explicit failure/reset handler")
 	var water_3d_source := _read("res://scripts/ui/water_tube_3d_motion.gd")
 	if water_3d_source.contains("GlassSecondaryHighlight") or water_3d_source.contains("highlight_mesh := BoxMesh.new()"):
 		return _fail("Water Sort still contains synthetic vertical glass highlight bars")
