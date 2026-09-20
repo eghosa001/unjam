@@ -82,7 +82,7 @@ func _add_booster_bar() -> void:
 		var key := String(spec[0])
 		var button := FigmaReferenceCanvas.premium_button(
 			"%s  %s\n◈ %d" % [String(spec[2]), String(spec[1]), int(BOOSTER_COSTS[key])],
-			12,
+			13,
 			Color(1, 0.995, 0.97),
 			Color("#7d21d6"),
 			15,
