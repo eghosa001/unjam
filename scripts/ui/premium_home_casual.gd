@@ -171,21 +171,6 @@ func _make_brand_logo(parent: VBoxContainer) -> void:
 	Unjam3DTheme.label_3d(subtitle, Color.WHITE, Unjam3DTheme.NAVY, 4)
 	logo_box.add_child(subtitle)
 
-func _make_tagline(parent: VBoxContainer) -> void:
-	var center := CenterContainer.new()
-	parent.add_child(center)
-	var plaque := PanelContainer.new()
-	plaque.custom_minimum_size = Vector2(650, 64)
-	plaque.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("ae592d"), 25, Color("f1ac5f"), 3, 8))
-	center.add_child(plaque)
-	var label := Label.new()
-	label.text = "PUZZLE  •  RELAX  •  BRIGHTER DAYS ♥"
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 19)
-	Unjam3DTheme.label_3d(label, Color.WHITE, Color("6f2e14"), 3)
-	plaque.add_child(label)
-
 func _make_hero(parent: VBoxContainer) -> void:
 	var viewport_size := get_viewport_rect().size
 	var hero_height := 210.0 if viewport_size.y < 1100.0 else (300.0 if viewport_size.y < 1400.0 else 360.0)
@@ -208,26 +193,6 @@ func _make_hero(parent: VBoxContainer) -> void:
 	mascot.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	mascot.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	center.add_child(mascot)
-
-func _make_sign_stack(parent: HBoxContainer) -> void:
-	var stack := VBoxContainer.new()
-	stack.name = "ExplorerSignStack"
-	stack.custom_minimum_size = Vector2(235, 340)
-	stack.alignment = BoxContainer.ALIGNMENT_CENTER
-	stack.add_theme_constant_override("separation", 7)
-	parent.add_child(stack)
-	for item in ["PUZZLE", "RELAX", "BRIGHTER", "DAYS ♥"]:
-		var sign := PanelContainer.new()
-		sign.custom_minimum_size = Vector2(220, 68)
-		sign.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("b56832"), 13, Color("efaa58"), 2, 6))
-		stack.add_child(sign)
-		var label := Label.new()
-		label.text = String(item)
-		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		label.add_theme_font_size_override("font_size", 20)
-		Unjam3DTheme.label_3d(label, Color("5b2513"), Color("ffd394"), 2)
-		sign.add_child(label)
 
 func _make_game_strip(parent: VBoxContainer) -> void:
 	var strip := HBoxContainer.new()
