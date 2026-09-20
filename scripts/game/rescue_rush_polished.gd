@@ -129,7 +129,7 @@ func _spawn_escape_visual(index: int, route: Array[Vector2i] = []) -> void:
 	var dir_i: Vector2i = DIRECTIONS.get(String(piece.get("direction", "right")), Vector2i.RIGHT)
 	var direction := Vector2(dir_i)
 	var start_pos := ghost.position
-	var center: Vector2 = cell.get_global_rect().get_center() - global_position
+	var center: Vector2 = get_global_transform_with_canvas().affine_inverse() * cell.get_global_rect().get_center()
 	PremiumVisuals.burst(center, world_accent(), 7 + mini(chain_count, 8))
 	_spawn_chain_popup(center, chain_count)
 	_spawn_speed_lines(cell.get_global_rect().get_center(), direction, world_accent())

@@ -3,6 +3,9 @@ extends "res://scripts/game/block_puzzle_final_polish.gd"
 const Progression = preload("res://scripts/core/block_puzzle_progression.gd")
 const CampaignGenerator = preload("res://scripts/core/block_puzzle_campaign_generator.gd")
 const LevelPack = preload("res://scripts/core/block_puzzle_level_pack.gd")
+const PremiumGameplayFeedbackLayer = preload("res://scripts/ui/premium_gameplay_feedback.gd")
+
+var premium_feedback: PremiumGameplayFeedback
 
 const VALID_MODES := ["campaign", "endless", "zen", "extreme"]
 
@@ -36,6 +39,27 @@ var attempt_closed := false
 func build_ui() -> void:
 	super.build_ui()
 	_add_booster_bar()
+	premium_feedback = PremiumGameplayFeedbackLayer.new()
+	premium_feedback.name = "BlockPremiumFeedback"
+	add_child(premium_feedback)
+
+func _spawn_clear_feedback(indices: Array[int], line_count: int) -> void:
+	super._spawn_clear_feedback(indices, line_count)
+	if premium_feedback == null or not is_instance_valid(premium_feedback) or board_shell == null:
+		return
+	var global_rect := board_shell.get_global_rect()
+	var inverse := get_global_transform_with_canvas().affine_inverse()
+	var local_top_left: Vector2 = inverse * global_rect.position
+	var local_bottom_right: Vector2 = inverse * global_rect.end
+	var local_rect := Rect2(local_top_left, local_bottom_right - local_top_left)
+	premium_feedback.show_sweep(local_rect, Color("#ff7a66"))
+	var center := local_rect.get_center()
+	if line_count >= 2:
+		premium_feedback.show_banner("%d-LINE BLAST" % line_count, Color("#ff7a66"), Vector2(center.x, maxf(170.0, local_rect.position.y - 18.0)), 196.0)
+	elif _clear_streak >= 2:
+		premium_feedback.show_banner("COMBO ×%d" % _clear_streak, Color("#ffd166"), Vector2(center.x, maxf(170.0, local_rect.position.y - 18.0)), 184.0)
+	if score_label != null:
+		MotionSystem.pop(score_label, 0.82)
 
 func _add_booster_bar() -> void:
 	var canvas := find_child("FigmaBlock390x844", true, false) as Control
