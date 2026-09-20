@@ -167,6 +167,14 @@ static func rounded_gradient3(top: Color, middle: Color, bottom: Color, radius: 
 			if fy > 0.82:
 				var lower_rolloff := ((fy - 0.82) / 0.18) * 0.14
 				pixel_fill = pixel_fill.lerp(Color(0, 0, 0, pixel_fill.a), lower_rolloff)
+			# Premium 3D bevel side: a brighter top/left rim and darker right/bottom
+			# side profile makes the nine-slice read as a physical raised object.
+			if fx < 0.10:
+				pixel_fill = pixel_fill.lerp(Color(1, 1, 1, pixel_fill.a), (0.10 - fx) * 0.55)
+			if fx > 0.88:
+				pixel_fill = pixel_fill.lerp(Color(0, 0, 0, pixel_fill.a), (fx - 0.88) * 0.72)
+			if fy > 0.90:
+				pixel_fill = pixel_fill.lerp(Color(0, 0, 0, pixel_fill.a), (fy - 0.90) * 0.92)
 			image.set_pixel(x, y, pixel_fill)
 	var style := StyleBoxTexture.new()
 	style.texture = ImageTexture.create_from_image(image)
@@ -176,6 +184,113 @@ static func rounded_gradient3(top: Color, middle: Color, bottom: Color, radius: 
 		style.set_content_margin(side, 0.0)
 	_rounded_gradient3_cache[cache_key] = style
 	return style
+
+static func _star_points(center: Vector2, outer_radius: float, inner_radius: float, point_count: int = 5) -> PackedVector2Array:
+	var points := PackedVector2Array()
+	for i in range(point_count * 2):
+		var radius := outer_radius if i % 2 == 0 else inner_radius
+		var angle := -PI / 2.0 + float(i) * PI / float(point_count)
+		points.append(center + Vector2(cos(angle), sin(angle)) * radius)
+	return points
+
+static func _regular_points(center: Vector2, radius: float, point_count: int, rotation: float = -PI / 2.0) -> PackedVector2Array:
+	var points := PackedVector2Array()
+	for i in range(point_count):
+		var angle := rotation + TAU * float(i) / float(point_count)
+		points.append(center + Vector2(cos(angle), sin(angle)) * radius)
+	return points
+
+static func add_collectible_star(parent: Node, center: Vector2, outer_radius: float, earned: bool = true, node_name: String = "CollectibleStar3D") -> Polygon2D:
+	var inner_radius := outer_radius * 0.48
+	var side := Polygon2D.new()
+	side.name = "%sSide" % node_name
+	side.polygon = _star_points(center + Vector2(0, maxf(2.0, outer_radius * 0.14)), outer_radius, inner_radius)
+	side.color = Color("#8f4d00") if earned else Color("#516474")
+	parent.add_child(side)
+	var star := Polygon2D.new()
+	star.name = node_name
+	star.polygon = _star_points(center, outer_radius, inner_radius)
+	star.color = Color("#ffc928") if earned else Color("#8faabc")
+	parent.add_child(star)
+	var highlight := Polygon2D.new()
+	highlight.name = "%sHighlight" % node_name
+	highlight.polygon = _star_points(center + Vector2(-outer_radius * 0.08, -outer_radius * 0.10), outer_radius * 0.56, inner_radius * 0.56)
+	highlight.color = Color(1.0, 0.97, 0.62, 0.58) if earned else Color(0.88, 0.95, 1.0, 0.28)
+	parent.add_child(highlight)
+	return star
+
+static func add_collectible_gem(parent: Node, center: Vector2, radius: float, node_name: String = "CollectibleGem3D") -> Polygon2D:
+	var side := Polygon2D.new()
+	side.name = "%sSide" % node_name
+	side.polygon = _regular_points(center + Vector2(0, maxf(2.0, radius * 0.18)), radius, 6, PI / 6.0)
+	side.color = Color("#1747a8")
+	parent.add_child(side)
+	var gem := Polygon2D.new()
+	gem.name = node_name
+	gem.polygon = _regular_points(center, radius, 6, PI / 6.0)
+	gem.color = Color("#34d9ff")
+	parent.add_child(gem)
+	var facet := Polygon2D.new()
+	facet.name = "%sFacet" % node_name
+	facet.polygon = PackedVector2Array([
+		center + Vector2(-radius * 0.58, -radius * 0.18),
+		center + Vector2(0, -radius * 0.86),
+		center + Vector2(radius * 0.12, -radius * 0.08),
+		center + Vector2(-radius * 0.08, radius * 0.18)
+	])
+	facet.color = Color(0.88, 1.0, 1.0, 0.70)
+	parent.add_child(facet)
+	return gem
+
+static func add_scene_backdrop_layers(parent: Control, accent: Color, dark: bool, prefix: String = "Surface") -> void:
+	# Static geometry mirrors the approved Figma key-light/accent-light composition
+	# without per-frame shaders, preserving low-end Android performance.
+	var key_light := PanelContainer.new()
+	key_light.name = "%sKeyLight" % prefix
+	key_light.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	key_light.add_theme_stylebox_override("panel", solid_box(Color(1, 1, 1, 0.16 if not dark else 0.09), 110))
+	set_rect(key_light, -55, -72, 270, 220)
+	parent.add_child(key_light)
+
+	var accent_glow := PanelContainer.new()
+	accent_glow.name = "%sAccentGlow" % prefix
+	accent_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	accent_glow.add_theme_stylebox_override("panel", solid_box(Color(accent.r, accent.g, accent.b, 0.12 if not dark else 0.08), 120))
+	set_rect(accent_glow, 230, 575, 250, 230)
+	parent.add_child(accent_glow)
+
+	var sweep := Polygon2D.new()
+	sweep.name = "%sLightSweep" % prefix
+	sweep.polygon = PackedVector2Array([Vector2(-45,118),Vector2(435,22),Vector2(435,118),Vector2(-45,226)])
+	sweep.color = Color(1,1,1,0.095 if not dark else 0.055)
+	parent.add_child(sweep)
+
+	var vignette := Polygon2D.new()
+	vignette.name = "%sBottomVignette" % prefix
+	vignette.polygon = PackedVector2Array([Vector2(-30,692),Vector2(430,604),Vector2(430,844),Vector2(-30,844)])
+	vignette.color = Color(0.005,0.015,0.06,0.28 if not dark else 0.42)
+	parent.add_child(vignette)
+
+	for i in range(4):
+		var vein := Line2D.new()
+		vein.name = "%sMaterialVein%d" % [prefix, i]
+		vein.width = 1.0
+		vein.antialiased = true
+		vein.default_color = Color(0.84,0.95,1.0,0.055 if not dark else 0.035) if i % 2 == 0 else Color(0.02,0.07,0.18,0.055)
+		var start := Vector2(18.0 + float(i) * 82.0, 260.0 + float(i) * 116.0)
+		var length := 120.0 + float(i) * 18.0
+		var angle := deg_to_rad(-8.0 if i % 2 == 0 else 11.0)
+		vein.points = PackedVector2Array([start, start + Vector2(cos(angle), sin(angle)) * length])
+		parent.add_child(vein)
+
+static func style_display_title(label_node: Label, fill: Color, outline_color: Color = Color("#071d55"), outline_size: int = 2) -> void:
+	label_node.add_theme_color_override("font_color", fill)
+	label_node.add_theme_color_override("font_outline_color", outline_color)
+	label_node.add_theme_constant_override("outline_size", outline_size)
+	label_node.add_theme_color_override("font_shadow_color", Color(0.01,0.03,0.12,0.72))
+	label_node.add_theme_constant_override("shadow_offset_x", 0)
+	label_node.add_theme_constant_override("shadow_offset_y", 4)
+	label_node.add_theme_constant_override("shadow_outline_size", 2)
 
 static func horizontal_gradient(left: Color, right: Color, radius: float = 0.0, border_color: Color = Color.TRANSPARENT, border_width: float = 0.0) -> StyleBoxTexture:
 	var cache_key := _style_cache_key("horizontal", [left, right], radius, border_color, border_width)
