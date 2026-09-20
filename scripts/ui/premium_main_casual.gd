@@ -199,7 +199,10 @@ func _figma_solid_card(canvas: Control, name_value: String, rect: Rect2, tint: C
 	if _dark() and tint.get_luminance() > 0.72:
 		resolved_tint = _figma_theme_card(border, Color("#132033"))
 		resolved_border = Color(border.r, border.g, border.b, 0.78)
-	card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(resolved_tint, radius, resolved_border, 1))
+	var gloss_top := resolved_tint.lightened(0.16 if _dark() else 0.11)
+	var gloss_mid := resolved_tint.lightened(0.025)
+	var gloss_bottom := resolved_tint.darkened(0.13 if _dark() else 0.08)
+	card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(gloss_top, gloss_mid, gloss_bottom, radius, resolved_border, 1, 0.40))
 	FigmaReferenceCanvas.set_rect(card, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(card)
