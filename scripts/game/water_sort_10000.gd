@@ -457,6 +457,8 @@ func _show_no_legal_pours_failure() -> void:
 	status_label.text = "NO LEGAL POURS"
 	FeedbackManager.blocked()
 	MultiGameManager.clear_checkpoint(GAME_ID)
+	if not daily_mode:
+		RetentionManager.record_level_fail()
 	AnalyticsManager.track("water_sort_attempt_failed", {"level": level_number, "moves": moves, "daily": daily_mode, "reason": "no_legal_pours"})
 	var result := PremiumResultOverlay.new()
 	result.configure(
