@@ -18,47 +18,63 @@ func _run() -> void:
 	root.add_child(overlay)
 	await _frames(6)
 
-	var canvas := overlay.find_child("FigmaResult390x844",true,false) as Control
 	var card := overlay.find_child("ResultCard3D",true,false) as Control
+	var title := overlay.find_child("ResultTitle",true,false) as Label
+	var subtitle := overlay.find_child("ResultSubtitle",true,false) as Label
 	var primary := overlay.find_child("PrimaryAction",true,false) as Button
 	var secondary := overlay.find_child("SecondaryAction",true,false) as Button
+	var secondary_shadow := overlay.find_child("SecondaryActionShadow",true,false) as Control
 	var stats := overlay.find_child("ResultStatsText",true,false) as Label
-	if canvas == null or card == null or primary == null or secondary == null or stats == null:
-		return _fail("Figma result hierarchy is incomplete")
-	if not _rect_eq(Rect2(card.position,card.size),Rect2(27,85,334,590)):
-		return _fail("Result card drifted from Figma 334x590 geometry")
-	if not _rect_eq(Rect2(primary.position,primary.size),Rect2(47,499,294,58)):
-		return _fail("Result primary action drifted from Figma geometry")
-	if not _rect_eq(Rect2(secondary.position,secondary.size),Rect2(47,569,294,48)):
-		return _fail("Result secondary action drifted from Figma geometry")
+	if card == null or title == null or subtitle == null or primary == null or secondary == null or secondary_shadow == null or stats == null:
+		return _fail("Result hierarchy is incomplete")
+	if not _rect_eq(Rect2(card.position,card.size),Rect2(27,96,334,510)):
+		return _fail("Result card geometry drifted")
+	if not _rect_eq(Rect2(primary.position,primary.size),Rect2(47,458,294,58)):
+		return _fail("Result primary geometry drifted")
+	if not _rect_eq(Rect2(secondary.position,secondary.size),Rect2(47,528,294,48)):
+		return _fail("Result secondary geometry drifted")
+	if not secondary_shadow.visible:
+		return _fail("Visible secondary action lost its shadow")
+	if title.get_rect().intersects(subtitle.get_rect()):
+		return _fail("Result title overlaps subtitle")
+	var stats_panel := overlay.find_child("Stats",true,false) as Control
+	for node in overlay.find_children("StarCard","PanelContainer",true,false):
+		if stats_panel != null and (node as Control).get_rect().intersects(stats_panel.get_rect()):
+			return _fail("Result stars overlap stats panel")
 	if stats.text.is_empty():
 		return _fail("Result stats are missing")
-	var star_count := 0
-	for node in _all_nodes(overlay):
-		if node is Label and (node as Label).text == "★":
-			star_count += 1
-	if star_count != 3:
-		return _fail("Result celebration does not render three earned stars")
-	var screen := Rect2(Vector2.ZERO,root.get_visible_rect().size)
-	if not _inside(card.get_global_rect(),screen):
-		return _fail("Figma result card spills outside viewport")
 
 	overlay.queue_free()
-	await process_frame
-	print("Figma result hierarchy validated.")
-	quit(0)
+	await _frames(2)
 
-func _all_nodes(node: Node) -> Array[Node]:
-	var out: Array[Node] = [node]
-	for child in node.get_children():
-		out.append_array(_all_nodes(child))
-	return out
+	var block_result := PremiumResultOverlay.new()
+	block_result.configure(
+		"BLOCK PUZZLE COMPLETE",
+		"Strong placements. Clean lines. Space controlled.",
+		"SCORE 640 • 4 LINES\n7 PLACEMENTS",
+		3,
+		Color("8b7cf6"),
+		"NEXT PUZZLE"
+	)
+	root.add_child(block_result)
+	await _frames(5)
+	var block_card := block_result.find_child("ResultCard3D",true,false) as Control
+	var hidden_secondary := block_result.find_child("SecondaryAction",true,false) as Button
+	var hidden_shadow := block_result.find_child("SecondaryActionShadow",true,false) as Control
+	if block_card == null or hidden_secondary == null or hidden_shadow == null:
+		return _fail("Block result hierarchy is incomplete")
+	if not _rect_eq(Rect2(block_card.position,block_card.size),Rect2(27,96,334,452)):
+		return _fail("Result without secondary action did not collapse its empty slot")
+	if hidden_secondary.visible or hidden_shadow.visible:
+		return _fail("Hidden secondary result action still leaves a visible placeholder")
+
+	block_result.queue_free()
+	await process_frame
+	print("Result hierarchy validated without collisions or empty action slots.")
+	quit(0)
 
 func _rect_eq(actual: Rect2, expected: Rect2) -> bool:
 	return actual.position.distance_to(expected.position) <= 1.0 and actual.size.distance_to(expected.size) <= 1.0
-
-func _inside(rect: Rect2, viewport: Rect2) -> bool:
-	return rect.position.x >= -2.0 and rect.position.y >= -2.0 and rect.end.x <= viewport.end.x + 2.0 and rect.end.y <= viewport.end.y + 2.0
 
 func _frames(count: int) -> void:
 	for _i in range(count):

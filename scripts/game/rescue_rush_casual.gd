@@ -144,22 +144,22 @@ func _build_figma_rescue(canvas: Control) -> void:
 
 	var depth := PanelContainer.new()
 	depth.add_theme_stylebox_override("panel",RefCanvas.rounded_gradient3(Color("#335257"),Color("#25434b"),Color("#1a3340"),26))
-	RefCanvas.set_rect(depth,27.15,195.92,338,338)
+	RefCanvas.set_rect(depth,23,194,344,344)
 	canvas.add_child(depth)
 	board_panel = PanelContainer.new()
 	board_panel.name = "RescueBoardPanel"
 	board_panel.add_theme_stylebox_override("panel",RefCanvas.rounded_gradient3(Color("#d1ebc2"),Color("#99c4ab"),Color("#5e8c85"),26,Color(0.94,1.0,0.88,0.72),2,0.45))
-	RefCanvas.set_rect(board_panel,25,183,338,338)
+	RefCanvas.set_rect(board_panel,21,180,348,348)
 	canvas.add_child(board_panel)
 	var margin := MarginContainer.new()
 	for side in ["left","right","top","bottom"]:
-		margin.add_theme_constant_override("margin_%s" % side,20)
+		margin.add_theme_constant_override("margin_%s" % side,10)
 	board_panel.add_child(margin)
 	board_grid = GridContainer.new()
 	board_grid.name = "RescueBoardGrid"
 	board_grid.columns = width
-	board_grid.add_theme_constant_override("h_separation",22)
-	board_grid.add_theme_constant_override("v_separation",22)
+	board_grid.add_theme_constant_override("h_separation",5)
+	board_grid.add_theme_constant_override("v_separation",5)
 	margin.add_child(board_grid)
 
 	var actions := HBoxContainer.new()
@@ -200,15 +200,15 @@ func _action(text_value: String, fill: Color) -> Button:
 	return result
 
 func _figma_board_gap() -> int:
-	return 22 if width <= 5 and height <= 5 else 10
+	return 6 if width <= 5 and height <= 5 else 5
 
 func _figma_board_cell_size() -> int:
 	if width <= 5 and height <= 5:
-		return 41
-	var available := 298.0
+		return 58
+	var available := 328.0
 	var gap := _figma_board_gap()
 	var span := maxi(width, height)
-	return int(clampf(floor((available - float(gap * maxi(span - 1,0))) / float(maxi(span,1))),28.0,41.0))
+	return int(clampf(floor((available - float(gap * maxi(span - 1,0))) / float(maxi(span,1))),30.0,43.0))
 
 func _make_empty_cell(_cell_size: int, pos: Vector2i, route: Dictionary) -> Control:
 	# The inherited premium renderer sizes its first pass for a much larger board.
@@ -217,6 +217,15 @@ func _make_empty_cell(_cell_size: int, pos: Vector2i, route: Dictionary) -> Cont
 	# Build empty cells at the final Figma size and use the single portal arrow
 	# shown by the production design so child minimums cannot expand the pedestal.
 	var slot := super._make_empty_cell(_figma_board_cell_size(), pos, route)
+	var route_cells: Array = route.get("cells", [])
+	var on_route := pos in route_cells
+	var is_edge_exit := on_route and not is_inside(pos + Vector2i(route.get("direction", Vector2i.RIGHT)))
+	var well_fill := Color(0.08,0.23,0.22,0.42)
+	var well_edge := Color(0.82,1.0,0.88,0.24)
+	if on_route:
+		well_fill = Color(0.22,0.74,0.44,0.12)
+		well_edge = Color(0.45,0.94,0.63,0.56 if is_edge_exit else 0.34)
+	slot.add_theme_stylebox_override("panel", style_box(well_fill, 10, well_edge, 2 if is_edge_exit else 1))
 	for child in slot.get_children():
 		if child is Label:
 			var label := child as Label
@@ -247,8 +256,53 @@ func _fit_board_to_viewport() -> void:
 					cell_panel.add_theme_stylebox_override("panel",exact_style)
 			if child.get_child_count() > 0 and child.get_child(0) is Control:
 				(child.get_child(0) as Control).custom_minimum_size = Vector2(cell_size,cell_size)
-	board_panel.custom_minimum_size = Vector2(338,338)
-	board_panel.size = Vector2(338,338)
+	board_panel.custom_minimum_size = Vector2(348,348)
+	board_panel.size = Vector2(348,348)
+
+func _hint_arrow_index() -> int:
+	var solver_index := PuzzleSolver.first_solution_move(level_data, pieces, 6000)
+	if solver_index >= 0 and solver_index < pieces.size():
+		var solver_piece: Dictionary = pieces[solver_index]
+		if bool(solver_piece.get("active", true)) and String(solver_piece.get("type", "normal")) not in ["gate", "blocker"] and is_path_clear(solver_index):
+			return solver_index
+	for i in range(pieces.size()):
+		var piece: Dictionary = pieces[i]
+		if not bool(piece.get("active", true)):
+			continue
+		if String(piece.get("type", "normal")) in ["gate", "blocker"]:
+			continue
+		if is_path_clear(i):
+			return i
+	return -1
+
+func show_hint() -> void:
+	if board_locked or rescued:
+		return
+	var index := _hint_arrow_index()
+	if index < 0:
+		hint_label.text = "No arrow can be safely removed from this position."
+		FeedbackManager.blocked()
+		return
+	hints_used_this_level += 1
+	SaveManager.record_hint()
+	FeedbackManager.tap()
+	AnalyticsManager.hint_used(level_number)
+	var legal_before := _legal_map()
+	history.append(snapshot())
+	board_locked = true
+	chain_count = maxi(1, chain_count)
+	FeedbackManager.escape(chain_count)
+	escape_piece(index, true)
+	await get_tree().create_timer(0.06).timeout
+	await _resolve_cascades(legal_before)
+	await resolve_rescue()
+	if not is_inside_tree():
+		return
+	if not rescued:
+		render_board()
+		hint_label.text = "Hint cleared one arrow."
+		_save_checkpoint()
+	board_locked = false
 
 func render_board() -> void:
 	super.render_board()

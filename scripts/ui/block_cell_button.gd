@@ -265,8 +265,13 @@ func _draw_extruded_cube(rect: Rect2, fill: Color) -> void:
 	var bevel := front.grow(-3.0)
 	_draw_box(bevel, Color(fill.lightened(0.08), 0.28), 5, Color(1, 1, 1, 0.10), 1)
 	var highlight_y := front.position.y + maxf(4.0, front.size.y * 0.10)
-	draw_line(Vector2(front.position.x + 7, highlight_y), Vector2(front.end.x - 7, highlight_y), Color(1, 1, 1, 0.55), 2.4, true)
-	draw_circle(front.position + Vector2(front.size.x * 0.28, front.size.y * 0.30), maxf(1.5, front.size.x * 0.035), Color(1, 1, 1, 0.40))
+	draw_line(Vector2(front.position.x + 7, highlight_y), Vector2(front.end.x - 7, highlight_y), Color(1, 1, 1, 0.68), 2.5, true)
+	var gloss := Rect2(
+		front.position + Vector2(front.size.x * 0.16, front.size.y * 0.17),
+		Vector2(front.size.x * 0.48, maxf(3.0, front.size.y * 0.15))
+	)
+	_draw_box(gloss, Color(1,1,1,0.12), 4, Color(1,1,1,0.05), 1)
+	draw_circle(front.position + Vector2(front.size.x * 0.28, front.size.y * 0.30), maxf(1.5, front.size.x * 0.040), Color(1, 1, 1, 0.52))
 
 func _draw_box(rect: Rect2, color: Color, radius: int, border: Color, border_width: int) -> void:
 	var style := StyleBoxFlat.new()

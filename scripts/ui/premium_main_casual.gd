@@ -195,14 +195,16 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 		"settings": Callable(self,"build_settings"),
 	}
 	var hit_x := {"home":14.0, "games":84.0, "daily":153.0, "collection":222.0, "settings":291.0}
-	if xs.has(active):
-		var active_fill := Color(0.08,0.34,0.53) if dark_mode else FIGMA_CYAN
-		_figma_solid_card(canvas, "StdNav/Active", Rect2(float(hit_x[active]),767,62,48), active_fill, active_fill, 14, false)
 	for key in ["home","games","daily","collection","settings"]:
 		var selected: bool = String(key) == active
 		var selected_text := Color(0.42,0.78,1.0) if dark_mode else Color(0.05,0.49,0.86)
 		var idle_text := Color(0.62,0.72,0.80) if dark_mode else FIGMA_MUTED
-		_figma_text(canvas, String(names[key]), Rect2(float(xs[key])-1.0,788,58,30), 12, selected_text if selected else idle_text)
+		if selected:
+			var marker_color := Color(0.32,0.75,1.0) if dark_mode else FIGMA_CYAN
+			_figma_solid_card(canvas, "StdNavSelectedDot_%s" % String(key), Rect2(float(xs[key])+25.0,776,8,8), marker_color, marker_color, 4, false)
+			_figma_solid_card(canvas, "StdNavSelectedLine_%s" % String(key), Rect2(float(xs[key])+11.0,815,36,4), marker_color, marker_color, 2, false)
+		var nav_label := _figma_text(canvas, String(names[key]), Rect2(float(xs[key])-1.0,788,58,26), 12, selected_text if selected else idle_text, true)
+		nav_label.name = "StdNavLabel_%s" % String(key)
 		var hit := Button.new()
 		hit.name = "StdNav/Proto/%s" % String(names[key])
 		hit.flat = true
