@@ -52,7 +52,7 @@ func run() -> void:
 				return true
 			)
 		if reward_button != null:
-			reward_button = prompt.find_child("InsufficientCoinsRewardButton", true, false) as Button
+			reward_button = prompt.find_child("*Rewarded", true, false) as Button
 			reward_button.emit_signal("pressed")
 			await _frames(3)
 			expect_true(int(save_manager.data.get("coins", -1)) == 50, "Reward recovery did not grant exactly 50 coins")
