@@ -24,6 +24,17 @@ func build_ui() -> void:
 	premium_feedback = PremiumGameplayFeedbackLayer.new()
 	premium_feedback.name = "RescuePremiumFeedback"
 	add_child(premium_feedback)
+	call_deferred("_show_level_intro")
+
+func _show_level_intro() -> void:
+	if daily_mode or premium_feedback == null or not is_instance_valid(premium_feedback):
+		return
+	var milestone := String(level_data.get("milestone", "normal"))
+	var role := String(level_data.get("level_role", "standard"))
+	if milestone == "normal" and role not in ["world_boss", "boss"]:
+		return
+	var label := ("WORLD BOSS" if role == "world_boss" else milestone.replace("_", " ").to_upper())
+	premium_feedback.show_banner(label, Color("#ffd166"), Vector2(195, 178), 210.0)
 
 func _spawn_chain_popup(center: Vector2, combo: int) -> void:
 	super._spawn_chain_popup(center, combo)
