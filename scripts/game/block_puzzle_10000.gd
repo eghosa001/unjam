@@ -212,6 +212,7 @@ func load_level() -> void:
 			call_deferred("_fail_campaign", "MOVE LIMIT REACHED")
 		elif not any_move_available():
 			call_deferred("_handle_no_legal_moves")
+	call_deferred("_show_level_intro")
 	AnalyticsManager.track("block_puzzle_attempt_started", {
 		"level": level_number,
 		"mode": play_mode,
@@ -220,6 +221,16 @@ func load_level() -> void:
 		"restarts": attempt_restarts,
 		"difficulty_score": int(campaign_profile.get("difficulty_score", -1))
 	})
+
+func _show_level_intro() -> void:
+	if daily_mode or premium_feedback == null or not is_instance_valid(premium_feedback) or campaign_profile.is_empty():
+		return
+	var milestone := String(campaign_profile.get("milestone", "normal"))
+	if milestone == "normal":
+		return
+	var label := milestone.replace("_", " ").to_upper()
+	var accent := Color("#ffd166") if milestone in ["boss", "world_finale", "mastery", "finale", "extreme"] else Color("#c084fc")
+	premium_feedback.show_banner(label, accent, Vector2(195, 170), 210.0)
 
 func refill_pieces() -> void:
 	if daily_mode:
