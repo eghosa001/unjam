@@ -97,8 +97,83 @@ static func rounded_gradient(top: Color, bottom: Color, radius: float = 16.0, bo
 		style.set_content_margin(side, 0.0)
 	return style
 
+static func rounded_gradient3(top: Color, middle: Color, bottom: Color, radius: float = 16.0, border_color: Color = Color.TRANSPARENT, border_width: float = 0.0, midpoint: float = 0.55) -> StyleBoxTexture:
+	var image_size := 96
+	var image := Image.create(image_size, image_size, false, Image.FORMAT_RGBA8)
+	var r := clampf(radius / 24.0 * 22.0, 0.0, 44.0)
+	var bw := maxf(0.0, border_width / 4.0 * 4.0)
+	var split := clampf(midpoint, 0.08, 0.92)
+	for y in range(image_size):
+		var fy := float(y) / float(image_size - 1)
+		var fill := top.lerp(middle, fy / split) if fy <= split else middle.lerp(bottom, (fy - split) / (1.0 - split))
+		for x in range(image_size):
+			var px := float(x) + 0.5
+			var py := float(y) + 0.5
+			var dx := maxf(maxf(r - px, 0.0), px - (float(image_size) - r))
+			var dy := maxf(maxf(r - py, 0.0), py - (float(image_size) - r))
+			if dx * dx + dy * dy > r * r:
+				image.set_pixel(x, y, Color.TRANSPARENT)
+				continue
+			if bw > 0.0:
+				var inner_r := maxf(0.0, r - bw)
+				var idx := maxf(maxf(inner_r - px, 0.0), px - (float(image_size) - inner_r))
+				var idy := maxf(maxf(inner_r - py, 0.0), py - (float(image_size) - inner_r))
+				var in_inner := idx * idx + idy * idy <= inner_r * inner_r and px >= bw and py >= bw and px <= image_size - bw and py <= image_size - bw
+				if not in_inner:
+					image.set_pixel(x, y, border_color)
+					continue
+			# Production controls use a restrained inset highlight rather than a
+			# flat fill. Bake it into the nine-slice so scaling keeps the same look.
+			if py <= bw + 4.0:
+				fill = fill.lerp(Color.WHITE, 0.14)
+			image.set_pixel(x, y, fill)
+	var style := StyleBoxTexture.new()
+	style.texture = ImageTexture.create_from_image(image)
+	var margin := maxi(8, int(ceil(r + bw + 2.0)))
+	for side in [SIDE_LEFT, SIDE_TOP, SIDE_RIGHT, SIDE_BOTTOM]:
+		style.set_texture_margin(side, margin)
+		style.set_content_margin(side, 0.0)
+	return style
+
 static func vertical_gradient(top: Color, bottom: Color, radius: float = 0.0, border_color: Color = Color.TRANSPARENT, border_width: float = 0.0) -> StyleBoxTexture:
 	return rounded_gradient(top, bottom, radius, border_color, border_width)
+
+static func shadow_box(radius: float, shadow_color: Color = Color(0.02, 0.10, 0.20, 0.20), shadow_size: int = 6, shadow_offset: Vector2 = Vector2(0, 4)) -> StyleBoxFlat:
+	var style := solid_box(Color(0, 0, 0, 0.001), radius)
+	style.shadow_color = shadow_color
+	style.shadow_size = shadow_size
+	style.shadow_offset = shadow_offset
+	return style
+
+static func add_shadow(parent: Control, rect: Rect2, radius: float, shadow_color: Color = Color(0.02, 0.10, 0.20, 0.20), shadow_size: int = 6, shadow_offset: Vector2 = Vector2(0, 4)) -> PanelContainer:
+	var shadow := PanelContainer.new()
+	shadow.name = "FigmaShadow"
+	shadow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	shadow.add_theme_stylebox_override("panel", shadow_box(radius, shadow_color, shadow_size, shadow_offset))
+	set_rect(shadow, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
+	parent.add_child(shadow)
+	return shadow
+
+static func premium_button(text_value: String, font_size: int, text_color: Color, fill: Color, radius: float, border: Color = Color.TRANSPARENT, border_width: float = 0.0) -> Button:
+	var result := Button.new()
+	result.text = text_value
+	result.focus_mode = Control.FOCUS_NONE
+	result.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	result.add_theme_font_override("font", Unjam3DTheme.readable_font())
+	result.add_theme_font_size_override("font_size", font_size)
+	result.add_theme_color_override("font_color", text_color)
+	result.add_theme_color_override("font_hover_color", text_color)
+	result.add_theme_color_override("font_pressed_color", text_color)
+	var top := fill.lightened(0.18)
+	var bottom := fill.darkened(0.18)
+	var normal := rounded_gradient3(top, fill, bottom, radius, border, border_width)
+	var hover := rounded_gradient3(top.lightened(0.05), fill.lightened(0.045), bottom.lightened(0.04), radius, border.lightened(0.05), border_width)
+	var pressed := rounded_gradient3(fill, fill.darkened(0.07), bottom.darkened(0.08), radius, border, border_width)
+	result.add_theme_stylebox_override("normal", normal)
+	result.add_theme_stylebox_override("hover", hover)
+	result.add_theme_stylebox_override("pressed", pressed)
+	result.add_theme_stylebox_override("focus", normal)
+	return result
 
 static func label(text_value: String, font_size: int, color: Color, bold := false) -> Label:
 	var result := Label.new()
