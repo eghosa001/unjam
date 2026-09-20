@@ -156,36 +156,40 @@ func _preview_rescue(canvas: Control, y: float) -> void:
 
 func _preview_water(canvas: Control, y: float) -> void:
 	var specs := [
-		[255.0, 12.6, 84.0, Color("#ffd63d"), 48.7],
-		[284.0, 16.2, 79.0, Color("#ff4da3"), 56.9],
-		[313.0, 12.6, 84.0, Color("#1aa8ff"), 48.7],
+		[255.0,12.56,84.0,Color("#ff7ebd"),Color("#d64089"),41.57,48.72,38.88,19.75,68.0,10.76,85.37],
+		[284.0,16.15,79.0,Color("#5ac1ff"),Color("#158dd6"),33.34,56.88,30.64,23.34,63.0,14.35,84.47],
+		[313.0,12.56,84.0,Color("#5fd78f"),Color("#1ca754"),52.14,36.96,49.45,19.75,68.0,10.76,85.37],
 	]
 	for spec in specs:
 		var x := float(spec[0])
 		var top := y + float(spec[1])
 		var h := float(spec[2])
-		RefCanvas.add_shadow(canvas, Rect2(x, top, 22, h), 9, Color(0.02,0.15,0.26,0.18), 3, Vector2(0,3))
+		var left: Color = spec[3] as Color
+		var right: Color = spec[4] as Color
+		var shadow := PanelContainer.new()
+		shadow.add_theme_stylebox_override("panel",RefCanvas.solid_box(Color(0.02,0.15,0.26,0.16),4))
+		RefCanvas.set_rect(shadow,x,y+float(spec[11]),22,7)
+		canvas.add_child(shadow)
 		var bottle := PanelContainer.new()
-		bottle.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color(0.96,1.0,1.0,0.18), Color(0.82,0.97,1.0,0.08), Color(0.66,0.90,1.0,0.12), 9, Color(0.82,0.98,1.0,0.90), 1))
-		RefCanvas.set_rect(bottle, x, top, 22, h)
+		bottle.add_theme_stylebox_override("panel",RefCanvas.solid_box(Color(0.90,0.99,1.0,0.10),9,Color(0.82,0.98,1.0,0.90),1.3))
+		RefCanvas.set_rect(bottle,x,top,22,h)
 		canvas.add_child(bottle)
-		var liquid_h := float(spec[4])
 		var liquid := PanelContainer.new()
-		liquid.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color(spec[3]).lightened(0.08), Color(spec[3]), Color(spec[3]).darkened(0.10), 6))
-		RefCanvas.set_rect(liquid, x + 3, top + h - liquid_h - 5, 16, liquid_h)
+		liquid.add_theme_stylebox_override("panel",RefCanvas.horizontal_gradient(left,right,2))
+		RefCanvas.set_rect(liquid,x+3,y+float(spec[5]),16,float(spec[6]))
 		canvas.add_child(liquid)
 		var meniscus := PanelContainer.new()
-		meniscus.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(spec[3]).lightened(0.10), 5))
-		RefCanvas.set_rect(meniscus, x + 3, top + h - liquid_h - 7, 16, 5)
+		meniscus.add_theme_stylebox_override("panel",RefCanvas.horizontal_gradient(left.lightened(0.08),right.lightened(0.04),3))
+		RefCanvas.set_rect(meniscus,x+3,y+float(spec[7]),16,6)
 		canvas.add_child(meniscus)
-		var rim := ColorRect.new()
-		rim.color = Color(0.93, 0.995, 1.0, 0.92)
-		RefCanvas.set_rect(rim, x - 1, top + 1, 24, 2)
-		canvas.add_child(rim)
 		var hi := ColorRect.new()
-		hi.color = Color(1,1,1,0.46)
-		RefCanvas.set_rect(hi, x + 4, top + 8, 2, h - 18)
+		hi.color = Color(1,1,1,0.48)
+		RefCanvas.set_rect(hi,x+5,y+float(spec[8]),2,float(spec[9]))
 		canvas.add_child(hi)
+		var rim := PanelContainer.new()
+		rim.add_theme_stylebox_override("panel",RefCanvas.horizontal_gradient(Color("#f4fdff"),Color("#cfeffc"),3,Color(0.82,0.98,1.0,0.90),0.8))
+		RefCanvas.set_rect(rim,x+1,y+float(spec[10]),20,6)
+		canvas.add_child(rim)
 
 func _preview_block(canvas: Control, y: float) -> void:
 	var board_depth := PanelContainer.new()
