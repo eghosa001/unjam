@@ -37,5 +37,5 @@ func try_move(index: int) -> void:
 	var legal := index >= 0 and index < pieces.size() and is_path_clear(index)
 	await super.try_move(index)
 	if not legal and premium_feedback != null and is_instance_valid(premium_feedback) and board_panel != null:
-		var local_center := board_panel.get_global_rect().get_center() - global_position
+		var local_center: Vector2 = get_global_transform_with_canvas().affine_inverse() * board_panel.get_global_rect().get_center()
 		premium_feedback.show_ring(local_center, minf(board_panel.size.x, board_panel.size.y) * 0.92, Color("#ff8d78"))
