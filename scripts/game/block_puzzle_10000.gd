@@ -49,7 +49,9 @@ func _spawn_clear_feedback(indices: Array[int], line_count: int) -> void:
 		return
 	var global_rect := board_shell.get_global_rect()
 	var inverse := get_global_transform_with_canvas().affine_inverse()
-	var local_rect := Rect2(inverse * global_rect.position, global_rect.size)
+	var local_top_left: Vector2 = inverse * global_rect.position
+	var local_bottom_right: Vector2 = inverse * global_rect.end
+	var local_rect := Rect2(local_top_left, local_bottom_right - local_top_left)
 	premium_feedback.show_sweep(local_rect, Color("#ff7a66"))
 	var center := local_rect.get_center()
 	if line_count >= 2:
