@@ -342,8 +342,8 @@ static func add_shadow(parent: Control, rect: Rect2, radius: float, shadow_color
 	return shadow
 
 static func contrast_ratio(a: Color, b: Color) -> float:
-	var la := a.get_luminance()
-	var lb := b.get_luminance()
+	var la := a.srgb_to_linear().get_luminance()
+	var lb := b.srgb_to_linear().get_luminance()
 	return (maxf(la, lb) + 0.05) / (minf(la, lb) + 0.05)
 
 static func accessible_text_color(preferred: Color, fill: Color, minimum_ratio: float = 4.5) -> Color:
