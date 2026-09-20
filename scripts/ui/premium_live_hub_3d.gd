@@ -196,7 +196,7 @@ func _preview_block(canvas: Control, y: float) -> void:
 	board.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#613894"), Color("#452670"), Color("#2e1a54"), 10, Color(0.72,0.52,1.0,0.60), 1))
 	RefCanvas.set_rect(board, 253, y + 7, 84, 74)
 	canvas.add_child(board)
-	var palette := [Color("#ffd63d"), Color("#ff7acb"), Color("#50e889"), Color("#47c8ff")]
+	var palette: Array[Color] = [Color("#ffd63d"), Color("#ff7acb"), Color("#50e889"), Color("#47c8ff")]
 	var occupied := [1,5,8,9,14,18,23,24,31,35,36,42,47,49,54,61]
 	var cell := 7.0
 	var gap := 2.0
@@ -210,7 +210,7 @@ func _preview_block(canvas: Control, y: float) -> void:
 			canvas.add_child(well)
 			var idx := row * 8 + col
 			if idx in occupied:
-				var fill := palette[(row + col) % palette.size()]
+				var fill: Color = palette[(row + col) % palette.size()]
 				var depth := ColorRect.new()
 				depth.color = fill.darkened(0.34)
 				RefCanvas.set_rect(depth, px + 1, py + 2, cell - 1, cell - 1)
