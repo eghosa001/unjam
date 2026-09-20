@@ -12,6 +12,10 @@ var character_root: Node3D
 var face_root: Node3D
 var phase := 0.0
 var celebrating := false
+var _render_accumulator := 0.0
+
+const DECORATIVE_RENDER_FPS := 30.0
+const DECORATIVE_RENDER_INTERVAL := 1.0 / DECORATIVE_RENDER_FPS
 
 func configure(id: String, color: Color = Color("ffd166")) -> void:
 	rescue_id = id
@@ -40,6 +44,7 @@ func apply_motion_preference() -> void:
 func _sync_render_lifecycle() -> void:
 	if viewport_3d == null:
 		return
+	_render_accumulator = 0.0
 	if not is_visible_in_tree():
 		set_process(false)
 		viewport_3d.render_target_update_mode = SubViewport.UPDATE_DISABLED
@@ -52,18 +57,23 @@ func _sync_render_lifecycle() -> void:
 		viewport_3d.render_target_update_mode = SubViewport.UPDATE_ONCE
 		return
 	set_process(true)
-	viewport_3d.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	viewport_3d.render_target_update_mode = SubViewport.UPDATE_ONCE
 
 func _process(delta: float) -> void:
 	phase += delta
-	if character_root == null or celebrating:
-		return
 	if MotionSystem.reduced():
 		_sync_render_lifecycle()
 		return
-	character_root.position.y = sin(phase * 2.8) * 0.055
-	character_root.rotation.y = sin(phase * 1.25) * 0.08
-	character_root.rotation.z = sin(phase * 1.9) * 0.025
+	_render_accumulator += delta
+	if _render_accumulator < DECORATIVE_RENDER_INTERVAL:
+		return
+	_render_accumulator = fmod(_render_accumulator, DECORATIVE_RENDER_INTERVAL)
+	if character_root != null and not celebrating:
+		character_root.position.y = sin(phase * 2.8) * 0.055
+		character_root.rotation.y = sin(phase * 1.25) * 0.08
+		character_root.rotation.z = sin(phase * 1.9) * 0.025
+	if viewport_3d != null:
+		viewport_3d.render_target_update_mode = SubViewport.UPDATE_ONCE
 
 func celebrate() -> void:
 	if character_root == null or not is_instance_valid(character_root):
