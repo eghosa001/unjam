@@ -178,7 +178,14 @@ func _attach_game(game: Node) -> void:
 		elif "💡" in button.text:
 			prefix = "💡  "
 		button.set_meta("unjam_hint_prefix", prefix)
-	button.custom_minimum_size.y = maxf(button.custom_minimum_size.y, 116.0)
+	var figma_owned := _inside_figma_reference(button)
+	button.set_meta("unjam_figma_hint", figma_owned)
+	if figma_owned:
+		# Figma owns the visual label and geometry. Keep monetization details in the
+		# tooltip/accessibility copy instead of expanding a 52-60px audited control.
+		button.set_meta("unjam_hint_authored_text", button.text)
+	else:
+		button.custom_minimum_size.y = maxf(button.custom_minimum_size.y, 116.0)
 	button.pressed.connect(request_hint_for_game.bind(game))
 	_attached_games[id] = game
 	_refresh_hint_button(game, button)
@@ -191,8 +198,11 @@ func _refresh_hint_button(game: Node, button: Button = null) -> void:
 	if target == null:
 		return
 	var prefix := String(target.get_meta("unjam_hint_prefix", ""))
-	target.text = "%sHINT • %d\n◈ %d" % [prefix, HINT_COST, coin_balance()]
-	target.tooltip_text = "Costs %d coins. Balance: %d. If you are short, Shop or an optional rewarded ad can help." % [HINT_COST, coin_balance()]
+	if bool(target.get_meta("unjam_figma_hint", false)):
+		target.text = String(target.get_meta("unjam_hint_authored_text", target.text))
+	else:
+		target.text = "%sHINT • %d\n◈ %d" % [prefix, HINT_COST, coin_balance()]
+	target.tooltip_text = "Hint costs %d coins. Balance: %d. If you are short, Shop or an optional rewarded ad can help." % [HINT_COST, coin_balance()]
 
 func _on_balance_changed(_new_balance: int, _delta: int, _reason: String) -> void:
 	for id in _attached_games.keys().duplicate():
@@ -201,6 +211,14 @@ func _on_balance_changed(_new_balance: int, _delta: int, _reason: String) -> voi
 			_attached_games.erase(id)
 			continue
 		_refresh_hint_button(game)
+
+func _inside_figma_reference(node: Node) -> bool:
+	var current := node
+	while current != null:
+		if current.has_meta("unjam_figma_reference_root"):
+			return true
+		current = current.get_parent()
+	return false
 
 func _find_hint_button(node: Node) -> Button:
 	for child in node.get_children():
