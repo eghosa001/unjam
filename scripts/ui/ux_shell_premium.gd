@@ -426,6 +426,8 @@ func _script_path(node: Node) -> String:
 func _is_custom_surface(node: Node) -> bool:
 	var cursor: Node = node
 	while cursor != null:
+		if cursor.has_meta("unjam_figma_reference_root"):
+			return true
 		if cursor.name in ["PremiumHome", "PremiumLive", "ActiveGame"]:
 			return true
 		var path := _script_path(cursor)
