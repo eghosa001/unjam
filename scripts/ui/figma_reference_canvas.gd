@@ -7,6 +7,7 @@ const REFERENCE_SIZE := Vector2(390.0, 844.0)
 var extra_scale := 1.0
 
 func _ready() -> void:
+	set_meta("unjam_figma_reference_root", true)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	size = REFERENCE_SIZE
 	custom_minimum_size = REFERENCE_SIZE
