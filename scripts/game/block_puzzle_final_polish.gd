@@ -225,6 +225,9 @@ func _occupied_count(state: Array) -> int:
 	return count
 
 func _fit_3d_board_layout() -> void:
+	if find_child("FigmaBlock390x844", true, false) != null:
+		_fit_figma_board_layout()
+		return
 	if board_grid == null or board_shell == null or board_grid.get_child_count() == 0:
 		return
 	var viewport_size := get_viewport_rect().size
