@@ -4,71 +4,55 @@ func _initialize() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
+	root.size = Vector2i(540, 960)
 	var packed := load("res://scenes/Main.tscn") as PackedScene
 	if packed == null:
-		push_error("Main scene could not be loaded")
-		quit(1)
-		return
-	var main := packed.instantiate()
+		return _fail("Main scene could not be loaded")
+	var main := packed.instantiate() as Control
 	root.add_child(main)
-	await process_frame
-	await process_frame
-	await process_frame
+	await _frames(8)
+	main.call("build_home")
+	await _frames(6)
 
-	var failures: Array[String] = []
-	var home := _find_node_named(main, "PremiumHomeCasual")
+	var home := main.get_node_or_null("PremiumHome") as Control
 	if home == null:
-		home = _find_node_with_method(main, "build_home_launcher")
-	if home == null:
-		failures.append("Premium Home surface is missing")
-	else:
-		if _find_node_named(home, "ExplorerSignStack") != null:
-			failures.append("Home still contains the cluttered explorer sign stack")
-		var mascot := _find_node_named(home, "HomeMascot3D") as Control
-		if mascot == null or mascot.custom_minimum_size.x < 640.0:
-			failures.append("Home mascot is not the dominant centered hero")
-		var hero := _find_node_named(home, "HomeHero3D") as Control
-		if hero == null or hero.custom_minimum_size.y > 480.0:
-			failures.append("Home hero is still too tall/crowded")
-		var strip := _find_node_named(home, "HomeGameStrip")
-		if strip == null or strip.get_child_count() != 3:
-			failures.append("Home does not have the clean three-game strip")
-		if _find_label_with(home, "Small\nPuzzles") != null:
-			failures.append("Home still contains the competing right-side quote card")
+		return _fail("Premium Home surface is missing")
+	var canvas := home.find_child("FigmaHome390x844", true, false) as Control
+	var hero := home.find_child("FigmaHomeHero", true, false) as Control
+	var preview := home.find_child("FigmaHomeHeroPreview", true, false) as Control
+	var primary := home.find_child("HomePrimaryAction", true, false) as Button
+	var choose := home.find_child("HomeChooseGameButton", true, false) as Button
+	var nav := home.find_child("HomeBottomNav3D", true, false) as Control
+	if canvas == null or hero == null or preview == null or primary == null or choose == null or nav == null:
+		return _fail("Figma Home hierarchy is incomplete")
+	if not _rect_eq(Rect2(hero.position, hero.size), Rect2(22,122,346,224)):
+		return _fail("Home hero drifted from Figma 346x224 reference")
+	if not _rect_eq(Rect2(preview.position, preview.size), Rect2(220,145,125,136)):
+		return _fail("Home preview drifted from Figma 125x136 reference")
+	if not _rect_eq(Rect2(primary.position, primary.size), Rect2(42,286,178,48)):
+		return _fail("Home primary action drifted from Figma reference")
+	if not _rect_eq(Rect2(choose.position, choose.size), Rect2(22,366,166,52)):
+		return _fail("Home Choose Game action drifted from Figma reference")
+	if not _rect_eq(Rect2(nav.position, nav.size), Rect2(14,758,362,70)):
+		return _fail("Home bottom nav drifted from Figma reference")
+	if home.find_child("HomeMascot3D", true, false) != null:
+		return _fail("Retired giant mascot returned to Figma Home")
+	if home.find_child("HomeGameStrip", true, false) != null:
+		return _fail("Retired oversized game strip returned to Figma Home")
 
 	main.queue_free()
-	await process_frame
-	if not failures.is_empty():
-		for failure in failures:
-			push_error(failure)
-		quit(1)
-		return
-	print("Home premium visual hierarchy validated.")
+	await _frames(2)
+	print("Home Figma visual hierarchy validated.")
 	quit(0)
 
-func _find_node_named(node: Node, wanted: String) -> Node:
-	if node.name == wanted:
-		return node
-	for child in node.get_children():
-		var found := _find_node_named(child, wanted)
-		if found != null:
-			return found
-	return null
+func _rect_eq(actual: Rect2, expected: Rect2) -> bool:
+	return actual.position.distance_to(expected.position) <= 1.0 and actual.size.distance_to(expected.size) <= 1.0
 
-func _find_node_with_method(node: Node, method_name: String) -> Node:
-	if node.has_method(method_name):
-		return node
-	for child in node.get_children():
-		var found := _find_node_with_method(child, method_name)
-		if found != null:
-			return found
-	return null
+func _frames(count: int) -> void:
+	for _i in range(count):
+		await process_frame
 
-func _find_label_with(node: Node, fragment: String) -> Label:
-	if node is Label and fragment in (node as Label).text:
-		return node as Label
-	for child in node.get_children():
-		var found := _find_label_with(child, fragment)
-		if found != null:
-			return found
-	return null
+func _fail(message: String) -> bool:
+	push_error(message)
+	quit(1)
+	return false
