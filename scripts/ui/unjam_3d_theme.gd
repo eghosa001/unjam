@@ -13,7 +13,6 @@ static func readable_font() -> FontVariation:
 
 const SKY_TOP := Color("41b9ff")
 const SKY_BOTTOM := Color("dff8ff")
-const DEEP_BLUE := Color("075bb8")
 const NAVY := Color("073b78")
 const INK := Color("12345a")
 const WHITE := Color("fffef8")
@@ -25,7 +24,6 @@ const WATER := Color("19b9ff")
 const WATER_DARK := Color("087dcc")
 const PURPLE := Color("c63cff")
 const PURPLE_DARK := Color("7d20d7")
-const PINK := Color("ff4ca5")
 const RED := Color("ff4d55")
 
 static func game_accent(game_id: String) -> Color:
