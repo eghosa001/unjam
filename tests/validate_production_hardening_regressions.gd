@@ -242,7 +242,7 @@ func _validate_figma_button_contrast() -> bool:
 	var bright_orange := Color("#ff8c1f")
 	var button := FigmaReferenceCanvas.premium_button("TEST", 12, Color.WHITE, bright_orange, 16)
 	var resolved: Color = button.get_theme_color("font_color")
-	button.queue_free()
+	button.free()
 	if FigmaReferenceCanvas.contrast_ratio(resolved, bright_orange) < 4.5:
 		return _fail("Shared Figma premium button allows sub-4.5:1 text contrast on bright orange")
 	var direct := FigmaReferenceCanvas.accessible_text_color(Color.WHITE, bright_orange)
