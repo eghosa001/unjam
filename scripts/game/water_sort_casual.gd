@@ -1,168 +1,188 @@
 extends "res://scripts/game/water_sort_ultra_motion.gd"
 
+const RefCanvas = preload("res://scripts/ui/figma_reference_canvas.gd")
+const MotionTube = preload("res://scripts/ui/water_tube_3d_motion.gd")
+
+const SKY_TOP := Color(0.27, 0.76, 1.0)
+const SKY_MID := Color(0.63, 0.91, 1.0)
+const SKY_BOTTOM := Color(0.91, 0.99, 1.0)
+const NAVY := Color(0.03, 0.23, 0.47)
+const OFF_WHITE := Color(1.0, 0.995, 0.97)
+const BLUE := Color(0.03, 0.43, 0.78)
+const ORANGE := Color(1.0, 0.55, 0.12)
+
+var figma_canvas: FigmaReferenceCanvas
+var gameplay_stage: PanelContainer
+
 func build_ui() -> void:
 	clip_contents = true
-	var environment_3d := Unjam3DGameplayStage.new()
-	environment_3d.name = "WaterSort3DEnvironment"
-	environment_3d.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	environment_3d.configure("water_sort", Unjam3DTheme.WATER)
-	environment_3d.z_index = -100
-	add_child(environment_3d)
 	PremiumVisuals.set_accent(Unjam3DTheme.WATER)
 
-	var viewport_size := get_viewport_rect().size
-	var compact := viewport_size.x < 700.0 or viewport_size.y < 1100.0
-	var outer := MarginContainer.new()
-	outer.name = "WaterOuter"
-	outer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	outer.add_theme_constant_override("margin_left", 16 if compact else 28)
-	outer.add_theme_constant_override("margin_right", 16 if compact else 28)
-	outer.add_theme_constant_override("margin_top", 10 if compact else 20)
-	outer.add_theme_constant_override("margin_bottom", 12 if compact else 24)
-	add_child(outer)
-	var root := VBoxContainer.new()
-	root.name = "WaterRoot"
-	root.add_theme_constant_override("separation", 7 if compact else 11)
-	outer.add_child(root)
+	var viewport_bg := ColorRect.new()
+	viewport_bg.name = "WaterFigmaViewportBackground"
+	viewport_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	viewport_bg.color = Color(0.04, 0.39, 0.67)
+	viewport_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(viewport_bg)
 
-	var header := HBoxContainer.new()
-	header.name = "WaterHeader"
-	header.custom_minimum_size = Vector2(0, 72 if compact else 86)
-	header.add_theme_constant_override("separation", 8 if compact else 12)
-	root.add_child(header)
-	var back := Button.new()
+	figma_canvas = RefCanvas.new()
+	figma_canvas.name = "FigmaWater390x844"
+	add_child(figma_canvas)
+	_build_figma_water(figma_canvas)
+
+func _build_figma_water(canvas: Control) -> void:
+	var sky := PanelContainer.new()
+	sky.name = "WaterScenicSky"
+	sky.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient(SKY_TOP, SKY_BOTTOM, 0))
+	RefCanvas.set_rect(sky, 0, 0, 390, 844)
+	sky.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(sky)
+	var ground := PanelContainer.new()
+	ground.name = "WaterScenicGround"
+	ground.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient(Color(0.20, 0.76, 0.88), Color(0.04, 0.39, 0.67), 0))
+	RefCanvas.set_rect(ground, 0, 94, 390, 410)
+	ground.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(ground)
+	var platform := Polygon2D.new()
+	platform.name = "WaterPerspectivePlatform"
+	platform.polygon = PackedVector2Array([Vector2(34, 500), Vector2(356, 500), Vector2(330, 190), Vector2(60, 190)])
+	platform.color = Color(0.45, 0.89, 0.95, 0.72)
+	canvas.add_child(platform)
+
+	var back := RefCanvas.button("←", 22, NAVY, Color(0.96, 0.99, 1.0, 0.98), 16, Color(0.57, 0.84, 1.0, 0.52), 1)
 	back.name = "WaterBackAction"
-	back.text = "←"
-	back.custom_minimum_size = Vector2(80, 72) if compact else Vector2(92, 78)
-	back.add_theme_font_size_override("font_size", 30 if compact else 34)
-	Unjam3DTheme.gloss_button(back, Unjam3DTheme.WATER_DARK, true, 24)
+	RefCanvas.set_rect(back, 16, 16, 54, 54)
 	back.pressed.connect(_quit)
-	header.add_child(back)
-	title_label = Label.new()
-	title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	title_label.add_theme_font_size_override("font_size", 27 if compact else 31)
-	Unjam3DTheme.label_3d(title_label, Color.WHITE, Unjam3DTheme.NAVY, 5)
-	header.add_child(title_label)
-	var retry := Button.new()
+	canvas.add_child(back)
+	var retry := RefCanvas.button("↻", 23, NAVY, Color(0.96, 0.99, 1.0, 0.98), 16, Color(0.57, 0.84, 1.0, 0.52), 1)
 	retry.name = "WaterRetryAction"
-	retry.text = "↻"
-	retry.custom_minimum_size = Vector2(80, 72) if compact else Vector2(92, 78)
-	retry.add_theme_font_size_override("font_size", 30 if compact else 34)
-	Unjam3DTheme.gloss_button(retry, Unjam3DTheme.WATER_DARK, true, 24)
+	RefCanvas.set_rect(retry, 320, 16, 54, 54)
 	retry.pressed.connect(restart_level)
-	header.add_child(retry)
+	canvas.add_child(retry)
 
 	var info := PanelContainer.new()
-	info.name = "CompactGameInfo"
-	info.custom_minimum_size = Vector2(0, 82 if compact else 94)
-	info.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("0879cf"), 30, Color("69dcff"), 3, 10))
-	root.add_child(info)
-	var info_row := HBoxContainer.new()
-	info_row.add_theme_constant_override("separation", 12)
-	info.add_child(info_row)
-	meta_label = Label.new()
-	meta_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	meta_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	meta_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	meta_label.add_theme_font_size_override("font_size", 20 if compact else 22)
-	Unjam3DTheme.label_3d(meta_label, Color.WHITE, Color("034477"), 3)
-	info_row.add_child(meta_label)
-	move_label = Label.new()
-	move_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	move_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	move_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	move_label.add_theme_font_size_override("font_size", 21 if compact else 24)
-	Unjam3DTheme.label_3d(move_label, Color.WHITE, Color("034477"), 3)
-	info_row.add_child(move_label)
+	info.name = "WaterInfo"
+	info.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient(Color(0.166, 0.510, 0.811), Color(0.025, 0.353, 0.640), 14, Color(0.47, 0.69, 0.88, 0.52), 1))
+	RefCanvas.set_rect(info, 18, 80, 354, 42)
+	info.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(info)
+	meta_label = _make_label("", 12, Color(0.92, 0.98, 1.0), true)
+	RefCanvas.set_rect(meta_label, 38, 92, 135, 20)
+	canvas.add_child(meta_label)
+	move_label = _make_label("", 12, OFF_WHITE, true)
+	move_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	RefCanvas.set_rect(move_label, 174, 92, 180, 20)
+	canvas.add_child(move_label)
 
 	var objective := PanelContainer.new()
-	objective.name = "WaterObjectiveCard"
-	objective.custom_minimum_size = Vector2(0, 50 if compact else 56)
-	objective.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color(0.97, 0.995, 1.0, 0.94), 24, Color("8be6ff"), 2, 6))
-	root.add_child(objective)
-	var objective_label := Label.new()
-	objective_label.text = "💧  SORT • POUR • SOLVE"
+	objective.name = "WaterObjective"
+	objective.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient(Color.WHITE, Color(0.919, 0.9694, 1.0), 12, Color(0.532, 0.823, 1.0, 0.45), 1))
+	RefCanvas.set_rect(objective, 18, 130, 354, 30)
+	objective.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(objective)
+	var objective_label := _make_label("💧  SORT • POUR • SOLVE", 16, NAVY, true)
 	objective_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	objective_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	objective_label.name = "WaterObjectiveLabel"
-	objective_label.add_theme_font_size_override("font_size", 20 if compact else 23)
-	Unjam3DTheme.label_3d(objective_label, Unjam3DTheme.NAVY, Color.WHITE, 2)
-	objective.add_child(objective_label)
+	RefCanvas.set_rect(objective_label, 18, 130, 354, 30)
+	canvas.add_child(objective_label)
 
-	var center := MarginContainer.new()
-	center.name = "GameplayStageHolder"
-	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	root.add_child(center)
-	var stage := PanelContainer.new()
-	stage.name = "GameplayStage"
-	stage.custom_minimum_size = Vector2(0, 520)
-	stage.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	stage.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	stage.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color(0.80, 0.95, 1.0, 0.82), 38, Color("89e4ff"), 3, 16))
-	center.add_child(stage)
-	var stage_margin := MarginContainer.new()
-	for side in ["left", "right", "top", "bottom"]:
-		stage_margin.add_theme_constant_override("margin_%s" % side, 18)
-	stage.add_child(stage_margin)
-	var stage_center := CenterContainer.new()
-	stage_center.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	stage_margin.add_child(stage_center)
+	gameplay_stage = PanelContainer.new()
+	gameplay_stage.name = "GameplayStage"
+	gameplay_stage.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.90, 0.99, 1.0, 0.38), 20, Color(0.55, 0.91, 1.0, 0.80), 1))
+	RefCanvas.set_rect(gameplay_stage, 18, 170, 354, 420)
+	gameplay_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(gameplay_stage)
+
 	board = GridContainer.new()
+	board.name = "WaterBoard"
 	board.columns = 5
-	board.add_theme_constant_override("h_separation", 18)
-	board.add_theme_constant_override("v_separation", 24)
-	stage_center.add_child(board)
+	board.add_theme_constant_override("h_separation", 11)
+	board.add_theme_constant_override("v_separation", 14)
+	RefCanvas.set_rect(board, 38, 202.7, 294, 251)
+	canvas.add_child(board)
 
-	var feedback := PanelContainer.new()
-	feedback.name = "CompactGameFeedback"
-	feedback.custom_minimum_size = Vector2(0, 64 if compact else 72)
-	feedback.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color(0.94, 0.99, 1.0, 0.98), 24, Color("78d9ff"), 2, 7))
-	root.add_child(feedback)
-	var feedback_row := HBoxContainer.new()
-	feedback_row.add_theme_constant_override("separation", 10)
-	feedback.add_child(feedback_row)
-	hint_label = Label.new()
-	hint_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	hint_label.add_theme_font_size_override("font_size", 20 if compact else 22)
-	Unjam3DTheme.label_3d(hint_label, Unjam3DTheme.NAVY, Color.WHITE, 2)
-	feedback_row.add_child(hint_label)
-	status_label = Label.new()
-	status_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	status_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	status_label.add_theme_font_size_override("font_size", 20 if compact else 22)
-	Unjam3DTheme.label_3d(status_label, Unjam3DTheme.WATER_DARK, Color.WHITE, 2)
-	feedback_row.add_child(status_label)
+	status_label = _make_label("READY", 12, NAVY, true)
+	RefCanvas.set_rect(status_label, 18, 597, 354, 20)
+	canvas.add_child(status_label)
+	hint_label = _make_label("", 12, ORANGE, true)
+	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	RefCanvas.set_rect(hint_label, 120, 597, 252, 20)
+	canvas.add_child(hint_label)
 
 	var actions := HBoxContainer.new()
 	actions.name = "CompactGameActions"
-	actions.alignment = BoxContainer.ALIGNMENT_CENTER
 	actions.add_theme_constant_override("separation", 14)
-	root.add_child(actions)
-	var undo := Button.new()
+	RefCanvas.set_rect(actions, 22, 628, 346, 60)
+	canvas.add_child(actions)
+
+	var undo := _action_button("↶  UNDO", BLUE)
 	undo.name = "WaterUndoAction"
-	undo.text = "↶\nUNDO"
-	undo.custom_minimum_size = Vector2(190, 100) if compact else Vector2(220, 116)
-	undo.add_theme_font_size_override("font_size", 20 if compact else 22)
-	Unjam3DTheme.gloss_button(undo, Unjam3DTheme.WATER_DARK, true, 24)
 	undo.pressed.connect(undo_move)
 	actions.add_child(undo)
-	var hint := Button.new()
+	var hint := _action_button("💡  HINT", ORANGE)
 	hint.name = "WaterHintAction"
-	hint.text = "💡\nHINT"
-	hint.custom_minimum_size = Vector2(190, 100) if compact else Vector2(220, 116)
-	hint.add_theme_font_size_override("font_size", 20 if compact else 22)
-	Unjam3DTheme.gloss_button(hint, Unjam3DTheme.ORANGE, true, 24)
-	# HintManager is the single owner of paid/rewarded hint delivery.
+	# HintManager is the single owner of hint cost/reward handling.
 	actions.add_child(hint)
-	PremiumVisuals.entrance(root, 0.008)
 
-func apply_theme_mode(dark: bool) -> void:
-	var environment := get_node_or_null("WaterSort3DEnvironment") as Unjam3DGameplayStage
-	if environment != null:
-		environment.set_dark_mode(dark)
+	title_label = Label.new()
+	title_label.visible = false
+	canvas.add_child(title_label)
+
+func _action_button(text_value: String, fill: Color) -> Button:
+	var button := RefCanvas.button(text_value, 12, OFF_WHITE, fill, 16, fill.lightened(0.30), 1)
+	button.custom_minimum_size = Vector2(106, 60)
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	return button
+
+func _make_label(text_value: String, font_size: int, color: Color, bold: bool) -> Label:
+	return RefCanvas.label(text_value, font_size, color, bold)
+
+func render_board() -> void:
+	# Keep the authoritative motion/pour renderer, then remap its real tube
+	# controls into the audited Figma stage instead of the old oversized fitter.
+	super.render_board()
+	_apply_tube_layout()
+	if move_label != null:
+		move_label.text = "MOVES %d   •   3★ ≤ %d" % [moves, par_moves]
+	if status_label != null and status_label.text.strip_edges().is_empty():
+		status_label.text = "READY"
+
+func _apply_tube_layout() -> void:
+	if board == null or not is_instance_valid(board):
+		return
+	var count := tubes.size()
+	if count <= 0:
+		return
+	var columns := 5 if count <= 5 else (3 if count <= 6 else (4 if count <= 8 else 5))
+	var rows := int(ceil(float(count) / float(columns)))
+	var tube_size := Vector2(50, 251)
+	var h_gap := 11
+	var v_gap := 14
+	if rows > 1:
+		if count <= 6:
+			tube_size = Vector2(58, 176)
+			h_gap = 28
+			v_gap = 20
+		elif count <= 8:
+			tube_size = Vector2(48, 174)
+			h_gap = 22
+			v_gap = 20
+		else:
+			tube_size = Vector2(42, 168)
+			h_gap = 15
+			v_gap = 18
+	board.columns = columns
+	board.add_theme_constant_override("h_separation", h_gap)
+	board.add_theme_constant_override("v_separation", v_gap)
+	for child in board.get_children():
+		if child is Control:
+			(child as Control).custom_minimum_size = tube_size
+	var content_w := tube_size.x * columns + float(h_gap * maxi(columns - 1, 0))
+	var content_h := tube_size.y * rows + float(v_gap * maxi(rows - 1, 0))
+	board.size = Vector2(content_w, content_h)
+	board.custom_minimum_size = Vector2(content_w, content_h)
+	board.position = Vector2(195.0 - content_w * 0.5, 170.0 + (420.0 - content_h) * 0.5)
+
+func apply_theme_mode(_dark: bool) -> void:
+	# Production Figma gameplay is intentionally bright; Settings owns the
+	# explicit dark variant. Keep gameplay geometry/colors faithful here.
+	pass
