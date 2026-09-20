@@ -41,8 +41,10 @@ func _run() -> void:
 	var objective_label := _find_label_with(game,"SORT • POUR • SOLVE")
 	if objective_label == null:
 		return _fail("Water Sort objective label is missing")
-	if objective_label.text != "💧  SORT • POUR • SOLVE":
-		return _fail("Water Sort objective copy drifted from Figma")
+	if objective_label.text != "SORT • POUR • SOLVE":
+		return _fail("Water Sort objective copy drifted from the composed Figma control")
+	if game.find_child("WaterObjectiveDrop", true, false) == null:
+		return _fail("Water Sort objective droplet icon is missing")
 	if objective_label.get_theme_font_size("font_size") != 16:
 		return _fail("Water Sort objective typography drifted from Figma 16px reference")
 	if not _rect_eq(Rect2(emblem.position,emblem.size),Rect2(77,17,30,30)):
