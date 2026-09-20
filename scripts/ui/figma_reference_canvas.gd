@@ -189,6 +189,7 @@ static func add_shadow(parent: Control, rect: Rect2, radius: float, shadow_color
 
 static func premium_button(text_value: String, font_size: int, text_color: Color, fill: Color, radius: float, border: Color = Color.TRANSPARENT, border_width: float = 0.0) -> Button:
 	var result := Button.new()
+	result.set_meta("unjam_figma_exact_geometry", true)
 	result.text = text_value
 	result.focus_mode = Control.FOCUS_NONE
 	result.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
