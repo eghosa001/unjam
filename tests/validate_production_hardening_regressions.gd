@@ -12,6 +12,10 @@ func _run() -> void:
 	if not await _validate_shared_completion_overlay(): return
 	if not await _validate_help_does_not_overlap_game_footer(): return
 	if not await _validate_primary_visual_occupancy(): return
+	if not _validate_figma_button_contrast(): return
+	if not await _validate_header_badge_clearance(): return
+	if not await _validate_shop_header_clearance(): return
+	if not _validate_dead_code_cleanup(): return
 	if not _validate_visual_workflow_installs_plugins(): return
 	if not _validate_main_ci_runs_new_hardening_gates(): return
 	if not _validate_release_workflow_exists(): return
@@ -205,6 +209,14 @@ func _validate_primary_visual_occupancy() -> bool:
 	if not hero.get_global_rect().encloses(primary.get_global_rect()):
 		main.queue_free(); await process_frame
 		return _fail("Figma Home primary action escapes its hero card")
+	var hero_title := home.find_child("HomeHeroGameTitle", true, false) as Control
+	var hero_preview := home.find_child("FigmaHomeHeroPreview", true, false) as Control
+	if hero_title == null or hero_preview == null:
+		main.queue_free(); await process_frame
+		return _fail("Figma Home title/preview diagnostics are incomplete")
+	if hero_title.get_global_rect().intersects(hero_preview.get_global_rect()):
+		main.queue_free(); await process_frame
+		return _fail("Figma Home game title overlaps its hero preview")
 
 	main.call("start_multi_level", "water_sort", 1, false)
 	await _frames(10)
@@ -224,6 +236,89 @@ func _validate_primary_visual_occupancy() -> bool:
 		return _fail("Water Sort bottles are below the audited Figma gameplay readability floor")
 	main.queue_free()
 	await process_frame
+	return true
+
+func _validate_figma_button_contrast() -> bool:
+	var bright_orange := Color("#ff8c1f")
+	var button := FigmaReferenceCanvas.premium_button("TEST", 12, Color.WHITE, bright_orange, 16)
+	var resolved: Color = button.get_theme_color("font_color")
+	button.queue_free()
+	if FigmaReferenceCanvas.contrast_ratio(resolved, bright_orange) < 4.5:
+		return _fail("Shared Figma premium button allows sub-4.5:1 text contrast on bright orange")
+	var direct := FigmaReferenceCanvas.accessible_text_color(Color.WHITE, bright_orange)
+	if FigmaReferenceCanvas.contrast_ratio(direct, bright_orange) < 4.5:
+		return _fail("Figma accessible_text_color does not meet the production contrast floor")
+	return true
+
+func _validate_header_badge_clearance() -> bool:
+	root.size = Vector2i(1080, 1920)
+	var packed := load("res://scenes/Main.tscn") as PackedScene
+	var main := packed.instantiate() as Control
+	root.add_child(main)
+	main.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	await _frames(8)
+	main.call("build_settings")
+	await _frames(6)
+	var title := main.find_child("FigmaHeaderTitle", true, false) as Control
+	var subtitle := main.find_child("FigmaHeaderSubtitle", true, false) as Control
+	var pill := main.find_child("FigmaHeaderPill", true, false) as Control
+	if title == null or subtitle == null or pill == null:
+		main.queue_free(); await process_frame
+		return _fail("Shared Figma header diagnostics are incomplete")
+	if title.get_global_rect().intersects(pill.get_global_rect()) or subtitle.get_global_rect().intersects(pill.get_global_rect()):
+		main.queue_free(); await process_frame
+		return _fail("Shared Figma header title/subtitle intrudes into the status pill")
+	main.queue_free()
+	await process_frame
+	return true
+
+func _validate_shop_header_clearance() -> bool:
+	root.size = Vector2i(1080, 1920)
+	var packed := load("res://scenes/Main.tscn") as PackedScene
+	var main := packed.instantiate() as Control
+	root.add_child(main)
+	main.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	await _frames(8)
+	var hub := main.get_node_or_null("MonetizationHub")
+	if hub == null or not hub.has_method("open_shop"):
+		main.queue_free(); await process_frame
+		return _fail("Shop hub unavailable for header clearance check")
+	hub.call("open_shop")
+	await _frames(6)
+	var title := main.find_child("ShopTitle3D", true, false) as Control
+	var subtitle := main.find_child("ShopSubtitle", true, false) as Control
+	var wallet := main.find_child("ShopCoinPill", true, false) as Control
+	if title == null or subtitle == null or wallet == null:
+		main.queue_free(); await process_frame
+		return _fail("Shop header diagnostics are incomplete")
+	if title.get_global_rect().intersects(wallet.get_global_rect()) or subtitle.get_global_rect().intersects(wallet.get_global_rect()):
+		main.queue_free(); await process_frame
+		return _fail("Shop header title/subtitle intrudes into the wallet pill")
+	main.queue_free()
+	await process_frame
+	return true
+
+func _validate_dead_code_cleanup() -> bool:
+	var retired := {
+		"res://scripts/systems/hint_manager.gd": ["func can_afford_hint("],
+		"res://scripts/core/multi_game_manager.gd": ["func can_start_daily("],
+		"res://scripts/systems/economy_manager.gd": ["func collection_daily_reward("],
+		"res://scripts/ui/device_fit.gd": ["func content_rect("],
+		"res://scripts/ui/figma_reference_canvas.gd": ["func ref_rect("],
+		"res://scripts/ui/premium_live_hub.gd": ["const DESCRIPTIONS"],
+		"res://scripts/ui/unjam_3d_theme.gd": ["const DEEP_BLUE", "const PINK"],
+		"res://scripts/game/block_puzzle_premium_layout.gd": ["const PREMIUM_CELL_MIN"],
+		"res://scripts/ui/premium_main_casual.gd": ["const FIGMA_BG_MID", "const FIGMA_DARK_MID", "const FIGMA_PURPLE"],
+		"res://scripts/ui/monetization_hub_3d.gd": ["const SHOP_DARK_BG_TOP", "const SHOP_DARK_BG_MID", "const SHOP_DARK_BG_BOTTOM", "const SHOP_DARK_CARD", "const SHOP_DARK_INK", "const SHOP_DARK_MUTED"]
+	}
+	for dead_path in retired:
+		var source := _source(dead_path)
+		for token in retired[dead_path]:
+			if source.contains(String(token)):
+				return _fail("Verified dead source returned: %s in %s" % [token, dead_path])
+	var tutorial := _source("res://scripts/ui/ux_shell_casual.gd")
+	if not tutorial.contains("TUTORIAL_DARK_NEUTRAL_FALLBACK.lerp"):
+		return _fail("Tutorial compatibility fallback became dead instead of serving the dark-scene contract")
 	return true
 
 func _validate_visual_workflow_installs_plugins() -> bool:
