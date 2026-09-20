@@ -19,6 +19,12 @@ const DARK_BOTTOM := Color("#29465b")
 const DARK_CARD := Color("#223b50")
 const DARK_INK := Color("#eef7ff")
 const DARK_MUTED := Color("#b6c7d6")
+const SCENE_TOP := Color("#1b63c5")
+const SCENE_MID := Color("#173f98")
+const SCENE_BOTTOM := Color("#0a1d58")
+const DARK_SCENE_TOP := Color("#101932")
+const DARK_SCENE_MID := Color("#0b1631")
+const DARK_SCENE_BOTTOM := Color("#060d22")
 
 var figma_canvas: FigmaReferenceCanvas
 
@@ -51,7 +57,7 @@ func build_home_launcher() -> void:
 	var viewport_bg := ColorRect.new()
 	viewport_bg.name = "FigmaHomeViewportBackground"
 	viewport_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	viewport_bg.color = DARK_BOTTOM if _home_dark() else BG_BOTTOM
+	viewport_bg.color = DARK_SCENE_BOTTOM if _home_dark() else SCENE_BOTTOM
 	viewport_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(viewport_bg)
 
@@ -62,16 +68,20 @@ func build_home_launcher() -> void:
 
 func _build_reference_home(canvas: Control) -> void:
 	_add_frame_background(canvas)
-	_add_text(canvas, "UNJAM", Rect2(21, 23, 101, 34), 27, NAVY, true)
+	var brand_title := _add_text(canvas, "UNJAM", Rect2(21, 23, 101, 34), 27, OFF_WHITE, true)
+	brand_title.name = "HomeBrandTitle3D"
+	RefCanvas.style_display_title(brand_title, Color("#ffb92f"), Color("#071d55"), 2)
 
 	var cleared := 0
 	for game_id in MultiGameManager.GAME_IDS:
 		cleared += int(MultiGameManager.progress_for(game_id).get("levels_completed", 0))
 	var player_level := maxi(1, 1 + int(cleared / 10))
 	_add_pill(canvas, Rect2(21, 64, 78, 40), Color(0.03, 0.43, 0.78), "LV %d" % player_level, 13, OFF_WHITE)
-	home_coin_button = _add_action(canvas, Rect2(107, 64, 112, 40), Color(1.0, 0.55, 0.12), "◈ %s +" % _compact_number(EconomyManager.balance()), 12, OFF_WHITE, Callable(self, "_open_shop"), 20)
+	home_coin_button = _add_action(canvas, Rect2(107, 64, 112, 40), Color(1.0, 0.55, 0.12), "   %s +" % _compact_number(EconomyManager.balance()), 12, OFF_WHITE, Callable(self, "_open_shop"), 20)
 	home_coin_button.name = "HomeCoinShopButton"
-	_add_pill(canvas, Rect2(227, 64, 92, 40), GOLD, "★ %s" % _compact_number(_total_stars()), 12, NAVY)
+	RefCanvas.add_collectible_gem(canvas, Vector2(122, 84), 8.0, "HomeCurrencyGem3D")
+	_add_pill(canvas, Rect2(227, 64, 92, 40), GOLD, "   %s" % _compact_number(_total_stars()), 12, NAVY)
+	RefCanvas.add_collectible_star(canvas, Vector2(242, 84), 8.0, true, "HomeCurrencyStar3D")
 
 	_add_hero(canvas)
 	_add_quick_actions(canvas)
@@ -79,17 +89,28 @@ func _build_reference_home(canvas: Control) -> void:
 	_add_world_progress(canvas)
 	_add_bottom_nav_reference(canvas)
 
+func _on_economy_balance_changed(new_balance: int, _delta: int, _reason: String) -> void:
+	if home_coin_button != null and is_instance_valid(home_coin_button):
+		home_coin_button.text = "   %s +" % _compact_number(new_balance)
+
 func _add_frame_background(canvas: Control) -> void:
 	var bg := PanelContainer.new()
 	bg.name = "FigmaHomeBackground"
-	var top := DARK_TOP if _home_dark() else BG_TOP
-	var middle := DARK_MID if _home_dark() else BG_MID
-	var bottom := DARK_BOTTOM if _home_dark() else BG_BOTTOM
-	var border := Color(0.22,0.36,0.48,0.82) if _home_dark() else Color("#bad1e3")
+	var top := DARK_SCENE_TOP if _home_dark() else SCENE_TOP
+	var middle := DARK_SCENE_MID if _home_dark() else SCENE_MID
+	var bottom := DARK_SCENE_BOTTOM if _home_dark() else SCENE_BOTTOM
+	var border := Color("#334c78") if _home_dark() else Color("#5ba6e8")
 	bg.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(top, middle, bottom, 34, border, 1, 0.48))
 	RefCanvas.set_rect(bg, 0, 0, 390, 844)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(bg)
+	RefCanvas.add_scene_backdrop_layers(canvas, Unjam3DTheme.game_accent(selected_game), _home_dark(), "Home")
+	var home_key_light := canvas.get_node_or_null("HomeKeyLight")
+	var home_accent_glow := canvas.get_node_or_null("HomeAccentGlow")
+	if home_key_light != null:
+		home_key_light.set_meta("unjam_figma_scene_light", true)
+	if home_accent_glow != null:
+		home_accent_glow.set_meta("unjam_figma_scene_light", true)
 
 	# Low-saturation sea-glass/slate depth layers add composition without borrowing
 	# any gameplay accent. They are static, cheap, and stay behind all controls.
@@ -135,6 +156,7 @@ func _add_hero(canvas: Control) -> void:
 	var world := MultiGameManager.world_for_game_level(selected_game, level)
 	var game_title := _add_text(canvas, _short_game_name(selected_game), Rect2(41, 167, 186, 34), 28, NAVY, true)
 	game_title.name = "HomeHeroGameTitle"
+	RefCanvas.style_display_title(game_title, Unjam3DTheme.game_accent(selected_game).lightened(0.18), Color("#071d55"), 2)
 	var game_meta := _add_text(canvas, "LEVEL %d • WORLD %d" % [level, world], Rect2(41, 204, 170, 17), 14, BLUE, true)
 	game_meta.name = "HomeHeroGameMeta"
 
@@ -310,10 +332,16 @@ func _add_world_progress(canvas: Control) -> void:
 	progress.min_value = 0
 	progress.max_value = total
 	progress.value = completed_in_world
-	progress.add_theme_stylebox_override("background", RefCanvas.solid_box(Color(0.06,0.16,0.23,0.55) if _home_dark() else Color(0.72,0.82,0.83,0.72), 6))
-	progress.add_theme_stylebox_override("fill", RefCanvas.rounded_gradient3(accent.lightened(0.22), accent, accent.darkened(0.14), 6, Color.TRANSPARENT, 0, 0.36))
+	progress.add_theme_stylebox_override("background", RefCanvas.rounded_gradient3(Color("#132642"), Color("#091a34"), Color("#051126"), 6, Color(0.38,0.58,0.78,0.55), 1.0, 0.50))
+	progress.add_theme_stylebox_override("fill", RefCanvas.rounded_gradient3(accent.lightened(0.48), accent.lightened(0.12), accent.darkened(0.18), 6, Color(accent.lightened(0.62),0.72), 1.0, 0.32))
 	RefCanvas.set_rect(progress, 37, 636, 309, 10)
 	canvas.add_child(progress)
+	var progress_specular := ColorRect.new()
+	progress_specular.name = "WorldProgressSpecular"
+	progress_specular.color = Color(1,1,1,0.42)
+	progress_specular.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	RefCanvas.set_rect(progress_specular, 41, 637, 180, 2)
+	canvas.add_child(progress_specular)
 
 func _add_bottom_nav_reference(canvas: Control) -> void:
 	var shell := PanelContainer.new()
@@ -444,6 +472,7 @@ func _refresh_home_selection() -> void:
 	var title := figma_canvas.get_node_or_null("HomeHeroGameTitle") as Label
 	if title != null:
 		title.text = _short_game_name(selected_game)
+		RefCanvas.style_display_title(title, Unjam3DTheme.game_accent(selected_game).lightened(0.18), Color("#071d55"), 2)
 	var meta := figma_canvas.get_node_or_null("HomeHeroGameMeta") as Label
 	if meta != null:
 		meta.text = "LEVEL %d • WORLD %d" % [level, world]
