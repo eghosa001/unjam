@@ -92,7 +92,8 @@ static func apply_button(button: Button, dark: bool, accent: Color, role: String
 	button.flat = false
 	button.focus_mode = Control.FOCUS_NONE
 	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	button.custom_minimum_size = Vector2(button.custom_minimum_size.x, maxf(button.custom_minimum_size.y, 78.0))
+	if not button.has_meta("unjam_figma_exact_geometry"):
+		button.custom_minimum_size = Vector2(button.custom_minimum_size.x, maxf(button.custom_minimum_size.y, 78.0))
 	var current_font := button.get_theme_font_size("font_size")
 	button.add_theme_font_size_override("font_size", maxi(20, current_font))
 	var normal := surface_2(dark)
