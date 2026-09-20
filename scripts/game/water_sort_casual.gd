@@ -113,7 +113,8 @@ func _build_figma_water(canvas: Control) -> void:
 	status_label = _make_label("READY", 13, NAVY, true)
 	RefCanvas.set_rect(status_label, 17, 599, 354, 20)
 	canvas.add_child(status_label)
-	hint_label = _make_label("", 13, GUIDANCE_ORANGE, true)\n\thint_label.name = "WaterGuidanceText"
+	hint_label = _make_label("", 13, GUIDANCE_ORANGE, true)
+	hint_label.name = "WaterGuidanceText"
 	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	RefCanvas.set_rect(hint_label, 119, 599, 252, 20)
 	canvas.add_child(hint_label)
