@@ -47,6 +47,8 @@ func _apply_enhancements() -> void:
 			hint.custom_minimum_size = Vector2(0, 44)
 
 func _enlarge_buttons(node: Node) -> void:
+	if node != host and node.has_meta("unjam_figma_reference_root"):
+		return
 	# A nested surface with its own enhancer owns all sizing below that root.
 	# This keeps Main from re-sizing an active game scene a second time.
 	if node != host and node.get_node_or_null("UiTouchEnhancer") != null:
