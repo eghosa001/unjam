@@ -1,7 +1,6 @@
 extends "res://scripts/game/water_sort_casual.gd"
 
 const WaterSolver = preload("res://scripts/core/water_sort_solver.gd")
-const RefCanvas = preload("res://scripts/ui/figma_reference_canvas.gd")
 const EXTRA_TUBE_COST := 75
 
 var extra_tube_used := false
