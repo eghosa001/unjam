@@ -54,8 +54,18 @@ static func profile(raw_level: int) -> Dictionary:
 	var target_moves := roundi(lerpf(float(move_band[0]), float(move_band[1]), clampf(score_fraction + local_progress * 0.04, 0.0, 1.0)))
 
 	if level <= 10:
+		# Teach one idea at a time. Keep the move target rising steadily without
+		# making level 10 harder than the first post-tutorial boards.
 		target_score = 15 + (level - 1)
-		target_moves = 6 + (level - 1) * 2
+		target_moves = [6, 7, 8, 9, 10, 11, 12, 13, 15, 16][level - 1]
+	elif level <= 100:
+		# Early campaign progression should feel like a controlled ramp with small
+		# relief levels, not the former 24 -> 18 -> 13 move-budget cliff. Difficulty
+		# rank still creates meaningful challenge variation, but within a bounded arc.
+		var early_progress := float(level - 11) / 89.0
+		var early_base := roundi(lerpf(16.0, 26.0, early_progress))
+		var early_bonus := [0, 2, 4, 6, 8, 10][clampi(rank, 0, 5)]
+		target_moves = clampi(early_base + early_bonus, 16, 36)
 
 	if level == MAX_LEVEL:
 		target_score = 98
@@ -273,6 +283,17 @@ static func _empty_bottles_for_level(level: int) -> int:
 static func _difficulty_rank(level: int) -> int:
 	if level <= 10:
 		return 0
+	# The first 100 levels establish the rhythm deliberately. Avoid random
+	# extreme spikes before players have learned workspace management; milestone
+	# overrides still make 25/50/75/100 feel special.
+	if level <= 24:
+		return 1 if level % 4 == 0 else 0
+	if level <= 49:
+		return [0, 1, 1, 2][level % 4]
+	if level <= 74:
+		return [1, 1, 2, 2, 1, 2][level % 6]
+	if level < 100:
+		return [1, 2, 2, 3, 1, 2][level % 6]
 	var phase := posmod(level - 1, 100) + 1
 	if phase == 100:
 		return 5
