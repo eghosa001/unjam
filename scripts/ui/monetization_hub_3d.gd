@@ -87,9 +87,11 @@ func _build_ui() -> void:
 	shop_title.name = "ShopTitle3D"
 	shop_title.clip_text = true
 	FigmaReferenceCanvas.style_display_title(shop_title, Color("#ffb92f"), Color("#071d55"), 2)
-	var shop_subtitle := _add_text(canvas,"Useful upgrades • optional rewards",Rect2(83,51,186,18),13,Color("#c6d9ec"))
+	var shop_subtitle := _add_text(canvas,"Useful upgrades • optional rewards",Rect2(83,51,186,30),13,Color("#c6d9ec"))
 	shop_subtitle.name = "ShopSubtitle"
+	shop_subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	shop_subtitle.clip_text = true
+	FigmaReferenceCanvas.set_rect(shop_subtitle,83,51,186,30)
 	balance_label = _add_text(canvas,"",Rect2(297,37,60,15),12,FigmaReferenceCanvas.accessible_text_color(Color("#fffef7"),Color("#ff8c1f")))
 	balance_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	FigmaReferenceCanvas.add_shadow(canvas,Rect2(285,21,84,46),23,Color(0.02,0.15,0.30,0.16),3,Vector2(0,2))
