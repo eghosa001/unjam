@@ -270,7 +270,7 @@ func _validate_header_badge_clearance() -> bool:
 		return _fail("Shared Figma header diagnostics are incomplete")
 	if title.get_global_rect().intersects(pill.get_global_rect()) or subtitle.get_global_rect().intersects(pill.get_global_rect()):
 		main.queue_free(); await process_frame
-		return _fail("Shared Figma header title/subtitle intrudes into the status pill")
+		return _fail("Shared Figma header title/subtitle intrudes into the status pill: title=%s subtitle=%s pill=%s" % [str(title.get_global_rect()), str(subtitle.get_global_rect()), str(pill.get_global_rect())])
 	main.queue_free()
 	await process_frame
 	return true
