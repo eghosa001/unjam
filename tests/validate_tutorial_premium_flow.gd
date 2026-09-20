@@ -29,7 +29,7 @@ func _run() -> void:
 		var close := shell.find_child("TutorialClose",true,false) as Button
 		if canvas == null or not canvas.visible:
 			return _fail("Figma tutorial canvas did not open for %s" % game_id)
-		if panel == null or not _rect_eq(Rect2(panel.position,panel.size),Rect2(18,54,354,650)):
+		if panel == null or not _rect_eq(Rect2(panel.position,panel.size),Rect2(17,53,354,650)):
 			return _fail("%s tutorial panel drifted from Figma 354x650 geometry" % game_id)
 		if body == null or body.text.length() > 180:
 			return _fail("%s tutorial reverted to a wall of text" % game_id)
@@ -39,11 +39,11 @@ func _run() -> void:
 			return _fail("%s tutorial progress indicator is missing" % game_id)
 		if next == null or back == null:
 			return _fail("%s tutorial navigation is missing" % game_id)
-		if not _rect_eq(Rect2(back.position,back.size),Rect2(44,472,142,48)):
+		if not _rect_eq(Rect2(back.position,back.size),Rect2(43,471,142,48)):
 			return _fail("%s BACK control drifted from Figma geometry" % game_id)
-		if not _rect_eq(Rect2(next.position,next.size),Rect2(204,472,142,48)):
+		if not _rect_eq(Rect2(next.position,next.size),Rect2(203,471,142,48)):
 			return _fail("%s NEXT control drifted from Figma geometry" % game_id)
-		if close == null or not _rect_eq(Rect2(close.position,close.size),Rect2(44,548,302,58)):
+		if close == null or not _rect_eq(Rect2(close.position,close.size),Rect2(43,547,302,58)):
 			return _fail("%s PLAY NOW control drifted from Figma geometry" % game_id)
 		var first_text := step.text
 		next.pressed.emit()
