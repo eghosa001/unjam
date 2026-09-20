@@ -15,6 +15,7 @@ func _run() -> void:
 	if not _validate_figma_button_contrast(): return
 	if not await _validate_header_badge_clearance(): return
 	if not await _validate_shop_header_clearance(): return
+	if not await _validate_selector_header_and_navigation(): return
 	if not _validate_dead_code_cleanup(): return
 	if not _validate_visual_workflow_installs_plugins(): return
 	if not _validate_main_ci_runs_new_hardening_gates(): return
@@ -294,6 +295,32 @@ func _validate_shop_header_clearance() -> bool:
 	if title.get_global_rect().intersects(wallet.get_global_rect()) or subtitle.get_global_rect().intersects(wallet.get_global_rect()):
 		main.queue_free(); await process_frame
 		return _fail("Shop header title/subtitle intrudes into the wallet pill")
+	main.queue_free()
+	await process_frame
+	return true
+
+func _validate_selector_header_and_navigation() -> bool:
+	root.size = Vector2i(1080, 1920)
+	var packed := load("res://scenes/Main.tscn") as PackedScene
+	var main := packed.instantiate() as Control
+	root.add_child(main)
+	main.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	await _frames(8)
+	main.call("_open_games_surface")
+	await _frames(8)
+	var title := main.find_child("SelectorTitle3D", true, false) as Control
+	var subtitle := main.find_child("SelectorSubtitle", true, false) as Control
+	var settings := main.find_child("SelectorSettingsButton", true, false) as Button
+	var back := main.find_child("SelectorBackButton", true, false) as Button
+	if title == null or subtitle == null or settings == null or back == null:
+		main.queue_free(); await process_frame
+		return _fail("Choose-a-Game header/navigation diagnostics are incomplete")
+	if title.get_global_rect().intersects(settings.get_global_rect()) or subtitle.get_global_rect().intersects(settings.get_global_rect()):
+		main.queue_free(); await process_frame
+		return _fail("Choose-a-Game title/subtitle intrudes into Settings")
+	if back.tooltip_text.is_empty() or settings.tooltip_text.is_empty():
+		main.queue_free(); await process_frame
+		return _fail("Choose-a-Game icon navigation lacks descriptive tooltips")
 	main.queue_free()
 	await process_frame
 	return true
