@@ -14,6 +14,7 @@ REQUIRED_RELEASE_TESTS = (
     'validate_level_launch',
     'validate_gameplay_interactions',
     'validate_progression_transitions',
+    'validate_theme_integrity',
     'validate_water_constructive_solvability',
 )
 
@@ -55,6 +56,9 @@ def main() -> int:
         'https://*/verify',
         'UNJAM_DEVELOPER_WEBSITE_URL',
         'check_live_monetization.py',
+        "targetSdkVersion:'36'",
+        "native-code: 'arm64-v8a'",
+        '16 KB native page compatibility',
     ):
         if token not in workflow:
             errors.append(f'missing release workflow contract token: {token}')
