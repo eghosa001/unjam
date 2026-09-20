@@ -265,10 +265,13 @@ func _add_mini_rescue_preview(canvas: Control, origin: Vector2) -> void:
 func _add_quick_actions(canvas: Control) -> void:
 	var choose := _add_action(canvas, Rect2(21, 365, 166, 52), BLUE, "◈ CHOOSE GAME", 12, OFF_WHITE, Callable(self, "_open_game_selector"), 16)
 	choose.name = "HomeChooseGameButton"
-	var daily_choice := MultiGameManager.daily_selected_game()
 	var main := get_parent()
-	var daily_complete := not daily_choice.is_empty() and main != null and main.has_method("_daily_done") and bool(main.call("_daily_done", daily_choice))
-	var daily_label := "☀ DAILY • DONE" if daily_complete else ("☀ DAILY • PICKED" if not daily_choice.is_empty() else "☀ DAILY • 1 PICK")
+	var daily_done_count := 0
+	if main != null and main.has_method("_daily_done"):
+		for game_id in MultiGameManager.GAME_IDS:
+			if bool(main.call("_daily_done", game_id)):
+				daily_done_count += 1
+	var daily_label := "☀ DAILY • DONE" if daily_done_count >= MultiGameManager.GAME_IDS.size() else "☀ DAILY • %d/3" % daily_done_count
 	var daily := _add_action(canvas, Rect2(197, 365, 170, 52), GOLD, daily_label, 11, NAVY, Callable(self, "_open_daily_games"), 16)
 	daily.name = "HomeDailyGamesButton"
 
