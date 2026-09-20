@@ -10,7 +10,10 @@ var launch_ms := {
 	"water_sort": [],
 	"block_puzzle": [],
 }
-var save_manager: Node\nvar multi_game_manager: Node\n\nvar assist_steps := {
+var save_manager: Node
+var multi_game_manager: Node
+
+var assist_steps := {
 	"rescue_rush": 0,
 	"water_sort": 0,
 	"block_puzzle": 0,
@@ -20,7 +23,11 @@ func _initialize() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
-	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT_DIR))\n\tsave_manager = root.get_node_or_null("/root/SaveManager")\n\tmulti_game_manager = root.get_node_or_null("/root/MultiGameManager")\n\tif save_manager == null or multi_game_manager == null:\n\t\treturn _fatal("Required SaveManager/MultiGameManager autoloads are unavailable")
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT_DIR))
+	save_manager = root.get_node_or_null("/root/SaveManager")
+	multi_game_manager = root.get_node_or_null("/root/MultiGameManager")
+	if save_manager == null or multi_game_manager == null:
+		return _fatal("Required SaveManager/MultiGameManager autoloads are unavailable")
 	root.size = VIEWPORT
 	Engine.max_fps = 120
 	Engine.time_scale = 4.0
@@ -68,7 +75,9 @@ func _run() -> void:
 
 func _sweep_rescue(main: Control) -> void:
 	for level in range(1, 101):
-		var save_data: Dictionary = save_manager.get("data")\n\t\tsave_data["active_run"] = {}\n\t\tsave_manager.set("data", save_data)
+		var save_data: Dictionary = save_manager.get("data")
+		save_data["active_run"] = {}
+		save_manager.set("data", save_data)
 		var started := Time.get_ticks_usec()
 		main.call("start_level", level)
 		await _frames(5)
