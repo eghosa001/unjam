@@ -51,12 +51,41 @@ static func solid_box(color: Color, radius: float = 0.0, border_color: Color = C
 		style.border_color = border_color
 	return style
 
-static func vertical_gradient(top: Color, bottom: Color, radius: float = 0.0, border_color: Color = Color.TRANSPARENT, border_width: float = 0.0) -> StyleBoxFlat:
-	# StyleBoxFlat cannot render a true gradient. Use the midpoint color as the
-	# panel body and rely on explicit top/bottom gloss overlays where exact
-	# Figma depth is important.
-	var middle := top.lerp(bottom, 0.5)
-	return solid_box(middle, radius, border_color, border_width)
+static func rounded_gradient(top: Color, bottom: Color, radius: float = 16.0, border_color: Color = Color.TRANSPARENT, border_width: float = 0.0) -> StyleBoxTexture:
+	var image_size := 96
+	var image := Image.create(image_size, image_size, false, Image.FORMAT_RGBA8)
+	var r := clampf(radius / 24.0 * 22.0, 0.0, 44.0)
+	var bw := maxf(0.0, border_width / 4.0 * 4.0)
+	for y in range(image_size):
+		var fy := float(y) / float(image_size - 1)
+		var fill := top.lerp(bottom, fy)
+		for x in range(image_size):
+			var px := float(x) + 0.5
+			var py := float(y) + 0.5
+			var dx := maxf(r - px, 0.0, px - (float(image_size) - r))
+			var dy := maxf(r - py, 0.0, py - (float(image_size) - r))
+			var outside := dx * dx + dy * dy > r * r
+			if outside:
+				image.set_pixel(x, y, Color.TRANSPARENT)
+				continue
+			if bw > 0.0:
+				var inner_r := maxf(0.0, r - bw)
+				var idx := maxf(inner_r - px, 0.0, px - (float(image_size) - inner_r))
+				var idy := maxf(inner_r - py, 0.0, py - (float(image_size) - inner_r))
+				var in_inner := idx * idx + idy * idy <= inner_r * inner_r and px >= bw and py >= bw and px <= image_size - bw and py <= image_size - bw
+				if not in_inner:
+					image.set_pixel(x, y, border_color)
+					continue
+			image.set_pixel(x, y, fill)
+	var style := StyleBoxTexture.new()
+	style.texture = ImageTexture.create_from_image(image)
+	var margin := maxi(8, int(ceil(r + bw + 2.0)))
+	for side in [SIDE_LEFT, SIDE_TOP, SIDE_RIGHT, SIDE_BOTTOM]:
+		style.set_texture_margin(side, margin)
+	return style
+
+static func vertical_gradient(top: Color, bottom: Color, radius: float = 0.0, border_color: Color = Color.TRANSPARENT, border_width: float = 0.0) -> StyleBoxTexture:
+	return rounded_gradient(top, bottom, radius, border_color, border_width)
 
 static func label(text_value: String, font_size: int, color: Color, bold := false) -> Label:
 	var result := Label.new()
