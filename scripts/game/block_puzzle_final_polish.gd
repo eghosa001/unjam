@@ -24,6 +24,11 @@ func apply_theme_mode(dark: bool) -> void:
 	_style_premium_surface(dark)
 
 func _style_premium_surface(dark: bool) -> void:
+	# The audited Figma gameplay shell already contains its final materials,
+	# depths and dimensions. The legacy premium skin changes borders/shadows and
+	# therefore changes PanelContainer minimum sizes, so it must not restyle it.
+	if find_child("FigmaBlock390x844", true, false) != null:
+		return
 	var score_card := find_child("BlockScoreCard", true, false) as PanelContainer
 	if score_card != null:
 		score_card.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("54207f") if dark else Color("8f35dd"), 30, Color("f2c6ff"), 3, 16))
