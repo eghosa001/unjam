@@ -9,6 +9,10 @@ var stage: Node3D
 var mascot_root: Node3D
 var wave_pivot: Node3D
 var phase := 0.0
+var _render_accumulator := 0.0
+
+const DECORATIVE_RENDER_FPS := 30.0
+const DECORATIVE_RENDER_INTERVAL := 1.0 / DECORATIVE_RENDER_FPS
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -20,16 +24,23 @@ func _ready() -> void:
 func _sync_render_activity() -> void:
 	var active := is_visible_in_tree()
 	set_process(active)
+	_render_accumulator = 0.0
 	if viewport_3d != null:
-		viewport_3d.render_target_update_mode = SubViewport.UPDATE_ALWAYS if active else SubViewport.UPDATE_DISABLED
+		viewport_3d.render_target_update_mode = SubViewport.UPDATE_ONCE if active else SubViewport.UPDATE_DISABLED
 
 func _process(delta: float) -> void:
 	phase += delta
+	_render_accumulator += delta
+	if _render_accumulator < DECORATIVE_RENDER_INTERVAL:
+		return
+	_render_accumulator = fmod(_render_accumulator, DECORATIVE_RENDER_INTERVAL)
 	if mascot_root != null:
 		mascot_root.position.y = sin(phase * 1.75) * 0.075
 		mascot_root.rotation.y = sin(phase * 0.72) * 0.07
 	if wave_pivot != null:
 		wave_pivot.rotation.z = deg_to_rad(-42.0 + sin(phase * 3.0) * 10.0)
+	if viewport_3d != null:
+		viewport_3d.render_target_update_mode = SubViewport.UPDATE_ONCE
 
 func _build_3d_scene() -> void:
 	viewport_3d = SubViewport.new()
