@@ -540,7 +540,7 @@ func build_collection_upgrades() -> void:
 		"COLLECTION",
 		"Progress, friends and permanent rewards",
 		"◈ +",
-		FIGMA_ORANGE,
+		FIGMA_GREEN,
 		Callable(self,"build_home"),
 		Callable(self,"_figma_open_shop")
 	)
@@ -550,21 +550,23 @@ func build_collection_upgrades() -> void:
 	var scroll_to_summary := Control.new()
 	scroll_to_summary.name = "Proto/ScrollToSummary"
 	scroll_to_summary.mouse_filter = Control.MOUSE_FILTER_PASS
-	FigmaReferenceCanvas.set_rect(scroll_to_summary,12,88,366,650)
+	FigmaReferenceCanvas.set_rect(scroll_to_summary,11,87,366,650)
 	scroll_to_summary.gui_input.connect(_collection_upgrades_scroll_input.bind(scroll_to_summary))
 	canvas.add_child(scroll_to_summary)
 
 	var owned_count := EconomyManager.collection_owned_count()
-	_figma_text(canvas,"GARDEN UPGRADES",Rect2(24,100,342,28),22,FIGMA_INK)
-	_figma_text(canvas,"Permanent value • %d / 6 owned" % owned_count,Rect2(24,132,342,18),13,FIGMA_MUTED)
-	_figma_card(canvas,"CollectionScroll/Boost",Rect2(24,164,342,60),Color(0.985,0.995,1.0),Color(0.64,0.91,0.73,0.54),15)
-	_figma_text(
+	_figma_text(canvas,"GARDEN UPGRADES",Rect2(23,99,342,28),22,Color("#1c8552"))
+	_figma_text(canvas,"Permanent value • %d / 6 owned" % owned_count,Rect2(23,131,342,18),13,Color("#597a8f"))
+	_figma_solid_card(canvas,"CollectionScroll/Boost",Rect2(23,163,342,60),Color("#f0fff5"),Color(0.30,0.78,0.48,0.42),16,false)
+	var boost_text := _figma_text(
 		canvas,
 		"+%d EVERY DAILY GAME   •   +%d GARDEN GIFT" % [EconomyManager.collection_daily_bonus(),EconomyManager.garden_gift_amount()],
-		Rect2(34,185,322,18),
+		Rect2(33,184,322,18),
 		12,
-		FIGMA_GREEN
+		Color("#1f8a52"),
+		true
 	)
+	boost_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 
 	var upgrades := [
 		["tree","CANOPY TREE","SHADE",100],
@@ -581,38 +583,47 @@ func build_collection_upgrades() -> void:
 		var display_name := String(spec[1])
 		var flavor := String(spec[2])
 		var cost := int(spec[3])
-		var y := 240.0 + float(i)*76.0
+		var y := 239.0 + float(i)*76.0
 		var owned := id in owned_decorations
-		_figma_card(
+		var card_fill := Color("#f0fff5") if owned else Color("#fcfaff")
+		var card_border := Color(0.32,0.78,0.49,0.46) if owned else Color(0.72,0.58,0.90,0.46)
+		var title_color := Color("#1f854f") if owned else Color("#4d3373")
+		_figma_solid_card(
 			canvas,
 			"CollectionScroll/Upgrade/%d" % i,
-			Rect2(24,y,342,66),
-			Color(0.985,0.995,1.0),
-			Color(0.64,0.91,0.73,0.46),
-			15
+			Rect2(23,y,342,66),
+			card_fill,
+			card_border,
+			16,
+			false
 		)
-		_figma_text(canvas,display_name,Rect2(38,y+11,184,18),13,FIGMA_INK)
-		_figma_text(canvas,"%s  •  +5 DAILY  •  +10 GIFT" % flavor,Rect2(38,y+36,206,16),12,FIGMA_MUTED)
+		_figma_text(canvas,display_name,Rect2(37,y+11,184,18),13,title_color)
+		_figma_text(canvas,"%s  •  +5 DAILY  •  +10 GIFT" % flavor,Rect2(37,y+36,206,16),12,Color("#6b8091"))
 		var state_text := "OWNED" if owned else "%d COINS" % cost
-		var pill_fill := FIGMA_GREEN if owned else FIGMA_ORANGE
+		var pill_fill := Color("#e0f2e5") if owned else Color("#7a57e0")
+		var state_text_color := Color("#4d7a59") if owned else Color.WHITE
 		var state := _figma_button(
 			canvas,
 			"CollectionUpgrade/%s" % id,
 			state_text,
-			Rect2(250,y+14,98,38),
+			Rect2(249,y+14,98,38),
 			pill_fill,
 			Callable(),
-			FIGMA_OFF_WHITE,
-			13,
+			state_text_color,
+			12,
 			12
 		)
 		state.disabled = owned
 		if owned:
+			var owned_style := FigmaReferenceCanvas.solid_box(Color("#e0f2e5"),12,Color.TRANSPARENT,0)
+			state.add_theme_stylebox_override("disabled",owned_style)
+			state.add_theme_color_override("font_disabled_color",Color("#4d7a59"))
 			state.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		else:
 			state.pressed.connect(_buy_collection_upgrade.bind(id,cost))
 
-	_figma_text(canvas,"Swipe down to return to your Collection summary",Rect2(38,711,314,18),12,FIGMA_MUTED)
+	var return_hint := _figma_text(canvas,"Swipe up to return to your Collection summary",Rect2(37,710,314,18),12,Color("#6e8596"),true)
+	return_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_figma_bottom_nav(canvas,"collection")
 
 func _collection_summary_scroll_input(event: InputEvent, owner: Control) -> void:
