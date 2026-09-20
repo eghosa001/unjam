@@ -1,0 +1,38 @@
+name: Apply UNJAM production patch
+
+on:
+  push:
+    branches:
+      - fix/premium-daily-failstates-20260920
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-unjam-production-patch
+  cancel-in-progress: true
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Reconstruct and apply verified patch
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cat qa/unjam-fix.part00.b64 qa/unjam-fix.part01.b64 | base64 -d > /tmp/unjam_fix.patch.gz
+          echo "95bf6342892c17a523ca1e9caee5c8d6cdf41f25910f4c62e53b2598680e3d0  /tmp/unjam_fix.patch.gz" | sha256sum -c -
+          gzip -dc /tmp/unjam_fix.patch.gz > /tmp/unjam_fix.patch
+          echo "5d60df0b8f82c5daa253f862e186df9bef930d3155c8c0d5a998587f03ae73b0  /tmp/unjam_fix.patch" | sha256sum -c -
+          git apply --check /tmp/unjam_fix.patch
+          git apply /tmp/unjam_fix.patch
+          rm -f qa/unjam-fix.part00.b64 qa/unjam-fix.part01.b64 .github/workflows/apply-unjam-production-patch.yml
+          git diff --check
+          git config user.name "UNJAM QA"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git commit -m "Fix premium theme, daily flow, and game fail states"
+          git push origin HEAD:fix/premium-daily-failstates-20260920
