@@ -2,8 +2,8 @@
 
 ## Current production pass
 
-Branch: `polish/consolidated-premium-pass-20260921`  
-Base: `main` after Daily return routing PR #117
+Branch: `main`  
+Latest consolidated merge reviewed: `84b0760c114c471d037d9d5f545a31ca141697f4` (PR #118)
 
 ### Consolidated code-side work completed
 
@@ -14,6 +14,7 @@ Base: `main` after Daily return routing PR #117
 - Typography now has separate readable body and strong heading/button weights instead of globally over-emboldening every label.
 - Home Quick Switch gives the selected game stronger depth while keeping inactive games quieter.
 - Home, Choose Game and secondary-screen bottom navigation now emphasize only the active destination rather than making all five labels compete visually.
+- Bottom navigation glyphs/labels and Home Quick Switch text were raised one readability step without changing the audited touch geometry or causing label overlap.
 - The U-only launcher icon and adaptive safe-zone contract remain protected by the release validator.
 - Existing gameplay polish remains active: bottle-rim Water Sort pouring, magnetic Block placement/failure handling, Rescue escape motion, premium result overlays, Daily independence and adaptive decorative-effect budgets.
 
@@ -21,7 +22,7 @@ Base: `main` after Daily return routing PR #117
 
 The latest combined build was reviewed as one product rather than one defect at a time. The comparison focused on the qualities visible in leading current block, water-sort and arrow-puzzle games: immediate puzzle readability, uncluttered hierarchy, tactile/glossy material depth, smooth satisfying motion, clear one-thumb controls, calm feedback and performance that does not sacrifice responsiveness.
 
-No further code change is being made merely to continue the loop when the full rendered matrix is already coherent; new changes should correspond to a reproduced defect or a measurable quality gap.
+The consolidated loop is merged to `main`. Further code changes should correspond to a reproduced defect or measurable quality gap rather than restarting cosmetic micro-passes.
 
 ### Verification gates
 
