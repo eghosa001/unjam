@@ -155,6 +155,25 @@ func _draw() -> void:
 	draw_arc(body.get_center() + Vector2(-body.size.x * 0.16, -body.size.y * 0.30), body.size.x * 0.19, -2.65, -1.05, 16, Color(1,1,1,0.38), 2.6, true)
 	draw_arc(Vector2(body.get_center().x, body.end.y - radius * 0.72), body.size.x * 0.31, 0.10, PI - 0.10, 22, Color(0.86,0.98,1.0,0.34), 2.2, true)
 	draw_circle(body.position + Vector2(body.size.x * 0.30, body.size.y * 0.18), maxf(1.8, body.size.x * 0.045), Color(1,1,1,0.44))
+
+	# Explicit OUTER crystal contour. This restores the visible bottle silhouette
+	# over opaque liquid without adding the interior vertical "shine" line that
+	# previously made the vessels look like lined plastic.
+	var contour_color := Color(0.90, 0.99, 1.0, 0.82)
+	var contour_glow := Color(0.25, 0.78, 1.0, 0.34)
+	var shoulder_y := body.position.y + radius * 0.56
+	var left_mouth := Vector2(body.get_center().x - mouth_width * 0.5, mouth_y + 2.0)
+	var right_mouth := Vector2(body.get_center().x + mouth_width * 0.5, mouth_y + 2.0)
+	var left_shoulder := Vector2(body.position.x + 1.4, shoulder_y)
+	var right_shoulder := Vector2(body.end.x - 1.4, shoulder_y)
+	var left_bottom := Vector2(body.position.x + 1.4, body.end.y - radius * 0.72)
+	var right_bottom := Vector2(body.end.x - 1.4, body.end.y - radius * 0.72)
+	for width in [5.2, 2.4]:
+		var c := contour_glow if width > 3.0 else contour_color
+		draw_line(left_mouth, left_shoulder, c, width, true)
+		draw_line(right_mouth, right_shoulder, c, width, true)
+		draw_line(left_shoulder, left_bottom, c, width, true)
+		draw_line(right_shoulder, right_bottom, c, width, true)
 	if is_selected:
 		var a := 0.35 + 0.12 * sin(pulse * 5.0)
 		draw_arc(body.get_center(), body.size.x * 0.68, 0, TAU, 42, Color(1.0, 0.88, 0.35, a), 4.0, true)
