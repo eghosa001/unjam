@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import re
 import subprocess
 from pathlib import Path
 
@@ -12,6 +13,13 @@ GROUP_TESTS = {
         "validate_uiux_regressions",
         "validate_viewport_fit",
         "validate_transition_ownership",
+        "validate_theme_integrity",
+    ],
+    "secondary_ui": [
+        "validate_requested_polish_contract",
+        "validate_reported_polish_regressions",
+        "validate_uiux_regressions",
+        "validate_viewport_fit",
         "validate_theme_integrity",
     ],
     "water": [
@@ -110,7 +118,7 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
             add(groups, "monetization")
             visual.add("shop")
         elif not game_specific_ui:
-            add(groups, "ui")
+            add(groups, "secondary_ui" if p.endswith(("premium_main_casual.gd", "premium_main.gd")) else "ui")
             if p.endswith(("figma_reference_canvas.gd", "unjam_3d_theme.gd")):
                 visual.update({
                     "home", "games", "levels", "collection", "daily", "settings",
@@ -219,6 +227,119 @@ def git_changed_files(base: str, head: str) -> list[str]:
         out = subprocess.check_output(["git", "diff", "--name-only", f"{base}...{head}"], text=True)
     return [line for line in out.splitlines() if line.strip()]
 
+PREMIUM_MAIN_PATH = "scripts/ui/premium_main_casual.gd"
+PREMIUM_MAIN_BROAD_SCOPES = {"home", "levels", "collection", "daily", "settings"}
+
+def _git_changed_line_numbers(base: str, head: str, path: str) -> tuple[list[int], bool]:
+    if not base:
+        return [], False
+    diff = subprocess.check_output(
+        ["git", "diff", "--unified=0", f"{base}...{head}", "--", path],
+        text=True,
+    )
+    result: list[int] = []
+    deletion_only_hunk = False
+    for line in diff.splitlines():
+        if not line.startswith("@@"):
+            continue
+        match = re.search(r"\+(\d+)(?:,(\d+))?", line)
+        if match is None:
+            continue
+        start = int(match.group(1))
+        count = int(match.group(2) or "1")
+        if count == 0:
+            # There is no changed line in the post-change file to attribute.
+            # Falling back to broad visual coverage is safer than assigning the
+            # deleted function to the preceding surviving function.
+            deletion_only_hunk = True
+            continue
+        result.extend(range(start, start + count))
+    return result, deletion_only_hunk
+
+def _git_file_text(ref: str, path: str) -> str:
+    return subprocess.check_output(["git", "show", f"{ref}:{path}"], text=True)
+
+def _premium_main_changed_functions(base: str, head: str) -> set[str]:
+    try:
+        lines = _git_file_text(head, PREMIUM_MAIN_PATH).splitlines()
+        changed_lines, deletion_only_hunk = _git_changed_line_numbers(base, head, PREMIUM_MAIN_PATH)
+    except subprocess.CalledProcessError:
+        return set()
+    if deletion_only_hunk:
+        return set()
+    functions: set[str] = set()
+    for line_no in changed_lines:
+        index = min(max(line_no - 1, 0), max(len(lines) - 1, 0))
+        while index >= 0:
+            stripped = lines[index].strip()
+            if lines[index].startswith("func ") and stripped.startswith("func "):
+                functions.add(stripped.split("func ", 1)[1].split("(", 1)[0])
+                break
+            index -= 1
+    return functions
+
+def _premium_main_scopes(functions: set[str]) -> set[str]:
+    if not functions:
+        return set(PREMIUM_MAIN_BROAD_SCOPES)
+
+    scopes: set[str] = set()
+    shared_prefixes = (
+        "_figma_surface", "_figma_text", "_figma_button", "_figma_card",
+        "_figma_solid_card", "_figma_header", "_figma_bottom_nav", "_figma_theme",
+    )
+    for name in functions:
+        low = name.lower()
+        if name.startswith(shared_prefixes):
+            return set(PREMIUM_MAIN_BROAD_SCOPES)
+        if "setting" in low or "privacy" in low or "tutorial" in low:
+            scopes.add("settings")
+        if "collection" in low or "garden" in low:
+            scopes.add("collection")
+        if "daily" in low:
+            scopes.add("daily")
+        if "level_select" in low or "level_card" in low or "world_select" in low:
+            scopes.add("levels")
+        if low in {"build_home", "_on_surface_changed"} or "home" in low:
+            scopes.add("home")
+    return scopes or set(PREMIUM_MAIN_BROAD_SCOPES)
+
+def _combine_plans(*plans: dict[str, object]) -> dict[str, object]:
+    groups: list[str] = []
+    tests: list[str] = []
+    visual: list[str] = []
+    needs_godot = False
+    release_contract = False
+    for plan in plans:
+        groups.extend(plan["groups"])
+        tests.extend(plan["tests"])
+        visual.extend(plan["visual"])
+        needs_godot = needs_godot or bool(plan["needs_godot"])
+        release_contract = release_contract or bool(plan["release_contract"])
+    return {
+        "groups": sorted(set(groups)),
+        "tests": list(dict.fromkeys(tests)),
+        "visual": sorted(set(visual)),
+        "needs_godot": needs_godot,
+        "release_contract": release_contract,
+    }
+
+def plan_for_changes(paths: list[str], base: str, head: str) -> dict[str, object]:
+    if PREMIUM_MAIN_PATH not in paths:
+        return plan_for_paths(paths)
+
+    other_paths = [path for path in paths if path != PREMIUM_MAIN_PATH]
+    other_plan = plan_for_paths(other_paths)
+    premium_plan = plan_for_paths([PREMIUM_MAIN_PATH])
+    scopes = _premium_main_scopes(_premium_main_changed_functions(base, head))
+    premium_plan["visual"] = sorted(scopes)
+
+    if "home" in scopes and "validate_home_premium_visual_hierarchy" not in premium_plan["tests"]:
+        premium_plan["tests"].append("validate_home_premium_visual_hierarchy")
+    if ("collection" in scopes or "daily" in scopes) and "validate_collection_daily_value" not in premium_plan["tests"]:
+        premium_plan["tests"].append("validate_collection_daily_value")
+
+    return _combine_plans(other_plan, premium_plan)
+
 def emit_github_output(path: str, plan: dict[str, object], changed: list[str]) -> None:
     values = {
         "tests": " ".join(plan["tests"]),
@@ -241,7 +362,7 @@ def self_test() -> None:
         (["scripts/ui/ux_shell_casual.gd"], ["ui"], ["tutorial"], True),
         (["scripts/ui/premium_result_overlay.gd"], ["ui"], ["result"], True),
         (["scripts/ui/premium_live_hub_3d.gd"], ["ui"], ["games"], True),
-        (["scripts/ui/premium_main_casual.gd"], ["ui"], ["collection", "daily", "home", "levels", "settings"], True),
+        (["scripts/ui/premium_main_casual.gd"], ["secondary_ui"], ["collection", "daily", "home", "levels", "settings"], True),
         (["scripts/systems/premium_visuals.gd"], ["ui"], ["collection", "daily", "games", "levels", "settings", "shop"], True),
         (["scripts/ui/monetization_hub_3d.gd"], ["monetization"], ["shop"], True),
         (["scripts/core/feedback_manager.gd"], ["audio"], [], True),
@@ -257,6 +378,11 @@ def self_test() -> None:
         assert plan["needs_godot"] is godot, (paths, plan)
     explicit = plan_for_paths(["tests/validate_viewport_fit.gd"])
     assert explicit["tests"] == ["validate_viewport_fit"], explicit
+    assert _premium_main_scopes({"build_settings", "_figma_setting_row"}) == {"settings"}
+    assert _premium_main_scopes({"build_collection_upgrades"}) == {"collection"}
+    assert _premium_main_scopes({"build_daily_games"}) == {"daily"}
+    assert _premium_main_scopes({"_figma_surface"}) == PREMIUM_MAIN_BROAD_SCOPES
+    assert "validate_requested_polish_contract" in GROUP_TESTS["secondary_ui"]
     print("select_fast_ci_tests self-test passed")
 
 def main() -> None:
@@ -272,7 +398,7 @@ def main() -> None:
         return
 
     changed = git_changed_files(args.base, args.head)
-    plan = plan_for_paths(changed)
+    plan = plan_for_changes(changed, args.base, args.head)
     print("Changed files:")
     for path in changed:
         print(f"  {path}")

@@ -376,10 +376,10 @@ func build_settings() -> void:
 
 	_figma_settings_card(canvas,"SettingsCard/Appearance",Rect2(17,409,354,76),card_fill,card_border,dark_mode)
 	_figma_text(canvas,"☀  APPEARANCE",Rect2(33,425,150,18),15,Color("#ff8c1f") if not dark_mode else heading_color)
-	_figma_text(canvas,"THEME",Rect2(33,448,210,28),13,muted_color)
+	_figma_text(canvas,"THEME",Rect2(33,448,210,28),14,muted_color)
 	var theme_fill := FIGMA_ORANGE
 	var theme_text := FIGMA_NAVY
-	var theme_button := _figma_button(canvas,"SettingToggle/Theme",theme_name,Rect2(279,439,72,44),theme_fill,Callable(),theme_text,19,12)
+	var theme_button := _figma_button(canvas,"SettingToggle/Theme",theme_name,Rect2(279,439,72,44),theme_fill,Callable(),theme_text,19,14)
 	theme_button.pressed.connect(func() -> void:
 		if shell != null and shell.has_method("_toggle_theme"):
 			shell.call("_toggle_theme")
@@ -422,12 +422,12 @@ func _figma_settings_card(canvas: Control, name_value: String, rect: Rect2, fill
 
 func _figma_setting_row(canvas: Control, key: String, label_text: String, toggle_y: float, label_y: float, default_value: bool = true, reduced_motion: bool = false, dark_mode: bool = false) -> void:
 	var text_color := Color(0.76,0.84,0.90) if dark_mode else FIGMA_INK
-	_figma_text(canvas,label_text,Rect2(34,label_y-7,210,30),13,text_color)
+	_figma_text(canvas,label_text,Rect2(34,label_y-7,210,30),14,text_color)
 	var enabled := bool(SaveManager.data.get(key,default_value))
 	var fill := FIGMA_BLUE if enabled else Color("#b2bfcc")
 	var button_text_color := FIGMA_OFF_WHITE if enabled else FIGMA_NAVY
 	var state := "ON" if enabled else "OFF"
-	var button := _figma_button(canvas,"SettingToggle/%s" % key.capitalize(),state,Rect2(279,toggle_y-3.0,72,44),fill,Callable(),button_text_color,19,12)
+	var button := _figma_button(canvas,"SettingToggle/%s" % key.capitalize(),state,Rect2(279,toggle_y-3.0,72,44),fill,Callable(),button_text_color,19,14)
 	if reduced_motion:
 		button.pressed.connect(_toggle_reduced_motion)
 	else:
@@ -564,7 +564,7 @@ func build_collection() -> void:
 	]
 	for metric in metrics:
 		_figma_text(canvas,_compact_stat(int(metric[0])),Rect2(float(metric[2]),136,62,26),18,FIGMA_INK)
-		_figma_text(canvas,String(metric[1]),Rect2(float(metric[2])-3,161,70,20),12,FIGMA_MUTED)
+		_figma_text(canvas,String(metric[1]),Rect2(float(metric[2])-3,161,70,20),13,FIGMA_MUTED)
 
 	_figma_text(canvas,"THREE PUZZLE WORLDS",Rect2(17,204,190,18),15,FIGMA_INK)
 	_figma_collection_progress(canvas,"rescue_rush",17)
@@ -578,7 +578,7 @@ func build_collection() -> void:
 		var unlocked := MultiGameManager.unlocked_achievements(game_id).size()
 		var total := MultiGameManager.achievement_definitions(game_id).size()
 		achievement_parts.append("%s %d/%d" % [_figma_short_game(game_id),unlocked,total])
-	_figma_text(canvas," • ".join(achievement_parts),Rect2(33,384,310,22),12,FIGMA_MUTED)
+	_figma_text(canvas," • ".join(achievement_parts),Rect2(33,384,310,22),13,FIGMA_MUTED)
 
 	var decorations: Array = SaveManager.data.get("decorations",[])
 	var rescued: Array = SaveManager.data.get("rescued",[])
@@ -586,11 +586,11 @@ func build_collection() -> void:
 	_figma_card(canvas,"Garden",Rect2(17,429,354,96),Color("#fffef8"),Color(0.55,0.86,0.71,0.32),18)
 	_figma_text(canvas,"♥  RESCUE GARDEN",Rect2(33,445,180,19),16,Color("#088c3d"))
 	_figma_text(canvas,"%d friends home • %d / 6 upgrades" % [rescued.size(),owned],Rect2(33,476,240,20),13,FIGMA_MUTED)
-	_figma_text(canvas,"%d / 6 upgrades  •  +%d Daily  •  +%d Gift" % [owned,EconomyManager.collection_daily_bonus(),EconomyManager.garden_gift_amount()],Rect2(33,501,310,20),12,FIGMA_MUTED)
+	_figma_text(canvas,"%d / 6 upgrades  •  +%d Daily  •  +%d Gift" % [owned,EconomyManager.collection_daily_bonus(),EconomyManager.garden_gift_amount()],Rect2(33,501,310,20),13,FIGMA_MUTED)
 
-	_figma_card(canvas,"Boost",Rect2(17,539,354,92),Color("#fffef8"),Color(0.55,0.86,0.71,0.32),18)
+	_figma_card(canvas,"Boost",Rect2(17,539,354,112),Color("#fffef8"),Color(0.55,0.86,0.71,0.32),18)
 	_figma_text(canvas,"PERMANENT BOOST",Rect2(33,555,180,18),15,FIGMA_ORANGE)
-	_figma_text(canvas,"+5 per Daily Game • +10 Garden Gift per upgrade",Rect2(33,583,310,20),12,FIGMA_MUTED)
+	_figma_text(canvas,"+5 per Daily Game • +10 Garden Gift per upgrade",Rect2(33,578,310,20),13,FIGMA_MUTED)
 
 	# Figma state transition: swipe upward through the Garden/Boost region to
 	# reveal the dedicated six-upgrade Collection state.
@@ -606,7 +606,7 @@ func build_collection() -> void:
 	if not can_claim:
 		gift_text = "GARDEN GIFT CLAIMED" if EconomyManager.garden_gift_claimed_today() else "BUY AN UPGRADE IN SHOP"
 	var gift_fill := FIGMA_GREEN if can_claim else Color(0.54,0.64,0.72)
-	var gift := _figma_button(canvas,"CollectionGardenGift",gift_text,Rect2(33,603,250,44),gift_fill,Callable(),FIGMA_OFF_WHITE,16,12)
+	var gift := _figma_button(canvas,"CollectionGardenGift",gift_text,Rect2(33,603,250,44),gift_fill,Callable(),FIGMA_OFF_WHITE,16,13)
 	if can_claim:
 		gift.pressed.connect(_claim_collection_gift)
 	else:
@@ -653,13 +653,13 @@ func build_collection_upgrades() -> void:
 
 	var owned_count := EconomyManager.collection_owned_count()
 	_figma_text(canvas,"GARDEN UPGRADES",Rect2(23,99,342,28),22,Color("#1c8552"))
-	_figma_text(canvas,"Permanent value • %d / 6 owned" % owned_count,Rect2(23,131,342,18),13,Color("#597a8f"))
+	_figma_text(canvas,"Permanent value • %d / 6 owned" % owned_count,Rect2(23,131,342,18),14,Color("#597a8f"))
 	_figma_solid_card(canvas,"CollectionScroll/Boost",Rect2(23,163,342,60),Color("#f0fff5"),Color(0.30,0.78,0.48,0.42),16,false)
 	var boost_text := _figma_text(
 		canvas,
 		"+%d EVERY DAILY GAME   •   +%d GARDEN GIFT" % [EconomyManager.collection_daily_bonus(),EconomyManager.garden_gift_amount()],
 		Rect2(33,184,322,18),
-		12,
+		13,
 		Color("#1f8a52"),
 		true
 	)
@@ -680,7 +680,7 @@ func build_collection_upgrades() -> void:
 		var display_name := String(spec[1])
 		var flavor := String(spec[2])
 		var cost := int(spec[3])
-		var y := 239.0 + float(i)*76.0
+		var y := 235.0 + float(i)*78.0
 		var owned := id in owned_decorations
 		var card_fill := Color("#f0fff5") if owned else Color("#fcfaff")
 		var card_border := Color(0.32,0.78,0.49,0.46) if owned else Color(0.72,0.58,0.90,0.46)
@@ -688,14 +688,15 @@ func build_collection_upgrades() -> void:
 		_figma_solid_card(
 			canvas,
 			"CollectionScroll/Upgrade/%d" % i,
-			Rect2(23,y,342,66),
+			Rect2(23,y,342,70),
 			card_fill,
 			card_border,
 			16,
 			false
 		)
-		_figma_text(canvas,display_name,Rect2(37,y+11,184,18),13,title_color)
-		_figma_text(canvas,"%s  •  +5 DAILY  •  +10 GIFT" % flavor,Rect2(37,y+36,206,16),12,Color("#6b8091"))
+		_figma_text(canvas,display_name,Rect2(37,y+8,184,18),14,title_color)
+		_figma_text(canvas,flavor,Rect2(37,y+30,92,15),12,title_color.lightened(0.12))
+		_figma_text(canvas,"+5 DAILY  •  +10 GIFT",Rect2(37,y+48,192,15),12,Color("#6b8091"))
 		var state_text := "OWNED" if owned else "%d COINS" % cost
 		var pill_fill := Color("#e0f2e5") if owned else Color("#7a57e0")
 		var state_text_color := Color("#4d7a59") if owned else Color.WHITE
@@ -703,12 +704,12 @@ func build_collection_upgrades() -> void:
 			canvas,
 			"CollectionUpgrade/%s" % id,
 			state_text,
-			Rect2(249,y+11,98,44),
+			Rect2(251,y+13,96,44),
 			pill_fill,
 			Callable(),
 			state_text_color,
 			12,
-			12
+			13
 		)
 		state.disabled = owned
 		if owned:
@@ -719,7 +720,7 @@ func build_collection_upgrades() -> void:
 		else:
 			state.pressed.connect(_buy_collection_upgrade.bind(id,cost))
 
-	var return_hint := _figma_text(canvas,"Swipe up to return to your Collection summary",Rect2(37,710,314,18),12,Color("#6e8596"),true)
+	var return_hint := _figma_text(canvas,"Swipe up to return to your Collection summary",Rect2(37,710,314,18),13,Color("#6e8596"),true)
 	return_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_figma_bottom_nav(canvas,"collection")
 
