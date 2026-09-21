@@ -247,8 +247,8 @@ func _figma_solid_card(canvas: Control, name_value: String, rect: Rect2, tint: C
 
 func _figma_header(canvas: Control, title_text: String, subtitle_text: String, pill_text: String, pill_fill: Color, back_callback: Callable = Callable(self, "build_home"), pill_callback: Callable = Callable(), dark_mode: bool = false) -> void:
 	var use_dark := dark_mode or _dark()
-	var heading_color := FIGMA_DARK_INK
-	var muted_color := Color("#c6d9ec") if not use_dark else FIGMA_DARK_MUTED
+	var heading_color := FIGMA_NAVY if not use_dark else FIGMA_DARK_INK
+	var muted_color := Color("#31566f") if not use_dark else FIGMA_DARK_MUTED
 	var back_color := FIGMA_DARK_INK
 	var back_fill := Color("#152b52") if not use_dark else Color("#101a31")
 	var back_button := _figma_button(canvas, "FigmaBack", "‹", Rect2(17,19,52,52), back_fill, back_callback, back_color, 18, 27)
