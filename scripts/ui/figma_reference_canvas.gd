@@ -306,10 +306,11 @@ static func style_display_title(label_node: Label, fill: Color, outline_color: C
 	label_node.add_theme_color_override("font_color", fill)
 	label_node.add_theme_color_override("font_outline_color", outline_color)
 	label_node.add_theme_constant_override("outline_size", outline_size)
-	label_node.add_theme_color_override("font_shadow_color", Color(0.01,0.03,0.12,0.72))
+	# Keep title depth without creating a second dark glyph after compact scaling.
+	label_node.add_theme_color_override("font_shadow_color", Color(0.01,0.03,0.12,0.38))
 	label_node.add_theme_constant_override("shadow_offset_x", 0)
-	label_node.add_theme_constant_override("shadow_offset_y", 4)
-	label_node.add_theme_constant_override("shadow_outline_size", 2)
+	label_node.add_theme_constant_override("shadow_offset_y", 2)
+	label_node.add_theme_constant_override("shadow_outline_size", 1)
 
 static func horizontal_gradient(left: Color, right: Color, radius: float = 0.0, border_color: Color = Color.TRANSPARENT, border_width: float = 0.0) -> StyleBoxTexture:
 	var cache_key := _style_cache_key("horizontal", [left, right], radius, border_color, border_width)
@@ -390,6 +391,14 @@ static func premium_button(text_value: String, font_size: int, text_color: Color
 	result.add_theme_color_override("font_color", resolved_text)
 	result.add_theme_color_override("font_hover_color", resolved_text)
 	result.add_theme_color_override("font_pressed_color", resolved_text)
+	# Figma controls can sit under older screen themes. Clear inherited text
+	# effects so compact phone rendering stays crisp instead of looking doubled.
+	result.add_theme_color_override("font_shadow_color", Color.TRANSPARENT)
+	result.add_theme_color_override("font_outline_color", Color.TRANSPARENT)
+	result.add_theme_constant_override("shadow_offset_x", 0)
+	result.add_theme_constant_override("shadow_offset_y", 0)
+	result.add_theme_constant_override("shadow_outline_size", 0)
+	result.add_theme_constant_override("outline_size", 0)
 
 	# StyleBoxTexture's nine-slice margins contribute to Button minimum size.
 	# Drawing the gradient in a geometry-neutral child preserves the exact Figma
@@ -428,6 +437,14 @@ static func label(text_value: String, font_size: int, color: Color, bold := fals
 	result.add_theme_font_override("font", Unjam3DTheme.readable_font())
 	result.add_theme_font_size_override("font_size", font_size)
 	result.add_theme_color_override("font_color", color)
+	# Body labels never need legacy shadows. Display titles opt back into their
+	# controlled outline/shadow explicitly through style_display_title().
+	result.add_theme_color_override("font_shadow_color", Color.TRANSPARENT)
+	result.add_theme_color_override("font_outline_color", Color.TRANSPARENT)
+	result.add_theme_constant_override("shadow_offset_x", 0)
+	result.add_theme_constant_override("shadow_offset_y", 0)
+	result.add_theme_constant_override("shadow_outline_size", 0)
+	result.add_theme_constant_override("outline_size", 0)
 	result.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	if bold:
 		result.add_theme_constant_override("outline_size", 0)
@@ -444,6 +461,12 @@ static func button(text_value: String, font_size: int, text_color: Color, fill: 
 	result.add_theme_color_override("font_color", resolved_text)
 	result.add_theme_color_override("font_hover_color", resolved_text)
 	result.add_theme_color_override("font_pressed_color", resolved_text)
+	result.add_theme_color_override("font_shadow_color", Color.TRANSPARENT)
+	result.add_theme_color_override("font_outline_color", Color.TRANSPARENT)
+	result.add_theme_constant_override("shadow_offset_x", 0)
+	result.add_theme_constant_override("shadow_offset_y", 0)
+	result.add_theme_constant_override("shadow_outline_size", 0)
+	result.add_theme_constant_override("outline_size", 0)
 	var normal := solid_box(fill, radius, border, border_width)
 	var hover := solid_box(fill.lightened(0.055), radius, border.lightened(0.06), border_width)
 	var pressed := solid_box(fill.darkened(0.075), radius, border, border_width)
