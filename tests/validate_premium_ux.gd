@@ -14,7 +14,7 @@ func _initialize() -> void:
 	_check_source("res://scripts/ui/insufficient_coins_prompt.gd", ["FigmaInsufficientCoins390x844", "CoinModal/Card", "WATCH AD"], failures)
 	_check_source("res://scripts/ui/block_piece_button.gd", ["touch_preview", "TOUCH_LIFT", "_update_touch_footprint", "register_touch_drag"], failures)
 	_check_source("res://scripts/game/block_puzzle_polished.gd", ["active_touch_piece", "register_touch_drag", "_finish_touch_drag"], failures)
-	_check_source("res://scripts/ui/water_tube_reference_button.gd", ["PALETTE", "liquid_base", "glass lip", "play_invalid", "play_success"], failures)
+	_check_source("res://scripts/ui/water_tube_reference_button.gd", ["PALETTE", "liquid_base", "glass lip", "neck_width", "refractive tint", "play_invalid", "play_success"], failures)
 	_check_source("res://scripts/systems/premium_visuals.gd", ["tactile_success", "tactile_invalid", "transition_cover"], failures)
 	_check_source("res://scripts/ui/motion_director.gd", ["create_tween", "TRANS", "EASE"], failures)
 
