@@ -104,7 +104,7 @@ func _build() -> void:
 	FigmaReferenceCanvas.set_rect(title, 47, 100, 294, 44)
 	_canvas.add_child(title)
 
-	var subtitle := FigmaReferenceCanvas.label(subtitle_text, 13, Color("#b6c7d6") if dark else Color("45617b"), false)
+	var subtitle := FigmaReferenceCanvas.label(subtitle_text, 14, Color("#b6c7d6") if dark else Color("45617b"), false)
 	subtitle.name = "ResultSubtitle"
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -174,7 +174,7 @@ func _build() -> void:
 	_secondary_shadow = FigmaReferenceCanvas.add_shadow(_canvas, Rect2(47,568,294,48), 16, Color(0.03,0.10,0.20,0.22), 4, Vector2(0,4))
 	_secondary_shadow.name = "SecondaryActionShadow"
 	_secondary_shadow.visible = has_secondary
-	_secondary_button = FigmaReferenceCanvas.premium_button(secondary_text, 12, Color.WHITE, Color("#086ec7"), 16, Color("#70b9ef"), 1.3)
+	_secondary_button = FigmaReferenceCanvas.premium_button(secondary_text, 14, Color.WHITE, Color("#086ec7"), 16, Color("#70b9ef"), 1.3)
 	_secondary_button.name = "SecondaryAction"
 	FigmaReferenceCanvas.set_rect(_secondary_button, 47, 568, 294, 48)
 	_secondary_button.visible = has_secondary
