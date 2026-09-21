@@ -232,8 +232,19 @@ func _show_level_intro() -> void:
 		return
 	var label := milestone.replace("_", " ").to_upper()
 	var accent := Color("#ffd166") if milestone in ["boss", "world_finale", "mastery", "finale", "extreme"] else Color("#c084fc")
+	var center := _level_intro_banner_center()
+	premium_feedback.show_banner(label, accent, center, 176.0)
+
+func _level_intro_banner_center() -> Vector2:
 	var view := get_viewport_rect().size
-	premium_feedback.show_banner(label, accent, Vector2(view.x * 0.5, view.y * 0.22), 176.0)
+	if board_shell == null or not is_instance_valid(board_shell):
+		return Vector2(view.x * 0.5, view.y * 0.18)
+	var inverse := get_global_transform_with_canvas().affine_inverse()
+	var board_top_local: Vector2 = inverse * board_shell.get_global_rect().position
+	# Block Puzzle has no safe band below the board because the tray begins
+	# immediately. Keep the transient milestone just above the board instead.
+	var y := maxf(92.0, board_top_local.y - 27.0)
+	return Vector2(view.x * 0.5, y)
 
 func refill_pieces() -> void:
 	if daily_mode:
