@@ -157,36 +157,66 @@ func _add_card_preview(canvas: Control, game_id: String, card_y: float) -> void:
 func _add_bottom_nav(canvas: Control) -> void:
 	var shell := PanelContainer.new()
 	shell.name = "SelectorBottomNav"
-	RefCanvas.add_shadow(canvas, Rect2(13, 757, 362, 70), 18, Color(0.02,0.10,0.18,0.12), 5, Vector2(0,4))
-	var nav_fill := Color(0.07,0.10,0.17,0.98) if _selector_dark() else Color(0.985, 0.995, 1.0, 0.97)
-	var nav_border := Color(0.23,0.34,0.45,0.90) if _selector_dark() else Color(0.78,0.88,0.95,0.75)
+	RefCanvas.add_shadow(canvas, Rect2(13, 757, 362, 70), 18, Color(0.02,0.10,0.18,0.16), 5, Vector2(0,4))
+	var nav_fill := Color(0.055,0.085,0.15,0.985) if _selector_dark() else Color(0.985, 0.995, 1.0, 0.98)
+	var nav_border := Color(0.24,0.39,0.54,0.94) if _selector_dark() else Color(0.70,0.86,0.97,0.84)
 	shell.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(nav_fill.lightened(0.12), nav_fill, nav_fill.darkened(0.10), 18, nav_border, 1, 0.40))
 	RefCanvas.set_rect(shell, 13, 757, 362, 70)
 	shell.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(shell)
-	var active := PanelContainer.new()
-	active.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(CYAN.lightened(0.18), CYAN, CYAN.darkened(0.14), 16, CYAN.lightened(0.24), 1, 0.40))
-	RefCanvas.set_rect(active, 84, 767, 62, 48)
-	active.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	canvas.add_child(active)
+
+	var top_gloss := PanelContainer.new()
+	top_gloss.name = "SelectorNavTopGloss"
+	top_gloss.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.64,0.88,1.0,0.22 if _selector_dark() else 0.34), 1))
+	RefCanvas.set_rect(top_gloss, 28, 760, 332, 2)
+	top_gloss.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(top_gloss)
+
 	var items := [
-		["HOME", 22.0, Callable(self, "_go_home"), false],
-		["GAMES", 91.0, Callable(), true],
-		["DAILY", 160.0, func(): get_parent().call("build_daily_games"), false],
-		["COLLECT", 229.0, func(): get_parent().call("build_collection"), false],
-		["SETTINGS", 298.0, func(): get_parent().call("build_settings"), false],
+		["HOME", "⌂", 22.0, Callable(self, "_go_home"), false, Color("#33b9ff")],
+		["GAMES", "▦", 91.0, Callable(), true, Color("#7b6cff")],
+		["DAILY", "✦", 160.0, func(): get_parent().call("build_daily_games"), false, Color("#ffd54f")],
+		["COLLECT", "◆", 229.0, func(): get_parent().call("build_collection"), false, Color("#21c763")],
+		["SETTINGS", "⚙", 298.0, func(): get_parent().call("build_settings"), false, CYAN],
 	]
 	for item in items:
-		var nav_text := (Color(0.42,0.78,1.0) if item[3] else DARK_MUTED) if _selector_dark() else (Color(0.05, 0.49, 0.86) if item[3] else Color(0.31, 0.43, 0.54))
-		_add_text(canvas, item[0], Rect2(item[1] - 1.0, 787, 62, 31), 13, nav_text, true)
+		var selected: bool = bool(item[4])
+		var accent: Color = item[5]
+		var idle_text := DARK_MUTED if _selector_dark() else Color(0.31, 0.43, 0.54)
+		var label_color := Color.WHITE if selected and _selector_dark() else (INK if selected else idle_text)
+		var glyph_color := accent.lightened(0.18) if selected else idle_text.lightened(0.06)
+		if selected:
+			var plate := PanelContainer.new()
+			plate.name = "SelectorNavActivePlate_%s" % String(item[0])
+			var plate_fill := accent.darkened(0.50) if _selector_dark() else accent.lightened(0.34)
+			var plate_border := accent.lightened(0.16) if _selector_dark() else accent.darkened(0.08)
+			plate.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(plate_fill.lightened(0.14), plate_fill, plate_fill.darkened(0.12), 15, plate_border, 1.0, 0.38))
+			RefCanvas.set_rect(plate, float(item[2]) - 2.0, 762, 60, 57)
+			plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			canvas.add_child(plate)
+			var shine := PanelContainer.new()
+			shine.name = "SelectorNavActiveShine_%s" % String(item[0])
+			shine.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(1,1,1,0.32 if _selector_dark() else 0.55),1))
+			RefCanvas.set_rect(shine, float(item[2]) + 8.0, 765, 40, 2)
+			shine.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			canvas.add_child(shine)
+		var glyph := _add_text(canvas, String(item[1]), Rect2(float(item[2]) - 1.0, 765, 58, 22), 18, glyph_color, true)
+		glyph.name = "SelectorNavGlyph_%s" % String(item[0])
+		glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		var label := _add_text(canvas, String(item[0]), Rect2(float(item[2]) - 1.0, 790, 58, 22), 12, label_color, true)
+		label.name = "SelectorNavLabel_%s" % String(item[0])
+		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		var hit := Button.new()
+		hit.name = "SelectorNavHit_%s" % String(item[0])
 		hit.flat = true
 		hit.focus_mode = Control.FOCUS_NONE
 		hit.modulate.a = 0.001
-		RefCanvas.set_rect(hit, item[1] - 9, 753, 74, 78)
-		var callback: Callable = item[2]
+		RefCanvas.set_rect(hit, float(item[2]) - 9.0, 753, 74 if String(item[0]) != "SETTINGS" else 80, 78)
+		var callback: Callable = item[3]
 		if callback.is_valid():
 			hit.pressed.connect(callback)
+		else:
+			hit.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		canvas.add_child(hit)
 
 func _add_text(canvas: Control, text_value: String, rect: Rect2, font_size: int, color: Color, bold: bool) -> Label:
