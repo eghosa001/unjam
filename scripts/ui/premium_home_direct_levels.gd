@@ -21,9 +21,9 @@ const DARK_BOTTOM := Color("#29465b")
 const DARK_CARD := Color("#223b50")
 const DARK_INK := Color("#eef7ff")
 const DARK_MUTED := Color("#b6c7d6")
-const SCENE_TOP := Color("#1b63c5")
-const SCENE_MID := Color("#173f98")
-const SCENE_BOTTOM := Color("#0a1d58")
+const SCENE_TOP := Color("#c9f4fb")
+const SCENE_MID := Color("#89d4e8")
+const SCENE_BOTTOM := Color("#4b9fc7")
 const DARK_SCENE_TOP := Color("#101932")
 const DARK_SCENE_MID := Color("#0b1631")
 const DARK_SCENE_BOTTOM := Color("#060d22")
@@ -141,13 +141,13 @@ func _add_frame_background(canvas: Control) -> void:
 	canvas.move_child(ribbon, 1)
 
 func _add_hero(canvas: Control) -> void:
-	RefCanvas.add_shadow(canvas, Rect2(21, 121, 346, 224), 20, Color(0.03, 0.12, 0.22, 0.16), 5, Vector2(0, 4))
+	RefCanvas.add_shadow(canvas, Rect2(21, 121, 346, 224), 20, Color(0.03, 0.12, 0.22, 0.25 if not _home_dark() else 0.16), 8 if not _home_dark() else 5, Vector2(0, 6 if not _home_dark() else 4))
 	var hero := PanelContainer.new()
 	hero.name = "FigmaHomeHero"
 	if _home_dark():
 		hero.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#162a40"), Color("#12243a"), Color("#0f1d30"), 20, Color(0.24,0.62,0.88,0.62), 1.2))
 	else:
-		hero.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#d7f4ff"), Color("#d1eef9"), Color("#caeaf6"), 20, Color(0.505, 0.769, 0.945, 0.32), 1.2))
+		hero.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#f4fdff"), Color("#d9f1f7"), Color("#b8dae5"), 20, Color("#70bfd9"), 1.5, 0.43))
 	RefCanvas.set_rect(hero, 21, 121, 346, 224)
 	hero.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(hero)
@@ -334,8 +334,8 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 	var shell := PanelContainer.new()
 	shell.name = "HomeBottomNav3D"
 	RefCanvas.add_shadow(canvas, Rect2(13, 757, 362, 70), 18, Color(0.02, 0.10, 0.18, 0.16), 5, Vector2(0, 4))
-	var nav_fill := Color(0.055,0.085,0.15,0.985) if _home_dark() else Color(0.985,0.995,1.0,0.98)
-	var nav_border := Color(0.24,0.39,0.54,0.94) if _home_dark() else Color(0.70,0.86,0.97,0.84)
+	var nav_fill := Color(0.055,0.085,0.15,0.985) if _home_dark() else Color("#e8f6fa")
+	var nav_border := Color(0.24,0.39,0.54,0.94) if _home_dark() else Color("#83c7db")
 	shell.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(nav_fill.lightened(0.12), nav_fill, nav_fill.darkened(0.10), 18, nav_border, 1, 0.40))
 	RefCanvas.set_rect(shell, 13, 757, 362, 70)
 	shell.mouse_filter = Control.MOUSE_FILTER_IGNORE
