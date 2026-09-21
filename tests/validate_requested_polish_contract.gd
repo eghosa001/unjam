@@ -12,7 +12,7 @@ func _init() -> void:
 	_require("res://scripts/ui/unjam_3d_backdrop.gd", ["Fewer, larger foliage clusters"], errors)
 	_require("res://scripts/ui/premium_main_casual.gd", ["SurfaceKeyLight", "SurfaceAccentGlow", "#1b63c5", "#173f98", "#0a1d58"], errors)
 	_require("res://scripts/ui/premium_home_direct_levels.gd", ["HomeKeyLight", "HomeAccentGlow", "HomeCurrencyGem3D", "HomeCurrencyStar3D", "WorldProgressSpecular"], errors)
-	_require("res://scripts/ui/premium_result_overlay.gd", ["ResultKeyLight", "ResultStar3D", "add_collectible_star"], errors)
+	_require("res://scripts/ui/premium_result_overlay.gd", ["ResultKeyLight", "ResultStar3D", "ResultGameArt3D", "add_collectible_star"], errors)
 	_require("res://scripts/ui/ux_shell_casual.gd", ["TutorialKeyLight", "add_scene_backdrop_layers"], errors)
 	_require("res://scripts/ui/premium_live_hub_3d.gd", ["SelectorWorldDepth", "SelectorGameArt3D_", "SelectorKeyLight", "#1b63c5", "style_display_title"], errors)
 	_require("res://scripts/ui/unjam_3d_game_art.gd", ["camera.fov = 39.0", "Game-specific card-scale composition", "display_root.scale = Vector3.ONE * 1.12"], errors)
