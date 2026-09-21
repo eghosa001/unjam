@@ -102,10 +102,9 @@ func _draw() -> void:
 		outline = Color("ff4d67")
 	if success_flash > 0.0:
 		outline = Color("7ff0b0")
-	# Blue outer refraction + bright inner crystal edge gives the bottle a
-	# double-wall glass read against the dark playfield.
-	_draw_glass_shape(Rect2(body.position - Vector2(1.5, 1.5), body.size + Vector2(3, 3)), Color(0.22, 0.76, 1.0, 0.035), Color(0.35, 0.82, 1.0, 0.34), radius + 1.5, 5.0)
-	_draw_glass_shape(body, Color(0.70, 0.93, 1.0, 0.115), outline, radius, 2.6)
+	# Outer refraction sits behind the liquid; the primary crystal shell is
+	# composited afterwards so glass remains visible over every colour layer.
+	_draw_glass_shape(Rect2(body.position - Vector2(1.5, 1.5), body.size + Vector2(3, 3)), Color(0.22, 0.76, 1.0, 0.040), Color(0.35, 0.82, 1.0, 0.34), radius + 1.5, 5.0)
 
 	# Four crisp liquid layers, similar to the visual rhythm in the reference.
 	var slot_h := inner.size.y / float(CAPACITY)
@@ -137,6 +136,16 @@ func _draw() -> void:
 		draw_rect(Rect2(r.position, Vector2(maxf(2.0, r.size.x * 0.12), r.size.y)), Color(liquid.darkened(0.28),0.24), true)
 		draw_rect(Rect2(Vector2(r.end.x - maxf(2.0, r.size.x * 0.12), r.position.y), Vector2(maxf(2.0, r.size.x * 0.12), r.size.y)), Color(liquid.darkened(0.32),0.22), true)
 
+	# Crystal overlay: broad translucent wall bands plus the complete shell are
+	# rendered after liquid. This keeps the vessel readable without a fake long
+	# vertical shine line through the middle of the bottle.
+	var wall_top := body.position.y + radius * 0.42
+	var wall_height := maxf(4.0, body.size.y - radius * 0.92)
+	var wall_width := maxf(3.0, body.size.x * 0.10)
+	draw_rect(Rect2(Vector2(body.position.x + 2.5, wall_top), Vector2(wall_width, wall_height)), Color(0.52,0.90,1.0,0.13), true)
+	draw_rect(Rect2(Vector2(body.end.x - wall_width - 2.5, wall_top), Vector2(wall_width, wall_height)), Color(0.92,0.99,1.0,0.10), true)
+	_draw_glass_shape(body, Color(0.78, 0.96, 1.0, 0.070), outline, radius, 2.8)
+
 	# Thick glass lip, base refraction and small curved glints. Avoid long vertical
 	# wall strokes—the user-visible bottle should read as glass, not as lined plastic.
 	var mouth_width := body.size.x * 0.48
@@ -146,13 +155,6 @@ func _draw() -> void:
 	draw_arc(body.get_center() + Vector2(-body.size.x * 0.16, -body.size.y * 0.30), body.size.x * 0.19, -2.65, -1.05, 16, Color(1,1,1,0.38), 2.6, true)
 	draw_arc(Vector2(body.get_center().x, body.end.y - radius * 0.72), body.size.x * 0.31, 0.10, PI - 0.10, 22, Color(0.86,0.98,1.0,0.34), 2.2, true)
 	draw_circle(body.position + Vector2(body.size.x * 0.30, body.size.y * 0.18), maxf(1.8, body.size.x * 0.045), Color(1,1,1,0.44))
-	# Reinforce only the OUTER crystal contour after liquid rendering. These edge
-	# strokes define the bottle silhouette without reintroducing an interior shine line.
-	var edge_top := body.position.y + radius * 0.52
-	var edge_bottom := body.end.y - radius * 0.58
-	draw_line(Vector2(body.position.x + 1.2, edge_top), Vector2(body.position.x + 1.2, edge_bottom), Color(0.64,0.92,1.0,0.58), 1.8, true)
-	draw_line(Vector2(body.end.x - 1.2, edge_top), Vector2(body.end.x - 1.2, edge_bottom), Color(0.90,0.98,1.0,0.42), 1.8, true)
-
 	if is_selected:
 		var a := 0.35 + 0.12 * sin(pulse * 5.0)
 		draw_arc(body.get_center(), body.size.x * 0.68, 0, TAU, 42, Color(1.0, 0.88, 0.35, a), 4.0, true)
