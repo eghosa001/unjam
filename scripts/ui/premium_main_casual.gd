@@ -549,12 +549,14 @@ func _figma_daily_progress(canvas: Control) -> void:
 		var label := _figma_text(
 			canvas,
 			"%s %s" % [String(spec[1]), "✓" if done else "READY"],
-			Rect2(float(spec[2])+5,676,86,18),
-			10,
+			Rect2(float(spec[2])+4,675,88,20),
+			12,
 			accent.lightened(0.25) if _dark() else accent.darkened(0.24),
 			true
 		)
+		label.name = "DailyProgressLabel/%s" % game_id
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 
 	var note := _figma_text(canvas, "Each Daily is independent • play in any order", Rect2(33,703,318,18), 12, FIGMA_MUTED, true)
 	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -585,8 +587,9 @@ func _figma_daily_card(canvas: Control, game_id: String, y: float, collection_bo
 	accent_rail.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(accent.lightened(0.30), accent, accent.darkened(0.24), 3, accent.lightened(0.38), 1, 0.36))
 	FigmaReferenceCanvas.set_rect(accent_rail, 20, y + 14, 5, 78)
 	canvas.add_child(accent_rail)
-	var daily_title := _figma_text(canvas, MultiGameManager.display_name(game_id).to_upper(), Rect2(33,y+18,150,21), 17, accent)
-	FigmaReferenceCanvas.style_display_title(daily_title, accent.lightened(0.18), Color("#071d55"), 1)
+	var daily_title := _figma_text(canvas, MultiGameManager.display_name(game_id).to_upper(), Rect2(33,y+18,170,22), 18, FIGMA_OFF_WHITE)
+	daily_title.name = "DailyTitle/%s" % game_id
+	FigmaReferenceCanvas.style_display_title(daily_title, Color("#fff7df"), accent.darkened(0.62), 2)
 	var detail := "TODAY’S RESCUE" if game_id == "rescue_rush" else ("TODAY’S SORT" if game_id == "water_sort" else "TODAY’S BLOCK RUN")
 	_figma_text(canvas, detail, Rect2(33,y+48,175,15), 12, FIGMA_MUTED)
 	var reward := "+%d COINS" % (100 + collection_bonus) if game_id == "rescue_rush" else "+%d–%d COINS" % [125 + collection_bonus,175 + collection_bonus]
@@ -603,7 +606,7 @@ func _figma_daily_card(canvas: Control, game_id: String, y: float, collection_bo
 		Callable(),
 		FIGMA_OFF_WHITE,
 		14,
-		11
+		14
 	)
 	button.disabled = bool(daily_state.get("disabled", false))
 	if not button.disabled:
