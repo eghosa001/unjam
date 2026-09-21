@@ -155,7 +155,7 @@ func _add_hero(canvas: Control) -> void:
 	hero.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(hero)
 
-	_add_text(canvas, "CURRENT JOURNEY", Rect2(41, 142, 150, 15), 12, ORANGE, true)
+	_add_text(canvas, "CURRENT JOURNEY", Rect2(41, 142, 150, 18), 14, ORANGE, true)
 	var level := _home_current_level(selected_game)
 	var world := MultiGameManager.world_for_game_level(selected_game, level)
 	var game_title_size := 23 if selected_game == "block_puzzle" else 27
@@ -229,10 +229,10 @@ func _add_quick_switch(canvas: Control) -> void:
 		RefCanvas.set_rect(card, x, 465, 108, 94)
 		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		canvas.add_child(card)
-		_add_text(canvas, String(entry[1]), Rect2(x + 7, 478, 96, 18), 11, entry[2], true)
+		_add_text(canvas, String(entry[1]), Rect2(x + 7, 477, 96, 20), 13, entry[2], true)
 		var level := _home_current_level(id)
 		var stars := MultiGameManager.total_stars(id)
-		_add_text(canvas, "L%d • ★%s" % [level, _compact_number(stars)], Rect2(x + 9, 509, 92, 15), 12, MUTED, false)
+		_add_text(canvas, "L%d • ★%s" % [level, _compact_number(stars)], Rect2(x + 9, 508, 92, 18), 13, MUTED, false)
 		var tap := Button.new()
 		tap.name = "HomeDirect_%s" % id
 		tap.set_meta("unjam_figma_exact_geometry", true)
@@ -262,9 +262,9 @@ func _add_world_progress(canvas: Control) -> void:
 	RefCanvas.set_rect(panel, 21, 590, 346, 74)
 	canvas.add_child(panel)
 
-	var world_title := _add_text(canvas, "WORLD %d PROGRESS" % world, Rect2(37, 604, 175, 18), 12, OFF_WHITE if _home_dark() else NAVY, true)
+	var world_title := _add_text(canvas, "WORLD %d PROGRESS" % world, Rect2(37, 603, 190, 20), 14, OFF_WHITE if _home_dark() else NAVY, true)
 	world_title.name = "HomeWorldProgressTitle"
-	var world_value := _add_text(canvas, "%d / %d" % [completed_in_world, total], Rect2(274, 604, 72, 18), 12, accent, true)
+	var world_value := _add_text(canvas, "%d / %d" % [completed_in_world, total], Rect2(266, 603, 80, 20), 14, accent, true)
 	world_value.name = "HomeWorldProgressValue"
 
 	var progress := ProgressBar.new()
