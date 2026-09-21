@@ -22,6 +22,11 @@ GROUP_TESTS = {
         "validate_viewport_fit",
         "validate_theme_integrity",
     ],
+    "tutorial": [
+        "validate_tutorial_premium_flow",
+        "validate_requested_polish_contract",
+        "validate_reported_polish_regressions",
+    ],
     "water": [
         "validate_reported_polish_regressions",
         "validate_compact_gameplay_stack",
@@ -114,11 +119,15 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
     if p.startswith("scripts/ui/"):
         game_specific_ui = bool(groups.intersection({"water", "block", "rescue"}))
         monetization_ui = any(token in p for token in ("monetization_hub", "shop_", "purchase_"))
+        tutorial_ui = "ux_shell" in p or "tutorial" in p
         if monetization_ui:
             add(groups, "monetization")
             visual.add("shop")
         elif not game_specific_ui:
-            add(groups, "secondary_ui" if p.endswith(("premium_main_casual.gd", "premium_main.gd")) else "ui")
+            if tutorial_ui:
+                add(groups, "tutorial")
+            else:
+                add(groups, "secondary_ui" if p.endswith(("premium_main_casual.gd", "premium_main.gd")) else "ui")
             if p.endswith(("figma_reference_canvas.gd", "unjam_3d_theme.gd")):
                 visual.update({
                     "home", "games", "levels", "collection", "daily", "settings",
@@ -130,7 +139,7 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
                 visual.add("games")
             elif p.endswith(("premium_main_casual.gd", "premium_main.gd")):
                 visual.update({"home", "levels", "collection", "daily", "settings"})
-            elif "ux_shell" in p or "tutorial" in p:
+            elif tutorial_ui:
                 visual.add("tutorial")
             elif "premium_result_overlay" in p or "result" in p:
                 visual.add("result")
@@ -369,7 +378,7 @@ def self_test() -> None:
         (["scripts/game/water_sort_casual.gd"], ["water"], ["water"], True),
         (["scripts/ui/water_tube_3d_motion.gd"], ["water"], ["water"], True),
         (["scripts/game/block_puzzle_3d.gd"], ["block"], ["block"], True),
-        (["scripts/ui/ux_shell_casual.gd"], ["ui"], ["tutorial"], True),
+        (["scripts/ui/ux_shell_casual.gd"], ["tutorial"], ["tutorial"], True),
         (["scripts/ui/premium_result_overlay.gd"], ["ui"], ["result"], True),
         (["scripts/ui/premium_live_hub_3d.gd"], ["ui"], ["games"], True),
         (["scripts/ui/premium_main_casual.gd"], ["secondary_ui"], ["collection", "daily", "home", "levels", "settings"], True),
@@ -394,6 +403,11 @@ def self_test() -> None:
     assert _premium_main_scopes({"_figma_bottom_nav"}) == {"collection", "daily", "settings"}
     assert _premium_main_scopes({"_figma_surface"}) == PREMIUM_MAIN_BROAD_SCOPES
     assert "validate_requested_polish_contract" in GROUP_TESTS["secondary_ui"]
+    assert GROUP_TESTS["tutorial"] == [
+        "validate_tutorial_premium_flow",
+        "validate_requested_polish_contract",
+        "validate_reported_polish_regressions",
+    ]
     icon_plan = plan_for_paths(["assets/icon_adaptive_foreground.svg"])
     assert icon_plan["release_contract"] is True
     assert icon_plan["needs_godot"] is False
