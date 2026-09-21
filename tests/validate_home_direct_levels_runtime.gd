@@ -45,6 +45,8 @@ func _run() -> void:
 		var expected := _expected_progress(game_id)
 		var hero_title := home.find_child("HomeHeroGameTitle",true,false) as Label
 		var hero_meta := home.find_child("HomeHeroGameMeta",true,false) as Label
+		var top_level := home.find_child("HomeSelectedGameLevel",true,false) as Label
+		var top_stars := home.find_child("HomeSelectedGameStars",true,false) as Label
 		var primary := home.find_child("HomePrimaryAction",true,false) as Button
 		var world_value := home.find_child("HomeWorldProgressValue",true,false) as Label
 		var progress := home.find_child("HomeWorldProgressBar",true,false) as ProgressBar
@@ -55,6 +57,11 @@ func _run() -> void:
 			return _fail("Home hero did not update for %s" % game_id)
 		if hero_meta == null or hero_meta.text != "LEVEL %d • WORLD %d" % [expected.level, expected.world]:
 			return _fail("Home hero level/world stayed stale for %s" % game_id)
+		if top_level == null or top_level.text != "LV %d" % expected.level:
+			return _fail("Home top level badge stayed stale for %s" % game_id)
+		var expected_stars := int(_multi.call("total_stars", game_id))
+		if top_stars == null or top_stars.text.strip_edges() != str(expected_stars):
+			return _fail("Home top star badge stayed stale for %s" % game_id)
 		if primary == null or primary.text != "CONTINUE • LEVEL %d" % expected.level:
 			return _fail("Home Continue action stayed stale for %s" % game_id)
 		if world_value == null or world_value.text != expected.world_text:
@@ -89,7 +96,7 @@ func _seed_distinct_progress() -> void:
 	var save_data := _save.get("data") as Dictionary
 	save_data["highest_level"] = 120
 	save_data["total_levels_completed"] = 119
-	save_data["stars"] = {"1": 3, "50": 2, "119": 3}
+	save_data["stars"] = {"1": 3, "50": 2}
 
 	var all: Dictionary = save_data.get("game_progress", {}).duplicate(true)
 	all["water_sort"] = {

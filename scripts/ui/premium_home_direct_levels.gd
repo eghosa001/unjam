@@ -75,15 +75,12 @@ func _build_reference_home(canvas: Control) -> void:
 	brand_title.name = "HomeBrandTitle3D"
 	RefCanvas.style_display_title(brand_title, Color("#ffb92f"), Color("#071d55"), 2)
 
-	var cleared := 0
-	for game_id in MultiGameManager.GAME_IDS:
-		cleared += int(MultiGameManager.progress_for(game_id).get("levels_completed", 0))
-	var player_level := maxi(1, 1 + int(cleared / 10))
-	_add_pill(canvas, Rect2(21, 64, 78, 40), Color(0.03, 0.43, 0.78), "LV %d" % player_level, 13, OFF_WHITE)
+	var selected_level := _home_current_level(selected_game)
+	_add_pill(canvas, Rect2(21, 64, 78, 40), Color(0.03, 0.43, 0.78), "LV %d" % selected_level, 13, OFF_WHITE, "HomeSelectedGameLevel")
 	home_coin_button = _add_action(canvas, Rect2(107, 62, 112, 44), Color(1.0, 0.55, 0.12), "   %s +" % _compact_number(EconomyManager.balance()), 12, OFF_WHITE, Callable(self, "_open_shop"), 20)
 	home_coin_button.name = "HomeCoinShopButton"
 	RefCanvas.add_collectible_gem(canvas, Vector2(122, 84), 8.0, "HomeCurrencyGem3D")
-	_add_pill(canvas, Rect2(227, 64, 92, 40), GOLD, "   %s" % _compact_number(_total_stars()), 12, NAVY)
+	_add_pill(canvas, Rect2(227, 64, 92, 40), GOLD, "   %s" % _compact_number(MultiGameManager.total_stars(selected_game)), 12, NAVY, "HomeSelectedGameStars")
 	RefCanvas.add_collectible_star(canvas, Vector2(242, 84), 8.0, true, "HomeCurrencyStar3D")
 
 	_add_hero(canvas)
@@ -395,7 +392,7 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 			hit.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		canvas.add_child(hit)
 
-func _add_pill(canvas: Control, rect: Rect2, fill: Color, text_value: String, font_size: int, text_color: Color) -> PanelContainer:
+func _add_pill(canvas: Control, rect: Rect2, fill: Color, text_value: String, font_size: int, text_color: Color, label_name: String = "") -> PanelContainer:
 	RefCanvas.add_shadow(canvas, rect, rect.size.y * 0.5, Color(0.02, 0.10, 0.18, 0.15), 3, Vector2(0, 2))
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(fill.lightened(0.16), fill, fill.darkened(0.12), rect.size.y * 0.5, fill.lightened(0.20), 1, 0.40))
@@ -404,6 +401,8 @@ func _add_pill(canvas: Control, rect: Rect2, fill: Color, text_value: String, fo
 	canvas.add_child(panel)
 	var resolved_text := text_color if fill.get_luminance() > 0.58 else _home_text_color(text_color)
 	var label := RefCanvas.label(text_value, font_size, resolved_text, true)
+	if not label_name.is_empty():
+		label.name = label_name
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	RefCanvas.set_rect(label, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	canvas.add_child(label)
@@ -484,6 +483,12 @@ func _refresh_home_selection() -> void:
 	var meta := figma_canvas.get_node_or_null("HomeHeroGameMeta") as Label
 	if meta != null:
 		meta.text = "LEVEL %d • WORLD %d" % [level, world]
+	var top_level := figma_canvas.get_node_or_null("HomeSelectedGameLevel") as Label
+	if top_level != null:
+		top_level.text = "LV %d" % level
+	var top_stars := figma_canvas.get_node_or_null("HomeSelectedGameStars") as Label
+	if top_stars != null:
+		top_stars.text = "   %s" % _compact_number(MultiGameManager.total_stars(selected_game))
 	if primary_button != null and is_instance_valid(primary_button):
 		primary_button.text = "CONTINUE • LEVEL %d" % level
 	var old_preview := figma_canvas.get_node_or_null("HomeHeroPreviewRoot")
