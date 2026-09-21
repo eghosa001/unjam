@@ -14,7 +14,8 @@ func _initialize() -> void:
 func _run() -> void:
 	var failures: Array[String] = []
 	root.size = TALL_VIEWPORT
-	await _check_game_scene("res://scenes/WaterSort.tscn","FigmaWater390x844","GameplayStage",Rect2(17,169,354,420),"CompactGameActions",Rect2(21,627,346,60),failures)
+	await _check_game_scene("res://scenes/WaterSort.tscn","FigmaWater390x844","GameplayStage",Rect2(17,169,354,420),"CompactGameActions",Rect2(21,650,346,60),failures)
+	await _check_water_footer(failures)
 	await _check_game_scene("res://scenes/Game.tscn","FigmaRescue390x844","RescueBoardPanel",Rect2(21,180,348,348),"CompactGameActions",Rect2(21,638,346,62),failures)
 	for viewport_size in SELECTOR_VIEWPORTS:
 		await _check_selector(viewport_size,failures)
@@ -49,6 +50,34 @@ func _check_game_scene(path: String, canvas_name: String, stage_name: String, st
 		for control in [stage,actions]:
 			if not _inside((control as Control).get_global_rect(),screen):
 				failures.append("%s control %s spills outside tall viewport" % [path,control.name])
+	scene.queue_free()
+	await process_frame
+
+func _check_water_footer(failures: Array[String]) -> void:
+	root.size = Vector2i(540,960)
+	var packed := load("res://scenes/WaterSort.tscn") as PackedScene
+	if packed == null:
+		failures.append("Could not load WaterSort.tscn for footer audit")
+		return
+	var scene := packed.instantiate() as Control
+	root.add_child(scene)
+	scene.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	await _frames(8)
+	var status := scene.find_child("WaterStatusText",true,false) as Label
+	var guidance := scene.find_child("WaterGuidanceText",true,false) as Label
+	var actions := scene.find_child("CompactGameActions",true,false) as Control
+	if status == null or guidance == null or actions == null:
+		failures.append("Water footer hierarchy is incomplete")
+	else:
+		var status_rect := status.get_global_rect()
+		var guidance_rect := guidance.get_global_rect()
+		var action_rect := actions.get_global_rect()
+		if status_rect.intersects(guidance_rect):
+			failures.append("Water status and guidance rows overlap")
+		if guidance_rect.intersects(action_rect):
+			failures.append("Water guidance overlaps action row")
+		if status.get_theme_font_size("font_size") < 14 or guidance.get_theme_font_size("font_size") < 14:
+			failures.append("Water footer text fell below 14px reference size")
 	scene.queue_free()
 	await process_frame
 
