@@ -105,7 +105,7 @@ func _draw() -> void:
 	# Blue outer refraction + bright inner crystal edge gives the bottle a
 	# double-wall glass read against the dark playfield.
 	_draw_glass_shape(Rect2(body.position - Vector2(1.5, 1.5), body.size + Vector2(3, 3)), Color(0.22, 0.76, 1.0, 0.035), Color(0.35, 0.82, 1.0, 0.34), radius + 1.5, 5.0)
-	_draw_glass_shape(body, Color(1, 1, 1, 0.035), outline, radius, 2.4)
+	_draw_glass_shape(body, Color(0.70, 0.93, 1.0, 0.075), outline, radius, 2.4)
 
 	# Four crisp liquid layers, similar to the visual rhythm in the reference.
 	var slot_h := inner.size.y / float(CAPACITY)
@@ -146,6 +146,12 @@ func _draw() -> void:
 	draw_arc(body.get_center() + Vector2(-body.size.x * 0.16, -body.size.y * 0.30), body.size.x * 0.19, -2.65, -1.05, 16, Color(1,1,1,0.38), 2.6, true)
 	draw_arc(Vector2(body.get_center().x, body.end.y - radius * 0.72), body.size.x * 0.31, 0.10, PI - 0.10, 22, Color(0.86,0.98,1.0,0.34), 2.2, true)
 	draw_circle(body.position + Vector2(body.size.x * 0.30, body.size.y * 0.18), maxf(1.8, body.size.x * 0.045), Color(1,1,1,0.44))
+	# Reinforce only the OUTER crystal contour after liquid rendering. These edge
+	# strokes define the bottle silhouette without reintroducing an interior shine line.
+	var edge_top := body.position.y + radius * 0.52
+	var edge_bottom := body.end.y - radius * 0.58
+	draw_line(Vector2(body.position.x + 1.2, edge_top), Vector2(body.position.x + 1.2, edge_bottom), Color(0.64,0.92,1.0,0.58), 1.8, true)
+	draw_line(Vector2(body.end.x - 1.2, edge_top), Vector2(body.end.x - 1.2, edge_bottom), Color(0.90,0.98,1.0,0.42), 1.8, true)
 
 	if is_selected:
 		var a := 0.35 + 0.12 * sin(pulse * 5.0)
