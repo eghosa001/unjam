@@ -37,6 +37,11 @@ func _run() -> void:
 			return _fail("Selector game title lost its high-contrast outline for %s" % game_id)
 		if game_title.get_theme_color("font_color").get_luminance() < 0.80:
 			return _fail("Selector game title lost its bright foreground for %s" % game_id)
+		var game_subtitle := _find(main, "SelectorGameSubtitle_%s" % game_id) as Label
+		if game_subtitle == null or game_subtitle.size.x > 184.1 or game_subtitle.size.y < 36.0:
+			return _fail("Selector subtitle bounds regressed for %s" % game_id)
+		if game_subtitle.autowrap_mode == TextServer.AUTOWRAP_OFF or not game_subtitle.clip_text:
+			return _fail("Selector subtitle must wrap and clip before the preview art for %s" % game_id)
 		var preview := _find(main, "SelectorGameArt3D_%s" % game_id) as SubViewportContainer
 		if preview == null or not bool(preview.get_meta("unjam_flat_3d_preview", false)):
 			return _fail("Selector flat-3D gameplay emblem is missing for %s" % game_id)
