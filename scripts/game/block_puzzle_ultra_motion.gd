@@ -69,10 +69,7 @@ func _tray_piece_button_size() -> Vector2:
 	var separation := float(piece_row.get_theme_constant("separation")) if piece_row != null else 12.0
 	var usable := maxf(300.0, viewport_size.x - side_budget - tray_padding - separation * 2.0)
 	var width := floorf(usable / 3.0)
-	# Short phones need a visibly substantial tray, not merely a large invisible
-	# hitbox around tiny bricks. Give the piece artwork enough vertical room to
-	# render up to 36px cells while keeping all three controls inside the tray.
-	var height := 124.0 if viewport_size.y < 1050.0 else (140.0 if viewport_size.y < 1400.0 else 158.0)
+	var height := 112.0 if viewport_size.y < 1050.0 else (136.0 if viewport_size.y < 1400.0 else 154.0)
 	return Vector2(clampf(width, 96.0, 270.0), height)
 
 func _play_place_feedback(indices: Array[int], color: Color, points: int) -> void:
