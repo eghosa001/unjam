@@ -343,8 +343,8 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 	var items := [
 		["HOME", "⌂", 22.0, Callable(), "HomeNavButton", true, Color("#33b9ff")],
 		["GAMES", "▦", 91.0, Callable(self, "_open_game_selector"), "HomeGamesNavButton", false, Color("#7b6cff")],
-		["DAILY", "✦", 160.0, Callable(self, "_open_daily_games"), "HomeDailyNavButton", false, GOLD],
-		["COLLECT", "◆", 222.0, func(): get_parent().call("build_collection"), "HomeCollectionNavButton", false, Color("#24c96b")],
+		["DAILY", "✦", 150.0, Callable(self, "_open_daily_games"), "HomeDailyNavButton", false, GOLD],
+		["COLLECT", "◆", 225.0, func(): get_parent().call("build_collection"), "HomeCollectionNavButton", false, Color("#24c96b")],
 		["SETTINGS", "⚙", 310.0, func(): get_parent().call("build_settings"), "HomeSettingsNavButton", false, CYAN],
 	]
 	for item in items:
