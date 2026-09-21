@@ -29,7 +29,7 @@ func _initialize() -> void:
 		push_error("Rescue Rush pieces lost the lightweight Canvas renderer")
 		quit(1)
 		return
-	for required in ["2.5D CanvasItem geometry", "func _draw_shell", "var depth :=", "func _draw_arrow", "raised inlay"]:
+	for required in ["2.5D CanvasItem geometry", "func _draw_shell", "var depth :=", "func _draw_arrow", "var cast := PackedVector2Array()", "var side := PackedVector2Array()", "var top := PackedVector2Array()"]:
 		if not piece_source.contains(required):
 			push_error("Rescue Rush tile depth contract is missing: " + required)
 			quit(1)
