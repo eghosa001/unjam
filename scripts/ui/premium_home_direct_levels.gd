@@ -229,10 +229,10 @@ func _add_quick_switch(canvas: Control) -> void:
 		RefCanvas.set_rect(card, x, 465, 108, 94)
 		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		canvas.add_child(card)
-		_add_text(canvas, String(entry[1]), Rect2(x + 7, 478, 96, 18), 12, entry[2], true)
+		_add_text(canvas, String(entry[1]), Rect2(x + 6, 477, 98, 20), 13, entry[2], true)
 		var level := _home_current_level(id)
 		var stars := MultiGameManager.total_stars(id)
-		_add_text(canvas, "L%d • ★%s" % [level, _compact_number(stars)], Rect2(x + 9, 509, 92, 15), 12, MUTED, false)
+		_add_text(canvas, "L%d • ★%s" % [level, _compact_number(stars)], Rect2(x + 8, 508, 94, 17), 13, MUTED, false)
 		var tap := Button.new()
 		tap.name = "HomeDirect_%s" % id
 		tap.set_meta("unjam_figma_exact_geometry", true)
@@ -368,7 +368,7 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 			shine.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(1,1,1,0.34 if _home_dark() else 0.55), 1))
 			RefCanvas.set_rect(shine, float(item[2]) + 7.0, 765, 40, 2)
 			canvas.add_child(shine)
-		var glyph := _add_text(canvas, item[1], Rect2(float(item[2]) - 1.0, 765, 58, 22), 18, icon_color, true)
+		var glyph := _add_text(canvas, item[1], Rect2(float(item[2]) - 1.0, 764, 58, 23), 20, icon_color, true)
 		glyph.name = "HomeNavGlyph_%s" % String(item[0])
 		glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		var display_name := "COLLECTION" if String(item[0]) == "COLLECT" else String(item[0])
@@ -376,7 +376,7 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 		var label_x := float(item[2]) - 12.0 if String(item[0]) == "COLLECT" else (float(item[2]) - 5.0 if String(item[0]) == "SETTINGS" else float(item[2]) - 1.0)
 		# Active destination carries weight; inactive labels stay regular so the
 		# five-item bar reads as navigation, not five competing headlines.
-		var label := _add_text(canvas, display_name, Rect2(label_x, 790, label_width, 22), 12, nav_color, selected)
+		var label := _add_text(canvas, display_name, Rect2(label_x, 790, label_width, 22), 13, nav_color, selected)
 		label.name = "HomeNavLabel_%s" % String(item[0])
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
