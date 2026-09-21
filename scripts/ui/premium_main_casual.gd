@@ -352,7 +352,7 @@ func build_settings() -> void:
 		FIGMA_DARK_BOTTOM if dark_mode else FIGMA_BG_BOTTOM,
 		FIGMA_DARK_TOP if dark_mode else FIGMA_BG_TOP
 	)
-	_figma_header(canvas, "SETTINGS", "Make UNJAM feel right for you", "AUTO-SAVE", Color("#1aa8ff"), Callable(self,"build_home"), Callable(), dark_mode)
+	_figma_header(canvas, "SETTINGS", "Sound, motion & theme", "AUTO-SAVE", Color("#1aa8ff"), Callable(self,"build_home"), Callable(), dark_mode)
 	if not dark_mode:
 		var settings_title := canvas.get_node_or_null("FigmaHeaderTitle") as Label
 		if settings_title != null:
