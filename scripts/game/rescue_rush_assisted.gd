@@ -34,8 +34,19 @@ func _show_level_intro() -> void:
 	if milestone == "normal" and role not in ["world_boss", "boss"]:
 		return
 	var label := ("WORLD BOSS" if role == "world_boss" else milestone.replace("_", " ").to_upper())
+	var center := _level_intro_banner_center()
+	premium_feedback.show_banner(label, Color("#ffd166"), center, 176.0)
+
+func _level_intro_banner_center() -> Vector2:
 	var view := get_viewport_rect().size
-	premium_feedback.show_banner(label, Color("#ffd166"), Vector2(view.x * 0.5, view.y * 0.22), 176.0)
+	if board_panel == null or not is_instance_valid(board_panel):
+		return Vector2(view.x * 0.5, view.y * 0.66)
+	var inverse := get_global_transform_with_canvas().affine_inverse()
+	var board_bottom_local: Vector2 = inverse * board_panel.get_global_rect().end
+	# Rescue has a deliberate breathing zone below the board and above the
+	# action buttons. Put milestone feedback there so it never masks an arrow.
+	var y := minf(view.y - 150.0, board_bottom_local.y + 54.0)
+	return Vector2(view.x * 0.5, y)
 
 func _spawn_chain_popup(center: Vector2, combo: int) -> void:
 	super._spawn_chain_popup(center, combo)
