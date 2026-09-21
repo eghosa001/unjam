@@ -218,7 +218,10 @@ func _add_quick_switch(canvas: Control) -> void:
 	for entry in games:
 		var id := String(entry[0])
 		var x := float(entry[3])
-		RefCanvas.add_shadow(canvas, Rect2(x, 465, 108, 94), 18, Color(0.02, 0.10, 0.18, 0.13), 4, Vector2(0, 3))
+		var selected_card := id == selected_game
+		# Only the selected game lifts strongly from the surface. Keeping inactive
+		# cards quieter reduces Home density while preserving full names/progress.
+		RefCanvas.add_shadow(canvas, Rect2(x, 465, 108, 94), 18, Color(0.02, 0.10, 0.18, 0.18 if selected_card else 0.09), 5 if selected_card else 2, Vector2(0, 4 if selected_card else 2))
 		var card := PanelContainer.new()
 		card.name = "HomeSwitchCard_%s" % id
 		var accent: Color = entry[2] as Color
@@ -371,7 +374,9 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 		var display_name := "COLLECTION" if String(item[0]) == "COLLECT" else String(item[0])
 		var label_width := 82.0 if String(item[0]) == "COLLECT" else (66.0 if String(item[0]) == "SETTINGS" else 58.0)
 		var label_x := float(item[2]) - 12.0 if String(item[0]) == "COLLECT" else (float(item[2]) - 5.0 if String(item[0]) == "SETTINGS" else float(item[2]) - 1.0)
-		var label := _add_text(canvas, display_name, Rect2(label_x, 790, label_width, 22), 12, nav_color, true)
+		# Active destination carries weight; inactive labels stay regular so the
+		# five-item bar reads as navigation, not five competing headlines.
+		var label := _add_text(canvas, display_name, Rect2(label_x, 790, label_width, 22), 12, nav_color, selected)
 		label.name = "HomeNavLabel_%s" % String(item[0])
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
