@@ -111,6 +111,18 @@ jobs:
           for scope in "${SCOPES[@]}"; do
             case "$scope" in
               home) test -s build/visual-audit/01-home-dark.png ;;
+              games) test -s build/visual-audit/02b-live-540x960-dark.png ;;
+              levels)
+                test -s build/visual-audit/03b-levels-rescue-540x960-dark.png
+                test -s build/visual-audit/12b-levels-block-540x960-dark.png
+                ;;
+              collection)
+                test -s build/visual-audit/05b-collection-540x960-dark.png
+                test -s build/visual-audit/05f-collection-upgrades-540x960-dark.png
+                ;;
+              daily) test -s build/visual-audit/05d-daily-540x960-dark.png ;;
+              settings) test -s build/visual-audit/06b-settings-540x960-dark.png ;;
+              shop) test -s build/visual-audit/06d-shop-540x960-dark.png ;;
               rescue) test -s build/visual-audit/09c-game-rescue-motion-540x960.png ;;
               water) test -s build/visual-audit/10c-game-water-pouring-540x960.png ;;
               block) test -s build/visual-audit/11-game-block.png ;;
