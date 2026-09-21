@@ -64,7 +64,8 @@ func _draw() -> void:
 	var outer := Rect2(Vector2(size.x * 0.18, 13.0 + lift), Vector2(size.x * 0.64, size.y - 42.0))
 	var neck_h := outer.size.y * 0.10
 	var body := Rect2(outer.position + Vector2(0, neck_h * 0.40), Vector2(outer.size.x, outer.size.y - neck_h * 0.40))
-	var inner := Rect2(body.position + Vector2(7, 10), body.size - Vector2(14, 20))
+	var inner_top := maxf(14.0, neck_h * 1.10)
+	var inner := Rect2(body.position + Vector2(7, inner_top), body.size - Vector2(14, inner_top + 10.0))
 	var radius := minf(18.0, body.size.x * 0.30)
 
 	# Soft shadow keeps the glass readable over the illustrated background.
@@ -118,40 +119,68 @@ func _draw() -> void:
 		draw_arc(body.get_center(), body.size.x * 0.68, 0, TAU, 42, Color(1.0, 0.88, 0.35, a), 4.0, true)
 
 func _draw_glass_shape(rect: Rect2, fill: Color, border: Color, radius: float, border_width: float) -> void:
-	# Bottle silhouette: narrow neck + rounded shoulder/body. Keeping this in the
-	# authoritative 2D renderer preserves fast mobile interaction while reading
-	# much closer to thick crystal glass than a straight rectangular tube.
-	var neck_width := rect.size.x * 0.56
-	var neck_height := maxf(10.0, rect.size.y * 0.115)
+	# Premium bottle silhouette: a genuinely narrow neck, sloped shoulders and a
+	# rounded crystal body. This stays in the authoritative CanvasItem renderer so
+	# interaction remains cheap while the bottle reads as glass rather than a tube.
+	var neck_width := rect.size.x * 0.48
+	var neck_height := maxf(12.0, rect.size.y * 0.125)
 	var neck := Rect2(
-		Vector2(rect.get_center().x - neck_width * 0.5, rect.position.y - neck_height * 0.34),
+		Vector2(rect.get_center().x - neck_width * 0.5, rect.position.y - neck_height * 0.38),
 		Vector2(neck_width, neck_height)
 	)
-	var body := Rect2(rect.position + Vector2(0, neck_height * 0.40), Vector2(rect.size.x, rect.size.y - neck_height * 0.40))
+	var body_top := rect.position.y + neck_height * 0.72
+	var body := Rect2(Vector2(rect.position.x, body_top), Vector2(rect.size.x, rect.end.y - body_top))
+	var shoulder_y := body.position.y + maxf(3.0, radius * 0.20)
+	var shoulder := PackedVector2Array([
+		Vector2(neck.position.x, neck.end.y - 1.0),
+		Vector2(neck.end.x, neck.end.y - 1.0),
+		Vector2(body.end.x - radius * 0.18, shoulder_y),
+		Vector2(body.position.x + radius * 0.18, shoulder_y),
+	])
+
+	# Shoulder bridge is drawn first so neck/body seams disappear into one glass
+	# silhouette instead of looking like two stacked rounded rectangles.
+	draw_colored_polygon(shoulder, fill)
+
 	var body_style := StyleBoxFlat.new()
 	body_style.bg_color = fill
-	body_style.corner_radius_top_left = int(radius * 0.42)
-	body_style.corner_radius_top_right = int(radius * 0.42)
+	body_style.corner_radius_top_left = int(radius * 0.26)
+	body_style.corner_radius_top_right = int(radius * 0.26)
 	body_style.corner_radius_bottom_left = int(radius)
 	body_style.corner_radius_bottom_right = int(radius)
 	var neck_style := StyleBoxFlat.new()
 	neck_style.bg_color = fill
 	neck_style.corner_radius_top_left = 4
 	neck_style.corner_radius_top_right = 4
-	neck_style.corner_radius_bottom_left = 3
-	neck_style.corner_radius_bottom_right = 3
+	neck_style.corner_radius_bottom_left = 2
+	neck_style.corner_radius_bottom_right = 2
+
 	if border_width > 0.0:
 		var bw := maxi(1, int(border_width))
-		for style in [body_style, neck_style]:
-			style.border_width_left = bw
-			style.border_width_right = bw
-			style.border_width_top = bw
-			style.border_width_bottom = bw
-			style.border_color = border
+		# Do not draw horizontal borders at the shoulder seam; use explicit sloped
+		# shoulder edges so the bottle keeps a continuous crystal outline.
+		body_style.border_width_left = bw
+		body_style.border_width_right = bw
+		body_style.border_width_bottom = bw
+		body_style.border_width_top = 0
+		body_style.border_color = border
+		neck_style.border_width_left = bw
+		neck_style.border_width_right = bw
+		neck_style.border_width_top = bw
+		neck_style.border_width_bottom = 0
+		neck_style.border_color = border
+
 	draw_style_box(body_style, body)
 	draw_style_box(neck_style, neck)
-	# Soft refractive tint on the lower body and shoulder catches helps separate
-	# transparent glass from the similarly bright board behind it.
+
+	if border_width > 0.0:
+		var shoulder_width := maxf(1.5, border_width)
+		draw_line(Vector2(neck.position.x, neck.end.y - 1.0), Vector2(body.position.x + radius * 0.18, shoulder_y), border, shoulder_width, true)
+		draw_line(Vector2(neck.end.x, neck.end.y - 1.0), Vector2(body.end.x - radius * 0.18, shoulder_y), border, shoulder_width, true)
+
+	# Local refraction follows the curved body rather than a long vertical white
+	# stripe, preserving the clean glass look requested for Water Sort.
 	if fill.a > 0.0:
-		draw_arc(Vector2(body.get_center().x, body.end.y - radius * 0.70), body.size.x * 0.29, 0.08, PI - 0.08, 20, Color(0.62,0.92,1.0,minf(fill.a * 2.2,0.18)), 2.0, true)
-		draw_arc(Vector2(body.position.x + radius * 0.62, body.position.y + radius * 0.50), radius * 0.46, -2.75, -1.30, 12, Color(1,1,1,minf(fill.a * 3.0,0.20)), 1.7, true)
+		draw_arc(Vector2(body.get_center().x, body.end.y - radius * 0.70), body.size.x * 0.30, 0.08, PI - 0.08, 20, Color(0.62,0.92,1.0,minf(fill.a * 2.2,0.18)), 2.0, true)
+		draw_arc(Vector2(body.position.x + radius * 0.58, body.position.y + radius * 0.72), radius * 0.42, -2.75, -1.22, 12, Color(1,1,1,minf(fill.a * 3.2,0.22)), 1.8, true)
+		draw_circle(Vector2(body.position.x + body.size.x * 0.30, body.position.y + body.size.y * 0.17), maxf(1.4, body.size.x * 0.030), Color(1,1,1,minf(fill.a * 4.0,0.26)))
