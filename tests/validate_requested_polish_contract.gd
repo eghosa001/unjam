@@ -15,7 +15,7 @@ func _init() -> void:
 	_require("res://scripts/ui/premium_result_overlay.gd", ["ResultKeyLight", "ResultStar3D", "ResultGameArt3D", "add_collectible_star"], errors)
 	_require("res://scripts/ui/ux_shell_casual.gd", ["TutorialKeyLight", "add_scene_backdrop_layers"], errors)
 	_require("res://scripts/ui/premium_live_hub_3d.gd", ["SelectorWorldDepth", "SelectorGameArt3D_", "SelectorKeyLight", "#1b63c5", "style_display_title"], errors)
-	_require("res://scripts/ui/unjam_3d_game_art.gd", ["camera.fov = 39.0", "Game-specific card-scale composition", "display_root.scale = Vector3.ONE * 1.12"], errors)
+	_require("res://scripts/ui/unjam_3d_game_art.gd", ["camera.fov = 39.0", "Game-specific card-scale composition", "display_root.scale = Vector3.ONE * 1.05", "Vector3(-0.14, 0.05, 0.08)"], errors)
 	_require("res://scripts/ui/monetization_hub_3d.gd", ["ShopWorldDepth", "ShopKeyLight", "ShopCurrencyGem3D", "add_collectible_gem", "style_display_title"], errors)
 	_require("res://scripts/ui/premium_home_direct_levels.gd", ["rounded_gradient3(stage_mid", "rounded_gradient3(nav_fill", "rounded_gradient3(fill.lightened"], errors)
 	_require("res://scripts/ui/premium_live_hub_3d.gd", ["rounded_gradient3(pill_mid", "rounded_gradient3(stage_mid", "rounded_gradient3(nav_fill"], errors)
