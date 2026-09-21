@@ -198,69 +198,6 @@ func _add_hero_preview(canvas: Control, game_id: String) -> void:
 	RefCanvas.set_rect(art, 229, 144, 115, 136)
 	preview_root.add_child(art)
 
-func _add_mini_bottle(canvas: Control, pos: Vector2, width: float, height: float, liquid_left: Color, liquid_right: Color, liquid_height: float) -> void:
-	var shadow := PanelContainer.new()
-	shadow.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.02, 0.15, 0.26, 0.16), 4))
-	RefCanvas.set_rect(shadow, pos.x, pos.y + height - 3, width, 7)
-	canvas.add_child(shadow)
-	var bottle := PanelContainer.new()
-	bottle.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.90, 0.99, 1.0, 0.10), 9, Color(0.82, 0.98, 1.0, 0.90), 1.3))
-	RefCanvas.set_rect(bottle, pos.x, pos.y, width, height)
-	bottle.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	canvas.add_child(bottle)
-	var body_y := pos.y + height - liquid_height - 3.0
-	var body := PanelContainer.new()
-	body.add_theme_stylebox_override("panel", RefCanvas.horizontal_gradient(liquid_left, liquid_right, 1))
-	RefCanvas.set_rect(body, pos.x + 3, body_y, width - 6, liquid_height)
-	canvas.add_child(body)
-	var meniscus := PanelContainer.new()
-	meniscus.add_theme_stylebox_override("panel", RefCanvas.horizontal_gradient(liquid_left.lightened(0.08), liquid_right.lightened(0.04), 3))
-	RefCanvas.set_rect(meniscus, pos.x + 3, body_y - 3.0, width - 6, 6)
-	canvas.add_child(meniscus)
-	var rim := PanelContainer.new()
-	rim.add_theme_stylebox_override("panel", RefCanvas.horizontal_gradient(Color("#f4fdff"), Color("#cfeffc"), 3, Color(0.82,0.98,1.0,0.90), 0.8))
-	RefCanvas.set_rect(rim, pos.x + 1, pos.y - 2, width - 2, 6)
-	canvas.add_child(rim)
-
-func _add_mini_block_preview(canvas: Control, origin: Vector2) -> void:
-	var board := PanelContainer.new()
-	board.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.23, 0.16, 0.37), 12, Color(0.72, 0.52, 1.0, 0.55), 1))
-	RefCanvas.set_rect(board, origin.x, origin.y, 105, 105)
-	canvas.add_child(board)
-	var palette := [Color(1, 0.84, 0.24), Color(1, 0.48, 0.82), Color(0.31, 0.96, 0.57), Color(0.28, 0.84, 1)]
-	for y in range(4):
-		for x in range(4):
-			var well := PanelContainer.new()
-			well.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.18, 0.10, 0.33), 4))
-			RefCanvas.set_rect(well, origin.x + 8 + x * 23, origin.y + 8 + y * 23, 19, 19)
-			canvas.add_child(well)
-			if (x + y * 2) % 3 == 0:
-				var fill := ColorRect.new()
-				fill.color = palette[(x + y) % palette.size()]
-				RefCanvas.set_rect(fill, origin.x + 10 + x * 23, origin.y + 10 + y * 23, 15, 15)
-				canvas.add_child(fill)
-
-func _add_mini_rescue_preview(canvas: Control, origin: Vector2) -> void:
-	var board := PanelContainer.new()
-	board.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.55, 0.72, 0.59), 12, Color(0.92, 1.0, 0.86, 0.62), 1))
-	RefCanvas.set_rect(board, origin.x, origin.y, 105, 105)
-	canvas.add_child(board)
-	var colors := [Color(0.20, 0.76, 0.44), Color(0.66, 0.40, 0.86), Color(0.18, 0.67, 1.0), Color(1, 0.57, 0.20)]
-	for i in range(6):
-		var x := i % 3
-		var y := i / 3
-		var tile := PanelContainer.new()
-		tile.add_theme_stylebox_override("panel", RefCanvas.solid_box(colors[i % colors.size()], 4))
-		RefCanvas.set_rect(tile, origin.x + 8 + x * 29, origin.y + 8 + y * 29, 22, 22)
-		canvas.add_child(tile)
-		var arrow := _make_label("→", 14, Color.WHITE, true)
-		RefCanvas.set_rect(arrow, origin.x + 10 + x * 29, origin.y + 8 + y * 29, 18, 22)
-		canvas.add_child(arrow)
-	var chick := PanelContainer.new()
-	chick.add_theme_stylebox_override("panel", RefCanvas.solid_box(GOLD, 9))
-	RefCanvas.set_rect(chick, origin.x + 42, origin.y + 67, 18, 18)
-	canvas.add_child(chick)
-
 func _add_quick_actions(canvas: Control) -> void:
 	var choose := _add_action(canvas, Rect2(21, 365, 166, 52), BLUE, "◈ CHOOSE GAME", 12, OFF_WHITE, Callable(self, "_open_game_selector"), 16)
 	choose.name = "HomeChooseGameButton"
