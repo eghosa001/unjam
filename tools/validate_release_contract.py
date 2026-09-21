@@ -104,11 +104,13 @@ def main() -> int:
 
     for token in (
         'viewBox="0 0 512 512"',
-        'UNJAM',
         'url(#bg)',
+        '<!-- main U silhouette/shadow -->',
     ):
         if token not in icon:
             errors.append(f'launcher icon master missing premium asset token: {token}')
+    if '>UNJAM<' in icon or '<text' in icon:
+        errors.append('launcher icon master must remain U-only with no embedded wordmark')
 
     if 'viewBox="0 0 432 432"' not in adaptive_bg:
         errors.append('adaptive icon background must remain a 432x432 Android layer')
@@ -116,10 +118,26 @@ def main() -> int:
     for token in (
         'id="AdaptiveSafeZone"',
         'translate(216 216) scale(.69) translate(-216 -216)',
-        'UNJAM',
+        'translate(49 76) scale(.82)',
     ):
         if token not in adaptive_fg:
             errors.append(f'adaptive foreground safe-zone contract missing token: {token}')
+    if '>UNJAM<' in adaptive_fg or '<text' in adaptive_fg:
+        errors.append('adaptive foreground must remain U-only with no embedded wordmark')
+
+    for token in (
+        'config/icon="res://assets/icon.svg"',
+    ):
+        if token not in project:
+            errors.append(f'project launcher icon is not wired to the U-only SVG source: {token}')
+
+    for token in (
+        'launcher_icons/main_192x192="res://assets/icon.svg"',
+        'launcher_icons/adaptive_foreground_432x432="res://assets/icon_adaptive_foreground.svg"',
+        'launcher_icons/adaptive_background_432x432="res://assets/icon_adaptive_background.svg"',
+    ):
+        if token not in preset:
+            errors.append(f'Android launcher icon is not wired to the current SVG source: {token}')
 
     if errors:
         print('Release contract validation failed:')
