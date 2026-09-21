@@ -72,7 +72,7 @@ func _run() -> void:
 		var expected_label: String = "COLLECTION" if nav_name == "COLLECT" else String(nav_name)
 		if glyph == null or glyph.text.is_empty() or label == null or label.text != expected_label:
 			return _fail("Games selector navigation identity is incomplete for %s" % nav_name)
-		if label.get_theme_font_size("font_size") < 12:
+		if label.get_theme_font_size("font_size") < 13:
 			return _fail("Games selector navigation label became too small for %s" % nav_name)
 		if hit == null or hit.size.x < 70.0 or hit.size.y < 74.0:
 			return _fail("Games selector navigation touch target is too small for %s" % nav_name)
