@@ -35,10 +35,44 @@ func _run() -> void:
 	await _frames(6)
 	if not main.has_method("_daily_ui_state"):
 		return _fail(save_manager, original, "Daily UI state helper unavailable")
+
+	# Exercise real Daily routing rather than only helper state. Leaving any Daily
+	# must return to the Daily hub, never the campaign level browser, and must not
+	# change eligibility for the other two games.
+	main.call("start_game_daily", "water_sort")
+	await _frames(5)
+	var active_water = main.get("active_game")
+	if active_water == null or not bool(active_water.get("daily_mode")):
+		return _fail(save_manager, original, "Water Daily did not launch as a Daily game")
+	active_water.emit_signal("quit_requested")
+	await _frames(5)
+	if String(main.get("current_surface")) != "daily" or main.get("active_game") != null:
+		return _fail(save_manager, original, "Quitting Water Daily did not return to Daily Games")
+
+	main.call("start_game_daily", "block_puzzle")
+	await _frames(5)
+	var active_block = main.get("active_game")
+	if active_block == null or not bool(active_block.get("daily_mode")):
+		return _fail(save_manager, original, "Block Daily did not launch as a Daily game")
+	active_block.emit_signal("finished", -1)
+	await _frames(5)
+	if String(main.get("current_surface")) != "daily" or main.get("active_game") != null:
+		return _fail(save_manager, original, "Finishing Block Daily did not return to Daily Games")
+
+	main.call("start_game_daily", "rescue_rush")
+	await _frames(5)
+	var active_rescue = main.get("active_game")
+	if active_rescue == null or not bool(active_rescue.get("daily_mode")):
+		return _fail(save_manager, original, "Rescue Daily did not launch as a Daily game")
+	main.call("force_back_from_game")
+	await _frames(5)
+	if String(main.get("current_surface")) != "daily" or main.get("active_game") != null:
+		return _fail(save_manager, original, "Android/back exit from Rescue Daily did not return to Daily Games")
+
 	for game_id in ["water_sort", "block_puzzle", "rescue_rush"]:
 		var state: Dictionary = main.call("_daily_ui_state", game_id, Color.WHITE)
 		if bool(state.get("disabled", true)):
-			return _fail(save_manager, original, "Starting one Daily game disabled %s" % game_id)
+			return _fail(save_manager, original, "Leaving one Daily game disabled %s" % game_id)
 	if not bool(multi_game_manager.call("complete_daily", "water_sort", 0)):
 		return _fail(save_manager, original, "Could not complete Water Daily for independence regression")
 	var water_state: Dictionary = main.call("_daily_ui_state", "water_sort", Color.WHITE)
