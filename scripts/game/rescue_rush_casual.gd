@@ -10,6 +10,16 @@ const ORANGE := Color(1.0,0.55,0.12)
 
 var figma_canvas: FigmaReferenceCanvas
 
+func _compact_objective_instruction() -> String:
+	match objective_type:
+		"full_escape": return "CLEAR ALL ARROWS • FREE THE CHICK"
+		"key_rescue": return "GET KEYS • OPEN THE RESCUE LANE"
+		"gate_run": return "OPEN GATES • FREE THE CHICK"
+		"bomb_route": return "CLEAR BOMBS • FREE THE CHICK"
+		"chain_rescue": return "BREAK CHAINS • FREE THE CHICK"
+		"perfect_rescue": return "FREE THE CHICK • ≤ %d MOVES" % action_budget
+		_: return "CLEAR A LANE • FREE THE CHICK"
+
 func _add_rescue_identity_emblem(canvas: Control) -> void:
 	var emblem := PanelContainer.new()
 	emblem.name = "Identity/Rescue Emblem"
@@ -139,7 +149,7 @@ func _build_figma_rescue(canvas: Control) -> void:
 	RefCanvas.set_rect(objective,17,137,354,34)
 	objective.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(objective)
-	var objective_label := RefCanvas.label(objective_instruction().to_upper(),16,Color("#088c3d"),true)
+	var objective_label := RefCanvas.label(_compact_objective_instruction(),16,Color("#088c3d"),true)
 	objective_label.name = "RescueObjectiveLabel"
 	objective_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	RefCanvas.set_rect(objective_label,29,137,330,34)
