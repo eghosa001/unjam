@@ -257,7 +257,9 @@ func _build_figma_block(canvas: Control) -> void:
 	canvas.add_child(frame_border)
 
 func _tray_piece_button_size() -> Vector2:
-	return Vector2(104, 72)
+	# Preserve the responsive short/tall-phone sizing from the active motion layer.
+	# The old fixed 104x72 override squeezed three-cell pieces on compact phones.
+	return super._tray_piece_button_size()
 
 func load_level() -> void:
 	_clear_transition_active = false
