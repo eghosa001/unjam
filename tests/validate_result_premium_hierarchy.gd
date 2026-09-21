@@ -25,7 +25,8 @@ func _run() -> void:
 	var secondary := overlay.find_child("SecondaryAction",true,false) as Button
 	var secondary_shadow := overlay.find_child("SecondaryActionShadow",true,false) as Control
 	var stats := overlay.find_child("ResultStatsText",true,false) as Label
-	if card == null or title == null or subtitle == null or primary == null or secondary == null or secondary_shadow == null or stats == null:
+	var identity_art := overlay.find_child("ResultGameArt3D",true,false) as Control
+	if card == null or title == null or subtitle == null or primary == null or secondary == null or secondary_shadow == null or stats == null or identity_art == null:
 		return _fail("Result hierarchy is incomplete")
 	if not _rect_eq(Rect2(card.position,card.size),Rect2(27,76,334,570)):
 		return _fail("Result card geometry drifted")
