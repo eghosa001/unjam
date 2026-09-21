@@ -148,13 +148,14 @@ func _build_ui() -> void:
 	_add_shop_status(canvas)
 	status_label = _add_text(
 		canvas,
-		"Restore purchases anytime • rewarded ads stay optional",
-		Rect2(31,724,328,30),
+		"Restore purchases anytime\nRewarded ads stay optional",
+		Rect2(37,718,316,38),
 		12,
 		Color("#c6d9ec")
 	)
 	status_label.name = "ShopStatusMessage"
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	status_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var accent_rail := ColorRect.new()
 	accent_rail.name = "ShopAccentRail"
