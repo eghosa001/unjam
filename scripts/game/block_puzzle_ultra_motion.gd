@@ -4,7 +4,7 @@ extends "res://scripts/game/block_puzzle_premium_layout.gd"
 # concentrate impact on the board/pieces so fast play never feels like a flash
 # or whole-screen vibration.
 const SmoothPieceButton = preload("res://scripts/ui/smooth_block_piece_button.gd")
-const PLACEMENT_HELP := "Release when the placement preview locks into place"
+const PLACEMENT_HELP := "Release on highlighted cells"
 
 func _ready() -> void:
 	super._ready()
@@ -19,13 +19,20 @@ func build_ui() -> void:
 func load_level() -> void:
 	super.load_level()
 	if hint_label != null:
-		hint_label.text = PLACEMENT_HELP
+		hint_label.text = PLACEMENT_HELP if _needs_placement_help() else ""
 
 func select_piece(index: int) -> void:
 	super.select_piece(index)
 	if not completed and index >= 0 and index < pieces.size() and not pieces[index].is_empty():
 		FeedbackManager.lift()
-		hint_label.text = PLACEMENT_HELP
+		if hint_label != null:
+			hint_label.text = PLACEMENT_HELP if _needs_placement_help() else ""
+
+func _needs_placement_help() -> bool:
+	# The app already has a dedicated tutorial. Keep only a tiny contextual cue
+	# during the first three campaign levels, then let the board and magnetic
+	# placement preview teach through interaction instead of persistent copy.
+	return not daily_mode and level_number <= 3
 
 func render_pieces() -> void:
 	if piece_row == null:
