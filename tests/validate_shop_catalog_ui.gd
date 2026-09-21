@@ -56,6 +56,11 @@ func run() -> void:
 		expect_true(status_note != null and status_note.get_theme_font_size("font_size") >= 12 and status_note.size.y >= 19.0, "Shop status note readability regressed")
 		var status_message := overlay.find_child("ShopStatusMessage", true, false) as Label if overlay != null else null
 		expect_true(status_message != null and status_message.size.x <= 316.0 and status_message.size.y >= 38.0 and "\n" in status_message.text, "Shop status message must stay wrapped inside its card")
+		for chip_name in ["ShopStatusAds", "ShopStatusStarter", "ShopStatusRewards"]:
+			var chip_title := overlay.find_child("%sTitle" % chip_name, true, false) as Label if overlay != null else null
+			var chip_state := overlay.find_child("%sState" % chip_name, true, false) as Label if overlay != null else null
+			expect_true(chip_title != null and chip_title.get_theme_font_size("font_size") >= 12, "Shop status chip title is too small: %s" % chip_name)
+			expect_true(chip_state != null and chip_state.get_theme_font_size("font_size") >= 12, "Shop status chip state is too small: %s" % chip_name)
 		if overlay != null and store != null:
 			for product_id in store.PRODUCTS.keys():
 				var buy := overlay.find_child("Buy_%s" % String(product_id), true, false) as Button
