@@ -344,8 +344,8 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 		["HOME", "⌂", 22.0, Callable(), "HomeNavButton", true, Color("#33b9ff")],
 		["GAMES", "▦", 91.0, Callable(self, "_open_game_selector"), "HomeGamesNavButton", false, Color("#7b6cff")],
 		["DAILY", "✦", 160.0, Callable(self, "_open_daily_games"), "HomeDailyNavButton", false, GOLD],
-		["COLLECT", "◆", 229.0, func(): get_parent().call("build_collection"), "HomeCollectionNavButton", false, Color("#24c96b")],
-		["SETTINGS", "⚙", 298.0, func(): get_parent().call("build_settings"), "HomeSettingsNavButton", false, CYAN],
+		["COLLECT", "◆", 222.0, func(): get_parent().call("build_collection"), "HomeCollectionNavButton", false, Color("#24c96b")],
+		["SETTINGS", "⚙", 310.0, func(): get_parent().call("build_settings"), "HomeSettingsNavButton", false, CYAN],
 	]
 	for item in items:
 		var selected: bool = bool(item[5])
@@ -372,11 +372,13 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 		glyph.name = "HomeNavGlyph_%s" % String(item[0])
 		glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		var display_name := "COLLECTION" if String(item[0]) == "COLLECT" else String(item[0])
-		var label_width := 70.0 if String(item[0]) == "COLLECT" else 58.0
-		var label_x := float(item[2]) - 7.0 if String(item[0]) == "COLLECT" else float(item[2]) - 1.0
+		var label_width := 82.0 if String(item[0]) == "COLLECT" else (66.0 if String(item[0]) == "SETTINGS" else 58.0)
+		var label_x := float(item[2]) - 12.0 if String(item[0]) == "COLLECT" else (float(item[2]) - 5.0 if String(item[0]) == "SETTINGS" else float(item[2]) - 1.0)
 		var label := _add_text(canvas, display_name, Rect2(label_x, 790, label_width, 22), 12, nav_color, true)
 		label.name = "HomeNavLabel_%s" % String(item[0])
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		label.clip_text = true
 		var hit := Button.new()
 		hit.name = item[4]
 		hit.flat = true
