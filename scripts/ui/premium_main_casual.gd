@@ -397,7 +397,7 @@ func build_settings() -> void:
 	var utility_border := Color(0.26,0.43,0.57,0.72) if dark_mode else utility_fill.lightened(0.24)
 	var utility_text := Color(0.76,0.84,0.90) if dark_mode else FIGMA_OFF_WHITE
 	FigmaReferenceCanvas.add_shadow(canvas, Rect2(33,541,144,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
-	var how_to := FigmaReferenceCanvas.premium_button("HOW TO PLAY",12,utility_text,Color("#086ec7") if not dark_mode else utility_fill,16,utility_border,1.2)
+	var how_to := FigmaReferenceCanvas.premium_button("HOW TO PLAY",14,utility_text,Color("#086ec7") if not dark_mode else utility_fill,16,utility_border,1.2)
 	how_to.name = "SettingsHowToPlay"
 	FigmaReferenceCanvas.set_rect(how_to,33,541,144,46)
 	how_to.pressed.connect(_show_current_tutorial)
