@@ -20,7 +20,8 @@ func _initialize() -> void:
 		"func _chime_stream",
 		"func _build_calm_ambient_loop",
 		"Fmaj7 -> Dm7 -> Bbmaj7 -> Cadd9",
-		"music_player.volume_db = -7.0",
+		"music_player.volume_db = -9.0",
+		"var body_tone := sin(TAU * float(chord[0]) * t) * 0.010 * edge",
 		"sfx.volume_db = 0.0",
 		"release_raw",
 		"var loop_edge := _smooth_edge(t, MUSIC_DURATION, 0.38)",
@@ -36,6 +37,10 @@ func _initialize() -> void:
 		failures.append("Legacy single-sine feedback path must not remain active")
 	if source.contains("1120.0"):
 		failures.append("Legacy piercing rescue tone must not remain")
+	if source.contains("float(chord[0]) * 0.5"):
+		failures.append("Ambient loop must not reintroduce a half-frequency sub-bass oscillator")
+	if source.contains("[58.27, 73.42, 87.31, 110.00]"):
+		failures.append("Ambient chord voicings must stay above phone-rumble bass territory")
 
 	var script = load(path)
 	if script == null:
