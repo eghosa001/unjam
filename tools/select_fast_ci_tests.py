@@ -54,6 +54,7 @@ GROUP_TESTS = {
     ],
     "shared_gameplay_ui": [
         "validate_compact_gameplay_stack",
+        "validate_production_hardening_regressions",
     ],
     "progression": [
         "validate_gameplay_interactions",
@@ -446,7 +447,10 @@ def self_test() -> None:
     assert "validate_compact_gameplay_stack" not in GROUP_TESTS["water"]
     assert "validate_compact_gameplay_stack" not in GROUP_TESTS["block"]
     assert "validate_compact_gameplay_stack" not in GROUP_TESTS["rescue"]
-    assert GROUP_TESTS["shared_gameplay_ui"] == ["validate_compact_gameplay_stack"]
+    assert GROUP_TESTS["shared_gameplay_ui"] == [
+        "validate_compact_gameplay_stack",
+        "validate_production_hardening_regressions",
+    ]
     icon_plan = plan_for_paths(["assets/icon_adaptive_foreground.svg"])
     assert icon_plan["release_contract"] is True
     assert icon_plan["needs_godot"] is False
