@@ -16,6 +16,15 @@ func _visual_scale() -> float:
 func show_banner(text_value: String, accent: Color, center: Vector2, width: float = 214.0) -> void:
 	if text_value.is_empty():
 		return
+	# Level-intro milestone banners use the compact 176px treatment. Keep those
+	# out of live puzzle cells: Block already carries milestone identity in its
+	# persistent footer, while Rescue has a clear non-interactive gap below board.
+	var viewport_size := get_viewport_rect().size
+	var is_intro_banner := is_equal_approx(width, 176.0) and center.y <= viewport_size.y * 0.30
+	if is_intro_banner and name == "BlockPremiumFeedback":
+		return
+	if is_intro_banner and name == "RescuePremiumFeedback":
+		center.y = viewport_size.y * 0.68
 	var visual_scale := _visual_scale()
 	var banner_width := width * visual_scale
 	var banner_height := 46.0 * visual_scale
