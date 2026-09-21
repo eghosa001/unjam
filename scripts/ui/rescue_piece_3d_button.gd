@@ -76,12 +76,15 @@ func _draw_shell(rect: Rect2, center: Vector2, pulse: float) -> void:
 func _draw_arrow(center: Vector2, dir: String, scale_value: float) -> void:
 	var v := _dir_vec(dir)
 	var n := Vector2(-v.y, v.x)
+	# Make direction readable before material detail. The previous glyph was
+	# visually attractive but too small inside dense late-game boards.
+	var readable_scale := scale_value * 1.18
 	var glyph_center := center - Vector2(0, 3.0)
-	var tip := glyph_center + v * scale_value
-	var tail := glyph_center - v * scale_value * 0.72
-	var neck := glyph_center + v * scale_value * 0.13
-	var half := scale_value * 0.23
-	var wing := scale_value * 0.52
+	var tip := glyph_center + v * readable_scale
+	var tail := glyph_center - v * readable_scale * 0.74
+	var neck := glyph_center + v * readable_scale * 0.10
+	var half := readable_scale * 0.25
+	var wing := readable_scale * 0.56
 	var points := PackedVector2Array([
 		tail + n * half,
 		neck + n * half,
@@ -91,18 +94,27 @@ func _draw_arrow(center: Vector2, dir: String, scale_value: float) -> void:
 		neck - n * half,
 		tail - n * half,
 	])
-	# Extrude the arrow separately from the tile face so it reads like a raised
-	# inlay rather than white paint.
+	# Strong separated shadow and sidewall preserve the raised 2.5D treatment.
 	var cast := PackedVector2Array()
 	var side := PackedVector2Array()
 	var top := PackedVector2Array()
 	for point in points:
-		cast.append(point + Vector2(1.5, 6.0))
-		side.append(point + Vector2(0, 3.5))
+		cast.append(point + Vector2(1.8, 6.5))
+		side.append(point + Vector2(0, 3.8))
 		top.append(point - Vector2(0, 1.0))
-	draw_polygon(cast, PackedColorArray([Color(0.01, 0.09, 0.16, 0.30)]))
-	draw_polygon(side, PackedColorArray([Color("b8d8e7")]))
-	draw_polygon(top, PackedColorArray([Color("fffef8")]))
-	draw_polyline(top + PackedVector2Array([top[0]]), Color("e3f5ff"), 2.0, true)
-	# A small specular streak gives the glyph the same lacquer language as the tile.
-	draw_line(glyph_center - v * scale_value * 0.38 - n * scale_value * 0.08, glyph_center + v * scale_value * 0.18 - n * scale_value * 0.08, Color(1, 1, 1, 0.62), 2.0, true)
+	draw_polygon(cast, PackedColorArray([Color(0.005, 0.035, 0.08, 0.48)]))
+	draw_polygon(side, PackedColorArray([Color("8fbfd7")]))
+	# Dark keyline first, then a warm-white face and cyan rim. This stays clear
+	# on green, blue, red, purple and yellow tiles instead of washing into gloss.
+	draw_polygon(top, PackedColorArray([Color("fffdf5")]))
+	var closed := top + PackedVector2Array([top[0]])
+	draw_polyline(closed, Color("#073b78"), 5.0, true)
+	draw_polyline(closed, Color("#dff8ff"), 2.0, true)
+	# Directional spine reinforces orientation at compact 40px cells.
+	draw_line(
+		glyph_center - v * readable_scale * 0.43,
+		glyph_center + v * readable_scale * 0.16,
+		Color("#ffffff"),
+		maxf(2.4, readable_scale * 0.085),
+		true
+	)
