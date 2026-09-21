@@ -45,6 +45,10 @@ func _run() -> void:
 			return _fail("%s tutorial progress indicator is missing" % game_id)
 		if next == null or back == null:
 			return _fail("%s tutorial navigation is missing" % game_id)
+		if progress.get_theme_font_size("font_size") < 13:
+			return _fail("%s tutorial progress text fell below readability floor" % game_id)
+		if next.get_theme_font_size("font_size") < 14 or back.get_theme_font_size("font_size") < 14:
+			return _fail("%s tutorial navigation text fell below readability floor" % game_id)
 		if not _rect_eq(Rect2(back.position,back.size),Rect2(43,526,142,48)):
 			return _fail("%s BACK control drifted from Figma geometry" % game_id)
 		if not _rect_eq(Rect2(next.position,next.size),Rect2(203,526,142,48)):
