@@ -458,7 +458,7 @@ func _run_fast_visual_audit(main: Node, shell: Node) -> void:
 			if block_status != null:
 				block_status.text = "Choose a block"
 			if block_hint != null:
-				block_hint.text = "Release when the preview locks into place"
+				block_hint.text = "Release on highlighted cells"
 		await _capture("11-game-block")
 
 	if _fast_visual_enabled("tutorial"):
