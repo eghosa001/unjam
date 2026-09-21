@@ -330,7 +330,9 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 
 	var receiver_local := _receiver_rim_local(receiver)
 	var target_lip := _control_point(receiver, receiver_local)
-	var tilt_degrees := 34.0 if MotionSystem.reduced() else 70.0
+	# A slightly shallower premium tilt keeps the connected bottle silhouette
+	# readable while still giving the stream a clear downhill rim and visible arc.
+	var tilt_degrees := 32.0 if MotionSystem.reduced() else 62.0
 	var final_rotation := deg_to_rad(tilt_degrees * direction)
 	var source_local_at_pour := _source_rim_local(ghost, direction)
 	# Keep the pouring lip visibly above and to the source side of the receiving
