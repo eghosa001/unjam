@@ -20,7 +20,7 @@ func _initialize() -> void:
 		"func _chime_stream",
 		"func _build_calm_ambient_loop",
 		"Fmaj7 -> Dm7 -> Bbmaj7 -> Cadd9",
-		"music_player.volume_db = -10.0",
+		"music_player.volume_db = -7.0",
 		"sfx.volume_db = 0.0",
 		"release_raw",
 		"var loop_edge := _smooth_edge(t, MUSIC_DURATION, 0.38)",
@@ -42,11 +42,21 @@ func _initialize() -> void:
 		failures.append("Feedback manager script failed to load")
 	else:
 		var feedback = script.new()
-		var chime = feedback.call("_chime_stream", [392.0, 523.25], 0.12, 0.07, 0.4)
+		var chime = feedback.call("_chime_stream", [392.0, 523.25], 0.12, 0.085, 0.4)
 		if chime == null or not chime.stereo or int(chime.mix_rate) != 22050:
 			failures.append("Calm chime stream must be stereo at 22050 Hz")
 		elif chime.data.size() <= 0:
 			failures.append("Calm chime stream generated no samples")
+		else:
+			var chime_first := _pcm16(chime.data, 0)
+			var chime_last := _pcm16(chime.data, chime.data.size() - 4)
+			if absi(chime_first) > 96 or absi(chime_last) > 96:
+				failures.append("Calm chime must enter and leave near zero to avoid clicks")
+			var chime_peak := _pcm_peak(chime.data)
+			if chime_peak < 900:
+				failures.append("Calm chime became too quiet to provide tactile confirmation")
+			if chime_peak > 20000:
+				failures.append("Calm chime lost safe PCM headroom")
 		var music = feedback.call("_build_calm_ambient_loop")
 		if music == null or music.data.size() < 8:
 			failures.append("Ambient loop generated no samples")
@@ -81,3 +91,10 @@ func _initialize() -> void:
 func _pcm16(bytes: PackedByteArray, offset: int) -> int:
 	var value := int(bytes[offset]) | (int(bytes[offset + 1]) << 8)
 	return value - 65536 if value >= 32768 else value
+
+func _pcm_peak(bytes: PackedByteArray) -> int:
+	var peak := 0
+	for offset in range(0, bytes.size() - 3, 4):
+		peak = maxi(peak, absi(_pcm16(bytes, offset)))
+		peak = maxi(peak, absi(_pcm16(bytes, offset + 2)))
+	return peak
