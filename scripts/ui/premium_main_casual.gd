@@ -467,7 +467,55 @@ func build_daily_games() -> void:
 		12,
 		FIGMA_MUTED
 	)
+	_figma_daily_progress(canvas)
 	_figma_bottom_nav(canvas, "daily")
+
+func _figma_daily_progress(canvas: Control) -> void:
+	var done_count := 0
+	for game_id in MultiGameManager.GAME_IDS:
+		if _daily_done(game_id):
+			done_count += 1
+
+	_figma_card(canvas, "DailyProgress", Rect2(17,610,354,116), Color("#fffef8"), Color(1.0,0.847,0.55,0.32), 18)
+	_figma_text(canvas, "TODAY'S SET", Rect2(33,624,150,18), 15, FIGMA_GOLD)
+	var count := _figma_text(canvas, "%d / 3 COMPLETE" % done_count, Rect2(226,624,125,18), 12, FIGMA_MUTED, true)
+	count.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+
+	var progress := ProgressBar.new()
+	progress.name = "DailyProgressBar"
+	progress.show_percentage = false
+	progress.min_value = 0
+	progress.max_value = 3
+	progress.value = done_count
+	progress.add_theme_stylebox_override("background", FigmaReferenceCanvas.rounded_gradient3(Color("#132642"), Color("#091a34"), Color("#051126"), 6, Color(0.38,0.58,0.78,0.55), 1.0, 0.50))
+	progress.add_theme_stylebox_override("fill", FigmaReferenceCanvas.rounded_gradient3(FIGMA_GOLD.lightened(0.38), FIGMA_GOLD, FIGMA_ORANGE.darkened(0.10), 6, Color(FIGMA_GOLD.lightened(0.48),0.72), 1.0, 0.32))
+	FigmaReferenceCanvas.set_rect(progress, 33, 649, 318, 9)
+	canvas.add_child(progress)
+
+	var status_specs := [
+		["rescue_rush", "RESCUE", 33.0],
+		["water_sort", "WATER", 139.0],
+		["block_puzzle", "BLOCK", 245.0],
+	]
+	for spec in status_specs:
+		var game_id := String(spec[0])
+		var accent := Unjam3DTheme.game_accent(game_id)
+		var done := _daily_done(game_id)
+		var fill := accent.darkened(0.68) if _dark() else accent.lightened(0.82)
+		var border := accent.lightened(0.14 if _dark() else 0.02)
+		_figma_solid_card(canvas, "DailyProgress/%s" % game_id, Rect2(float(spec[2]),670,96,32), fill, border, 12, false)
+		var label := _figma_text(
+			canvas,
+			"%s %s" % [String(spec[1]), "✓" if done else "READY"],
+			Rect2(float(spec[2])+5,676,86,18),
+			10,
+			accent.lightened(0.25) if _dark() else accent.darkened(0.24),
+			true
+		)
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+	var note := _figma_text(canvas, "Each Daily is independent • play in any order", Rect2(33,705,318,15), 11, FIGMA_MUTED, true)
+	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 func _figma_today_label() -> String:
 	var d := Time.get_date_dict_from_system()
