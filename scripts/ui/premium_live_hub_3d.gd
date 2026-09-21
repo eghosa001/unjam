@@ -146,6 +146,7 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 func _add_card_preview(canvas: Control, game_id: String, card_y: float) -> void:
 	var origin_y := card_y + 22.5
 	var stage := PanelContainer.new()
+	stage.name = "SelectorGamePreviewFrame_%s" % game_id
 	var stage_mid := Color(0.92, 1.0, 0.86, 0.50) if game_id == "rescue_rush" else (Color(0.91, 0.99, 1.0, 0.54) if game_id == "water_sort" else Color(0.94, 0.91, 1.0, 0.46))
 	stage.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(stage_mid.lightened(0.12), stage_mid, stage_mid.darkened(0.10), 16, Color(1,1,1,0.24), 1, 0.40))
 	RefCanvas.set_rect(stage, 243, origin_y, 104, 112)
