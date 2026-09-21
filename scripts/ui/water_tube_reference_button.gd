@@ -61,7 +61,7 @@ func _process(delta: float) -> void:
 
 func _visual_body_rect() -> Rect2:
 	var lift := -13.0 if is_selected else 0.0
-	var outer := Rect2(Vector2(size.x * 0.18, 13.0 + lift), Vector2(size.x * 0.64, size.y - 42.0))
+	var outer := Rect2(Vector2(size.x * 0.14, 13.0 + lift), Vector2(size.x * 0.72, size.y - 42.0))
 	var neck_h := outer.size.y * 0.10
 	return Rect2(outer.position + Vector2(0, neck_h * 0.40), Vector2(outer.size.x, outer.size.y - neck_h * 0.40))
 
@@ -85,11 +85,11 @@ func visual_receive_rim_local() -> Vector2:
 
 func _draw() -> void:
 	var lift := -13.0 if is_selected else 0.0
-	var outer := Rect2(Vector2(size.x * 0.18, 13.0 + lift), Vector2(size.x * 0.64, size.y - 42.0))
+	var outer := Rect2(Vector2(size.x * 0.14, 13.0 + lift), Vector2(size.x * 0.72, size.y - 42.0))
 	var neck_h := outer.size.y * 0.10
 	var body := Rect2(outer.position + Vector2(0, neck_h * 0.40), Vector2(outer.size.x, outer.size.y - neck_h * 0.40))
 	var inner_top := maxf(14.0, neck_h * 1.10)
-	var inner := Rect2(body.position + Vector2(7, inner_top), body.size - Vector2(14, inner_top + 10.0))
+	var inner := Rect2(body.position + Vector2(9, inner_top), body.size - Vector2(18, inner_top + 10.0))
 	var radius := minf(18.0, body.size.x * 0.30)
 
 	# Soft shadow keeps the glass readable over the illustrated background.
@@ -105,7 +105,7 @@ func _draw() -> void:
 	# Blue outer refraction + bright inner crystal edge gives the bottle a
 	# double-wall glass read against the dark playfield.
 	_draw_glass_shape(Rect2(body.position - Vector2(1.5, 1.5), body.size + Vector2(3, 3)), Color(0.22, 0.76, 1.0, 0.035), Color(0.35, 0.82, 1.0, 0.34), radius + 1.5, 5.0)
-	_draw_glass_shape(body, Color(0.70, 0.93, 1.0, 0.075), outline, radius, 2.4)
+	_draw_glass_shape(body, Color(0.70, 0.93, 1.0, 0.115), outline, radius, 2.6)
 
 	# Four crisp liquid layers, similar to the visual rhythm in the reference.
 	var slot_h := inner.size.y / float(CAPACITY)
