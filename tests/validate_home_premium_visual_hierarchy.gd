@@ -64,6 +64,11 @@ func _run() -> void:
 		return _fail("Home bottom nav no longer uses the complete Collection label")
 	if collection_label.get_theme_font_size("font_size") < 12:
 		return _fail("Home Collection navigation label became too small")
+	var settings_label := home.find_child("HomeNavLabel_SETTINGS", true, false) as Label
+	if settings_label == null:
+		return _fail("Home Settings navigation label is missing")
+	if collection_label.get_global_rect().end.x >= settings_label.get_global_rect().position.x:
+		return _fail("Home Collection label overlaps Settings")
 	if home.find_child("HomeMascot3D", true, false) != null:
 		return _fail("Retired giant mascot returned to Figma Home")
 	if home.find_child("HomeGameStrip", true, false) != null:
