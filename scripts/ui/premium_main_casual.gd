@@ -199,7 +199,7 @@ func _figma_text(canvas: Control, text_value: String, rect: Rect2, font_size: in
 	canvas.add_child(label)
 	return label
 
-func _figma_button(canvas: Control, name_value: String, text_value: String, rect: Rect2, fill: Color, callback: Callable, text_color: Color = FIGMA_OFF_WHITE, radius: float = 14.0, font_size: int = 12) -> Button:
+func _figma_button(canvas: Control, name_value: String, text_value: String, rect: Rect2, fill: Color, callback: Callable, text_color: Color = FIGMA_OFF_WHITE, radius: float = 14.0, font_size: int = 13) -> Button:
 	FigmaReferenceCanvas.add_shadow(canvas, rect, radius, Color(0.02,0.10,0.18,0.20 if _dark() else 0.16), 4, Vector2(0,3))
 	var resolved_fill := fill
 	var resolved_text := text_color
@@ -257,13 +257,13 @@ func _figma_header(canvas: Control, title_text: String, subtitle_text: String, p
 	header_title.name = "FigmaHeaderTitle"
 	header_title.clip_text = true
 	FigmaReferenceCanvas.style_display_title(header_title, pill_fill.lightened(0.28), Color("#071d55"), 2)
-	var subtitle := _figma_text(canvas, subtitle_text, Rect2(83,51,186,30), 12, muted_color)
+	var subtitle := _figma_text(canvas, subtitle_text, Rect2(83,51,186,30), 14, muted_color)
 	subtitle.name = "FigmaHeaderSubtitle"
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	subtitle.clip_text = true
 	FigmaReferenceCanvas.set_rect(subtitle, 83, 51, 186, 30)
 	if pill_callback.is_valid():
-		var pill_button := _figma_button(canvas, "FigmaHeaderPill", pill_text, Rect2(285,21,84,46), pill_fill, pill_callback, FIGMA_OFF_WHITE, 23, 12)
+		var pill_button := _figma_button(canvas, "FigmaHeaderPill", pill_text, Rect2(285,21,84,46), pill_fill, pill_callback, FIGMA_OFF_WHITE, 23, 13)
 		if pill_text.begins_with("◈"):
 			# Preserve the Figma/runtime text contract ("◈ +") for automation and
 			# accessibility while the faceted 3D gem sits directly over the glyph.
@@ -280,7 +280,7 @@ func _figma_header(canvas: Control, title_text: String, subtitle_text: String, p
 			pill = _figma_solid_card(canvas, "FigmaHeaderPill", Rect2(285,21,84,46), pill_fill, pill_fill.lightened(0.24), 23)
 		pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var pill_text_color := FigmaReferenceCanvas.accessible_text_color(FIGMA_OFF_WHITE, pill_fill)
-		var pill_label := _figma_text(canvas, pill_text, Rect2(297,29,60,30), 12, pill_text_color, true)
+		var pill_label := _figma_text(canvas, pill_text, Rect2(297,29,60,30), 13, pill_text_color, true)
 		pill_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 
 func _on_figma_wallet_balance_changed(new_balance: int, _delta: int, _reason: String) -> void:
@@ -376,10 +376,10 @@ func build_settings() -> void:
 
 	_figma_settings_card(canvas,"SettingsCard/Appearance",Rect2(17,409,354,76),card_fill,card_border,dark_mode)
 	_figma_text(canvas,"☀  APPEARANCE",Rect2(33,425,150,18),15,Color("#ff8c1f") if not dark_mode else heading_color)
-	_figma_text(canvas,"THEME",Rect2(33,448,210,28),13,muted_color)
+	_figma_text(canvas,"THEME",Rect2(33,448,210,28),14,muted_color)
 	var theme_fill := FIGMA_ORANGE
 	var theme_text := FIGMA_NAVY
-	var theme_button := _figma_button(canvas,"SettingToggle/Theme",theme_name,Rect2(279,439,72,44),theme_fill,Callable(),theme_text,19,12)
+	var theme_button := _figma_button(canvas,"SettingToggle/Theme",theme_name,Rect2(279,439,72,44),theme_fill,Callable(),theme_text,19,14)
 	theme_button.pressed.connect(func() -> void:
 		if shell != null and shell.has_method("_toggle_theme"):
 			shell.call("_toggle_theme")
@@ -397,13 +397,13 @@ func build_settings() -> void:
 	var utility_border := Color(0.26,0.43,0.57,0.72) if dark_mode else utility_fill.lightened(0.24)
 	var utility_text := Color(0.76,0.84,0.90) if dark_mode else FIGMA_OFF_WHITE
 	FigmaReferenceCanvas.add_shadow(canvas, Rect2(33,541,144,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
-	var how_to := FigmaReferenceCanvas.premium_button("HOW TO PLAY",12,utility_text,Color("#086ec7") if not dark_mode else utility_fill,16,utility_border,1.2)
+	var how_to := FigmaReferenceCanvas.premium_button("HOW TO PLAY",14,utility_text,Color("#086ec7") if not dark_mode else utility_fill,16,utility_border,1.2)
 	how_to.name = "SettingsHowToPlay"
 	FigmaReferenceCanvas.set_rect(how_to,33,541,144,46)
 	how_to.pressed.connect(_show_current_tutorial)
 	canvas.add_child(how_to)
 	FigmaReferenceCanvas.add_shadow(canvas, Rect2(193,541,158,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
-	var privacy := FigmaReferenceCanvas.premium_button("PRIVACY OPTIONS",12,utility_text,Color("#086ec7") if not dark_mode else utility_fill,16,utility_border,1.2)
+	var privacy := FigmaReferenceCanvas.premium_button("PRIVACY OPTIONS",14,utility_text,Color("#086ec7") if not dark_mode else utility_fill,16,utility_border,1.2)
 	privacy.name = "SettingsPrivacy"
 	FigmaReferenceCanvas.set_rect(privacy,193,541,158,46)
 	privacy.pressed.connect(PrivacyManager.show_privacy_options)
@@ -422,12 +422,12 @@ func _figma_settings_card(canvas: Control, name_value: String, rect: Rect2, fill
 
 func _figma_setting_row(canvas: Control, key: String, label_text: String, toggle_y: float, label_y: float, default_value: bool = true, reduced_motion: bool = false, dark_mode: bool = false) -> void:
 	var text_color := Color(0.76,0.84,0.90) if dark_mode else FIGMA_INK
-	_figma_text(canvas,label_text,Rect2(34,label_y-7,210,30),13,text_color)
+	_figma_text(canvas,label_text,Rect2(34,label_y-7,210,30),14,text_color)
 	var enabled := bool(SaveManager.data.get(key,default_value))
 	var fill := FIGMA_BLUE if enabled else Color("#b2bfcc")
 	var button_text_color := FIGMA_OFF_WHITE if enabled else FIGMA_NAVY
 	var state := "ON" if enabled else "OFF"
-	var button := _figma_button(canvas,"SettingToggle/%s" % key.capitalize(),state,Rect2(279,toggle_y-3.0,72,44),fill,Callable(),button_text_color,19,12)
+	var button := _figma_button(canvas,"SettingToggle/%s" % key.capitalize(),state,Rect2(279,toggle_y-3.0,72,44),fill,Callable(),button_text_color,19,14)
 	if reduced_motion:
 		button.pressed.connect(_toggle_reduced_motion)
 	else:
@@ -464,7 +464,7 @@ func build_daily_games() -> void:
 		canvas,
 		"COLLECTION BONUS  +%d DAILY   •   GARDEN GIFT +%d" % [bonus, EconomyManager.garden_gift_amount()],
 		Rect2(33,556,322,18),
-		12,
+		13,
 		FIGMA_MUTED
 	)
 	_figma_bottom_nav(canvas, "daily")
@@ -498,9 +498,9 @@ func _figma_daily_card(canvas: Control, game_id: String, y: float, collection_bo
 	var daily_title := _figma_text(canvas, MultiGameManager.display_name(game_id).to_upper(), Rect2(33,y+18,150,21), 17, accent)
 	FigmaReferenceCanvas.style_display_title(daily_title, accent.lightened(0.18), Color("#071d55"), 1)
 	var detail := "TODAY’S RESCUE" if game_id == "rescue_rush" else ("TODAY’S SORT" if game_id == "water_sort" else "TODAY’S BLOCK RUN")
-	_figma_text(canvas, detail, Rect2(33,y+48,175,15), 12, FIGMA_MUTED)
+	_figma_text(canvas, detail, Rect2(33,y+48,175,17), 13, FIGMA_MUTED)
 	var reward := "+%d COINS" % (100 + collection_bonus) if game_id == "rescue_rush" else "+%d–%d COINS" % [125 + collection_bonus,175 + collection_bonus]
-	_figma_text(canvas, reward, Rect2(33,y+72,130,16), 13, FIGMA_ORANGE)
+	_figma_text(canvas, reward, Rect2(33,y+72,145,18), 14, FIGMA_ORANGE)
 	var daily_state := _daily_ui_state(game_id, accent)
 	var fill: Color = daily_state.get("fill", accent)
 	var button_text := String(daily_state.get("text", "PLAY TODAY"))
@@ -513,7 +513,7 @@ func _figma_daily_card(canvas: Control, game_id: String, y: float, collection_bo
 		Callable(),
 		FIGMA_OFF_WHITE,
 		14,
-		11
+		14
 	)
 	button.disabled = bool(daily_state.get("disabled", false))
 	if not button.disabled:
@@ -564,7 +564,7 @@ func build_collection() -> void:
 	]
 	for metric in metrics:
 		_figma_text(canvas,_compact_stat(int(metric[0])),Rect2(float(metric[2]),136,62,26),18,FIGMA_INK)
-		_figma_text(canvas,String(metric[1]),Rect2(float(metric[2])-3,161,70,20),12,FIGMA_MUTED)
+		_figma_text(canvas,String(metric[1]),Rect2(float(metric[2])-3,161,70,20),13,FIGMA_MUTED)
 
 	_figma_text(canvas,"THREE PUZZLE WORLDS",Rect2(17,204,190,18),15,FIGMA_INK)
 	_figma_collection_progress(canvas,"rescue_rush",17)
@@ -578,7 +578,7 @@ func build_collection() -> void:
 		var unlocked := MultiGameManager.unlocked_achievements(game_id).size()
 		var total := MultiGameManager.achievement_definitions(game_id).size()
 		achievement_parts.append("%s %d/%d" % [_figma_short_game(game_id),unlocked,total])
-	_figma_text(canvas," • ".join(achievement_parts),Rect2(33,384,310,22),12,FIGMA_MUTED)
+	_figma_text(canvas," • ".join(achievement_parts),Rect2(33,384,310,22),13,FIGMA_MUTED)
 
 	var decorations: Array = SaveManager.data.get("decorations",[])
 	var rescued: Array = SaveManager.data.get("rescued",[])
@@ -586,11 +586,11 @@ func build_collection() -> void:
 	_figma_card(canvas,"Garden",Rect2(17,429,354,96),Color("#fffef8"),Color(0.55,0.86,0.71,0.32),18)
 	_figma_text(canvas,"♥  RESCUE GARDEN",Rect2(33,445,180,19),16,Color("#088c3d"))
 	_figma_text(canvas,"%d friends home • %d / 6 upgrades" % [rescued.size(),owned],Rect2(33,476,240,20),13,FIGMA_MUTED)
-	_figma_text(canvas,"%d / 6 upgrades  •  +%d Daily  •  +%d Gift" % [owned,EconomyManager.collection_daily_bonus(),EconomyManager.garden_gift_amount()],Rect2(33,501,310,20),12,FIGMA_MUTED)
+	_figma_text(canvas,"%d / 6 upgrades  •  +%d Daily  •  +%d Gift" % [owned,EconomyManager.collection_daily_bonus(),EconomyManager.garden_gift_amount()],Rect2(33,501,310,20),13,FIGMA_MUTED)
 
 	_figma_card(canvas,"Boost",Rect2(17,539,354,92),Color("#fffef8"),Color(0.55,0.86,0.71,0.32),18)
 	_figma_text(canvas,"PERMANENT BOOST",Rect2(33,555,180,18),15,FIGMA_ORANGE)
-	_figma_text(canvas,"+5 per Daily Game • +10 Garden Gift per upgrade",Rect2(33,583,310,20),12,FIGMA_MUTED)
+	_figma_text(canvas,"+5 per Daily Game • +10 Garden Gift per upgrade",Rect2(33,583,310,20),13,FIGMA_MUTED)
 
 	# Figma state transition: swipe upward through the Garden/Boost region to
 	# reveal the dedicated six-upgrade Collection state.
@@ -606,7 +606,7 @@ func build_collection() -> void:
 	if not can_claim:
 		gift_text = "GARDEN GIFT CLAIMED" if EconomyManager.garden_gift_claimed_today() else "BUY AN UPGRADE IN SHOP"
 	var gift_fill := FIGMA_GREEN if can_claim else Color(0.54,0.64,0.72)
-	var gift := _figma_button(canvas,"CollectionGardenGift",gift_text,Rect2(33,603,250,44),gift_fill,Callable(),FIGMA_OFF_WHITE,16,12)
+	var gift := _figma_button(canvas,"CollectionGardenGift",gift_text,Rect2(33,603,250,44),gift_fill,Callable(),FIGMA_OFF_WHITE,16,14)
 	if can_claim:
 		gift.pressed.connect(_claim_collection_gift)
 	else:
@@ -617,10 +617,10 @@ func build_collection() -> void:
 func _figma_collection_progress(canvas: Control, game_id: String, x: float) -> void:
 	var accent := Unjam3DTheme.game_accent(game_id)
 	_figma_card(canvas,"ProgressCard/%s" % game_id,Rect2(x,231,110,86),Color("#fffef7"),Color(accent,0.70),16)
-	_figma_text(canvas,_figma_short_game(game_id),Rect2(x+12,245,86,15),12,accent)
+	_figma_text(canvas,_figma_short_game(game_id),Rect2(x+12,245,86,17),13,accent)
 	var level := _highest_level_for_game(game_id)
 	var stars := MultiGameManager.total_stars(game_id)
-	_figma_text(canvas,"L%d • ★ %s" % [level,_compact_stat(stars)],Rect2(x+12,273,92,20),12,FIGMA_MUTED)
+	_figma_text(canvas,"L%d • ★ %s" % [level,_compact_stat(stars)],Rect2(x+12,273,92,20),13,FIGMA_MUTED)
 
 func _figma_short_game(game_id: String) -> String:
 	match game_id:
@@ -659,7 +659,7 @@ func build_collection_upgrades() -> void:
 		canvas,
 		"+%d EVERY DAILY GAME   •   +%d GARDEN GIFT" % [EconomyManager.collection_daily_bonus(),EconomyManager.garden_gift_amount()],
 		Rect2(33,184,322,18),
-		12,
+		13,
 		Color("#1f8a52"),
 		true
 	)
@@ -694,8 +694,8 @@ func build_collection_upgrades() -> void:
 			16,
 			false
 		)
-		_figma_text(canvas,display_name,Rect2(37,y+11,184,18),13,title_color)
-		_figma_text(canvas,"%s  •  +5 DAILY  •  +10 GIFT" % flavor,Rect2(37,y+36,206,16),12,Color("#6b8091"))
+		_figma_text(canvas,display_name,Rect2(37,y+11,184,18),14,title_color)
+		_figma_text(canvas,"%s  •  +5 DAILY  •  +10 GIFT" % flavor,Rect2(37,y+36,206,18),13,Color("#6b8091"))
 		var state_text := "OWNED" if owned else "%d COINS" % cost
 		var pill_fill := Color("#e0f2e5") if owned else Color("#7a57e0")
 		var state_text_color := Color("#4d7a59") if owned else Color.WHITE
@@ -708,7 +708,7 @@ func build_collection_upgrades() -> void:
 			Callable(),
 			state_text_color,
 			12,
-			12
+			14
 		)
 		state.disabled = owned
 		if owned:
@@ -719,7 +719,7 @@ func build_collection_upgrades() -> void:
 		else:
 			state.pressed.connect(_buy_collection_upgrade.bind(id,cost))
 
-	var return_hint := _figma_text(canvas,"Swipe up to return to your Collection summary",Rect2(37,710,314,18),12,Color("#6e8596"),true)
+	var return_hint := _figma_text(canvas,"Swipe up to return to your Collection summary",Rect2(37,710,314,18),13,Color("#6e8596"),true)
 	return_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_figma_bottom_nav(canvas,"collection")
 
@@ -965,7 +965,7 @@ func _figma_level_tabs(canvas: Control, active_game_id: String) -> void:
 		var active := game_id == active_game_id
 		var fill := active_accent if active else (Color("#20384b") if _dark() else Color("#fcfeff"))
 		var text_color := FIGMA_OFF_WHITE if active else (FIGMA_DARK_MUTED if _dark() else FIGMA_MUTED)
-		var button := _figma_button(canvas,"LevelGameTab/%s" % game_id,String(spec[1]),Rect2(float(spec[2]),81,108,44),fill,Callable(),text_color,14,12)
+		var button := _figma_button(canvas,"LevelGameTab/%s" % game_id,String(spec[1]),Rect2(float(spec[2]),81,108,44),fill,Callable(),text_color,14,13)
 		_style_figma_level_tab(button,active_accent,active)
 		if active:
 			button.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1062,7 +1062,7 @@ func _add_figma_block_modes(canvas: Control) -> void:
 	for spec in specs:
 		var mode := String(spec[0])
 		var fill: Color = spec[3] as Color
-		var button := _figma_button(canvas,"BlockMode/%s" % mode,String(spec[1]),Rect2(float(spec[2]),197,82,44),fill,Callable(),FIGMA_OFF_WHITE,13,12)
+		var button := _figma_button(canvas,"BlockMode/%s" % mode,String(spec[1]),Rect2(float(spec[2]),197,82,44),fill,Callable(),FIGMA_OFF_WHITE,13,13)
 		_style_figma_page_button(button,fill,fill,false)
 		if mode == "campaign":
 			button.mouse_filter = Control.MOUSE_FILTER_IGNORE
