@@ -144,7 +144,7 @@ func _build_figma_block(canvas: Control) -> void:
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	FigmaReferenceCanvas.set_rect(title_label, 115, 15, 184, 30)
 	canvas.add_child(title_label)
-	var campaign := FigmaReferenceCanvas.label("CAMPAIGN • HARD", 12, Color(0.92,0.98,1.0), false)
+	var campaign := FigmaReferenceCanvas.label("CAMPAIGN", 12, Color(0.92,0.98,1.0), false)
 	campaign.name = "BlockCampaignSubtitle"
 	campaign.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	FigmaReferenceCanvas.set_rect(campaign, 115, 43, 184, 20)

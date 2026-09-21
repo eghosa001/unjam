@@ -283,22 +283,33 @@ func refill_pieces() -> void:
 
 func render() -> void:
 	super.render()
-	if daily_mode or campaign_profile.is_empty():
+	var campaign_label := find_child("BlockCampaignSubtitle", true, false) as Label
+	if title_label != null:
+		title_label.text = "BLOCK PUZZLE"
+	if daily_mode:
+		if campaign_label != null:
+			campaign_label.text = "DAILY CHALLENGE"
+		return
+	if campaign_profile.is_empty():
+		if campaign_label != null:
+			campaign_label.text = play_mode.to_upper()
 		return
 	if play_mode == "endless":
-		title_label.text = "ENDLESS"
+		if campaign_label != null:
+			campaign_label.text = "ENDLESS • SCORE RUN"
 		goal_label.text = "SCORE %d  •  LINES %d" % [score, lines_cleared]
 		hint_label.text = "SURVIVE AS LONG AS POSSIBLE  •  NO TARGET"
 	elif play_mode == "zen":
-		title_label.text = "ZEN"
+		if campaign_label != null:
+			campaign_label.text = "ZEN • RELAXED"
 		goal_label.text = "SCORE %d  •  LINES %d" % [score, lines_cleared]
 		hint_label.text = "NO MOVE LIMIT  •  NO GAME OVER"
 	else:
 		var world := int(campaign_profile.get("world", 1))
-		var local_level := int(campaign_profile.get("level_in_world", level_number))
 		var score_value := int(campaign_profile.get("difficulty_score", 0))
 		var milestone := String(campaign_profile.get("milestone", "normal"))
-		title_label.text = ("EXTREME  •  %d" % level_number) if play_mode == "extreme" else "WORLD %d  •  %d" % [world, local_level]
+		if campaign_label != null:
+			campaign_label.text = ("EXTREME • LEVEL %d" % level_number) if play_mode == "extreme" else "LEVEL %d • WORLD %d" % [level_number, world]
 		var move_text := ""
 		if campaign_move_limit > 0:
 			move_text = "  •  MOVES %d/%d" % [placements, campaign_move_limit]
