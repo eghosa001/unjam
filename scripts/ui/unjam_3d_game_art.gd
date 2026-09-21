@@ -96,19 +96,32 @@ func _build_stage() -> void:
 	stage.add_child(fill)
 
 	var camera := Camera3D.new()
-	camera.position = Vector3(4.9, 5.0, 7.3)
-	camera.fov = 43.0
+	# Slightly closer, narrower framing makes the real 3D object the card's focal
+	# point instead of a small thumbnail floating in a large empty preview panel.
+	camera.position = Vector3(4.45, 4.55, 6.65)
+	camera.fov = 39.0
 	stage.add_child(camera)
-	camera.look_at(Vector3(0, 0.45, 0), Vector3.UP)
+	camera.look_at(Vector3(0, 0.48, 0), Vector3.UP)
 	camera.current = true
 
 	display_root = Node3D.new()
 	display_root.name = "Diorama"
 	stage.add_child(display_root)
+	# Game-specific card-scale composition: Rescue and Block can fill more of the
+	# frame, while Water keeps extra headroom for its tilted pouring bottle.
 	match game_id:
-		"water_sort": _build_water_sort()
-		"block_puzzle": _build_block_puzzle()
-		_: _build_rescue_rush()
+		"water_sort":
+			display_root.scale = Vector3.ONE * 1.02
+			display_root.position = Vector3(0, -0.02, 0.06)
+			_build_water_sort()
+		"block_puzzle":
+			display_root.scale = Vector3.ONE * 1.11
+			display_root.position = Vector3(0, 0.04, 0.08)
+			_build_block_puzzle()
+		_:
+			display_root.scale = Vector3.ONE * 1.12
+			display_root.position = Vector3(0, 0.05, 0.08)
+			_build_rescue_rush()
 
 func _build_rescue_rush() -> void:
 	_add_box(display_root, Vector3(5.7, 0.32, 4.25), Vector3(0, -0.38, 0), Color("07579b"), 0.06, 0.46)
