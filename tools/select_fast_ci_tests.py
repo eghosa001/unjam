@@ -16,6 +16,7 @@ GROUP_TESTS = {
     ],
     "water": [
         "validate_reported_polish_regressions",
+        "validate_compact_gameplay_stack",
         "validate_daily_and_late_water_runtime",
         "validate_water_liquid_continuity",
         "validate_water_pour_arc",
@@ -28,6 +29,7 @@ GROUP_TESTS = {
     ],
     "rescue": [
         "validate_reported_polish_regressions",
+        "validate_compact_gameplay_stack",
         "validate_gameplay_interactions",
         "validate_rescue_token_render_lifecycle",
     ],
