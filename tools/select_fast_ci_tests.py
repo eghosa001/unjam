@@ -100,7 +100,9 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
         game_specific_ui = bool(groups.intersection({"water", "block", "rescue"}))
         if not game_specific_ui:
             add(groups, "ui")
-            if "ux_shell" in p or "tutorial" in p:
+            if p.endswith("figma_reference_canvas.gd"):
+                visual.update({"home", "rescue", "water", "block", "tutorial", "result"})
+            elif "ux_shell" in p or "tutorial" in p:
                 visual.add("tutorial")
             elif "premium_result_overlay" in p or "result" in p:
                 visual.add("result")
