@@ -33,11 +33,17 @@ def main() -> int:
     preset_path = root / 'export_presets.cfg'
     project_path = root / 'project.godot'
     live_checker_path = root / 'tools' / 'check_live_monetization.py'
+    icon_path = root / 'assets' / 'icon.svg'
+    adaptive_bg_path = root / 'assets' / 'icon_adaptive_background.svg'
+    adaptive_fg_path = root / 'assets' / 'icon_adaptive_foreground.svg'
 
     workflow = workflow_path.read_text(encoding='utf-8')
     preset = preset_path.read_text(encoding='utf-8')
     project = project_path.read_text(encoding='utf-8')
     live_checker = live_checker_path.read_text(encoding='utf-8')
+    icon = icon_path.read_text(encoding='utf-8')
+    adaptive_bg = adaptive_bg_path.read_text(encoding='utf-8')
+    adaptive_fg = adaptive_fg_path.read_text(encoding='utf-8')
 
     errors: list[str] = []
 
@@ -95,6 +101,25 @@ def main() -> int:
     for token in ('/healthz', '/readiness', 'google_play', 'firestore'):
         if token not in live_checker:
             errors.append(f'live monetization checker missing dependency contract token: {token}')
+
+    for token in (
+        'viewBox="0 0 512 512"',
+        'UNJAM',
+        'url(#bg)',
+    ):
+        if token not in icon:
+            errors.append(f'launcher icon master missing premium asset token: {token}')
+
+    if 'viewBox="0 0 432 432"' not in adaptive_bg:
+        errors.append('adaptive icon background must remain a 432x432 Android layer')
+
+    for token in (
+        'id="AdaptiveSafeZone"',
+        'translate(216 216) scale(.69) translate(-216 -216)',
+        'UNJAM',
+    ):
+        if token not in adaptive_fg:
+            errors.append(f'adaptive foreground safe-zone contract missing token: {token}')
 
     if errors:
         print('Release contract validation failed:')
