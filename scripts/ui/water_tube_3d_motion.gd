@@ -64,7 +64,7 @@ func set_pour_progress(value: float) -> void:
 	if pour_mode == 1 and pour_amount > 0:
 		var previous_units := floori(previous_progress * float(pour_amount) + 0.0001)
 		var current_units := floori(pour_progress * float(pour_amount) + 0.0001)
-		if current_units > previous_units:
+		if current_units > previous_units and not MotionSystem.reduced():
 			_arrival_impulse = 1.0
 			_arrival_phase = 0.0
 	_refresh_liquid_3d()
