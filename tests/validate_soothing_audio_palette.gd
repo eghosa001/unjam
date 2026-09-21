@@ -49,6 +49,12 @@ func _initialize() -> void:
 			var last := _pcm16(music.data, music.data.size() - 4)
 			if absi(first) > 96 or absi(last) > 96:
 				failures.append("Ambient loop seam must taper close to zero")
+			for boundary_seconds in [8, 16, 24]:
+				var frame := boundary_seconds * int(music.mix_rate)
+				var before := _pcm16(music.data, (frame - 1) * 4)
+				var after := _pcm16(music.data, frame * 4)
+				if absi(after - before) > 1200:
+					failures.append("Ambient chord boundary has an audible PCM jump at %ds" % boundary_seconds)
 		feedback.free()
 
 	if not failures.is_empty():
