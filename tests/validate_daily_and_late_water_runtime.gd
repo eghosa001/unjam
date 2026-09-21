@@ -26,6 +26,31 @@ func _run() -> void:
 	if not bool(multi_game_manager.call("claim_daily_game", "water_sort")):
 		return _fail(save_manager, original, "Re-entering an unfinished daily game should remain allowed")
 
+	# UI state must remain independent even after one game is completed.
+	var main_packed := load("res://scenes/Main.tscn") as PackedScene
+	if main_packed == null:
+		return _fail(save_manager, original, "Main scene missing for Daily UI regression")
+	var main := main_packed.instantiate() as Control
+	root.add_child(main)
+	await _frames(6)
+	if not main.has_method("_daily_ui_state"):
+		return _fail(save_manager, original, "Daily UI state helper unavailable")
+	for game_id in ["water_sort", "block_puzzle", "rescue_rush"]:
+		var state: Dictionary = main.call("_daily_ui_state", game_id, Color.WHITE)
+		if bool(state.get("disabled", true)):
+			return _fail(save_manager, original, "Starting one Daily game disabled %s" % game_id)
+	if not bool(multi_game_manager.call("complete_daily", "water_sort", 0)):
+		return _fail(save_manager, original, "Could not complete Water Daily for independence regression")
+	var water_state: Dictionary = main.call("_daily_ui_state", "water_sort", Color.WHITE)
+	var block_state: Dictionary = main.call("_daily_ui_state", "block_puzzle", Color.WHITE)
+	var rescue_state: Dictionary = main.call("_daily_ui_state", "rescue_rush", Color.WHITE)
+	if not bool(water_state.get("disabled", false)):
+		return _fail(save_manager, original, "Completed Water Daily should disable only itself")
+	if bool(block_state.get("disabled", true)) or bool(rescue_state.get("disabled", true)):
+		return _fail(save_manager, original, "Completing Water Daily disabled another Daily game")
+	main.queue_free()
+	await process_frame
+
 	root.size = Vector2i(540, 960)
 	var packed := load("res://scenes/WaterSort.tscn") as PackedScene
 	if packed == null:
