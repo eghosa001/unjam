@@ -73,7 +73,7 @@ jobs:
         run: |
           set -euxo pipefail
           mkdir -p build/visual-audit
-          xvfb-run -a godot --path . --rendering-method gl_compatibility --script res://tests/capture_fast_visual_audit.gd 2>&1 | tee visual-audit.log
+          timeout 180s xvfb-run -a godot --path . --rendering-method gl_compatibility --script res://tests/capture_fast_visual_audit.gd 2>&1 | tee visual-audit.log
           if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access|ObjectDB instances were leaked|Leaked instance:" visual-audit.log; then exit 1; fi
           test -s build/visual-audit/01-home-dark.png
           test -s build/visual-audit/09c-game-rescue-motion-540x960.png
