@@ -149,14 +149,14 @@ func _build_shell() -> void:
 	_tutorial_canvas.add_child(tutorial_progress_label)
 
 	FigmaReferenceCanvas.add_shadow(_tutorial_canvas, Rect2(43,526,142,48), 16, Color(0.03,0.10,0.20,0.22), 4, Vector2(0,4))
-	tutorial_prev_button = FigmaReferenceCanvas.premium_button("‹ BACK",12,Color.WHITE,Color("#c7d6e3"),16,Color("#d0dde7"),1.2)
+	tutorial_prev_button = FigmaReferenceCanvas.premium_button("‹ BACK",14,Color.WHITE,Color("#c7d6e3"),16,Color("#d0dde7"),1.2)
 	tutorial_prev_button.name = "TutorialPrevious"
 	FigmaReferenceCanvas.set_rect(tutorial_prev_button,43,526,142,48)
 	tutorial_prev_button.pressed.connect(_tutorial_previous)
 	_tutorial_canvas.add_child(tutorial_prev_button)
 
 	FigmaReferenceCanvas.add_shadow(_tutorial_canvas, Rect2(203,526,142,48), 16, Color(0.03,0.10,0.20,0.22), 4, Vector2(0,4))
-	tutorial_next_button = FigmaReferenceCanvas.premium_button("NEXT ›",12,Color.WHITE,Color("#21c763"),16,Color("#74d999"),1.2)
+	tutorial_next_button = FigmaReferenceCanvas.premium_button("NEXT ›",14,Color.WHITE,Color("#21c763"),16,Color("#74d999"),1.2)
 	tutorial_next_button.name = "TutorialNext"
 	FigmaReferenceCanvas.set_rect(tutorial_next_button,203,526,142,48)
 	tutorial_next_button.pressed.connect(_tutorial_next)
