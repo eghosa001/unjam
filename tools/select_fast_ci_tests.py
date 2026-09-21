@@ -74,7 +74,10 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
         explicit_tests.add(Path(p).stem)
         return True
     if p == "tests/capture_visual_audit.gd":
-        visual.update({"home", "rescue", "water", "block", "tutorial", "result"})
+        visual.update({
+            "home", "games", "levels", "collection", "daily", "settings",
+            "shop", "rescue", "water", "block", "tutorial", "result"
+        })
         return True
 
     if p.startswith(DOC_PREFIXES) or suffix in DOC_SUFFIXES or p in {"license", "readme"}:
