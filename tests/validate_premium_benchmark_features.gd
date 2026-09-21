@@ -72,7 +72,7 @@ func _run() -> void:
 	if not tube_source.contains("side_inset := clampf(size.x * 0.10") or not tube_source.contains("cavity_side := clampf"):
 		return _fail("Water bottle geometry is not scaling with compact/late-game slot width")
 	var tray_source := _read("res://scripts/ui/block_piece_button.gd")
-	if not tray_source.contains("minf(36.0, fit_cell)") or not tray_source.contains("size.x - 10.0") or not tray_source.contains("pedestal_rect"):
+	if not tray_source.contains("minf(32.0, fit_cell)") or not tray_source.contains("size.x - 10.0") or not tray_source.contains("pedestal_rect"):
 		return _fail("Block Puzzle tray pieces lack the premium phone-scale size/pedestal hierarchy")
 	var rescue_ui_source := _read("res://scripts/game/rescue_rush_casual.gd")
 	if not rescue_ui_source.contains("set_rect(actions,21,638,346,62)"):
