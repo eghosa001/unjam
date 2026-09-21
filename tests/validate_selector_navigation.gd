@@ -20,6 +20,17 @@ func _run() -> void:
 	if nav == null or active == null:
 		return _fail("Games selector premium bottom navigation is incomplete")
 
+	for game_id in ["rescue_rush", "water_sort", "block_puzzle"]:
+		var game_title := _find(main, "SelectorGameTitle_%s" % game_id) as Label
+		if game_title == null:
+			return _fail("Selector game title is missing for %s" % game_id)
+		if game_title.get_theme_font_size("font_size") < 20:
+			return _fail("Selector game title is too small for %s" % game_id)
+		if game_title.get_theme_constant("outline_size") < 2:
+			return _fail("Selector game title lost its high-contrast outline for %s" % game_id)
+		if game_title.get_theme_color("font_color").get_luminance() < 0.80:
+			return _fail("Selector game title lost its bright foreground for %s" % game_id)
+
 	for nav_name in ["HOME", "GAMES", "DAILY", "COLLECT", "SETTINGS"]:
 		var glyph := _find(main, "SelectorNavGlyph_%s" % nav_name) as Label
 		var label := _find(main, "SelectorNavLabel_%s" % nav_name) as Label
