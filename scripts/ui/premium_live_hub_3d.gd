@@ -217,13 +217,13 @@ func _add_bottom_nav(canvas: Control) -> void:
 			RefCanvas.set_rect(shine, float(item[2]) + 8.0, 765, 40, 2)
 			shine.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			canvas.add_child(shine)
-		var glyph := _add_text(canvas, String(item[1]), Rect2(float(item[2]) - 1.0, 765, 58, 22), 18, glyph_color, true)
+		var glyph := _add_text(canvas, String(item[1]), Rect2(float(item[2]) - 1.0, 764, 58, 23), 20, glyph_color, true)
 		glyph.name = "SelectorNavGlyph_%s" % String(item[0])
 		glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		var display_name := "COLLECTION" if String(item[0]) == "COLLECT" else String(item[0])
 		var label_width := 82.0 if String(item[0]) == "COLLECT" else (66.0 if String(item[0]) == "SETTINGS" else 58.0)
 		var label_x := float(item[2]) - 12.0 if String(item[0]) == "COLLECT" else (float(item[2]) - 5.0 if String(item[0]) == "SETTINGS" else float(item[2]) - 1.0)
-		var label := _add_text(canvas, display_name, Rect2(label_x, 790, label_width, 22), 12, label_color, selected)
+		var label := _add_text(canvas, display_name, Rect2(label_x, 790, label_width, 22), 13, label_color, selected)
 		label.name = "SelectorNavLabel_%s" % String(item[0])
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
