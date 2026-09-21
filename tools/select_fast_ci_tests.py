@@ -23,7 +23,7 @@ GROUP_TESTS = {
         "validate_theme_integrity",
     ],
     "games_ui": [
-        "validate_selector_premium_card_hierarchy",
+        "validate_selector_navigation",
         "validate_requested_polish_contract",
     ],
     "tutorial": [
@@ -416,7 +416,7 @@ def self_test() -> None:
         "validate_reported_polish_regressions",
     ]
     assert GROUP_TESTS["games_ui"] == [
-        "validate_selector_premium_card_hierarchy",
+        "validate_selector_navigation",
         "validate_requested_polish_contract",
     ]
     icon_plan = plan_for_paths(["assets/icon_adaptive_foreground.svg"])
