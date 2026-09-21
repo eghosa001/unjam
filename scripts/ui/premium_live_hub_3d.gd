@@ -154,7 +154,7 @@ func _add_card_preview(canvas: Control, game_id: String, card_y: float) -> void:
 	canvas.add_child(stage)
 	var art := GAME_ART_SCRIPT.new()
 	art.name = "SelectorGameArt3D_%s" % game_id
-	art.configure(game_id)
+	art.configure(game_id, true)
 	RefCanvas.set_rect(art, 243, origin_y, 104, 112)
 	canvas.add_child(art)
 
