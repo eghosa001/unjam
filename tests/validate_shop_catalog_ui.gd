@@ -52,6 +52,14 @@ func run() -> void:
 				expect_true(expected in text, "Figma Shop content missing: %s" % expected)
 		var status_panel := overlay.find_child("ShopStatusPanel", true, false) as Control if overlay != null else null
 		expect_true(status_panel != null and status_panel.size.x >= 350.0 and status_panel.size.y >= 140.0, "Shop status panel is missing or too small")
+		var status_copy: Label = null
+		if overlay != null:
+			for node in overlay.find_children("*", "Label", true, false):
+				var label := node as Label
+				if label != null and label.text == "Real entitlements • optional rewards":
+					status_copy = label
+					break
+		expect_true(status_copy != null and status_copy.get_theme_font_size("font_size") >= 12, "Shop status explainer fell below the 12px readability floor")
 		if overlay != null and store != null:
 			for product_id in store.PRODUCTS.keys():
 				var buy := overlay.find_child("Buy_%s" % String(product_id), true, false) as Button
