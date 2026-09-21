@@ -3,6 +3,7 @@ extends Control
 
 # Exact coordinate space used by the audited Production frames in Figma.
 const REFERENCE_SIZE := Vector2(390.0, 844.0)
+const WORLD_BACKDROP_SCRIPT = preload("res://scripts/ui/unjam_3d_backdrop.gd")
 
 var extra_scale := 1.0
 
@@ -79,7 +80,7 @@ static func rounded_gradient(top: Color, bottom: Color, radius: float = 16.0, bo
 	var cache_key := _style_cache_key("rounded2", [top, bottom], radius, border_color, border_width)
 	if _rounded_gradient_cache.has(cache_key):
 		return _rounded_gradient_cache[cache_key] as StyleBoxTexture
-	var image_size := 64
+	var image_size := 96
 	var image := Image.create(image_size, image_size, false, Image.FORMAT_RGBA8)
 	var r := clampf(radius / 24.0 * (float(image_size) * 22.0 / 96.0), 0.0, float(image_size) * 44.0 / 96.0)
 	var bw := maxf(0.0, border_width / 4.0 * 4.0)
@@ -118,7 +119,7 @@ static func rounded_gradient3(top: Color, middle: Color, bottom: Color, radius: 
 	var cache_key := _style_cache_key("rounded3", [top, middle, bottom], radius, border_color, border_width, midpoint)
 	if _rounded_gradient3_cache.has(cache_key):
 		return _rounded_gradient3_cache[cache_key] as StyleBoxTexture
-	var image_size := 64
+	var image_size := 96
 	var image := Image.create(image_size, image_size, false, Image.FORMAT_RGBA8)
 	var r := clampf(radius / 24.0 * (float(image_size) * 22.0 / 96.0), 0.0, float(image_size) * 44.0 / 96.0)
 	var bw := maxf(0.0, border_width / 4.0 * 4.0)
@@ -164,11 +165,17 @@ static func rounded_gradient3(top: Color, middle: Color, bottom: Color, radius: 
 			# Premium 3D bevel side: a brighter top/left rim and darker right/bottom
 			# side profile makes the nine-slice read as a physical raised object.
 			if fx < 0.10:
-				pixel_fill = pixel_fill.lerp(Color(1, 1, 1, pixel_fill.a), (0.10 - fx) * 0.55)
+				pixel_fill = pixel_fill.lerp(Color(1, 1, 1, pixel_fill.a), (0.10 - fx) * 0.66)
 			if fx > 0.88:
-				pixel_fill = pixel_fill.lerp(Color(0, 0, 0, pixel_fill.a), (fx - 0.88) * 0.72)
-			if fy > 0.90:
-				pixel_fill = pixel_fill.lerp(Color(0, 0, 0, pixel_fill.a), (fy - 0.90) * 0.92)
+				pixel_fill = pixel_fill.lerp(Color(0, 0, 0, pixel_fill.a), (fx - 0.88) * 0.82)
+			if fy > 0.88:
+				pixel_fill = pixel_fill.lerp(Color(0, 0, 0, pixel_fill.a), ((fy - 0.88) / 0.12) * 0.18)
+			# Localized key-light hotspot gives the material an actual lacquered
+			# highlight instead of reading as a generic vertical gradient.
+			var hotspot_distance := Vector2((fx - 0.34) / 0.46, (fy - 0.12) / 0.24).length()
+			var hotspot := clampf(1.0 - hotspot_distance, 0.0, 1.0)
+			if hotspot > 0.0:
+				pixel_fill = pixel_fill.lerp(Color(1, 1, 1, pixel_fill.a), hotspot * 0.105)
 			image.set_pixel(x, y, pixel_fill)
 	var style := StyleBoxTexture.new()
 	style.texture = ImageTexture.create_from_image(image)
@@ -236,6 +243,16 @@ static func add_collectible_gem(parent: Node, center: Vector2, radius: float, no
 	parent.add_child(facet)
 	return gem
 
+static func add_world_depth(parent: Control, accent: Color, dark: bool, alpha: float = 0.18, node_name: String = "PremiumWorldDepth") -> Control:
+	var backdrop := WORLD_BACKDROP_SCRIPT.new()
+	backdrop.name = node_name
+	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	backdrop.configure(accent, dark)
+	backdrop.modulate.a = clampf(alpha, 0.0, 0.42)
+	set_rect(backdrop, 0, 0, REFERENCE_SIZE.x, REFERENCE_SIZE.y)
+	parent.add_child(backdrop)
+	return backdrop
+
 static func add_scene_backdrop_layers(parent: Control, accent: Color, dark: bool, prefix: String = "Surface") -> void:
 	# Static geometry mirrors the approved Figma key-light/accent-light composition
 	# without per-frame shaders, preserving low-end Android performance.
@@ -290,7 +307,7 @@ static func horizontal_gradient(left: Color, right: Color, radius: float = 0.0, 
 	var cache_key := _style_cache_key("horizontal", [left, right], radius, border_color, border_width)
 	if _horizontal_gradient_cache.has(cache_key):
 		return _horizontal_gradient_cache[cache_key] as StyleBoxTexture
-	var image_size := 64
+	var image_size := 96
 	var image := Image.create(image_size, image_size, false, Image.FORMAT_RGBA8)
 	var r := clampf(radius / 24.0 * (float(image_size) * 22.0 / 96.0), 0.0, float(image_size) * 44.0 / 96.0)
 	var bw := maxf(0.0, border_width)
