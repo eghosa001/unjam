@@ -514,7 +514,7 @@ func _figma_daily_progress(canvas: Control) -> void:
 		)
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
-	var note := _figma_text(canvas, "Each Daily is independent • play in any order", Rect2(33,705,318,15), 11, FIGMA_MUTED, true)
+	var note := _figma_text(canvas, "Each Daily is independent • play in any order", Rect2(33,703,318,18), 12, FIGMA_MUTED, true)
 	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 func _figma_today_label() -> String:
