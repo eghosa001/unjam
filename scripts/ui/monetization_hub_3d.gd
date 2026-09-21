@@ -223,7 +223,7 @@ func _add_shop_status(canvas: Control) -> void:
 	canvas.add_child(panel)
 
 	_add_text(canvas,"YOUR SHOP STATUS",Rect2(33,631,190,18),15,Color("#b078ff"))
-	_add_text(canvas,"Real entitlements • optional rewards",Rect2(33,652,230,15),11,Color("#7f96ad"))
+	_add_text(canvas,"Real entitlements • optional rewards",Rect2(33,650,248,19),12,Color("#9cb1c4"))
 
 	_shop_status_chip(
 		canvas,
