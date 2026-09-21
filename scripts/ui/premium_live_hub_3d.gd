@@ -228,6 +228,9 @@ func _add_bottom_nav(canvas: Control) -> void:
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		label.clip_text = true
+		label.custom_minimum_size = Vector2.ZERO
+		label.position = Vector2(label_x, 790)
+		label.size = Vector2(label_width, 22)
 		var hit := Button.new()
 		hit.name = "SelectorNavHit_%s" % String(item[0])
 		hit.flat = true
