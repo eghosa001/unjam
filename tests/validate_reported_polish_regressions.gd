@@ -22,7 +22,7 @@ func _init() -> void:
 	_require_source("res://scripts/game/game.gd", ["moves > par_moves", "moves > par_moves + 3", "assist_penalty"], "Rescue star move/assist scoring", errors)
 	_require_source("res://scripts/game/water_sort_10000.gd", ["moves <= par_moves", "moves <= two_star_moves"], "Water Sort star move scoring", errors)
 	_require_source("res://scripts/game/block_puzzle.gd", ["placements <= par_placements", "placements <= par_placements + 6"], "Block Puzzle star placement scoring", errors)
-	_require_source("res://scripts/game/block_puzzle_3d.gd", ["return super._tray_piece_button_size()"], "Block tray responsive sizing", errors)
+	_require_source("res://scripts/game/block_puzzle_3d.gd", ["Vector2(326, 112)", "Rect2(17,526,354,150)", "return Vector2(104, 112)"], "Block tray phone-scale fit", errors)
 	_require_source("res://scripts/ui/block_piece_button.gd", ["pedestal_rect", "pedestal_gloss"], "Block tray visual hierarchy", errors)
 	_require_source("res://scripts/game/water_sort_reference_motion.gd", ["tilt_degrees := 32.0 if MotionSystem.reduced() else 62.0"], "Water pour silhouette cohesion", errors)
 	_require_source("res://scripts/ui/water_tube_3d_motion.gd", ["Color(0.76, 0.95, 1.0, 0.44)", "Color(0.86, 0.995, 1.0, 0.54)"], "Water bottle glass readability", errors)
