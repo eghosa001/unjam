@@ -50,7 +50,7 @@ func _initialize() -> void:
 			if absi(first) > 96 or absi(last) > 96:
 				failures.append("Ambient loop seam must taper close to zero")
 			for boundary_seconds in [8, 16, 24]:
-				var frame := boundary_seconds * int(music.mix_rate)
+				var frame: int = int(boundary_seconds) * int(music.mix_rate)
 				var before := _pcm16(music.data, (frame - 1) * 4)
 				var after := _pcm16(music.data, frame * 4)
 				if absi(after - before) > 1200:
