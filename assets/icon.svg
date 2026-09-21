@@ -14,7 +14,6 @@
   <linearGradient id="red" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FF6C65"/><stop offset=".5" stop-color="#F3323A"/><stop offset="1" stop-color="#BB142E"/></linearGradient>
   <linearGradient id="wood" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FFB533"/><stop offset=".45" stop-color="#D87115"/><stop offset="1" stop-color="#87400A"/></linearGradient>
   <linearGradient id="woodDark" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#B85C0D"/><stop offset="1" stop-color="#552502"/></linearGradient>
-  <linearGradient id="word" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#FFFFFF"/><stop offset=".58" stop-color="#EAF0FF"/><stop offset="1" stop-color="#98A6FF"/></linearGradient>
   <filter id="shadow" x="-35%" y="-35%" width="170%" height="190%"><feGaussianBlur in="SourceAlpha" stdDeviation="10"/><feOffset dy="12"/><feComponentTransfer><feFuncA type="linear" slope=".42"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
   <filter id="soft" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="14"/></filter>
 </defs>
@@ -70,10 +69,4 @@
   <rect x="229" y="331" width="78" height="52" rx="12" fill="url(#yellow)"/>
 </g>
 <path d="M207 299h45" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" opacity=".45"/>
-<!-- wordmark -->
-<g filter="url(#shadow)">
-  <text x="256" y="454" text-anchor="middle" font-family="Arial Black, DejaVu Sans, sans-serif" font-weight="900" font-size="83" letter-spacing="-5" fill="#12135E" stroke="#12135E" stroke-width="16" stroke-linejoin="round">UNJAM</text>
-  <text x="256" y="444" text-anchor="middle" font-family="Arial Black, DejaVu Sans, sans-serif" font-weight="900" font-size="83" letter-spacing="-5" fill="url(#word)" stroke="#FFFFFF" stroke-width="4" stroke-linejoin="round">UNJAM</text>
-  <path d="M126 394c70-19 185-17 259 4" fill="none" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round" opacity=".30"/>
-</g>
 </svg>
