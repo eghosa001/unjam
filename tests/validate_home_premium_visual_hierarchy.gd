@@ -43,6 +43,20 @@ func _run() -> void:
 		return _fail("Home world showcase is not using the one-shot 3D game-art renderer")
 	if showcase.get_rect().end.y >= nav.position.y - 8.0:
 		return _fail("Home world showcase crowds the bottom navigation")
+	var world_title := home.find_child("HomeWorldProgressTitle", true, false) as Label
+	var world_value := home.find_child("HomeWorldProgressValue", true, false) as Label
+	var completion := home.find_child("HomeWorldProgressRoot", true, false) as Control
+	if world_title == null or world_value == null or completion == null:
+		return _fail("Home world journey typography nodes are missing")
+	if world_title.get_theme_font_size("font_size") < 12 or world_value.get_theme_font_size("font_size") < 12:
+		return _fail("Home world journey primary metadata fell below 12px reference size")
+	var completion_label: Label = null
+	for child in completion.get_children():
+		if child is Label and "% COMPLETE" in (child as Label).text:
+			completion_label = child as Label
+			break
+	if completion_label == null or completion_label.get_theme_font_size("font_size") < 11:
+		return _fail("Home world journey completion text fell below 11px reference size")
 	if not _rect_eq(Rect2(nav.position, nav.size), Rect2(13,757,362,70)):
 		return _fail("Home bottom nav drifted from Figma reference")
 	if home.find_child("HomeMascot3D", true, false) != null:

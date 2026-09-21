@@ -16,6 +16,7 @@ func _init() -> void:
 	_require_source("res://scripts/game/water_sort_casual.gd", ["func apply_theme_mode"], "Water Sort immediate dark theme", errors)
 	_require_source("res://scripts/game/block_puzzle_final_polish.gd", ["func apply_theme_mode", "BlockPuzzle3DEnvironment"], "Block Puzzle immediate dark theme", errors)
 	_require_source("res://scripts/ui/premium_home_direct_levels.gd", ["HomeWorldProgressRoot", "HomeWorldShowcase3D", "_add_world_progress(figma_canvas)", "progress_accent"], "Home Quick Switch world-progress synchronization", errors)
+	_require_source("res://scripts/ui/premium_home_direct_levels.gd", ["WORLD JOURNEY\", Rect2(195, 596, 152, 17), 12", "LEVEL %d • %d/%d", "%d%% COMPLETE", "Rect2(195, 706, 150, 16), 11"], "Home world-journey text readability", errors)
 	_require_source("res://scripts/ui/premium_main_casual.gd", ["SurfaceGlossSweep", "SurfaceWorldDepth", "DONE TODAY", "PLAY TODAY", "FIGMA_DARK_INK if _dark() else FIGMA_INK"], "gloss/independent-Daily/dark-level readability", errors)
 	_require_source("res://scripts/ui/ux_shell_casual.gd", ["TutorialStepCard", "Rect2(43,409,302,76)", "Rect2(43,598,302,58)"], "tutorial collision-safe layout", errors)
 	_require_source("res://scripts/ui/premium_result_overlay.gd", ["Rect2(27,76,334,570 if has_secondary else 500)", "Rect2(47,568,294,48)"], "result collision-safe layout", errors)

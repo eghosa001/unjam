@@ -229,7 +229,7 @@ func _add_quick_switch(canvas: Control) -> void:
 		RefCanvas.set_rect(card, x, 465, 108, 94)
 		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		canvas.add_child(card)
-		_add_text(canvas, String(entry[1]), Rect2(x + 7, 478, 96, 18), 11, entry[2], true)
+		_add_text(canvas, String(entry[1]), Rect2(x + 7, 478, 96, 18), 12, entry[2], true)
 		var level := _home_current_level(id)
 		var stars := MultiGameManager.total_stars(id)
 		_add_text(canvas, "L%d • ★%s" % [level, _compact_number(stars)], Rect2(x + 9, 509, 92, 15), 12, MUTED, false)
@@ -293,12 +293,12 @@ func _add_world_progress(canvas: Control) -> void:
 	RefCanvas.set_rect(art, 31, 592, 150, 130)
 	root.add_child(art)
 
-	var world_title := _add_text(root, "WORLD JOURNEY", Rect2(195, 596, 152, 16), 11, accent, true)
+	var world_title := _add_text(root, "WORLD JOURNEY", Rect2(195, 596, 152, 17), 12, accent, true)
 	world_title.name = "HomeWorldProgressTitle"
 	_add_text(root, "WORLD %d" % world, Rect2(195, 615, 152, 26), 18, OFF_WHITE if _home_dark() else NAVY, true)
-	var world_value := _add_text(root, "LEVEL %d • %d/%d" % [level, completed_in_world, total], Rect2(195, 644, 152, 17), 11, MUTED, true)
+	var world_value := _add_text(root, "LEVEL %d • %d/%d" % [level, completed_in_world, total], Rect2(195, 644, 152, 18), 12, MUTED, true)
 	world_value.name = "HomeWorldProgressValue"
-	_add_text(root, "NEXT MILESTONE • L%d" % next_milestone, Rect2(195, 668, 152, 16), 10, ORANGE, true)
+	_add_text(root, "NEXT MILESTONE • L%d" % next_milestone, Rect2(195, 668, 152, 17), 11, ORANGE, true)
 
 	var progress := ProgressBar.new()
 	progress.name = "HomeWorldProgressBar"
@@ -319,7 +319,7 @@ func _add_world_progress(canvas: Control) -> void:
 	root.add_child(progress_specular)
 
 	var percent := int(round(float(completed_in_world) / float(total) * 100.0))
-	var percent_label := _add_text(root, "%d%% COMPLETE" % percent, Rect2(195, 707, 150, 13), 9, accent, true)
+	var percent_label := _add_text(root, "%d%% COMPLETE" % percent, Rect2(195, 706, 150, 16), 11, accent, true)
 	percent_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 
 func _add_bottom_nav_reference(canvas: Control) -> void:
