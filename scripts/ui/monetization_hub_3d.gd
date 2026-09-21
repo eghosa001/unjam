@@ -70,6 +70,7 @@ func _build_ui() -> void:
 	FigmaReferenceCanvas.set_rect(bg,0,0,390,844)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(bg)
+	FigmaReferenceCanvas.add_world_depth(canvas, Color("#b078ff"), _shop_dark(), 0.12 if _shop_dark() else 0.16, "ShopWorldDepth")
 	FigmaReferenceCanvas.add_scene_backdrop_layers(canvas, Color("#b078ff"), _shop_dark(), "Shop")
 	var shop_key_light := canvas.get_node_or_null("ShopKeyLight")
 	if shop_key_light != null:
