@@ -13,6 +13,9 @@ func _initialize() -> void:
 		"const SFX_POOL_SIZE := 5",
 		"const MUSIC_DURATION := 32.0",
 		"func _play_chime",
+		"func _next_available_sfx_player",
+		"not candidate.playing",
+		"Never replace a waveform mid-play",
 		"func snap()",
 		"func _chime_stream",
 		"func _build_calm_ambient_loop",
@@ -26,6 +29,8 @@ func _initialize() -> void:
 	]:
 		if not source.contains(token):
 			failures.append("Missing calm-audio contract token: %s" % token)
+	if source.contains("var target := sfx_players[_sfx_cursor % sfx_players.size()]"):
+		failures.append("SFX pool must not overwrite a possibly active channel")
 	if source.contains("func _play_tone"):
 		failures.append("Legacy single-sine feedback path must not remain active")
 	if source.contains("1120.0"):
