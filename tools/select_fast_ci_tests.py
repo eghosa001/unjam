@@ -433,7 +433,6 @@ def self_test() -> None:
     ]
     assert GROUP_TESTS["games_ui"] == [
         "validate_selector_navigation",
-        "validate_requested_polish_contract",
     ]
     assert "validate_compact_gameplay_stack" not in GROUP_TESTS["water"]
     assert "validate_compact_gameplay_stack" not in GROUP_TESTS["block"]
