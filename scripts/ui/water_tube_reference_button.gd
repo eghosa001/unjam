@@ -106,8 +106,8 @@ func _draw() -> void:
 
 	# Thick glass lip, base refraction and small curved glints. Avoid long vertical
 	# wall strokes—the user-visible bottle should read as glass, not as lined plastic.
-	var mouth_width := body.size.x * 0.56
-	var mouth_y := body.position.y - maxf(10.0, body.size.y * 0.115) * 0.34 + 1.5
+	var mouth_width := body.size.x * 0.48
+	var mouth_y := body.position.y - maxf(12.0, body.size.y * 0.125) * 0.38 + 1.5
 	draw_line(Vector2(body.get_center().x - mouth_width * 0.5 - 3.0, mouth_y), Vector2(body.get_center().x + mouth_width * 0.5 + 3.0, mouth_y), outline, 4.5, true)
 	draw_line(Vector2(body.get_center().x - mouth_width * 0.38, mouth_y - 1.0), Vector2(body.get_center().x + mouth_width * 0.20, mouth_y - 1.0), Color(1,1,1,0.48), 1.5, true)
 	draw_arc(body.get_center() + Vector2(-body.size.x * 0.16, -body.size.y * 0.30), body.size.x * 0.19, -2.65, -1.05, 16, Color(1,1,1,0.38), 2.6, true)
