@@ -69,10 +69,23 @@ func _run() -> void:
 		var glyph := _find(main, "SelectorNavGlyph_%s" % nav_name) as Label
 		var label := _find(main, "SelectorNavLabel_%s" % nav_name) as Label
 		var hit := _find(main, "SelectorNavHit_%s" % nav_name) as Button
-		if glyph == null or glyph.text.is_empty() or label == null or label.text != nav_name:
+		var expected_label: String = "COLLECTION" if nav_name == "COLLECT" else String(nav_name)
+		if glyph == null or glyph.text.is_empty() or label == null or label.text != expected_label:
 			return _fail("Games selector navigation identity is incomplete for %s" % nav_name)
+		if label.get_theme_font_size("font_size") < 12:
+			return _fail("Games selector navigation label became too small for %s" % nav_name)
 		if hit == null or hit.size.x < 70.0 or hit.size.y < 74.0:
 			return _fail("Games selector navigation touch target is too small for %s" % nav_name)
+
+	var selector_daily := _find(main, "SelectorNavLabel_DAILY") as Label
+	var selector_collection := _find(main, "SelectorNavLabel_COLLECT") as Label
+	var selector_settings := _find(main, "SelectorNavLabel_SETTINGS") as Label
+	if selector_daily == null or selector_collection == null or selector_settings == null:
+		return _fail("Games selector Daily/Collection/Settings labels are missing")
+	if selector_daily.get_global_rect().end.x >= selector_collection.get_global_rect().position.x:
+		return _fail("Games selector Daily label overlaps Collection")
+	if selector_collection.get_global_rect().end.x >= selector_settings.get_global_rect().position.x:
+		return _fail("Games selector Collection label overlaps Settings")
 
 	main.queue_free()
 	await process_frame

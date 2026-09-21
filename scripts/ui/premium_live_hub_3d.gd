@@ -192,9 +192,9 @@ func _add_bottom_nav(canvas: Control) -> void:
 	var items := [
 		["HOME", "⌂", 22.0, Callable(self, "_go_home"), false, Color("#33b9ff")],
 		["GAMES", "▦", 91.0, Callable(), true, Color("#7b6cff")],
-		["DAILY", "✦", 160.0, func(): get_parent().call("build_daily_games"), false, Color("#ffd54f")],
-		["COLLECT", "◆", 229.0, func(): get_parent().call("build_collection"), false, Color("#21c763")],
-		["SETTINGS", "⚙", 298.0, func(): get_parent().call("build_settings"), false, CYAN],
+		["DAILY", "✦", 150.0, func(): get_parent().call("build_daily_games"), false, Color("#ffd54f")],
+		["COLLECT", "◆", 225.0, func(): get_parent().call("build_collection"), false, Color("#21c763")],
+		["SETTINGS", "⚙", 310.0, func(): get_parent().call("build_settings"), false, CYAN],
 	]
 	for item in items:
 		var selected: bool = bool(item[4])
@@ -220,9 +220,17 @@ func _add_bottom_nav(canvas: Control) -> void:
 		var glyph := _add_text(canvas, String(item[1]), Rect2(float(item[2]) - 1.0, 765, 58, 22), 18, glyph_color, true)
 		glyph.name = "SelectorNavGlyph_%s" % String(item[0])
 		glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		var label := _add_text(canvas, String(item[0]), Rect2(float(item[2]) - 1.0, 790, 58, 22), 12, label_color, true)
+		var display_name := "COLLECTION" if String(item[0]) == "COLLECT" else String(item[0])
+		var label_width := 82.0 if String(item[0]) == "COLLECT" else (66.0 if String(item[0]) == "SETTINGS" else 58.0)
+		var label_x := float(item[2]) - 12.0 if String(item[0]) == "COLLECT" else (float(item[2]) - 5.0 if String(item[0]) == "SETTINGS" else float(item[2]) - 1.0)
+		var label := _add_text(canvas, display_name, Rect2(label_x, 790, label_width, 22), 12, label_color, true)
 		label.name = "SelectorNavLabel_%s" % String(item[0])
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		label.clip_text = true
+		label.custom_minimum_size = Vector2.ZERO
+		label.position = Vector2(label_x, 790)
+		label.size = Vector2(label_width, 22)
 		var hit := Button.new()
 		hit.name = "SelectorNavHit_%s" % String(item[0])
 		hit.flat = true

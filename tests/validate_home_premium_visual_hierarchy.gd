@@ -59,6 +59,19 @@ func _run() -> void:
 		return _fail("Home world journey completion text fell below 11px reference size")
 	if not _rect_eq(Rect2(nav.position, nav.size), Rect2(13,757,362,70)):
 		return _fail("Home bottom nav drifted from Figma reference")
+	var collection_label := home.find_child("HomeNavLabel_COLLECT", true, false) as Label
+	if collection_label == null or collection_label.text != "COLLECTION":
+		return _fail("Home bottom nav no longer uses the complete Collection label")
+	if collection_label.get_theme_font_size("font_size") < 12:
+		return _fail("Home Collection navigation label became too small")
+	var daily_label := home.find_child("HomeNavLabel_DAILY", true, false) as Label
+	var settings_label := home.find_child("HomeNavLabel_SETTINGS", true, false) as Label
+	if daily_label == null or settings_label == null:
+		return _fail("Home Daily/Settings navigation labels are missing")
+	if daily_label.get_global_rect().end.x >= collection_label.get_global_rect().position.x:
+		return _fail("Home Daily label overlaps Collection")
+	if collection_label.get_global_rect().end.x >= settings_label.get_global_rect().position.x:
+		return _fail("Home Collection label overlaps Settings")
 	if home.find_child("HomeMascot3D", true, false) != null:
 		return _fail("Retired giant mascot returned to Figma Home")
 	if home.find_child("HomeGameStrip", true, false) != null:
