@@ -1,6 +1,18 @@
 extends "res://scripts/ui/water_tube_reference_motion.gd"
 class_name WaterTube3DMotion
 
+const GLASS_BODY_RADIUS := 0.65
+const GLASS_BODY_HEIGHT := 2.72
+const GLASS_BODY_CENTER_Y := -0.18
+const GLASS_SHOULDER_HEIGHT := 0.38
+const GLASS_SHOULDER_CENTER_Y := 1.37
+const GLASS_NECK_RADIUS := 0.38
+const GLASS_NECK_HEIGHT := 0.36
+const GLASS_NECK_CENTER_Y := 1.74
+const GLASS_MOUTH_Y := 1.92
+const GLASS_MOUTH_RADIUS := 0.40
+const GLASS_BASE_Y := -1.54
+
 # Real 3D presentation layered under the existing authoritative Water Sort
 # control. The SubViewport is one-shot while idle; pour progress explicitly
 # requests frames, so a board full of tubes does not create permanent 3D loops.
@@ -127,57 +139,117 @@ func _build_3d_view() -> void:
 	_build_liquid_meniscus_3d()
 
 func _build_glass_3d() -> void:
-	var glass_mesh := CylinderMesh.new()
-	glass_mesh.top_radius = 0.62
-	glass_mesh.bottom_radius = 0.54
-	glass_mesh.height = 3.32
-	glass_mesh.radial_segments = 24
-	glass_mesh.cap_top = false
-	glass_mesh.cap_bottom = true
-	var glass := MeshInstance3D.new()
-	glass.name = "OpenTopGlass"
-	glass.mesh = glass_mesh
-	glass.material_override = _material_3d(Color(0.82, 0.97, 1.0, 0.11), 0.0, 0.045)
-	stage_3d.add_child(glass)
+	# Premium bottle silhouette built from real geometry: broad body, tapered
+	# shoulder and narrow neck. This replaces the old single tapered cylinder
+	# that was technically 3D but still read as a test tube on the phone.
+	var glass_material := _material_3d(Color(0.78, 0.95, 1.0, 0.16), 0.0, 0.035)
+	var shoulder_material := _material_3d(Color(0.84, 0.98, 1.0, 0.18), 0.0, 0.030)
+
+	var body_mesh := CylinderMesh.new()
+	body_mesh.top_radius = GLASS_BODY_RADIUS
+	body_mesh.bottom_radius = GLASS_BODY_RADIUS * 0.96
+	body_mesh.height = GLASS_BODY_HEIGHT
+	body_mesh.radial_segments = 32
+	body_mesh.cap_top = false
+	body_mesh.cap_bottom = true
+	var body := MeshInstance3D.new()
+	body.name = "BottleBody3D"
+	body.mesh = body_mesh
+	body.position.y = GLASS_BODY_CENTER_Y
+	body.material_override = glass_material
+	stage_3d.add_child(body)
+
+	var shoulder_mesh := CylinderMesh.new()
+	shoulder_mesh.top_radius = GLASS_NECK_RADIUS
+	shoulder_mesh.bottom_radius = GLASS_BODY_RADIUS
+	shoulder_mesh.height = GLASS_SHOULDER_HEIGHT
+	shoulder_mesh.radial_segments = 32
+	shoulder_mesh.cap_top = false
+	shoulder_mesh.cap_bottom = false
+	var shoulder := MeshInstance3D.new()
+	shoulder.name = "BottleShoulder3D"
+	shoulder.mesh = shoulder_mesh
+	shoulder.position.y = GLASS_SHOULDER_CENTER_Y
+	shoulder.material_override = shoulder_material
+	stage_3d.add_child(shoulder)
+
+	var neck_mesh := CylinderMesh.new()
+	neck_mesh.top_radius = GLASS_NECK_RADIUS
+	neck_mesh.bottom_radius = GLASS_NECK_RADIUS
+	neck_mesh.height = GLASS_NECK_HEIGHT
+	neck_mesh.radial_segments = 28
+	neck_mesh.cap_top = false
+	neck_mesh.cap_bottom = false
+	var neck := MeshInstance3D.new()
+	neck.name = "BottleNeck3D"
+	neck.mesh = neck_mesh
+	neck.position.y = GLASS_NECK_CENTER_Y
+	neck.material_override = shoulder_material
+	stage_3d.add_child(neck)
 
 	var rim_mesh := TorusMesh.new()
-	rim_mesh.inner_radius = 0.56
-	rim_mesh.outer_radius = 0.68
-	rim_mesh.rings = 16
-	rim_mesh.ring_segments = 6
+	rim_mesh.inner_radius = GLASS_MOUTH_RADIUS * 0.82
+	rim_mesh.outer_radius = GLASS_MOUTH_RADIUS * 1.12
+	rim_mesh.rings = 20
+	rim_mesh.ring_segments = 8
 	var rim := MeshInstance3D.new()
-	rim.name = "OpenGlassRim"
+	rim.name = "BottleMouthRim3D"
 	rim.mesh = rim_mesh
-	rim.position.y = 1.66
-	rim.material_override = _material_3d(Color(0.92, 0.995, 1.0, 0.90), 0.0, 0.045)
+	rim.position.y = GLASS_MOUTH_Y
+	rim.material_override = _material_3d(Color(0.94, 0.998, 1.0, 0.94), 0.0, 0.028)
 	stage_3d.add_child(rim)
 
+	var inner_rim_mesh := TorusMesh.new()
+	inner_rim_mesh.inner_radius = GLASS_MOUTH_RADIUS * 0.68
+	inner_rim_mesh.outer_radius = GLASS_MOUTH_RADIUS * 0.84
+	inner_rim_mesh.rings = 18
+	inner_rim_mesh.ring_segments = 7
+	var inner_rim := MeshInstance3D.new()
+	inner_rim.name = "BottleInnerRim3D"
+	inner_rim.mesh = inner_rim_mesh
+	inner_rim.position.y = GLASS_MOUTH_Y - 0.015
+	inner_rim.material_override = _material_3d(Color(0.35, 0.78, 1.0, 0.42), 0.0, 0.040)
+	stage_3d.add_child(inner_rim)
+
 	var base_mesh := TorusMesh.new()
-	base_mesh.inner_radius = 0.47
-	base_mesh.outer_radius = 0.57
-	base_mesh.rings = 14
-	base_mesh.ring_segments = 6
+	base_mesh.inner_radius = GLASS_BODY_RADIUS * 0.78
+	base_mesh.outer_radius = GLASS_BODY_RADIUS * 0.98
+	base_mesh.rings = 18
+	base_mesh.ring_segments = 7
 	var base_rim := MeshInstance3D.new()
+	base_rim.name = "BottleBaseRim3D"
 	base_rim.mesh = base_mesh
-	base_rim.position.y = -1.61
-	base_rim.material_override = _material_3d(Color(0.80, 0.96, 1.0, 0.56), 0.0, 0.065)
+	base_rim.position.y = GLASS_BASE_Y
+	base_rim.material_override = _material_3d(Color(0.72, 0.94, 1.0, 0.62), 0.0, 0.050)
 	stage_3d.add_child(base_rim)
 
-	# The glass gets its depth from the real cylindrical geometry, rim, clearcoat
-	# and lighting. Avoid vertical white bars: on a small phone they read as
-	# artificial divider lines rather than premium reflections.
+	# A thin transparent inset shell gives visible wall thickness around coloured
+	# liquid without drawing a fake vertical highlight stripe.
+	var inner_shell_mesh := CylinderMesh.new()
+	inner_shell_mesh.top_radius = GLASS_BODY_RADIUS * 0.84
+	inner_shell_mesh.bottom_radius = GLASS_BODY_RADIUS * 0.82
+	inner_shell_mesh.height = GLASS_BODY_HEIGHT - 0.10
+	inner_shell_mesh.radial_segments = 28
+	inner_shell_mesh.cap_top = false
+	inner_shell_mesh.cap_bottom = false
+	var inner_shell := MeshInstance3D.new()
+	inner_shell.name = "BottleInnerWall3D"
+	inner_shell.mesh = inner_shell_mesh
+	inner_shell.position.y = GLASS_BODY_CENTER_Y
+	inner_shell.material_override = _material_3d(Color(0.24, 0.70, 0.92, 0.055), 0.0, 0.055)
+	stage_3d.add_child(inner_shell)
 
 	var shadow_mesh := CylinderMesh.new()
-	shadow_mesh.top_radius = 0.72
-	shadow_mesh.bottom_radius = 0.72
+	shadow_mesh.top_radius = 0.76
+	shadow_mesh.bottom_radius = 0.76
 	shadow_mesh.height = 0.025
-	shadow_mesh.radial_segments = 24
+	shadow_mesh.radial_segments = 28
 	var contact_shadow := MeshInstance3D.new()
 	contact_shadow.name = "TubeContactShadow"
 	contact_shadow.mesh = shadow_mesh
-	contact_shadow.position = Vector3(0.10, -1.77, -0.08)
-	contact_shadow.scale = Vector3(1.0, 1.0, 0.52)
-	contact_shadow.material_override = _material_3d(Color(0.02, 0.15, 0.28, 0.20), 0.0, 0.18)
+	contact_shadow.position = Vector3(0.10, GLASS_BASE_Y - 0.16, -0.08)
+	contact_shadow.scale = Vector3(1.0, 1.0, 0.50)
+	contact_shadow.material_override = _material_3d(Color(0.02, 0.15, 0.28, 0.22), 0.0, 0.18)
 	stage_3d.add_child(contact_shadow)
 
 func _build_liquid_materials_3d() -> void:
@@ -323,7 +395,7 @@ func visual_receive_rim_local() -> Vector2:
 	# Project the actual 3D opening center instead of reusing the retired 2D
 	# bottle rectangle. This keeps the incoming stream glued to the rendered rim
 	# across responsive tube sizes and SubViewport stretching.
-	return _project_rim_point(Vector3(0.0, 1.66, 0.0))
+	return _project_rim_point(Vector3(0.0, GLASS_MOUTH_Y, 0.0))
 
 func visual_pour_rim_local(direction: float) -> Vector2:
 	# Find the left/right screen edge of the real 3D torus rim. Camera perspective
@@ -335,7 +407,7 @@ func visual_pour_rim_local(direction: float) -> Vector2:
 	var best := visual_receive_rim_local()
 	for i in range(24):
 		var angle := TAU * float(i) / 24.0
-		var rim_3d := Vector3(cos(angle) * 0.62, 1.66, sin(angle) * 0.62)
+		var rim_3d := Vector3(cos(angle) * GLASS_MOUTH_RADIUS, GLASS_MOUTH_Y, sin(angle) * GLASS_MOUTH_RADIUS)
 		var projected := _project_rim_point(rim_3d)
 		if (want_right and projected.x > best.x) or (not want_right and projected.x < best.x):
 			best = projected
