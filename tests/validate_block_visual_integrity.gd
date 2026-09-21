@@ -88,7 +88,11 @@ func _validate_runtime(viewport_size: Vector2i) -> bool:
 		game.queue_free()
 		return _fail("Block gameplay header still exposes the retired hard-coded difficulty")
 	var normal_hint := game.find_child("BlockHintText", true, false) as Label
-	if normal_hint == null or not normal_hint.text.strip_edges().is_empty():
+	if normal_hint == null:
+		game.queue_free()
+		return _fail("Block gameplay hint row is missing")
+	var experienced_hint := normal_hint.text.to_lower()
+	if "release on highlighted cells" in experienced_hint or "drag a block" in experienced_hint or "drag to place" in experienced_hint:
 		game.queue_free()
 		return _fail("Experienced Block levels still show persistent placement instruction")
 
