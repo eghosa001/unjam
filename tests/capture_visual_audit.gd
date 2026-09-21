@@ -412,6 +412,48 @@ func _run_fast_visual_audit(main: Node, shell: Node) -> void:
 		else:
 			push_error("Fast visual audit could not open Shop")
 
+	# Light mode now owns a distinct premium material treatment. Capture the
+	# affected navigation/content surfaces explicitly so a green contract test
+	# cannot hide flat-looking pale screens.
+	var needs_light_review := (
+		_fast_visual_enabled("home")
+		or _fast_visual_enabled("games")
+		or _fast_visual_enabled("levels")
+		or _fast_visual_enabled("collection")
+		or _fast_visual_enabled("daily")
+		or _fast_visual_enabled("settings")
+	)
+	if needs_light_review:
+		await _set_theme(shell, "light")
+		if _fast_visual_enabled("home"):
+			main.call("build_home")
+			await _settle(5)
+			await _capture("07b-home-540x960-light")
+		if _fast_visual_enabled("games"):
+			main.set("current_surface", "live")
+			if main.has_signal("surface_changed"):
+				main.emit_signal("surface_changed", "live")
+			await _settle(5)
+			await _capture("14b-live-540x960-light")
+		if _fast_visual_enabled("levels"):
+			main.set("selected_game_id", "rescue_rush")
+			main.call("build_level_select")
+			await _settle(5)
+			await _capture("03c-levels-rescue-540x960-light")
+		if _fast_visual_enabled("collection"):
+			main.call("build_collection")
+			await _settle(5)
+			await _capture("13b-collection-540x960-light")
+		if _fast_visual_enabled("daily"):
+			main.call("build_daily_games")
+			await _settle(5)
+			await _capture("05g-daily-540x960-light")
+		if _fast_visual_enabled("settings"):
+			main.call("build_settings")
+			await _settle(5)
+			await _capture("08b-settings-540x960-light")
+		await _set_theme(shell, "dark")
+
 	if _fast_visual_enabled("rescue"):
 		main.call("start_level", 1)
 		await _settle(5)
