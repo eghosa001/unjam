@@ -88,22 +88,28 @@ func _draw() -> void:
 		var liquid: Color = PALETTE[color_index]
 		var y := inner.end.y - slot_h * float(slot + 1)
 		var r := Rect2(Vector2(inner.position.x, y + 1.0), Vector2(inner.size.x, slot_h + 1.0))
+		var liquid_base := liquid.darkened(0.10)
 		if slot == 0:
 			var style := StyleBoxFlat.new()
-			style.bg_color = liquid
+			style.bg_color = liquid_base
 			style.corner_radius_bottom_left = int(radius * 0.52)
 			style.corner_radius_bottom_right = int(radius * 0.52)
 			draw_style_box(style, r)
 		else:
-			draw_rect(r, liquid, true)
-		# Bright top meniscus.
-		draw_line(Vector2(r.position.x + 2, r.position.y + 2), Vector2(r.end.x - 2, r.position.y + 2), liquid.lightened(0.28), 2.0, true)
+			draw_rect(r, liquid_base, true)
+		# Upper light field + bright meniscus gives each liquid band volume without
+		# inserting an artificial vertical reflection line through the bottle.
+		var light_band := Rect2(r.position + Vector2(2, 2), Vector2(maxf(2.0, r.size.x - 4), maxf(3.0, r.size.y * 0.42)))
+		draw_rect(light_band, Color(liquid.lightened(0.20), 0.46), true)
+		draw_line(Vector2(r.position.x + 2, r.position.y + 2), Vector2(r.end.x - 2, r.position.y + 2), liquid.lightened(0.40), 2.2, true)
 
-	# Tube lip and simple glass highlights.
+	# Thick glass lip, base refraction and small curved glints. Avoid long vertical
+	# wall strokes—the user-visible bottle should read as glass, not as lined plastic.
 	var lip_y := body.position.y + 3.0
-	draw_line(Vector2(body.position.x - 3, lip_y), Vector2(body.end.x + 3, lip_y), outline, 4.0, true)
-	draw_line(Vector2(body.position.x + 9, body.position.y + 18), Vector2(body.position.x + 9, body.end.y - 24), Color(1, 1, 1, 0.28), 3.0, true)
-	draw_line(Vector2(body.end.x - 7, body.position.y + 23), Vector2(body.end.x - 7, body.size.y * 0.38 + body.position.y), Color(1, 1, 1, 0.13), 2.0, true)
+	draw_line(Vector2(body.position.x - 3, lip_y), Vector2(body.end.x + 3, lip_y), outline, 4.5, true)
+	draw_arc(body.get_center() + Vector2(-body.size.x * 0.16, -body.size.y * 0.30), body.size.x * 0.19, -2.65, -1.05, 16, Color(1,1,1,0.38), 2.6, true)
+	draw_arc(Vector2(body.get_center().x, body.end.y - radius * 0.72), body.size.x * 0.31, 0.10, PI - 0.10, 22, Color(0.86,0.98,1.0,0.34), 2.2, true)
+	draw_circle(body.position + Vector2(body.size.x * 0.30, body.size.y * 0.18), maxf(1.8, body.size.x * 0.045), Color(1,1,1,0.44))
 
 	if is_selected:
 		var a := 0.35 + 0.12 * sin(pulse * 5.0)
