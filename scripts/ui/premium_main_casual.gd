@@ -317,7 +317,7 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 		1,
 		false
 	)
-	var xs := {"home":22.0, "games":91.0, "daily":160.0, "collection":222.0, "settings":310.0}
+	var xs := {"home":22.0, "games":91.0, "daily":150.0, "collection":225.0, "settings":310.0}
 	var names := {"home":"HOME", "games":"GAMES", "daily":"DAILY", "collection":"COLLECTION", "settings":"SETTINGS"}
 	var glyphs := {"home":"⌂", "games":"▦", "daily":"✦", "collection":"◆", "settings":"⚙"}
 	var accents := {
@@ -334,7 +334,7 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 		"collection": Callable(self,"build_collection"),
 		"settings": Callable(self,"build_settings"),
 	}
-	var hit_x := {"home":14.0, "games":84.0, "daily":153.0, "collection":213.0, "settings":299.0}
+	var hit_x := {"home":14.0, "games":84.0, "daily":143.0, "collection":216.0, "settings":299.0}
 	for key in ["home","games","daily","collection","settings"]:
 		var selected: bool = String(key) == active
 		var accent: Color = accents[key]
