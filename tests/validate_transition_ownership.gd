@@ -12,6 +12,9 @@ func _initialize() -> void:
 		failures.append("3D surface manager still creates a competing content transition tween")
 	if not motion_director.contains("_animate_surface_in") or not motion_director.contains("target.create_tween()"):
 		failures.append("MotionDirector must remain the single navigation transition owner")
+	for needle in ["_animate_key_elements", "cards.resize(6)", "float(i) * 0.012", "MotionSystem.duration(&\"settle\")"]:
+		if not motion_director.contains(needle):
+			failures.append("MotionDirector lost restrained premium card staging: " + needle)
 	if not main_scene.contains("premium_surface_manager_static.gd") or not main_scene.contains("motion_director.gd"):
 		failures.append("Main scene transition/skin ownership wiring changed unexpectedly")
 
