@@ -119,7 +119,7 @@ func _check_selector(viewport_size: Vector2i, failures: Array[String]) -> void:
 	main.call("build_home")
 	await _frames(3)
 	var home := main.get_node_or_null("PremiumHome") as Control
-	var games := home.find_child("HomeLevelsNavButton",true,false) as Button if home != null else null
+	var games := home.find_child("HomeGamesNavButton",true,false) as Button if home != null else null
 	if games == null:
 		failures.append("Home Games action missing at %s" % str(viewport_size))
 		main.queue_free()
