@@ -149,14 +149,14 @@ func _build_shell() -> void:
 	_tutorial_canvas.add_child(tutorial_progress_label)
 
 	FigmaReferenceCanvas.add_shadow(_tutorial_canvas, Rect2(43,526,142,48), 16, Color(0.03,0.10,0.20,0.22), 4, Vector2(0,4))
-	tutorial_prev_button = FigmaReferenceCanvas.premium_button("‹ BACK",12,Color.WHITE,Color("#c7d6e3"),16,Color("#d0dde7"),1.2)
+	tutorial_prev_button = FigmaReferenceCanvas.premium_button("‹ BACK",13,Color.WHITE,Color("#c7d6e3"),16,Color("#d0dde7"),1.2)
 	tutorial_prev_button.name = "TutorialPrevious"
 	FigmaReferenceCanvas.set_rect(tutorial_prev_button,43,526,142,48)
 	tutorial_prev_button.pressed.connect(_tutorial_previous)
 	_tutorial_canvas.add_child(tutorial_prev_button)
 
 	FigmaReferenceCanvas.add_shadow(_tutorial_canvas, Rect2(203,526,142,48), 16, Color(0.03,0.10,0.20,0.22), 4, Vector2(0,4))
-	tutorial_next_button = FigmaReferenceCanvas.premium_button("NEXT ›",12,Color.WHITE,Color("#21c763"),16,Color("#74d999"),1.2)
+	tutorial_next_button = FigmaReferenceCanvas.premium_button("NEXT ›",13,Color.WHITE,Color("#21c763"),16,Color("#74d999"),1.2)
 	tutorial_next_button.name = "TutorialNext"
 	FigmaReferenceCanvas.set_rect(tutorial_next_button,203,526,142,48)
 	tutorial_next_button.pressed.connect(_tutorial_next)
@@ -451,8 +451,8 @@ func _demo_rescue(step: int) -> void:
 	exit.add_theme_stylebox_override("panel",FigmaReferenceCanvas.rounded_gradient3(Color("#80efb0"),Color("#35b96b"),Color("#148b4c"),10))
 	FigmaReferenceCanvas.set_rect(exit,168,21,30,44)
 	_tutorial_demo_root.add_child(exit)
-	var exit_label := FigmaReferenceCanvas.label("EXIT",12,Color("#1f8c52"),true)
-	FigmaReferenceCanvas.set_rect(exit_label,161,69,44,14)
+	var exit_label := FigmaReferenceCanvas.label("EXIT",11,Color.WHITE,true)
+	FigmaReferenceCanvas.set_rect(exit_label,161,35,44,14)
 	exit_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_tutorial_demo_root.add_child(exit_label)
 	if step == 1:
