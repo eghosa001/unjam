@@ -32,8 +32,9 @@ func _run() -> void:
 	for child in board_grid.get_children():
 		if child is Control and (child as Control).custom_minimum_size.x < minimum_cell:
 			return _fail("Rescue grid cells are still undersized")
-	if objective.text != "OPEN A CLEAR LANE AND FREE THE CHICK":
-		return _fail("Rescue objective copy drifted")
+	var expected_objective := String(game.call("_compact_objective_instruction"))
+	if objective.text != expected_objective:
+		return _fail("Rescue objective copy drifted from active objective: %s != %s" % [objective.text, expected_objective])
 
 	var arrow_source := _read("res://scripts/ui/rescue_piece_3d_button.gd")
 	for token in [
