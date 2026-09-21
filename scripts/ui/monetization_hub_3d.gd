@@ -145,7 +145,15 @@ func _build_ui() -> void:
 	privacy.pressed.connect(PrivacyManager.show_privacy_options)
 	canvas.add_child(privacy)
 
-	status_label = _add_text(canvas,"",Rect2(23,617,342,52),14,Color("#c6d9ec"))
+	_add_shop_status(canvas)
+	status_label = _add_text(
+		canvas,
+		"Restore purchases anytime • rewarded ads stay optional",
+		Rect2(31,724,328,30),
+		12,
+		Color("#c6d9ec")
+	)
+	status_label.name = "ShopStatusMessage"
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var accent_rail := ColorRect.new()
@@ -182,14 +190,80 @@ func _add_product_exact(canvas: Control, product_id: String, rect: Rect2, displa
 	elif StoreManager.is_purchase_pending(product_id):
 		buy_text = "PENDING"
 		disabled = true
-	FigmaReferenceCanvas.add_shadow(canvas,Rect2(275,rect.position.y+18,78,46),23,Color(0.02,0.15,0.30,0.16),3,Vector2(0,2))
+	# Localized Play prices, PENDING and UNAVAILABLE need more breathing room than
+	# the old 78 px pill. The wider CTA still leaves a safe gap after product copy.
+	FigmaReferenceCanvas.add_shadow(canvas,Rect2(257,rect.position.y+18,96,46),23,Color(0.02,0.15,0.30,0.16),3,Vector2(0,2))
 	var buy := FigmaReferenceCanvas.premium_button(buy_text,14,Color.WHITE,Color("#ff8c1f"),23,Color("#ffbd64"),1.2)
 	buy.name = "Buy_%s" % product_id
-	FigmaReferenceCanvas.set_rect(buy,275,rect.position.y+18,78,46)
+	FigmaReferenceCanvas.set_rect(buy,257,rect.position.y+18,96,46)
 	buy.disabled = disabled
 	if not disabled:
 		buy.pressed.connect(_purchase.bind(product_id,buy))
 	canvas.add_child(buy)
+
+func _add_shop_status(canvas: Control) -> void:
+	var remove_info: Dictionary = StoreManager.PRODUCTS[StoreManager.PRODUCT_REMOVE_ADS]
+	var starter_info: Dictionary = StoreManager.PRODUCTS[StoreManager.PRODUCT_STARTER_PACK]
+	var ad_free := _is_owned_product(StoreManager.PRODUCT_REMOVE_ADS, remove_info)
+	var starter_owned := _is_owned_product(StoreManager.PRODUCT_STARTER_PACK, starter_info)
+
+	FigmaReferenceCanvas.add_shadow(canvas,Rect2(17,617,354,148),18,Color(0.03,0.10,0.20,0.20),5,Vector2(0,4))
+	var panel := PanelContainer.new()
+	panel.name = "ShopStatusPanel"
+	var panel_top := Color("#192644") if _shop_dark() else Color("#eef5ff")
+	var panel_mid := Color("#131e35") if _shop_dark() else Color("#e8f1fb")
+	var panel_bottom := Color("#0d1729") if _shop_dark() else Color("#e1ebf6")
+	panel.add_theme_stylebox_override("panel",FigmaReferenceCanvas.rounded_gradient3(
+		panel_top,panel_mid,panel_bottom,18,
+		Color(0.55,0.46,0.92,0.64) if _shop_dark() else Color(0.50,0.63,0.90,0.42),
+		1.2,0.46
+	))
+	FigmaReferenceCanvas.set_rect(panel,17,617,354,148)
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(panel)
+
+	_add_text(canvas,"YOUR SHOP STATUS",Rect2(33,631,190,18),15,Color("#b078ff"))
+	_add_text(canvas,"Real entitlements • optional rewards",Rect2(33,652,230,15),11,Color("#7f96ad"))
+
+	_shop_status_chip(
+		canvas,
+		"ShopStatusAds",
+		"ADS",
+		"OFF" if ad_free else "STANDARD",
+		Rect2(31,674,98,40),
+		Color("#26d07c") if ad_free else Color("#ff9a32")
+	)
+	_shop_status_chip(
+		canvas,
+		"ShopStatusStarter",
+		"STARTER",
+		"OWNED" if starter_owned else "AVAILABLE",
+		Rect2(145,674,98,40),
+		Color("#b078ff")
+	)
+	_shop_status_chip(
+		canvas,
+		"ShopStatusRewards",
+		"REWARDS",
+		"OPTIONAL",
+		Rect2(259,674,98,40),
+		Color("#2dd4b6")
+	)
+
+func _shop_status_chip(canvas: Control, name_value: String, title: String, state: String, rect: Rect2, accent: Color) -> void:
+	var chip := PanelContainer.new()
+	chip.name = name_value
+	var fill := accent.darkened(0.72) if _shop_dark() else accent.lightened(0.84)
+	chip.add_theme_stylebox_override("panel",FigmaReferenceCanvas.rounded_gradient3(
+		fill.lightened(0.08),fill,fill.darkened(0.10),12,Color(accent,0.72),1.0,0.36
+	))
+	FigmaReferenceCanvas.set_rect(chip,rect.position.x,rect.position.y,rect.size.x,rect.size.y)
+	chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(chip)
+	var title_label := _add_text(canvas,title,Rect2(rect.position.x+5,rect.position.y+4,rect.size.x-10,13),9,Color("#d6e2ef"))
+	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var state_label := _add_text(canvas,state,Rect2(rect.position.x+5,rect.position.y+18,rect.size.x-10,17),11,accent.lightened(0.28))
+	state_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 func _is_owned_product(product_id: String, info: Dictionary) -> bool:
 	if not bool(info.get("non_consumable",false)):
