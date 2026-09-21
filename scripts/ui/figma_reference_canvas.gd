@@ -389,7 +389,7 @@ static func premium_button(text_value: String, font_size: int, text_color: Color
 	result.text = text_value
 	result.focus_mode = Control.FOCUS_NONE
 	result.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	result.add_theme_font_override("font", Unjam3DTheme.readable_font())
+	result.add_theme_font_override("font", Unjam3DTheme.strong_font())
 	result.add_theme_font_size_override("font_size", font_size)
 	var resolved_text := accessible_text_color(text_color, fill)
 	result.add_theme_color_override("font_color", resolved_text)
@@ -438,7 +438,7 @@ static func premium_button(text_value: String, font_size: int, text_color: Color
 static func label(text_value: String, font_size: int, color: Color, bold := false) -> Label:
 	var result := Label.new()
 	result.text = text_value
-	result.add_theme_font_override("font", Unjam3DTheme.readable_font())
+	result.add_theme_font_override("font", Unjam3DTheme.strong_font() if bold else Unjam3DTheme.readable_font())
 	result.add_theme_font_size_override("font_size", font_size)
 	result.add_theme_color_override("font_color", color)
 	# Body labels never need legacy shadows. Display titles opt back into their
@@ -459,7 +459,7 @@ static func button(text_value: String, font_size: int, text_color: Color, fill: 
 	result.text = text_value
 	result.focus_mode = Control.FOCUS_NONE
 	result.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	result.add_theme_font_override("font", Unjam3DTheme.readable_font())
+	result.add_theme_font_override("font", Unjam3DTheme.strong_font())
 	result.add_theme_font_size_override("font_size", font_size)
 	var resolved_text := accessible_text_color(text_color, fill)
 	result.add_theme_color_override("font_color", resolved_text)
