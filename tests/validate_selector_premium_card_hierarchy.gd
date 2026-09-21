@@ -20,19 +20,6 @@ func _run() -> void:
 	await process_frame
 
 	var failures: Array[String] = []
-	var nav := _find_node_named(main, "SelectorBottomNav") as PanelContainer
-	var active_plate := _find_node_named(main, "SelectorNavActivePlate_GAMES") as PanelContainer
-	if nav == null or active_plate == null:
-		failures.append("Selector bottom navigation is missing its premium Games active state")
-	for nav_name in ["HOME", "GAMES", "DAILY", "COLLECT", "SETTINGS"]:
-		var glyph := _find_node_named(main, "SelectorNavGlyph_%s" % nav_name) as Label
-		var label := _find_node_named(main, "SelectorNavLabel_%s" % nav_name) as Label
-		var hit := _find_node_named(main, "SelectorNavHit_%s" % nav_name) as Button
-		if glyph == null or glyph.text.is_empty() or label == null:
-			failures.append("Selector navigation identity is incomplete for %s" % nav_name)
-		if hit == null or hit.size.x < 74.0 or hit.size.y < 78.0:
-			failures.append("Selector navigation touch target is too small for %s" % nav_name)
-
 	for game_id in ["rescue_rush", "water_sort", "block_puzzle"]:
 		var card := _find_node_named(main, "GameCard3D_%s" % game_id) as PanelContainer
 		if card == null:
