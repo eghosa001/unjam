@@ -4,7 +4,9 @@ func _init() -> void:
 	var errors: Array[String] = []
 	_require("res://project.godot", ["theme/default_font_multichannel_signed_distance_field=true"], errors)
 	_require("res://scripts/ui/premium_home_direct_levels.gd", ["RESCUE RUSH", "WATER SORT", "BLOCK PUZZLE", "daily_done_count", "HomeHeroGameArt3D", "#dcebe8", "#29465b"], errors)
+	_require("res://scripts/ui/premium_home_direct_levels.gd", ["HomeNavTopGloss", "HomeNavActivePlate", "HomeNavGlyph_", "HomeGamesNavButton", "\"GAMES\", \"▦\"", "\"DAILY\", \"✦\"", "\"COLLECT\", \"◆\""], errors)
 	_require("res://scripts/ui/premium_home_overhaul.gd", ["Progress, stars, wallet", "_sync()"], errors)
+	_require("res://scripts/ui/premium_home_casual.gd", ["HomeCoinShopButton", "HomeGamesNavButton", "HomeDailyNavButton", "HomeCollectionNavButton", "HomeSettingsNavButton", "GAMES", "DAILY", "COLLECT"], errors)
 	_require("res://scripts/ui/premium_main_casual.gd", ["One challenge per game today", "DONE TODAY", "PLAY TODAY", "TODAY’S SORT", "\"Sound, motion & theme\"", "DailyAccent/", "game-tinted lacquer", "SurfaceWorldDepth", "SurfaceBackdropHaloTop", "SurfaceGlossSweep"], errors)
 	_require("res://scripts/ui/premium_design_system.gd", ["PremiumGlossBackdrop", "func _gloss_style", "func _install_gloss"], errors)
 	_require("res://scripts/ui/figma_reference_canvas.gd", ["Premium casual-game gloss", "lower_rolloff", "center_boost"], errors)
@@ -39,6 +41,8 @@ func _init() -> void:
 	_reject("res://scripts/ui/water_tube_button.gd", ["draw_line(body.position + Vector2(31, 43)", "glass_shine", "draw_rect(glass_shine", "var shine: Rect2", "draw_rect(shine", "draw_line(body.position + Vector2(9, 25)", "draw_line(Vector2(body.end.x - 9", "_draw_round_rect(cavity, Color(0.025, 0.075, 0.14"], errors)
 	_reject("res://scripts/game/block_puzzle_3d.gd", ["No moves — new blocks"], errors)
 	_reject("res://scripts/game/block_puzzle.gd", ["No moves — new blocks", "pieces[0] = SHAPES[0].duplicate()"], errors)
+	_reject("res://scripts/ui/premium_home_direct_levels.gd", ["HomeLevelsNavButton", "HomeShopNavButton", "HomeNavSelectedDot", "HomeNavSelectedUnderline"], errors)
+	_reject("res://scripts/ui/premium_home_casual.gd", ["HomeLevelsNavButton", "HomeShopNavButton"], errors)
 	_reject("res://scripts/ui/premium_main_casual.gd", ["Daily level %d", "Three fresh challenges every day", "TODAY: %s"], errors)
 	if not errors.is_empty():
 		for error in errors:

@@ -277,28 +277,37 @@ func _make_bottom_nav() -> void:
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 6)
 	nav.add_child(row)
+	# Keep the same global destinations everywhere. Shop stays available from the
+	# coin badge above, while gameplay level selection remains inside Games.
 	var entries: Array = [
-		["⌂\nHOME", Callable(), "HomeNavButton"],
-		["★\nLEVELS", Callable(self, "_open_journey"), "HomeLevelsNavButton"],
-		["●\nSHOP", Callable(self, "_open_shop"), "HomeShopNavButton"],
-		["♥\nCOLLECTION", func(): get_parent().call("build_collection"), "HomeCollectionNavButton"],
-		["⚙\nSETTINGS", func(): get_parent().call("build_settings"), "HomeSettingsNavButton"]
+		["⌂\nHOME", Callable(), "HomeNavButton", Color("33b9ff"), "Home"],
+		["▦\nGAMES", Callable(self, "_open_game_selector"), "HomeGamesNavButton", Color("7b6cff"), "Games"],
+		["✦\nDAILY", func(): get_parent().call("build_daily_games"), "HomeDailyNavButton", Color("f5c93a"), "Daily Games"],
+		["◆\nCOLLECT", func(): get_parent().call("build_collection"), "HomeCollectionNavButton", Color("24c96b"), "Collection"],
+		["⚙\nSETTINGS", func(): get_parent().call("build_settings"), "HomeSettingsNavButton", Color("35c6ff"), "Settings"]
 	]
 	var narrow := get_viewport_rect().size.x < 600.0
+	var dark_mode := _theme_mode() == "dark"
 	for i in range(entries.size()):
 		var entry: Array = entries[i]
 		var button := Button.new()
 		button.name = String(entry[2])
 		button.text = String(entry[0])
+		button.tooltip_text = String(entry[4])
 		button.custom_minimum_size = Vector2(0, 90)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.add_theme_font_size_override("font_size", 18 if narrow else 20)
 		var selected := i == 0
-		var fill := Unjam3DTheme.ORANGE if String(entry[2]) == "HomeShopNavButton" else (Unjam3DTheme.WATER if selected else Color("0d6dc2"))
-		Unjam3DTheme.gloss_button(button, fill, selected or String(entry[2]) == "HomeShopNavButton", 22, _theme_mode() == "dark")
+		var accent: Color = entry[3]
+		var idle_fill := Color("0a315d") if dark_mode else Color("0d6dc2")
+		Unjam3DTheme.gloss_button(button, accent if selected else idle_fill, selected, 22, dark_mode)
+		if not selected:
+			button.modulate = Color(1,1,1,0.96)
 		var callback: Callable = entry[1]
 		if callback.is_valid():
 			button.pressed.connect(callback)
+		else:
+			button.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.add_child(button)
 
 func _open_shop() -> void:
