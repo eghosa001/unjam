@@ -325,46 +325,66 @@ func _add_world_progress(canvas: Control) -> void:
 func _add_bottom_nav_reference(canvas: Control) -> void:
 	var shell := PanelContainer.new()
 	shell.name = "HomeBottomNav3D"
-	RefCanvas.add_shadow(canvas, Rect2(13, 757, 362, 70), 18, Color(0.02, 0.10, 0.18, 0.12), 5, Vector2(0, 4))
-	var nav_fill := Color(0.07,0.10,0.17,0.98) if _home_dark() else Color(0.985, 0.995, 1.0, 0.97)
-	var nav_border := Color(0.23,0.34,0.45,0.90) if _home_dark() else Color(0.78, 0.88, 0.95, 0.75)
+	RefCanvas.add_shadow(canvas, Rect2(13, 757, 362, 70), 18, Color(0.02, 0.10, 0.18, 0.16), 5, Vector2(0, 4))
+	var nav_fill := Color(0.055,0.085,0.15,0.985) if _home_dark() else Color(0.985,0.995,1.0,0.98)
+	var nav_border := Color(0.24,0.39,0.54,0.94) if _home_dark() else Color(0.70,0.86,0.97,0.84)
 	shell.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(nav_fill.lightened(0.12), nav_fill, nav_fill.darkened(0.10), 18, nav_border, 1, 0.40))
 	RefCanvas.set_rect(shell, 13, 757, 362, 70)
 	shell.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(shell)
+
+	var top_gloss := PanelContainer.new()
+	top_gloss.name = "HomeNavTopGloss"
+	top_gloss.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	top_gloss.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.64,0.88,1.0,0.22 if _home_dark() else 0.34), 1))
+	RefCanvas.set_rect(top_gloss, 28, 760, 332, 2)
+	canvas.add_child(top_gloss)
+
 	var items := [
-		["HOME", 22.0, Callable(), "HomeNavButton", true],
-		["GAMES", 91.0, Callable(self, "_open_game_selector"), "HomeLevelsNavButton", false],
-		["DAILY", 160.0, Callable(self, "_open_daily_games"), "HomeDailyNavButton", false],
-		["COLLECT", 229.0, func(): get_parent().call("build_collection"), "HomeCollectionNavButton", false],
-		["SETTINGS", 298.0, func(): get_parent().call("build_settings"), "HomeSettingsNavButton", false],
+		["HOME", "⌂", 22.0, Callable(), "HomeNavButton", true, Color("#33b9ff")],
+		["GAMES", "▦", 91.0, Callable(self, "_open_game_selector"), "HomeGamesNavButton", false, Color("#7b6cff")],
+		["DAILY", "✦", 160.0, Callable(self, "_open_daily_games"), "HomeDailyNavButton", false, GOLD],
+		["COLLECT", "◆", 229.0, func(): get_parent().call("build_collection"), "HomeCollectionNavButton", false, GREEN],
+		["SETTINGS", "⚙", 298.0, func(): get_parent().call("build_settings"), "HomeSettingsNavButton", false, CYAN],
 	]
 	for item in items:
-		var selected: bool = bool(item[4])
-		var nav_color := (Color(0.42,0.78,1.0) if selected else DARK_MUTED) if _home_dark() else (Color(0.05, 0.49, 0.86) if selected else Color(0.31, 0.43, 0.54))
+		var selected: bool = bool(item[5])
+		var accent: Color = item[6]
+		var nav_color := Color.WHITE if selected and _home_dark() else (DARK_MUTED if _home_dark() else (INK if selected else Color(0.31,0.43,0.54)))
+		var icon_color := accent.lightened(0.18) if selected else (DARK_MUTED.lightened(0.08) if _home_dark() else Color(0.38,0.51,0.62))
 		if selected:
-			var dot := PanelContainer.new()
-			dot.name = "HomeNavSelectedDot"
-			dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			dot.add_theme_stylebox_override("panel", RefCanvas.solid_box(CYAN, 4))
-			RefCanvas.set_rect(dot, float(item[1]) + 26.0, 776, 8, 8)
-			canvas.add_child(dot)
-			var underline := PanelContainer.new()
-			underline.name = "HomeNavSelectedUnderline"
-			underline.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			underline.add_theme_stylebox_override("panel", RefCanvas.solid_box(CYAN, 2))
-			RefCanvas.set_rect(underline, float(item[1]) + 12.0, 815, 36, 4)
-			canvas.add_child(underline)
-		_add_text(canvas, item[0], Rect2(item[1] - 1.0, 788, 62, 26), 13, nav_color, true)
+			var plate_fill := accent.darkened(0.50) if _home_dark() else accent.lightened(0.34)
+			var plate_border := accent.lightened(0.16) if _home_dark() else accent.darkened(0.08)
+			RefCanvas.add_shadow(canvas, Rect2(float(item[2]) - 3.0, 762, 60, 57), 15, Color(0.01,0.04,0.08,0.24), 3, Vector2(0,3))
+			var plate := PanelContainer.new()
+			plate.name = "HomeNavActivePlate"
+			plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			plate.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(plate_fill.lightened(0.14), plate_fill, plate_fill.darkened(0.12), 15, plate_border, 1.2, 0.40))
+			RefCanvas.set_rect(plate, float(item[2]) - 3.0, 762, 60, 57)
+			canvas.add_child(plate)
+			var shine := PanelContainer.new()
+			shine.name = "HomeNavActiveShine"
+			shine.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			shine.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(1,1,1,0.34 if _home_dark() else 0.55), 1))
+			RefCanvas.set_rect(shine, float(item[2]) + 7.0, 765, 40, 2)
+			canvas.add_child(shine)
+		var glyph := _add_text(canvas, item[1], Rect2(float(item[2]) - 1.0, 765, 58, 22), 18, icon_color, true)
+		glyph.name = "HomeNavGlyph_%s" % String(item[0])
+		glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		var label := _add_text(canvas, item[0], Rect2(float(item[2]) - 1.0, 790, 58, 22), 12, nav_color, true)
+		label.name = "HomeNavLabel_%s" % String(item[0])
+		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		var hit := Button.new()
-		hit.name = item[3]
+		hit.name = item[4]
 		hit.flat = true
 		hit.focus_mode = Control.FOCUS_NONE
 		hit.modulate.a = 0.001
-		RefCanvas.set_rect(hit, item[1] - 9, 753, 74, 78)
-		var cb: Callable = item[2]
+		RefCanvas.set_rect(hit, item[2] - 9, 753, 74, 78)
+		var cb: Callable = item[3]
 		if cb.is_valid():
 			hit.pressed.connect(cb)
+		else:
+			hit.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		canvas.add_child(hit)
 
 func _add_pill(canvas: Control, rect: Rect2, fill: Color, text_value: String, font_size: int, text_color: Color) -> PanelContainer:
