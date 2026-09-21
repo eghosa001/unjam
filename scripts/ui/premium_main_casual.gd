@@ -140,6 +140,7 @@ func _figma_surface(active: String, bottom_tint: Color = FIGMA_BG_BOTTOM, top_ti
 		"collection": scene_accent = FIGMA_GREEN
 		"settings": scene_accent = FIGMA_CYAN
 		_: scene_accent = _accent()
+	FigmaReferenceCanvas.add_world_depth(canvas, scene_accent, _dark(), 0.12 if _dark() else 0.17, "SurfaceWorldDepth")
 	FigmaReferenceCanvas.add_scene_backdrop_layers(canvas, scene_accent, _dark(), "Surface")
 	var surface_key_light := canvas.get_node_or_null("SurfaceKeyLight")
 	var surface_accent_glow := canvas.get_node_or_null("SurfaceAccentGlow")
