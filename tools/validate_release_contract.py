@@ -117,8 +117,8 @@ def main() -> int:
 
     for token in (
         'id="AdaptiveSafeZone"',
-        'translate(216 216) scale(.69) translate(-216 -216)',
-        'translate(49 76) scale(.82)',
+        'translate(216 216) scale(.94) translate(-216 -216)',
+        'translate(55 82) scale(.80)',
     ):
         if token not in adaptive_fg:
             errors.append(f'adaptive foreground safe-zone contract missing token: {token}')
