@@ -3,7 +3,7 @@ extends SceneTree
 func _initialize() -> void:
 	var failures: Array[String] = []
 	_check_source("res://scripts/ui/figma_reference_canvas.gd", ["REFERENCE_SIZE := Vector2(390.0, 844.0)", "rounded_gradient", "set_rect"], failures)
-	_check_source("res://scripts/ui/premium_home_direct_levels.gd", ["FigmaHome390x844", "FigmaHomeHero", "HomePrimaryAction", "HomeChooseGameButton", "HomeBottomNav3D"], failures)
+	_check_source("res://scripts/ui/premium_home_direct_levels.gd", ["FigmaHome390x844", "FigmaHomeHero", "HomePrimaryAction", "HomeChooseGameButton", "HomeBottomNav3D", "CURRENT JOURNEY\", Rect2(41, 142, 150, 18), 14", "String(entry[1]), Rect2(x + 7, 477, 96, 20), 13", "WORLD %d PROGRESS\" % world, Rect2(37, 603, 190, 20), 14"], failures)
 	_check_source("res://scripts/ui/premium_live_hub_3d.gd", ["FigmaSelector390x844", "GameCard3D_", "SelectorCardHit_", "SelectorBottomNav", "3 PUZZLES • 1 JOURNEY\", Rect2(83, 51, 186, 30), 14"], failures)
 	_check_source("res://scripts/game/water_sort_casual.gd", ["FigmaWater390x844", "GameplayStage", "WaterUndoAction", "WaterRetryAction", "meta_label = _make_label(\"\", 14", "premium_button(text_value, 14"], failures)
 	_check_source("res://scripts/game/block_puzzle_3d.gd", ["FigmaBlock390x844", "BlockBoardShell", "BlockTray", "BlockPieceRow", "CAMPAIGN • HARD\", 14", "goal_label = FigmaReferenceCanvas.label(\"\", 14"], failures)
