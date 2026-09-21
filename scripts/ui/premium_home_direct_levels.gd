@@ -371,7 +371,10 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 		var glyph := _add_text(canvas, item[1], Rect2(float(item[2]) - 1.0, 765, 58, 22), 18, icon_color, true)
 		glyph.name = "HomeNavGlyph_%s" % String(item[0])
 		glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		var label := _add_text(canvas, item[0], Rect2(float(item[2]) - 1.0, 790, 58, 22), 12, nav_color, true)
+		var display_name := "COLLECTION" if String(item[0]) == "COLLECT" else String(item[0])
+		var label_width := 70.0 if String(item[0]) == "COLLECT" else 58.0
+		var label_x := float(item[2]) - 7.0 if String(item[0]) == "COLLECT" else float(item[2]) - 1.0
+		var label := _add_text(canvas, display_name, Rect2(label_x, 790, label_width, 22), 12, nav_color, true)
 		label.name = "HomeNavLabel_%s" % String(item[0])
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		var hit := Button.new()
