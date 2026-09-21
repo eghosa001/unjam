@@ -26,17 +26,22 @@ func _initialize() -> void:
 		quit(1)
 		return
 	if not piece_source.contains("premium_piece_button.gd"):
-		push_error("Rescue Rush pieces lost the flat bevel/gloss renderer")
+		push_error("Rescue Rush pieces lost the lightweight Canvas renderer")
 		quit(1)
 		return
+	for required in ["2.5D CanvasItem geometry", "func _draw_shell", "var depth :=", "func _draw_arrow", "raised inlay"]:
+		if not piece_source.contains(required):
+			push_error("Rescue Rush tile depth contract is missing: " + required)
+			quit(1)
+			return
 	if not piece_source.contains("set_process(false)"):
-		push_error("Flat Rescue Rush pieces still redraw continuously while idle")
+		push_error("Rescue Rush 2.5D pieces still redraw continuously while idle")
 		quit(1)
 		return
 	for forbidden in ["SubViewport", "Camera3D", "Node3D", "BoxMesh", "TorusMesh"]:
 		if piece_source.contains(forbidden):
-			push_error("Flat Rescue Rush piece still allocates perspective 3D resource: " + forbidden)
+			push_error("Rescue Rush 2.5D piece still allocates perspective 3D resource: " + forbidden)
 			quit(1)
 			return
-	print("Rescue Rush flat pieces keep gameplay sizing and sleep without per-tile perspective rendering.")
+	print("Rescue Rush 2.5D pieces keep sculpted depth, gameplay sizing and idle sleep without per-tile perspective rendering.")
 	quit(0)
