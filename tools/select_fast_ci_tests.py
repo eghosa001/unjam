@@ -72,6 +72,9 @@ GROUP_TESTS = {
         "validate_soothing_audio_palette",
         "validate_feedback_manager_event_driven_music",
     ],
+    "branding": [
+        "validate_launcher_icon_safe_zone",
+    ],
     "monetization": [
         "validate_monetization",
         "validate_shop_catalog_ui",
@@ -104,6 +107,14 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
             "home", "games", "levels", "collection", "daily", "settings",
             "shop", "rescue", "water", "block", "tutorial", "result"
         })
+        return True
+
+    if p in {
+        "assets/icon.svg",
+        "assets/icon_adaptive_background.svg",
+        "assets/icon_adaptive_foreground.svg",
+    }:
+        add(groups, "branding")
         return True
 
     if p.startswith(DOC_PREFIXES) or suffix in DOC_SUFFIXES or p in {"license", "readme"}:
@@ -140,13 +151,16 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
         game_specific_ui = bool(groups.intersection({"water", "block", "rescue"}))
         monetization_ui = any(token in p for token in ("monetization_hub", "shop_", "purchase_"))
         tutorial_ui = "ux_shell" in p or "tutorial" in p
-        games_ui = "premium_live_hub" in p or "unjam_3d_game_art" in p
+        games_ui = "premium_live_hub" in p or "unjam_3d_game_art" in p or "unjam_flat_game_logo" in p
         home_ui = "premium_home" in p
         if monetization_ui:
             add(groups, "monetization")
             visual.add("shop")
         elif not game_specific_ui:
-            if tutorial_ui:
+            if "unjam_flat_game_logo" in p:
+                add(groups, "games_ui", "home")
+                visual.update({"games", "home"})
+            elif tutorial_ui:
                 add(groups, "tutorial")
             elif games_ui:
                 add(groups, "games_ui")
@@ -415,6 +429,7 @@ def self_test() -> None:
         (["scripts/ui/premium_result_overlay.gd"], ["ui"], ["result"], True),
         (["scripts/ui/premium_live_hub_3d.gd"], ["games_ui"], ["games"], True),
         (["scripts/ui/unjam_3d_game_art.gd"], ["games_ui"], ["games"], True),
+        (["scripts/ui/unjam_flat_game_logo.gd"], ["games_ui", "home"], ["games", "home"], True),
         (["scripts/ui/premium_main_casual.gd"], ["secondary_ui"], ["collection", "daily", "home", "levels", "settings"], True),
         (["scripts/systems/premium_visuals.gd"], ["ui"], ["collection", "daily", "games", "levels", "settings", "shop"], True),
         (["scripts/ui/monetization_hub_3d.gd"], ["monetization"], ["shop"], True),
@@ -456,8 +471,10 @@ def self_test() -> None:
         "validate_production_hardening_regressions",
     ]
     icon_plan = plan_for_paths(["assets/icon_adaptive_foreground.svg"])
+    assert icon_plan["groups"] == ["branding"]
+    assert icon_plan["tests"] == ["validate_launcher_icon_safe_zone"]
     assert icon_plan["release_contract"] is True
-    assert icon_plan["needs_godot"] is False
+    assert icon_plan["needs_godot"] is True
     print("select_fast_ci_tests self-test passed")
 
 def main() -> None:
