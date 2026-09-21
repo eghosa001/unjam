@@ -31,14 +31,14 @@ func _ready() -> void:
 	for i in range(SFX_POOL_SIZE):
 		var sfx := AudioStreamPlayer.new()
 		sfx.name = "CalmSfx%02d" % (i + 1)
-		sfx.volume_db = 0.0
+		sfx.volume_db = -2.5
 		add_child(sfx)
 		sfx_players.append(sfx)
 	player = sfx_players[0]
 
 	music_player = AudioStreamPlayer.new()
 	music_player.name = "CalmAmbientMusic"
-	music_player.volume_db = -9.0
+	music_player.volume_db = -10.0
 	add_child(music_player)
 	music_stream = _build_calm_ambient_loop()
 	music_player.stream = music_stream
@@ -89,7 +89,7 @@ func lift() -> void:
 	_play_chime([440.0, 659.25], 0.130, 0.095, 0.52)
 
 func drop() -> void:
-	_play_chime([329.63, 261.63], 0.145, 0.105, 0.34)
+	_play_chime([392.0, 329.63], 0.145, 0.095, 0.30)
 
 func snap() -> void:
 	# Magnetic placement confirmation: lighter than a drop/clear, but tactile
@@ -142,7 +142,7 @@ func tap() -> void:
 
 func blocked() -> void:
 	# Low, rounded two-note fall. Avoid sub-200 Hz buzzy sine errors.
-	_play_chime([293.66, 246.94], 0.190, 0.080, 0.18)
+	_play_chime([392.0, 329.63], 0.180, 0.070, 0.16)
 	_vibrate(8)
 
 func escape(chain: int = 1) -> void:
@@ -254,10 +254,10 @@ func _build_calm_ambient_loop() -> AudioStreamWAV:
 	# could physically buzz small phone speakers/cases. These voicings retain the
 	# same harmony while moving the body into a cleaner mobile-safe register.
 	var chords := [
-		[174.61, 220.00, 261.63, 329.63],
-		[146.83, 174.61, 220.00, 261.63],
-		[116.54, 146.83, 174.61, 220.00],
-		[130.81, 196.00, 261.63, 293.66],
+		[261.63, 329.63, 392.00, 523.25],
+		[220.00, 261.63, 329.63, 392.00],
+		[233.08, 293.66, 349.23, 440.00],
+		[196.00, 293.66, 392.00, 440.00],
 	]
 	var melody := [349.23, 440.00, 523.25, 440.00, 293.66, 349.23, 440.00, 523.25, 349.23, 392.00, 523.25, 587.33, 440.00, 392.00, 349.23, 293.66]
 	var section_length := MUSIC_DURATION / 4.0
@@ -275,7 +275,9 @@ func _build_calm_ambient_loop() -> AudioStreamWAV:
 			var phase := float(voice) * 0.61
 			pad += sin(TAU * base * t + phase) * 0.095
 			pad += sin(TAU * base * 2.0 * t + phase + 0.3) * 0.022
-			pad += sin(TAU * base * 0.501 * t + phase * 0.7) * 0.035
+			# Keep the ambient body in the midrange. A former ~0.5x partial put
+			# substantial energy back into the 58-87 Hz range on phone speakers.
+			pad += sin(TAU * base * 1.501 * t + phase * 0.7) * 0.018
 		pad *= edge
 
 		# Slow "breathing" keeps the pad alive while staying below conscious
@@ -303,13 +305,12 @@ func _build_calm_ambient_loop() -> AudioStreamWAV:
 		# No sub-bass oscillator: phone speakers cannot reproduce it cleanly and
 		# often turn it into cabinet/case vibration. A quiet fundamental body keeps
 		# warmth without energy below the lowest musical note in the voicing.
-		var body_tone := sin(TAU * float(chord[0]) * t) * 0.010 * edge
-		var air := sin(TAU * 0.083 * t + sin(t * 0.11)) * 0.003
+		var body_tone := sin(TAU * float(chord[0]) * t) * 0.008 * edge
 
 		# The complete 32-second waveform also approaches zero at the loop seam so
 		# LOOP_FORWARD never jumps from a non-zero final sample back to frame zero.
 		var loop_edge := _smooth_edge(t, MUSIC_DURATION, 0.38)
-		var base_sample := (pad + mallet * edge + body_tone + air * edge) * 0.68 * loop_edge
+		var base_sample := (pad + mallet * edge + body_tone) * 0.64 * loop_edge
 		var width_l := sin(TAU * float(chord[1]) * 1.003 * t + 0.3) * 0.006 * edge * loop_edge
 		var width_r := sin(TAU * float(chord[2]) * 0.997 * t + 1.0) * 0.006 * edge * loop_edge
 		_write_stereo(bytes, i, base_sample + width_l, base_sample + width_r)
