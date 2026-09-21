@@ -98,14 +98,29 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
 
     if p.startswith("scripts/ui/"):
         game_specific_ui = bool(groups.intersection({"water", "block", "rescue"}))
-        if not game_specific_ui:
+        monetization_ui = any(token in p for token in ("monetization_hub", "shop_", "purchase_"))
+        if monetization_ui:
+            add(groups, "monetization")
+            visual.add("shop")
+        elif not game_specific_ui:
             add(groups, "ui")
-            if p.endswith("figma_reference_canvas.gd"):
-                visual.update({"home", "rescue", "water", "block", "tutorial", "result"})
+            if p.endswith(("figma_reference_canvas.gd", "unjam_3d_theme.gd")):
+                visual.update({
+                    "home", "games", "levels", "collection", "daily", "settings",
+                    "shop", "rescue", "water", "block", "tutorial", "result"
+                })
+            elif "premium_home" in p:
+                visual.add("home")
+            elif "premium_live_hub" in p:
+                visual.add("games")
+            elif p.endswith(("premium_main_casual.gd", "premium_main.gd")):
+                visual.update({"levels", "collection", "daily", "settings"})
             elif "ux_shell" in p or "tutorial" in p:
                 visual.add("tutorial")
             elif "premium_result_overlay" in p or "result" in p:
                 visual.add("result")
+            elif "unjam_3d_backdrop" in p or "premium_visuals" in p:
+                visual.update({"games", "levels", "collection", "daily", "settings", "shop"})
             else:
                 visual.add("home")
 
@@ -218,6 +233,9 @@ def self_test() -> None:
         (["scripts/game/block_puzzle_3d.gd"], ["block"], ["block"], True),
         (["scripts/ui/ux_shell_casual.gd"], ["ui"], ["tutorial"], True),
         (["scripts/ui/premium_result_overlay.gd"], ["ui"], ["result"], True),
+        (["scripts/ui/premium_live_hub_3d.gd"], ["ui"], ["games"], True),
+        (["scripts/ui/premium_main_casual.gd"], ["ui"], ["collection", "daily", "levels", "settings"], True),
+        (["scripts/ui/monetization_hub_3d.gd"], ["monetization"], ["shop"], True),
         (["scripts/core/feedback_manager.gd"], ["audio"], [], True),
         (["scripts/core/store_manager.gd"], ["monetization"], [], True),
         (["tests/validate_viewport_fit.gd"], [], [], True),
