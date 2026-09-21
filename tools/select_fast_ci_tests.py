@@ -77,6 +77,8 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
 
     if p.startswith(DOC_PREFIXES) or suffix in DOC_SUFFIXES or p in {"license", "readme"}:
         return False
+    if p.startswith(".github/") or p == "tools/select_fast_ci_tests.py":
+        return False
 
     is_code = suffix in CODE_SUFFIXES or p.startswith(("scripts/", "scenes/", "addons/", "data/"))
     if not is_code:
@@ -93,13 +95,15 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
         visual.add("rescue")
 
     if p.startswith("scripts/ui/"):
-        add(groups, "ui")
-        if "ux_shell" in p or "tutorial" in p:
-            visual.add("tutorial")
-        elif "premium_result_overlay" in p or "result" in p:
-            visual.add("result")
-        elif "water" not in p and "block" not in p and "rescue" not in p:
-            visual.add("home")
+        game_specific_ui = bool(groups.intersection({"water", "block", "rescue"}))
+        if not game_specific_ui:
+            add(groups, "ui")
+            if "ux_shell" in p or "tutorial" in p:
+                visual.add("tutorial")
+            elif "premium_result_overlay" in p or "result" in p:
+                visual.add("result")
+            else:
+                visual.add("home")
 
     if any(token in p for token in (
         "multi_game_manager", "progression", "save_manager", "level_pack",
@@ -140,7 +144,11 @@ def plan_for_paths(paths: list[str]) -> dict[str, object]:
         code_related = classify_path(path, groups, visual, explicit_tests)
         needs_godot = needs_godot or code_related
         low = path.lower()
-        if code_related or low in {"project.godot", "export_presets.cfg"}:
+        if (
+            low in {"project.godot", "export_presets.cfg", "tools/validate_release_contract.py"}
+            or low.startswith("addons/")
+            or any(token in low for token in ("monetization", "admob", "billing", "purchase_verification"))
+        ):
             release_contract = True
 
     tests: list[str] = []
@@ -202,12 +210,15 @@ def self_test() -> None:
     cases = [
         (["docs/README.md"], [], [], False),
         (["scripts/game/water_sort_casual.gd"], ["water"], ["water"], True),
+        (["scripts/ui/water_tube_3d_motion.gd"], ["water"], ["water"], True),
         (["scripts/game/block_puzzle_3d.gd"], ["block"], ["block"], True),
         (["scripts/ui/ux_shell_casual.gd"], ["ui"], ["tutorial"], True),
         (["scripts/ui/premium_result_overlay.gd"], ["ui"], ["result"], True),
         (["scripts/core/feedback_manager.gd"], ["audio"], [], True),
         (["scripts/core/store_manager.gd"], ["monetization"], [], True),
         (["tests/validate_viewport_fit.gd"], [], [], True),
+        (["tools/select_fast_ci_tests.py"], [], [], False),
+        ([".github/workflows/godot-ci.yml"], [], [], False),
     ]
     for paths, groups, visual, godot in cases:
         plan = plan_for_paths(paths)
