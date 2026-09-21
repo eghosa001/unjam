@@ -62,6 +62,7 @@ func _initialize() -> void:
 		"BottleMouthRim3D",
 		"_glass_material_3d",
 		"Glass must remain visible over opaque liquid",
+		"Stronger crystal alpha/emission",
 		"GLASS_MOUTH_Y"
 	], failures)
 
