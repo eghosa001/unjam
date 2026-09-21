@@ -76,6 +76,10 @@ jobs:
           godot --headless --path . --editor --quit 2>&1 | tee import.log
           if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" import.log; then exit 1; fi
 
+      # Selective hardening gates are planned by tools/select_fast_ci_tests.py:
+      # validate_production_hardening_regressions and
+      # validate_water_constructive_solvability. They run only for relevant
+      # shared-gameplay/Water changes; exhaustive 10,000-level audits stay manual.
       - name: Run selected iteration contracts
         if: steps.plan.outputs.tests != ''
         env:
