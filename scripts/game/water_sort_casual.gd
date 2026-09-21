@@ -74,11 +74,15 @@ func _build_figma_water(canvas: Control) -> void:
 	info.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(info)
 	meta_label = _make_label("", 13, Color(0.92, 0.98, 1.0), true)
-	RefCanvas.set_rect(meta_label, 37, 91, 135, 20)
+	meta_label.clip_text = true
+	meta_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	RefCanvas.set_rect(meta_label, 37, 91, 170, 20)
 	canvas.add_child(meta_label)
 	move_label = _make_label("", 13, OFF_WHITE, true)
 	move_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	RefCanvas.set_rect(move_label, 173, 91, 180, 20)
+	move_label.clip_text = true
+	move_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	RefCanvas.set_rect(move_label, 208, 91, 145, 20)
 	canvas.add_child(move_label)
 
 	var objective := PanelContainer.new()
@@ -238,7 +242,7 @@ func render_board() -> void:
 	super.render_board()
 	_apply_tube_layout()
 	if move_label != null:
-		move_label.text = "MOVES %d   •   3★ ≤ %d" % [moves, par_moves]
+		move_label.text = "MOVES %d • 3★≤%d" % [moves, par_moves]
 	if status_label != null and status_label.text.strip_edges().is_empty():
 		status_label.text = "READY"
 
