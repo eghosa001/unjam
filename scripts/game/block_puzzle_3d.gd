@@ -227,7 +227,7 @@ func _build_figma_block(canvas: Control) -> void:
 	var status_region := Control.new()
 	status_region.name = "BlockStatus"
 	status_region.clip_contents = true
-	FigmaReferenceCanvas.set_rect(status_region, 18, 690, 354, 20)
+	FigmaReferenceCanvas.set_rect(status_region, 18, 676, 354, 20)
 	canvas.add_child(status_region)
 	status_label = FigmaReferenceCanvas.label("", 13, Color(1,0.995,0.97), true)
 	status_label.name = "BlockStatusText"
@@ -240,7 +240,7 @@ func _build_figma_block(canvas: Control) -> void:
 	var hint_region := Control.new()
 	hint_region.name = "BlockHint"
 	hint_region.clip_contents = true
-	FigmaReferenceCanvas.set_rect(hint_region, 18, 716, 354, 20)
+	FigmaReferenceCanvas.set_rect(hint_region, 18, 702, 354, 20)
 	canvas.add_child(hint_region)
 	hint_label = FigmaReferenceCanvas.label("", 13, Color(1,0.995,0.97), true)
 	hint_label.name = "BlockHintText"
