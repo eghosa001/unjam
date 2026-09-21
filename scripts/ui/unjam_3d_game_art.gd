@@ -119,8 +119,10 @@ func _build_stage() -> void:
 			display_root.position = Vector3(0, 0.04, 0.08)
 			_build_block_puzzle()
 		_:
-			display_root.scale = Vector3.ONE * 1.12
-			display_root.position = Vector3(0, 0.05, 0.08)
+			# Rescue has a wide exit gate on the right edge; leave deliberate breathing
+			# room so the premium diorama never looks accidentally cropped in cards.
+			display_root.scale = Vector3.ONE * 1.05
+			display_root.position = Vector3(-0.14, 0.05, 0.08)
 			_build_rescue_rush()
 
 func _build_rescue_rush() -> void:
