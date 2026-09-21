@@ -1,6 +1,6 @@
 extends "res://scripts/ui/premium_home_casual.gd"
 
-const GAME_ART_SCRIPT = preload("res://scripts/ui/unjam_3d_game_art.gd")
+const FLAT_GAME_LOGO_SCRIPT = preload("res://scripts/ui/unjam_flat_game_logo.gd")
 
 const RefCanvas = preload("res://scripts/ui/figma_reference_canvas.gd")
 
@@ -189,11 +189,11 @@ func _add_hero_preview(canvas: Control, game_id: String) -> void:
 	RefCanvas.set_rect(stage, 229, 144, 115, 136)
 	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	preview_root.add_child(stage)
-	var art := GAME_ART_SCRIPT.new()
-	art.name = "HomeHeroGameArt3D"
-	art.configure(game_id)
-	RefCanvas.set_rect(art, 229, 144, 115, 136)
-	preview_root.add_child(art)
+	var mark := FLAT_GAME_LOGO_SCRIPT.new()
+	mark.name = "HomeHeroFlatGameLogo"
+	mark.configure(game_id)
+	RefCanvas.set_rect(mark, 239, 154, 95, 116)
+	preview_root.add_child(mark)
 
 func _add_quick_actions(canvas: Control) -> void:
 	var choose := _add_action(canvas, Rect2(21, 365, 166, 52), BLUE, "◈ CHOOSE GAME", 12, OFF_WHITE, Callable(self, "_open_game_selector"), 16)
@@ -229,10 +229,18 @@ func _add_quick_switch(canvas: Control) -> void:
 		RefCanvas.set_rect(card, x, 465, 108, 94)
 		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		canvas.add_child(card)
-		_add_text(canvas, String(entry[1]), Rect2(x + 6, 477, 98, 20), 13, entry[2], true)
+		var mark := FLAT_GAME_LOGO_SCRIPT.new()
+		mark.name = "HomeQuickSwitchFlatLogo_%s" % id
+		mark.configure(id)
+		RefCanvas.set_rect(mark, x + 38, 471, 32, 32)
+		canvas.add_child(mark)
+		var switch_name := _add_text(canvas, String(entry[1]), Rect2(x + 5, 505, 100, 17), 11, entry[2], true)
+		switch_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		switch_name.clip_text = true
 		var level := _home_current_level(id)
 		var stars := MultiGameManager.total_stars(id)
-		_add_text(canvas, "L%d • ★%s" % [level, _compact_number(stars)], Rect2(x + 8, 508, 94, 17), 13, MUTED, false)
+		var switch_meta := _add_text(canvas, "L%d • ★%s" % [level, _compact_number(stars)], Rect2(x + 6, 530, 96, 16), 11, MUTED, false)
+		switch_meta.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		var tap := Button.new()
 		tap.name = "HomeDirect_%s" % id
 		tap.set_meta("unjam_figma_exact_geometry", true)
@@ -287,11 +295,11 @@ func _add_world_progress(canvas: Control) -> void:
 	art_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(art_stage)
 
-	var art := GAME_ART_SCRIPT.new()
-	art.name = "HomeWorldShowcase3D"
-	art.configure(selected_game)
-	RefCanvas.set_rect(art, 31, 592, 150, 130)
-	root.add_child(art)
+	var mark := FLAT_GAME_LOGO_SCRIPT.new()
+	mark.name = "HomeWorldFlatGameLogo"
+	mark.configure(selected_game)
+	RefCanvas.set_rect(mark, 47, 603, 118, 108)
+	root.add_child(mark)
 
 	var world_title := _add_text(root, "WORLD JOURNEY", Rect2(195, 596, 152, 17), 12, accent, true)
 	world_title.name = "HomeWorldProgressTitle"

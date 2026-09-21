@@ -1,7 +1,7 @@
 extends "res://scripts/ui/premium_live_hub.gd"
 
 const RefCanvas = preload("res://scripts/ui/figma_reference_canvas.gd")
-const GAME_ART_SCRIPT = preload("res://scripts/ui/unjam_3d_game_art.gd")
+const FLAT_GAME_LOGO_SCRIPT = preload("res://scripts/ui/unjam_flat_game_logo.gd")
 
 const BG_TOP := Color("#dcebe8")
 const BG_MID := Color("#d4e3e8")
@@ -165,11 +165,11 @@ func _add_card_preview(canvas: Control, game_id: String, card_y: float) -> void:
 	RefCanvas.set_rect(stage, 243, origin_y, 104, 112)
 	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(stage)
-	var art := GAME_ART_SCRIPT.new()
-	art.name = "SelectorGameArt3D_%s" % game_id
-	art.configure(game_id, true)
-	RefCanvas.set_rect(art, 243, origin_y, 104, 112)
-	canvas.add_child(art)
+	var mark := FLAT_GAME_LOGO_SCRIPT.new()
+	mark.name = "SelectorFlatGameLogo_%s" % game_id
+	mark.configure(game_id)
+	RefCanvas.set_rect(mark, 252, origin_y + 9, 86, 94)
+	canvas.add_child(mark)
 
 func _add_bottom_nav(canvas: Control) -> void:
 	var shell := PanelContainer.new()

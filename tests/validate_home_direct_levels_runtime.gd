@@ -50,8 +50,8 @@ func _run() -> void:
 		var primary := home.find_child("HomePrimaryAction",true,false) as Button
 		var world_value := home.find_child("HomeWorldProgressValue",true,false) as Label
 		var progress := home.find_child("HomeWorldProgressBar",true,false) as ProgressBar
-		var hero_art := home.find_child("HomeHeroGameArt3D",true,false)
-		var world_art := home.find_child("HomeWorldShowcase3D",true,false)
+		var hero_art := home.find_child("HomeHeroFlatGameLogo",true,false)
+		var world_art := home.find_child("HomeWorldFlatGameLogo",true,false)
 
 		if hero_title == null or hero_title.text != _expected_title(game_id):
 			return _fail("Home hero did not update for %s" % game_id)
@@ -69,9 +69,9 @@ func _run() -> void:
 		if progress == null or int(round(progress.max_value)) != expected.total or int(round(progress.value)) != expected.completed:
 			return _fail("Home World Journey progress bar stayed stale for %s" % game_id)
 		if hero_art == null or String(hero_art.get("game_id")) != game_id:
-			return _fail("Home hero 3D preview stayed stale for %s" % game_id)
+			return _fail("Home hero flat game mark stayed stale for %s" % game_id)
 		if world_art == null or String(world_art.get("game_id")) != game_id:
-			return _fail("Home World Journey 3D showcase stayed stale for %s" % game_id)
+			return _fail("Home World Journey flat game mark stayed stale for %s" % game_id)
 		if not previous_world_value.is_empty() and world_value.text == previous_world_value:
 			return _fail("Home World Journey did not visibly change between games")
 		previous_world_value = world_value.text

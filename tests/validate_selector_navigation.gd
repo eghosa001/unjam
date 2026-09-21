@@ -52,18 +52,13 @@ func _run() -> void:
 		# rects so the Figma reference-canvas device scale cancels out.
 		if subtitle_clip.get_global_rect().end.x > preview_frame.get_global_rect().position.x + 1.0:
 			return _fail("Selector subtitle clipping region overlaps preview frame for %s" % game_id)
-		var preview := _find(main, "SelectorGameArt3D_%s" % game_id) as SubViewportContainer
-		if preview == null or not bool(preview.get_meta("unjam_flat_3d_preview", false)):
-			return _fail("Selector flat-3D gameplay emblem is missing for %s" % game_id)
-		var preview_viewport := _find(preview, "GamePreviewViewport3D") as SubViewport
-		if preview_viewport == null or preview_viewport.size.y <= 0:
-			return _fail("Selector preview viewport is missing for %s" % game_id)
-		var preview_aspect := float(preview_viewport.size.x) / float(preview_viewport.size.y)
-		if absf(preview_aspect - (104.0 / 112.0)) > 0.03:
-			return _fail("Selector preview aspect ratio regressed for %s" % game_id)
-		var preview_camera := _find(preview, "Flat3DPreviewCamera") as Camera3D
-		if preview_camera == null or preview_camera.projection != Camera3D.PROJECTION_ORTHOGONAL:
-			return _fail("Selector gameplay emblem must use orthographic flat-3D framing for %s" % game_id)
+		var preview := _find(main, "SelectorFlatGameLogo_%s" % game_id) as Control
+		if preview == null or not bool(preview.get_meta("unjam_flat_game_logo", false)):
+			return _fail("Selector flat gameplay logo is missing for %s" % game_id)
+		if preview.get_script() == null or not String(preview.get_script().resource_path).ends_with("unjam_flat_game_logo.gd"):
+			return _fail("Selector is not using the shared flat game identity renderer for %s" % game_id)
+		if preview.find_child("GamePreviewViewport3D", true, false) != null:
+			return _fail("Selector game identity must not allocate a 3D preview viewport for %s" % game_id)
 
 	for nav_name in ["HOME", "GAMES", "DAILY", "COLLECT", "SETTINGS"]:
 		var glyph := _find(main, "SelectorNavGlyph_%s" % nav_name) as Label

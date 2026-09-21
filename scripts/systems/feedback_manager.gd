@@ -38,7 +38,7 @@ func _ready() -> void:
 
 	music_player = AudioStreamPlayer.new()
 	music_player.name = "CalmAmbientMusic"
-	music_player.volume_db = -7.0
+	music_player.volume_db = -9.0
 	add_child(music_player)
 	music_stream = _build_calm_ambient_loop()
 	music_player.stream = music_stream
@@ -95,14 +95,15 @@ func snap() -> void:
 	# Magnetic placement confirmation: lighter than a drop/clear, but tactile
 	# enough that players feel the valid cell lock without looking away.
 	_play_chime([493.88, 659.25], 0.090, 0.046, 0.28)
-	_vibrate(8)
+	# Placement audio is tactile enough on its own; avoid coupling routine taps
+	# to phone vibration.
 
 func pour_start() -> void:
 	_play_chime([349.23, 440.0], 0.135, 0.068, 0.26)
 
 func pour_land() -> void:
 	_play_chime([440.0, 523.25, 659.25], 0.180, 0.080, 0.40)
-	_vibrate(7)
+	# Landing remains audio-only to prevent repeated pour actions from rumbling.
 
 func invalid() -> void:
 	blocked()
@@ -112,26 +113,25 @@ func line_clear(lines: int = 1) -> void:
 	var roots := [523.25, 587.33, 659.25, 698.46]
 	var root := float(roots[tier - 1])
 	_play_chime([root, root * 1.25, root * 1.5], 0.22 + float(tier) * 0.035, 0.085 + float(tier) * 0.008, 0.56)
-	if tier >= 2:
-		_vibrate(12 + tier * 3)
+	if tier >= 3:
+		_vibrate(8)
 
 func combo(chain: int = 1) -> void:
 	var tier := clampi(chain, 1, 8)
 	var scale := [392.0, 440.0, 523.25, 587.33, 659.25, 783.99, 880.0, 1046.5]
 	var root := float(scale[tier - 1])
 	_play_chime([root, root * 1.5], 0.16 + minf(0.08, float(tier) * 0.01), 0.075, 0.52)
-	if tier >= 6:
-		_vibrate(14 + tier)
+	# Combo escalation stays musical; no repeated haptic stacking.
 
 func complete(kind: String = "level") -> void:
 	if kind == "rescue":
 		# Warm F-major add6 shape: celebratory without the piercing "ding" of the
 		# old 1120 Hz single-sine completion tone.
 		_play_chime([349.23, 440.0, 523.25, 659.25], 0.62, 0.105, 0.62)
-		_vibrate(28)
+		_vibrate(16)
 	else:
 		_play_chime([392.0, 493.88, 587.33, 783.99], 0.56, 0.100, 0.60)
-		_vibrate(25)
+		_vibrate(14)
 
 # Backward-compatible API used throughout the existing scenes.
 func tap() -> void:
@@ -143,19 +143,19 @@ func tap() -> void:
 func blocked() -> void:
 	# Low, rounded two-note fall. Avoid sub-200 Hz buzzy sine errors.
 	_play_chime([293.66, 246.94], 0.190, 0.080, 0.18)
-	_vibrate(20)
+	_vibrate(8)
 
 func escape(chain: int = 1) -> void:
 	var tier := clampi(chain, 1, 8)
 	var notes := [392.0, 440.0, 493.88, 523.25, 587.33, 659.25, 698.46, 783.99]
 	var root := float(notes[tier - 1])
 	_play_chime([root, root * 1.5], 0.165, 0.075, 0.45)
-	if tier >= 3:
-		_vibrate(8 + mini(8, tier))
+	if tier >= 6:
+		_vibrate(8)
 
 func effect() -> void:
 	_play_chime([523.25, 659.25, 783.99], 0.260, 0.085, 0.58)
-	_vibrate(14)
+	_vibrate(8)
 
 func rescue() -> void:
 	complete("rescue")
@@ -249,11 +249,15 @@ func _build_calm_ambient_loop() -> AudioStreamWAV:
 	bytes.resize(frames * 4)
 
 	# Fmaj7 -> Dm7 -> Bbmaj7 -> Cadd9, each held for eight seconds.
+	# Keep the pad above phone-rumble territory: the former 58-110 Hz roots,
+	# combined with a half-frequency oscillator, produced 29-55 Hz energy that
+	# could physically buzz small phone speakers/cases. These voicings retain the
+	# same harmony while moving the body into a cleaner mobile-safe register.
 	var chords := [
-		[87.31, 110.00, 130.81, 164.81],
-		[73.42, 87.31, 110.00, 130.81],
-		[58.27, 73.42, 87.31, 110.00],
-		[65.41, 98.00, 130.81, 146.83],
+		[174.61, 220.00, 261.63, 329.63],
+		[146.83, 174.61, 220.00, 261.63],
+		[116.54, 146.83, 174.61, 220.00],
+		[130.81, 196.00, 261.63, 293.66],
 	]
 	var melody := [349.23, 440.00, 523.25, 440.00, 293.66, 349.23, 440.00, 523.25, 349.23, 392.00, 523.25, 587.33, 440.00, 392.00, 349.23, 293.66]
 	var section_length := MUSIC_DURATION / 4.0
@@ -296,13 +300,16 @@ func _build_calm_ambient_loop() -> AudioStreamWAV:
 		# Every chord-dependent oscillator follows the section edge. Previously the
 		# low and stereo-width voices jumped instantly to new frequencies every
 		# eight seconds while only the pad faded, creating a periodic click.
-		var low := sin(TAU * float(chord[0]) * 0.5 * t) * 0.028 * edge
-		var air := sin(TAU * 0.083 * t + sin(t * 0.11)) * 0.004
+		# No sub-bass oscillator: phone speakers cannot reproduce it cleanly and
+		# often turn it into cabinet/case vibration. A quiet fundamental body keeps
+		# warmth without energy below the lowest musical note in the voicing.
+		var body_tone := sin(TAU * float(chord[0]) * t) * 0.010 * edge
+		var air := sin(TAU * 0.083 * t + sin(t * 0.11)) * 0.003
 
 		# The complete 32-second waveform also approaches zero at the loop seam so
 		# LOOP_FORWARD never jumps from a non-zero final sample back to frame zero.
 		var loop_edge := _smooth_edge(t, MUSIC_DURATION, 0.38)
-		var base_sample := (pad + mallet * edge + low + air * edge) * 0.76 * loop_edge
+		var base_sample := (pad + mallet * edge + body_tone + air * edge) * 0.68 * loop_edge
 		var width_l := sin(TAU * float(chord[1]) * 1.003 * t + 0.3) * 0.006 * edge * loop_edge
 		var width_r := sin(TAU * float(chord[2]) * 0.997 * t + 1.0) * 0.006 * edge * loop_edge
 		_write_stereo(bytes, i, base_sample + width_l, base_sample + width_r)
