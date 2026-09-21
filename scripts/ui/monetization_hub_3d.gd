@@ -126,26 +126,26 @@ func _build_ui() -> void:
 	_add_text(canvas,"WATCH & EARN",Rect2(33,473,150,18),15,Color("#088c3d"))
 	_add_text(canvas,"Optional • +50 coins",Rect2(33,499,170,18),13,Color("#4f6b85"))
 	FigmaReferenceCanvas.add_shadow(canvas,Rect2(237,471,116,48),25,Color(0.02,0.15,0.30,0.16),3,Vector2(0,2))
-	var watch := FigmaReferenceCanvas.premium_button("▶ +50 COINS",12,Color.WHITE,Color("#ff8c1f"),25,Color("#ffbd64"),1.2)
+	var watch := FigmaReferenceCanvas.premium_button("▶ +50 COINS",14,Color.WHITE,Color("#ff8c1f"),25,Color("#ffbd64"),1.2)
 	watch.name = "ShopRewardedCoinsButton"
 	FigmaReferenceCanvas.set_rect(watch,237,471,116,48)
 	watch.pressed.connect(_watch_rewarded.bind(watch))
 	canvas.add_child(watch)
 
 	FigmaReferenceCanvas.add_shadow(canvas,Rect2(17,557,170,46),16,Color(0.03,0.10,0.20,0.22),4,Vector2(0,4))
-	var restore := FigmaReferenceCanvas.premium_button("RESTORE PURCHASES",12,Color.WHITE,Color("#086ec7"),16,Color("#70b9ef"),1.2)
+	var restore := FigmaReferenceCanvas.premium_button("RESTORE PURCHASES",14,Color.WHITE,Color("#086ec7"),16,Color("#70b9ef"),1.2)
 	restore.name = "ShopRestorePurchases"
 	FigmaReferenceCanvas.set_rect(restore,17,557,170,46)
 	restore.pressed.connect(_restore_purchases)
 	canvas.add_child(restore)
 	FigmaReferenceCanvas.add_shadow(canvas,Rect2(201,557,170,46),16,Color(0.03,0.10,0.20,0.22),4,Vector2(0,4))
-	var privacy := FigmaReferenceCanvas.premium_button("PRIVACY OPTIONS",12,Color.WHITE,Color("#086ec7"),16,Color("#70b9ef"),1.2)
+	var privacy := FigmaReferenceCanvas.premium_button("PRIVACY OPTIONS",14,Color.WHITE,Color("#086ec7"),16,Color("#70b9ef"),1.2)
 	privacy.name = "ShopPrivacyOptions"
 	FigmaReferenceCanvas.set_rect(privacy,201,557,170,46)
 	privacy.pressed.connect(PrivacyManager.show_privacy_options)
 	canvas.add_child(privacy)
 
-	status_label = _add_text(canvas,"",Rect2(23,617,342,52),12,Color("#c6d9ec"))
+	status_label = _add_text(canvas,"",Rect2(23,617,342,52),14,Color("#c6d9ec"))
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var accent_rail := ColorRect.new()
@@ -183,7 +183,7 @@ func _add_product_exact(canvas: Control, product_id: String, rect: Rect2, displa
 		buy_text = "PENDING"
 		disabled = true
 	FigmaReferenceCanvas.add_shadow(canvas,Rect2(275,rect.position.y+18,78,46),23,Color(0.02,0.15,0.30,0.16),3,Vector2(0,2))
-	var buy := FigmaReferenceCanvas.premium_button(buy_text,12,Color.WHITE,Color("#ff8c1f"),23,Color("#ffbd64"),1.2)
+	var buy := FigmaReferenceCanvas.premium_button(buy_text,14,Color.WHITE,Color("#ff8c1f"),23,Color("#ffbd64"),1.2)
 	buy.name = "Buy_%s" % product_id
 	FigmaReferenceCanvas.set_rect(buy,275,rect.position.y+18,78,46)
 	buy.disabled = disabled
