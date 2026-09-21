@@ -265,7 +265,7 @@ func _make_empty_cell(_cell_size: int, pos: Vector2i, route: Dictionary) -> Cont
 	rim_style.border_color = Color(0.84, 1.0, 0.90, 0.24)
 	rim.add_theme_stylebox_override("panel", rim_style)
 	rim.show_behind_parent = false
-	rim.z_index = -1
+	rim.z_index = 1
 	slot.add_child(rim)
 	for child in slot.get_children():
 		if child is Label:
