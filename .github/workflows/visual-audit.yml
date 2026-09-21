@@ -1,8 +1,6 @@
 name: Visual UI Audit
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
