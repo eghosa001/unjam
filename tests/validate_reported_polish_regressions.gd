@@ -28,6 +28,9 @@ func _init() -> void:
 	_require_source("res://scripts/game/water_sort_reference_motion.gd", ["tilt_degrees := 32.0 if MotionSystem.reduced() else 62.0"], "Water pour silhouette", errors)
 	_require_source("res://scripts/ui/premium_result_overlay.gd", ["label(subtitle_text, 14", "premium_button(secondary_text, 14"], "result text readability", errors)
 	_require_source("res://scripts/ui/monetization_hub_3d.gd", ["premium_button(\"RESTORE PURCHASES\",13", "premium_button(\"PRIVACY OPTIONS\",13"], "Shop utility readability", errors)
+	_require_source("res://scripts/game/block_puzzle_3d.gd", ["set_rect(status_region, 18, 676", "set_rect(hint_region, 18, 702"], "Block status/guidance separation", errors)
+	_require_source("res://scripts/game/block_puzzle_10000.gd", ["set_rect(bar, 17, 728, 349, 54)"], "Block booster thumb-zone separation", errors)
+	_require_source("res://scripts/ui/ux_shell_casual.gd", ["label(\"EXIT\",11,Color.WHITE", "set_rect(exit_label,161,35,44,14)"], "tutorial exit-label separation", errors)
 	_require_source("res://scripts/ui/figma_reference_canvas.gd", ["double glyph", "font_shadow_color\", Color.TRANSPARENT", "shadow_offset_y\", 2"], "crisp scaled Figma text", errors)
 
 	if not errors.is_empty():
