@@ -22,6 +22,10 @@ GROUP_TESTS = {
         "validate_viewport_fit",
         "validate_theme_integrity",
     ],
+    "games_ui": [
+        "validate_selector_premium_card_hierarchy",
+        "validate_requested_polish_contract",
+    ],
     "tutorial": [
         "validate_tutorial_premium_flow",
         "validate_requested_polish_contract",
@@ -120,12 +124,15 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
         game_specific_ui = bool(groups.intersection({"water", "block", "rescue"}))
         monetization_ui = any(token in p for token in ("monetization_hub", "shop_", "purchase_"))
         tutorial_ui = "ux_shell" in p or "tutorial" in p
+        games_ui = "premium_live_hub" in p
         if monetization_ui:
             add(groups, "monetization")
             visual.add("shop")
         elif not game_specific_ui:
             if tutorial_ui:
                 add(groups, "tutorial")
+            elif games_ui:
+                add(groups, "games_ui")
             else:
                 add(groups, "secondary_ui" if p.endswith(("premium_main_casual.gd", "premium_main.gd")) else "ui")
             if p.endswith(("figma_reference_canvas.gd", "unjam_3d_theme.gd")):
@@ -135,7 +142,7 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
                 })
             elif "premium_home" in p:
                 visual.add("home")
-            elif "premium_live_hub" in p:
+            elif games_ui:
                 visual.add("games")
             elif p.endswith(("premium_main_casual.gd", "premium_main.gd")):
                 visual.update({"home", "levels", "collection", "daily", "settings"})
@@ -380,7 +387,7 @@ def self_test() -> None:
         (["scripts/game/block_puzzle_3d.gd"], ["block"], ["block"], True),
         (["scripts/ui/ux_shell_casual.gd"], ["tutorial"], ["tutorial"], True),
         (["scripts/ui/premium_result_overlay.gd"], ["ui"], ["result"], True),
-        (["scripts/ui/premium_live_hub_3d.gd"], ["ui"], ["games"], True),
+        (["scripts/ui/premium_live_hub_3d.gd"], ["games_ui"], ["games"], True),
         (["scripts/ui/premium_main_casual.gd"], ["secondary_ui"], ["collection", "daily", "home", "levels", "settings"], True),
         (["scripts/systems/premium_visuals.gd"], ["ui"], ["collection", "daily", "games", "levels", "settings", "shop"], True),
         (["scripts/ui/monetization_hub_3d.gd"], ["monetization"], ["shop"], True),
@@ -407,6 +414,10 @@ def self_test() -> None:
         "validate_tutorial_premium_flow",
         "validate_requested_polish_contract",
         "validate_reported_polish_regressions",
+    ]
+    assert GROUP_TESTS["games_ui"] == [
+        "validate_selector_premium_card_hierarchy",
+        "validate_requested_polish_contract",
     ]
     icon_plan = plan_for_paths(["assets/icon_adaptive_foreground.svg"])
     assert icon_plan["release_contract"] is True
