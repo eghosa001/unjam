@@ -599,7 +599,7 @@ func _figma_daily_card(canvas: Control, game_id: String, y: float, collection_bo
 	var button_text := String(daily_state.get("text", "PLAY TODAY"))
 	var button := _figma_button(
 		canvas,
-		"DailyPlay/%s" % game_id,
+		"DailyPlay_%s" % game_id,
 		button_text,
 		Rect2(236,y+42,116,48),
 		fill,
