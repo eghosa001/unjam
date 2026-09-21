@@ -61,6 +61,15 @@ func _run() -> void:
 	current_scene = water
 	await _frames(8)
 
+	var title := water.get("title_label") as Label
+	var meta := water.get("meta_label") as Label
+	var profile := water.get("level_profile") as Dictionary
+	var expected_world := int(profile.get("world", 1))
+	if title == null or title.text != "WATER SORT":
+		return _fail(save_manager, original, "Water gameplay header lost its game identity")
+	if meta == null or meta.text != "LEVEL 1 • WORLD %d" % expected_world:
+		return _fail(save_manager, original, "Water gameplay header is not reporting live level/world data")
+
 	var synthetic: Array = []
 	for i in range(15):
 		synthetic.append([] if i >= 12 else [i % 12])
