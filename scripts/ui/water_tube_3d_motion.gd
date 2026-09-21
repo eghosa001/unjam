@@ -456,6 +456,7 @@ func _draw() -> void:
 	# liquid themselves are real 3D. The outline is local, not a screen flash.
 	var center := size * 0.5
 	var radius := maxf(18.0, minf(size.x, size.y) * 0.38)
+	_draw_liquid_identity_markers()
 	if is_selected and pour_mode == 0:
 		var alpha := 0.34 if MotionSystem.reduced() else 0.34 + 0.12 * sin(pulse * 5.0)
 		draw_arc(center, radius, 0.0, TAU, 40, Color(1.0, 0.88, 0.35, alpha), 4.0, true)
@@ -463,3 +464,55 @@ func _draw() -> void:
 		draw_arc(center, radius + 3.0, 0.0, TAU, 40, Color("ff4d67", invalid_flash), 5.0, true)
 	if success_flash > 0.0:
 		draw_arc(center, radius + 3.0, 0.0, TAU, 40, Color("7ff0b0", success_flash), 5.0, true)
+
+func _draw_liquid_identity_markers() -> void:
+	# Colour is still the primary cue, but 10-12 colour late-game boards can put
+	# neighbouring hues under different phone/display calibration. Give every
+	# palette entry a unique shape+count micro-mark: four shapes × three counts.
+	# The markers are deliberately small and live near the bottle wall so the
+	# liquid still reads as premium 3D rather than a labelled UI list.
+	if size.x < 28.0 or size.y < 70.0:
+		return
+	var marker_x := size.x * 0.72
+	var liquid_top := size.y * 0.255
+	var liquid_bottom := size.y * 0.765
+	var slot_span := (liquid_bottom - liquid_top) / float(CAPACITY)
+	var mark_size := clampf(size.x * 0.026, 1.4, 2.8)
+	var gap := mark_size * 2.7
+	for slot in range(CAPACITY):
+		if _slot_fill(slot) <= 0.18:
+			continue
+		var color_index := clampi(_slot_color(slot), 0, PALETTE.size() - 1)
+		var shape := color_index % 4
+		var count := int(color_index / 4) + 1
+		var y := liquid_bottom - slot_span * (float(slot) + 0.5)
+		var group_width := gap * float(count - 1)
+		for marker in range(count):
+			var p := Vector2(marker_x - group_width * 0.5 + float(marker) * gap, y)
+			_draw_identity_marker(p, shape, mark_size)
+
+func _draw_identity_marker(center: Vector2, shape: int, radius: float) -> void:
+	var shadow := Color(0.01, 0.05, 0.10, 0.52)
+	var ink := Color(1.0, 1.0, 1.0, 0.80)
+	match shape:
+		0:
+			draw_circle(center + Vector2(0.8, 1.0), radius + 0.8, shadow)
+			draw_circle(center, radius, ink)
+		1:
+			draw_line(center + Vector2(-radius * 1.5, 1.0), center + Vector2(radius * 1.5, 1.0), shadow, radius * 1.7, true)
+			draw_line(center - Vector2(radius * 1.5, 0), center + Vector2(radius * 1.5, 0), ink, radius, true)
+		2:
+			var diamond := PackedVector2Array([
+				center + Vector2(0, -radius * 1.4),
+				center + Vector2(radius * 1.4, 0),
+				center + Vector2(0, radius * 1.4),
+				center + Vector2(-radius * 1.4, 0),
+			])
+			var diamond_shadow := PackedVector2Array()
+			for point in diamond:
+				diamond_shadow.append(point + Vector2(0.8, 1.0))
+			draw_colored_polygon(diamond_shadow, shadow)
+			draw_colored_polygon(diamond, ink)
+		_:
+			draw_line(center + Vector2(0.8, -radius * 1.5 + 1.0), center + Vector2(0.8, radius * 1.5 + 1.0), shadow, radius * 1.7, true)
+			draw_line(center - Vector2(0, radius * 1.5), center + Vector2(0, radius * 1.5), ink, radius, true)
