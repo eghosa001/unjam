@@ -1,4 +1,4 @@
-name: Godot Fast CI
+name: Godot Selective CI
 
 on:
   push:
@@ -9,29 +9,51 @@ permissions:
   contents: read
 
 concurrency:
-  group: godot-fast-ci-${{ github.ref }}
+  group: godot-selective-ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Select checks for changed files
+        id: plan
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PUSH_BASE_SHA: ${{ github.event.before }}
+          PUSH_HEAD_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/select_fast_ci_tests.py --self-test
+          BASE_SHA="$PR_BASE_SHA"
+          HEAD_SHA="$PR_HEAD_SHA"
+          if [[ -z "$BASE_SHA" ]]; then BASE_SHA="$PUSH_BASE_SHA"; fi
+          if [[ -z "$HEAD_SHA" ]]; then HEAD_SHA="$PUSH_HEAD_SHA"; fi
+          python3 tools/select_fast_ci_tests.py             --base "$BASE_SHA"             --head "$HEAD_SHA"             --github-output "$GITHUB_OUTPUT"
 
       - name: Validate static release contract
+        if: steps.plan.outputs.release_contract == 'true'
         shell: bash
         run: |
           set -euo pipefail
           python3 tools/validate_release_contract.py
 
       - name: Setup Godot 4.7.2
+        if: steps.plan.outputs.needs_godot == 'true'
         uses: solarlabyrinth/action-setup-godot@v3
         with:
           version: 4.7.2-stable
           export-templates: false
 
       - name: Disable release-only editor plugins
+        if: steps.plan.outputs.needs_godot == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -47,49 +69,62 @@ jobs:
           PY
 
       - name: Import project and reject script errors
+        if: steps.plan.outputs.needs_godot == 'true'
         shell: bash
         run: |
           set -o pipefail
           godot --headless --path . --editor --quit 2>&1 | tee import.log
           if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" import.log; then exit 1; fi
 
-      - name: Run high-signal iteration contracts
+      - name: Run selected iteration contracts
+        if: steps.plan.outputs.tests != ''
+        env:
+          FAST_TESTS: ${{ steps.plan.outputs.tests }}
         shell: bash
         run: |
           set -euxo pipefail
-          for t in             validate_requested_polish_contract             validate_reported_polish_regressions             validate_uiux_regressions             validate_viewport_fit             validate_compact_gameplay_stack             validate_transition_ownership             validate_gameplay_interactions             validate_progression_transitions             validate_daily_and_late_water_runtime             validate_water_liquid_continuity             validate_water_pour_arc             validate_block_visual_integrity             validate_block_single_touch_owner             validate_rescue_token_render_lifecycle             validate_theme_integrity
-          do
+          for t in $FAST_TESTS; do
             bash tools/run_godot_test.sh "$t" 45
           done
 
       - name: Boot smoke test
+        if: steps.plan.outputs.needs_godot == 'true'
         shell: bash
         run: |
           set -o pipefail
           godot --headless --path . --quit-after 5 2>&1 | tee boot.log
           if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" boot.log; then exit 1; fi
 
-      - name: Capture rendered regression screens
+      - name: Capture only affected rendered screens
+        if: steps.plan.outputs.visual_scope != ''
         env:
           UNJAM_FAST_VISUAL_AUDIT: "1"
+          UNJAM_FAST_VISUAL_AUDIT_SCOPE: ${{ steps.plan.outputs.visual_scope }}
         shell: bash
         run: |
           set -euxo pipefail
           mkdir -p build/visual-audit
           timeout 180s xvfb-run -a godot --path . --rendering-method gl_compatibility --script res://tests/capture_visual_audit.gd 2>&1 | tee visual-audit.log
           if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access|ObjectDB instances were leaked|Leaked instance:" visual-audit.log; then exit 1; fi
-          test -s build/visual-audit/01-home-dark.png
-          test -s build/visual-audit/09c-game-rescue-motion-540x960.png
-          test -s build/visual-audit/10c-game-water-pouring-540x960.png
-          test -s build/visual-audit/11-game-block.png
-          test -s build/visual-audit/15b-tutorial-540x960-dark.png
-          test -s build/visual-audit/16b-result-540x960-dark.png
 
-      - name: Upload rendered regression screens
-        if: always()
+          IFS=',' read -ra SCOPES <<< "$UNJAM_FAST_VISUAL_AUDIT_SCOPE"
+          for scope in "${SCOPES[@]}"; do
+            case "$scope" in
+              home) test -s build/visual-audit/01-home-dark.png ;;
+              rescue) test -s build/visual-audit/09c-game-rescue-motion-540x960.png ;;
+              water) test -s build/visual-audit/10c-game-water-pouring-540x960.png ;;
+              block) test -s build/visual-audit/11-game-block.png ;;
+              tutorial) test -s build/visual-audit/15b-tutorial-540x960-dark.png ;;
+              result) test -s build/visual-audit/16b-result-540x960-dark.png ;;
+              *) echo "Unknown visual scope: $scope" >&2; exit 1 ;;
+            esac
+          done
+
+      - name: Upload fast-CI evidence
+        if: always() && steps.plan.outputs.needs_godot == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: unjam-fast-visual-audit
+          name: unjam-selective-ci-evidence
           path: |
             build/visual-audit/*.png
             import.log
@@ -98,8 +133,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 3
 
-# Intentionally excluded from the inner development loop:
-# Android APK/AAB exports, API 36 installation, 16 KB ELF inspection,
-# purchase-verifier backend validation, exhaustive 10,000-level campaign
-# generation/solving, and full monetization checks. Those remain in the
-# explicit production-release/manual workflows.
+# Fast CI is intentionally change-scoped. It must never grow back into the
+# production-release suite. Android exports, monetization plugin verification,
+# exhaustive 10,000-level audits, campaign generation/solving, and the full
+# visual matrix remain in explicit production/manual workflows.
