@@ -336,6 +336,11 @@ def _premium_main_scopes(functions: set[str]) -> set[str]:
             scopes.add("home")
     return scopes or set(PREMIUM_MAIN_BROAD_SCOPES)
 
+def _premium_main_tests(scopes: set[str]) -> list[str]:
+    if scopes == {"daily"}:
+        return ["validate_daily_readability", "validate_collection_daily_value"]
+    return list(GROUP_TESTS["secondary_ui"])
+
 def _combine_plans(*plans: dict[str, object]) -> dict[str, object]:
     groups: list[str] = []
     tests: list[str] = []
@@ -365,6 +370,7 @@ def plan_for_changes(paths: list[str], base: str, head: str) -> dict[str, object
     premium_plan = plan_for_paths([PREMIUM_MAIN_PATH])
     scopes = _premium_main_scopes(_premium_main_changed_functions(base, head))
     premium_plan["visual"] = sorted(scopes)
+    premium_plan["tests"] = _premium_main_tests(scopes)
 
     if "home" in scopes and "validate_home_premium_visual_hierarchy" not in premium_plan["tests"]:
         premium_plan["tests"].append("validate_home_premium_visual_hierarchy")
@@ -417,6 +423,8 @@ def self_test() -> None:
     assert _premium_main_scopes({"build_daily_games"}) == {"daily"}
     assert _premium_main_scopes({"_figma_bottom_nav"}) == {"collection", "daily", "settings"}
     assert _premium_main_scopes({"_figma_surface"}) == PREMIUM_MAIN_BROAD_SCOPES
+    assert _premium_main_tests({"daily"}) == ["validate_daily_readability", "validate_collection_daily_value"]
+    assert "validate_viewport_fit" in _premium_main_tests({"settings"})
     assert "validate_requested_polish_contract" in GROUP_TESTS["secondary_ui"]
     assert GROUP_TESTS["tutorial"] == [
         "validate_tutorial_premium_flow",
