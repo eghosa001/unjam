@@ -1,5 +1,7 @@
 extends "res://scripts/ui/premium_home_casual.gd"
 
+const GAME_ART_SCRIPT = preload("res://scripts/ui/unjam_3d_game_art.gd")
+
 const RefCanvas = preload("res://scripts/ui/figma_reference_canvas.gd")
 
 const BG_TOP := Color("#dcebe8")
@@ -105,6 +107,7 @@ func _add_frame_background(canvas: Control) -> void:
 	RefCanvas.set_rect(bg, 0, 0, 390, 844)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(bg)
+	RefCanvas.add_world_depth(canvas, Unjam3DTheme.game_accent(selected_game), _home_dark(), 0.18 if _home_dark() else 0.24, "HomeWorldDepth")
 	RefCanvas.add_scene_backdrop_layers(canvas, Unjam3DTheme.game_accent(selected_game), _home_dark(), "Home")
 	var home_key_light := canvas.get_node_or_null("HomeKeyLight")
 	var home_accent_glow := canvas.get_node_or_null("HomeAccentGlow")
@@ -189,15 +192,11 @@ func _add_hero_preview(canvas: Control, game_id: String) -> void:
 	RefCanvas.set_rect(stage, 229, 144, 115, 136)
 	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	preview_root.add_child(stage)
-	match game_id:
-		"water_sort":
-			_add_mini_bottle(preview_root, Vector2(231, 158), 22, 108, Color("#ff7ebd"), Color("#d64089"), 62.64)
-			_add_mini_bottle(preview_root, Vector2(270.5, 162), 22, 103, Color("#5ac1ff"), Color("#158dd6"), 74.16)
-			_add_mini_bottle(preview_root, Vector2(310, 158), 22, 108, Color("#5fd78f"), Color("#1ca754"), 47.52)
-		"block_puzzle":
-			_add_mini_block_preview(preview_root, Vector2(230, 154))
-		_:
-			_add_mini_rescue_preview(preview_root, Vector2(230, 154))
+	var art := GAME_ART_SCRIPT.new()
+	art.name = "HomeHeroGameArt3D"
+	art.configure(game_id)
+	RefCanvas.set_rect(art, 229, 144, 115, 136)
+	preview_root.add_child(art)
 
 func _add_mini_bottle(canvas: Control, pos: Vector2, width: float, height: float, liquid_left: Color, liquid_right: Color, liquid_height: float) -> void:
 	var shadow := PanelContainer.new()
