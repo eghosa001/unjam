@@ -27,6 +27,7 @@ func run() -> void:
 	await process_frame
 	var save_manager = root.get_node_or_null("SaveManager")
 	var economy = root.get_node_or_null("EconomyManager")
+	var store = root.get_node_or_null("StoreManager")
 	var original_coins := int(save_manager.data.get("coins", 0)) if save_manager != null else 0
 	if save_manager != null:
 		save_manager.data.coins = 200
@@ -51,8 +52,8 @@ func run() -> void:
 				expect_true(expected in text, "Figma Shop content missing: %s" % expected)
 		var status_panel := overlay.find_child("ShopStatusPanel", true, false) as Control if overlay != null else null
 		expect_true(status_panel != null and status_panel.size.x >= 350.0 and status_panel.size.y >= 140.0, "Shop status panel is missing or too small")
-		if overlay != null:
-			for product_id in StoreManager.PRODUCTS.keys():
+		if overlay != null and store != null:
+			for product_id in store.PRODUCTS.keys():
 				var buy := overlay.find_child("Buy_%s" % String(product_id), true, false) as Button
 				expect_true(buy != null and buy.size.x >= 96.0, "Shop CTA is too narrow for localized price/status: %s" % String(product_id))
 		var balance_label = hub.get("balance_label") as Label
