@@ -24,6 +24,7 @@ func _initialize() -> void:
 		"sfx.volume_db = 0.0",
 		"release_raw",
 		"var loop_edge := _smooth_edge(t, MUSIC_DURATION, 0.38)",
+		"var pulse_edge := _smooth_edge(pulse_phase, 2.0, 0.035)",
 		"* edge * loop_edge",
 		"root * 1.5",
 	]:
@@ -60,6 +61,12 @@ func _initialize() -> void:
 				var after := _pcm16(music.data, frame * 4)
 				if absi(after - before) > 1200:
 					failures.append("Ambient chord boundary has an audible PCM jump at %ds" % boundary_seconds)
+			for pulse_seconds in range(2, 32, 2):
+				var pulse_frame: int = int(pulse_seconds) * int(music.mix_rate)
+				var pulse_before := _pcm16(music.data, (pulse_frame - 1) * 4)
+				var pulse_after := _pcm16(music.data, pulse_frame * 4)
+				if absi(pulse_after - pulse_before) > 900:
+					failures.append("Ambient mallet pulse has an audible PCM jump at %ds" % pulse_seconds)
 		feedback.free()
 
 	if not failures.is_empty():

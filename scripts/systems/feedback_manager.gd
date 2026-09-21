@@ -283,7 +283,11 @@ func _build_calm_ambient_loop() -> AudioStreamWAV:
 		# generous silence, avoiding the constant arpeggio of the previous loop.
 		var pulse_index := int(t / 2.0) % melody.size()
 		var pulse_phase := fmod(t, 2.0)
-		var mallet_env := exp(-pulse_phase * 4.6)
+		# Each two-second pulse must enter and leave at zero amplitude. Without a
+		# short edge fade, fmod() resets the exponential envelope from near-zero
+		# straight back to 1.0 and can produce a periodic rhythmic click.
+		var pulse_edge := _smooth_edge(pulse_phase, 2.0, 0.035)
+		var mallet_env := exp(-pulse_phase * 4.6) * pulse_edge
 		var mf := float(melody[pulse_index])
 		var mallet := sin(TAU * mf * t) * 0.040
 		mallet += sin(TAU * mf * 2.0 * t + 0.2) * 0.009
