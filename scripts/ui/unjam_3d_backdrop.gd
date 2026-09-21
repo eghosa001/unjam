@@ -32,8 +32,9 @@ func _draw() -> void:
 		draw_rect(Rect2(0, 0, w, h * 0.42), Color("#315b70", 0.16))
 
 func _draw_sky(w: float, h: float) -> void:
-	# More bands than before keeps the large mobile background smooth without a shader.
-	var bands := 52
+	# This backdrop redraws only on setup/resize, so use enough bands to stay smooth
+	# after Android density scaling instead of exposing horizontal color steps.
+	var bands := 192
 	for i in range(bands):
 		var t := float(i) / float(bands - 1)
 		var y := h * t
@@ -126,10 +127,11 @@ func _draw_water_world(w: float, h: float) -> void:
 
 	# River gradient and perspective streaks.
 	var water_top := h * 0.675
-	for i in range(18):
-		var t := float(i) / 17.0
+	var river_bands := 48
+	for i in range(river_bands):
+		var t := float(i) / float(river_bands - 1)
 		var yy := water_top + (h - water_top) * t
-		var band_h := (h - water_top) / 17.0 + 2.0
+		var band_h := (h - water_top) / float(river_bands - 1) + 1.0
 		draw_rect(Rect2(0, yy, w, band_h), Color("20bddc").lerp(Color("087fbb"), t * 0.82))
 	for i in range(12):
 		var yy := h * (0.705 + float(i) * 0.025)
