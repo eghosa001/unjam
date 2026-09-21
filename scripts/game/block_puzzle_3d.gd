@@ -214,7 +214,7 @@ func _build_figma_block(canvas: Control) -> void:
 		Color("#fffaff"), Color("#fbf4ff"), Color("#eee1fb"), 22,
 		Color(0.88,0.68,1.0,0.78), 1.5, 0.42
 	))
-	FigmaReferenceCanvas.set_rect(tray, 17, 534, 354, 104)
+	FigmaReferenceCanvas.set_rect(tray, 17, 528, 354, 142)
 	tray.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(tray)
 	piece_row = HBoxContainer.new()
