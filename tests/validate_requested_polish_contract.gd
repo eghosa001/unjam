@@ -4,7 +4,7 @@ func _init() -> void:
 	var errors: Array[String] = []
 	_require("res://scripts/ui/premium_home_direct_levels.gd", ["RESCUE RUSH", "WATER SORT", "BLOCK PUZZLE", "daily_done_count", "HomeHeroGameArt3D", "#dcebe8", "#29465b"], errors)
 	_require("res://scripts/ui/premium_home_overhaul.gd", ["Progress, stars, wallet", "_sync()"], errors)
-	_require("res://scripts/ui/premium_main_casual.gd", ["One challenge per game today", "DONE TODAY", "PLAY TODAY", "TODAY’S SORT", "SurfaceWorldDepth", "SurfaceBackdropHaloTop", "SurfaceGlossSweep"], errors)
+	_require("res://scripts/ui/premium_main_casual.gd", ["One challenge per game today", "DONE TODAY", "PLAY TODAY", "TODAY’S SORT", "DailyAccent/", "game-tinted lacquer", "SurfaceWorldDepth", "SurfaceBackdropHaloTop", "SurfaceGlossSweep"], errors)
 	_require("res://scripts/ui/premium_design_system.gd", ["PremiumGlossBackdrop", "func _gloss_style", "func _install_gloss"], errors)
 	_require("res://scripts/ui/figma_reference_canvas.gd", ["Premium casual-game gloss", "lower_rolloff", "center_boost"], errors)
 	_require("res://scripts/ui/figma_reference_canvas.gd", ["TEXTURE_FILTER_LINEAR", "var image_size := 160", "func add_world_depth", "func add_scene_backdrop_layers", "func add_collectible_star", "func add_collectible_gem", "Localized key-light hotspot", "Premium 3D bevel side"], errors)
