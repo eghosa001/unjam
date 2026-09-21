@@ -16,6 +16,7 @@ GROUP_TESTS = {
         "validate_theme_integrity",
     ],
     "secondary_ui": [
+        "validate_requested_polish_contract",
         "validate_reported_polish_regressions",
         "validate_uiux_regressions",
         "validate_viewport_fit",
@@ -229,14 +230,15 @@ def git_changed_files(base: str, head: str) -> list[str]:
 PREMIUM_MAIN_PATH = "scripts/ui/premium_main_casual.gd"
 PREMIUM_MAIN_BROAD_SCOPES = {"home", "levels", "collection", "daily", "settings"}
 
-def _git_changed_line_numbers(base: str, head: str, path: str) -> list[int]:
+def _git_changed_line_numbers(base: str, head: str, path: str) -> tuple[list[int], bool]:
     if not base:
-        return []
+        return [], False
     diff = subprocess.check_output(
         ["git", "diff", "--unified=0", f"{base}...{head}", "--", path],
         text=True,
     )
     result: list[int] = []
+    deletion_only_hunk = False
     for line in diff.splitlines():
         if not line.startswith("@@"):
             continue
@@ -246,10 +248,13 @@ def _git_changed_line_numbers(base: str, head: str, path: str) -> list[int]:
         start = int(match.group(1))
         count = int(match.group(2) or "1")
         if count == 0:
-            result.append(max(1, start))
-        else:
-            result.extend(range(start, start + count))
-    return result
+            # There is no changed line in the post-change file to attribute.
+            # Falling back to broad visual coverage is safer than assigning the
+            # deleted function to the preceding surviving function.
+            deletion_only_hunk = True
+            continue
+        result.extend(range(start, start + count))
+    return result, deletion_only_hunk
 
 def _git_file_text(ref: str, path: str) -> str:
     return subprocess.check_output(["git", "show", f"{ref}:{path}"], text=True)
@@ -257,8 +262,10 @@ def _git_file_text(ref: str, path: str) -> str:
 def _premium_main_changed_functions(base: str, head: str) -> set[str]:
     try:
         lines = _git_file_text(head, PREMIUM_MAIN_PATH).splitlines()
-        changed_lines = _git_changed_line_numbers(base, head, PREMIUM_MAIN_PATH)
+        changed_lines, deletion_only_hunk = _git_changed_line_numbers(base, head, PREMIUM_MAIN_PATH)
     except subprocess.CalledProcessError:
+        return set()
+    if deletion_only_hunk:
         return set()
     functions: set[str] = set()
     for line_no in changed_lines:
@@ -375,6 +382,7 @@ def self_test() -> None:
     assert _premium_main_scopes({"build_collection_upgrades"}) == {"collection"}
     assert _premium_main_scopes({"build_daily_games"}) == {"daily"}
     assert _premium_main_scopes({"_figma_surface"}) == PREMIUM_MAIN_BROAD_SCOPES
+    assert "validate_requested_polish_contract" in GROUP_TESTS["secondary_ui"]
     print("select_fast_ci_tests self-test passed")
 
 def main() -> None:
