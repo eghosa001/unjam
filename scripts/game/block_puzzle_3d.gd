@@ -79,9 +79,11 @@ func _fit_figma_board_layout() -> void:
 	board_shell.position = Vector2(29, 179)
 	board_shell.size = Vector2(330, 330)
 	if piece_row != null:
-		piece_row.custom_minimum_size = Vector2(326, 72)
-		piece_row.position = Vector2(31, 556)
-		piece_row.size = Vector2(326, 72)
+		# The production 3D layer must not collapse the responsive tray back to
+		# 72 px high. Give tall three-cell pieces near-board cell scale on phones.
+		piece_row.custom_minimum_size = Vector2(326, 108)
+		piece_row.position = Vector2(31, 546)
+		piece_row.size = Vector2(326, 108)
 		piece_row.add_theme_constant_override("separation", 7)
 
 func build_ui() -> void:
@@ -207,7 +209,7 @@ func _build_figma_block(canvas: Control) -> void:
 
 	var tray := PanelContainer.new()
 	tray.name = "BlockTray"
-	FigmaReferenceCanvas.add_shadow(canvas, Rect2(17,534,354,104), 22, Color(0.07,0.03,0.16,0.20), 6, Vector2(0,5))
+	FigmaReferenceCanvas.add_shadow(canvas, Rect2(17,528,354,142), 22, Color(0.07,0.03,0.16,0.20), 6, Vector2(0,5))
 	tray.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(
 		Color("#fffaff"), Color("#fbf4ff"), Color("#eee1fb"), 22,
 		Color(0.88,0.68,1.0,0.78), 1.5, 0.42
@@ -219,13 +221,13 @@ func _build_figma_block(canvas: Control) -> void:
 	piece_row.name = "BlockPieceRow"
 	piece_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	piece_row.add_theme_constant_override("separation", 7)
-	FigmaReferenceCanvas.set_rect(piece_row, 31, 556, 326, 72)
+	FigmaReferenceCanvas.set_rect(piece_row, 31, 546, 326, 108)
 	canvas.add_child(piece_row)
 
 	var status_region := Control.new()
 	status_region.name = "BlockStatus"
 	status_region.clip_contents = true
-	FigmaReferenceCanvas.set_rect(status_region, 18, 712, 354, 20)
+	FigmaReferenceCanvas.set_rect(status_region, 18, 690, 354, 20)
 	canvas.add_child(status_region)
 	status_label = FigmaReferenceCanvas.label("", 13, Color(1,0.995,0.97), true)
 	status_label.name = "BlockStatusText"
@@ -238,7 +240,7 @@ func _build_figma_block(canvas: Control) -> void:
 	var hint_region := Control.new()
 	hint_region.name = "BlockHint"
 	hint_region.clip_contents = true
-	FigmaReferenceCanvas.set_rect(hint_region, 18, 734, 354, 20)
+	FigmaReferenceCanvas.set_rect(hint_region, 18, 716, 354, 20)
 	canvas.add_child(hint_region)
 	hint_label = FigmaReferenceCanvas.label("", 13, Color(1,0.995,0.97), true)
 	hint_label.name = "BlockHintText"
@@ -257,7 +259,11 @@ func _build_figma_block(canvas: Control) -> void:
 	canvas.add_child(frame_border)
 
 func _tray_piece_button_size() -> Vector2:
-	return Vector2(104, 72)
+	# Respect the responsive parent calculation, then cap it to the fixed Figma
+	# tray width. This keeps compact phones safe while removing the old 72 px
+	# height bottleneck that made tall pieces look tiny.
+	var responsive := super._tray_piece_button_size()
+	return Vector2(clampf(responsive.x, 96.0, 104.0), clampf(responsive.y, 96.0, 108.0))
 
 func load_level() -> void:
 	_clear_transition_active = false
