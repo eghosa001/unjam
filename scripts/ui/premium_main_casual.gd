@@ -318,7 +318,7 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 		false
 	)
 	var xs := {"home":22.0, "games":91.0, "daily":160.0, "collection":229.0, "settings":298.0}
-	var names := {"home":"HOME", "games":"GAMES", "daily":"DAILY", "collection":"COLLECT", "settings":"SETTINGS"}
+	var names := {"home":"HOME", "games":"GAMES", "daily":"DAILY", "collection":"COLLECTION", "settings":"SETTINGS"}
 	var glyphs := {"home":"⌂", "games":"▦", "daily":"✦", "collection":"◆", "settings":"⚙"}
 	var accents := {
 		"home":Color("#33b9ff"),
@@ -364,7 +364,9 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 		var glyph := _figma_text(canvas, String(glyphs[key]), Rect2(float(xs[key])-1.0,765,58,22), 18, icon_color, true)
 		glyph.name = "StdNavGlyph_%s" % String(key)
 		glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		var nav_label := _figma_text(canvas, String(names[key]), Rect2(float(xs[key])-1.0,790,58,22), 12, selected_text if selected else idle_text, true)
+		var label_width := 70.0 if String(key) == "collection" else 58.0
+		var label_x := float(xs[key]) - 7.0 if String(key) == "collection" else float(xs[key]) - 1.0
+		var nav_label := _figma_text(canvas, String(names[key]), Rect2(label_x,790,label_width,22), 12, selected_text if selected else idle_text, true)
 		nav_label.name = "StdNavLabel_%s" % String(key)
 		nav_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		var hit := Button.new()
