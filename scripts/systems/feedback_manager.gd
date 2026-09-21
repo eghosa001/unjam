@@ -11,7 +11,7 @@ extends Node
 
 const SAMPLE_RATE := 22050
 const MUSIC_RATE := 16000
-const SFX_POOL_SIZE := 5
+const SFX_POOL_SIZE := 8
 const MUSIC_DURATION := 32.0
 
 var player: AudioStreamPlayer
@@ -31,14 +31,14 @@ func _ready() -> void:
 	for i in range(SFX_POOL_SIZE):
 		var sfx := AudioStreamPlayer.new()
 		sfx.name = "CalmSfx%02d" % (i + 1)
-		sfx.volume_db = 0.0
+		sfx.volume_db = -3.0
 		add_child(sfx)
 		sfx_players.append(sfx)
 	player = sfx_players[0]
 
 	music_player = AudioStreamPlayer.new()
 	music_player.name = "CalmAmbientMusic"
-	music_player.volume_db = -10.0
+	music_player.volume_db = -8.0
 	add_child(music_player)
 	music_stream = _build_calm_ambient_loop()
 	music_player.stream = music_stream
@@ -171,11 +171,26 @@ func _vibrate(ms: int) -> void:
 func _play_chime(notes: Array, duration: float, volume: float, brightness: float) -> void:
 	if sfx_players.is_empty() or not bool(SaveManager.data.get("sound", true)):
 		return
+	var target := _next_idle_sfx_player()
+	if target == null:
+		# Never cut a live waveform to make room for another click-prone transient.
+		# Eight voices are enough for normal puzzle bursts; excess micro-feedback is
+		# intentionally dropped rather than restarting an active player mid-sample.
+		return
 	var stream := _chime_stream(notes, duration, volume, brightness)
-	var target := sfx_players[_sfx_cursor % sfx_players.size()]
-	_sfx_cursor = (_sfx_cursor + 1) % sfx_players.size()
 	target.stream = stream
 	target.play()
+
+func _next_idle_sfx_player() -> AudioStreamPlayer:
+	if sfx_players.is_empty():
+		return null
+	for offset in range(sfx_players.size()):
+		var index := (_sfx_cursor + offset) % sfx_players.size()
+		var candidate := sfx_players[index]
+		if candidate != null and is_instance_valid(candidate) and not candidate.playing:
+			_sfx_cursor = (index + 1) % sfx_players.size()
+			return candidate
+	return null
 
 func _chime_stream(notes: Array, duration: float, volume: float, brightness: float) -> AudioStreamWAV:
 	var key := "%s|%.3f|%.3f|%.3f" % [str(notes), duration, volume, brightness]
@@ -268,7 +283,10 @@ func _build_calm_ambient_loop() -> AudioStreamWAV:
 		# generous silence, avoiding the constant arpeggio of the previous loop.
 		var pulse_index := int(t / 2.0) % melody.size()
 		var pulse_phase := fmod(t, 2.0)
-		var mallet_env := exp(-pulse_phase * 4.6)
+		# Pulse notes must begin and end at zero amplitude. Resetting the exponential
+		# envelope directly every two seconds caused a small but audible rhythmic click.
+		var pulse_edge := _smooth_edge(pulse_phase, 2.0, 0.035)
+		var mallet_env := exp(-pulse_phase * 4.6) * pulse_edge
 		var mf := float(melody[pulse_index])
 		var mallet := sin(TAU * mf * t) * 0.040
 		mallet += sin(TAU * mf * 2.0 * t + 0.2) * 0.009
