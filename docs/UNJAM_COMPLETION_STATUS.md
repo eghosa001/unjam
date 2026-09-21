@@ -2,8 +2,8 @@
 
 ## Current production pass
 
-Branch: `fix/premium-daily-failstates-20260920`
-Base: `main` at `e95478549406bbad67533a1cd655380198c491d4`
+Branch: rolling production polish on `main`
+Base: current `main`
 
 ### Implemented in this pass
 
@@ -14,16 +14,15 @@ Base: `main` at `e95478549406bbad67533a1cd655380198c491d4`
 - Block Puzzle cube side shading was lifted so extrusion faces remain readable.
 - Block Puzzle no longer manufactures a tiny rescue block when no placement exists; dead ends now produce an explicit failure result.
 - Rescue Rush and Water Sort now also present explicit failure results when no legal action remains.
-- Daily Games now allow one selected game per calendar day across all three games, do not expose hidden level numbers, and do not save/resume daily checkpoints.
+- Daily Games now provide three independent daily challenges: starting or leaving one game does not lock the other two. They do not expose hidden level numbers and do not save/resume daily checkpoints.
 - Repeated puzzle sounds were softened while keeping the existing calm synthesized palette.
 
 ### Verification gates
 
 - `validate_requested_polish_contract`
 - `validate_daily_and_late_water_runtime`
-- Existing theme, viewport, gameplay, progression, motion, idle-cost, monetization and production completion contracts.
-- Rendered visual audit, including compact 540×960 states.
-- Android API 36 APK/AAB export and package validation.
+- Fast PR iteration uses focused theme, viewport, gameplay, progression, motion and visual-regression contracts plus rendered compact screenshots.
+- Exhaustive monetization, 10,000-level campaign, Android API 36 APK/AAB, package, signing and 16 KB checks remain in explicit production/manual workflows.
 
 ### Remaining external/device gate
 
