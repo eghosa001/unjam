@@ -50,6 +50,14 @@ func run() -> void:
 				expect_true(expected in text, "Figma Shop content missing: %s" % expected)
 		var balance_label = hub.get("balance_label") as Label
 		expect_true(balance_label != null and "200" in balance_label.text, "Shop wallet balance missing")
+		for control_name in ["ShopRewardedCoinsButton","ShopRestorePurchases","ShopPrivacyOptions"]:
+			var control := overlay.find_child(control_name,true,false) as Button
+			expect_true(control != null and control.get_theme_font_size("font_size") >= 14, "Shop action text below premium readability floor: %s" % control_name)
+		for buy_node in overlay.find_children("Buy_*","Button",true,false):
+			var buy_button := buy_node as Button
+			expect_true(buy_button != null and buy_button.get_theme_font_size("font_size") >= 14, "Shop purchase button text below premium readability floor")
+		var shop_status = hub.get("status_label") as Label
+		expect_true(shop_status != null and shop_status.get_theme_font_size("font_size") >= 14, "Shop status text below premium readability floor")
 		if economy != null:
 			economy.grant(50, "qa_shop_refresh")
 			await _frames(2)
