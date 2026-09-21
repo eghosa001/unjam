@@ -86,6 +86,9 @@ def main() -> int:
         'permissions/internet=true',
         'permissions/access_network_state=true',
         'com.google.android.gms.permission.AD_ID',
+        'launcher_icons/main_192x192="res://assets/icon.svg"',
+        'launcher_icons/adaptive_foreground_432x432="res://assets/icon_adaptive_foreground.svg"',
+        'launcher_icons/adaptive_background_432x432="res://assets/icon_adaptive_background.svg"',
     ):
         if token not in preset:
             errors.append(f'export preset does not preserve fresh-app/monetization contract: {token}')
@@ -94,6 +97,7 @@ def main() -> int:
         'res://addons/admob/plugin.cfg',
         'res://addons/GodotGooglePlayBilling/plugin.cfg',
         'ca-app-pub-7517898921176341~1892369383',
+        'config/icon="res://assets/icon.svg"',
     ):
         if token not in project:
             errors.append(f'project.godot missing monetization contract token: {token}')
