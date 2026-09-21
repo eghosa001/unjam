@@ -59,6 +59,30 @@ func _process(delta: float) -> void:
 	if is_selected or invalid_flash > 0.0 or success_flash > 0.0:
 		queue_redraw()
 
+func _visual_body_rect() -> Rect2:
+	var lift := -13.0 if is_selected else 0.0
+	var outer := Rect2(Vector2(size.x * 0.18, 13.0 + lift), Vector2(size.x * 0.64, size.y - 42.0))
+	var neck_h := outer.size.y * 0.10
+	return Rect2(outer.position + Vector2(0, neck_h * 0.40), Vector2(outer.size.x, outer.size.y - neck_h * 0.40))
+
+func _visual_mouth_geometry() -> Dictionary:
+	var body := _visual_body_rect()
+	var neck_width := body.size.x * 0.48
+	var neck_height := maxf(12.0, body.size.y * 0.125)
+	var mouth_y := body.position.y - neck_height * 0.38 + 1.5
+	return {"center": Vector2(body.get_center().x, mouth_y), "width": neck_width}
+
+func visual_pour_rim_local(direction: float) -> Vector2:
+	# Motion uses this exact rendered mouth instead of a percentage-of-control
+	# fallback, so the stream remains attached to the visible lip after tilting.
+	var mouth := _visual_mouth_geometry()
+	var center: Vector2 = mouth["center"]
+	var half_width := float(mouth["width"]) * 0.5
+	return center + Vector2((half_width + 1.5) * (1.0 if direction >= 0.0 else -1.0), 0)
+
+func visual_receive_rim_local() -> Vector2:
+	return Vector2(_visual_mouth_geometry()["center"])
+
 func _draw() -> void:
 	var lift := -13.0 if is_selected else 0.0
 	var outer := Rect2(Vector2(size.x * 0.18, 13.0 + lift), Vector2(size.x * 0.64, size.y - 42.0))
