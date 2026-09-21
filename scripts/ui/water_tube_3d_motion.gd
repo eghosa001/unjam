@@ -1,16 +1,16 @@
 extends "res://scripts/ui/water_tube_reference_motion.gd"
 class_name WaterTube3DMotion
 
-const GLASS_BODY_RADIUS := 0.65
+const GLASS_BODY_RADIUS := 0.72
 const GLASS_BODY_HEIGHT := 2.72
 const GLASS_BODY_CENTER_Y := -0.18
 const GLASS_SHOULDER_HEIGHT := 0.38
 const GLASS_SHOULDER_CENTER_Y := 1.37
-const GLASS_NECK_RADIUS := 0.38
+const GLASS_NECK_RADIUS := 0.40
 const GLASS_NECK_HEIGHT := 0.36
 const GLASS_NECK_CENTER_Y := 1.74
 const GLASS_MOUTH_Y := 1.92
-const GLASS_MOUTH_RADIUS := 0.40
+const GLASS_MOUTH_RADIUS := 0.42
 const GLASS_BASE_Y := -1.54
 
 # Real 3D presentation layered under the existing authoritative Water Sort
@@ -142,8 +142,11 @@ func _build_glass_3d() -> void:
 	# Premium bottle silhouette built from real geometry: broad body, tapered
 	# shoulder and narrow neck. This replaces the old single tapered cylinder
 	# that was technically 3D but still read as a test tube on the phone.
-	var glass_material := _material_3d(Color(0.78, 0.95, 1.0, 0.16), 0.0, 0.035)
-	var shoulder_material := _material_3d(Color(0.84, 0.98, 1.0, 0.18), 0.0, 0.030)
+	# Glass must remain visible over opaque liquid at phone scale. Use a wider,
+	# brighter shell with a very small emissive lift; the liquid remains the colour
+	# focal point while the vessel finally reads as a crystal bottle.
+	var glass_material := _glass_material_3d(Color(0.76, 0.95, 1.0, 0.30), 0.030, 0.075)
+	var shoulder_material := _glass_material_3d(Color(0.84, 0.99, 1.0, 0.34), 0.025, 0.090)
 
 	var body_mesh := CylinderMesh.new()
 	body_mesh.top_radius = GLASS_BODY_RADIUS
@@ -236,7 +239,7 @@ func _build_glass_3d() -> void:
 	inner_shell.name = "BottleInnerWall3D"
 	inner_shell.mesh = inner_shell_mesh
 	inner_shell.position.y = GLASS_BODY_CENTER_Y
-	inner_shell.material_override = _material_3d(Color(0.24, 0.70, 0.92, 0.055), 0.0, 0.055)
+	inner_shell.material_override = _glass_material_3d(Color(0.30, 0.76, 0.96, 0.105), 0.045, 0.045)
 	stage_3d.add_child(inner_shell)
 
 	var shadow_mesh := CylinderMesh.new()
@@ -266,8 +269,8 @@ func _build_liquid_segments_3d() -> void:
 	liquid_segments_3d.clear()
 	for slot in range(CAPACITY):
 		var mesh := CylinderMesh.new()
-		mesh.top_radius = 0.49
-		mesh.bottom_radius = 0.49
+		mesh.top_radius = 0.46
+		mesh.bottom_radius = 0.46
 		mesh.height = 0.60
 		mesh.radial_segments = 20
 		# Interior liquid volumes do not own horizontal caps. Contiguous slots
@@ -284,8 +287,8 @@ func _build_liquid_segments_3d() -> void:
 
 func _build_liquid_meniscus_3d() -> void:
 	var mesh := SphereMesh.new()
-	mesh.radius = 0.49
-	mesh.height = 0.98
+	mesh.radius = 0.46
+	mesh.height = 0.92
 	mesh.radial_segments = 24
 	mesh.rings = 8
 	liquid_meniscus_3d = MeshInstance3D.new()
@@ -358,6 +361,13 @@ func _refresh_liquid_3d() -> void:
 			if top_color < liquid_materials_3d.size():
 				liquid_meniscus_3d.material_override = liquid_materials_3d[top_color]
 	_request_3d_frame()
+
+func _glass_material_3d(color: Color, roughness_value: float, emission_energy: float) -> StandardMaterial3D:
+	var material := _material_3d(color, 0.0, roughness_value)
+	material.emission_enabled = true
+	material.emission = Color(color.r, color.g, color.b)
+	material.emission_energy_multiplier = emission_energy
+	return material
 
 func _material_3d(color: Color, metallic_value: float, roughness_value: float) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()
