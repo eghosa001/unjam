@@ -104,22 +104,26 @@ def main() -> int:
 
     for token in (
         'viewBox="0 0 512 512"',
-        'UNJAM',
         'url(#bg)',
+        '<!-- main U silhouette/shadow -->',
     ):
         if token not in icon:
             errors.append(f'launcher icon master missing premium asset token: {token}')
+    if '<text' in icon or '>UNJAM<' in icon:
+        errors.append('launcher icon must stay U-mark only; wordmark text is not allowed')
 
     if 'viewBox="0 0 432 432"' not in adaptive_bg:
         errors.append('adaptive icon background must remain a 432x432 Android layer')
 
     for token in (
         'id="AdaptiveSafeZone"',
-        'translate(216 216) scale(.69) translate(-216 -216)',
-        'UNJAM',
+        'translate(216 216) scale(.94) translate(-216 -216)',
+        'translate(55 82) scale(.80)',
     ):
         if token not in adaptive_fg:
             errors.append(f'adaptive foreground safe-zone contract missing token: {token}')
+    if '<text' in adaptive_fg or '>UNJAM<' in adaptive_fg:
+        errors.append('adaptive foreground must stay U-mark only; wordmark text is not allowed')
 
     if errors:
         print('Release contract validation failed:')
