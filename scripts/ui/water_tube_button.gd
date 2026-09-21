@@ -7,7 +7,7 @@ const PALETTE := [
 	# hue wheel; the four late-game additions deliberately differ in value as well
 	# as hue so 10-12 colour boards remain readable on small phone screens.
 	Color("e53935"), Color("1e5eff"), Color("ffd400"), Color("00a86b"),
-	Color("7a3ef0"), Color("ff7a00"), Color("00b8d9"), Color("d81b60"),
+	Color("a100f2"), Color("ff7a00"), Color("00b8d9"), Color("e0008a"),
 	Color("263238"), Color("a8e600"), Color("9a5a24"), Color("ff8fbd")
 ]
 var layers: Array = []
