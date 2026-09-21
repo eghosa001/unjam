@@ -99,14 +99,14 @@ func _build() -> void:
 	canvas.add_child(reward_button)
 
 	FigmaReferenceCanvas.add_shadow(canvas,Rect2(46,506,142,52),16,Color(0.02,0.08,0.16,0.15),4,Vector2(0,4))
-	var shop := FigmaReferenceCanvas.premium_button("OPEN SHOP",13,Color.WHITE,Color("#147ddb"),16,Color("#61bfff"),1.2)
+	var shop := FigmaReferenceCanvas.premium_button("OPEN SHOP",14,Color.WHITE,Color("#147ddb"),16,Color("#61bfff"),1.2)
 	shop.name = "CoinModal/Shop"
 	FigmaReferenceCanvas.set_rect(shop,46,506,142,52)
 	shop.pressed.connect(_open_shop)
 	canvas.add_child(shop)
 
 	FigmaReferenceCanvas.add_shadow(canvas,Rect2(202,506,142,52),16,Color(0.02,0.08,0.16,0.15),4,Vector2(0,4))
-	var later := FigmaReferenceCanvas.premium_button("NOT NOW",13,Color("#c8d7e4") if dark else Color("#57738a"),Color("#24364a") if dark else Color("#f5faff"),16,Color("#3d5870") if dark else Color("#b8d1e3"),1.2)
+	var later := FigmaReferenceCanvas.premium_button("NOT NOW",14,Color("#c8d7e4") if dark else Color("#57738a"),Color("#24364a") if dark else Color("#f5faff"),16,Color("#3d5870") if dark else Color("#b8d1e3"),1.2)
 	later.name = "CoinModal/Later"
 	FigmaReferenceCanvas.set_rect(later,202,506,142,52)
 	later.pressed.connect(_close)
