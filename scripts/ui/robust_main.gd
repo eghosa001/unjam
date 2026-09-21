@@ -302,8 +302,8 @@ func start_multi_level_mode(game_id: String, level_number: int, daily: bool = fa
 	game_scene.daily_mode = daily
 	if game_id == "block_puzzle":
 		game_scene.set("play_mode", mode)
-	game_scene.finished.connect(_on_multi_finished.bind(game_id))
-	game_scene.quit_requested.connect(_on_multi_quit.bind(game_id))
+	game_scene.finished.connect(_on_multi_finished.bind(game_id, daily))
+	game_scene.quit_requested.connect(_on_multi_quit.bind(game_id, daily))
 	add_child(game_scene)
 	game_scene.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	game_scene.z_index = 100
@@ -330,8 +330,8 @@ func _spawn_rescue(level_number: int, daily: bool, custom_data: Dictionary) -> v
 	game_scene.daily_mode = daily
 	if not custom_data.is_empty():
 		game_scene.custom_level_data = custom_data.duplicate(true)
-	game_scene.finished.connect(_on_rescue_finished)
-	game_scene.quit_requested.connect(_on_rescue_quit)
+	game_scene.finished.connect(_on_rescue_finished.bind(daily))
+	game_scene.quit_requested.connect(_on_rescue_quit.bind(daily))
 	add_child(game_scene)
 	game_scene.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	game_scene.z_index = 100
@@ -352,8 +352,11 @@ func _remove_active_game() -> void:
 func force_back_from_game() -> void:
 	# Android back must never depend on the active game's animation/busy state.
 	var game_id := selected_game_id
+	var was_daily := active_game != null and is_instance_valid(active_game) and bool(active_game.get("daily_mode"))
 	_remove_active_game()
-	if game_id == "rescue_rush":
+	if was_daily:
+		build_daily_games()
+	elif game_id == "rescue_rush":
 		build_level_select()
 	else:
 		selected_game_id = game_id
@@ -361,30 +364,40 @@ func force_back_from_game() -> void:
 		selected_multi_page = _multi_page_for_level(game_id, MultiGameManager.highest_level(game_id))
 		build_multi_level_select()
 
-func _on_rescue_finished(completed_level: int) -> void:
+func _on_rescue_finished(completed_level: int, was_daily: bool = false) -> void:
 	active_game = null
-	if completed_level < 0:
+	if was_daily:
+		build_daily_games()
+	elif completed_level < 0:
 		build_home()
 	elif LevelManager.has_level(completed_level + 1):
 		call_deferred("start_level", completed_level + 1)
 	else:
 		build_home()
 
-func _on_rescue_quit() -> void:
+func _on_rescue_quit(was_daily: bool = false) -> void:
 	active_game = null
-	build_level_select()
+	if was_daily:
+		build_daily_games()
+	else:
+		build_level_select()
 
-func _on_multi_finished(completed_level: int, game_id: String) -> void:
+func _on_multi_finished(completed_level: int, game_id: String, was_daily: bool = false) -> void:
 	active_game = null
-	if completed_level < 0:
+	if was_daily:
+		build_daily_games()
+	elif completed_level < 0:
 		build_home()
 	elif completed_level < MultiGameManager.CAMPAIGN_LEVELS:
 		call_deferred("start_multi_level", game_id, completed_level + 1, false)
 	else:
 		build_home()
 
-func _on_multi_quit(game_id: String) -> void:
+func _on_multi_quit(game_id: String, was_daily: bool = false) -> void:
 	active_game = null
+	if was_daily:
+		build_daily_games()
+		return
 	selected_game_id = game_id
 	selected_multi_world = MultiGameManager.world_for_game_level(game_id, MultiGameManager.highest_level(game_id))
 	selected_multi_page = _multi_page_for_level(game_id, MultiGameManager.highest_level(game_id))
