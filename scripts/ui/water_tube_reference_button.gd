@@ -116,17 +116,40 @@ func _draw() -> void:
 		draw_arc(body.get_center(), body.size.x * 0.68, 0, TAU, 42, Color(1.0, 0.88, 0.35, a), 4.0, true)
 
 func _draw_glass_shape(rect: Rect2, fill: Color, border: Color, radius: float, border_width: float) -> void:
-	var style := StyleBoxFlat.new()
-	style.bg_color = fill
-	style.corner_radius_top_left = 3
-	style.corner_radius_top_right = 3
-	style.corner_radius_bottom_left = int(radius)
-	style.corner_radius_bottom_right = int(radius)
+	# Bottle silhouette: narrow neck + rounded shoulder/body. Keeping this in the
+	# authoritative 2D renderer preserves fast mobile interaction while reading
+	# much closer to thick crystal glass than a straight rectangular tube.
+	var neck_width := rect.size.x * 0.56
+	var neck_height := maxf(10.0, rect.size.y * 0.115)
+	var neck := Rect2(
+		Vector2(rect.get_center().x - neck_width * 0.5, rect.position.y - neck_height * 0.34),
+		Vector2(neck_width, neck_height)
+	)
+	var body := Rect2(rect.position + Vector2(0, neck_height * 0.40), Vector2(rect.size.x, rect.size.y - neck_height * 0.40))
+	var body_style := StyleBoxFlat.new()
+	body_style.bg_color = fill
+	body_style.corner_radius_top_left = int(radius * 0.42)
+	body_style.corner_radius_top_right = int(radius * 0.42)
+	body_style.corner_radius_bottom_left = int(radius)
+	body_style.corner_radius_bottom_right = int(radius)
+	var neck_style := StyleBoxFlat.new()
+	neck_style.bg_color = fill
+	neck_style.corner_radius_top_left = 4
+	neck_style.corner_radius_top_right = 4
+	neck_style.corner_radius_bottom_left = 3
+	neck_style.corner_radius_bottom_right = 3
 	if border_width > 0.0:
-		var bw := int(border_width)
-		style.border_width_left = bw
-		style.border_width_right = bw
-		style.border_width_top = bw
-		style.border_width_bottom = bw
-		style.border_color = border
-	draw_style_box(style, rect)
+		var bw := maxi(1, int(border_width))
+		for style in [body_style, neck_style]:
+			style.border_width_left = bw
+			style.border_width_right = bw
+			style.border_width_top = bw
+			style.border_width_bottom = bw
+			style.border_color = border
+	draw_style_box(body_style, body)
+	draw_style_box(neck_style, neck)
+	# Soft refractive tint on the lower body and shoulder catches helps separate
+	# transparent glass from the similarly bright board behind it.
+	if fill.a > 0.0:
+		draw_arc(Vector2(body.get_center().x, body.end.y - radius * 0.70), body.size.x * 0.29, 0.08, PI - 0.08, 20, Color(0.62,0.92,1.0,minf(fill.a * 2.2,0.18)), 2.0, true)
+		draw_arc(Vector2(body.position.x + radius * 0.62, body.position.y + radius * 0.50), radius * 0.46, -2.75, -1.30, 12, Color(1,1,1,minf(fill.a * 3.0,0.20)), 1.7, true)
