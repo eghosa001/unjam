@@ -35,10 +35,24 @@ func _run() -> void:
 	if objective.text != "OPEN A CLEAR LANE AND FREE THE CHICK":
 		return _fail("Rescue objective copy drifted")
 
+	var arrow_source := _read("res://scripts/ui/rescue_piece_3d_button.gd")
+	for token in [
+		"var readable_scale := scale_value * 1.18",
+		"Color(\"#073b78\"), 5.0",
+		"Color(\"#dff8ff\"), 2.0",
+		"Directional spine reinforces orientation",
+	]:
+		if not arrow_source.contains(token):
+			return _fail("Rescue arrow clarity contract is missing: %s" % token)
+
 	game.queue_free()
 	await process_frame
 	print("Rescue Rush dense 7x7 board hierarchy validated.")
 	quit(0)
+
+func _read(path: String) -> String:
+	var file := FileAccess.open(path, FileAccess.READ)
+	return "" if file == null else file.get_as_text()
 
 func _frames(count: int) -> void:
 	for _i in range(count):
