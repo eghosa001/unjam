@@ -163,8 +163,10 @@ func _build_glass_3d() -> void:
 	# Glass must remain visible over opaque liquid at phone scale. Use a wider,
 	# brighter shell with a very small emissive lift; the liquid remains the colour
 	# focal point while the vessel finally reads as a crystal bottle.
-	var glass_material := _glass_material_3d(Color(0.76, 0.95, 1.0, 0.30), 0.030, 0.075)
-	var shoulder_material := _glass_material_3d(Color(0.84, 0.99, 1.0, 0.34), 0.025, 0.090)
+	# Keep the shoulder/neck optically connected to the body while tilted.
+	# Stronger crystal alpha/emission prevents a floating-rim look at phone scale.
+	var glass_material := _glass_material_3d(Color(0.76, 0.95, 1.0, 0.44), 0.028, 0.110)
+	var shoulder_material := _glass_material_3d(Color(0.86, 0.995, 1.0, 0.54), 0.022, 0.145)
 
 	var body_mesh := CylinderMesh.new()
 	body_mesh.top_radius = GLASS_BODY_RADIUS
@@ -257,7 +259,7 @@ func _build_glass_3d() -> void:
 	inner_shell.name = "BottleInnerWall3D"
 	inner_shell.mesh = inner_shell_mesh
 	inner_shell.position.y = GLASS_BODY_CENTER_Y
-	inner_shell.material_override = _glass_material_3d(Color(0.30, 0.76, 0.96, 0.105), 0.045, 0.045)
+	inner_shell.material_override = _glass_material_3d(Color(0.34, 0.80, 0.98, 0.16), 0.040, 0.060)
 	stage_3d.add_child(inner_shell)
 
 	var shadow_mesh := CylinderMesh.new()
