@@ -262,10 +262,14 @@ func _shop_status_chip(canvas: Control, name_value: String, title: String, state
 	FigmaReferenceCanvas.set_rect(chip,rect.position.x,rect.position.y,rect.size.x,rect.size.y)
 	chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(chip)
-	var title_label := _add_text(canvas,title,Rect2(rect.position.x+5,rect.position.y+4,rect.size.x-10,13),9,Color("#d6e2ef"))
+	var title_label := _add_text(canvas,title,Rect2(rect.position.x+5,rect.position.y+2,rect.size.x-10,16),12,Color("#d6e2ef"))
+	title_label.name = "%sTitle" % name_value
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var state_label := _add_text(canvas,state,Rect2(rect.position.x+5,rect.position.y+18,rect.size.x-10,17),11,accent.lightened(0.28))
+	title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	var state_label := _add_text(canvas,state,Rect2(rect.position.x+5,rect.position.y+20,rect.size.x-10,17),12,accent.lightened(0.28))
+	state_label.name = "%sState" % name_value
 	state_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	state_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 
 func _is_owned_product(product_id: String, info: Dictionary) -> bool:
 	if not bool(info.get("non_consumable",false)):
