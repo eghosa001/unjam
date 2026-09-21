@@ -41,6 +41,9 @@ GROUP_TESTS = {
         "validate_daily_and_late_water_runtime",
         "validate_water_liquid_continuity",
         "validate_water_pour_arc",
+        # Sampled constructive proof only; the exhaustive 10,000-level variant
+        # stays in the explicit production workflow.
+        "validate_water_constructive_solvability",
     ],
     "block": [
         "validate_reported_polish_regressions",
@@ -445,6 +448,7 @@ def self_test() -> None:
         "validate_selector_navigation",
     ]
     assert "validate_compact_gameplay_stack" not in GROUP_TESTS["water"]
+    assert "validate_water_constructive_solvability" in GROUP_TESTS["water"]
     assert "validate_compact_gameplay_stack" not in GROUP_TESTS["block"]
     assert "validate_compact_gameplay_stack" not in GROUP_TESTS["rescue"]
     assert GROUP_TESTS["shared_gameplay_ui"] == [
