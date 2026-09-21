@@ -299,14 +299,34 @@ func _figma_open_shop() -> void:
 
 func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false) -> void:
 	var use_dark := dark_mode or _dark()
-	var bar_fill := Color(0.07,0.10,0.17,0.98) if use_dark else Color(0.985,0.995,1.0)
-	var bar_border := Color(0.23,0.34,0.45,0.90) if use_dark else Color(0.78,0.88,0.95,0.75)
+	var bar_fill := Color(0.055,0.085,0.15,0.985) if use_dark else Color(0.985,0.995,1.0)
+	var bar_border := Color(0.24,0.39,0.54,0.94) if use_dark else Color(0.70,0.86,0.97,0.84)
 	if use_dark:
 		_figma_solid_card(canvas, "StdNav/Bar", Rect2(13,757,362,70), bar_fill, bar_border, 18)
 	else:
 		_figma_card(canvas, "StdNav/Bar", Rect2(13,757,362,70), bar_fill, bar_border, 18)
+	# Premium casual navigation reads as a row of collectible-like tabs rather
+	# than utility-app text links: every destination gets an icon and the active
+	# destination lifts onto a glossy plate with its own accent.
+	_figma_solid_card(
+		canvas,
+		"StdNavTopGloss",
+		Rect2(28,760,332,2),
+		Color(0.64,0.88,1.0,0.22 if use_dark else 0.34),
+		Color(0.64,0.88,1.0,0.10 if use_dark else 0.18),
+		1,
+		false
+	)
 	var xs := {"home":22.0, "games":91.0, "daily":160.0, "collection":229.0, "settings":298.0}
 	var names := {"home":"HOME", "games":"GAMES", "daily":"DAILY", "collection":"COLLECT", "settings":"SETTINGS"}
+	var glyphs := {"home":"⌂", "games":"▦", "daily":"✦", "collection":"◆", "settings":"⚙"}
+	var accents := {
+		"home":Color("#33b9ff"),
+		"games":Color("#7b6cff"),
+		"daily":FIGMA_GOLD,
+		"collection":FIGMA_GREEN,
+		"settings":FIGMA_CYAN,
+	}
 	var callbacks := {
 		"home": Callable(self,"build_home"),
 		"games": Callable(self,"_open_games_surface"),
@@ -317,14 +337,36 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 	var hit_x := {"home":14.0, "games":84.0, "daily":153.0, "collection":222.0, "settings":291.0}
 	for key in ["home","games","daily","collection","settings"]:
 		var selected: bool = String(key) == active
-		var selected_text := Color(0.42,0.78,1.0) if use_dark else Color(0.05,0.49,0.86)
+		var accent: Color = accents[key]
+		var selected_text := Color.WHITE if use_dark else FIGMA_INK
 		var idle_text := Color(0.62,0.72,0.80) if use_dark else FIGMA_MUTED
+		var icon_color := accent.lightened(0.18) if selected else idle_text.lightened(0.06)
 		if selected:
-			var marker_color := Color(0.32,0.75,1.0) if use_dark else FIGMA_CYAN
-			_figma_solid_card(canvas, "StdNavSelectedDot_%s" % String(key), Rect2(float(xs[key])+25.0,776,8,8), marker_color, marker_color, 4, false)
-			_figma_solid_card(canvas, "StdNavSelectedLine_%s" % String(key), Rect2(float(xs[key])+11.0,815,36,4), marker_color, marker_color, 2, false)
-		var nav_label := _figma_text(canvas, String(names[key]), Rect2(float(xs[key])-1.0,787,58,28), 13, selected_text if selected else idle_text, true)
+			var plate_fill := accent.darkened(0.50) if use_dark else accent.lightened(0.34)
+			var plate_border := accent.lightened(0.16) if use_dark else accent.darkened(0.08)
+			_figma_solid_card(
+				canvas,
+				"StdNavActivePlate_%s" % String(key),
+				Rect2(float(hit_x[key])+5.0,762,60,57),
+				plate_fill,
+				plate_border,
+				15
+			)
+			_figma_solid_card(
+				canvas,
+				"StdNavActiveShine_%s" % String(key),
+				Rect2(float(hit_x[key])+15.0,765,40,2),
+				Color(1,1,1,0.32 if use_dark else 0.55),
+				Color(1,1,1,0.12),
+				1,
+				false
+			)
+		var glyph := _figma_text(canvas, String(glyphs[key]), Rect2(float(xs[key])-1.0,765,58,22), 18, icon_color, true)
+		glyph.name = "StdNavGlyph_%s" % String(key)
+		glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		var nav_label := _figma_text(canvas, String(names[key]), Rect2(float(xs[key])-1.0,790,58,22), 12, selected_text if selected else idle_text, true)
 		nav_label.name = "StdNavLabel_%s" % String(key)
+		nav_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		var hit := Button.new()
 		hit.name = "StdNav/Proto/%s" % String(names[key])
 		hit.flat = true
