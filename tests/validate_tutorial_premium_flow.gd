@@ -37,6 +37,14 @@ func _run() -> void:
 			return _fail("%s tutorial reverted to a wall of text" % game_id)
 		if demo == null or demo.get_child_count() == 0 or step == null or step.text.is_empty():
 			return _fail("%s gameplay demo art is missing" % game_id)
+		if game_id == "rescue_rush":
+			var exit_label := shell.find_child("TutorialDemoExitLabel",true,false) as Label
+			if exit_label == null or exit_label.get_theme_font_size("font_size") < 12:
+				return _fail("Rescue tutorial EXIT label fell below the 12px readability floor")
+			if exit_label.position.distance_to(Vector2(160,34)) > 1.0:
+				return _fail("Rescue tutorial EXIT label drifted from its intended position")
+			if exit_label.position.x + exit_label.size.x > demo.size.x or exit_label.position.y + exit_label.size.y > demo.size.y:
+				return _fail("Rescue tutorial EXIT label escaped the demo bounds")
 		if demo_panel == null or step_card == null or demo_panel.get_rect().intersects(step_card.get_rect()):
 			return _fail("%s tutorial demo and instruction card overlap" % game_id)
 		if step.get_rect().intersects(progress.get_rect()):
