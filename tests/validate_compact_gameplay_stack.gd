@@ -15,8 +15,9 @@ func _run() -> void:
 	var failures: Array[String] = []
 	root.size = TALL_VIEWPORT
 	await _check_game_scene("res://scenes/WaterSort.tscn","FigmaWater390x844","GameplayStage",Rect2(17,169,354,420),"CompactGameActions",Rect2(21,650,346,60),failures)
+	await _check_water_header(failures)
 	await _check_water_footer(failures)
-	await _check_game_scene("res://scenes/Game.tscn","FigmaRescue390x844","RescueBoardPanel",Rect2(21,180,348,348),"CompactGameActions",Rect2(21,638,346,62),failures)
+	await _check_game_scene("res://scenes/Game.tscn","FigmaRescue390x844","RescueBoardPanel",Rect2(21,180,348,348),"CompactGameActions",Rect2(21,566,346,62),failures)
 	for viewport_size in SELECTOR_VIEWPORTS:
 		await _check_selector(viewport_size,failures)
 	if failures.is_empty():
@@ -50,6 +51,30 @@ func _check_game_scene(path: String, canvas_name: String, stage_name: String, st
 		for control in [stage,actions]:
 			if not _inside((control as Control).get_global_rect(),screen):
 				failures.append("%s control %s spills outside tall viewport" % [path,control.name])
+	scene.queue_free()
+	await process_frame
+
+func _check_water_header(failures: Array[String]) -> void:
+	root.size = Vector2i(540,960)
+	var packed := load("res://scenes/WaterSort.tscn") as PackedScene
+	if packed == null:
+		failures.append("Could not load WaterSort.tscn for header audit")
+		return
+	var scene := packed.instantiate() as Control
+	root.add_child(scene)
+	scene.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	await _frames(8)
+	var meta := scene.get("meta_label") as Label
+	var moves := scene.get("move_label") as Label
+	if meta == null or moves == null:
+		failures.append("Water header labels are missing")
+	else:
+		if meta.get_global_rect().intersects(moves.get_global_rect()):
+			failures.append("Water metadata and move labels overlap")
+		if not meta.clip_text or not moves.clip_text:
+			failures.append("Water header labels must clip instead of bleeding into each other")
+		if meta.get_theme_font_size("font_size") < 13 or moves.get_theme_font_size("font_size") < 13:
+			failures.append("Water header text fell below 13px reference size")
 	scene.queue_free()
 	await process_frame
 
