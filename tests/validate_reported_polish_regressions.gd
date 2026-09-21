@@ -35,7 +35,7 @@ func _init() -> void:
 	_require_source("res://scripts/ui/ux_shell_casual.gd", ["label(\"EXIT\",11,Color.WHITE", "set_rect(exit_label,161,35,44,14)"], "Tutorial exit label containment", errors)
 	_require_source("res://scripts/ui/figma_reference_canvas.gd", ["second dark glyph", "font_shadow_color\", Color.TRANSPARENT", "shadow_offset_y\", 2", "shadow_outline_size\", 1"], "crisp scaled Figma text", errors)
 	_require_source("res://scripts/ui/premium_main_casual.gd", ["Rect2(34,label_y-7,210,30),14", "button_text_color,19,14", "theme_text,19,14"], "Settings compact text minimums", errors)
-	_require_source("res://scripts/ui/premium_main_casual.gd", ["Rect2(37,y+11,184,18),14", "Rect2(37,y+36,206,16),13", "state_text_color,\n\t\t\t12,\n\t\t\t13"], "Collection upgrade compact text minimums", errors)
+	_require_source("res://scripts/ui/premium_main_casual.gd", ["Rect2(17,539,354,112)", "Rect2(37,y+8,184,18),14", "Rect2(37,y+48,192,15),12", "Rect2(251,y+13,96,44)", "state_text_color,\n\t\t\t12,\n\t\t\t13"], "Collection compact spacing/readability", errors)
 
 	if not errors.is_empty():
 		for error in errors:
