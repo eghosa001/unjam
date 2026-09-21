@@ -252,20 +252,53 @@ func _add_world_progress(canvas: Control) -> void:
 	var last := MultiGameManager.last_level_in_game_world(selected_game, world)
 	var total := maxi(1, last - first + 1)
 	var completed_in_world := clampi(completed_level - first + 1, 0, total)
+	var accent := Unjam3DTheme.game_accent(selected_game)
+	var level := _home_current_level(selected_game)
+	var next_milestone := int(ceil(float(level) / 25.0)) * 25
+	if next_milestone <= level:
+		next_milestone += 25
+	next_milestone = mini(next_milestone, MultiGameManager.CAMPAIGN_LEVELS)
 
+	var root := Control.new()
+	root.name = "HomeWorldProgressRoot"
+	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	RefCanvas.set_rect(root, 0, 0, 390, 844)
+	canvas.add_child(root)
+
+	var showcase_rect := Rect2(21, 582, 346, 150)
+	RefCanvas.add_shadow(root, showcase_rect, 20, Color(0.01,0.06,0.12,0.25 if _home_dark() else 0.16), 6, Vector2(0,5))
 	var panel := PanelContainer.new()
 	panel.name = "HomeWorldProgress"
-	var accent := Unjam3DTheme.game_accent(selected_game)
 	var fill := Color("#20384b") if _home_dark() else Color("#e4eeec")
-	var edge := Color(accent,0.70 if _home_dark() else 0.46)
-	panel.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(fill.lightened(0.16), fill, fill.darkened(0.12), 16, edge, 1.2, 0.38))
-	RefCanvas.set_rect(panel, 21, 590, 346, 74)
-	canvas.add_child(panel)
+	var edge := Color(accent,0.76 if _home_dark() else 0.50)
+	panel.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(fill.lightened(0.18), fill, fill.darkened(0.15), 20, edge, 1.5, 0.46))
+	RefCanvas.set_rect(panel, showcase_rect.position.x, showcase_rect.position.y, showcase_rect.size.x, showcase_rect.size.y)
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(panel)
 
-	var world_title := _add_text(canvas, "WORLD %d PROGRESS" % world, Rect2(37, 604, 175, 18), 12, OFF_WHITE if _home_dark() else NAVY, true)
+	# A compact one-shot 3D diorama makes world progression feel like a physical
+	# destination instead of a thin status strip. The renderer returns to one-shot
+	# mode after its initial frames, so the Home screen keeps its idle budget.
+	var art_stage := PanelContainer.new()
+	art_stage.name = "HomeWorldShowcaseStage"
+	var stage_fill := Color("#13263b") if _home_dark() else accent.lightened(0.84)
+	art_stage.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(stage_fill.lightened(0.10), stage_fill, stage_fill.darkened(0.15), 16, Color(accent,0.42), 1.0, 0.42))
+	RefCanvas.set_rect(art_stage, 31, 592, 150, 130)
+	art_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(art_stage)
+
+	var art := GAME_ART_SCRIPT.new()
+	art.name = "HomeWorldShowcase3D"
+	art.configure(selected_game)
+	RefCanvas.set_rect(art, 31, 592, 150, 130)
+	root.add_child(art)
+
+	var world_title := _add_text(root, "WORLD JOURNEY", Rect2(195, 596, 152, 16), 11, accent, true)
 	world_title.name = "HomeWorldProgressTitle"
-	var world_value := _add_text(canvas, "%d / %d" % [completed_in_world, total], Rect2(274, 604, 72, 18), 12, accent, true)
+	_add_text(root, "WORLD %d" % world, Rect2(195, 615, 152, 26), 18, OFF_WHITE if _home_dark() else NAVY, true)
+	var world_value := _add_text(root, "LEVEL %d • %d/%d" % [level, completed_in_world, total], Rect2(195, 644, 152, 17), 11, MUTED, true)
 	world_value.name = "HomeWorldProgressValue"
+	_add_text(root, "NEXT MILESTONE • L%d" % next_milestone, Rect2(195, 668, 152, 16), 10, ORANGE, true)
 
 	var progress := ProgressBar.new()
 	progress.name = "HomeWorldProgressBar"
@@ -275,14 +308,19 @@ func _add_world_progress(canvas: Control) -> void:
 	progress.value = completed_in_world
 	progress.add_theme_stylebox_override("background", RefCanvas.rounded_gradient3(Color("#132642"), Color("#091a34"), Color("#051126"), 6, Color(0.38,0.58,0.78,0.55), 1.0, 0.50))
 	progress.add_theme_stylebox_override("fill", RefCanvas.rounded_gradient3(accent.lightened(0.48), accent.lightened(0.12), accent.darkened(0.18), 6, Color(accent.lightened(0.62),0.72), 1.0, 0.32))
-	RefCanvas.set_rect(progress, 37, 636, 309, 10)
-	canvas.add_child(progress)
+	RefCanvas.set_rect(progress, 195, 694, 150, 10)
+	root.add_child(progress)
+
 	var progress_specular := ColorRect.new()
 	progress_specular.name = "WorldProgressSpecular"
-	progress_specular.color = Color(1,1,1,0.42)
+	progress_specular.color = Color(1,1,1,0.38)
 	progress_specular.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	RefCanvas.set_rect(progress_specular, 41, 637, 180, 2)
-	canvas.add_child(progress_specular)
+	RefCanvas.set_rect(progress_specular, 199, 695, 84, 2)
+	root.add_child(progress_specular)
+
+	var percent := int(round(float(completed_in_world) / float(total) * 100.0))
+	var percent_label := _add_text(root, "%d%% COMPLETE" % percent, Rect2(195, 707, 150, 13), 9, accent, true)
+	percent_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 
 func _add_bottom_nav_reference(canvas: Control) -> void:
 	var shell := PanelContainer.new()
@@ -426,36 +464,17 @@ func _refresh_home_selection() -> void:
 		old_preview.queue_free()
 	_add_hero_preview(figma_canvas, selected_game)
 
-	# Quick Switch must refresh the progress card as well as the hero. Otherwise
-	# the selected game changes while WORLD progress still shows the previous game.
-	var highest := MultiGameManager.highest_level(selected_game)
-	var completed_level := clampi(highest - 1, 0, MultiGameManager.CAMPAIGN_LEVELS)
-	var world_level := maxi(1, mini(highest, MultiGameManager.CAMPAIGN_LEVELS))
-	var progress_world := MultiGameManager.world_for_game_level(selected_game, world_level)
-	var first := MultiGameManager.first_level_in_game_world(selected_game, progress_world)
-	var last := MultiGameManager.last_level_in_game_world(selected_game, progress_world)
-	var total := maxi(1, last - first + 1)
-	var completed_in_world := clampi(completed_level - first + 1, 0, total)
+	# Quick Switch rebuilds the complete world showcase so its one-shot 3D art,
+	# world data, milestone and progress bar always match the selected game.
+	var old_world_progress := figma_canvas.get_node_or_null("HomeWorldProgressRoot")
+	if old_world_progress != null:
+		figma_canvas.remove_child(old_world_progress)
+		old_world_progress.queue_free()
+	_add_world_progress(figma_canvas)
 	var progress_accent := Unjam3DTheme.game_accent(selected_game)
 	var home_accent_glow := figma_canvas.get_node_or_null("HomeAccentGlow") as PanelContainer
 	if home_accent_glow != null:
 		home_accent_glow.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(progress_accent.r, progress_accent.g, progress_accent.b, 0.12 if not _home_dark() else 0.08), 120))
-	var world_title := figma_canvas.get_node_or_null("HomeWorldProgressTitle") as Label
-	if world_title != null:
-		world_title.text = "WORLD %d PROGRESS" % progress_world
-	var world_value := figma_canvas.get_node_or_null("HomeWorldProgressValue") as Label
-	if world_value != null:
-		world_value.text = "%d / %d" % [completed_in_world, total]
-		world_value.add_theme_color_override("font_color", progress_accent)
-	var progress_bar := figma_canvas.get_node_or_null("HomeWorldProgressBar") as ProgressBar
-	if progress_bar != null:
-		progress_bar.max_value = total
-		progress_bar.value = completed_in_world
-		progress_bar.add_theme_stylebox_override("fill", RefCanvas.rounded_gradient3(progress_accent.lightened(0.22), progress_accent, progress_accent.darkened(0.14), 6, Color.TRANSPARENT, 0, 0.36))
-	var progress_panel := figma_canvas.get_node_or_null("HomeWorldProgress") as PanelContainer
-	if progress_panel != null:
-		var progress_fill := Color("#20384b") if _home_dark() else Color("#e4eeec")
-		progress_panel.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(progress_fill.lightened(0.16), progress_fill, progress_fill.darkened(0.12), 16, Color(progress_accent,0.70 if _home_dark() else 0.46), 1.2, 0.38))
 
 	var accents := {
 		"rescue_rush": Color(0.13, 0.78, 0.39),
