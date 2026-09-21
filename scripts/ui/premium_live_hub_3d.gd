@@ -1,6 +1,7 @@
 extends "res://scripts/ui/premium_live_hub.gd"
 
 const RefCanvas = preload("res://scripts/ui/figma_reference_canvas.gd")
+const GAME_ART_SCRIPT = preload("res://scripts/ui/unjam_3d_game_art.gd")
 
 const BG_TOP := Color("#dcebe8")
 const BG_MID := Color("#d4e3e8")
@@ -68,6 +69,7 @@ func _build_reference_selector(canvas: Control) -> void:
 	RefCanvas.set_rect(background, 0, 0, 390, 844)
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(background)
+	RefCanvas.add_world_depth(canvas, Color("#ffd34e"), _selector_dark(), 0.14 if _selector_dark() else 0.18, "SelectorWorldDepth")
 	RefCanvas.add_scene_backdrop_layers(canvas, Color("#ffd34e"), _selector_dark(), "Selector")
 	var selector_key_light := canvas.get_node_or_null("SelectorKeyLight")
 	if selector_key_light != null:
@@ -146,10 +148,11 @@ func _add_card_preview(canvas: Control, game_id: String, card_y: float) -> void:
 	RefCanvas.set_rect(stage, 243, origin_y, 104, 112)
 	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(stage)
-	match game_id:
-		"rescue_rush": _preview_rescue(canvas, origin_y)
-		"water_sort": _preview_water(canvas, origin_y)
-		_: _preview_block(canvas, origin_y)
+	var art := GAME_ART_SCRIPT.new()
+	art.name = "SelectorGameArt3D_%s" % game_id
+	art.configure(game_id)
+	RefCanvas.set_rect(art, 243, origin_y, 104, 112)
+	canvas.add_child(art)
 
 func _preview_rescue(canvas: Control, y: float) -> void:
 	var board_depth := PanelContainer.new()
