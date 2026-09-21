@@ -21,6 +21,7 @@
 <rect width="512" height="512" rx="94" fill="url(#bg)"/>
 <rect width="512" height="512" rx="94" fill="url(#halo)"/>
 <ellipse cx="256" cy="435" rx="205" ry="52" fill="#0A0D58" opacity=".52" filter="url(#soft)"/>
+<g id="LauncherSafeForeground" transform="translate(256 256) scale(.78) translate(-256 -256)">
 <!-- radial light rays -->
 <g opacity=".18" fill="#C8F4FF">
   <path d="M242 52h28l-8 160h-12z"/><path d="M122 91l23-15 74 139-14 9z"/><path d="M390 92l-23-16-73 139 14 9z"/>
@@ -69,4 +70,5 @@
   <rect x="229" y="331" width="78" height="52" rx="12" fill="url(#yellow)"/>
 </g>
 <path d="M207 299h45" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" opacity=".45"/>
+</g>
 </svg>
