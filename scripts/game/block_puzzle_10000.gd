@@ -82,7 +82,7 @@ func _add_booster_bar() -> void:
 	bar.name = "CampaignBoosters"
 	bar.alignment = BoxContainer.ALIGNMENT_CENTER
 	bar.add_theme_constant_override("separation", 7)
-	FigmaReferenceCanvas.set_rect(bar, 17, 649, 349, 54)
+	FigmaReferenceCanvas.set_rect(bar, 17, 732, 349, 54)
 	for spec in [
 		["undo", "UNDO", "↶"],
 		["hammer", "HAMMER", "◆"],
