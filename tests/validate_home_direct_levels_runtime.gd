@@ -1,9 +1,16 @@
 extends SceneTree
 
+const CAMPAIGN_LEVELS := 10000
+
 var _original_data: Dictionary = {}
+var _save: Node
+var _multi: Node
 
 func _initialize() -> void:
-	_original_data = SaveManager.data.duplicate(true)
+	_save = root.get_node("SaveManager")
+	_multi = root.get_node("MultiGameManager")
+	var save_data := _save.get("data") as Dictionary
+	_original_data = save_data.duplicate(true)
 	call_deferred("_run")
 
 func _run() -> void:
@@ -79,11 +86,12 @@ func _run() -> void:
 func _seed_distinct_progress() -> void:
 	# Distinct worlds make stale cross-game state observable instead of allowing a
 	# fresh all-Level-1 profile to pass accidentally.
-	SaveManager.data["highest_level"] = 120
-	SaveManager.data["total_levels_completed"] = 119
-	SaveManager.data["stars"] = {"1": 3, "50": 2, "119": 3}
+	var save_data := _save.get("data") as Dictionary
+	save_data["highest_level"] = 120
+	save_data["total_levels_completed"] = 119
+	save_data["stars"] = {"1": 3, "50": 2, "119": 3}
 
-	var all: Dictionary = SaveManager.data.get("game_progress", {}).duplicate(true)
+	var all: Dictionary = save_data.get("game_progress", {}).duplicate(true)
 	all["water_sort"] = {
 		"highest_level": 650,
 		"levels_completed": 649,
@@ -94,16 +102,17 @@ func _seed_distinct_progress() -> void:
 		"levels_completed": 1249,
 		"stars": {"1": 3, "500": 2, "1000": 3, "1249": 2},
 	}
-	SaveManager.data["game_progress"] = all
-	MultiGameManager.ensure_state()
+	save_data["game_progress"] = all
+	_save.set("data", save_data)
+	_multi.call("ensure_state")
 
 func _expected_progress(game_id: String) -> Dictionary:
-	var highest := MultiGameManager.highest_level(game_id)
-	var level := clampi(highest, 1, MultiGameManager.CAMPAIGN_LEVELS)
-	var completed_level := clampi(highest - 1, 0, MultiGameManager.CAMPAIGN_LEVELS)
-	var world := MultiGameManager.world_for_game_level(game_id, level)
-	var first := MultiGameManager.first_level_in_game_world(game_id, world)
-	var last := MultiGameManager.last_level_in_game_world(game_id, world)
+	var highest := int(_multi.call("highest_level", game_id))
+	var level := clampi(highest, 1, CAMPAIGN_LEVELS)
+	var completed_level := clampi(highest - 1, 0, CAMPAIGN_LEVELS)
+	var world := int(_multi.call("world_for_game_level", game_id, level))
+	var first := int(_multi.call("first_level_in_game_world", game_id, world))
+	var last := int(_multi.call("last_level_in_game_world", game_id, world))
 	var total := maxi(1, last - first + 1)
 	var completed := clampi(completed_level - first + 1, 0, total)
 	return {
@@ -122,8 +131,8 @@ func _expected_title(game_id: String) -> String:
 
 func _restore_save() -> void:
 	if not _original_data.is_empty():
-		SaveManager.data = _original_data.duplicate(true)
-		SaveManager.save()
+		_save.set("data", _original_data.duplicate(true))
+		_save.call("save")
 
 func _frames(count: int) -> void:
 	for _i in range(count):
