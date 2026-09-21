@@ -349,13 +349,19 @@ func _remove_active_game() -> void:
 			remove_child(stale)
 		stale.queue_free()
 
+func _return_from_daily() -> void:
+	if has_method("build_daily_games"):
+		call("build_daily_games")
+	else:
+		build_home()
+
 func force_back_from_game() -> void:
 	# Android back must never depend on the active game's animation/busy state.
 	var game_id := selected_game_id
 	var was_daily := active_game != null and is_instance_valid(active_game) and bool(active_game.get("daily_mode"))
 	_remove_active_game()
 	if was_daily:
-		build_daily_games()
+		_return_from_daily()
 	elif game_id == "rescue_rush":
 		build_level_select()
 	else:
@@ -367,7 +373,7 @@ func force_back_from_game() -> void:
 func _on_rescue_finished(completed_level: int, was_daily: bool = false) -> void:
 	active_game = null
 	if was_daily:
-		build_daily_games()
+		_return_from_daily()
 	elif completed_level < 0:
 		build_home()
 	elif LevelManager.has_level(completed_level + 1):
@@ -378,14 +384,14 @@ func _on_rescue_finished(completed_level: int, was_daily: bool = false) -> void:
 func _on_rescue_quit(was_daily: bool = false) -> void:
 	active_game = null
 	if was_daily:
-		build_daily_games()
+		_return_from_daily()
 	else:
 		build_level_select()
 
 func _on_multi_finished(completed_level: int, game_id: String, was_daily: bool = false) -> void:
 	active_game = null
 	if was_daily:
-		build_daily_games()
+		_return_from_daily()
 	elif completed_level < 0:
 		build_home()
 	elif completed_level < MultiGameManager.CAMPAIGN_LEVELS:
@@ -396,7 +402,7 @@ func _on_multi_finished(completed_level: int, game_id: String, was_daily: bool =
 func _on_multi_quit(game_id: String, was_daily: bool = false) -> void:
 	active_game = null
 	if was_daily:
-		build_daily_games()
+		_return_from_daily()
 		return
 	selected_game_id = game_id
 	selected_multi_world = MultiGameManager.world_for_game_level(game_id, MultiGameManager.highest_level(game_id))
