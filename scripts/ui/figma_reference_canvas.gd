@@ -28,6 +28,10 @@ static func _style_cache_key(kind: String, colors: Array[Color], radius: float, 
 
 func _ready() -> void:
 	set_meta("unjam_figma_reference_root", true)
+	# Cached gradient textures are much smaller than the final phone surface.
+	# Explicit linear sampling prevents their source rows from appearing as
+	# horizontal scan-line bands after the 390x844 canvas is device-scaled.
+	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	size = REFERENCE_SIZE
 	custom_minimum_size = REFERENCE_SIZE
