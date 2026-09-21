@@ -192,8 +192,8 @@ func _add_bottom_nav(canvas: Control) -> void:
 	var items := [
 		["HOME", "⌂", 22.0, Callable(self, "_go_home"), false, Color("#33b9ff")],
 		["GAMES", "▦", 91.0, Callable(), true, Color("#7b6cff")],
-		["DAILY", "✦", 160.0, func(): get_parent().call("build_daily_games"), false, Color("#ffd54f")],
-		["COLLECT", "◆", 222.0, func(): get_parent().call("build_collection"), false, Color("#21c763")],
+		["DAILY", "✦", 150.0, func(): get_parent().call("build_daily_games"), false, Color("#ffd54f")],
+		["COLLECT", "◆", 225.0, func(): get_parent().call("build_collection"), false, Color("#21c763")],
 		["SETTINGS", "⚙", 310.0, func(): get_parent().call("build_settings"), false, CYAN],
 	]
 	for item in items:
