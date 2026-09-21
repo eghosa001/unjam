@@ -101,9 +101,9 @@ func _build_reference_selector(canvas: Control) -> void:
 	settings.pressed.connect(func(): get_parent().call("build_settings"))
 	canvas.add_child(settings)
 
-	_add_game_card(canvas, "rescue_rush", Rect2(17, 111, 354, 160), Color("#21c763"), Color("#49d17f"), "RESCUE RUSH", "Tap arrows. Clear the lane.")
-	_add_game_card(canvas, "water_sort", Rect2(17, 285, 354, 160), Color("#1aa8ff"), Color("#43b8ff"), "WATER SORT", "Pour colours into matching tubes.")
-	_add_game_card(canvas, "block_puzzle", Rect2(17, 459, 354, 160), Color("#c73dff"), Color("#d160ff"), "BLOCK PUZZLE", "Drag pieces. Clear lines.")
+	_add_game_card(canvas, "rescue_rush", Rect2(17, 111, 354, 160), Color("#21c763"), Color("#49d17f"), "RESCUE RUSH", "Tap arrows. Clear paths.")
+	_add_game_card(canvas, "water_sort", Rect2(17, 285, 354, 160), Color("#1aa8ff"), Color("#43b8ff"), "WATER SORT", "Sort colours by tube.")
+	_add_game_card(canvas, "block_puzzle", Rect2(17, 459, 354, 160), Color("#c73dff"), Color("#d160ff"), "BLOCK PUZZLE", "Place blocks. Clear lines.")
 	_add_bottom_nav(canvas)
 
 func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color, highlight: Color, title: String, subtitle: String) -> void:
@@ -118,7 +118,23 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 	var game_title := _add_text(canvas, title, Rect2(34, rect.position.y + 12.6, 184, 24), 20, OFF_WHITE, true)
 	game_title.name = "SelectorGameTitle_%s" % game_id
 	RefCanvas.style_display_title(game_title, Color("#fff7df"), accent.darkened(0.62), 2)
-	_add_text(canvas, subtitle, Rect2(34, rect.position.y + 39.6, 184, 18), 13, OFF_WHITE, false)
+	# Keep body copy in a hard clipping region. Label intrinsic minimum size can
+	# exceed its authored width for longer localized strings, so the wrapper is
+	# the authoritative boundary before the 3D emblem.
+	var subtitle_clip := Control.new()
+	subtitle_clip.name = "SelectorGameSubtitleClip_%s" % game_id
+	subtitle_clip.clip_contents = true
+	subtitle_clip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	RefCanvas.set_rect(subtitle_clip, 34, rect.position.y + 39.6, 184, 38)
+	canvas.add_child(subtitle_clip)
+	var game_subtitle := _make_label(subtitle, 13, OFF_WHITE, false)
+	game_subtitle.name = "SelectorGameSubtitle_%s" % game_id
+	game_subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	game_subtitle.clip_text = true
+	game_subtitle.custom_minimum_size = Vector2.ZERO
+	game_subtitle.position = Vector2.ZERO
+	game_subtitle.size = Vector2(184, 38)
+	subtitle_clip.add_child(game_subtitle)
 	var level := maxi(1, MultiGameManager.highest_level(game_id))
 	RefCanvas.add_shadow(canvas, Rect2(33, rect.position.y + 100.7, 112, 36), 13, Color(0.02,0.10,0.20,0.16), 3, Vector2(0,2))
 	var level_pill := PanelContainer.new()
@@ -143,6 +159,7 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 func _add_card_preview(canvas: Control, game_id: String, card_y: float) -> void:
 	var origin_y := card_y + 22.5
 	var stage := PanelContainer.new()
+	stage.name = "SelectorGamePreviewFrame_%s" % game_id
 	var stage_mid := Color(0.92, 1.0, 0.86, 0.50) if game_id == "rescue_rush" else (Color(0.91, 0.99, 1.0, 0.54) if game_id == "water_sort" else Color(0.94, 0.91, 1.0, 0.46))
 	stage.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(stage_mid.lightened(0.12), stage_mid, stage_mid.darkened(0.10), 16, Color(1,1,1,0.24), 1, 0.40))
 	RefCanvas.set_rect(stage, 243, origin_y, 104, 112)
@@ -150,7 +167,7 @@ func _add_card_preview(canvas: Control, game_id: String, card_y: float) -> void:
 	canvas.add_child(stage)
 	var art := GAME_ART_SCRIPT.new()
 	art.name = "SelectorGameArt3D_%s" % game_id
-	art.configure(game_id)
+	art.configure(game_id, true)
 	RefCanvas.set_rect(art, 243, origin_y, 104, 112)
 	canvas.add_child(art)
 

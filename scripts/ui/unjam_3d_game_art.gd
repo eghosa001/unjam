@@ -1,28 +1,35 @@
 class_name Unjam3DGameArt
 extends SubViewportContainer
 
-# Lightweight real 3D preview used on Choose-a-Game cards. Each card is a
-# one-shot rendered toy diorama: true lighting/depth without three permanent
-# 3D render loops running behind a scroll view.
+# Lightweight one-shot 3D game art shared by Home, results and Choose a Game.
+# Selector cards opt into an orthographic flat-3D / 2.5D treatment; wider Home
+# and result consumers keep the original perspective render and aspect ratio.
 var game_id := "rescue_rush"
 var accent := Unjam3DTheme.GREEN
+var flat_selector_mode := false
 var viewport_3d: SubViewport
 var stage: Node3D
 var display_root: Node3D
 
-func configure(id: String) -> void:
+func configure(id: String, use_flat_selector: bool = false) -> void:
 	game_id = id
 	accent = Unjam3DTheme.game_accent(id)
+	flat_selector_mode = use_flat_selector
+	set_meta("unjam_flat_3d_preview", flat_selector_mode)
 	if is_inside_tree() and viewport_3d != null:
+		viewport_3d.size = Vector2i(416, 448) if flat_selector_mode else Vector2i(576, 432)
 		call_deferred("_rebuild_stage")
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	set_meta("unjam_flat_3d_preview", flat_selector_mode)
 	stretch = true
 	viewport_3d = SubViewport.new()
 	viewport_3d.own_world_3d = true
 	viewport_3d.name = "GamePreviewViewport3D"
-	viewport_3d.size = Vector2i(576, 432)
+	# Selector cards use their tall 104x112 aspect; other consumers retain the
+	# original 4:3 render so Home/result art is never widened by card-specific UI.
+	viewport_3d.size = Vector2i(416, 448) if flat_selector_mode else Vector2i(576, 432)
 	viewport_3d.transparent_bg = true
 	viewport_3d.msaa_3d = Viewport.MSAA_4X
 	viewport_3d.render_target_update_mode = SubViewport.UPDATE_ALWAYS
@@ -72,36 +79,44 @@ func _build_stage() -> void:
 	environment.background_mode = Environment.BG_COLOR
 	environment.background_color = Unjam3DTheme.game_dark(game_id)
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment.ambient_light_color = accent.lightened(0.70)
-	environment.ambient_light_energy = 1.02
+	environment.ambient_light_color = accent.lightened(0.74 if flat_selector_mode else 0.70)
+	environment.ambient_light_energy = 1.16 if flat_selector_mode else 1.02
 	world_environment.environment = environment
 	stage.add_child(world_environment)
 
 	var key := DirectionalLight3D.new()
-	key.rotation_degrees = Vector3(-48, -34, 0)
+	key.rotation_degrees = Vector3(-52, -34, 0) if flat_selector_mode else Vector3(-48, -34, 0)
 	key.light_color = Color("fff7dc")
-	key.light_energy = 1.55
+	key.light_energy = 1.42 if flat_selector_mode else 1.55
 	key.shadow_enabled = true
 	stage.add_child(key)
 	var rim := DirectionalLight3D.new()
 	rim.rotation_degrees = Vector3(-22, 146, 12)
 	rim.light_color = accent.lightened(0.45)
-	rim.light_energy = 0.92
+	rim.light_energy = 0.72 if flat_selector_mode else 0.92
 	stage.add_child(rim)
 	var fill := OmniLight3D.new()
 	fill.position = Vector3(-3.2, 3.4, 4.1)
 	fill.light_color = Color("9beaff")
-	fill.light_energy = 0.62
+	fill.light_energy = 0.46 if flat_selector_mode else 0.62
 	fill.omni_range = 12.0
 	stage.add_child(fill)
 
 	var camera := Camera3D.new()
-	# Slightly closer, narrower framing makes the real 3D object the card's focal
-	# point instead of a small thumbnail floating in a large empty preview panel.
-	camera.position = Vector3(4.45, 4.55, 6.65)
-	camera.fov = 39.0
+	if flat_selector_mode:
+		camera.name = "Flat3DPreviewCamera"
+		# Orthographic/isometric framing reads like premium flat-3D iconography.
+		# Size 9.15 leaves real breathing room around the widest projected boards
+		# in the tall 104:112 selector viewport instead of clipping their side edges.
+		camera.projection = Camera3D.PROJECTION_ORTHOGONAL
+		camera.size = 9.15
+		camera.position = Vector3(5.35, 7.15, 6.85)
+	else:
+		camera.name = "PerspectivePreviewCamera"
+		camera.position = Vector3(4.45, 4.55, 6.65)
+		camera.fov = 39.0
 	stage.add_child(camera)
-	camera.look_at(Vector3(0, 0.48, 0), Vector3.UP)
+	camera.look_at(Vector3(0, 0.62, 0), Vector3.UP) if flat_selector_mode else camera.look_at(Vector3(0, 0.48, 0), Vector3.UP)
 	camera.current = true
 
 	display_root = Node3D.new()
@@ -136,11 +151,17 @@ func _build_rescue_rush() -> void:
 	_add_arrow_tile(Vector3(0.56, 0.34, -0.04), Color("ff4d55"), 90.0)
 	_add_arrow_tile(Vector3(0.56, 0.34, 1.08), Color("20d86b"), 180.0)
 	_add_arrow_tile(Vector3(-1.74, 0.34, -0.04), Color("c63cff"), -90.0)
-
-	_add_sphere(display_root, 0.46, Vector3(-0.58, 0.57, -0.02), Color("ffd83d"), Vector3(1.0, 0.96, 1.0))
-	_add_sphere(display_root, 0.06, Vector3(-0.72, 0.68, 0.40), Color("17304a"), Vector3.ONE)
-	_add_sphere(display_root, 0.06, Vector3(-0.44, 0.68, 0.40), Color("17304a"), Vector3.ONE)
-	_add_sphere(display_root, 0.09, Vector3(-0.58, 0.51, 0.43), Color("ff795f"), Vector3(1.35, 0.35, 0.30))
+	if flat_selector_mode:
+		# At chooser-card scale, gameplay arrows identify Rescue Rush faster than
+		# a mascot face and remain legible in the orthographic emblem.
+		_add_arrow_tile(Vector3(-0.59, 0.34, -0.04), Color("ffd83d"), 0.0)
+		_add_arrow_tile(Vector3(1.71, 0.34, 1.08), Color("ff8d1f"), -90.0)
+	else:
+		# Preserve the established mascot detail on larger Home/result previews.
+		_add_sphere(display_root, 0.46, Vector3(-0.58, 0.57, -0.02), Color("ffd83d"), Vector3(1.0, 0.96, 1.0))
+		_add_sphere(display_root, 0.06, Vector3(-0.72, 0.68, 0.40), Color("17304a"), Vector3.ONE)
+		_add_sphere(display_root, 0.06, Vector3(-0.44, 0.68, 0.40), Color("17304a"), Vector3.ONE)
+		_add_sphere(display_root, 0.09, Vector3(-0.58, 0.51, 0.43), Color("ff795f"), Vector3(1.35, 0.35, 0.30))
 
 	_add_box(display_root, Vector3(0.18, 0.95, 0.18), Vector3(2.78, 0.28, -0.72), Color("fff3d1"), 0.0, 0.34)
 	_add_box(display_root, Vector3(0.18, 0.95, 0.18), Vector3(2.78, 0.28, 0.72), Color("fff3d1"), 0.0, 0.34)
