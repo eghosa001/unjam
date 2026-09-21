@@ -63,6 +63,8 @@ func _run() -> void:
 			failures.append("Home is missing Daily Games route token: %s" % token)
 	for token in [
 		"func build_daily_games",
+		"\"collection\":222.0, \"settings\":310.0",
+		"nav_label.clip_text = true",
 		"DailyCard/",
 		"PLAY TODAY",
 		"DONE TODAY",
