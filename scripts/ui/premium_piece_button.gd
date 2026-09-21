@@ -79,18 +79,28 @@ func _draw_motion_trail(center: Vector2, pulse: float) -> void:
 
 func _draw_shell(rect: Rect2, center: Vector2, pulse: float) -> void:
 	var radius := minf(rect.size.x, rect.size.y) * 0.22
-	var shadow_rect := Rect2(rect.position + Vector2(0, 7), rect.size)
-	draw_style_box(_rounded(accent.darkened(0.43), radius, Color(0.02, 0.13, 0.22, 0.34), 2), shadow_rect)
-	var edge := glow.lightened(0.10)
-	draw_style_box(_rounded(accent, radius, edge, 4), rect)
-	# Lower bevel gives the tile its chunky toy depth.
-	var lower := Rect2(Vector2(rect.position.x + 5, rect.end.y - rect.size.y * 0.20), Vector2(rect.size.x - 10, rect.size.y * 0.15))
-	draw_style_box(_rounded(Color(accent.darkened(0.28), 0.78), radius * 0.46, Color.TRANSPARENT, 0), lower)
-	# Broad glossy cap instead of the old dark inner plate.
-	var gloss_rect := Rect2(rect.position + Vector2(9, 8), Vector2(rect.size.x - 18, maxf(8.0, rect.size.y * 0.16)))
-	draw_style_box(_rounded(Color(1, 1, 1, 0.25 + pulse * 0.04), radius * 0.42, Color.TRANSPARENT, 0), gloss_rect)
-	var side_gloss := Rect2(rect.position + Vector2(8, rect.size.y * 0.24), Vector2(maxf(5.0, rect.size.x * 0.07), rect.size.y * 0.43))
-	draw_style_box(_rounded(Color(1, 1, 1, 0.12), radius * 0.30, Color.TRANSPARENT, 0), side_gloss)
+	# A visible lower sidewall and contact shadow give the tile physical thickness
+	# before the glossy front face is drawn on top.
+	var shadow_rect := Rect2(rect.position + Vector2(0, 9), rect.size)
+	draw_style_box(_rounded(Color(0.01, 0.05, 0.10, 0.38), radius, Color.TRANSPARENT, 0), shadow_rect)
+	var side_rect := Rect2(rect.position + Vector2(0, 6), rect.size)
+	draw_style_box(_rounded(accent.darkened(0.34), radius, accent.darkened(0.48), 2), side_rect)
+	var edge := glow.lightened(0.12)
+	draw_style_box(_rounded(accent, radius, edge, 3), rect)
+	# Bright top bevel and darker bottom rolloff create clear material separation.
+	var top_face := PackedVector2Array([
+		rect.position + Vector2(radius * 0.42, 4),
+		rect.position + Vector2(rect.size.x - radius * 0.42, 4),
+		rect.position + Vector2(rect.size.x - radius * 0.70, 11),
+		rect.position + Vector2(radius * 0.70, 11)
+	])
+	draw_colored_polygon(top_face, Color(accent.lightened(0.34), 0.54))
+	var lower := Rect2(Vector2(rect.position.x + 5, rect.end.y - rect.size.y * 0.18), Vector2(rect.size.x - 10, rect.size.y * 0.13))
+	draw_style_box(_rounded(Color(accent.darkened(0.30), 0.76), radius * 0.46, Color.TRANSPARENT, 0), lower)
+	# Localized lacquer highlight rather than a flat white stripe.
+	var gloss_rect := Rect2(rect.position + Vector2(10, 9), Vector2(rect.size.x * 0.48, maxf(8.0, rect.size.y * 0.15)))
+	draw_style_box(_rounded(Color(1, 1, 1, 0.28 + pulse * 0.035), radius * 0.42, Color.TRANSPARENT, 0), gloss_rect)
+	draw_circle(rect.position + Vector2(rect.size.x * 0.24, rect.size.y * 0.28), maxf(2.0, rect.size.x * 0.035), Color(1,1,1,0.46))
 	if hover_amount > 0.01:
 		draw_arc(center, rect.size.x * 0.55, 0, TAU, 36, Color(glow, 0.18 + pulse * 0.10), 4.0, true)
 
