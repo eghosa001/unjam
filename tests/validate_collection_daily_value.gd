@@ -66,7 +66,7 @@ func _run() -> void:
 		"DailyCard/",
 		"PLAY TODAY",
 		"DONE TODAY",
-		"TODAY: %s",
+		"if _daily_done(game_id)",
 		"COLLECTION BONUS",
 		"Proto/ScrollToUpgrades",
 		"func build_collection_upgrades",
