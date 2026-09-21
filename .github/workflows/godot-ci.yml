@@ -36,7 +36,14 @@ jobs:
         run: |
           set -euo pipefail
           chmod +x tools/install_monetization_plugins.sh
-          tools/install_monetization_plugins.sh
+          for attempt in 1 2 3; do
+            if tools/install_monetization_plugins.sh; then
+              exit 0
+            fi
+            echo "Plugin download attempt $attempt failed; retrying..."
+            sleep $((attempt * 2))
+          done
+          exit 1
 
       - name: Import project and reject script errors
         shell: bash
