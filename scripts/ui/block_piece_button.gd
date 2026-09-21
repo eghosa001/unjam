@@ -423,6 +423,18 @@ func _draw() -> void:
 			points.append(point)
 	if points.is_empty():
 		return
+	# Give every live tray choice a subtle physical pedestal so the selectable
+	# piece remains distinct from the pale tray even before it is pressed.
+	var pedestal_rect := Rect2(Vector2(3.0, 7.0), size - Vector2(6.0, 14.0))
+	var pedestal_fill := Color(accent.darkened(0.58), 0.10 if not selected else 0.18)
+	var pedestal_border := Color(accent.lightened(0.24), 0.24 if not selected else 0.62)
+	draw_style_box(_style(pedestal_fill, pedestal_border, 2, 14), pedestal_rect)
+	var pedestal_gloss := Rect2(
+		pedestal_rect.position + Vector2(10.0, 7.0),
+		Vector2(maxf(8.0, pedestal_rect.size.x - 20.0), 5.0)
+	)
+	draw_style_box(_style(Color(1, 1, 1, 0.10), Color.TRANSPARENT, 0, 3), pedestal_gloss)
+
 	var max_x := 0
 	var max_y := 0
 	for point in points:
@@ -452,8 +464,8 @@ func tray_visual_cell_size() -> float:
 
 func _tray_cell_size(max_x: int, max_y: int) -> float:
 	var fit_cell := minf((size.x - 10.0) / float(max_x + 1), (size.y - 10.0) / float(max_y + 1))
-	# Tray pieces should be immediately legible and close to the 32.6px board
-	# cells, while still fitting the tallest three-cell shapes without clipping.
+	# Keep tray bricks visually close to board-cell scale; the pedestal supplies
+	# hierarchy without forcing the actual brick geometry to shrink.
 	return clampf(minf(32.0, fit_cell), 18.0, 32.0)
 
 func _draw_block(rect: Rect2, fill: Color) -> void:
