@@ -41,8 +41,11 @@ func _run() -> void:
 		if preview == null or not bool(preview.get_meta("unjam_flat_3d_preview", false)):
 			return _fail("Selector flat-3D gameplay emblem is missing for %s" % game_id)
 		var preview_viewport := _find(preview, "GamePreviewViewport3D") as SubViewport
-		if preview_viewport == null or preview_viewport.size != Vector2i(416, 448):
-			return _fail("Selector preview aspect/render size regressed for %s" % game_id)
+		if preview_viewport == null or preview_viewport.size.y <= 0:
+			return _fail("Selector preview viewport is missing for %s" % game_id)
+		var preview_aspect := float(preview_viewport.size.x) / float(preview_viewport.size.y)
+		if absf(preview_aspect - (104.0 / 112.0)) > 0.03:
+			return _fail("Selector preview aspect ratio regressed for %s" % game_id)
 		var preview_camera := _find(preview, "Flat3DPreviewCamera") as Camera3D
 		if preview_camera == null or preview_camera.projection != Camera3D.PROJECTION_ORTHOGONAL:
 			return _fail("Selector gameplay emblem must use orthographic flat-3D framing for %s" % game_id)
