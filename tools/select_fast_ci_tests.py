@@ -292,10 +292,13 @@ def _premium_main_scopes(functions: set[str]) -> set[str]:
     scopes: set[str] = set()
     shared_prefixes = (
         "_figma_surface", "_figma_text", "_figma_button", "_figma_card",
-        "_figma_solid_card", "_figma_header", "_figma_bottom_nav", "_figma_theme",
+        "_figma_solid_card", "_figma_header", "_figma_theme",
     )
     for name in functions:
         low = name.lower()
+        if name == "_figma_bottom_nav":
+            scopes.update({"collection", "daily", "settings"})
+            continue
         if name.startswith(shared_prefixes):
             return set(PREMIUM_MAIN_BROAD_SCOPES)
         if "setting" in low or "privacy" in low or "tutorial" in low:
@@ -388,6 +391,7 @@ def self_test() -> None:
     assert _premium_main_scopes({"build_settings", "_figma_setting_row"}) == {"settings"}
     assert _premium_main_scopes({"build_collection_upgrades"}) == {"collection"}
     assert _premium_main_scopes({"build_daily_games"}) == {"daily"}
+    assert _premium_main_scopes({"_figma_bottom_nav"}) == {"collection", "daily", "settings"}
     assert _premium_main_scopes({"_figma_surface"}) == PREMIUM_MAIN_BROAD_SCOPES
     assert "validate_requested_polish_contract" in GROUP_TESTS["secondary_ui"]
     icon_plan = plan_for_paths(["assets/icon_adaptive_foreground.svg"])
