@@ -451,8 +451,9 @@ func _demo_rescue(step: int) -> void:
 	exit.add_theme_stylebox_override("panel",FigmaReferenceCanvas.rounded_gradient3(Color("#80efb0"),Color("#35b96b"),Color("#148b4c"),10))
 	FigmaReferenceCanvas.set_rect(exit,168,21,30,44)
 	_tutorial_demo_root.add_child(exit)
-	var exit_label := FigmaReferenceCanvas.label("EXIT",11,Color.WHITE,true)
-	FigmaReferenceCanvas.set_rect(exit_label,161,35,44,14)
+	var exit_label := FigmaReferenceCanvas.label("EXIT",12,Color.WHITE,true)
+	exit_label.name = "TutorialDemoExitLabel"
+	FigmaReferenceCanvas.set_rect(exit_label,160,34,46,17)
 	exit_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_tutorial_demo_root.add_child(exit_label)
 	if step == 1:
