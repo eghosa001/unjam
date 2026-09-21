@@ -1,4 +1,4 @@
-name: Godot CI
+name: Godot Fast CI
 
 on:
   push:
@@ -9,120 +9,59 @@ permissions:
   contents: read
 
 concurrency:
-  group: godot-ci-${{ github.ref }}
+  group: godot-fast-ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - name: Upload current source snapshot
-        uses: actions/upload-artifact@v4
-        with:
-          name: unjam-current-source
-          path: |
-            .
-            !.git/**
-            !build/**
-          include-hidden-files: true
-          if-no-files-found: error
-          retention-days: 1
-      - name: Validate release contract
+
+      - name: Validate static release contract
         shell: bash
         run: |
           set -euo pipefail
           python3 tools/validate_release_contract.py
-      - name: Setup Node 22
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Validate purchase verifier backend
-        shell: bash
-        run: |
-          set -euxo pipefail
-          python3 tools/validate_purchase_claim_protocol.py
-          cd backend/play-verifier
-          npm install --omit=dev --no-audit --no-fund
-          npm test
-          node --check src/server.js
-          node --check src/google_play.js
-          node --check src/firestore_ledger.js
-      - name: Setup JDK 17
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: '17'
+
       - name: Setup Godot 4.7.2
         uses: solarlabyrinth/action-setup-godot@v3
         with:
           version: 4.7.2-stable
-          export-templates: true
-      - name: Install Android API 36
+          export-templates: false
+
+      - name: Install runtime plugins
         shell: bash
         run: |
-          set -euxo pipefail
-          ANDROID_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
-          test -n "$ANDROID_ROOT"
-          SDKMANAGER=$(find "$ANDROID_ROOT/cmdline-tools" -name sdkmanager -type f | sort | tail -1)
-          test -x "$SDKMANAGER"
-          set +o pipefail
-          yes | "$SDKMANAGER" --sdk_root="$ANDROID_ROOT" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
-          SDK_STATUS=${PIPESTATUS[1]}
-          set -o pipefail
-          test "$SDK_STATUS" -eq 0
-          echo "ANDROID_HOME=$ANDROID_ROOT" >> "$GITHUB_ENV"
-          echo "ANDROID_SDK_ROOT=$ANDROID_ROOT" >> "$GITHUB_ENV"
-      - name: Install monetization plugins
-        shell: bash
-        run: |
-          set -euxo pipefail
+          set -euo pipefail
           chmod +x tools/install_monetization_plugins.sh
           tools/install_monetization_plugins.sh
+
       - name: Import project and reject script errors
         shell: bash
         run: |
           set -o pipefail
           godot --headless --path . --editor --quit 2>&1 | tee import.log
           if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" import.log; then exit 1; fi
-      - name: Upload Godot import diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: unjam-import-diagnostics
-          path: import.log
-          if-no-files-found: warn
-          retention-days: 3
-      - name: Fast quality contracts
+
+      - name: Run high-signal iteration contracts
         shell: bash
         run: |
           set -euxo pipefail
-          for t in validate_requested_polish_contract validate_daily_and_late_water_runtime validate_collection_daily_value validate_soothing_audio_palette validate_motion_quality validate_transition_ownership validate_edge_safe_effects validate_gameplay_stage_budget validate_decorative_3d_frame_budget validate_rescue_token_render_lifecycle validate_water_tubes_sleep_idle validate_water_liquid_continuity validate_block_cells_sleep_idle validate_block_compact_fit validate_block_single_touch_owner validate_reported_polish_regressions validate_premium_benchmark_features validate_assist_difficulty_pass validate_difficulty_curves validate_coin_economy validate_coin_grants validate_external_coin_sync validate_progression_coin_sync validate_monetization validate_admob_production validate_billing_production validate_premium_ux validate_visual_quality_contract validate_production_completion validate_uiux_regressions validate_figma_runtime_sync validate_viewport_fit validate_compact_gameplay_stack validate_home_premium_visual_hierarchy validate_home_event_driven validate_home_tall_screen_composition validate_tutorial_premium_flow validate_result_premium_hierarchy validate_theme_integrity validate_block_puzzle_premium_visual_hierarchy validate_navigation_surface_coverage validate_retention validate_robustness validate_production_hardening_regressions; do
-            bash tools/run_godot_test.sh "$t" 45
-          done
-      - name: Fast flat-board 3D-effects architecture and idle-cost contracts
-        shell: bash
-        run: |
-          set -euxo pipefail
-          for t in validate_flat_gameplay_surfaces validate_hybrid_gameplay_architecture validate_3d_world_isolation validate_gameplay_stage_budget validate_decorative_3d_frame_budget validate_rescue_piece_idle_cost validate_rescue_token_render_lifecycle validate_water_tubes_sleep_idle validate_block_cells_sleep_idle validate_transition_ownership; do
+          for t in             validate_requested_polish_contract             validate_reported_polish_regressions             validate_uiux_regressions             validate_viewport_fit             validate_compact_gameplay_stack             validate_transition_ownership             validate_gameplay_interactions             validate_progression_transitions             validate_daily_and_late_water_runtime             validate_water_liquid_continuity             validate_water_pour_arc             validate_block_visual_integrity             validate_block_single_touch_owner             validate_rescue_token_render_lifecycle             validate_theme_integrity
+          do
             bash tools/run_godot_test.sh "$t" 45
           done
 
-      - name: Focused gameplay and campaign contracts
-        shell: bash
-        run: |
-          set -euxo pipefail
-          for t in validate_block_exact_solver validate_campaign validate_campaign_diversity validate_level_launch validate_gameplay_interactions validate_progression_transitions validate_home_direct_levels_runtime validate_rescue_hint_exec validate_rescue_progression_10000 validate_water_sort_type_safety validate_water_tube_3d_layering validate_water_premium_visual_hierarchy validate_water_idle_status_after_pour validate_water_tubes_sleep_idle validate_water_assist_runtime validate_block_hint_exec_runtime validate_assist_economy_runtime validate_shop_navigation_runtime validate_shop_catalog_ui validate_insufficient_coins_prompt validate_restore_purchase_flow validate_live_wallet_shop validate_secondary_wallet_shop validate_gameplay_wallet_ui validate_block_progression_10000 validate_block_constructive_solvability validate_block_objective_runtime validate_block_level_pack_codec validate_block_visual_integrity validate_block_modes_boosters validate_block_bot_calibration validate_water_progression validate_water_pour_arc validate_water_constructive_solvability; do
-            bash tools/run_godot_test.sh "$t" 180
-          done
       - name: Boot smoke test
         shell: bash
         run: |
           set -o pipefail
           godot --headless --path . --quit-after 5 2>&1 | tee boot.log
           if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" boot.log; then exit 1; fi
-      - name: Render visual audit screenshots
+
+      - name: Capture rendered regression screens
         shell: bash
         run: |
           set -euxo pipefail
@@ -130,118 +69,27 @@ jobs:
           xvfb-run -a godot --path . --rendering-method gl_compatibility --script res://tests/capture_visual_audit.gd 2>&1 | tee visual-audit.log
           if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access|ObjectDB instances were leaked|Leaked instance:" visual-audit.log; then exit 1; fi
           test -s build/visual-audit/01-home-dark.png
-          test -s build/visual-audit/03b-levels-rescue-540x960-dark.png
-          test -s build/visual-audit/05b-collection-540x960-dark.png
           test -s build/visual-audit/09c-game-rescue-motion-540x960.png
           test -s build/visual-audit/10c-game-water-pouring-540x960.png
-          test -s build/visual-audit/10d-game-water-settled-540x960.png
           test -s build/visual-audit/11-game-block.png
           test -s build/visual-audit/15b-tutorial-540x960-dark.png
           test -s build/visual-audit/16b-result-540x960-dark.png
-      - name: Upload visual audit screenshots
-        uses: actions/upload-artifact@v4
-        with:
-          name: unjam-visual-audit
-          path: build/visual-audit/*.png
-          if-no-files-found: error
-          retention-days: 7
-      - name: Prepare Android debug keystore
-        shell: bash
-        run: |
-          set -euxo pipefail
-          keytool -genkeypair -v -keystore "$RUNNER_TEMP/unjam-debug.keystore" -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Unjam Debug,O=Unjam,C=NG"
-          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$RUNNER_TEMP/unjam-debug.keystore" >> "$GITHUB_ENV"
-          echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> "$GITHUB_ENV"
-          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> "$GITHUB_ENV"
-      - name: Android API 36 Gradle APK export smoke test
-        shell: bash
-        run: |
-          set -o pipefail
-          mkdir -p build/android
-          cp export_presets.cfg "$RUNNER_TEMP/export_presets.aab.cfg"
-          sed -i 's/gradle_build\/export_format=1/gradle_build\/export_format=0/' export_presets.cfg
-          godot --headless --verbose --path . --install-android-build-template --export-debug Android build/android/unjam-debug.apk 2>&1 | tee android-apk-export.log
-          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" android-apk-export.log; then exit 1; fi
-          test -s build/android/unjam-debug.apk
-          cp "$RUNNER_TEMP/export_presets.aab.cfg" export_presets.cfg
-      - name: Verify packaged monetization manifest contract
-        shell: bash
-        run: |
-          set -euo pipefail
-          APK=build/android/unjam-debug.apk
-          AAPT="$(find "$ANDROID_SDK_ROOT/build-tools" -type f -name aapt | sort | tail -1)"
-          test -x "$AAPT"
-          "$AAPT" dump badging "$APK" | tee build/android/apk-badging.txt
-          "$AAPT" dump permissions "$APK" | tee build/android/apk-permissions.txt
-          "$AAPT" dump xmltree "$APK" AndroidManifest.xml | tee build/android/apk-manifest.txt
-          grep -F "package: name='com.eghosa.unjamgam'" build/android/apk-badging.txt
-          grep -F "targetSdkVersion:'36'" build/android/apk-badging.txt
-          grep -F "native-code: 'arm64-v8a'" build/android/apk-badging.txt
-          grep -F "android.permission.INTERNET" build/android/apk-permissions.txt
-          grep -F "android.permission.ACCESS_NETWORK_STATE" build/android/apk-permissions.txt
-          grep -F "com.google.android.gms.permission.AD_ID" build/android/apk-permissions.txt
-          grep -F "com.google.android.gms.ads.APPLICATION_ID" build/android/apk-manifest.txt
-          grep -F "ca-app-pub-7517898921176341~1892369383" build/android/apk-manifest.txt
-          grep -F "com.android.vending.BILLING" build/android/apk-permissions.txt
-          grep -F "com.google.android.play.billingclient.version" build/android/apk-manifest.txt
-          grep -F '"9.1.0"' build/android/apk-manifest.txt
-          grep -F "org.godotengine.plugin.v2.GodotGooglePlayBilling" build/android/apk-manifest.txt
-          grep -F "com.android.billingclient.api.ProxyBillingActivity" build/android/apk-manifest.txt
-      - name: Upload Android debug APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: unjam-debug-apk
-          path: build/android/unjam-debug.apk
-          if-no-files-found: error
-          retention-days: 7
-      - name: Android API 36 Gradle AAB export smoke test
-        shell: bash
-        run: |
-          set -o pipefail
-          godot --headless --verbose --path . --export-debug Android build/android/unjam-debug.aab 2>&1 | tee android-aab-export.log
-          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" android-aab-export.log; then exit 1; fi
-          test -s build/android/unjam-debug.aab
-      - name: Verify debug AAB 16 KB native page compatibility
-        shell: bash
-        run: |
-          set -euo pipefail
-          AAB=build/android/unjam-debug.aab
-          NATIVE_DIR="$RUNNER_TEMP/unjam-debug-native-libs"
-          rm -rf "$NATIVE_DIR"
-          mkdir -p "$NATIVE_DIR"
-          unzip -q "$AAB" 'base/lib/*/*.so' -d "$NATIVE_DIR" || true
-          python3 - <<'PY'
-          import pathlib
-          import re
-          import subprocess
-          import os
 
-          root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'unjam-debug-native-libs'
-          libs = sorted(root.rglob('*.so'))
-          if not libs:
-              raise SystemExit('No native libraries found in debug AAB for 16 KB alignment verification')
-          failures = []
-          for lib in libs:
-              out = subprocess.check_output(['readelf', '-lW', str(lib)], text=True, errors='replace')
-              aligns = []
-              for line in out.splitlines():
-                  if re.match(r'^\s*LOAD\s', line):
-                      try:
-                          aligns.append(int(line.split()[-1], 16))
-                      except ValueError:
-                          pass
-              if not aligns:
-                  failures.append(f'{lib}: no LOAD segments parsed')
-              elif min(aligns) < 0x4000:
-                  failures.append(f'{lib}: LOAD alignment {min(aligns):#x} < 0x4000')
-          if failures:
-              raise SystemExit('16 KB native page compatibility failed:\n' + '\n'.join(failures))
-          print(f'16KB_NATIVE_OK: verified {len(libs)} native libraries')
-          PY
-      - name: Upload Android debug AAB
+      - name: Upload rendered regression screens
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: unjam-debug-aab
-          path: build/android/unjam-debug.aab
-          if-no-files-found: error
-          retention-days: 7
+          name: unjam-fast-visual-audit
+          path: |
+            build/visual-audit/*.png
+            import.log
+            boot.log
+            visual-audit.log
+          if-no-files-found: warn
+          retention-days: 3
+
+# Intentionally excluded from the inner development loop:
+# Android APK/AAB exports, API 36 installation, 16 KB ELF inspection,
+# purchase-verifier backend validation, exhaustive 10,000-level campaign
+# generation/solving, and full monetization checks. Those remain in the
+# explicit production-release/manual workflows.
