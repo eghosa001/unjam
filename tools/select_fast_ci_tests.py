@@ -90,7 +90,7 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
 
     if p.startswith(DOC_PREFIXES) or suffix in DOC_SUFFIXES or p in {"license", "readme"}:
         return False
-    if p.startswith(".github/") or p == "tools/select_fast_ci_tests.py":
+    if p.startswith(".github/") or p in {"tools/select_fast_ci_tests.py", "tools/validate_release_contract.py"}:
         return False
 
     is_code = suffix in CODE_SUFFIXES or p.startswith(("scripts/", "scenes/", "addons/", "data/"))
@@ -179,7 +179,14 @@ def plan_for_paths(paths: list[str]) -> dict[str, object]:
         needs_godot = needs_godot or code_related
         low = path.lower()
         if (
-            low in {"project.godot", "export_presets.cfg", "tools/validate_release_contract.py"}
+            low in {
+                "project.godot",
+                "export_presets.cfg",
+                "tools/validate_release_contract.py",
+                "assets/icon.svg",
+                "assets/icon_adaptive_background.svg",
+                "assets/icon_adaptive_foreground.svg",
+            }
             or low.startswith("addons/")
             or any(token in low for token in ("monetization", "admob", "billing", "purchase_verification"))
         ):
@@ -383,6 +390,9 @@ def self_test() -> None:
     assert _premium_main_scopes({"build_daily_games"}) == {"daily"}
     assert _premium_main_scopes({"_figma_surface"}) == PREMIUM_MAIN_BROAD_SCOPES
     assert "validate_requested_polish_contract" in GROUP_TESTS["secondary_ui"]
+    icon_plan = plan_for_paths(["assets/icon_adaptive_foreground.svg"])
+    assert icon_plan["release_contract"] is True
+    assert icon_plan["needs_godot"] is False
     print("select_fast_ci_tests self-test passed")
 
 def main() -> None:
