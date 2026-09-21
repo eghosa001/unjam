@@ -21,7 +21,7 @@ func _init() -> void:
 	_require("res://scripts/ui/premium_live_hub_3d.gd", ["rounded_gradient3(pill_mid", "rounded_gradient3(stage_mid", "rounded_gradient3(nav_fill"], errors)
 	_require("res://scripts/ui/insufficient_coins_prompt.gd", ["card_mid", "rounded_gradient3"], errors)
 	_require("res://scripts/game/rescue_rush_casual.gd", ["rounded_gradient3"], errors)
-	_require("res://scripts/game/water_sort_casual.gd", ["rounded_gradient3"], errors)
+	_require("res://scripts/game/water_sort_casual.gd", ["rounded_gradient3", "Premium glass needs contrast", "#173d67", "#061f3c"], errors)
 	_require("res://scripts/core/multi_game_manager.gd", ["func daily_started_games", "func daily_selected_game", "func claim_daily_game", "daily_game_choices"], errors)
 	_require("res://scripts/game/water_sort_casual.gd", ["stage_height := 390.0", "count <= 12 else 5", "height_width_limit"], errors)
 	_require("res://scripts/game/water_sort_10000.gd", ["WATER SORT FAILED", "func _has_any_legal_pour", "NO LEGAL POURS"], errors)
