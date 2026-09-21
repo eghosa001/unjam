@@ -30,6 +30,7 @@ func _init() -> void:
 	_require_source("res://scripts/ui/ux_shell_casual.gd", ["premium_button(\"‹ BACK\",14", "premium_button(\"NEXT ›\",14"], "Tutorial navigation readability", errors)
 	_require_source("res://scripts/ui/monetization_hub_3d.gd", ["premium_button(\"▶ +50 COINS\",14", "premium_button(\"RESTORE PURCHASES\",14", "premium_button(buy_text,14"], "Shop readable action text", errors)
 	_require_source("res://scripts/ui/premium_result_overlay.gd", ["premium_button(secondary_text, 14"], "Result secondary action readability", errors)
+	_require_source("res://scripts/ui/figma_reference_canvas.gd", ["second dark glyph", "font_shadow_color\", Color.TRANSPARENT", "shadow_offset_y\", 2"], "crisp scaled Figma text", errors)
 
 	if not errors.is_empty():
 		for error in errors:
