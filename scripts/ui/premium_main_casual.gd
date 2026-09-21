@@ -588,9 +588,9 @@ func build_collection() -> void:
 	_figma_text(canvas,"%d friends home • %d / 6 upgrades" % [rescued.size(),owned],Rect2(33,476,240,20),13,FIGMA_MUTED)
 	_figma_text(canvas,"%d / 6 upgrades  •  +%d Daily  •  +%d Gift" % [owned,EconomyManager.collection_daily_bonus(),EconomyManager.garden_gift_amount()],Rect2(33,501,310,20),13,FIGMA_MUTED)
 
-	_figma_card(canvas,"Boost",Rect2(17,539,354,92),Color("#fffef8"),Color(0.55,0.86,0.71,0.32),18)
+	_figma_card(canvas,"Boost",Rect2(17,539,354,112),Color("#fffef8"),Color(0.55,0.86,0.71,0.32),18)
 	_figma_text(canvas,"PERMANENT BOOST",Rect2(33,555,180,18),15,FIGMA_ORANGE)
-	_figma_text(canvas,"+5 per Daily Game • +10 Garden Gift per upgrade",Rect2(33,583,310,20),13,FIGMA_MUTED)
+	_figma_text(canvas,"+5 per Daily Game • +10 Garden Gift per upgrade",Rect2(33,578,310,20),13,FIGMA_MUTED)
 
 	# Figma state transition: swipe upward through the Garden/Boost region to
 	# reveal the dedicated six-upgrade Collection state.
@@ -680,7 +680,7 @@ func build_collection_upgrades() -> void:
 		var display_name := String(spec[1])
 		var flavor := String(spec[2])
 		var cost := int(spec[3])
-		var y := 239.0 + float(i)*76.0
+		var y := 235.0 + float(i)*78.0
 		var owned := id in owned_decorations
 		var card_fill := Color("#f0fff5") if owned else Color("#fcfaff")
 		var card_border := Color(0.32,0.78,0.49,0.46) if owned else Color(0.72,0.58,0.90,0.46)
@@ -688,14 +688,15 @@ func build_collection_upgrades() -> void:
 		_figma_solid_card(
 			canvas,
 			"CollectionScroll/Upgrade/%d" % i,
-			Rect2(23,y,342,66),
+			Rect2(23,y,342,70),
 			card_fill,
 			card_border,
 			16,
 			false
 		)
-		_figma_text(canvas,display_name,Rect2(37,y+11,184,18),14,title_color)
-		_figma_text(canvas,"%s  •  +5 DAILY  •  +10 GIFT" % flavor,Rect2(37,y+36,206,16),13,Color("#6b8091"))
+		_figma_text(canvas,display_name,Rect2(37,y+8,184,18),14,title_color)
+		_figma_text(canvas,flavor,Rect2(37,y+30,92,15),12,title_color.lightened(0.12))
+		_figma_text(canvas,"+5 DAILY  •  +10 GIFT",Rect2(37,y+48,192,15),12,Color("#6b8091"))
 		var state_text := "OWNED" if owned else "%d COINS" % cost
 		var pill_fill := Color("#e0f2e5") if owned else Color("#7a57e0")
 		var state_text_color := Color("#4d7a59") if owned else Color.WHITE
@@ -703,7 +704,7 @@ func build_collection_upgrades() -> void:
 			canvas,
 			"CollectionUpgrade/%s" % id,
 			state_text,
-			Rect2(249,y+11,98,44),
+			Rect2(251,y+13,96,44),
 			pill_fill,
 			Callable(),
 			state_text_color,
