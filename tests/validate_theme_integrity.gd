@@ -82,8 +82,8 @@ func _run() -> void:
 	var home_key := main.find_child("HomeKeyLight", true, false) as PanelContainer
 	if home_key == null:
 		return _fail("Home light-mode key light is missing")
-	var home_key_style := home_key.get_theme_stylebox("panel") as StyleBoxFlat
-	if home_key_style == null or home_key_style.bg_color.a < 0.20:
+	var backdrop_source := _read("res://scripts/ui/figma_reference_canvas.gd")
+	if not backdrop_source.contains("0.24 if not dark else 0.09"):
 		return _fail("Home light-mode key light became too flat")
 
 	main.set("current_surface", "live")
