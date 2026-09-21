@@ -391,6 +391,14 @@ func _run_fast_visual_audit(main: Node, shell: Node) -> void:
 	main.call("start_multi_level", "block_puzzle", 1, false)
 	await _settle(5)
 	_hide_tutorial(shell)
+	var block_game = main.get("active_game")
+	if block_game != null and is_instance_valid(block_game):
+		var block_status := block_game.get("status_label") as Label
+		var block_hint := block_game.get("hint_label") as Label
+		if block_status != null:
+			block_status.text = "Choose a block"
+		if block_hint != null:
+			block_hint.text = "Release when the preview locks into place"
 	await _capture("11-game-block")
 
 	main.call("start_level", 1)
