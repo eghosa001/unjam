@@ -2,6 +2,7 @@ class_name FigmaButtonBackdrop
 extends Control
 
 var style_box: StyleBox
+var pressed := false
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -9,10 +10,19 @@ func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var owner := get_parent() as BaseButton
 	if owner != null:
-		owner.button_down.connect(queue_redraw)
-		owner.button_up.connect(queue_redraw)
-		owner.mouse_entered.connect(queue_redraw)
-		owner.mouse_exited.connect(queue_redraw)
+		owner.button_down.connect(func() -> void:
+			pressed = true
+			queue_redraw()
+		)
+		owner.button_up.connect(func() -> void:
+			pressed = false
+			queue_redraw()
+		)
+		owner.mouse_exited.connect(func() -> void:
+			if not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+				pressed = false
+			queue_redraw()
+		)
 
 func configure(value: StyleBox) -> void:
 	style_box = value
@@ -21,8 +31,6 @@ func configure(value: StyleBox) -> void:
 func _draw() -> void:
 	if style_box == null:
 		return
-	var owner := get_parent() as BaseButton
-	var pressed := owner != null and owner.button_pressed
 	# Premium toy-like controls visibly compress their lower sidewall on touch.
 	# This material response works with MotionSystem.press() rather than replacing it.
 	var y_offset := 2.0 if pressed else 0.0
