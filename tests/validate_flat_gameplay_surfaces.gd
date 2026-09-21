@@ -54,7 +54,12 @@ func _initialize() -> void:
 		"Recess lighting"
 	], failures)
 	_check("res://scripts/ui/water_tube_3d_motion.gd", [
-		"SubViewport.UPDATE_ONCE"
+		"SubViewport.UPDATE_ONCE",
+		"BottleBody3D",
+		"BottleShoulder3D",
+		"BottleNeck3D",
+		"BottleMouthRim3D",
+		"GLASS_MOUTH_Y"
 	], failures)
 
 	if not failures.is_empty():
