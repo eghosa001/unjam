@@ -73,10 +73,10 @@ func _build_figma_water(canvas: Control) -> void:
 	RefCanvas.set_rect(info, 17, 79, 354, 42)
 	info.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(info)
-	meta_label = _make_label("", 13, Color(0.92, 0.98, 1.0), true)
+	meta_label = _make_label("", 14, Color(0.92, 0.98, 1.0), true)
 	RefCanvas.set_rect(meta_label, 37, 91, 135, 20)
 	canvas.add_child(meta_label)
-	move_label = _make_label("", 13, OFF_WHITE, true)
+	move_label = _make_label("", 14, OFF_WHITE, true)
 	move_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	RefCanvas.set_rect(move_label, 173, 91, 180, 20)
 	canvas.add_child(move_label)
@@ -224,7 +224,7 @@ func _add_water_bulb_icon(button: Button) -> void:
 	button.add_child(base)
 
 func _action_button(text_value: String, fill: Color) -> Button:
-	var button := RefCanvas.premium_button(text_value, 13, OFF_WHITE, fill, 16, fill.lightened(0.30), 1.3)
+	var button := RefCanvas.premium_button(text_value, 14, OFF_WHITE, fill, 16, fill.lightened(0.30), 1.3)
 	button.custom_minimum_size = Vector2(106, 60)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	return button
