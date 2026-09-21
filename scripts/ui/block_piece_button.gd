@@ -465,9 +465,9 @@ func tray_visual_cell_size() -> float:
 
 func _tray_cell_size(max_x: int, max_y: int) -> float:
 	var fit_cell := minf((size.x - 10.0) / float(max_x + 1), (size.y - 10.0) / float(max_y + 1))
-	# Tray pieces should read slightly larger than board cells so the selectable
-	# inventory remains obvious at phone scale, while tall shapes still fit.
-	return clampf(minf(36.0, fit_cell), 20.0, 36.0)
+	# Keep tray bricks at the same visual scale as board cells; the pedestal now
+	# supplies hierarchy/affordance without making placed pieces appear to shrink.
+	return clampf(minf(32.0, fit_cell), 18.0, 32.0)
 
 func _draw_block(rect: Rect2, fill: Color) -> void:
 	# Use real top/right extrusion instead of a second full-size dark rectangle.
