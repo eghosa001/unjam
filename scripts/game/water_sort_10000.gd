@@ -83,7 +83,15 @@ func _show_level_intro() -> void:
 	if milestone == "normal":
 		return
 	var label := milestone.replace("_", " ").to_upper()
+	if milestone == "world_finale":
+		label = "FINALE"
 	var accent := Color("#ffd166") if milestone in ["boss", "world_finale", "mastery", "finale"] else Color("#5da9ff")
+	if meta_label != null:
+		meta_label.text = "%s • WORLD %d" % [label, int(level_profile.get("world", 1))]
+	# Dense late-game boards use the header treatment only. A center banner over
+	# 11+ tubes blocks the first row and makes the premium intro harm gameplay.
+	if tubes.size() > 10:
+		return
 	var view := get_viewport_rect().size
 	premium_feedback.show_banner(label, accent, Vector2(view.x * 0.5, view.y * 0.23), 176.0)
 
