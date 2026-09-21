@@ -42,13 +42,16 @@ func _run() -> void:
 			return _fail("Selector game subtitle is missing for %s" % game_id)
 		if game_subtitle.autowrap_mode == TextServer.AUTOWRAP_OFF or not game_subtitle.clip_text:
 			return _fail("Selector subtitle must wrap and clip before the preview art for %s" % game_id)
+		var subtitle_clip := _find(main, "SelectorGameSubtitleClip_%s" % game_id) as Control
+		if subtitle_clip == null or not subtitle_clip.clip_contents:
+			return _fail("Selector subtitle clipping region is missing for %s" % game_id)
 		var preview_frame := _find(main, "SelectorGamePreviewFrame_%s" % game_id) as Control
 		if preview_frame == null:
 			return _fail("Selector preview frame is missing for subtitle containment: %s" % game_id)
-		# Compare against the visible frame, not the stretching SubViewportContainer.
-		# Both controls share the same scaled Figma canvas, so global geometry is safe.
-		if game_subtitle.get_global_rect().end.x > preview_frame.get_global_rect().position.x + 1.0:
-			return _fail("Selector subtitle overlaps preview frame for %s" % game_id)
+		# The hard clipping wrapper is the visible text boundary. Compare global
+		# rects so the Figma reference-canvas device scale cancels out.
+		if subtitle_clip.get_global_rect().end.x > preview_frame.get_global_rect().position.x + 1.0:
+			return _fail("Selector subtitle clipping region overlaps preview frame for %s" % game_id)
 		var preview := _find(main, "SelectorGameArt3D_%s" % game_id) as SubViewportContainer
 		if preview == null or not bool(preview.get_meta("unjam_flat_3d_preview", false)):
 			return _fail("Selector flat-3D gameplay emblem is missing for %s" % game_id)
