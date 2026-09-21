@@ -36,6 +36,10 @@ func _validate_source_contracts() -> bool:
 		return _fail("Drag footprint still renders a second full 3D brick")
 	if not motion_source.contains("Keep exactly one stable control per tray slot"):
 		return _fail("Piece tray still uses destructive full rebuilds")
+	if not motion_source.contains("Release on highlighted cells") or not motion_source.contains("func _needs_placement_help()"):
+		return _fail("Block placement help lost its compact contextual contract")
+	if motion_source.contains("Release when the placement preview locks into place"):
+		return _fail("Block placement help regressed to the long persistent instruction")
 	if not piece_source.contains("_sanitize_shape") or not piece_source.contains("Detach synchronously"):
 		return _fail("Piece visual deduplication/orphan-preview cleanup is missing")
 	return true
@@ -83,6 +87,14 @@ func _validate_runtime(viewport_size: Vector2i) -> bool:
 	if "HARD" in subtitle.text:
 		game.queue_free()
 		return _fail("Block gameplay header still exposes the retired hard-coded difficulty")
+	var normal_hint := game.find_child("BlockHintText", true, false) as Label
+	if normal_hint == null:
+		game.queue_free()
+		return _fail("Block gameplay hint row is missing")
+	var experienced_hint := normal_hint.text.to_lower()
+	if "release on highlighted cells" in experienced_hint or "drag a block" in experienced_hint or "drag to place" in experienced_hint:
+		game.queue_free()
+		return _fail("Experienced Block levels still show persistent placement instruction")
 
 	var viewport_rect := Rect2(Vector2.ZERO, root.get_visible_rect().size)
 	var critical_names := [
