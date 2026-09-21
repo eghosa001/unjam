@@ -101,12 +101,12 @@ func _build_reference_selector(canvas: Control) -> void:
 	settings.pressed.connect(func(): get_parent().call("build_settings"))
 	canvas.add_child(settings)
 
-	_add_game_card(canvas, "rescue_rush", Rect2(17, 111, 354, 160), Color("#21c763"), Color("#49d17f"), "RESCUE RUSH", "Tap arrows. Clear the lane.", 76)
-	_add_game_card(canvas, "water_sort", Rect2(17, 285, 354, 160), Color("#1aa8ff"), Color("#43b8ff"), "WATER SORT", "Pour colours into matching tubes.", 128)
-	_add_game_card(canvas, "block_puzzle", Rect2(17, 459, 354, 160), Color("#c73dff"), Color("#d160ff"), "BLOCK PUZZLE", "Drag pieces. Clear lines.", 92)
+	_add_game_card(canvas, "rescue_rush", Rect2(17, 111, 354, 160), Color("#21c763"), Color("#49d17f"), "RESCUE RUSH", "Tap arrows. Clear the lane.")
+	_add_game_card(canvas, "water_sort", Rect2(17, 285, 354, 160), Color("#1aa8ff"), Color("#43b8ff"), "WATER SORT", "Pour colours into matching tubes.")
+	_add_game_card(canvas, "block_puzzle", Rect2(17, 459, 354, 160), Color("#c73dff"), Color("#d160ff"), "BLOCK PUZZLE", "Drag pieces. Clear lines.")
 	_add_bottom_nav(canvas)
 
-func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color, highlight: Color, title: String, subtitle: String, figma_fallback_level: int) -> void:
+func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color, highlight: Color, title: String, subtitle: String) -> void:
 	RefCanvas.add_shadow(canvas, rect, 20, Color(0.03,0.10,0.20,0.22), 8, Vector2(0,6))
 	var card := PanelContainer.new()
 	card.name = "GameCard3D_%s" % game_id
@@ -120,8 +120,6 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 	RefCanvas.style_display_title(game_title, Color("#fff7df"), accent.darkened(0.62), 2)
 	_add_text(canvas, subtitle, Rect2(34, rect.position.y + 39.6, 184, 18), 13, OFF_WHITE, false)
 	var level := maxi(1, MultiGameManager.highest_level(game_id))
-	if level <= 1:
-		level = figma_fallback_level
 	RefCanvas.add_shadow(canvas, Rect2(33, rect.position.y + 100.7, 112, 36), 13, Color(0.02,0.10,0.20,0.16), 3, Vector2(0,2))
 	var level_pill := PanelContainer.new()
 	var pill_mid := Color(0.04, 0.30, 0.55)
@@ -129,7 +127,8 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 	RefCanvas.set_rect(level_pill, 33, rect.position.y + 100.7, 112, 36)
 	level_pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(level_pill)
-	_add_text(canvas, "LEVEL %d" % level, Rect2(45, rect.position.y + 111, 88, 16), 13, OFF_WHITE, true)
+	var level_label := _add_text(canvas, "LEVEL %d" % level, Rect2(45, rect.position.y + 111, 88, 16), 13, OFF_WHITE, true)
+	level_label.name = "SelectorLevelLabel_%s" % game_id
 	_add_card_preview(canvas, game_id, rect.position.y)
 
 	var tap := Button.new()

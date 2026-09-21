@@ -20,7 +20,14 @@ func _run() -> void:
 	if nav == null or active == null:
 		return _fail("Games selector premium bottom navigation is incomplete")
 
+	var multi_game := root.get_node_or_null("MultiGameManager")
+	if multi_game == null:
+		return _fail("MultiGameManager autoload is missing")
 	for game_id in ["rescue_rush", "water_sort", "block_puzzle"]:
+		var expected_level := maxi(1, int(multi_game.call("highest_level", game_id)))
+		var level_label := _find(main, "SelectorLevelLabel_%s" % game_id) as Label
+		if level_label == null or level_label.text != "LEVEL %d" % expected_level:
+			return _fail("Selector shows stale/fake progress for %s" % game_id)
 		var game_title := _find(main, "SelectorGameTitle_%s" % game_id) as Label
 		if game_title == null:
 			return _fail("Selector game title is missing for %s" % game_id)
