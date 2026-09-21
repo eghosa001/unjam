@@ -38,7 +38,7 @@ func _ready() -> void:
 
 	music_player = AudioStreamPlayer.new()
 	music_player.name = "CalmAmbientMusic"
-	music_player.volume_db = -10.0
+	music_player.volume_db = -7.0
 	add_child(music_player)
 	music_stream = _build_calm_ambient_loop()
 	music_player.stream = music_stream
@@ -83,25 +83,25 @@ func _sync_music() -> void:
 # ---------------------------------------------------------------------------
 
 func nav() -> void:
-	_play_chime([392.0, 523.25], 0.105, 0.075, 0.42)
+	_play_chime([392.0, 523.25], 0.105, 0.085, 0.42)
 
 func lift() -> void:
-	_play_chime([440.0, 659.25], 0.130, 0.085, 0.52)
+	_play_chime([440.0, 659.25], 0.130, 0.095, 0.52)
 
 func drop() -> void:
-	_play_chime([329.63, 261.63], 0.145, 0.095, 0.34)
+	_play_chime([329.63, 261.63], 0.145, 0.105, 0.34)
 
 func snap() -> void:
 	# Magnetic placement confirmation: lighter than a drop/clear, but tactile
 	# enough that players feel the valid cell lock without looking away.
-	_play_chime([493.88, 659.25], 0.090, 0.036, 0.28)
+	_play_chime([493.88, 659.25], 0.090, 0.046, 0.28)
 	_vibrate(8)
 
 func pour_start() -> void:
-	_play_chime([349.23, 440.0], 0.135, 0.058, 0.26)
+	_play_chime([349.23, 440.0], 0.135, 0.068, 0.26)
 
 func pour_land() -> void:
-	_play_chime([440.0, 523.25, 659.25], 0.180, 0.070, 0.40)
+	_play_chime([440.0, 523.25, 659.25], 0.180, 0.080, 0.40)
 	_vibrate(7)
 
 func invalid() -> void:
@@ -138,11 +138,11 @@ func tap() -> void:
 	apply_settings()
 	# A tiny wooden tick: audible enough for confirmation, quiet enough for
 	# repeated menu use.
-	_play_chime([392.0], 0.080, 0.042, 0.20)
+	_play_chime([392.0], 0.080, 0.052, 0.20)
 
 func blocked() -> void:
 	# Low, rounded two-note fall. Avoid sub-200 Hz buzzy sine errors.
-	_play_chime([293.66, 246.94], 0.190, 0.070, 0.18)
+	_play_chime([293.66, 246.94], 0.190, 0.080, 0.18)
 	_vibrate(20)
 
 func escape(chain: int = 1) -> void:
