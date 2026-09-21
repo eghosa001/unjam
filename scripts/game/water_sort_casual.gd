@@ -98,7 +98,10 @@ func _build_figma_water(canvas: Control) -> void:
 	gameplay_stage = PanelContainer.new()
 	gameplay_stage.name = "GameplayStage"
 	RefCanvas.add_shadow(canvas, Rect2(17,169,354,420), 20, Color(0.01,0.12,0.23,0.18), 8, Vector2(0,7))
-	gameplay_stage.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color(0.94,1.0,1.0,0.40), Color(0.90,0.99,1.0,0.38), Color(0.82,0.95,1.0,0.34), 20, Color(0.55, 0.91, 1.0, 0.80), 1.5))
+	# Premium glass needs contrast. Keep the overall Water screen bright, but give
+	# the playfield a deep ocean-glass surface so crystal edges and liquid volume
+	# remain readable even with many bottles at late levels.
+	gameplay_stage.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#173d67"), Color("#0b3158"), Color("#061f3c"), 20, Color(0.52, 0.90, 1.0, 0.72), 1.5))
 	RefCanvas.set_rect(gameplay_stage, 17, 169, 354, 420)
 	gameplay_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(gameplay_stage)

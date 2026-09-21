@@ -171,19 +171,42 @@ func _prune_daily_game_choices()->void:
   choices.erase(String(keys.pop_front()))
  SaveManager.data["daily_game_choices"]=choices
 
-func daily_selected_game()->String:
+func daily_started_games()->Array[String]:
  ensure_state()
  var choices:Dictionary=SaveManager.data.get("daily_game_choices",{})
- var value:=String(choices.get(date_key(),""))
- return value if value in GAME_IDS else ""
+ var key:=date_key()
+ var raw=choices.get(key,[])
+ var started:Array[String]=[]
+ if raw is Array:
+  for value in raw:
+   var id:=String(value)
+   if id in GAME_IDS and id not in started:started.append(id)
+ else:
+  # Migrate the former one-choice-per-day string format without losing history.
+  var legacy:=String(raw)
+  if legacy in GAME_IDS:started.append(legacy)
+  choices[key]=started.duplicate()
+  SaveManager.data["daily_game_choices"]=choices
+ return started
 
+func daily_selected_game()->String:
+ # Compatibility helper for older callers. Daily play is no longer exclusive;
+ # return the most recently started game only as a descriptive value.
+ var started:=daily_started_games()
+ return started.back() if not started.is_empty() else ""
 
 func claim_daily_game(id:String)->bool:
  if id not in GAME_IDS:return false
  ensure_state()
- var key:=date_key();var choices:Dictionary=SaveManager.data.get("daily_game_choices",{});var chosen:=String(choices.get(key,""))
- if not chosen.is_empty():return chosen==id
- choices[key]=id;SaveManager.data["daily_game_choices"]=choices;_prune_daily_game_choices();SaveManager.save();return true
+ var key:=date_key()
+ var choices:Dictionary=SaveManager.data.get("daily_game_choices",{})
+ var started:=daily_started_games()
+ if id not in started:started.append(id)
+ choices[key]=started
+ SaveManager.data["daily_game_choices"]=choices
+ _prune_daily_game_choices()
+ SaveManager.save()
+ return true
 
 func daily_level(id:String)->int:
  var d:=Time.get_date_dict_from_system();return posmod(int(d.year)*372+int(d.month)*31+int(d.day)+GAME_IDS.find(id)*997,CAMPAIGN_LEVELS)+1

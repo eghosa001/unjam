@@ -140,6 +140,7 @@ func _figma_surface(active: String, bottom_tint: Color = FIGMA_BG_BOTTOM, top_ti
 		"collection": scene_accent = FIGMA_GREEN
 		"settings": scene_accent = FIGMA_CYAN
 		_: scene_accent = _accent()
+	FigmaReferenceCanvas.add_world_depth(canvas, scene_accent, _dark(), 0.12 if _dark() else 0.17, "SurfaceWorldDepth")
 	FigmaReferenceCanvas.add_scene_backdrop_layers(canvas, scene_accent, _dark(), "Surface")
 	var surface_key_light := canvas.get_node_or_null("SurfaceKeyLight")
 	var surface_accent_glow := canvas.get_node_or_null("SurfaceAccentGlow")
@@ -351,7 +352,7 @@ func build_settings() -> void:
 		FIGMA_DARK_BOTTOM if dark_mode else FIGMA_BG_BOTTOM,
 		FIGMA_DARK_TOP if dark_mode else FIGMA_BG_TOP
 	)
-	_figma_header(canvas, "SETTINGS", "Make UNJAM feel right for you", "AUTO-SAVE", Color("#1aa8ff"), Callable(self,"build_home"), Callable(), dark_mode)
+	_figma_header(canvas, "SETTINGS", "Sound, motion & theme", "AUTO-SAVE", Color("#1aa8ff"), Callable(self,"build_home"), Callable(), dark_mode)
 	if not dark_mode:
 		var settings_title := canvas.get_node_or_null("FigmaHeaderTitle") as Label
 		if settings_title != null:
@@ -475,20 +476,25 @@ func _figma_today_label() -> String:
 	return "%s %d" % [months[clampi(month - 1,0,11)], int(d.get("day",1))]
 
 func _daily_ui_state(game_id: String, accent: Color) -> Dictionary:
-	var chosen := MultiGameManager.daily_selected_game()
-	var own_done := _daily_done(game_id)
-	var chosen_done := not chosen.is_empty() and _daily_done(chosen)
-	if chosen_done:
+	# Each Daily card is independent. Completing, abandoning or failing one game
+	# must never disable either of the other two.
+	if _daily_done(game_id):
 		return {"text":"DONE TODAY", "fill":FIGMA_GREEN, "disabled":true, "done":true}
-	if own_done:
-		return {"text":"DONE TODAY", "fill":FIGMA_GREEN, "disabled":true, "done":true}
-	if not chosen.is_empty() and chosen != game_id:
-		return {"text":"TODAY: %s" % _figma_short_game(chosen), "fill":Color("#718696"), "disabled":true, "done":false}
 	return {"text":"PLAY TODAY", "fill":accent, "disabled":false, "done":false}
 
 func _figma_daily_card(canvas: Control, game_id: String, y: float, collection_bonus: int) -> void:
 	var accent := Unjam3DTheme.game_accent(game_id)
-	_figma_card(canvas, "DailyCard/%s" % game_id, Rect2(17,y,354,106), Color("#fffef8"), Color(1.0,0.847,0.55,0.32), 18)
+	# Daily cards should feel like three distinct puzzle worlds, not neutral list rows.
+	# Use a restrained game-tinted lacquer so text remains calm and accessible.
+	var card_fill := accent.darkened(0.70) if _dark() else accent.lightened(0.72)
+	var card_border := accent.lightened(0.16 if _dark() else 0.05)
+	_figma_solid_card(canvas, "DailyCard/%s" % game_id, Rect2(17,y,354,106), card_fill, card_border, 18)
+	var accent_rail := PanelContainer.new()
+	accent_rail.name = "DailyAccent/%s" % game_id
+	accent_rail.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	accent_rail.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(accent.lightened(0.30), accent, accent.darkened(0.24), 3, accent.lightened(0.38), 1, 0.36))
+	FigmaReferenceCanvas.set_rect(accent_rail, 20, y + 14, 5, 78)
+	canvas.add_child(accent_rail)
 	var daily_title := _figma_text(canvas, MultiGameManager.display_name(game_id).to_upper(), Rect2(33,y+18,150,21), 17, accent)
 	FigmaReferenceCanvas.style_display_title(daily_title, accent.lightened(0.18), Color("#071d55"), 1)
 	var detail := "TODAY’S RESCUE" if game_id == "rescue_rush" else ("TODAY’S SORT" if game_id == "water_sort" else "TODAY’S BLOCK RUN")

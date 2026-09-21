@@ -155,14 +155,16 @@ func _draw_foreground(w: float, h: float) -> void:
 	# Darker foreground foliage makes the center feel brighter and deeper.
 	for side in [0, 1]:
 		var direction := -1.0 if side == 0 else 1.0
-		var sx := w * (0.015 if side == 0 else 0.985)
-		for i in range(12):
-			var y := h * (0.07 + float(i) * 0.078)
-			var r := w * (0.025 + float(i % 4) * 0.004)
-			draw_circle(Vector2(sx, y) + Vector2(direction * r * 0.25, r * 0.24), r * 1.40, Color("0d633d"))
-			draw_circle(Vector2(sx, y), r * 1.12, Color("1f9b50"))
-			draw_circle(Vector2(sx - direction * r * 0.45, y - r * 0.28), r * 0.78, Color("67d35d"))
-			draw_circle(Vector2(sx - direction * r * 0.62, y - r * 0.52), r * 0.35, Color("b4ed65"))
+		var sx := w * (0.010 if side == 0 else 0.990)
+		# Fewer, larger foliage clusters frame the screen without producing a
+		# repeated dotted edge pattern behind every menu card.
+		for i in range(7):
+			var y := h * (0.09 + float(i) * 0.132)
+			var r := w * (0.027 + float(i % 3) * 0.004)
+			draw_circle(Vector2(sx, y) + Vector2(direction * r * 0.18, r * 0.28), r * 1.34, Color("0d633d"))
+			draw_circle(Vector2(sx, y), r * 1.08, Color("1f9b50"))
+			draw_circle(Vector2(sx - direction * r * 0.48, y - r * 0.30), r * 0.72, Color("67d35d"))
+			draw_circle(Vector2(sx - direction * r * 0.66, y - r * 0.54), r * 0.31, Color("b4ed65"))
 
 	# Flowers, mushrooms and gem-like accent specks around the safe margins.
 	var flower_points := [Vector2(0.075,0.78), Vector2(0.14,0.88), Vector2(0.20,0.76), Vector2(0.81,0.87), Vector2(0.88,0.78), Vector2(0.94,0.90)]

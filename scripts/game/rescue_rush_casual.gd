@@ -10,6 +10,16 @@ const ORANGE := Color(1.0,0.55,0.12)
 
 var figma_canvas: FigmaReferenceCanvas
 
+func _compact_objective_instruction() -> String:
+	match objective_type:
+		"full_escape": return "CLEAR ALL ARROWS • FREE THE CHICK"
+		"key_rescue": return "GET KEYS • OPEN THE RESCUE LANE"
+		"gate_run": return "OPEN GATES • FREE THE CHICK"
+		"bomb_route": return "CLEAR BOMBS • FREE THE CHICK"
+		"chain_rescue": return "BREAK CHAINS • FREE THE CHICK"
+		"perfect_rescue": return "FREE THE CHICK • ≤ %d MOVES" % action_budget
+		_: return "CLEAR A LANE • FREE THE CHICK"
+
 func _add_rescue_identity_emblem(canvas: Control) -> void:
 	var emblem := PanelContainer.new()
 	emblem.name = "Identity/Rescue Emblem"
@@ -139,7 +149,7 @@ func _build_figma_rescue(canvas: Control) -> void:
 	RefCanvas.set_rect(objective,17,137,354,34)
 	objective.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(objective)
-	var objective_label := RefCanvas.label(objective_instruction().to_upper(),16,Color("#088c3d"),true)
+	var objective_label := RefCanvas.label(_compact_objective_instruction(),16,Color("#088c3d"),true)
 	objective_label.name = "RescueObjectiveLabel"
 	objective_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	RefCanvas.set_rect(objective_label,29,137,330,34)
@@ -228,7 +238,45 @@ func _make_empty_cell(_cell_size: int, pos: Vector2i, route: Dictionary) -> Cont
 	if on_route:
 		well_fill = Color(0.22,0.74,0.44,0.12)
 		well_edge = Color(0.45,0.94,0.63,0.56 if is_edge_exit else 0.34)
-	slot.add_theme_stylebox_override("panel", style_box(well_fill, 10, well_edge, 2 if is_edge_exit else 1))
+	var well_style := StyleBoxFlat.new()
+	well_style.bg_color = well_fill
+	well_style.corner_radius_top_left = 10
+	well_style.corner_radius_top_right = 10
+	well_style.corner_radius_bottom_left = 10
+	well_style.corner_radius_bottom_right = 10
+	var edge_width := 2 if is_edge_exit else 1
+	well_style.border_width_left = edge_width
+	well_style.border_width_right = edge_width
+	well_style.border_width_top = edge_width
+	well_style.border_width_bottom = edge_width
+	well_style.border_color = well_edge
+	# Contact shadow plus a pale bottom rim makes each empty slot read as a
+	# recessed socket instead of a flat rounded square.
+	well_style.shadow_color = Color(0.01, 0.08, 0.10, 0.38)
+	well_style.shadow_size = 3
+	well_style.shadow_offset = Vector2(0, 2)
+	slot.add_theme_stylebox_override("panel", well_style)
+	var rim := Panel.new()
+	rim.name = "RescueWellInnerRim"
+	rim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	rim.offset_left = 3
+	rim.offset_top = 3
+	rim.offset_right = -3
+	rim.offset_bottom = -3
+	var rim_style := StyleBoxFlat.new()
+	rim_style.bg_color = Color.TRANSPARENT
+	rim_style.corner_radius_top_left = 7
+	rim_style.corner_radius_top_right = 7
+	rim_style.corner_radius_bottom_left = 7
+	rim_style.corner_radius_bottom_right = 7
+	rim_style.border_width_bottom = 1
+	rim_style.border_width_right = 1
+	rim_style.border_color = Color(0.84, 1.0, 0.90, 0.24)
+	rim.add_theme_stylebox_override("panel", rim_style)
+	rim.show_behind_parent = false
+	rim.z_index = 1
+	slot.add_child(rim)
 	for child in slot.get_children():
 		if child is Label:
 			var label := child as Label

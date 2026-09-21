@@ -1,6 +1,7 @@
 extends "res://scripts/ui/premium_live_hub.gd"
 
 const RefCanvas = preload("res://scripts/ui/figma_reference_canvas.gd")
+const GAME_ART_SCRIPT = preload("res://scripts/ui/unjam_3d_game_art.gd")
 
 const BG_TOP := Color("#dcebe8")
 const BG_MID := Color("#d4e3e8")
@@ -68,6 +69,7 @@ func _build_reference_selector(canvas: Control) -> void:
 	RefCanvas.set_rect(background, 0, 0, 390, 844)
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(background)
+	RefCanvas.add_world_depth(canvas, Color("#ffd34e"), _selector_dark(), 0.14 if _selector_dark() else 0.18, "SelectorWorldDepth")
 	RefCanvas.add_scene_backdrop_layers(canvas, Color("#ffd34e"), _selector_dark(), "Selector")
 	var selector_key_light := canvas.get_node_or_null("SelectorKeyLight")
 	if selector_key_light != null:
@@ -81,7 +83,7 @@ func _build_reference_selector(canvas: Control) -> void:
 	back.pressed.connect(_go_home)
 	canvas.add_child(back)
 
-	var selector_title := _add_text(canvas, "CHOOSE A GAME", Rect2(83, 21, 186, 28), 23, OFF_WHITE, true)
+	var selector_title := _add_text(canvas, "CHOOSE A GAME", Rect2(83, 21, 186, 28), 21, OFF_WHITE, true)
 	selector_title.name = "SelectorTitle3D"
 	selector_title.clip_text = true
 	RefCanvas.style_display_title(selector_title, Color("#ffca45"), Color("#071d55"), 2)
@@ -146,171 +148,11 @@ func _add_card_preview(canvas: Control, game_id: String, card_y: float) -> void:
 	RefCanvas.set_rect(stage, 243, origin_y, 104, 112)
 	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(stage)
-	match game_id:
-		"rescue_rush": _preview_rescue(canvas, origin_y)
-		"water_sort": _preview_water(canvas, origin_y)
-		_: _preview_block(canvas, origin_y)
-
-func _preview_rescue(canvas: Control, y: float) -> void:
-	var board_depth := PanelContainer.new()
-	board_depth.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color("#173d33"), 12))
-	RefCanvas.set_rect(board_depth, 253, y + 15.3, 84, 90)
-	canvas.add_child(board_depth)
-	var board := PanelContainer.new()
-	board.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#a9d3ad"), Color("#8cb896"), Color("#759d80"), 12, Color(0.92, 1.0, 0.86, 0.62), 1))
-	RefCanvas.set_rect(board, 253, y + 10.8, 84, 90)
-	canvas.add_child(board)
-	var specs := [
-		[Vector2(258.0, y + 13.5), Color("#1c9c5a"), "→"],
-		[Vector2(282.7, y + 13.5), Color("#8942c1"), "↓"],
-		[Vector2(258.0, y + 35.7), Color("#158dd6"), "←"],
-		[Vector2(307.3, y + 35.7), Color("#8942c1"), "↑"],
-		[Vector2(258.0, y + 57.9), Color("#d6761a"), "→"],
-		[Vector2(307.3, y + 57.9), Color("#1c9c5a"), "↓"],
-	]
-	for spec in specs:
-		var pos: Vector2 = spec[0]
-		var fill: Color = spec[1]
-		var depth := PanelContainer.new()
-		depth.add_theme_stylebox_override("panel", RefCanvas.solid_box(fill.darkened(0.34), 4))
-		RefCanvas.set_rect(depth, pos.x + 1.5, pos.y + 3.1, 21.7, 21.7)
-		canvas.add_child(depth)
-		var tile := PanelContainer.new()
-		tile.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(fill.lightened(0.33), fill, fill.darkened(0.14), 4))
-		RefCanvas.set_rect(tile, pos.x, pos.y, 21.7, 21.7)
-		canvas.add_child(tile)
-		var arrow := _make_label(String(spec[2]), 13, Color.WHITE, true)
-		arrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		RefCanvas.set_rect(arrow, pos.x, pos.y, 21.7, 21.7)
-		canvas.add_child(arrow)
-	var chick := PanelContainer.new()
-	chick.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color("#ffd63d"), 8, Color("#fff1a0"), 1))
-	RefCanvas.set_rect(chick, 287.5, y + 39.0, 15, 15)
-	canvas.add_child(chick)
-	var eye := ColorRect.new()
-	eye.color = Color("#183b42")
-	RefCanvas.set_rect(eye, 296.0, y + 44.9, 2, 2.5)
-	canvas.add_child(eye)
-	var exit := PanelContainer.new()
-	exit.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#80efb0"), Color("#35b96b"), Color("#148b4c"), 5))
-	RefCanvas.set_rect(exit, 329, y + 21.6, 11, 30)
-	canvas.add_child(exit)
-
-func _preview_water(canvas: Control, y: float) -> void:
-	var specs := [
-		[255.0,12.56,84.0,Color("#ff7ebd"),Color("#d64089"),41.57,48.72,38.88,19.75,68.0,10.76,85.37],
-		[284.0,16.15,79.0,Color("#5ac1ff"),Color("#158dd6"),33.34,56.88,30.64,23.34,63.0,14.35,84.47],
-		[313.0,12.56,84.0,Color("#5fd78f"),Color("#1ca754"),52.14,36.96,49.45,19.75,68.0,10.76,85.37],
-	]
-	for spec in specs:
-		var x := float(spec[0])
-		var top := y + float(spec[1])
-		var h := float(spec[2])
-		var left: Color = spec[3] as Color
-		var right: Color = spec[4] as Color
-		var shadow := PanelContainer.new()
-		shadow.add_theme_stylebox_override("panel",RefCanvas.solid_box(Color(0.02,0.15,0.26,0.16),4))
-		RefCanvas.set_rect(shadow,x,y+float(spec[11]),22,7)
-		canvas.add_child(shadow)
-		var bottle := PanelContainer.new()
-		bottle.add_theme_stylebox_override("panel",RefCanvas.solid_box(Color(0.90,0.99,1.0,0.10),9,Color(0.82,0.98,1.0,0.90),1.3))
-		RefCanvas.set_rect(bottle,x,top,22,h)
-		canvas.add_child(bottle)
-		var liquid := PanelContainer.new()
-		liquid.add_theme_stylebox_override("panel",RefCanvas.horizontal_gradient(left,right,2))
-		RefCanvas.set_rect(liquid,x+3,y+float(spec[5]),16,float(spec[6]))
-		canvas.add_child(liquid)
-		var meniscus := PanelContainer.new()
-		meniscus.add_theme_stylebox_override("panel",RefCanvas.horizontal_gradient(left.lightened(0.08),right.lightened(0.04),3))
-		RefCanvas.set_rect(meniscus,x+3,y+float(spec[7]),16,6)
-		canvas.add_child(meniscus)
-		var rim := PanelContainer.new()
-		rim.add_theme_stylebox_override("panel",RefCanvas.horizontal_gradient(Color("#f4fdff"),Color("#cfeffc"),3,Color(0.82,0.98,1.0,0.90),0.8))
-		RefCanvas.set_rect(rim,x+1,y+float(spec[10]),20,6)
-		canvas.add_child(rim)
-
-func _preview_block(canvas: Control, y: float) -> void:
-	var depth := PanelContainer.new()
-	depth.add_theme_stylebox_override("panel",RefCanvas.solid_box(Color("#241447"),12))
-	RefCanvas.set_rect(depth,253,y+15.25,84,90)
-	canvas.add_child(depth)
-	var board := PanelContainer.new()
-	board.add_theme_stylebox_override("panel",RefCanvas.solid_box(Color("#4f307d"),12,Color(0.72,0.52,1.0,0.55),1))
-	RefCanvas.set_rect(board,253,y+10.76,84,90)
-	canvas.add_child(board)
-
-	var cube_specs := {
-		0:[Color("#b89af9"),Color("#764dce"),Color(0.263,0.173,0.463,0.40)],
-		1:[Color("#71c9ff"),Color("#158dd6"),Color(0.047,0.318,0.478,0.40)],
-		5:[Color("#71c9ff"),Color("#158dd6"),Color(0.047,0.318,0.478,0.40)],
-		6:[Color("#75dc9f"),Color("#1ca754"),Color(0.063,0.373,0.188,0.40)],
-		9:[Color("#71c9ff"),Color("#158dd6"),Color(0.047,0.318,0.478,0.40)],
-		10:[Color("#75dc9f"),Color("#1ca754"),Color(0.063,0.373,0.188,0.40)],
-		11:[Color("#ffb874"),Color("#d6761a"),Color(0.478,0.263,0.059,0.40)],
-		14:[Color("#75dc9f"),Color("#1ca754"),Color(0.063,0.373,0.188,0.40)],
-	}
-	for row in range(4):
-		for col in range(4):
-			var index := row*4+col
-			var wx := 257.0+float(col)*19.0
-			var wy := y+12.56+float(row)*17.08
-			var well := PanelContainer.new()
-			well.add_theme_stylebox_override("panel",RefCanvas.solid_box(Color("#291a47"),3,Color(0.52,0.39,0.68,0.34),0.7))
-			RefCanvas.set_rect(well,wx,wy,17,17)
-			canvas.add_child(well)
-			if cube_specs.has(index):
-				var spec: Array = cube_specs[index]
-				var top_color: Color = spec[0] as Color
-				var bottom_color: Color = spec[1] as Color
-				var shadow_color: Color = spec[2] as Color
-				var cube_shadow := PanelContainer.new()
-				cube_shadow.add_theme_stylebox_override("panel",RefCanvas.solid_box(shadow_color,3))
-				RefCanvas.set_rect(cube_shadow,wx+1.5,wy+4.04,14,14)
-				canvas.add_child(cube_shadow)
-				var cube := PanelContainer.new()
-				cube.add_theme_stylebox_override("panel",RefCanvas.rounded_gradient3(top_color,top_color.lerp(bottom_color,0.48),bottom_color,3))
-				RefCanvas.set_rect(cube,wx+0.5,wy+2.24,14,14)
-				canvas.add_child(cube)
-
-	var tray := PanelContainer.new()
-	tray.name = "SelectorBlockTray"
-	tray.add_theme_stylebox_override("panel",RefCanvas.solid_box(Color(0.969,0.929,1.0,0.95),6,Color(0.72,0.55,0.94,0.48),0.8))
-	RefCanvas.set_rect(tray,251,y+85.5,88,20)
-	canvas.add_child(tray)
-	_add_selector_tray_piece(canvas,[Vector2(257,y+94),Vector2(267,y+94),Vector2(277,y+94)],Color("#466df2"),Color("#749bff"))
-	_add_selector_tray_piece(canvas,[Vector2(293,y+90),Vector2(293,y+100),Vector2(303,y+100)],Color("#38df63"),Color("#66ff91"))
-	_add_selector_tray_piece(canvas,[Vector2(321,y+90),Vector2(331,y+90),Vector2(321,y+100),Vector2(331,y+100)],Color("#f4b83d"),Color("#ffe66b"))
-
-	# The small silhouettes below the tray are part of the audited selector polish.
-	for px in [251.0,257.0,263.0]:
-		_add_selector_flat_bit(canvas,Vector2(px,y+117.5),Color("#4ad175"))
-	for pos in [Vector2(281,y+114.5),Vector2(281,y+120.5),Vector2(287,y+120.5)]:
-		_add_selector_flat_bit(canvas,pos,Color("#4a8cfa"))
-	for pos in [Vector2(313,y+114.5),Vector2(319,y+114.5),Vector2(313,y+120.5),Vector2(319,y+120.5)]:
-		_add_selector_flat_bit(canvas,pos,Color("#f57a3d"))
-
-func _add_selector_tray_piece(canvas: Control, cells: Array, fill: Color, edge: Color) -> void:
-	for value in cells:
-		var pos: Vector2 = value as Vector2
-		var top := Polygon2D.new()
-		top.polygon = PackedVector2Array([
-			Vector2(pos.x,pos.y),
-			Vector2(pos.x+2.5,pos.y-2.5),
-			Vector2(pos.x+9.0,pos.y-2.5),
-			Vector2(pos.x+6.5,pos.y),
-		])
-		top.color = fill.lightened(0.28)
-		canvas.add_child(top)
-		var front := PanelContainer.new()
-		front.add_theme_stylebox_override("panel",RefCanvas.solid_box(fill,3,Color(edge,0.85),0.8))
-		RefCanvas.set_rect(front,pos.x,pos.y,6.5,6.5)
-		canvas.add_child(front)
-
-func _add_selector_flat_bit(canvas: Control, pos: Vector2, fill: Color) -> void:
-	var bit := PanelContainer.new()
-	bit.add_theme_stylebox_override("panel",RefCanvas.solid_box(fill,1.2))
-	RefCanvas.set_rect(bit,pos.x,pos.y,5,5)
-	canvas.add_child(bit)
+	var art := GAME_ART_SCRIPT.new()
+	art.name = "SelectorGameArt3D_%s" % game_id
+	art.configure(game_id)
+	RefCanvas.set_rect(art, 243, origin_y, 104, 112)
+	canvas.add_child(art)
 
 func _add_bottom_nav(canvas: Control) -> void:
 	var shell := PanelContainer.new()

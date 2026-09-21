@@ -19,6 +19,9 @@ func _initialize() -> void:
 		"Fmaj7 -> Dm7 -> Bbmaj7 -> Cadd9",
 		"music_player.volume_db = -10.0",
 		"sfx.volume_db = 0.0",
+		"release_raw",
+		"var loop_edge := _smooth_edge(t, MUSIC_DURATION, 0.38)",
+		"* edge * loop_edge",
 		"root * 1.5",
 	]:
 		if not source.contains(token):
@@ -38,6 +41,20 @@ func _initialize() -> void:
 			failures.append("Calm chime stream must be stereo at 22050 Hz")
 		elif chime.data.size() <= 0:
 			failures.append("Calm chime stream generated no samples")
+		var music = feedback.call("_build_calm_ambient_loop")
+		if music == null or music.data.size() < 8:
+			failures.append("Ambient loop generated no samples")
+		else:
+			var first := _pcm16(music.data, 0)
+			var last := _pcm16(music.data, music.data.size() - 4)
+			if absi(first) > 96 or absi(last) > 96:
+				failures.append("Ambient loop seam must taper close to zero")
+			for boundary_seconds in [8, 16, 24]:
+				var frame: int = int(boundary_seconds) * int(music.mix_rate)
+				var before := _pcm16(music.data, (frame - 1) * 4)
+				var after := _pcm16(music.data, frame * 4)
+				if absi(after - before) > 1200:
+					failures.append("Ambient chord boundary has an audible PCM jump at %ds" % boundary_seconds)
 		feedback.free()
 
 	if not failures.is_empty():
@@ -47,3 +64,8 @@ func _initialize() -> void:
 		return
 	print("SOOTHING_AUDIO_PALETTE_OK")
 	quit(0)
+
+
+func _pcm16(bytes: PackedByteArray, offset: int) -> int:
+	var value := int(bytes[offset]) | (int(bytes[offset + 1]) << 8)
+	return value - 65536 if value >= 32768 else value

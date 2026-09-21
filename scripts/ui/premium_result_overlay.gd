@@ -1,6 +1,8 @@
 class_name PremiumResultOverlay
 extends Control
 
+const GAME_ART_SCRIPT = preload("res://scripts/ui/unjam_3d_game_art.gd")
+
 signal continue_requested
 signal secondary_requested
 
@@ -197,59 +199,13 @@ func _result_game_id() -> String:
 	return "rescue_rush"
 
 func _add_identity(game_id: String) -> void:
-	match game_id:
-		"water_sort":
-			var colors: Array[Color] = [Color("#ff4da3"), Color("#1fabff"), Color("#38d16b")]
-			for i in range(3):
-				var x := 144.0 + float(i) * 36.0
-				var glass := PanelContainer.new()
-				glass.name = "ResultIdentity/Water/Glass/%d" % i
-				glass.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color(0.92,0.99,1.0,0.10), 10, Color(0.78,0.96,1.0,0.90), 1.2))
-				FigmaReferenceCanvas.set_rect(glass, x, 246, 28, 44)
-				_canvas.add_child(glass)
-				var liquid := ColorRect.new()
-				liquid.color = colors[i]
-				FigmaReferenceCanvas.set_rect(liquid, x + 4, 260, 20, 24)
-				_canvas.add_child(liquid)
-				var meniscus := PanelContainer.new()
-				meniscus.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(colors[i].lightened(0.08), 4))
-				FigmaReferenceCanvas.set_rect(meniscus, x + 4, 256, 20, 8)
-				_canvas.add_child(meniscus)
-		"block_puzzle":
-			var fills: Array[Color] = [Color("#38df63"), Color("#466df2"), Color("#ff8b3e"), Color("#9d5add")]
-			var edges: Array[Color] = [Color("#61ff8c"), Color("#6f96ff"), Color("#ffb467"), Color("#c683ff")]
-			for i in range(4):
-				var x := 138.0 + float(i) * 30.0
-				var cell := PanelContainer.new()
-				cell.name = "ResultIdentity/Block/%d/Front" % i
-				cell.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(fills[i], 4, Color(edges[i],0.90), 1))
-				FigmaReferenceCanvas.set_rect(cell, x, 261, 24, 22)
-				_canvas.add_child(cell)
-				var top := Polygon2D.new()
-				top.name = "ResultIdentity/Block/%d/Top" % i
-				top.polygon = PackedVector2Array([Vector2(x,261),Vector2(x+3,257),Vector2(x+27,257),Vector2(x+24,261)])
-				top.color = fills[i].lightened(0.28)
-				_canvas.add_child(top)
-		_:
-			var shadow := PanelContainer.new()
-			shadow.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color(0.04,0.18,0.12,0.20), 8))
-			FigmaReferenceCanvas.set_rect(shadow,168,278,52,8)
-			_canvas.add_child(shadow)
-			var chick := PanelContainer.new()
-			chick.name = "ResultIdentity/Rescue/Chick"
-			chick.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color("#ffd63d"), 14, Color("#fff1a0"), 1))
-			FigmaReferenceCanvas.set_rect(chick,180,251,28,26)
-			_canvas.add_child(chick)
-			for x in [187.0,197.0]:
-				var eye := ColorRect.new()
-				eye.color = Color("#183b42")
-				FigmaReferenceCanvas.set_rect(eye,x,260,3,4)
-				_canvas.add_child(eye)
-			var exit := PanelContainer.new()
-			exit.name = "ResultIdentity/Rescue/Exit"
-			exit.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(Color("#80efb0"), Color("#35b96b"), Color("#148b4c"), 10))
-			FigmaReferenceCanvas.set_rect(exit,220,246,20,38)
-			_canvas.add_child(exit)
+	# Use the same lit one-shot diorama language as Home and Choose Game. The old
+	# hand-drawn chick/tubes/cubes looked like placeholder glyphs beside the 3D stars.
+	var art := GAME_ART_SCRIPT.new()
+	art.name = "ResultGameArt3D"
+	art.configure(game_id)
+	FigmaReferenceCanvas.set_rect(art, 139, 226, 110, 72)
+	_canvas.add_child(art)
 
 func _celebrate() -> void:
 	if not is_inside_tree():

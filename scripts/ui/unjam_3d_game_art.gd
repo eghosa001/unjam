@@ -22,8 +22,9 @@ func _ready() -> void:
 	viewport_3d = SubViewport.new()
 	viewport_3d.own_world_3d = true
 	viewport_3d.name = "GamePreviewViewport3D"
-	viewport_3d.size = Vector2i(480, 360)
+	viewport_3d.size = Vector2i(576, 432)
 	viewport_3d.transparent_bg = true
+	viewport_3d.msaa_3d = Viewport.MSAA_4X
 	viewport_3d.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	add_child(viewport_3d)
 	_build_stage()
@@ -95,19 +96,34 @@ func _build_stage() -> void:
 	stage.add_child(fill)
 
 	var camera := Camera3D.new()
-	camera.position = Vector3(4.9, 5.0, 7.3)
-	camera.fov = 43.0
+	# Slightly closer, narrower framing makes the real 3D object the card's focal
+	# point instead of a small thumbnail floating in a large empty preview panel.
+	camera.position = Vector3(4.45, 4.55, 6.65)
+	camera.fov = 39.0
 	stage.add_child(camera)
-	camera.look_at(Vector3(0, 0.45, 0), Vector3.UP)
+	camera.look_at(Vector3(0, 0.48, 0), Vector3.UP)
 	camera.current = true
 
 	display_root = Node3D.new()
 	display_root.name = "Diorama"
 	stage.add_child(display_root)
+	# Game-specific card-scale composition: Rescue and Block can fill more of the
+	# frame, while Water keeps extra headroom for its tilted pouring bottle.
 	match game_id:
-		"water_sort": _build_water_sort()
-		"block_puzzle": _build_block_puzzle()
-		_: _build_rescue_rush()
+		"water_sort":
+			display_root.scale = Vector3.ONE * 1.02
+			display_root.position = Vector3(0, -0.02, 0.06)
+			_build_water_sort()
+		"block_puzzle":
+			display_root.scale = Vector3.ONE * 1.11
+			display_root.position = Vector3(0, 0.04, 0.08)
+			_build_block_puzzle()
+		_:
+			# Rescue has a wide exit gate on the right edge; leave deliberate breathing
+			# room so the premium diorama never looks accidentally cropped in cards.
+			display_root.scale = Vector3.ONE * 1.05
+			display_root.position = Vector3(-0.14, 0.05, 0.08)
+			_build_rescue_rush()
 
 func _build_rescue_rush() -> void:
 	_add_box(display_root, Vector3(5.7, 0.32, 4.25), Vector3(0, -0.38, 0), Color("07579b"), 0.06, 0.46)
@@ -195,17 +211,20 @@ func _build_block_puzzle() -> void:
 	_add_block_cube(Vector3(1.33, 0.33, 2.34), Color("ffd83d"), 0.72)
 
 func _add_block_cube(position_value: Vector3, color: Color, scale_value: float = 0.88) -> void:
-	_add_box(display_root, Vector3(scale_value, 0.56, scale_value), position_value, color, 0.08, 0.23)
-	_add_box(display_root, Vector3(scale_value * 0.70, 0.035, scale_value * 0.30), position_value + Vector3(0, 0.30, -scale_value * 0.18), Color(1, 1, 1, 0.30), 0.0, 0.15)
+	# Layered body + inset cap creates a visible bevel at preview scale while
+	# keeping geometry cheap enough for one-shot mobile rendering.
+	_add_box(display_root, Vector3(scale_value * 1.02, 0.48, scale_value * 1.02), position_value - Vector3(0, 0.04, 0), color.darkened(0.16), 0.03, 0.24)
+	_add_box(display_root, Vector3(scale_value * 0.92, 0.46, scale_value * 0.92), position_value + Vector3(0, 0.05, 0), color, 0.04, 0.16)
+	_add_box(display_root, Vector3(scale_value * 0.72, 0.040, scale_value * 0.34), position_value + Vector3(-scale_value * 0.05, 0.31, -scale_value * 0.17), Color(1, 1, 1, 0.36), 0.0, 0.10)
 
 func _material(color: Color, metallic_value: float = 0.0, roughness_value: float = 0.34) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()
 	material.albedo_color = color
 	material.metallic = metallic_value
-	material.roughness = clampf(roughness_value, 0.12, 0.42)
+	material.roughness = clampf(roughness_value, 0.10, 0.34)
 	material.clearcoat_enabled = true
-	material.clearcoat = 0.62 if color.a >= 0.90 else 0.38
-	material.clearcoat_roughness = 0.13 if color.a >= 0.90 else 0.08
+	material.clearcoat = 0.78 if color.a >= 0.90 else 0.46
+	material.clearcoat_roughness = 0.09 if color.a >= 0.90 else 0.06
 	if color.a < 0.995:
 		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	return material

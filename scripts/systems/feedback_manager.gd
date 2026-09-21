@@ -193,7 +193,11 @@ func _chime_stream(notes: Array, duration: float, volume: float, brightness: flo
 		# plucked wooden feel of kalimba/marimba instead of an electronic beep.
 		var attack := minf(1.0, t / 0.006)
 		var decay := exp(-progress * (4.8 + brightness * 2.4))
-		var envelope := attack * decay
+		# Force the final 12 ms to zero. Cached one-shot WAVs otherwise stop at a
+		# non-zero sample and can click when rapid puzzle feedback overlaps.
+		var release_raw := clampf((duration - t) / 0.012, 0.0, 1.0)
+		var release := release_raw * release_raw * (3.0 - 2.0 * release_raw)
+		var envelope := attack * decay * release
 		var body := 0.0
 		for note_value in notes:
 			var f := float(note_value)
@@ -270,13 +274,18 @@ func _build_calm_ambient_loop() -> AudioStreamWAV:
 		mallet += sin(TAU * mf * 2.0 * t + 0.2) * 0.009
 		mallet *= mallet_env
 
-		# Nearly subliminal low fundamental glues the harmony without a beat.
-		var low := sin(TAU * float(chord[0]) * 0.5 * t) * 0.028
+		# Every chord-dependent oscillator follows the section edge. Previously the
+		# low and stereo-width voices jumped instantly to new frequencies every
+		# eight seconds while only the pad faded, creating a periodic click.
+		var low := sin(TAU * float(chord[0]) * 0.5 * t) * 0.028 * edge
 		var air := sin(TAU * 0.083 * t + sin(t * 0.11)) * 0.004
 
-		var base_sample := (pad + mallet + low + air) * 0.76
-		var width_l := sin(TAU * float(chord[1]) * 1.003 * t + 0.3) * 0.006
-		var width_r := sin(TAU * float(chord[2]) * 0.997 * t + 1.0) * 0.006
+		# The complete 32-second waveform also approaches zero at the loop seam so
+		# LOOP_FORWARD never jumps from a non-zero final sample back to frame zero.
+		var loop_edge := _smooth_edge(t, MUSIC_DURATION, 0.38)
+		var base_sample := (pad + mallet * edge + low + air * edge) * 0.76 * loop_edge
+		var width_l := sin(TAU * float(chord[1]) * 1.003 * t + 0.3) * 0.006 * edge * loop_edge
+		var width_r := sin(TAU * float(chord[2]) * 0.997 * t + 1.0) * 0.006 * edge * loop_edge
 		_write_stereo(bytes, i, base_sample + width_l, base_sample + width_r)
 
 	var stream := AudioStreamWAV.new()

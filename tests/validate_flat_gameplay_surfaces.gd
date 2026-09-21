@@ -30,7 +30,8 @@ func _initialize() -> void:
 	], failures)
 	_check("res://scripts/ui/premium_piece_button.gd", [
 		"_draw_shell",
-		"Lower bevel",
+		"visible lower sidewall",
+		"Bright top bevel",
 		"gloss_rect",
 		"shadow_rect"
 	], failures)
@@ -49,10 +50,19 @@ func _initialize() -> void:
 		"BlockCellButton.new()"
 	], failures)
 	_check("res://scripts/ui/block_cell_button.gd", [
-		"_draw_extruded_cube"
+		"_draw_extruded_cube",
+		"Recess lighting"
 	], failures)
 	_check("res://scripts/ui/water_tube_3d_motion.gd", [
-		"SubViewport.UPDATE_ONCE"
+		"SubViewport.UPDATE_ONCE",
+		"GLASS_BODY_RADIUS := 0.72",
+		"BottleBody3D",
+		"BottleShoulder3D",
+		"BottleNeck3D",
+		"BottleMouthRim3D",
+		"_glass_material_3d",
+		"Glass must remain visible over opaque liquid",
+		"GLASS_MOUTH_Y"
 	], failures)
 
 	if not failures.is_empty():
