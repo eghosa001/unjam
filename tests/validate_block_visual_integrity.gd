@@ -70,6 +70,20 @@ func _validate_runtime(viewport_size: Vector2i) -> bool:
 	game.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	await _frames(8)
 
+	var title := game.get("title_label") as Label
+	var subtitle := game.find_child("BlockCampaignSubtitle", true, false) as Label
+	var profile := game.get("campaign_profile") as Dictionary
+	var expected_world := int(profile.get("world", 1))
+	if title == null or title.text != "BLOCK PUZZLE":
+		game.queue_free()
+		return _fail("Block gameplay header lost its game identity")
+	if subtitle == null or subtitle.text != "LEVEL 1800 • WORLD %d" % expected_world:
+		game.queue_free()
+		return _fail("Block gameplay header is not reporting live level/world data")
+	if "HARD" in subtitle.text:
+		game.queue_free()
+		return _fail("Block gameplay header still exposes the retired hard-coded difficulty")
+
 	var viewport_rect := Rect2(Vector2.ZERO, root.get_visible_rect().size)
 	var critical_names := [
 		"FigmaBlock390x844", "BackAction", "RetryAction", "BlockCampaignSubtitle",
