@@ -363,6 +363,55 @@ func _run_fast_visual_audit(main: Node, shell: Node) -> void:
 	root.size = Vector2i(540, 960)
 	await _settle(4)
 
+	if _fast_visual_enabled("games"):
+		main.set("current_surface", "live")
+		if main.has_signal("surface_changed"):
+			main.emit_signal("surface_changed", "live")
+		await _settle(5)
+		await _capture("02b-live-540x960-dark")
+
+	if _fast_visual_enabled("levels"):
+		main.set("selected_game_id", "rescue_rush")
+		main.call("build_level_select")
+		await _settle(5)
+		await _capture("03b-levels-rescue-540x960-dark")
+		main.set("selected_game_id", "block_puzzle")
+		main.set("selected_multi_world", 1)
+		main.call("build_multi_level_select")
+		await _settle(5)
+		await _capture("12b-levels-block-540x960-dark")
+
+	if _fast_visual_enabled("collection"):
+		main.call("build_collection")
+		await _settle(5)
+		await _capture("05b-collection-540x960-dark")
+		if main.has_method("build_collection_upgrades"):
+			main.call("build_collection_upgrades")
+			await _settle(5)
+			await _capture("05f-collection-upgrades-540x960-dark")
+
+	if _fast_visual_enabled("daily"):
+		main.call("build_daily_games")
+		await _settle(5)
+		await _capture("05d-daily-540x960-dark")
+
+	if _fast_visual_enabled("settings"):
+		main.call("build_settings")
+		await _settle(5)
+		await _capture("06b-settings-540x960-dark")
+
+	if _fast_visual_enabled("shop"):
+		var shop := main.get_node_or_null("MonetizationHub")
+		if shop != null and shop.has_method("open_shop"):
+			shop.call("open_shop")
+			await _settle(5)
+			await _capture("06d-shop-540x960-dark")
+			if shop.has_method("_close_shop"):
+				shop.call("_close_shop")
+				await _settle(3)
+		else:
+			push_error("Fast visual audit could not open Shop")
+
 	if _fast_visual_enabled("rescue"):
 		main.call("start_level", 1)
 		await _settle(5)
