@@ -4,6 +4,11 @@ extends Control
 var accent: Color = Unjam3DTheme.GREEN
 var dark_mode := false
 
+# Static 2px-wide gradient textures remove visible hard-edged color bands while
+# keeping the backdrop shader-free and cheap on low-end Android hardware.
+static var _sky_gradient_texture: ImageTexture
+static var _river_gradient_texture: ImageTexture
+
 func configure(value: Color, use_dark_mode: bool = false) -> void:
 	accent = value
 	dark_mode = use_dark_mode
@@ -11,6 +16,7 @@ func configure(value: Color, use_dark_mode: bool = false) -> void:
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	resized.connect(queue_redraw)
 	queue_redraw()
 
@@ -32,15 +38,7 @@ func _draw() -> void:
 		draw_rect(Rect2(0, 0, w, h * 0.42), Color("#315b70", 0.16))
 
 func _draw_sky(w: float, h: float) -> void:
-	# This backdrop redraws only on setup/resize, so use enough bands to stay smooth
-	# after Android density scaling instead of exposing horizontal color steps.
-	var bands := 192
-	for i in range(bands):
-		var t := float(i) / float(bands - 1)
-		var y := h * t
-		var band_h := h / float(bands) + 2.0
-		var sky_color := Color("31b5ff").lerp(Color("eafcff"), pow(t, 0.86))
-		draw_rect(Rect2(0, y, w, band_h), sky_color)
+	draw_texture_rect(_sky_gradient(), Rect2(0, 0, w, h), false)
 
 	# Warm sun bloom gives the same cheerful fantasy-game lighting as the reference.
 	var sun := Vector2(w * 0.77, h * 0.105)
@@ -59,6 +57,30 @@ func _draw_sky(w: float, h: float) -> void:
 		var point := Vector2(w * p.x, h * p.y)
 		draw_circle(point, maxf(2.0, w * 0.0035), Color(1,1,1,0.68))
 		draw_line(point - Vector2(w * 0.008, 0), point + Vector2(w * 0.008, 0), Color(1,1,1,0.30), 2.0)
+
+func _sky_gradient() -> ImageTexture:
+	if _sky_gradient_texture != null:
+		return _sky_gradient_texture
+	var image := Image.create(2, 512, false, Image.FORMAT_RGBA8)
+	for y in range(image.get_height()):
+		var t := float(y) / float(image.get_height() - 1)
+		var sky_color := Color("31b5ff").lerp(Color("eafcff"), pow(t, 0.86))
+		image.set_pixel(0, y, sky_color)
+		image.set_pixel(1, y, sky_color)
+	_sky_gradient_texture = ImageTexture.create_from_image(image)
+	return _sky_gradient_texture
+
+func _river_gradient() -> ImageTexture:
+	if _river_gradient_texture != null:
+		return _river_gradient_texture
+	var image := Image.create(2, 256, false, Image.FORMAT_RGBA8)
+	for y in range(image.get_height()):
+		var t := float(y) / float(image.get_height() - 1)
+		var river_color := Color("20bddc").lerp(Color("087fbb"), t * 0.82)
+		image.set_pixel(0, y, river_color)
+		image.set_pixel(1, y, river_color)
+	_river_gradient_texture = ImageTexture.create_from_image(image)
+	return _river_gradient_texture
 
 func _draw_distant_world(w: float, h: float) -> void:
 	# Blue atmospheric mountain layer.
@@ -127,12 +149,7 @@ func _draw_water_world(w: float, h: float) -> void:
 
 	# River gradient and perspective streaks.
 	var water_top := h * 0.675
-	var river_bands := 48
-	for i in range(river_bands):
-		var t := float(i) / float(river_bands - 1)
-		var yy := water_top + (h - water_top) * t
-		var band_h := (h - water_top) / float(river_bands - 1) + 1.0
-		draw_rect(Rect2(0, yy, w, band_h), Color("20bddc").lerp(Color("087fbb"), t * 0.82))
+	draw_texture_rect(_river_gradient(), Rect2(0, water_top, w, h - water_top), false)
 	for i in range(12):
 		var yy := h * (0.705 + float(i) * 0.025)
 		var inset := w * (0.03 + float(i) * 0.018)
