@@ -62,7 +62,7 @@ func _run() -> void:
 	var collection_label := home.find_child("HomeNavLabel_COLLECT", true, false) as Label
 	if collection_label == null or collection_label.text != "COLLECTION":
 		return _fail("Home bottom nav no longer uses the complete Collection label")
-	if collection_label.get_theme_font_size("font_size") < 12:
+	if collection_label.get_theme_font_size("font_size") < 13:
 		return _fail("Home Collection navigation label became too small")
 	var daily_label := home.find_child("HomeNavLabel_DAILY", true, false) as Label
 	var settings_label := home.find_child("HomeNavLabel_SETTINGS", true, false) as Label

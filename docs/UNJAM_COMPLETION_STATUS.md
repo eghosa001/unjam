@@ -2,28 +2,37 @@
 
 ## Current production pass
 
-Branch: rolling production polish on `main`
-Base: current `main`
+Branch: `polish/consolidated-premium-pass-20260921`  
+Base: `main` after Daily return routing PR #117
 
-### Implemented in this pass
+### Consolidated code-side work completed
 
-- Replaced plain white/near-black menu backgrounds with low-saturation sea-glass/slate gradients and static depth layers that do not compete with game accents.
-- Quick Switch now uses the complete names **RESCUE RUSH**, **WATER SORT**, and **BLOCK PUZZLE**.
-- Home LV/★/quick-switch progression refreshes whenever Home becomes visible.
-- Water Sort removed the extra internal glass line and now fits up to 15 tubes inside the audited gameplay stage.
-- Block Puzzle cube side shading was lifted so extrusion faces remain readable.
-- Block Puzzle no longer manufactures a tiny rescue block when no placement exists; dead ends now produce an explicit failure result.
-- Rescue Rush and Water Sort now also present explicit failure results when no legal action remains.
-- Daily Games now provide three independent daily challenges: starting or leaving one game does not lock the other two. They do not expose hidden level numbers and do not save/resume daily checkpoints.
-- Repeated puzzle sounds were softened while keeping the existing calm synthesized palette.
+- Daily quit, completion and Android-back routing now returns to Daily Games consistently instead of leaking into campaign navigation.
+- The shared Figma material renderer now uses higher-resolution cached gradients and filtered texture sampling for smoother high-density Android surfaces.
+- The procedural world backdrop no longer builds the sky/river from visible horizontal color bands; cached filtered gradient textures are used instead.
+- Display-title depth was tightened to avoid fuzzy/doubled glyphs after compact-canvas scaling.
+- Typography now has separate readable body and strong heading/button weights instead of globally over-emboldening every label.
+- Home Quick Switch gives the selected game stronger depth while keeping inactive games quieter.
+- Home, Choose Game and secondary-screen bottom navigation now emphasize only the active destination rather than making all five labels compete visually.
+- The U-only launcher icon and adaptive safe-zone contract remain protected by the release validator.
+- Existing gameplay polish remains active: bottle-rim Water Sort pouring, magnetic Block placement/failure handling, Rescue escape motion, premium result overlays, Daily independence and adaptive decorative-effect budgets.
+
+### Current benchmark loop
+
+The latest combined build was reviewed as one product rather than one defect at a time. The comparison focused on the qualities visible in leading current block, water-sort and arrow-puzzle games: immediate puzzle readability, uncluttered hierarchy, tactile/glossy material depth, smooth satisfying motion, clear one-thumb controls, calm feedback and performance that does not sacrifice responsiveness.
+
+No further code change is being made merely to continue the loop when the full rendered matrix is already coherent; new changes should correspond to a reproduced defect or a measurable quality gap.
 
 ### Verification gates
 
-- `validate_requested_polish_contract`
-- `validate_daily_and_late_water_runtime`
-- Fast PR iteration uses focused theme, viewport, gameplay, progression, motion and visual-regression contracts plus rendered compact screenshots.
-- Exhaustive monetization, 10,000-level campaign, Android API 36 APK/AAB, package, signing and 16 KB checks remain in explicit production/manual workflows.
+- Fast iteration remains change-scoped rather than running the entire release suite.
+- Central renderer/device-fit changes now additionally run `validate_production_hardening_regressions` because that contract covers touch-target floors, visual occupancy, navigation clearance, verified dead-code removals and other cross-screen regressions.
+- The consolidated renderer is guarded for smooth gradient textures, regular/strong typography separation and crisp display-title depth.
+- Full rendered evidence covers Home, Choose Game, all level browsers, Daily, Collection, Collection Upgrades, Shop, Settings, tutorials, results and all three gameplay surfaces.
+- Exhaustive monetization, campaign-generation, Android API 36 export, package/signing and 16 KB native-page checks remain in the explicit production-release workflow so normal iteration stays fast.
 
-### Remaining external/device gate
+### Remaining external/device gates
 
-Final real low-end Android frame-time and touch-latency validation remains a physical-device/internal-track check; CI validates architecture, rendering, behavior and packaging but cannot reproduce every low-end GPU/driver combination.
+These cannot be proven by repository CI alone: final physical Android play on representative phones, subjective phone-speaker/Bluetooth/headphone listening, Play-distributed Billing/AdMob/UMP behavior, Play Console declarations, live purchase-verification/app-ads configuration and the final signed Internal Testing AAB.
+
+A release should only be called production-ready after those external checks pass on the exact release commit.

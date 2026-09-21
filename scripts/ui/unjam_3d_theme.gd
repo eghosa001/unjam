@@ -2,14 +2,27 @@ class_name Unjam3DTheme
 extends RefCounted
 
 static var _readable_font: FontVariation
+static var _strong_font: FontVariation
 
 static func readable_font() -> FontVariation:
 	if _readable_font == null:
 		var font := FontVariation.new()
 		font.base_font = ThemeDB.fallback_font
-		font.variation_embolden = 0.85
+		# Body copy should stay clean at the 390px reference scale. Heavy synthetic
+		# emboldening made small counters and secondary labels look congested.
+		font.variation_embolden = 0.24
 		_readable_font = font
 	return _readable_font
+
+static func strong_font() -> FontVariation:
+	if _strong_font == null:
+		var font := FontVariation.new()
+		font.base_font = ThemeDB.fallback_font
+		# Headings/buttons retain a deliberate casual-game weight without the
+		# overfilled glyphs produced by the old 0.85 global embolden.
+		font.variation_embolden = 0.62
+		_strong_font = font
+	return _strong_font
 
 const SKY_TOP := Color("41b9ff")
 const SKY_BOTTOM := Color("dff8ff")
@@ -60,7 +73,7 @@ static func gloss_button(button: Button, accent: Color, primary: bool = true, ra
 	button.focus_mode = Control.FOCUS_NONE
 	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	button.custom_minimum_size.y = maxf(button.custom_minimum_size.y, 88.0)
-	button.add_theme_font_override("font", readable_font())
+	button.add_theme_font_override("font", strong_font())
 	button.add_theme_font_size_override("font_size", maxi(28, button.get_theme_font_size("font_size")))
 	var base := accent if primary else (Color("162743") if dark_mode else Color("edf9ff"))
 	var edge := accent.lightened(0.28) if primary else (accent.lightened(0.10) if dark_mode else Color("9de2ff"))
@@ -77,7 +90,7 @@ static func gloss_button(button: Button, accent: Color, primary: bool = true, ra
 	button.add_theme_constant_override("outline_size", 2)
 
 static func label_3d(label: Label, color: Color = Color.WHITE, outline: Color = Color("07518e"), outline_size: int = 4) -> void:
-	label.add_theme_font_override("font", readable_font())
+	label.add_theme_font_override("font", strong_font())
 	label.add_theme_color_override("font_color", color)
 	label.add_theme_color_override("font_outline_color", outline)
 	var font_size := label.get_theme_font_size("font_size")

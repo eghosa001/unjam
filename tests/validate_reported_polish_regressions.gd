@@ -34,7 +34,7 @@ func _init() -> void:
 	_require_source("res://scripts/game/block_puzzle_3d.gd", ["set_rect(status_region, 18, 682", "set_rect(hint_region, 18, 706"], "Block tray/status/guidance separation", errors)
 	_require_source("res://scripts/game/block_puzzle_10000.gd", ["set_rect(bar, 17, 732, 349, 54)"], "Block booster lower thumb-zone separation", errors)
 	_require_source("res://scripts/ui/ux_shell_casual.gd", ["label(\"EXIT\",12,Color.WHITE", "set_rect(exit_label,160,34,46,17)"], "Tutorial exit label containment", errors)
-	_require_source("res://scripts/ui/figma_reference_canvas.gd", ["second dark glyph", "font_shadow_color\", Color.TRANSPARENT", "shadow_offset_y\", 2", "shadow_outline_size\", 1"], "crisp scaled Figma text", errors)
+	_require_source("res://scripts/ui/figma_reference_canvas.gd", ["second dark glyph", "font_shadow_color\", Color.TRANSPARENT", "shadow_offset_y\", 1", "shadow_outline_size\", 0"], "crisp scaled Figma text", errors)
 	_require_source("res://scripts/ui/premium_main_casual.gd", ["Rect2(34,label_y-7,210,30),14", "button_text_color,19,14", "theme_text,19,14"], "Settings compact text minimums", errors)
 	_require_source("res://scripts/ui/premium_main_casual.gd", ["Rect2(17,539,354,112)", "Rect2(37,y+8,184,18),14", "Rect2(37,y+48,192,15),12", "Rect2(251,y+13,96,44)", "state_text_color,\n\t\t\t12,\n\t\t\t13"], "Collection compact spacing/readability", errors)
 	_require_source("res://scripts/ui/premium_main_casual.gd", ["func _figma_daily_progress", "DailyProgressBar", "Each Daily is independent • play in any order", "Rect2(33,703,318,18), 12", "Rect2(17,610,354,116)"], "Daily independent progress panel", errors)
