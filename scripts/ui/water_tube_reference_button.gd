@@ -141,10 +141,12 @@ func _draw() -> void:
 	# vertical shine line through the middle of the bottle.
 	var wall_top := body.position.y + radius * 0.42
 	var wall_height := maxf(4.0, body.size.y - radius * 0.92)
-	var wall_width := maxf(3.0, body.size.x * 0.10)
-	draw_rect(Rect2(Vector2(body.position.x + 2.5, wall_top), Vector2(wall_width, wall_height)), Color(0.52,0.90,1.0,0.13), true)
-	draw_rect(Rect2(Vector2(body.end.x - wall_width - 2.5, wall_top), Vector2(wall_width, wall_height)), Color(0.92,0.99,1.0,0.10), true)
-	_draw_glass_shape(body, Color(0.78, 0.96, 1.0, 0.070), outline, radius, 2.8)
+	var wall_width := maxf(4.0, body.size.x * 0.14)
+	# Phone-scale crystal sidewalls need to remain visible after screenshot/device
+	# downsampling. These are OUTER wall masses, not an interior shine stripe.
+	draw_rect(Rect2(Vector2(body.position.x + 2.5, wall_top), Vector2(wall_width, wall_height)), Color(0.48,0.88,1.0,0.26), true)
+	draw_rect(Rect2(Vector2(body.end.x - wall_width - 2.5, wall_top), Vector2(wall_width, wall_height)), Color(0.92,0.99,1.0,0.22), true)
+	_draw_glass_shape(body, Color(0.78, 0.96, 1.0, 0.105), outline, radius, 3.2)
 
 	# Thick glass lip, base refraction and small curved glints. Avoid long vertical
 	# wall strokes—the user-visible bottle should read as glass, not as lined plastic.
@@ -159,8 +161,8 @@ func _draw() -> void:
 	# Explicit OUTER crystal contour. This restores the visible bottle silhouette
 	# over opaque liquid without adding the interior vertical "shine" line that
 	# previously made the vessels look like lined plastic.
-	var contour_color := Color(0.90, 0.99, 1.0, 0.82)
-	var contour_glow := Color(0.25, 0.78, 1.0, 0.34)
+	var contour_color := Color(0.94, 1.0, 1.0, 0.98)
+	var contour_glow := Color(0.18, 0.74, 1.0, 0.52)
 	var shoulder_y := body.position.y + radius * 0.56
 	var left_mouth := Vector2(body.get_center().x - mouth_width * 0.5, mouth_y + 2.0)
 	var right_mouth := Vector2(body.get_center().x + mouth_width * 0.5, mouth_y + 2.0)
@@ -168,12 +170,17 @@ func _draw() -> void:
 	var right_shoulder := Vector2(body.end.x - 1.4, shoulder_y)
 	var left_bottom := Vector2(body.position.x + 1.4, body.end.y - radius * 0.72)
 	var right_bottom := Vector2(body.end.x - 1.4, body.end.y - radius * 0.72)
-	for width in [5.2, 2.4]:
-		var c := contour_glow if width > 3.0 else contour_color
+	for width in [7.0, 3.6]:
+		var c := contour_glow if width > 4.0 else contour_color
 		draw_line(left_mouth, left_shoulder, c, width, true)
 		draw_line(right_mouth, right_shoulder, c, width, true)
 		draw_line(left_shoulder, left_bottom, c, width, true)
 		draw_line(right_shoulder, right_bottom, c, width, true)
+	# Shoulder glass planes visually connect the mouth to the body at small sizes.
+	var left_plane := PackedVector2Array([left_mouth, left_shoulder, left_shoulder + Vector2(wall_width, 0), left_mouth + Vector2(3.0, 1.0)])
+	var right_plane := PackedVector2Array([right_mouth, right_shoulder, right_shoulder - Vector2(wall_width, 0), right_mouth - Vector2(3.0, 1.0)])
+	draw_colored_polygon(left_plane, Color(0.68,0.94,1.0,0.18))
+	draw_colored_polygon(right_plane, Color(0.92,0.99,1.0,0.14))
 	if is_selected:
 		var a := 0.35 + 0.12 * sin(pulse * 5.0)
 		draw_arc(body.get_center(), body.size.x * 0.68, 0, TAU, 42, Color(1.0, 0.88, 0.35, a), 4.0, true)
