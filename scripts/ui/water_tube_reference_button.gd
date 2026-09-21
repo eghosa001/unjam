@@ -102,7 +102,10 @@ func _draw() -> void:
 		outline = Color("ff4d67")
 	if success_flash > 0.0:
 		outline = Color("7ff0b0")
-	_draw_glass_shape(body, Color(1, 1, 1, 0.045), outline, radius, 3.0)
+	# Blue outer refraction + bright inner crystal edge gives the bottle a
+	# double-wall glass read against the dark playfield.
+	_draw_glass_shape(Rect2(body.position - Vector2(1.5, 1.5), body.size + Vector2(3, 3)), Color(0.22, 0.76, 1.0, 0.035), Color(0.35, 0.82, 1.0, 0.34), radius + 1.5, 5.0)
+	_draw_glass_shape(body, Color(1, 1, 1, 0.035), outline, radius, 2.4)
 
 	# Four crisp liquid layers, similar to the visual rhythm in the reference.
 	var slot_h := inner.size.y / float(CAPACITY)
@@ -126,7 +129,13 @@ func _draw() -> void:
 		# inserting an artificial vertical reflection line through the bottle.
 		var light_band := Rect2(r.position + Vector2(2, 2), Vector2(maxf(2.0, r.size.x - 4), maxf(3.0, r.size.y * 0.42)))
 		draw_rect(light_band, Color(liquid.lightened(0.20), 0.46), true)
-		draw_line(Vector2(r.position.x + 2, r.position.y + 2), Vector2(r.end.x - 2, r.position.y + 2), liquid.lightened(0.40), 2.2, true)
+		draw_line(Vector2(r.position.x + 2, r.position.y + 2), Vector2(r.end.x - 2, r.position.y + 2), liquid.lightened(0.44), 2.2, true)
+		# Narrow center glow + darker edge falloff makes each layer feel cylindrical
+		# rather than like a flat colored rectangle.
+		var center_glow := Rect2(Vector2(r.position.x + r.size.x * 0.34, r.position.y + 3), Vector2(r.size.x * 0.24, maxf(2.0, r.size.y - 6)))
+		draw_rect(center_glow, Color(1,1,1,0.08), true)
+		draw_rect(Rect2(r.position, Vector2(maxf(2.0, r.size.x * 0.12), r.size.y)), Color(liquid.darkened(0.28),0.24), true)
+		draw_rect(Rect2(Vector2(r.end.x - maxf(2.0, r.size.x * 0.12), r.position.y), Vector2(maxf(2.0, r.size.x * 0.12), r.size.y)), Color(liquid.darkened(0.32),0.22), true)
 
 	# Thick glass lip, base refraction and small curved glints. Avoid long vertical
 	# wall strokes—the user-visible bottle should read as glass, not as lined plastic.
