@@ -31,19 +31,20 @@ jobs:
           version: 4.7.2-stable
           export-templates: false
 
-      - name: Install runtime plugins
+      - name: Disable release-only editor plugins
         shell: bash
         run: |
           set -euo pipefail
-          chmod +x tools/install_monetization_plugins.sh
-          for attempt in 1 2 3; do
-            if tools/install_monetization_plugins.sh; then
-              exit 0
-            fi
-            echo "Plugin download attempt $attempt failed; retrying..."
-            sleep $((attempt * 2))
-          done
-          exit 1
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("project.godot")
+          text = path.read_text()
+          enabled = 'enabled=PackedStringArray("res://addons/admob/plugin.cfg", "res://addons/GodotGooglePlayBilling/plugin.cfg")'
+          if enabled not in text:
+              raise SystemExit("Expected monetization editor-plugin declaration is missing")
+          path.write_text(text.replace(enabled, "enabled=PackedStringArray()"))
+          PY
 
       - name: Import project and reject script errors
         shell: bash
