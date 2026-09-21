@@ -554,7 +554,7 @@ func _figma_daily_progress(canvas: Control) -> void:
 			accent.lightened(0.25) if _dark() else accent.darkened(0.24),
 			true
 		)
-		label.name = "DailyProgressLabel/%s" % game_id
+		label.name = "DailyProgressLabel_%s" % game_id
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 
@@ -588,7 +588,7 @@ func _figma_daily_card(canvas: Control, game_id: String, y: float, collection_bo
 	FigmaReferenceCanvas.set_rect(accent_rail, 20, y + 14, 5, 78)
 	canvas.add_child(accent_rail)
 	var daily_title := _figma_text(canvas, MultiGameManager.display_name(game_id).to_upper(), Rect2(33,y+18,170,22), 18, FIGMA_OFF_WHITE)
-	daily_title.name = "DailyTitle/%s" % game_id
+	daily_title.name = "DailyTitle_%s" % game_id
 	FigmaReferenceCanvas.style_display_title(daily_title, Color("#fff7df"), accent.darkened(0.62), 2)
 	var detail := "TODAY’S RESCUE" if game_id == "rescue_rush" else ("TODAY’S SORT" if game_id == "water_sort" else "TODAY’S BLOCK RUN")
 	_figma_text(canvas, detail, Rect2(33,y+48,175,15), 12, FIGMA_MUTED)
