@@ -106,6 +106,8 @@ def main() -> int:
         'viewBox="0 0 512 512"',
         'url(#bg)',
         '<!-- main U silhouette/shadow -->',
+        'id="LauncherSafeForeground"',
+        'scale(.78)',
     ):
         if token not in icon:
             errors.append(f'launcher icon master missing premium asset token: {token}')
@@ -117,7 +119,7 @@ def main() -> int:
 
     for token in (
         'id="AdaptiveSafeZone"',
-        'translate(216 216) scale(.94) translate(-216 -216)',
+        'translate(216 216) scale(.86) translate(-216 -216)',
         'translate(55 82) scale(.80)',
     ):
         if token not in adaptive_fg:
