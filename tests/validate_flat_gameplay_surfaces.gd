@@ -55,10 +55,13 @@ func _initialize() -> void:
 	], failures)
 	_check("res://scripts/ui/water_tube_3d_motion.gd", [
 		"SubViewport.UPDATE_ONCE",
+		"GLASS_BODY_RADIUS := 0.72",
 		"BottleBody3D",
 		"BottleShoulder3D",
 		"BottleNeck3D",
 		"BottleMouthRim3D",
+		"_glass_material_3d",
+		"Glass must remain visible over opaque liquid",
 		"GLASS_MOUTH_Y"
 	], failures)
 
