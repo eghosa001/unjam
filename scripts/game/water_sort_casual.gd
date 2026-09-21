@@ -114,19 +114,28 @@ func _build_figma_water(canvas: Control) -> void:
 	RefCanvas.set_rect(board, 37, 201.73, 294, 251)
 	canvas.add_child(board)
 
-	status_label = _make_label("READY", 13, NAVY, true)
-	RefCanvas.set_rect(status_label, 17, 599, 354, 20)
+	# Keep status and guidance on independent rows. Sharing one y-band looked
+	# compact at READY but longer recovery/assist messages could collide with
+	# "Best move..." guidance on phone screens.
+	status_label = _make_label("READY", 14, NAVY, true)
+	status_label.name = "WaterStatusText"
+	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	status_label.clip_text = true
+	status_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	RefCanvas.set_rect(status_label, 17, 596, 354, 21)
 	canvas.add_child(status_label)
-	hint_label = _make_label("", 13, GUIDANCE_ORANGE, true)
+	hint_label = _make_label("", 14, GUIDANCE_ORANGE, true)
 	hint_label.name = "WaterGuidanceText"
 	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	RefCanvas.set_rect(hint_label, 119, 599, 252, 20)
+	hint_label.clip_text = true
+	hint_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	RefCanvas.set_rect(hint_label, 17, 620, 354, 21)
 	canvas.add_child(hint_label)
 
 	var actions := HBoxContainer.new()
 	actions.name = "CompactGameActions"
 	actions.add_theme_constant_override("separation", 14)
-	RefCanvas.set_rect(actions, 21, 627, 346, 60)
+	RefCanvas.set_rect(actions, 21, 650, 346, 60)
 	canvas.add_child(actions)
 
 	var undo := _action_button("↶  UNDO", BLUE)
