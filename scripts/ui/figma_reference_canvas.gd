@@ -8,7 +8,7 @@ const WORLD_BACKDROP_SCRIPT = preload("res://scripts/ui/unjam_3d_backdrop.gd")
 var extra_scale := 1.0
 
 # Screen navigation rebuilds many Figma-authored controls. Re-generating the
-# same 96x96 gradient images on every tap was expensive enough to be visible as
+# the same generated gradient images on every tap was expensive enough to be visible as
 # navigation hitching on device. Cache immutable StyleBoxTexture instances by
 # their authored visual parameters so later screen builds reuse GPU-ready data.
 static var _rounded_gradient_cache: Dictionary = {}
@@ -127,7 +127,9 @@ static func rounded_gradient3(top: Color, middle: Color, bottom: Color, radius: 
 	var cache_key := _style_cache_key("rounded3", [top, middle, bottom], radius, border_color, border_width, midpoint)
 	if _rounded_gradient3_cache.has(cache_key):
 		return _rounded_gradient3_cache[cache_key] as StyleBoxTexture
-	var image_size := 96
+	# 160px source material prevents visible stepping/banding after the authored
+	# 390x844 surface is scaled to high-density Android viewports.
+	var image_size := 160
 	var image := Image.create(image_size, image_size, false, Image.FORMAT_RGBA8)
 	var r := clampf(radius / 24.0 * (float(image_size) * 22.0 / 96.0), 0.0, float(image_size) * 44.0 / 96.0)
 	var bw := maxf(0.0, border_width / 4.0 * 4.0)
@@ -307,16 +309,18 @@ static func style_display_title(label_node: Label, fill: Color, outline_color: C
 	label_node.add_theme_color_override("font_outline_color", outline_color)
 	label_node.add_theme_constant_override("outline_size", outline_size)
 	# Keep title depth without creating a second dark glyph after compact scaling.
-	label_node.add_theme_color_override("font_shadow_color", Color(0.01,0.03,0.12,0.38))
+	# Keep one restrained depth cue. A shadow outline creates a second glyph when
+	# the 390px reference canvas is scaled, which reads as fuzzy rather than 3D.
+	label_node.add_theme_color_override("font_shadow_color", Color(0.01,0.03,0.12,0.22))
 	label_node.add_theme_constant_override("shadow_offset_x", 0)
-	label_node.add_theme_constant_override("shadow_offset_y", 2)
-	label_node.add_theme_constant_override("shadow_outline_size", 1)
+	label_node.add_theme_constant_override("shadow_offset_y", 1)
+	label_node.add_theme_constant_override("shadow_outline_size", 0)
 
 static func horizontal_gradient(left: Color, right: Color, radius: float = 0.0, border_color: Color = Color.TRANSPARENT, border_width: float = 0.0) -> StyleBoxTexture:
 	var cache_key := _style_cache_key("horizontal", [left, right], radius, border_color, border_width)
 	if _horizontal_gradient_cache.has(cache_key):
 		return _horizontal_gradient_cache[cache_key] as StyleBoxTexture
-	var image_size := 96
+	var image_size := 160
 	var image := Image.create(image_size, image_size, false, Image.FORMAT_RGBA8)
 	var r := clampf(radius / 24.0 * (float(image_size) * 22.0 / 96.0), 0.0, float(image_size) * 44.0 / 96.0)
 	var bw := maxf(0.0, border_width)
