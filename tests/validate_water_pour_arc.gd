@@ -100,6 +100,25 @@ func _run() -> void:
 		game.queue_free()
 		return _fail("Water pour source clamp allows a tilted bottle outside the phone viewport")
 
+	var live_board := game.get("board") as GridContainer
+	if live_board != null and live_board.get_child_count() >= 2:
+		game.set("active_source_tubes", {0: true})
+		game.set("active_target_tubes", {1: true})
+		game.call("render_board")
+		await process_frame
+		var locked_source := live_board.get_child(0) as Control
+		var locked_target := live_board.get_child(1) as Control
+		if locked_source == null or locked_target == null:
+			game.queue_free()
+			return _fail("Water active-pour controls disappeared from the grid")
+		if locked_source.modulate.a > 0.001 or locked_target.modulate.a > 0.001:
+			game.queue_free()
+			return _fail("Water active-pour originals remain visible underneath their animated ghosts")
+		game.set("active_source_tubes", {})
+		game.set("active_target_tubes", {})
+		game.call("render_board")
+		await process_frame
+
 	var motion_text := _read("res://scripts/game/water_sort_reference_motion.gd")
 	for token in ["_source_rim_local", "_receiver_rim_local", "_position_for_tilted_rim", "_liquid_arc_points", "_pour_direction", "_clamp_pour_source_position", "_release_pour_visual_lock"]:
 		if not motion_text.contains(token):

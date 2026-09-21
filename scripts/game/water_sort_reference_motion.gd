@@ -27,7 +27,10 @@ func render_board() -> void:
 		button.configure(tubes[i], i == selected, i)
 		button.pressed.connect(select_tube.bind(i))
 		if active_source_tubes.has(i) or active_target_tubes.has(i):
-			button.modulate = Color(1, 1, 1, 0.08)
+			# Keep the control in the GridContainer so layout stays fixed, but make
+			# the original bottle fully invisible while the animated pour ghost owns
+			# that physical bottle. Partial opacity reads as a duplicate bottle.
+			button.modulate = Color(1, 1, 1, 0.0)
 			button.disabled = true
 		board.add_child(button)
 	move_label.text = "MOVES %d   •   PERFECT ≤ %d   •   %d COLORS" % [moves, par_moves, color_count]
