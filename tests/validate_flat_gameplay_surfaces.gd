@@ -30,7 +30,8 @@ func _initialize() -> void:
 	], failures)
 	_check("res://scripts/ui/premium_piece_button.gd", [
 		"_draw_shell",
-		"Lower bevel",
+		"visible lower sidewall",
+		"Bright top bevel",
 		"gloss_rect",
 		"shadow_rect"
 	], failures)
