@@ -37,6 +37,15 @@ func _run() -> void:
 			return _fail("Selector game title lost its high-contrast outline for %s" % game_id)
 		if game_title.get_theme_color("font_color").get_luminance() < 0.80:
 			return _fail("Selector game title lost its bright foreground for %s" % game_id)
+		var preview := _find(main, "SelectorGameArt3D_%s" % game_id) as SubViewportContainer
+		if preview == null or not bool(preview.get_meta("unjam_flat_3d_preview", false)):
+			return _fail("Selector flat-3D gameplay emblem is missing for %s" % game_id)
+		var preview_viewport := _find(preview, "GamePreviewViewport3D") as SubViewport
+		if preview_viewport == null or preview_viewport.size != Vector2i(416, 448):
+			return _fail("Selector preview aspect/render size regressed for %s" % game_id)
+		var preview_camera := _find(preview, "Flat3DPreviewCamera") as Camera3D
+		if preview_camera == null or preview_camera.projection != Camera3D.PROJECTION_ORTHOGONAL:
+			return _fail("Selector gameplay emblem must use orthographic flat-3D framing for %s" % game_id)
 
 	for nav_name in ["HOME", "GAMES", "DAILY", "COLLECT", "SETTINGS"]:
 		var glyph := _find(main, "SelectorNavGlyph_%s" % nav_name) as Label
