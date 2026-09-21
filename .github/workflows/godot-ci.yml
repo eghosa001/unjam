@@ -70,6 +70,8 @@ jobs:
           if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" boot.log; then exit 1; fi
 
       - name: Capture rendered regression screens
+        env:
+          UNJAM_FAST_VISUAL_AUDIT: "1"
         shell: bash
         run: |
           set -euxo pipefail
