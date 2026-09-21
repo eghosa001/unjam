@@ -171,11 +171,26 @@ func _vibrate(ms: int) -> void:
 func _play_chime(notes: Array, duration: float, volume: float, brightness: float) -> void:
 	if sfx_players.is_empty() or not bool(SaveManager.data.get("sound", true)):
 		return
+	var target := _next_available_sfx_player()
+	if target == null:
+		# Never replace a waveform mid-play. A dropped micro-effect under extreme
+		# overlap is far less noticeable than the click caused by truncating an
+		# active channel at a non-zero sample.
+		return
 	var stream := _chime_stream(notes, duration, volume, brightness)
-	var target := sfx_players[_sfx_cursor % sfx_players.size()]
-	_sfx_cursor = (_sfx_cursor + 1) % sfx_players.size()
 	target.stream = stream
 	target.play()
+
+func _next_available_sfx_player() -> AudioStreamPlayer:
+	if sfx_players.is_empty():
+		return null
+	for offset in range(sfx_players.size()):
+		var index := (_sfx_cursor + offset) % sfx_players.size()
+		var candidate := sfx_players[index]
+		if candidate != null and is_instance_valid(candidate) and not candidate.playing:
+			_sfx_cursor = (index + 1) % sfx_players.size()
+			return candidate
+	return null
 
 func _chime_stream(notes: Array, duration: float, volume: float, brightness: float) -> AudioStreamWAV:
 	var key := "%s|%.3f|%.3f|%.3f" % [str(notes), duration, volume, brightness]
