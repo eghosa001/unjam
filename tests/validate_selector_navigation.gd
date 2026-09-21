@@ -69,8 +69,11 @@ func _run() -> void:
 		var glyph := _find(main, "SelectorNavGlyph_%s" % nav_name) as Label
 		var label := _find(main, "SelectorNavLabel_%s" % nav_name) as Label
 		var hit := _find(main, "SelectorNavHit_%s" % nav_name) as Button
-		if glyph == null or glyph.text.is_empty() or label == null or label.text != nav_name:
+		var expected_label := "COLLECTION" if nav_name == "COLLECT" else nav_name
+		if glyph == null or glyph.text.is_empty() or label == null or label.text != expected_label:
 			return _fail("Games selector navigation identity is incomplete for %s" % nav_name)
+		if label.get_theme_font_size("font_size") < 12:
+			return _fail("Games selector navigation label became too small for %s" % nav_name)
 		if hit == null or hit.size.x < 70.0 or hit.size.y < 74.0:
 			return _fail("Games selector navigation touch target is too small for %s" % nav_name)
 
