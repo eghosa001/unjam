@@ -33,22 +33,22 @@ GROUP_TESTS = {
     ],
     "water": [
         "validate_reported_polish_regressions",
-        "validate_compact_gameplay_stack",
         "validate_daily_and_late_water_runtime",
         "validate_water_liquid_continuity",
         "validate_water_pour_arc",
     ],
     "block": [
         "validate_reported_polish_regressions",
-        "validate_compact_gameplay_stack",
         "validate_block_visual_integrity",
         "validate_block_single_touch_owner",
     ],
     "rescue": [
         "validate_reported_polish_regressions",
-        "validate_compact_gameplay_stack",
         "validate_gameplay_interactions",
         "validate_rescue_token_render_lifecycle",
+    ],
+    "shared_gameplay_ui": [
+        "validate_compact_gameplay_stack",
     ],
     "progression": [
         "validate_gameplay_interactions",
@@ -119,6 +119,13 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
     if p.startswith("scripts/systems/") and "premium_visuals" in p:
         add(groups, "ui")
         visual.update({"games", "levels", "collection", "daily", "settings", "shop"})
+
+    if p in {
+        "scripts/ui/device_fit.gd",
+        "scripts/ui/figma_reference_canvas.gd",
+        "scenes/main.tscn",
+    }:
+        add(groups, "shared_gameplay_ui")
 
     if p.startswith("scripts/ui/"):
         game_specific_ui = bool(groups.intersection({"water", "block", "rescue"}))
@@ -385,6 +392,7 @@ def self_test() -> None:
         (["scripts/game/water_sort_casual.gd"], ["water"], ["water"], True),
         (["scripts/ui/water_tube_3d_motion.gd"], ["water"], ["water"], True),
         (["scripts/game/block_puzzle_3d.gd"], ["block"], ["block"], True),
+        (["scripts/ui/device_fit.gd"], ["shared_gameplay_ui", "ui"], ["home"], True),
         (["scripts/ui/ux_shell_casual.gd"], ["tutorial"], ["tutorial"], True),
         (["scripts/ui/premium_result_overlay.gd"], ["ui"], ["result"], True),
         (["scripts/ui/premium_live_hub_3d.gd"], ["games_ui"], ["games"], True),
@@ -419,6 +427,10 @@ def self_test() -> None:
         "validate_selector_navigation",
         "validate_requested_polish_contract",
     ]
+    assert "validate_compact_gameplay_stack" not in GROUP_TESTS["water"]
+    assert "validate_compact_gameplay_stack" not in GROUP_TESTS["block"]
+    assert "validate_compact_gameplay_stack" not in GROUP_TESTS["rescue"]
+    assert GROUP_TESTS["shared_gameplay_ui"] == ["validate_compact_gameplay_stack"]
     icon_plan = plan_for_paths(["assets/icon_adaptive_foreground.svg"])
     assert icon_plan["release_contract"] is True
     assert icon_plan["needs_godot"] is False
