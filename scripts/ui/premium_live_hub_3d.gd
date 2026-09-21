@@ -87,7 +87,7 @@ func _build_reference_selector(canvas: Control) -> void:
 	selector_title.name = "SelectorTitle3D"
 	selector_title.clip_text = true
 	RefCanvas.style_display_title(selector_title, Color("#ffca45"), Color("#071d55"), 2)
-	var selector_subtitle := _add_text(canvas, "3 PUZZLES • 1 JOURNEY", Rect2(83, 51, 186, 30), 12, Color("#c6d9ec"), false)
+	var selector_subtitle := _add_text(canvas, "3 PUZZLES • 1 JOURNEY", Rect2(83, 51, 186, 30), 14, Color("#c6d9ec"), false)
 	selector_subtitle.name = "SelectorSubtitle"
 	selector_subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	selector_subtitle.clip_text = true
