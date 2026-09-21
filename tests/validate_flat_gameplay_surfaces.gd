@@ -50,7 +50,8 @@ func _initialize() -> void:
 		"BlockCellButton.new()"
 	], failures)
 	_check("res://scripts/ui/block_cell_button.gd", [
-		"_draw_extruded_cube"
+		"_draw_extruded_cube",
+		"Recess lighting"
 	], failures)
 	_check("res://scripts/ui/water_tube_3d_motion.gd", [
 		"SubViewport.UPDATE_ONCE"
