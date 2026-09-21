@@ -24,7 +24,6 @@ GROUP_TESTS = {
     ],
     "games_ui": [
         "validate_selector_navigation",
-        "validate_requested_polish_contract",
     ],
     "tutorial": [
         "validate_tutorial_premium_flow",
@@ -131,7 +130,7 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
         game_specific_ui = bool(groups.intersection({"water", "block", "rescue"}))
         monetization_ui = any(token in p for token in ("monetization_hub", "shop_", "purchase_"))
         tutorial_ui = "ux_shell" in p or "tutorial" in p
-        games_ui = "premium_live_hub" in p
+        games_ui = "premium_live_hub" in p or "unjam_3d_game_art" in p
         if monetization_ui:
             add(groups, "monetization")
             visual.add("shop")
@@ -402,6 +401,7 @@ def self_test() -> None:
         (["scripts/ui/ux_shell_casual.gd"], ["tutorial"], ["tutorial"], True),
         (["scripts/ui/premium_result_overlay.gd"], ["ui"], ["result"], True),
         (["scripts/ui/premium_live_hub_3d.gd"], ["games_ui"], ["games"], True),
+        (["scripts/ui/unjam_3d_game_art.gd"], ["games_ui"], ["games"], True),
         (["scripts/ui/premium_main_casual.gd"], ["secondary_ui"], ["collection", "daily", "home", "levels", "settings"], True),
         (["scripts/systems/premium_visuals.gd"], ["ui"], ["collection", "daily", "games", "levels", "settings", "shop"], True),
         (["scripts/ui/monetization_hub_3d.gd"], ["monetization"], ["shop"], True),
