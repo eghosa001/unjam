@@ -15,6 +15,7 @@ func _init() -> void:
 	_require("res://scripts/ui/premium_home_direct_levels.gd", ["HomeKeyLight", "HomeAccentGlow", "HomeCurrencyGem3D", "HomeCurrencyStar3D", "WorldProgressSpecular"], errors)
 	_require("res://scripts/ui/premium_result_overlay.gd", ["ResultKeyLight", "ResultStar3D", "ResultGameArt3D", "add_collectible_star"], errors)
 	_require("res://scripts/ui/ux_shell_casual.gd", ["TutorialKeyLight", "add_scene_backdrop_layers"], errors)
+	_require("res://scripts/ui/premium_gameplay_feedback.gd", ["is_intro_banner", "BlockPremiumFeedback", "RescuePremiumFeedback", "viewport_size.y * 0.68"], errors)
 	_require("res://scripts/ui/premium_live_hub_3d.gd", ["SelectorWorldDepth", "SelectorGameArt3D_", "SelectorKeyLight", "#1b63c5", "\"CHOOSE A GAME\", Rect2(83, 21, 186, 28), 21", "style_display_title"], errors)
 	_require("res://scripts/ui/unjam_3d_game_art.gd", ["camera.fov = 39.0", "Game-specific card-scale composition", "display_root.scale = Vector3.ONE * 1.05", "Vector3(-0.14, 0.05, 0.08)"], errors)
 	_require("res://scripts/ui/monetization_hub_3d.gd", ["ShopWorldDepth", "ShopKeyLight", "ShopCurrencyGem3D", "add_collectible_gem", "style_display_title"], errors)
