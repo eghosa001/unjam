@@ -28,7 +28,7 @@ func _init() -> void:
 	_require("res://scripts/core/multi_game_manager.gd", ["func daily_started_games", "func daily_selected_game", "func claim_daily_game", "daily_game_choices"], errors)
 	_require("res://scripts/game/water_sort_casual.gd", ["stage_height := 390.0", "count <= 12 else 5", "height_width_limit"], errors)
 	_require("res://scripts/game/water_sort_10000.gd", ["if tubes.size() > 10:", "meta_label.text = \"%s • WORLD %d\"", "premium_feedback.show_banner"], errors)
-	_require("res://scripts/ui/water_tube_3d_motion.gd", ["Premium bottle silhouette built from real geometry", "GLASS_BODY_RADIUS := 0.72", "_glass_material_3d", "BottleShoulder3D", "BottleNeck3D", "BottleInnerWall3D", "_arrival_impulse", "Arrival ripple", "arrival_flatten"], errors)
+	_require("res://scripts/ui/water_tube_3d_motion.gd", ["Premium bottle silhouette built from real geometry", "GLASS_BODY_RADIUS := 0.72", "_glass_material_3d", "BottleShoulder3D", "BottleNeck3D", "BottleInnerWall3D", "_arrival_impulse", "Arrival ripple", "arrival_flatten", "and not MotionSystem.reduced()"], errors)
 	_require("res://scripts/game/water_sort_10000.gd", ["WATER SORT FAILED", "func _has_any_legal_pour", "NO LEGAL POURS"], errors)
 	_require("res://scripts/game/block_puzzle_10000.gd", ["BLOCK PUZZLE FAILED", "func _handle_no_legal_moves", "BlockFailureResult", "func _level_intro_banner_center()", "board_top_local.y - 27.0", "spectacle_level", "show_ring(center", "FeedbackManager.combo(spectacle_level)"], errors)
 	_require("res://scripts/game/rescue_rush_assisted.gd", ["func _level_intro_banner_center()", "board_bottom_local.y + 54.0"], errors)
