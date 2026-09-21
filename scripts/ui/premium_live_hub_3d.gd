@@ -118,7 +118,10 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 	var game_title := _add_text(canvas, title, Rect2(34, rect.position.y + 12.6, 184, 24), 20, OFF_WHITE, true)
 	game_title.name = "SelectorGameTitle_%s" % game_id
 	RefCanvas.style_display_title(game_title, Color("#fff7df"), accent.darkened(0.62), 2)
-	_add_text(canvas, subtitle, Rect2(34, rect.position.y + 39.6, 184, 18), 13, OFF_WHITE, false)
+	var game_subtitle := _add_text(canvas, subtitle, Rect2(34, rect.position.y + 39.6, 184, 38), 13, OFF_WHITE, false)
+	game_subtitle.name = "SelectorGameSubtitle_%s" % game_id
+	game_subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	game_subtitle.clip_text = true
 	var level := maxi(1, MultiGameManager.highest_level(game_id))
 	RefCanvas.add_shadow(canvas, Rect2(33, rect.position.y + 100.7, 112, 36), 13, Color(0.02,0.10,0.20,0.16), 3, Vector2(0,2))
 	var level_pill := PanelContainer.new()
