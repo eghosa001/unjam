@@ -1,0 +1,28 @@
+name: Fast CI Policy Guard
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/godot-ci.yml"
+      - ".github/workflows/ci-policy.yml"
+      - "tools/select_fast_ci_tests.py"
+      - "tools/validate_fast_ci_policy.py"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/godot-ci.yml"
+      - ".github/workflows/ci-policy.yml"
+      - "tools/select_fast_ci_tests.py"
+      - "tools/validate_fast_ci_policy.py"
+
+permissions:
+  contents: read
+
+jobs:
+  policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+      - name: Enforce selective fast CI
+        run: python3 tools/validate_fast_ci_policy.py
