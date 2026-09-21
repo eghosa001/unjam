@@ -165,7 +165,7 @@ jobs:
         run: |
           set -euxo pipefail
           godot --headless --path . --editor --quit
-          for t in validate_motion_quality validate_decorative_3d_frame_budget validate_monetization validate_admob_production validate_billing_production validate_premium_ux validate_visual_quality_contract validate_production_completion validate_uiux_regressions validate_theme_integrity validate_viewport_fit validate_retention validate_robustness validate_production_hardening_regressions; do
+          for t in validate_motion_quality validate_decorative_3d_frame_budget validate_monetization validate_admob_production validate_billing_production validate_premium_ux validate_visual_quality_contract validate_production_completion validate_uiux_regressions validate_theme_integrity validate_viewport_fit validate_retention validate_robustness validate_production_hardening_regressions validate_soothing_audio_palette; do
             timeout 60s godot --headless --path . --script "res://tests/$t.gd"
           done
       - name: Run focused release gameplay and campaign gates
