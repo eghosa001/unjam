@@ -77,10 +77,13 @@ func _run() -> void:
 		if hit == null or hit.size.x < 70.0 or hit.size.y < 74.0:
 			return _fail("Games selector navigation touch target is too small for %s" % nav_name)
 
+	var selector_daily := _find(main, "SelectorNavLabel_DAILY") as Label
 	var selector_collection := _find(main, "SelectorNavLabel_COLLECT") as Label
 	var selector_settings := _find(main, "SelectorNavLabel_SETTINGS") as Label
-	if selector_collection == null or selector_settings == null:
-		return _fail("Games selector Collection/Settings labels are missing")
+	if selector_daily == null or selector_collection == null or selector_settings == null:
+		return _fail("Games selector Daily/Collection/Settings labels are missing")
+	if selector_daily.get_global_rect().end.x >= selector_collection.get_global_rect().position.x:
+		return _fail("Games selector Daily label overlaps Collection")
 	if selector_collection.get_global_rect().end.x >= selector_settings.get_global_rect().position.x:
 		return _fail("Games selector Collection label overlaps Settings")
 
