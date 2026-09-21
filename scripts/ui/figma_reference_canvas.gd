@@ -84,10 +84,14 @@ static func rounded_gradient(top: Color, bottom: Color, radius: float = 16.0, bo
 	var cache_key := _style_cache_key("rounded2", [top, bottom], radius, border_color, border_width)
 	if _rounded_gradient_cache.has(cache_key):
 		return _rounded_gradient_cache[cache_key] as StyleBoxTexture
-	var image_size := 96
+	# 160px cached material tiles remain cheap enough for mobile while giving
+	# large cards substantially smoother gloss/gradient rolloff than the former
+	# 96px source textures after 390x844 canvas scaling.
+	var image_size := 160
 	var image := Image.create(image_size, image_size, false, Image.FORMAT_RGBA8)
+	var source_scale := float(image_size) / 96.0
 	var r := clampf(radius / 24.0 * (float(image_size) * 22.0 / 96.0), 0.0, float(image_size) * 44.0 / 96.0)
-	var bw := maxf(0.0, border_width / 4.0 * 4.0)
+	var bw := maxf(0.0, border_width * source_scale)
 	for y in range(image_size):
 		var fy := float(y) / float(image_size - 1)
 		var fill := top.lerp(bottom, fy)
