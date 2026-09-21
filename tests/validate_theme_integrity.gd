@@ -77,6 +77,42 @@ func _run() -> void:
 	var light_bg := main.find_child("FigmaHomeViewportBackground", true, false) as ColorRect
 	if light_bg == null or light_bg.color.get_luminance() < 0.52 or light_bg.color.get_luminance() > 0.88:
 		return _fail("Light theme is outside the premium tinted-neutral range")
+	if main.find_child("HomeLightGlassHorizon", true, false) == null:
+		return _fail("Home light mode lost its layered glass horizon")
+	var home_key := main.find_child("HomeKeyLight", true, false) as PanelContainer
+	if home_key == null:
+		return _fail("Home light-mode key light is missing")
+	var home_key_style := home_key.get_theme_stylebox("panel") as StyleBoxFlat
+	if home_key_style == null or home_key_style.bg_color.a < 0.20:
+		return _fail("Home light-mode key light became too flat")
+
+	main.set("current_surface", "live")
+	if main.has_signal("surface_changed"):
+		main.emit_signal("surface_changed", "live")
+	await _frames(5)
+	if main.find_child("SelectorLightGlassHorizon", true, false) == null:
+		return _fail("Choose Game light mode lost its layered glass horizon")
+	var selector_subtitle := main.find_child("SelectorSubtitle", true, false) as Label
+	if selector_subtitle == null or selector_subtitle.get_theme_color("font_color").get_luminance() > 0.46:
+		return _fail("Choose Game light-mode subtitle lost readable dark contrast")
+
+	main.call("build_settings")
+	await _frames(5)
+	if main.find_child("SurfaceLightGlassHorizon", true, false) == null:
+		return _fail("Secondary light surfaces lost their layered glass horizon")
+	var settings_bg := main.find_child("FigmaSurfaceBackground", true, false) as PanelContainer
+	if settings_bg == null:
+		return _fail("Light Settings surface background is missing")
+
+	for path in [
+		"res://scripts/ui/premium_main_casual.gd",
+		"res://scripts/ui/premium_home_direct_levels.gd",
+		"res://scripts/ui/premium_live_hub_3d.gd",
+	]:
+		var source := _read(path)
+		for token in ["#c9f4fb", "#89d4e8", "#4b9fc7"]:
+			if not source.contains(token):
+				return _fail("Premium light scene palette contract missing in %s: %s" % [path, token])
 
 	var feedback := root.get_node_or_null("FeedbackManager")
 	if feedback != null and feedback.has_method("shutdown_audio"):
