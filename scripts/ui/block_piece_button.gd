@@ -423,6 +423,18 @@ func _draw() -> void:
 			points.append(point)
 	if points.is_empty():
 		return
+	# Give each tray choice a shallow physical base so the draggable piece reads
+	# immediately against the pale tray without changing placement geometry.
+	var pedestal_rect := Rect2(Vector2(3.0, 7.0), size - Vector2(6.0, 14.0))
+	var pedestal_fill := Color(accent.darkened(0.58), 0.10 if not selected else 0.18)
+	var pedestal_border := Color(accent.lightened(0.24), 0.24 if not selected else 0.62)
+	draw_style_box(_style(pedestal_fill, pedestal_border, 2, 14), pedestal_rect)
+	var pedestal_gloss := Rect2(
+		pedestal_rect.position + Vector2(10.0, 7.0),
+		Vector2(maxf(8.0, pedestal_rect.size.x - 20.0), 5.0)
+	)
+	draw_style_box(_style(Color(1, 1, 1, 0.10), Color.TRANSPARENT, 0, 3), pedestal_gloss)
+
 	var max_x := 0
 	var max_y := 0
 	for point in points:

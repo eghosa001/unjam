@@ -20,6 +20,10 @@ func _run() -> void:
 
 	var shell := main.get_node_or_null("UXShell")
 	await _set_theme(shell, "dark")
+	if OS.get_environment("UNJAM_FAST_VISUAL_AUDIT") == "1":
+		await _run_fast_visual_audit(main, shell)
+		await _shutdown_visual_audit()
+		return
 
 	main.call("build_home")
 	await _capture("01-home-dark")
@@ -341,6 +345,77 @@ func _run() -> void:
 	await _settle(3)
 
 	print("Visual audit captures written to %s" % OUT_DIR)
+	await _shutdown_visual_audit()
+
+func _run_fast_visual_audit(main: Node, shell: Node) -> void:
+	# PR loop: capture only the highest-signal compact states. The manual Visual UI
+	# Audit intentionally continues through the full matrix above.
+	main.call("build_home")
+	await _capture("01-home-dark")
+
+	root.size = Vector2i(540, 960)
+	await _settle(4)
+	main.call("start_level", 1)
+	await _settle(5)
+	_hide_tutorial(shell)
+	var rescue_game = main.get("active_game")
+	if rescue_game != null and is_instance_valid(rescue_game):
+		var legal_index := -1
+		var rescue_pieces: Array = rescue_game.get("pieces")
+		for i in range(rescue_pieces.size()):
+			if bool(rescue_game.call("is_path_clear", i)):
+				legal_index = i
+				break
+		if legal_index >= 0:
+			rescue_game.call("try_move", legal_index)
+			if await _wait_for_named_motion(rescue_game, "RescueEscapeGhost", 90):
+				await _capture("09c-game-rescue-motion-540x960")
+			else:
+				push_error("Fast visual audit never exposed RescueEscapeGhost")
+	else:
+		push_error("Fast visual audit could not launch Rescue Rush")
+
+	main.call("start_multi_level", "water_sort", 1, false)
+	await _settle(5)
+	_hide_tutorial(shell)
+	var water_game = main.get("active_game")
+	if water_game != null and is_instance_valid(water_game) and bool(water_game.call("can_show_hint")):
+		water_game.call("show_hint")
+		if await _wait_for_named_motion(water_game, "PourStream", 120):
+			await _capture("10c-game-water-pouring-540x960")
+		else:
+			push_error("Fast visual audit never exposed PourStream")
+	else:
+		push_error("Fast visual audit could not launch a hintable Water Sort board")
+
+	main.call("start_multi_level", "block_puzzle", 1, false)
+	await _settle(5)
+	_hide_tutorial(shell)
+	await _capture("11-game-block")
+
+	main.call("start_level", 1)
+	await _settle(5)
+	if shell != null and shell.has_method("show_tutorial"):
+		shell.call("show_tutorial", "rescue_rush")
+	await _capture("15b-tutorial-540x960-dark")
+	_hide_tutorial(shell)
+
+	var compact_result := PremiumResultOverlay.new()
+	compact_result.configure(
+		"LEVEL COMPLETE",
+		"Clean play. Strong route. Keep the streak moving.",
+		"7 MOVES   •   PERFECT ≤ 8\n1 RESCUE SECURED",
+		3,
+		Color("2dd4b6"),
+		"NEXT PUZZLE"
+	)
+	main.add_child(compact_result)
+	await _capture("16b-result-540x960-dark")
+	compact_result.queue_free()
+	await _settle(2)
+	print("Fast visual audit captures written to %s" % OUT_DIR)
+
+func _shutdown_visual_audit() -> void:
 	# The visual runner synthesizes music through FeedbackManager. Release the
 	# generated stream/player before SceneTree quits so leak diagnostics remain
 	# meaningful instead of reporting the intentionally persistent autoload.
