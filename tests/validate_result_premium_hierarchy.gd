@@ -36,6 +36,10 @@ func _run() -> void:
 		return _fail("Result secondary geometry drifted")
 	if not secondary_shadow.visible:
 		return _fail("Visible secondary action lost its shadow")
+	if subtitle.get_theme_font_size("font_size") < 14:
+		return _fail("Result subtitle fell below readability floor")
+	if secondary.get_theme_font_size("font_size") < 14:
+		return _fail("Result secondary action fell below readability floor")
 	if title.get_rect().intersects(subtitle.get_rect()):
 		return _fail("Result title overlaps subtitle")
 	var stats_panel := overlay.find_child("Stats",true,false) as Control
