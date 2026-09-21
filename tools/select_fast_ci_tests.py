@@ -25,6 +25,12 @@ GROUP_TESTS = {
     "games_ui": [
         "validate_selector_navigation",
     ],
+    "home": [
+        "validate_home_direct_levels_runtime",
+        "validate_home_premium_visual_hierarchy",
+        "validate_home_return_atomic",
+        "validate_viewport_fit",
+    ],
     "tutorial": [
         "validate_tutorial_premium_flow",
         "validate_requested_polish_contract",
@@ -131,6 +137,7 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
         monetization_ui = any(token in p for token in ("monetization_hub", "shop_", "purchase_"))
         tutorial_ui = "ux_shell" in p or "tutorial" in p
         games_ui = "premium_live_hub" in p or "unjam_3d_game_art" in p
+        home_ui = "premium_home" in p
         if monetization_ui:
             add(groups, "monetization")
             visual.add("shop")
@@ -139,6 +146,8 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
                 add(groups, "tutorial")
             elif games_ui:
                 add(groups, "games_ui")
+            elif home_ui:
+                add(groups, "home")
             else:
                 add(groups, "secondary_ui" if p.endswith(("premium_main_casual.gd", "premium_main.gd")) else "ui")
             if p.endswith(("figma_reference_canvas.gd", "unjam_3d_theme.gd")):
