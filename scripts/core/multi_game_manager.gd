@@ -12,6 +12,7 @@ const TASK_REWARD := 75
 const DAILY_HISTORY_LIMIT := 45
 const WATER_WORLD_BADGE_SPAN_VERSION := 2
 const BLOCK_WORLD_BADGE_SPAN_VERSION := 2
+const CHECKPOINT_HISTORY_LIMIT := 24
 
 var _state_initialized := false
 var _total_stars_cache: Dictionary = {}
@@ -307,6 +308,9 @@ func save_checkpoint(id:String,data:Dictionary)->void:
  # A second recursive duplicate here doubled per-move allocation cost; keep only
  # a shallow top-level copy while checkpoint() still deep-copies on read.
  var payload:=data.duplicate(false)
+ var raw_history=payload.get("history",[])
+ if raw_history is Array and (raw_history as Array).size()>CHECKPOINT_HISTORY_LIMIT:
+  payload["history"]=(raw_history as Array).slice((raw_history as Array).size()-CHECKPOINT_HISTORY_LIMIT)
  payload["game"]=id
  var existing=runs.get(id,{})
  if existing is Dictionary:
