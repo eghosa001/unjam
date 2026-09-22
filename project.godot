@@ -58,8 +58,8 @@ admob_android_app_id="ca-app-pub-7517898921176341~1892369383"
 admob_rewarded_unit_id="ca-app-pub-7517898921176341/2926249456"
 admob_interstitial_unit_id="ca-app-pub-7517898921176341/9108514429"
 privacy_policy_url="https://eghosa001.github.io/unjam/privacy.html"
-supabase_url=""
-supabase_publishable_key=""
+supabase_url="https://sotwqajpcyjlpxntjddr.supabase.co"
+supabase_publishable_key="sb_publishable_T9YvzDzxS1awQz4QOoeRIA_CLGkqCnD"
 
 [editor_plugins]
 
