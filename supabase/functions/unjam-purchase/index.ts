@@ -138,78 +138,62 @@ async function playResponse(packageName: string, purchaseToken: string): Promise
   });
 }
 
-async function oneTimeProductsResponse(): Promise<Response> {
+async function oneTimeProductResponse(productId: string): Promise<Response> {
   const accessToken = await googleToken();
   const url =
-    `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${encodeURIComponent(PACKAGE_NAME)}/oneTimeProducts?pageSize=1000`;
+    `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${encodeURIComponent(PACKAGE_NAME)}/oneTimeProducts/${encodeURIComponent(productId)}`;
   return fetch(url, {
     headers: { authorization: `Bearer ${accessToken}`, accept: "application/json" },
   });
 }
 
-async function legacyInAppProductsResponse(): Promise<Response> {
-  const accessToken = await googleToken();
-  const url =
-    `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${encodeURIComponent(PACKAGE_NAME)}/inappproducts`;
-  return fetch(url, {
-    headers: { authorization: `Bearer ${accessToken}`, accept: "application/json" },
+function oneTimeProductReadiness(productId: string, product: any): string {
+  if (String(product?.productId ?? "") !== productId) return `${productId}:invalid_response`;
+  const options = Array.isArray(product?.purchaseOptions) ? product.purchaseOptions : [];
+  const activePricedBuy = options.some((option: any) => {
+    if (String(option?.state ?? "") !== "ACTIVE" || !option?.buyOption) return false;
+    const regions = Array.isArray(option?.regionalPricingAndAvailabilityConfigs)
+      ? option.regionalPricingAndAvailabilityConfigs
+      : [];
+    return regions.some((region: any) => {
+      if (String(region?.availability ?? "") !== "AVAILABLE") return false;
+      const price = region?.price;
+      if (!price || typeof price !== "object") return false;
+      const units = Number(price?.units ?? 0);
+      const nanos = Number(price?.nanos ?? 0);
+      return Boolean(price?.currencyCode) && (units > 0 || nanos > 0);
+    });
   });
+  return activePricedBuy ? "" : `${productId}:no_active_priced_buy_option`;
 }
 
-function catalogReadiness(data: any): { ok: boolean; detail: string } {
-  const products = Array.isArray(data?.oneTimeProducts) ? data.oneTimeProducts : [];
+async function productCatalogReadiness(): Promise<{ ok: boolean; detail: string }> {
   const problems: string[] = [];
   for (const productId of Object.keys(PRODUCTS)) {
-    const product = products.find((value: any) => String(value?.productId ?? "") === productId);
-    if (!product) {
+    const result = await oneTimeProductResponse(productId);
+    if (result.status === 404) {
       problems.push(`${productId}:missing`);
       continue;
     }
-    const options = Array.isArray(product?.purchaseOptions) ? product.purchaseOptions : [];
-    const activePricedBuy = options.some((option: any) => {
-      if (String(option?.state ?? "") !== "ACTIVE" || !option?.buyOption) return false;
-      const regions = Array.isArray(option?.regionalPricingAndAvailabilityConfigs)
-        ? option.regionalPricingAndAvailabilityConfigs
-        : [];
-      return regions.some((region: any) => {
-        if (String(region?.availability ?? "") !== "AVAILABLE") return false;
-        const price = region?.price;
-        if (!price || typeof price !== "object") return false;
-        const units = Number(price?.units ?? 0);
-        const nanos = Number(price?.nanos ?? 0);
-        return Boolean(price?.currencyCode) && (units > 0 || nanos > 0);
-      });
-    });
-    if (!activePricedBuy) problems.push(`${productId}:no_active_priced_buy_option`);
+    if (!result.ok) {
+      problems.push(`${productId}:http_${result.status}`);
+      continue;
+    }
+    const text = await result.text();
+    if (!text.trim()) {
+      problems.push(`${productId}:empty_response`);
+      continue;
+    }
+    try {
+      const problem = oneTimeProductReadiness(productId, JSON.parse(text));
+      if (problem) problems.push(problem);
+    } catch {
+      problems.push(`${productId}:invalid_json`);
+    }
   }
   return {
     ok: problems.length === 0,
     detail: problems.length === 0 ? "catalog_ready" : problems.join(","),
-  };
-}
-
-function legacyCatalogReadiness(data: any): { ok: boolean; detail: string } {
-  const products = Array.isArray(data?.inappproduct) ? data.inappproduct : [];
-  const problems: string[] = [];
-  for (const productId of Object.keys(PRODUCTS)) {
-    const product = products.find((value: any) => String(value?.sku ?? "") === productId);
-    if (!product) {
-      problems.push(`${productId}:missing`);
-      continue;
-    }
-    if (String(product?.status ?? "").toLowerCase() !== "active") {
-      problems.push(`${productId}:inactive`);
-      continue;
-    }
-    const price = product?.defaultPrice;
-    const priceMicros = Number(price?.priceMicros ?? 0);
-    if (!price || !price?.currency || !(priceMicros > 0)) {
-      problems.push(`${productId}:missing_price`);
-    }
-  }
-  return {
-    ok: problems.length === 0,
-    detail: problems.length === 0 ? "legacy_catalog_ready" : problems.join(","),
   };
 }
 
@@ -511,25 +495,9 @@ Deno.serve(async (req) => {
     }
 
     try {
-      const catalog = await oneTimeProductsResponse();
-      const modernText = catalog.ok ? await catalog.text() : "";
-      if (catalog.ok && modernText.trim()) {
-        const catalogState = catalogReadiness(JSON.parse(modernText));
-        dependencies.product_catalog = catalogState.ok;
-        productCatalogDetail = catalogState.detail;
-      } else {
-        const legacy = await legacyInAppProductsResponse();
-        const legacyText = legacy.ok ? await legacy.text() : "";
-        if (legacy.ok && legacyText.trim()) {
-          const catalogState = legacyCatalogReadiness(JSON.parse(legacyText));
-          dependencies.product_catalog = catalogState.ok;
-          productCatalogDetail = `legacy:${catalogState.detail}`;
-        } else {
-          productCatalogDetail = catalog.ok
-            ? `product_catalog_empty;legacy_http_${legacy.status}`
-            : `product_catalog_http_${catalog.status};legacy_http_${legacy.status}`;
-        }
-      }
+      const catalogState = await productCatalogReadiness();
+      dependencies.product_catalog = catalogState.ok;
+      productCatalogDetail = catalogState.detail;
     } catch (error) {
       const message = error instanceof Error ? error.message : "unknown";
       productCatalogDetail = `product_catalog_probe_failed:${message.slice(0, 160)}`;

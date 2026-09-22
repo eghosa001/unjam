@@ -13,7 +13,7 @@ This repository is now prepared to start the replacement Play listing at **versi
 - [ ] Add the new keystore and credentials to GitHub Actions secrets: `UNJAM_ANDROID_KEYSTORE_BASE64`, `UNJAM_ANDROID_KEY_ALIAS`, and `UNJAM_ANDROID_KEY_PASSWORD`.
 - [ ] Add the new upload certificate SHA-1 to GitHub Actions secret `UNJAM_ANDROID_UPLOAD_SHA1`.
 - [x] Bind the selected Supabase project URL and publishable key in `project.godot` (public client configuration).
-- [ ] Add GitHub Actions repository variable `UNJAM_DEVELOPER_WEBSITE_URL` using the exact developer website URL entered in Play Console. Production release now checks the crawler hostname root for `app-ads.txt`.
+- [x] Bind the production developer website in `project.godot` to `https://unjam-site-prod-production.up.railway.app`; `UNJAM_DEVELOPER_WEBSITE_URL` remains an optional CI override. Production release checks the crawler hostname root for `app-ads.txt`.
 - [ ] Run the `Android Production Release` workflow with `version_name=1.0.0` and `version_code=1`; download the verified release AAB and upload that AAB to the new Play listing.
 - [ ] After the first accepted Play upload, every subsequent upload must use a higher `versionCode`.
 
@@ -44,17 +44,17 @@ Configured in code/CI:
 
 Still account-side / external:
 
-- [ ] Publish `app-ads.txt` at the **hostname root** of the developer website used in the Play listing (for example `https://example.com/app-ads.txt`). A GitHub Pages project URL such as `https://eghosa001.github.io/unjam/` is not sufficient by itself because AdMob checks `https://eghosa001.github.io/app-ads.txt`, not the project subpath.
-- [ ] Confirm the configured privacy policy URL is publicly reachable without login.
+- [x] Publish `app-ads.txt` at the **hostname root** of the production Railway developer website; live monetization readiness has verified the expected AdMob seller record there.
+- [x] Confirm the configured Railway privacy policy URL is publicly reachable without login; live monetization readiness has verified it.
 - [x] Purchase-verification backend is implemented for Google Play Developer API verification and production purchases fail closed until the live HTTPS endpoint is injected at release time.
 - [x] Supabase Edge Function exposes a readiness action that verifies Postgres, Google Play purchase verification, Voided Purchases authorization, and hardened monetization capabilities; production release fails if any dependency is unavailable.
 - [x] Purchase verification is idempotent by SHA-256 purchase-token fingerprint in Supabase Postgres. `unjam_starter_pack` and other non-consumable entitlements cannot be granted twice from duplicate callbacks when the backend is live.
 - [x] Apply `supabase/migrations/20260922_create_purchase_ledger.sql` and `supabase/migrations/20260922_harden_monetization_lifecycle.sql` to the selected Supabase project.
 - [x] Deploy `supabase/functions/unjam-purchase` to that project.
 - [x] Store `GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL` and `GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY` only as Supabase Edge Function secrets. Live readiness reaches the Google Play API, confirming the credentials are present and OAuth succeeds; Cloud Run and Firestore are not used.
-- [ ] In Play Console, grant that service-account identity access to `com.eghosa.unjamgam` with **View financial data** (or the account-level equivalent **View financial data, orders and cancellation survey responses**). The live Purchases API probe currently returns HTTP 403 until this permission is granted.
-- [ ] Create `unjam_remove_ads`, `unjam_starter_pack`, `unjam_coins_500`, `unjam_coins_1500`, and `unjam_coins_4000` as one-time products in the **new** Play Console app.
-- [ ] Configure the matching product prices in the new Play Console app.
+- [x] Grant the purchase-verifier service account Google Play API access for `com.eghosa.unjamgam`; live readiness now passes both purchase verification and Voided Purchases authorization. The earlier HTTP 403 is resolved.
+- [ ] Create/activate `unjam_remove_ads`, `unjam_starter_pack`, `unjam_coins_500`, `unjam_coins_1500`, and `unjam_coins_4000` as one-time products in Google Play.
+- [ ] Configure real prices and at least one active, region-available buy option for each product. Release readiness queries every required product ID individually and stays red until all five are sellable.
 - [ ] Complete Play Console Data Safety based on the exact production SDK set.
 - [ ] Set **Contains ads = Yes**.
 - [ ] Complete Target audience and IARC accurately.

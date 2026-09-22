@@ -73,7 +73,7 @@ func run() -> void:
 		expect_true('suffix = product.nonConsumable ? "acknowledge" : "consume"' in backend_source, "Server-side Play acknowledge/consume finalization is missing")
 		expect_true("consume_play_request_slot" in backend_source, "Purchase endpoint database rate limiting is missing")
 		expect_true("install_bound_revocations" in backend_source, "Install-bound refund readiness capability is missing")
-		expect_true("oneTimeProducts?pageSize=1000" in backend_source and "product_catalog_validation" in backend_source, "Google Play product-catalog readiness validation is missing")
+		expect_true("oneTimeProductResponse" in backend_source and "productCatalogReadiness" in backend_source and "product_catalog_validation" in backend_source, "Google Play product-catalog readiness validation is missing")
 
 	expect_true(FileAccess.file_exists("res://tools/install_monetization_plugins.sh"), "Monetization plugin installer missing")
 	if FileAccess.file_exists("res://tools/install_monetization_plugins.sh"):
