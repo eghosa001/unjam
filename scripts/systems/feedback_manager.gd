@@ -13,6 +13,7 @@ const SAMPLE_RATE := 22050
 const MUSIC_RATE := 16000
 const SFX_POOL_SIZE := 5
 const MUSIC_DURATION := 32.0
+const MUSIC_SYNTH_CHUNK_FRAMES := 4096
 
 var player: AudioStreamPlayer
 var sfx_players: Array[AudioStreamPlayer] = []
@@ -21,6 +22,7 @@ var music_stream: AudioStreamWAV
 var last_music_enabled := false
 var _sfx_cursor := 0
 var _stream_cache: Dictionary = {}
+var _music_building := false
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -40,9 +42,9 @@ func _ready() -> void:
 	music_player.name = "CalmAmbientMusic"
 	music_player.volume_db = -11.0
 	add_child(music_player)
-	music_stream = _build_calm_ambient_loop()
-	music_player.stream = music_stream
-	_sync_music()
+	last_music_enabled = bool(SaveManager.data.get("music", true))
+	if last_music_enabled:
+		call_deferred("_ensure_music_stream")
 
 func _exit_tree() -> void:
 	shutdown_audio()
@@ -66,6 +68,22 @@ func shutdown_audio() -> void:
 	_stream_cache.clear()
 
 func apply_settings() -> void:
+	last_music_enabled = bool(SaveManager.data.get("music", true))
+	if last_music_enabled and music_stream == null:
+		call_deferred("_ensure_music_stream")
+		return
+	_sync_music()
+
+func _ensure_music_stream() -> void:
+	if _music_building or music_stream != null or music_player == null:
+		return
+	_music_building = true
+	var built: AudioStreamWAV = await _build_calm_ambient_loop()
+	_music_building = false
+	if not is_inside_tree() or music_player == null or not is_instance_valid(music_player):
+		return
+	music_stream = built
+	music_player.stream = music_stream
 	_sync_music()
 
 func _sync_music() -> void:
@@ -73,7 +91,7 @@ func _sync_music() -> void:
 	if music_player == null:
 		return
 	if last_music_enabled:
-		if not music_player.playing:
+		if music_stream != null and not music_player.playing:
 			music_player.play()
 	else:
 		music_player.stop()
@@ -263,6 +281,13 @@ func _build_calm_ambient_loop() -> AudioStreamWAV:
 	var section_length := MUSIC_DURATION / 4.0
 
 	for i in range(frames):
+		if i > 0 and i % MUSIC_SYNTH_CHUNK_FRAMES == 0:
+			var tree := get_tree()
+			if tree == null:
+				return AudioStreamWAV.new()
+			await tree.process_frame
+			if not is_inside_tree():
+				return AudioStreamWAV.new()
 		var t := float(i) / float(MUSIC_RATE)
 		var section := mini(3, int(t / section_length))
 		var local_t := fmod(t, section_length)
