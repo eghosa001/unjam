@@ -88,15 +88,25 @@ func _rescue_achievements()->Array:
    if value not in out:out.append(value)
  return out
 
-func progress_for(id:String)->Dictionary:
+func _progress_ref(id:String)->Dictionary:
  ensure_state()
- if id=="rescue_rush": return {"highest_level":int(SaveManager.data.get("highest_level",1)),"stars":SaveManager.data.get("stars",{}),"levels_completed":int(SaveManager.data.get("total_levels_completed",0)),"perfect_clears":int(SaveManager.data.get("perfect_clears",0)),"perfect_streak":int(SaveManager.data.get("perfect_streak",0)),"best_perfect_streak":int(SaveManager.data.get("best_perfect_streak",0)),"milestone_chests":SaveManager.data.get("milestone_chests",[]),"world_badges":SaveManager.data.get("world_badges",[]),"daily_streak":int(SaveManager.data.get("daily_streak",0)),"daily_best_streak":int(SaveManager.data.get("daily_best_streak",0)),"achievements":_rescue_achievements()}
- return (SaveManager.data.get("game_progress",{}) as Dictionary).get(id,{}).duplicate(true)
-func highest_level(id:String)->int:return clampi(int(progress_for(id).get("highest_level",1)),1,CAMPAIGN_LEVELS+1)
-func get_stars(id:String,n:int)->int:return int((progress_for(id).get("stars",{}) as Dictionary).get(str(n),0))
+ if id=="rescue_rush":
+  return {"highest_level":int(SaveManager.data.get("highest_level",1)),"stars":SaveManager.data.get("stars",{}),"levels_completed":int(SaveManager.data.get("total_levels_completed",0)),"perfect_clears":int(SaveManager.data.get("perfect_clears",0)),"perfect_streak":int(SaveManager.data.get("perfect_streak",0)),"best_perfect_streak":int(SaveManager.data.get("best_perfect_streak",0)),"milestone_chests":SaveManager.data.get("milestone_chests",[]),"world_badges":SaveManager.data.get("world_badges",[]),"daily_streak":int(SaveManager.data.get("daily_streak",0)),"daily_best_streak":int(SaveManager.data.get("daily_best_streak",0)),"achievements":_rescue_achievements()}
+ var all=SaveManager.data.get("game_progress",{})
+ if not all is Dictionary:return {}
+ var raw=(all as Dictionary).get(id,{})
+ return raw if raw is Dictionary else {}
+
+func progress_for(id:String)->Dictionary:
+ return _progress_ref(id).duplicate(true)
+
+func highest_level(id:String)->int:return clampi(int(_progress_ref(id).get("highest_level",1)),1,CAMPAIGN_LEVELS+1)
+func get_stars(id:String,n:int)->int:return int((_progress_ref(id).get("stars",{}) as Dictionary).get(str(n),0))
 func total_stars(id:String)->int:
  var total:=0
- for v in (progress_for(id).get("stars",{}) as Dictionary).values():total+=int(v)
+ var stars=_progress_ref(id).get("stars",{})
+ if not stars is Dictionary:return 0
+ for v in (stars as Dictionary).values():total+=int(v)
  return total
 func is_level_unlocked(id:String,n:int)->bool:return n<=highest_level(id)
 func world_for_level(n:int)->int:return clampi(int((maxi(1,n)-1)/LEVELS_PER_WORLD)+1,1,WORLD_COUNT)
@@ -224,7 +234,7 @@ func daily_level(id:String)->int:
  var d:=Time.get_date_dict_from_system();return posmod(int(d.year)*372+int(d.month)*31+int(d.day)+GAME_IDS.find(id)*997,CAMPAIGN_LEVELS)+1
 func is_daily_completed(id:String)->bool:
  if id=="rescue_rush":return DailyChallenge.is_completed_today()
- return date_key() in progress_for(id).get("daily_completed",[])
+ return date_key() in _progress_ref(id).get("daily_completed",[])
 
 func daily_tasks(id:String)->Array:
  ensure_state();var key:=date_key()+":"+id;var store:Dictionary=SaveManager.data.get("daily_tasks",{});var changed:=false
@@ -249,7 +259,7 @@ func claim_daily_task(id:String,task_id:String)->bool:
  return false
 func achievement_definitions(id:String)->Array:return [{"id":"first","title":"First Victory","need":1},{"id":"century","title":"Century Club","need":100},{"id":"perfect25","title":"Perfectionist","need":25},{"id":"world10","title":"World Traveller","need":10},{"id":"master","title":"10K Master","need":10000}]
 func unlocked_achievements(id:String)->Array:
- var p:=progress_for(id);var out:Array=[]
+ var p:=_progress_ref(id);var out:Array=[]
  for a in achievement_definitions(id):
   var ok:=int(p.get("levels_completed",0))>=int(a.need) if String(a.id) in ["first","century","master"] else (int(p.get("perfect_clears",0))>=25 if String(a.id)=="perfect25" else (p.get("world_badges",[]) as Array).size()>=10)
   if ok:out.append(String(a.id))
