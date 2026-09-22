@@ -115,6 +115,8 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 	var game_title := _add_text(canvas, title, Rect2(34, rect.position.y + 12.6, 184, 24), 20, DARK_INK if _selector_dark() else INK, true)
 	game_title.name = "SelectorGameTitle_%s" % game_id
 	game_title.add_theme_color_override("font_color", DARK_INK if _selector_dark() else INK)
+	game_title.add_theme_constant_override("outline_size", 2)
+	game_title.add_theme_color_override("font_outline_color", Color("#11151a") if _selector_dark() else Color(1, 1, 1, 0.72))
 	# Keep body copy in a hard clipping region. Label intrinsic minimum size can
 	# exceed its authored width for longer localized strings, so the wrapper is
 	# the authoritative boundary before the 3D emblem.
