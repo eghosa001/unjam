@@ -54,19 +54,25 @@ static func profile(raw_level: int) -> Dictionary:
 	var target_score := roundi(lerpf(float(score_band[0]), float(score_band[1]), clampf(score_fraction + local_progress * 0.06, 0.0, 1.0)))
 	var target_moves := roundi(lerpf(float(move_band[0]), float(move_band[1]), clampf(score_fraction + local_progress * 0.04, 0.0, 1.0)))
 
-	if level <= 10:
-		# Teach one idea at a time. Keep the move target rising steadily without
-		# making level 10 harder than the first post-tutorial boards.
-		target_score = 15 + (level - 1)
-		target_moves = [6, 7, 8, 9, 10, 11, 12, 13, 15, 16][level - 1]
+	if level <= 3:
+		# Three levels are enough to establish the pour rule and empty-tube idea.
+		target_score = [15, 19, 23][level - 1]
+		target_moves = [6, 8, 10][level - 1]
+	elif level <= 10:
+		# From level 4 onward the player is already solving, not being tutorialized.
+		# Raise both planning depth and efficiency pressure without a difficulty cliff.
+		target_score = [28, 32, 36, 40, 44, 48, 52][level - 4]
+		target_moves = [13, 15, 17, 19, 21, 23, 25][level - 4]
 	elif level <= 100:
-		# Early campaign progression should feel like a controlled ramp with small
-		# relief levels, not the former 24 -> 18 -> 13 move-budget cliff. Difficulty
-		# rank still creates meaningful challenge variation, but within a bounded arc.
+		# Keep the post-onboarding campaign above the level-10 baseline while
+		# retaining the normal sawtooth relief/challenge rhythm.
 		var early_progress: float = float(level - 11) / 89.0
-		var early_base: int = roundi(lerpf(16.0, 26.0, early_progress))
+		var early_base: int = roundi(lerpf(25.0, 34.0, early_progress))
 		var early_bonus: int = int([0, 2, 4, 6, 8, 10][clampi(rank, 0, 5)])
-		target_moves = clampi(early_base + early_bonus, 16, 36)
+		target_moves = clampi(early_base + early_bonus, 25, 44)
+		var early_score_base: int = roundi(lerpf(45.0, 56.0, early_progress))
+		var early_score_bonus: int = int([0, 2, 4, 6, 8, 10][clampi(rank, 0, 5)])
+		target_score = clampi(early_score_base + early_score_bonus, 45, 66)
 
 	if level == MAX_LEVEL:
 		target_score = 98
@@ -77,8 +83,10 @@ static func profile(raw_level: int) -> Dictionary:
 	var three_star_limit := maxi(target_moves, 6)
 	var two_star_limit := three_star_limit + maxi(5, ceili(float(three_star_limit) * 0.15))
 	var scramble_steps := clampi(target_moves, 4, 80)
-	if level <= 10:
-		scramble_steps = clampi(3 + level, 4, 14)
+	if level <= 3:
+		scramble_steps = [4, 6, 8][level - 1]
+	elif level <= 10:
+		scramble_steps = clampi(target_moves + 2, 12, 28)
 	elif retention_role == "recovery":
 		scramble_steps = maxi(4, roundi(float(scramble_steps) * 0.84))
 	elif retention_role in ["confidence", "learn", "practice"]:
@@ -241,10 +249,8 @@ static func canonical_signature(tubes: Array) -> String:
 static func _colors_for_level(level: int, band: int, local_progress: float) -> int:
 	if level <= 2:
 		return 3
-	if level <= 5:
+	if level <= 6:
 		return 4
-	if level <= 10:
-		return 4 + (1 if level >= 8 else 0)
 	if level <= 20:
 		return 5
 	if level <= 40:
@@ -315,7 +321,7 @@ static func _difficulty_rank(level: int) -> int:
 
 static func _retention_role(level: int) -> String:
 	if level <= 10:
-		return ["tutorial", "tutorial", "learn", "confidence", "build", "recovery", "build", "learn", "challenge", "peak"][level - 1]
+		return ["tutorial", "tutorial", "tutorial", "build", "challenge", "build", "challenge", "stretch", "stretch", "peak"][level - 1]
 	if _is_color_intro(level):
 		return "learn"
 	if _is_color_intro(level - 1) or _is_color_intro(level - 2):
@@ -368,7 +374,7 @@ static func _rank_fraction(rank: int) -> float:
 		_: return 1.0
 
 static func _difficulty_label(rank: int, level: int) -> String:
-	if level <= 10:
+	if level <= 3:
 		return "tutorial"
 	match rank:
 		0: return "normal-hard"

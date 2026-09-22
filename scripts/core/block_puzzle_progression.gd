@@ -51,6 +51,8 @@ static func profile(raw_level: int) -> Dictionary:
 		floor_score,
 		ceiling_score
 	)
+	if level <= 10:
+		difficulty_score = [12, 18, 24, 32, 38, 43, 47, 51, 54, 55][level - 1]
 
 	var world := int((level - 1) / WORLD_SIZE) + 1
 	var level_in_world := ((level - 1) % WORLD_SIZE) + 1
@@ -92,7 +94,7 @@ static func profile(raw_level: int) -> Dictionary:
 		"difficulty_score": difficulty_score,
 		"difficulty_floor": floor_score,
 		"difficulty_ceiling": ceiling_score,
-		"difficulty_class": difficulty_class(difficulty_score, milestone),
+		"difficulty_class": difficulty_class(difficulty_score, milestone, pace_role),
 		"piece_tier": tier,
 		"planning_horizon": horizon,
 		"initial_occupancy": occupancy,
@@ -193,8 +195,8 @@ static func objective_introduction_age(level: int) -> int:
 	return -1
 
 static func retention_role(level: int) -> String:
-	if level <= 9:
-		return ["tutorial", "tutorial", "confidence", "build", "challenge", "recovery", "build", "challenge", "peak"][level - 1]
+	if level <= 10:
+		return ["tutorial", "tutorial", "tutorial", "build", "challenge", "build", "challenge", "stretch", "stretch", "peak"][level - 1]
 	var intro_age := objective_introduction_age(level)
 	if intro_age == 0:
 		return "learn"
@@ -255,11 +257,12 @@ static func first_attempt_target(score: int, milestone: String, role: String = "
 	if score < 70: return Vector2(0.48, 0.66)
 	return Vector2(0.30, 0.48)
 
-static func difficulty_class(score: int, milestone: String = "normal") -> String:
+static func difficulty_class(score: int, milestone: String = "normal", role: String = "") -> String:
 	if milestone == "finale": return "finale"
 	if milestone in ["boss", "mastery"] and score >= 70: return "boss"
-	if score < 35: return "tutorial"
-	if score < 50: return "normal"
+	if role == "tutorial": return "tutorial"
+	if score < 35: return "normal"
+	if score < 50: return "hard"
 	if score < 65: return "hard"
 	if score < 75: return "very_hard"
 	if score < 84: return "expert"

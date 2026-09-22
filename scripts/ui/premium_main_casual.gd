@@ -1,11 +1,11 @@
 extends "res://scripts/ui/premium_main.gd"
 
 const FIGMA_LEVEL_PAGE_SIZE := 20
-const FIGMA_BG_TOP := Color("#e6d4aa")
-const FIGMA_BG_BOTTOM := Color("#9a743f")
-const FIGMA_NAVY := Color("#1f2933")
+const FIGMA_BG_TOP := Color("#e9e5dd")
+const FIGMA_BG_BOTTOM := Color("#8f887f")
+const FIGMA_NAVY := Color("#252a30")
 const FIGMA_INK := Color("#26323d")
-const FIGMA_MUTED := Color("#52606d")
+const FIGMA_MUTED := Color("#62676e")
 const FIGMA_OFF_WHITE := Color(1.0, 0.995, 0.97)
 const FIGMA_BLUE := Color(0.03, 0.43, 0.78)
 const FIGMA_GREEN := Color(0.13, 0.78, 0.39)
@@ -13,17 +13,17 @@ const FIGMA_CYAN := Color(0.14, 0.68, 1.0)
 const FIGMA_ORANGE := Color(1.0, 0.55, 0.12)
 const FIGMA_GOLD := Color(1.0, 0.84, 0.24)
 
-const FIGMA_DARK_TOP := Color("#4b3a27")
-const FIGMA_DARK_BOTTOM := Color("#2a2118")
-const FIGMA_DARK_CARD := Color("#33281c")
+const FIGMA_DARK_TOP := Color("#343434")
+const FIGMA_DARK_BOTTOM := Color("#181818")
+const FIGMA_DARK_CARD := Color("#252525")
 const FIGMA_DARK_INK := Color("#f5f7fa")
 const FIGMA_DARK_MUTED := Color("#a7b1bc")
-const FIGMA_SCENE_TOP := Color("#e2c98f")
-const FIGMA_SCENE_MID := Color("#b89050")
-const FIGMA_SCENE_BOTTOM := Color("#805b31")
-const FIGMA_SCENE_DARK_TOP := Color("#4b3a27")
-const FIGMA_SCENE_DARK_MID := Color("#382b1d")
-const FIGMA_SCENE_DARK_BOTTOM := Color("#2a2118")
+const FIGMA_SCENE_TOP := Color("#e4dfd5")
+const FIGMA_SCENE_MID := Color("#b3aca2")
+const FIGMA_SCENE_BOTTOM := Color("#80786e")
+const FIGMA_SCENE_DARK_TOP := Color("#363636")
+const FIGMA_SCENE_DARK_MID := Color("#272727")
+const FIGMA_SCENE_DARK_BOTTOM := Color("#181818")
 
 var _collection_scroll_tracking := false
 var _collection_scroll_origin_y := 0.0
@@ -218,7 +218,7 @@ func _figma_card(canvas: Control, name_value: String, rect: Rect2, tint: Color =
 	FigmaReferenceCanvas.add_shadow(canvas, rect, radius, Color(0.01,0.04,0.08,0.30 if _dark() else 0.22), 7 if not _dark() else 5, Vector2(0,5 if not _dark() else 4))
 	var card := PanelContainer.new()
 	card.name = name_value
-	var resolved_tint := Color("#1c2d4b") if _dark() else Color("#a9bddc")
+	var resolved_tint := Color("#282b30") if _dark() else Color("#d6d1c7")
 	var resolved_accent := Color(accent.r, accent.g, accent.b, 0.78) if _dark() else Color(accent.r, accent.g, accent.b, maxf(accent.a, 0.62))
 	card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(resolved_tint.lightened(0.025 if _dark() else 0.07), resolved_tint, resolved_tint.darkened(0.07 if _dark() else 0.13), radius, resolved_accent, 1.4 if not _dark() else 1.2, 0.44 if not _dark() else 0.48))
 	FigmaReferenceCanvas.set_rect(card, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
@@ -234,7 +234,7 @@ func _figma_solid_card(canvas: Control, name_value: String, rect: Rect2, tint: C
 	var resolved_tint := tint
 	var resolved_border := border
 	if not _dark() and tint.get_luminance() > 0.72:
-		resolved_tint = Color("#a9bddc")
+		resolved_tint = Color("#d6d1c7")
 	elif _dark() and tint.get_luminance() > 0.72:
 		resolved_tint = _figma_theme_card(border, Color("#132033"))
 		resolved_border = Color(border.r, border.g, border.b, 0.78)
@@ -252,7 +252,7 @@ func _figma_header(canvas: Control, title_text: String, subtitle_text: String, p
 	var heading_color := FIGMA_OFF_WHITE if not use_dark else FIGMA_DARK_INK
 	var muted_color := Color("#dbe6f4") if not use_dark else FIGMA_DARK_MUTED
 	var back_color := FIGMA_DARK_INK if use_dark else FIGMA_NAVY
-	var back_fill := Color("#d8c294") if not use_dark else Color("#3a2d20")
+	var back_fill := Color("#cbc4b8") if not use_dark else Color("#2c2c2c")
 	var back_button := _figma_button(canvas, "FigmaBack", "‹", Rect2(17,19,52,52), back_fill, back_callback, back_color, 18, 27)
 	back_button.tooltip_text = "Back"
 	var header_title := _figma_text(canvas, title_text, Rect2(83,21,186,28), 23, heading_color)
@@ -304,8 +304,8 @@ func _figma_open_shop() -> void:
 
 func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false) -> void:
 	var use_dark := dark_mode or _dark()
-	var bar_fill := Color("#2a2117") if use_dark else Color("#c8aa70")
-	var bar_border := Color("#80613b") if use_dark else Color("#d2b06a")
+	var bar_fill := Color("#232323") if use_dark else Color("#bcb5a9")
+	var bar_border := Color("#5b5347") if use_dark else Color("#d2b06a")
 	if use_dark:
 		_figma_solid_card(canvas, "StdNav/Bar", Rect2(13,757,362,70), bar_fill, bar_border, 18)
 	else:
@@ -412,8 +412,8 @@ func build_settings() -> void:
 		if settings_title != null:
 			settings_title.add_theme_color_override("font_color",FIGMA_INK)
 
-	var card_fill := Color("#33281c") if dark_mode else Color("#fffaf0")
-	var card_border := Color("#80613b") if dark_mode else Color("#c8aa70")
+	var card_fill := Color("#252525") if dark_mode else Color("#d8d4cc")
+	var card_border := Color("#5b5347") if dark_mode else Color("#b89b61")
 	var heading_color := Color(0.91,0.97,1.0) if dark_mode else FIGMA_INK
 	var muted_color := Color(0.76,0.84,0.90) if dark_mode else FIGMA_INK
 
@@ -444,11 +444,11 @@ func build_settings() -> void:
 	if dark_mode:
 		help_card = _figma_solid_card(canvas,"HelpPrivacy",Rect2(17,499,354,94),card_fill,card_border,18)
 	else:
-		help_card = _figma_solid_card(canvas,"HelpPrivacy",Rect2(17,499,354,94),Color("#fffaf0"),Color("#c8aa70"),18)
+		help_card = _figma_solid_card(canvas,"HelpPrivacy",Rect2(17,499,354,94),Color("#d8d4cc"),Color("#b89b61"),18)
 		help_card.modulate.a = 0.70
 	_figma_text(canvas,"SUPPORT",Rect2(33,515,170,18),15,FIGMA_GOLD if not dark_mode else heading_color)
-	var utility_fill := Color("#3a2d20") if dark_mode else Color("#d8c294")
-	var utility_border := Color("#80613b") if dark_mode else Color("#b89050")
+	var utility_fill := Color("#2c2c2c") if dark_mode else Color("#cbc4b8")
+	var utility_border := Color("#5b5347") if dark_mode else Color("#b89b61")
 	var utility_text := FIGMA_DARK_INK if dark_mode else FIGMA_NAVY
 	FigmaReferenceCanvas.add_shadow(canvas, Rect2(33,541,144,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
 	var how_to := FigmaReferenceCanvas.premium_button("HOW TO PLAY",14,utility_text,utility_fill,16,utility_border,1.2)
