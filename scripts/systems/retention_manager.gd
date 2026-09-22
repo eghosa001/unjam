@@ -21,6 +21,11 @@ const ACHIEVEMENT_REWARDS := {
 	"levels_1000": {"title":"UNJAM LEGEND", "coins":750}
 }
 
+var _daily_missions_cache_key := ""
+var _daily_missions_cache: Array[Dictionary] = []
+var _weekly_rivals_cache_key := ""
+var _weekly_rivals_cache: Array[Dictionary] = []
+
 func _ready() -> void:
 	process_login()
 
@@ -132,20 +137,25 @@ func claim_login_reward() -> Dictionary:
 
 func daily_missions() -> Array[Dictionary]:
 	ensure_state()
-	var templates: Array[Dictionary] = [
-		{"id":"clear_levels", "title":"RESCUE RUN", "description":"Complete 5 campaign levels", "target":5},
-		{"id":"perfects", "title":"PRECISION", "description":"Earn 3 stars on 3 levels", "target":3},
-		{"id":"hard_levels", "title":"BRAVE RESCUER", "description":"Complete 2 Hard or Boss levels", "target":2},
-		{"id":"coins", "title":"TREASURE HUNT", "description":"Earn 200 coins from level rewards", "target":200}
-	]
-	var seed_value: int = int(today_key().hash())
-	var result: Array[Dictionary] = []
-	for i in range(3):
-		var idx: int = absi(seed_value + i * 17) % templates.size()
-		while _contains_mission(result, String(templates[idx].id)):
-			idx = (idx + 1) % templates.size()
-		result.append(templates[idx].duplicate(true))
-	return result
+	var key := today_key()
+	if _daily_missions_cache_key != key or _daily_missions_cache.is_empty():
+		var templates: Array[Dictionary] = [
+			{"id":"clear_levels", "title":"RESCUE RUN", "description":"Complete 5 campaign levels", "target":5},
+			{"id":"perfects", "title":"PRECISION", "description":"Earn 3 stars on 3 levels", "target":3},
+			{"id":"hard_levels", "title":"BRAVE RESCUER", "description":"Complete 2 Hard or Boss levels", "target":2},
+			{"id":"coins", "title":"TREASURE HUNT", "description":"Earn 200 coins from level rewards", "target":200}
+		]
+		var seed_value: int = int(key.hash())
+		var generated: Array[Dictionary] = []
+		for i in range(3):
+			var idx: int = absi(seed_value + i * 17) % templates.size()
+			while _contains_mission(generated, String(templates[idx].id)):
+				idx = (idx + 1) % templates.size()
+			generated.append(templates[idx].duplicate(true))
+		_daily_missions_cache_key = key
+		_daily_missions_cache = generated
+	# Callers may freely annotate/sort their copy without corrupting the period cache.
+	return _daily_missions_cache.duplicate(true)
 
 func _contains_mission(list: Array[Dictionary], id: String) -> bool:
 	for mission in list:
@@ -263,20 +273,29 @@ func _increment_mission(id: String, amount: int) -> void:
 
 func weekly_rank() -> int:
 	var rank: int = 1
-	for rival in weekly_rivals():
+	for rival in _weekly_rivals_ref():
 		if int(rival.points) > int(SaveManager.data.weekly_points):
 			rank += 1
 	return rank
 
-func weekly_rivals() -> Array[Dictionary]:
-	var seed_value: int = int(week_key().hash())
+func _weekly_rivals_ref() -> Array[Dictionary]:
+	var key := week_key()
+	if _weekly_rivals_cache_key == key and not _weekly_rivals_cache.is_empty():
+		return _weekly_rivals_cache
+	var seed_value: int = int(key.hash())
 	var names: Array[String] = ["Nova", "Kai", "Mira", "Jett", "Ayo", "Lina", "Rex", "Zuri", "Tobi"]
 	var rivals: Array[Dictionary] = []
 	for i in range(9):
 		var points: int = 120 + absi(seed_value + i * 733) % 1150
 		rivals.append({"name":names[i], "points":points})
 	rivals.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return int(a.points) > int(b.points))
-	return rivals
+	_weekly_rivals_cache_key = key
+	_weekly_rivals_cache = rivals
+	return _weekly_rivals_cache
+
+func weekly_rivals() -> Array[Dictionary]:
+	# Keep the public API isolated while weekly_rank() uses the allocation-free cache.
+	return _weekly_rivals_ref().duplicate(true)
 
 func claim_weekly_tier(index: int) -> Dictionary:
 	if index < 0 or index >= WEEKLY_TARGETS.size():
