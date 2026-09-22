@@ -30,7 +30,12 @@ func load_save() -> void:
 			data[key] = loaded[key]
 	_migrate_robust()
 	_sanitize()
-	save()
+	var payload := JSON.stringify(data)
+	if loaded.is_empty() or data != loaded:
+		save()
+	else:
+		# A clean current-version save needs no startup rewrite/backup cycle.
+		_last_saved_payload = payload
 
 func _read_dictionary(path: String) -> Dictionary:
 	if not FileAccess.file_exists(path):
