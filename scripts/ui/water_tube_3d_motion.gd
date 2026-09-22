@@ -24,6 +24,7 @@ var liquid_root_3d: Node3D
 var liquid_meniscus_3d: MeshInstance3D
 var liquid_segments_3d: Array[MeshInstance3D] = []
 var liquid_materials_3d: Array[StandardMaterial3D] = []
+static var _shared_liquid_materials_3d: Array[StandardMaterial3D] = []
 var _arrival_impulse := 0.0
 var _arrival_phase := 0.0
 
@@ -276,11 +277,14 @@ func _build_glass_3d() -> void:
 	stage_3d.add_child(contact_shadow)
 
 func _build_liquid_materials_3d() -> void:
-	# Cache one saturated material per palette entry. Liquid uses a softer satin
-	# response than glass so highlights cannot wash neighbouring hues together.
+	# Materials are immutable during play, so all bottle viewports can share one
+	# palette instead of allocating another full material set per tube.
+	if _shared_liquid_materials_3d.is_empty():
+		for color in PALETTE:
+			_shared_liquid_materials_3d.append(_liquid_material_3d(color))
 	liquid_materials_3d.clear()
-	for color in PALETTE:
-		liquid_materials_3d.append(_liquid_material_3d(color))
+	for material in _shared_liquid_materials_3d:
+		liquid_materials_3d.append(material)
 
 func _liquid_material_3d(color: Color) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()
