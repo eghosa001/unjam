@@ -20,9 +20,9 @@ func _initialize() -> void:
 		"func _chime_stream",
 		"func _build_calm_ambient_loop",
 		"Fmaj7 -> Dm7 -> Bbmaj7 -> Cadd9",
-		"music_player.volume_db = -10.0",
+		"music_player.volume_db = -11.0",
 		"var body_tone := sin(TAU * float(chord[0]) * t) * 0.008 * edge",
-		"sfx.volume_db = -2.5",
+		"sfx.volume_db = -3.0",
 		"release_raw",
 		"var loop_edge := _smooth_edge(t, MUSIC_DURATION, 0.38)",
 		"var pulse_edge := _smooth_edge(pulse_phase, 2.0, 0.035)",
@@ -45,8 +45,10 @@ func _initialize() -> void:
 		failures.append("Ambient loop must not mix sub-audible oscillator energy directly into PCM")
 	if source.contains("[58.27, 73.42, 87.31, 110.00]"):
 		failures.append("Ambient chord voicings must stay above phone-rumble bass territory")
-	if not source.contains("[196.00, 293.66, 392.00, 440.00]"):
-		failures.append("Ambient voicings must keep their lowest fundamental at or above 196 Hz")
+	if source.contains("[196.00, 293.66, 392.00, 440.00]"):
+		failures.append("Ambient loop must not reintroduce the former 196 Hz bass-root voicing")
+	if not source.contains("[261.63, 329.63, 392.00, 493.88]"):
+		failures.append("Ambient voicings must retain the raised mobile-safe final chord")
 
 	var script = load(path)
 	if script == null:
@@ -88,6 +90,12 @@ func _initialize() -> void:
 				var pulse_after := _pcm16(music.data, pulse_frame * 4)
 				if absi(pulse_after - pulse_before) > 900:
 					failures.append("Ambient mallet pulse has an audible PCM jump at %ds" % pulse_seconds)
+			var reference_power := _goertzel_power(music.data, int(music.mix_rate), 261.63, 2.0)
+			var low_power := 0.0
+			for hz in [40.0, 60.0, 80.0, 100.0, 120.0, 150.0]:
+				low_power = maxf(low_power, _goertzel_power(music.data, int(music.mix_rate), hz, 2.0))
+			if reference_power <= 0.0 or low_power > reference_power * 0.12:
+				failures.append("Ambient loop still carries excessive low-frequency energy (low/reference %.4f)" % (low_power / maxf(reference_power, 0.000001)))
 		feedback.free()
 
 	if not failures.is_empty():
@@ -109,3 +117,18 @@ func _pcm_peak(bytes: PackedByteArray) -> int:
 		peak = maxi(peak, absi(_pcm16(bytes, offset)))
 		peak = maxi(peak, absi(_pcm16(bytes, offset + 2)))
 	return peak
+
+func _goertzel_power(bytes: PackedByteArray, sample_rate: int, frequency: float, seconds: float) -> float:
+	var frame_count := mini(int(float(sample_rate) * seconds), int(bytes.size() / 4))
+	if frame_count <= 0:
+		return 0.0
+	var omega := TAU * frequency / float(sample_rate)
+	var coeff := 2.0 * cos(omega)
+	var s1 := 0.0
+	var s2 := 0.0
+	for frame in range(frame_count):
+		var sample := float(_pcm16(bytes, frame * 4)) / 32768.0
+		var s0 := sample + coeff * s1 - s2
+		s2 = s1
+		s1 = s0
+	return s1 * s1 + s2 * s2 - coeff * s1 * s2

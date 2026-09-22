@@ -276,7 +276,7 @@ static func add_scene_backdrop_layers(parent: Control, accent: Color, dark: bool
 	var accent_glow := PanelContainer.new()
 	accent_glow.name = "%sAccentGlow" % prefix
 	accent_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	accent_glow.add_theme_stylebox_override("panel", solid_box(Color(accent.r, accent.g, accent.b, 0.18 if not dark else 0.08), 120))
+	accent_glow.add_theme_stylebox_override("panel", solid_box(Color(accent.r, accent.g, accent.b, 0.10 if not dark else 0.06), 120))
 	set_rect(accent_glow, 230, 575, 250, 230)
 	parent.add_child(accent_glow)
 
@@ -289,7 +289,7 @@ static func add_scene_backdrop_layers(parent: Control, accent: Color, dark: bool
 	var vignette := Polygon2D.new()
 	vignette.name = "%sBottomVignette" % prefix
 	vignette.polygon = PackedVector2Array([Vector2(-30,692),Vector2(430,604),Vector2(430,844),Vector2(-30,844)])
-	vignette.color = Color(0.005,0.015,0.06,0.18 if not dark else 0.42)
+	vignette.color = Color(0.03,0.035,0.045,0.12 if not dark else 0.34)
 	parent.add_child(vignette)
 
 	# Light mode gets a quiet glass horizon so the background reads as a layered
@@ -301,7 +301,7 @@ static func add_scene_backdrop_layers(parent: Control, accent: Color, dark: bool
 			Vector2(-25, 470), Vector2(415, 402),
 			Vector2(415, 520), Vector2(-25, 584)
 		])
-		horizon.color = Color(0.88, 0.98, 1.0, 0.16)
+		horizon.color = Color("#b7cae8", 0.18)
 		parent.add_child(horizon)
 
 	for i in range(4):
@@ -309,7 +309,7 @@ static func add_scene_backdrop_layers(parent: Control, accent: Color, dark: bool
 		vein.name = "%sMaterialVein%d" % [prefix, i]
 		vein.width = 1.0
 		vein.antialiased = true
-		vein.default_color = Color(0.84,0.95,1.0,0.085 if not dark else 0.035) if i % 2 == 0 else Color(0.02,0.07,0.18,0.070 if not dark else 0.055)
+		vein.default_color = Color("#dce8fb",0.070 if not dark else 0.028) if i % 2 == 0 else Color("#4e6791",0.060 if not dark else 0.045)
 		var start := Vector2(18.0 + float(i) * 82.0, 260.0 + float(i) * 116.0)
 		var length := 120.0 + float(i) * 18.0
 		var angle := deg_to_rad(-8.0 if i % 2 == 0 else 11.0)

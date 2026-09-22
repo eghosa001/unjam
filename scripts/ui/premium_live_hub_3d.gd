@@ -3,25 +3,25 @@ extends "res://scripts/ui/premium_live_hub.gd"
 const RefCanvas = preload("res://scripts/ui/figma_reference_canvas.gd")
 const FLAT_GAME_LOGO_SCRIPT = preload("res://scripts/ui/unjam_flat_game_logo.gd")
 
-const BG_TOP := Color("#dcebe8")
-const BG_MID := Color("#d4e3e8")
-const BG_BOTTOM := Color("#c3d2df")
-const NAVY := Color(0.03, 0.23, 0.47)
-const INK := Color(0.07, 0.20, 0.35)
-const MUTED := Color(0.31, 0.42, 0.52)
+const BG_TOP := Color("#4f76b8")
+const BG_MID := Color("#8ea8d1")
+const BG_BOTTOM := Color("#315596")
+const NAVY := Color("#1f2933")
+const INK := Color("#26323d")
+const MUTED := Color("#52606d")
 const OFF_WHITE := Color(1.0, 0.995, 0.97)
 const CYAN := Color(0.14, 0.68, 1.0)
-const DARK_TOP := Color("#182a3b")
-const DARK_MID := Color("#20384b")
-const DARK_BOTTOM := Color("#29465b")
-const DARK_INK := Color("#eef7ff")
-const DARK_MUTED := Color("#b6c7d6")
-const SCENE_TOP := Color("#d7f8ff")
-const SCENE_MID := Color("#72c7dc")
-const SCENE_BOTTOM := Color("#287fa8")
-const DARK_SCENE_TOP := Color("#101932")
-const DARK_SCENE_MID := Color("#0b1631")
-const DARK_SCENE_BOTTOM := Color("#060d22")
+const DARK_TOP := Color("#24385f")
+const DARK_MID := Color("#1b2c4d")
+const DARK_BOTTOM := Color("#13213a")
+const DARK_INK := Color("#f5f7fa")
+const DARK_MUTED := Color("#a7b1bc")
+const SCENE_TOP := Color("#4f76b8")
+const SCENE_MID := Color("#3f67aa")
+const SCENE_BOTTOM := Color("#315596")
+const DARK_SCENE_TOP := Color("#24385f")
+const DARK_SCENE_MID := Color("#24385f")
+const DARK_SCENE_BOTTOM := Color("#13213a")
 
 var figma_canvas: FigmaReferenceCanvas
 
@@ -69,8 +69,8 @@ func _build_reference_selector(canvas: Control) -> void:
 	RefCanvas.set_rect(background, 0, 0, 390, 844)
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(background)
-	RefCanvas.add_world_depth(canvas, Color("#ffd34e"), _selector_dark(), 0.14 if _selector_dark() else 0.10, "SelectorWorldDepth")
-	RefCanvas.add_scene_backdrop_layers(canvas, Color("#ffd34e"), _selector_dark(), "Selector")
+	RefCanvas.add_world_depth(canvas, Color("#59636f") if _selector_dark() else Color("#9aa4ae"), _selector_dark(), 0.0, "SelectorWorldDepth")
+	RefCanvas.add_scene_backdrop_layers(canvas, Color("#365787") if _selector_dark() else Color("#6f8fbd"), _selector_dark(), "Selector")
 	var selector_key_light := canvas.get_node_or_null("SelectorKeyLight")
 	if selector_key_light != null:
 		selector_key_light.set_meta("unjam_figma_scene_light", true)
@@ -87,7 +87,7 @@ func _build_reference_selector(canvas: Control) -> void:
 	selector_title.name = "SelectorTitle3D"
 	selector_title.clip_text = true
 	RefCanvas.style_display_title(selector_title, Color("#ffca45"), Color("#071d55"), 2)
-	var selector_subtitle := _add_text(canvas, "3 PUZZLES • 1 JOURNEY", Rect2(83, 51, 186, 30), 12, Color("#c6d9ec") if _selector_dark() else Color("#31566f"), false)
+	var selector_subtitle := _add_text(canvas, "3 PUZZLES • 1 JOURNEY", Rect2(83, 51, 186, 30), 12, Color("#c6d9ec") if _selector_dark() else Color("#e4edf8"), false)
 	selector_subtitle.name = "SelectorSubtitle"
 	selector_subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	selector_subtitle.clip_text = true
@@ -175,8 +175,8 @@ func _add_bottom_nav(canvas: Control) -> void:
 	var shell := PanelContainer.new()
 	shell.name = "SelectorBottomNav"
 	RefCanvas.add_shadow(canvas, Rect2(13, 757, 362, 70), 18, Color(0.02,0.10,0.18,0.16), 5, Vector2(0,4))
-	var nav_fill := Color(0.055,0.085,0.15,0.985) if _selector_dark() else Color("#d9edf3")
-	var nav_border := Color(0.24,0.39,0.54,0.94) if _selector_dark() else Color("#5ca7c2")
+	var nav_fill := Color("#1c2d4b") if _selector_dark() else Color("#9fb5d5")
+	var nav_border := Color("#365787") if _selector_dark() else Color("#6f8fbd")
 	shell.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(nav_fill.lightened(0.12), nav_fill, nav_fill.darkened(0.10), 18, nav_border, 1, 0.40))
 	RefCanvas.set_rect(shell, 13, 757, 362, 70)
 	shell.mouse_filter = Control.MOUSE_FILTER_IGNORE
