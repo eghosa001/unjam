@@ -83,16 +83,10 @@ func _build_reference_selector(canvas: Control) -> void:
 	back.pressed.connect(_go_home)
 	canvas.add_child(back)
 
-	var selector_title := _add_text(canvas, "CHOOSE A GAME", Rect2(83, 21, 186, 28), 21, OFF_WHITE, true)
+	var selector_title := _add_text(canvas, "CHOOSE A GAME", Rect2(83, 28, 186, 32), 21, OFF_WHITE, true)
 	selector_title.name = "SelectorTitle3D"
 	selector_title.clip_text = true
 	RefCanvas.style_display_title(selector_title, Color("#ffca45"), Color("#071d55"), 2)
-	var selector_subtitle := _add_text(canvas, "3 PUZZLES • 1 JOURNEY", Rect2(83, 51, 186, 30), 12, Color("#c6d9ec") if _selector_dark() else Color("#e4edf8"), false)
-	selector_subtitle.name = "SelectorSubtitle"
-	selector_subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	selector_subtitle.clip_text = true
-	RefCanvas.set_rect(selector_subtitle, 83, 51, 186, 30)
-
 	RefCanvas.add_shadow(canvas, Rect2(285, 21, 84, 46), 23, Color(0.02,0.15,0.30,0.16), 3, Vector2(0,2))
 	var settings := RefCanvas.premium_button("⚙", 18, OFF_WHITE, Color(0.03, 0.43, 0.78), 23)
 	settings.name = "SelectorSettingsButton"
