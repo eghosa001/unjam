@@ -98,17 +98,38 @@ func _check_block() -> bool:
 		return _fail("Block Puzzle must not win while a required row objective remains")
 	rows.clear()
 
-	var move_fail: Dictionary = game.call("_failure_presentation", "MOVE LIMIT REACHED")
-	var fit_fail: Dictionary = game.call("_failure_presentation", "NO LEGAL MOVES")
-	if String(move_fail.get("title", "")) != "OUT OF MOVES":
+	if int(game.get("campaign_move_limit")) != -1:
 		game.queue_free()
-		return _fail("Block Puzzle move-limit loss is not identified")
+		return _fail("Block Puzzle campaign must not fail on a move limit")
+	var fit_fail: Dictionary = game.call("_failure_presentation", "NO LEGAL MOVES")
 	if String(fit_fail.get("title", "")) != "NO MOVES LEFT":
 		game.queue_free()
 		return _fail("Block Puzzle no-fit loss is not identified")
-	if String(move_fail.get("subtitle", "")) == String(fit_fail.get("subtitle", "")):
+
+	# A bad tray must not end the game while even one board cell can accept a
+	# legal shape. The runtime should replace it with a fitting rescue piece.
+	var board: Array = []
+	for y in range(8):
+		var row: Array = []
+		for x in range(8):
+			row.append(true)
+		board.append(row)
+	board[0][0] = false
+	game.set("cells", board)
+	game.set("campaign_special_cells", {})
+	game.set("pieces", [
+		[Vector2i(0, 0), Vector2i(1, 0)],
+		[Vector2i(0, 0), Vector2i(0, 1)],
+		[Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, 0)]
+	])
+	game.set("piece_colors", [Color.WHITE, Color.WHITE, Color.WHITE])
+	if bool(game.call("any_move_available")):
 		game.queue_free()
-		return _fail("Block Puzzle distinct loss causes use the same explanation")
+		return _fail("Block Puzzle test setup should begin with no fitting tray piece")
+	game.call("_ensure_playable_tray")
+	if not bool(game.call("any_move_available")):
+		game.queue_free()
+		return _fail("Block Puzzle must keep play alive while usable board space remains")
 
 	game.queue_free()
 	await process_frame
