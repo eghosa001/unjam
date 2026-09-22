@@ -5,7 +5,7 @@ const MAX_LEVEL := 10000
 const WORLD_SIZE := 500
 const WORLD_COUNT := 20
 const CAPACITY := 4
-const GENERATOR_VERSION := 3
+const GENERATOR_VERSION := 4
 
 const SCORE_BANDS := [
 	[15, 55], [45, 60], [50, 63], [54, 66], [57, 69],
@@ -33,6 +33,7 @@ static func profile(raw_level: int) -> Dictionary:
 	var band := clampi(int((level - 1) / WORLD_SIZE), 0, WORLD_COUNT - 1)
 	var world := band + 1
 	var world_level := posmod(level - 1, WORLD_SIZE) + 1
+	var retention_role := _retention_role(level)
 	var rank := _difficulty_rank(level)
 	var milestone := milestone_kind(level)
 	if milestone == "boss":
@@ -72,12 +73,18 @@ static func profile(raw_level: int) -> Dictionary:
 		target_moves = 80
 
 	var colors := _colors_for_level(level, band, local_progress)
-	var empty_bottles := _empty_bottles_for_level(level)
+	var empty_bottles := _empty_bottles_for_level(level, retention_role)
 	var three_star_limit := maxi(target_moves, 6)
 	var two_star_limit := three_star_limit + maxi(5, ceili(float(three_star_limit) * 0.15))
 	var scramble_steps := clampi(target_moves, 4, 80)
 	if level <= 10:
 		scramble_steps = clampi(3 + level, 4, 14)
+	elif retention_role == "recovery":
+		scramble_steps = maxi(4, roundi(float(scramble_steps) * 0.84))
+	elif retention_role in ["confidence", "learn", "practice"]:
+		scramble_steps = maxi(4, roundi(float(scramble_steps) * 0.92))
+	elif retention_role == "peak":
+		scramble_steps = mini(80, scramble_steps + 3)
 
 	var flags: Array[String] = []
 	if empty_bottles == 1:
@@ -103,6 +110,8 @@ static func profile(raw_level: int) -> Dictionary:
 		"target_difficulty": target_score,
 		"difficulty_label": _difficulty_label(rank, level),
 		"milestone": milestone,
+		"retention_role": retention_role,
+		"first_attempt_target": _first_attempt_target(retention_role, rank, milestone),
 		"target_moves_min": int(move_band[0]),
 		"target_moves_max": int(move_band[1]),
 		"target_moves": target_moves,
@@ -260,8 +269,14 @@ static func _colors_for_level(level: int, band: int, local_progress: float) -> i
 		value += 1
 	return clampi(value, minimum, maximum)
 
-static func _empty_bottles_for_level(level: int) -> int:
+static func _empty_bottles_for_level(level: int, retention_role: String) -> int:
 	if level <= 1000:
+		return 2
+	if level == MAX_LEVEL:
+		return 1
+	# Recovery and mechanic-learning levels deliberately restore workspace.
+	# This prevents a hard level from being followed by another hidden pressure spike.
+	if retention_role in ["recovery", "learn", "practice"]:
 		return 2
 	var probability := 0.05
 	if level <= 2500:
@@ -274,42 +289,74 @@ static func _empty_bottles_for_level(level: int) -> int:
 		probability = 0.23
 	else:
 		probability = 0.30
+	if retention_role in ["stretch", "peak"]:
+		probability = minf(0.45, probability + 0.08)
 	if milestone_kind(level) in ["world_finale", "mastery", "finale"]:
 		probability = minf(0.45, probability + 0.10)
-	if level == MAX_LEVEL:
-		return 1
 	return 1 if _unit_hash(level, 47) < probability else 2
 
 static func _difficulty_rank(level: int) -> int:
+	if level <= 2:
+		return 0
+	var role := _retention_role(level)
+	match role:
+		"tutorial", "recovery", "confidence", "learn":
+			return 0
+		"practice", "build":
+			return 1
+		"challenge":
+			return 2
+		"stretch":
+			return 3
+		"peak":
+			return 4
+		_:
+			return 1
+
+static func _retention_role(level: int) -> String:
 	if level <= 10:
-		return 0
-	# The first 100 levels establish the rhythm deliberately. Avoid random
-	# extreme spikes before players have learned workspace management; milestone
-	# overrides still make 25/50/75/100 feel special.
-	if level <= 24:
-		return 1 if level % 4 == 0 else 0
-	if level <= 49:
-		return [0, 1, 1, 2][level % 4]
-	if level <= 74:
-		return [1, 1, 2, 2, 1, 2][level % 6]
-	if level < 100:
-		return [1, 2, 2, 3, 1, 2][level % 6]
-	var phase := posmod(level - 1, 100) + 1
-	if phase == 100:
-		return 5
-	var block := int((level - 1) / 100)
-	# 37 is coprime to 99, so every 99-level block receives a deterministic
-	# permutation rather than a monotonically increasing mini-ramp.
-	var slot := posmod((phase - 1) * 37 + block * 17, 99)
-	if slot < 50:
-		return 0
-	if slot < 75:
-		return 1
-	if slot < 89:
-		return 2
-	if slot < 95:
-		return 3
-	return 4
+		return ["tutorial", "tutorial", "learn", "confidence", "build", "recovery", "build", "learn", "challenge", "peak"][level - 1]
+	if _is_color_intro(level):
+		return "learn"
+	if _is_color_intro(level - 1) or _is_color_intro(level - 2):
+		return "practice"
+	if milestone_kind(level - 1) in ["hard", "mini_boss", "boss", "world_finale", "mastery"]:
+		return "recovery"
+	var slot := posmod(level - 1, 10) + 1
+	match slot:
+		1: return "recovery"
+		2: return "confidence"
+		3, 4: return "build"
+		5: return "challenge"
+		6: return "recovery"
+		7: return "build"
+		8: return "stretch"
+		9: return "challenge"
+		_: return "peak"
+
+static func _is_color_intro(level: int) -> bool:
+	return level in [21, 41, 61, 101, 201, 501, 1001, 2501, 5001, 7501]
+
+static func _first_attempt_target(role: String, rank: int, milestone: String) -> Vector2:
+	if milestone == "finale":
+		return Vector2(0.18, 0.30)
+	if milestone in ["mastery", "world_finale", "boss"]:
+		return Vector2(0.24, 0.40)
+	match role:
+		"tutorial", "confidence", "learn":
+			return Vector2(0.82, 0.95)
+		"recovery", "practice":
+			return Vector2(0.72, 0.88)
+		"build":
+			return Vector2(0.60, 0.78)
+		"challenge":
+			return Vector2(0.44, 0.62)
+		"stretch":
+			return Vector2(0.34, 0.52)
+		"peak":
+			return Vector2(0.28, 0.46)
+		_:
+			return Vector2(0.55 - float(rank) * 0.04, 0.75 - float(rank) * 0.03)
 
 static func _rank_fraction(rank: int) -> float:
 	match rank:
