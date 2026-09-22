@@ -68,6 +68,8 @@ func _ambient_count() -> int:
 	return _materials.particle_budget(14, quality_scale, _reduced_motion())
 
 func set_accent(color: Color) -> void:
+	if accent.is_equal_approx(color) and not _ambient_nodes.is_empty():
+		return
 	accent = color
 	ambient_sparkles(_ambient_count())
 
@@ -87,8 +89,10 @@ func _diamond(radius: float, color: Color) -> Polygon2D:
 func ambient_sparkles(count: int = 12) -> void:
 	if not is_instance_valid(overlay):
 		return
-	var scaled_count := mini(count, _ambient_count())
 	clear_ambient()
+	var scaled_count := mini(count, _ambient_count())
+	if scaled_count <= 0:
+		return
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 44321
 	for _i in range(scaled_count):
@@ -99,6 +103,7 @@ func ambient_sparkles(count: int = 12) -> void:
 		dot.set_meta("ambient", true)
 		dot.set_meta("speed", rng.randf_range(3.0, 9.0))
 		overlay.add_child(dot)
+		_ambient_nodes.append(dot)
 
 func burst(global_pos: Vector2, color: Color = Color("2dd4b6"), count: int = 18) -> void:
 	var scaled := _materials.particle_budget(count, quality_scale, _reduced_motion())
