@@ -26,6 +26,10 @@ var liquid_segments_3d: Array[MeshInstance3D] = []
 var liquid_materials_3d: Array[StandardMaterial3D] = []
 var _arrival_impulse := 0.0
 var _arrival_phase := 0.0
+var _rim_projection_cached := false
+var _rim_center_normalized := Vector2(0.5, 0.1)
+var _rim_left_normalized := Vector2(0.5, 0.1)
+var _rim_right_normalized := Vector2(0.5, 0.1)
 
 func configure(values: Array, selected: bool, index: int) -> void:
 	var liquid_changed := layers != values
@@ -430,39 +434,55 @@ func _request_3d_frame() -> void:
 	if viewport_3d != null:
 		viewport_3d.render_target_update_mode = SubViewport.UPDATE_ONCE
 
-func _project_rim_point(local_3d: Vector3) -> Vector2:
+func _project_rim_normalized(local_3d: Vector3) -> Vector2:
 	if camera_3d == null or viewport_3d == null or stage_3d == null:
-		return Vector2(size.x * 0.5, size.y * 0.10)
-	var viewport_point := camera_3d.unproject_position(stage_3d.to_global(local_3d))
+		return Vector2(0.5, 0.1)
 	var viewport_size := Vector2(viewport_3d.size)
 	if viewport_size.x <= 0.0 or viewport_size.y <= 0.0:
-		return Vector2(size.x * 0.5, size.y * 0.10)
-	return Vector2(
-		viewport_point.x / viewport_size.x * size.x,
-		viewport_point.y / viewport_size.y * size.y
-	)
+		return Vector2(0.5, 0.1)
+	var viewport_point := camera_3d.unproject_position(stage_3d.to_global(local_3d))
+	return Vector2(viewport_point.x / viewport_size.x, viewport_point.y / viewport_size.y)
 
-func visual_receive_rim_local() -> Vector2:
-	# Project the actual 3D opening center instead of reusing the retired 2D
-	# bottle rectangle. This keeps the incoming stream glued to the rendered rim
-	# across responsive tube sizes and SubViewport stretching.
-	return _project_rim_point(Vector3(0.0, GLASS_MOUTH_Y, 0.0))
-
-func visual_pour_rim_local(direction: float) -> Vector2:
-	# Find the left/right screen edge of the real 3D torus rim. Camera perspective
-	# means a fixed world-X offset is not guaranteed to be the visible downhill
-	# lip, so sample the circumference and select by projected screen X.
+func _ensure_rim_projection_cache() -> void:
+	if _rim_projection_cached:
+		return
 	if camera_3d == null or viewport_3d == null or stage_3d == null:
-		return super.visual_pour_rim_local(direction)
-	var want_right := direction >= 0.0
-	var best := visual_receive_rim_local()
+		return
+	_rim_center_normalized = _project_rim_normalized(Vector3(0.0, GLASS_MOUTH_Y, 0.0))
+	_rim_left_normalized = _rim_center_normalized
+	_rim_right_normalized = _rim_center_normalized
+	# Camera, glass geometry and the 3D stage are static for the lifetime of this
+	# tube. Sample the torus once instead of doing 24 camera projections on every
+	# animation frame of every pour.
 	for i in range(24):
 		var angle := TAU * float(i) / 24.0
 		var rim_3d := Vector3(cos(angle) * GLASS_MOUTH_RADIUS, GLASS_MOUTH_Y, sin(angle) * GLASS_MOUTH_RADIUS)
-		var projected := _project_rim_point(rim_3d)
-		if (want_right and projected.x > best.x) or (not want_right and projected.x < best.x):
-			best = projected
-	return best
+		var projected := _project_rim_normalized(rim_3d)
+		if projected.x < _rim_left_normalized.x:
+			_rim_left_normalized = projected
+		if projected.x > _rim_right_normalized.x:
+			_rim_right_normalized = projected
+	_rim_projection_cached = true
+
+func _normalized_rim_to_local(point: Vector2) -> Vector2:
+	return Vector2(point.x * size.x, point.y * size.y)
+
+func _project_rim_point(local_3d: Vector3) -> Vector2:
+	# Kept as a geometry helper for validation/debug callers; hot-path pouring
+	# uses the cached normalized rim positions below.
+	return _normalized_rim_to_local(_project_rim_normalized(local_3d))
+
+func visual_receive_rim_local() -> Vector2:
+	# Project the actual 3D opening center instead of reusing the retired 2D
+	# bottle rectangle. Normalized caching keeps it correct across control resizes.
+	_ensure_rim_projection_cache()
+	return _normalized_rim_to_local(_rim_center_normalized)
+
+func visual_pour_rim_local(direction: float) -> Vector2:
+	if camera_3d == null or viewport_3d == null or stage_3d == null:
+		return super.visual_pour_rim_local(direction)
+	_ensure_rim_projection_cache()
+	return _normalized_rim_to_local(_rim_right_normalized if direction >= 0.0 else _rim_left_normalized)
 
 func _draw() -> void:
 	# Keep interaction feedback in the inexpensive 2D layer while the bottle and
