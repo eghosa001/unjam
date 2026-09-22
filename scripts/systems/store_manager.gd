@@ -52,13 +52,13 @@ func provider_ready() -> bool:
 func verifier_ready() -> bool:
 	var supabase_url := String(ProjectSettings.get_setting("monetization/supabase_url", "")).strip_edges()
 	var publishable_key := String(ProjectSettings.get_setting("monetization/supabase_publishable_key", "")).strip_edges()
-	return supabase_url.begins_with("https://") and ".supabase.co" in supabase_url and not publishable_key.is_empty()
+	return supabase_url.begins_with("https://") and not publishable_key.is_empty()
 
 func release_configuration_issues() -> Array[String]:
 	var issues: Array[String] = []
 	var supabase_url := String(ProjectSettings.get_setting("monetization/supabase_url", "")).strip_edges()
 	var publishable_key := String(ProjectSettings.get_setting("monetization/supabase_publishable_key", "")).strip_edges()
-	if not supabase_url.begins_with("https://") or not ".supabase.co" in supabase_url:
+	if not supabase_url.begins_with("https://"):
 		issues.append("Supabase monetization URL is not configured")
 	if publishable_key.is_empty():
 		issues.append("Supabase publishable key is not configured")
