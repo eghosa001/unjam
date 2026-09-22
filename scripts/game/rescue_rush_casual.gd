@@ -12,13 +12,13 @@ var figma_canvas: FigmaReferenceCanvas
 
 func _compact_objective_instruction() -> String:
 	match objective_type:
-		"full_escape": return "CLEAR ALL ARROWS • FREE THE CHICK"
-		"key_rescue": return "GET KEYS • OPEN THE RESCUE LANE"
-		"gate_run": return "OPEN GATES • FREE THE CHICK"
-		"bomb_route": return "CLEAR BOMBS • FREE THE CHICK"
-		"chain_rescue": return "BREAK CHAINS • FREE THE CHICK"
-		"perfect_rescue": return "FREE THE CHICK • ≤ %d MOVES" % action_budget
-		_: return "CLEAR A LANE • FREE THE CHICK"
+		"full_escape": return "WIN • CLEAR ALL ARROWS"
+		"key_rescue": return "WIN • KEYS + CLEAR LANE"
+		"gate_run": return "WIN • OPEN GATES + CLEAR LANE"
+		"bomb_route": return "WIN • BOMBS + CLEAR LANE"
+		"chain_rescue": return "WIN • LINKS + CLEAR LANE"
+		"perfect_rescue": return "WIN • RESCUE ≤ %d MOVES" % action_budget
+		_: return "WIN • OPEN ONE CLEAR LANE"
 
 func _add_rescue_identity_emblem(canvas: Control) -> void:
 	var emblem := PanelContainer.new()
@@ -358,9 +358,12 @@ func show_hint() -> void:
 func render_board() -> void:
 	super.render_board()
 	if moves_label != null:
-		var mistake_text := "FREE" if mistake_limit <= 0 else "%d/%d" % [mistakes_this_level,mistake_limit]
+		var lives_text := "∞" if mistake_limit <= 0 else str(maxi(0, mistake_limit - mistakes_this_level))
 		moves_label.visible = true
-		moves_label.text = "MOVES %d/%d   •   MISTAKES %s   •   CHAIN ×%d" % [moves,par_moves,mistake_text,maxi(chain_count,1)]
+		if objective_type == "perfect_rescue":
+			moves_label.text = "MOVES %d/%d   •   LIVES %s   •   CHAIN ×%d" % [moves, action_budget, lives_text, maxi(chain_count,1)]
+		else:
+			moves_label.text = "MOVES %d   •   3★≤%d   •   LIVES %s   •   CHAIN ×%d" % [moves, par_moves, lives_text, maxi(chain_count,1)]
 		moves_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		moves_label.add_theme_font_size_override("font_size",13)
 	if rescue_label != null:

@@ -10,7 +10,7 @@ var _last_rendered_pour_feedback_sequence := 0
 var level_profile: Dictionary = {}
 var generation_meta: Dictionary = {}
 var two_star_moves := 0
-var failed := false
+var stuck := false
 
 func build_ui() -> void:
 	super.build_ui()
@@ -36,7 +36,7 @@ func level_config() -> Dictionary:
 	}
 
 func load_level() -> void:
-	failed = false
+	stuck = false
 	_pour_flow_streak = 0
 	_pour_feedback_sequence = 0
 	_last_rendered_pour_feedback_sequence = 0
@@ -523,47 +523,26 @@ func _refresh_idle_status_after_pours() -> void:
 	_check_no_legal_pours()
 
 func _check_no_legal_pours() -> void:
-	if failed or completed or pending_completion or _has_active_pours():
+	if completed or pending_completion or _has_active_pours():
 		return
 	if is_complete() or _has_any_legal_pour():
+		stuck = false
 		return
-	_show_no_legal_pours_failure()
-
-func _show_no_legal_pours_failure() -> void:
-	if failed or completed:
+	if stuck:
 		return
-	failed = true
+	stuck = true
 	selected = -1
-	status_label.text = "NO LEGAL POURS"
+	status_label.text = "STUCK • NO LEGAL POUR"
+	if hint_label != null:
+		hint_label.text = "UNDO, ADD A TUBE, OR RETRY • NO PENALTY"
 	FeedbackManager.blocked()
-	MultiGameManager.clear_checkpoint(GAME_ID)
-	if not daily_mode:
-		RetentionManager.record_level_fail()
-	AnalyticsManager.track("water_sort_attempt_failed", {"level": level_number, "moves": moves, "daily": daily_mode, "reason": "no_legal_pours"})
-	var result := PremiumResultOverlay.new()
-	result.configure(
-		"WATER SORT FAILED",
-		"No valid pour remains.",
-		"%d MOVES   •   %d COLOURS\nUNDO OR RETRY EARLIER NEXT TIME" % [moves, color_count],
-		0,
-		Color("5da9ff"),
-		"RETRY",
-		"NO POURS"
-	)
-	result.configure_secondary("BACK HOME" if daily_mode else "BACK TO LEVELS", true)
-	add_child(result)
-	result.continue_requested.connect(func() -> void:
-		if is_instance_valid(result): result.queue_free()
-		failed = false
-		restart_level()
-	)
-	result.secondary_requested.connect(func() -> void:
-		if daily_mode:
-			finished.emit(-1)
-		else:
-			quit_requested.emit()
-		queue_free()
-	)
+	AnalyticsManager.track("water_sort_attempt_stuck", {
+		"level": level_number,
+		"moves": moves,
+		"daily": daily_mode,
+		"reason": "no_legal_pours"
+	})
+	_save_checkpoint()
 
 func complete_level() -> void:
 	if completed:
@@ -576,7 +555,8 @@ func complete_level() -> void:
 		MultiGameManager.complete_daily(GAME_ID, 100 + stars * 25)
 	else:
 		MultiGameManager.complete_level(GAME_ID, level_number, stars, 25 + color_count * 2)
-	status_label.text = "SORT COMPLETE"
+	stuck = false
+	status_label.text = "WIN • ALL COLOURS SORTED"
 	PremiumVisuals.burst(Vector2(540, 880), Color("5da9ff"), 28)
 	AnalyticsManager.track("water_sort_completed", {
 		"level": level_number,
@@ -592,7 +572,7 @@ func complete_level() -> void:
 	var result := PremiumResultOverlay.new()
 	result.configure(
 		"WATER SORT COMPLETE",
-		"Every colour is cleanly separated.",
+		"Win condition met: every non-empty tube is full and contains one colour.",
 		"%d MOVES   •   3★ ≤ %d   •   2★ ≤ %d\n%d COLOURS SORTED" % [
 			moves, par_moves, two_star_moves, color_count
 		],

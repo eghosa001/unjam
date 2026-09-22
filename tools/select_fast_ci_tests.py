@@ -310,6 +310,18 @@ WATER_CAMPAIGN_GENERATOR_FUNCTIONS = {
     "_shuffle_int_array",
 }
 
+WIN_LOSS_RULE_TEST = "tests/validate_win_loss_rules.gd"
+WIN_LOSS_RULE_PATHS = {
+    WIN_LOSS_RULE_TEST,
+    "scripts/game/water_sort_10000.gd",
+    "scripts/game/water_sort_casual.gd",
+    "scripts/game/block_puzzle_10000.gd",
+    "scripts/game/game.gd",
+    "scripts/game/rescue_rush_casual.gd",
+    "scripts/game/rescue_rush_premium.gd",
+    "tools/select_fast_ci_tests.py",
+}
+
 def _git_changed_line_numbers(base: str, head: str, path: str) -> tuple[list[int], bool]:
     if not base:
         return [], False
@@ -422,6 +434,18 @@ def plan_for_changes(paths: list[str], base: str, head: str) -> dict[str, object
     effective_paths = list(paths)
     focused_plans: list[dict[str, object]] = []
 
+    # Win/loss rule work has its own runtime + phone-fit contract. Do not fan
+    # these text/state changes out into motion, palette, liquid, token-lifecycle
+    # and unrelated visual suites.
+    if WIN_LOSS_RULE_TEST in effective_paths and set(effective_paths).issubset(WIN_LOSS_RULE_PATHS):
+        return {
+            "groups": ["win_loss_rules"],
+            "tests": ["validate_win_loss_rules", "validate_gameplay_interactions"],
+            "visual": [],
+            "needs_godot": True,
+            "release_contract": False,
+        }
+
     if WATER_CAMPAIGN_PATH in effective_paths and _water_campaign_generator_only(base, head):
         effective_paths.remove(WATER_CAMPAIGN_PATH)
         focused_plans.append({
@@ -493,6 +517,14 @@ def self_test() -> None:
         assert plan["needs_godot"] is godot, (paths, plan)
     explicit = plan_for_paths(["tests/validate_viewport_fit.gd"])
     assert explicit["tests"] == ["validate_viewport_fit"], explicit
+    focused_rules = plan_for_changes([
+        "scripts/game/game.gd",
+        "scripts/game/water_sort_10000.gd",
+        WIN_LOSS_RULE_TEST,
+        "tools/select_fast_ci_tests.py",
+    ], "", "HEAD")
+    assert focused_rules["tests"] == ["validate_win_loss_rules", "validate_gameplay_interactions"], focused_rules
+    assert focused_rules["visual"] == [], focused_rules
     assert _premium_main_scopes({"build_settings", "_figma_setting_row"}) == {"settings"}
     assert _premium_main_scopes({"build_collection_upgrades"}) == {"collection"}
     assert _premium_main_scopes({"build_daily_games"}) == {"daily"}

@@ -312,11 +312,16 @@ func render() -> void:
 			campaign_label.text = ("EXTREME • LEVEL %d" % level_number) if play_mode == "extreme" else "LEVEL %d • WORLD %d" % [level_number, world]
 		var move_text := ""
 		if campaign_move_limit > 0:
-			move_text = "  •  MOVES %d/%d" % [placements, campaign_move_limit]
-		goal_label.text = "LINES %d/%d  •  TARGET %d%s%s" % [lines_cleared, target_lines, target_score, move_text, _objective_status_text()]
+			move_text = " • %d/%d MOVES" % [placements, campaign_move_limit]
+		goal_label.text = "WIN • %d/%d PTS • %d/%d LINES%s" % [
+			score, target_score, lines_cleared, target_lines, move_text
+		]
 		_render_special_cells()
+		var special_text := _objective_status_text()
 		if campaign_failed:
-			hint_label.text = "This attempt is blocked. Undo a mistake or restart the same deterministic puzzle."
+			hint_label.text = "ATTEMPT ENDED • RETRY OR GO BACK"
+		elif not special_text.is_empty():
+			hint_label.text = "ALSO CLEAR • " + special_text
 		elif play_mode == "extreme":
 			hint_label.text = "EXTREME  •  DIFFICULTY %d/100  •  NO MERCY" % score_value
 		elif milestone != "normal":
@@ -710,6 +715,8 @@ func complete_level() -> void:
 	if not daily_mode and play_mode in ["endless", "zen"]:
 		return
 	if not daily_mode:
+		if goal_label != null:
+			goal_label.text = "WIN • ALL GOALS COMPLETE"
 		AnalyticsManager.track("block_puzzle_campaign_profile", {
 			"level": level_number,
 			"world": int(_profile().get("world", 1)),
@@ -974,16 +981,16 @@ func _objective_status_text() -> String:
 		elif kind == "steel": steel_layers += layers
 		elif kind == "target": targets += layers
 	var parts := PackedStringArray()
-	if crates > 0: parts.append("CRATE %d" % crates)
-	if ice_layers > 0: parts.append("ICE %d" % ice_layers)
-	if locks > 0: parts.append("LOCK %d" % locks)
-	if steel_layers > 0: parts.append("STEEL %d" % steel_layers)
-	if targets > 0: parts.append("TARGET %d" % targets)
-	if not target_rows_pending.is_empty(): parts.append("ROW %d" % target_rows_pending.size())
-	if not target_cols_pending.is_empty(): parts.append("COL %d" % target_cols_pending.size())
+	if crates > 0: parts.append("%d CRATES" % crates)
+	if ice_layers > 0: parts.append("%d ICE" % ice_layers)
+	if locks > 0: parts.append("%d LOCKS" % locks)
+	if steel_layers > 0: parts.append("%d STEEL" % steel_layers)
+	if targets > 0: parts.append("%d TARGETS" % targets)
+	if not target_rows_pending.is_empty(): parts.append("%d ROWS" % target_rows_pending.size())
+	if not target_cols_pending.is_empty(): parts.append("%d COLS" % target_cols_pending.size())
 	var doubles_left := maxi(0, required_double_clears - double_clear_progress)
-	if doubles_left > 0: parts.append("DOUBLE %d" % doubles_left)
-	return "" if parts.is_empty() else "  •  " + " / ".join(parts)
+	if doubles_left > 0: parts.append("%d DOUBLES" % doubles_left)
+	return " • ".join(parts)
 
 func _to_int_array(raw: Variant) -> Array[int]:
 	var out: Array[int] = []
@@ -1068,13 +1075,39 @@ func _handle_no_legal_moves() -> void:
 		return
 	_fail_campaign("NO LEGAL MOVES")
 
+func _failure_presentation(reason: String) -> Dictionary:
+	if reason.begins_with("MOVE LIMIT"):
+		return {
+			"title": "OUT OF MOVES",
+			"subtitle": "The move limit ended before every win goal was completed.",
+			"badge": "MOVE LIMIT"
+		}
+	if reason.begins_with("NO LEGAL MOVES"):
+		return {
+			"title": "NO MOVES LEFT",
+			"subtitle": "None of the remaining tray pieces fits anywhere on the board.",
+			"badge": "NO PIECE FITS"
+		}
+	if reason.begins_with("ENDLESS RUN OVER"):
+		return {
+			"title": "RUN OVER",
+			"subtitle": "No remaining tray piece fits. Your score is final.",
+			"badge": "NO PIECE FITS"
+		}
+	return {
+		"title": "LEVEL FAILED",
+		"subtitle": reason.capitalize(),
+		"badge": "TRY AGAIN"
+	}
+
 func _fail_campaign(reason: String) -> void:
 	var existing_failure := find_child("BlockFailureResult", true, false)
 	if existing_failure != null:
 		return
+	var presentation := _failure_presentation(reason)
 	campaign_failed = true
 	selected_piece = -1
-	status_label.text = reason
+	status_label.text = String(presentation.get("title", "LEVEL FAILED"))
 	FeedbackManager.blocked()
 	_track_attempt_end("failed", false)
 	if not daily_mode and play_mode == "campaign":
@@ -1092,13 +1125,15 @@ func _fail_campaign(reason: String) -> void:
 	var result := PremiumResultOverlay.new()
 	result.name = "BlockFailureResult"
 	result.configure(
-		"BLOCK PUZZLE FAILED",
-		"No valid placement remains.",
-		"SCORE %d   •   %d LINES\n%d PLACEMENTS" % [score, lines_cleared, placements],
+		String(presentation.get("title", "LEVEL FAILED")),
+		String(presentation.get("subtitle", reason)),
+		"SCORE %d/%d   •   LINES %d/%d\n%d PLACEMENTS" % [
+			score, target_score, lines_cleared, target_lines, placements
+		],
 		0,
 		Color("8b7cf6"),
 		"RETRY",
-		"NO MOVES"
+		String(presentation.get("badge", "TRY AGAIN"))
 	)
 	result.configure_secondary("BACK HOME" if daily_mode else "BACK TO LEVELS", true)
 	add_child(result)
