@@ -62,7 +62,7 @@ GROUP_TESTS = {
         "validate_production_hardening_regressions",
     ],
     "progression": [
-        "validate_gameplay_interactions",
+        "validate_retention_pacing",
         "validate_progression_transitions",
     ],
     "daily": [
@@ -127,6 +127,16 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
     is_code = suffix in CODE_SUFFIXES or p.startswith(("scripts/", "scenes/", "addons/", "data/"))
     if not is_code:
         return False
+
+    progression_contracts = {
+        "scripts/core/water_sort_progression.gd": "validate_water_constructive_solvability",
+        "scripts/core/block_puzzle_progression.gd": "validate_block_progression_10000",
+        "scripts/core/rescue_rush_progression.gd": "validate_rescue_progression_10000",
+    }
+    if p in progression_contracts:
+        add(groups, "progression")
+        explicit_tests.add(progression_contracts[p])
+        return True
 
     if any(token in p for token in ("water_sort", "water_tube", "/water_", "water_")):
         add(groups, "water")
@@ -435,6 +445,9 @@ def self_test() -> None:
         (["scripts/ui/premium_main_casual.gd"], ["secondary_ui"], ["collection", "daily", "home", "levels", "settings"], True),
         (["scripts/systems/premium_visuals.gd"], ["ui"], ["collection", "daily", "games", "levels", "settings", "shop"], True),
         (["scripts/ui/monetization_hub_3d.gd"], ["monetization"], ["shop"], True),
+        (["scripts/core/water_sort_progression.gd"], ["progression"], [], True),
+        (["scripts/core/block_puzzle_progression.gd"], ["progression"], [], True),
+        (["scripts/core/rescue_rush_progression.gd"], ["progression"], [], True),
         (["scripts/core/feedback_manager.gd"], ["audio"], [], True),
         (["scripts/core/store_manager.gd"], ["monetization"], [], True),
         (["tests/validate_viewport_fit.gd"], [], [], True),
@@ -464,6 +477,13 @@ def self_test() -> None:
     assert GROUP_TESTS["games_ui"] == [
         "validate_selector_navigation",
     ]
+    progression_plan = plan_for_paths(["scripts/core/water_sort_progression.gd"])
+    assert progression_plan["tests"] == [
+        "validate_retention_pacing",
+        "validate_progression_transitions",
+        "validate_water_constructive_solvability",
+    ], progression_plan
+    assert progression_plan["visual"] == [], progression_plan
     assert "validate_compact_gameplay_stack" not in GROUP_TESTS["water"]
     assert "validate_water_constructive_solvability" in GROUP_TESTS["water"]
     assert "validate_water_palette_accessibility" in GROUP_TESTS["water"]
