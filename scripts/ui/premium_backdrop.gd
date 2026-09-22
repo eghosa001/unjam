@@ -8,6 +8,13 @@ var accent_color := Color("2dd4b6")
 var motif := 0
 var t := 0.0
 var _materials = MATERIALS_SCRIPT.new()
+var _redraw_accumulator := 0.0
+
+# Ambient movement is deliberately slow. Rebuilding the entire full-screen
+# backdrop at 60/90/120 Hz wastes Canvas draw work without improving perceived
+# motion, so decorative redraws are capped independently of gameplay FPS.
+const AMBIENT_REDRAW_FPS := 30.0
+const AMBIENT_REDRAW_INTERVAL := 1.0 / AMBIENT_REDRAW_FPS
 
 func configure(base: Color, accent: Color, motif_index: int) -> void:
 	base_color = base
@@ -25,6 +32,7 @@ func apply_motion_preference() -> void:
 	var reduced := MotionSystem.reduced()
 	if reduced:
 		t = 0.0
+	_redraw_accumulator = 0.0
 	_sync_process_state()
 
 func _sync_process_state() -> void:
@@ -37,6 +45,10 @@ func _process(delta: float) -> void:
 	if MotionSystem.reduced():
 		return
 	t += delta
+	_redraw_accumulator += delta
+	if _redraw_accumulator < AMBIENT_REDRAW_INTERVAL:
+		return
+	_redraw_accumulator = fmod(_redraw_accumulator, AMBIENT_REDRAW_INTERVAL)
 	queue_redraw()
 
 func decorative_particle_count_for(quality_scale: float, reduced_motion: bool) -> int:
