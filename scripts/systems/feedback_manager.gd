@@ -31,14 +31,14 @@ func _ready() -> void:
 	for i in range(SFX_POOL_SIZE):
 		var sfx := AudioStreamPlayer.new()
 		sfx.name = "CalmSfx%02d" % (i + 1)
-		sfx.volume_db = -2.5
+		sfx.volume_db = -3.0
 		add_child(sfx)
 		sfx_players.append(sfx)
 	player = sfx_players[0]
 
 	music_player = AudioStreamPlayer.new()
 	music_player.name = "CalmAmbientMusic"
-	music_player.volume_db = -10.0
+	music_player.volume_db = -11.0
 	add_child(music_player)
 	music_stream = _build_calm_ambient_loop()
 	music_player.stream = music_stream
@@ -257,7 +257,7 @@ func _build_calm_ambient_loop() -> AudioStreamWAV:
 		[261.63, 329.63, 392.00, 523.25],
 		[220.00, 261.63, 329.63, 392.00],
 		[233.08, 293.66, 349.23, 440.00],
-		[196.00, 293.66, 392.00, 440.00],
+		[261.63, 329.63, 392.00, 493.88],
 	]
 	var melody := [349.23, 440.00, 523.25, 440.00, 293.66, 349.23, 440.00, 523.25, 349.23, 392.00, 523.25, 587.33, 440.00, 392.00, 349.23, 293.66]
 	var section_length := MUSIC_DURATION / 4.0
