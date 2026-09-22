@@ -472,6 +472,10 @@ func _run_fast_visual_audit(main: Node, shell: Node) -> void:
 					await _capture("09c-game-rescue-motion-540x960")
 				else:
 					push_error("Fast visual audit never exposed RescueEscapeGhost")
+			main.call("start_level", 10000)
+			await _settle(7)
+			_hide_tutorial(shell)
+			await _capture("09f-game-rescue-level10000-540x960")
 		else:
 			push_error("Fast visual audit could not launch Rescue Rush")
 
@@ -486,6 +490,11 @@ func _run_fast_visual_audit(main: Node, shell: Node) -> void:
 				await _capture("10c-game-water-pouring-540x960")
 			else:
 				push_error("Fast visual audit never exposed PourStream")
+			await _wait_until_water_idle(water_game)
+			main.call("start_multi_level", "water_sort", 10000, false)
+			await _settle(12)
+			_hide_tutorial(shell)
+			await _capture("10f-game-water-level10000-540x960")
 		else:
 			push_error("Fast visual audit could not launch a hintable Water Sort board")
 
