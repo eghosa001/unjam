@@ -200,7 +200,7 @@ static func _mistake_limit(n: int, role: String) -> int:
 
 static func _level_role(n: int, local: int) -> String:
 	if n <= 10:
-		return ["tutorial", "tutorial", "confidence", "build", "challenge", "recovery", "build", "challenge", "stretch", "peak"][n - 1]
+		return ["tutorial", "tutorial", "confidence", "build", "challenge", "recovery", "build", "stretch", "recovery", "peak"][n - 1]
 	var intro_age := _mechanic_intro_age(n)
 	if intro_age == 0:
 		return "learn"
