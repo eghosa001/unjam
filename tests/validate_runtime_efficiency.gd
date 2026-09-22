@@ -82,6 +82,7 @@ func _hot_paths_stay_lightweight() -> bool:
 	var manager := FileAccess.get_file_as_string("res://scripts/core/multi_game_manager.gd")
 	var water := FileAccess.get_file_as_string("res://scripts/ui/water_tube_3d_motion.gd")
 	var visuals := FileAccess.get_file_as_string("res://scripts/systems/robust_premium_visuals.gd")
+	var retention := FileAccess.get_file_as_string("res://scripts/systems/retention_manager.gd")
 	var checkpoint_fn := manager.get_slice("func _checkpoint_payload_matches", 1).get_slice("func save_checkpoint", 0)
 	if ".duplicate(true)" in checkpoint_fn:
 		return _fail("Checkpoint equality regressed to recursive copying")
@@ -91,6 +92,12 @@ func _hot_paths_stay_lightweight() -> bool:
 	var quality_fn := visuals.get_slice("func _set_quality", 1).get_slice("func _ambient_count", 0)
 	if not "save_deferred" in quality_fn:
 		return _fail("Adaptive quality persistence is synchronous again")
+	var retention_complete := retention.get_slice("func record_level_complete", 1).get_slice("func record_level_fail", 0)
+	var retention_fail := retention.get_slice("func record_level_fail", 1).get_slice("func _increment_mission", 0)
+	if "SaveManager.save()" in retention_complete or not "_persist_gameplay_state_deferred()" in retention_complete:
+		return _fail("Level-complete retention regressed to a synchronous second save")
+	if "SaveManager.save()" in retention_fail or not "_persist_gameplay_state_deferred()" in retention_fail:
+		return _fail("Level-fail retention regressed to synchronous persistence")
 	return true
 
 func _dead_helpers_are_gone() -> bool:
