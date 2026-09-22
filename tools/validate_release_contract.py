@@ -58,9 +58,9 @@ def main() -> int:
         'unzip -t',
         'sha256sum',
         'validate_purchase_claim_protocol.py',
-        'backend/play-verifier',
-        'npm test',
-        'https://*/verify',
+        'supabase/functions/unjam-purchase',
+        'UNJAM_SUPABASE_URL',
+        'UNJAM_SUPABASE_PUBLISHABLE_KEY',
         'UNJAM_DEVELOPER_WEBSITE_URL',
         'check_live_monetization.py',
         "targetSdkVersion:'36'",
@@ -91,6 +91,8 @@ def main() -> int:
             errors.append(f'export preset does not preserve fresh-app/monetization contract: {token}')
 
     for token in (
+        'supabase_url=""',
+        'supabase_publishable_key=""',
         'res://addons/admob/plugin.cfg',
         'res://addons/GodotGooglePlayBilling/plugin.cfg',
         'ca-app-pub-7517898921176341~1892369383',
@@ -98,7 +100,7 @@ def main() -> int:
         if token not in project:
             errors.append(f'project.godot missing monetization contract token: {token}')
 
-    for token in ('/healthz', '/readiness', 'google_play', 'firestore'):
+    for token in ('unjam-purchase', 'google_play', 'postgres', 'UNJAM_SUPABASE_URL'):
         if token not in live_checker:
             errors.append(f'live monetization checker missing dependency contract token: {token}')
 
