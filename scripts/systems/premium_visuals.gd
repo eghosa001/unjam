@@ -6,6 +6,7 @@ var ambient_time := 0.0
 var accent := Color("2dd4b6")
 var _motion_reduced := false
 var _ambient_nodes: Array[Polygon2D] = []
+var _ambient_wrap_y := 1040.0
 
 func _ready() -> void:
 	layer = CanvasLayer.new()
@@ -16,6 +17,11 @@ func _ready() -> void:
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	layer.add_child(overlay)
 	get_tree().node_added.connect(_on_node_added)
+	var viewport := get_viewport()
+	if viewport != null:
+		_refresh_ambient_bounds()
+		if not viewport.size_changed.is_connected(_refresh_ambient_bounds):
+			viewport.size_changed.connect(_refresh_ambient_bounds)
 	if SaveManager.has_signal("premium_reward"):
 		SaveManager.premium_reward.connect(_on_premium_reward)
 	apply_motion_preference()
@@ -37,9 +43,13 @@ func apply_motion_preference() -> void:
 		if node != self and is_instance_valid(node) and node.has_method("apply_motion_preference"):
 			node.call("apply_motion_preference")
 
+func _refresh_ambient_bounds() -> void:
+	var viewport := get_viewport()
+	if viewport != null:
+		_ambient_wrap_y = maxf(960.0, viewport.get_visible_rect().size.y + 80.0)
+
 func _process(delta: float) -> void:
 	ambient_time += delta
-	var wrap_y := maxf(960.0, get_viewport().get_visible_rect().size.y + 80.0)
 	for i in range(_ambient_nodes.size() - 1, -1, -1):
 		var node := _ambient_nodes[i]
 		if not is_instance_valid(node):
@@ -49,13 +59,15 @@ func _process(delta: float) -> void:
 		node.position.y -= speed * delta
 		node.position.x += sin(ambient_time * 0.45 + float(i)) * 2.2 * delta
 		if node.position.y < -40.0:
-			node.position.y = wrap_y
+			node.position.y = _ambient_wrap_y
 
 func _on_node_added(node: Node) -> void:
 	if node is BaseButton:
 		call_deferred("premium_button", node)
 
 func set_accent(color: Color) -> void:
+	if accent.is_equal_approx(color) and not _ambient_nodes.is_empty():
+		return
 	accent = color
 	ambient_sparkles(14)
 
