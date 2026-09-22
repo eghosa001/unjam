@@ -22,7 +22,6 @@ jobs:
       EXPECTED_PACKAGE: com.eghosa.unjamgam
       VERSION_NAME: "1.0.1"
       VERSION_CODE: "2"
-      EXPECTED_UPLOAD_SHA1: ${{ secrets.UNJAM_ANDROID_UPLOAD_SHA1 }}
     steps:
       - uses: actions/checkout@v4
 
@@ -70,28 +69,10 @@ jobs:
           chmod +x tools/install_monetization_plugins.sh
           tools/install_monetization_plugins.sh
 
-      - name: Configure version 2 signing
-        env:
-          KEYSTORE_B64: ${{ secrets.UNJAM_ANDROID_KEYSTORE_BASE64 }}
-          KEY_ALIAS: ${{ secrets.UNJAM_ANDROID_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.UNJAM_ANDROID_KEY_PASSWORD }}
+      - name: Configure version 2 unsigned export
         shell: bash
         run: |
           set -euo pipefail
-          test -n "$KEYSTORE_B64"
-          test -n "$KEY_ALIAS"
-          test -n "$KEY_PASSWORD"
-          test -n "$EXPECTED_UPLOAD_SHA1"
-
-          KEYSTORE="$RUNNER_TEMP/unjam-v2-release.keystore"
-          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$KEYSTORE"
-          chmod 600 "$KEYSTORE"
-
-          keytool -list -keystore "$KEYSTORE" -storepass "$KEY_PASSWORD" -alias "$KEY_ALIAS" >/dev/null
-          ACTUAL_UPLOAD_SHA1="$(keytool -list -v -keystore "$KEYSTORE" -storepass "$KEY_PASSWORD" -alias "$KEY_ALIAS" | sed -n 's/^[[:space:]]*SHA1: //p' | head -n 1 | tr '[:lower:]' '[:upper:]' | tr -d '\r')"
-          EXPECTED_UPLOAD_SHA1="$(printf '%s' "$EXPECTED_UPLOAD_SHA1" | tr '[:lower:]' '[:upper:]')"
-          test "$ACTUAL_UPLOAD_SHA1" = "$EXPECTED_UPLOAD_SHA1"
-
           python3 - <<'PY'
           import re
           from pathlib import Path
@@ -99,16 +80,13 @@ jobs:
           s = p.read_text()
           s = re.sub(r'version/code=\d+', 'version/code=2', s)
           s = re.sub(r'version/name="[^"]*"', 'version/name="1.0.1"', s)
+          s = s.replace('package/signed=true', 'package/signed=false')
           p.write_text(s)
           PY
-
           grep -Fx 'package/unique_name="com.eghosa.unjamgam"' export_presets.cfg
           grep -Fx 'version/code=2' export_presets.cfg
           grep -Fx 'version/name="1.0.1"' export_presets.cfg
-
-          echo "GODOT_ANDROID_KEYSTORE_RELEASE_PATH=$KEYSTORE" >> "$GITHUB_ENV"
-          echo "GODOT_ANDROID_KEYSTORE_RELEASE_USER=$KEY_ALIAS" >> "$GITHUB_ENV"
-          echo "GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
+          grep -Fx 'package/signed=false' export_presets.cfg
 
       - name: Import and run targeted monetization tests
         shell: bash
@@ -151,35 +129,25 @@ jobs:
           grep -F "com.google.android.play.billingclient.version" build/android/v2-manifest.txt
           rm -f "$APK"
 
-      - name: Export version 2 AAB
+      - name: Export unsigned version 2 AAB
         shell: bash
         run: |
           set -o pipefail
-          godot --headless --verbose --path . --export-release Android build/android/UNJAM-1.0.1-v2.aab 2>&1 | tee build/android/v2-aab-export.log
+          godot --headless --verbose --path . --export-release Android build/android/UNJAM-1.0.1-v2-unsigned.aab 2>&1 | tee build/android/v2-aab-export.log
           if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" build/android/v2-aab-export.log; then exit 1; fi
-          test -s build/android/UNJAM-1.0.1-v2.aab
+          test -s build/android/UNJAM-1.0.1-v2-unsigned.aab
+          unzip -t build/android/UNJAM-1.0.1-v2-unsigned.aab > build/android/v2-aab-zip-test.log
+          sha256sum build/android/UNJAM-1.0.1-v2-unsigned.aab > build/android/UNJAM-1.0.1-v2-unsigned.aab.sha256
 
-      - name: Verify signed AAB
-        shell: bash
-        run: |
-          set -euo pipefail
-          AAB=build/android/UNJAM-1.0.1-v2.aab
-          jarsigner -verify -verbose -certs "$AAB" | tee build/android/v2-jarsigner.log
-          unzip -t "$AAB" | tee build/android/v2-aab-zip-test.log
-          BUNDLE_SHA1="$(keytool -printcert -jarfile "$AAB" | sed -n 's/^[[:space:]]*SHA1: //p' | head -n 1 | tr '[:lower:]' '[:upper:]' | tr -d '\r')"
-          EXPECTED_UPLOAD_SHA1="$(printf '%s' "$EXPECTED_UPLOAD_SHA1" | tr '[:lower:]' '[:upper:]')"
-          test "$BUNDLE_SHA1" = "$EXPECTED_UPLOAD_SHA1"
-          sha256sum "$AAB" | tee build/android/UNJAM-1.0.1-v2.aab.sha256
-
-      - name: Upload version 2 AAB
+      - name: Upload unsigned v2 AAB and manifest evidence
         uses: actions/upload-artifact@v4
         with:
-          name: UNJAM-1.0.1-versionCode-2-billing-bootstrap
+          name: UNJAM-1.0.1-versionCode-2-unsigned
           path: |
-            build/android/UNJAM-1.0.1-v2.aab
-            build/android/UNJAM-1.0.1-v2.aab.sha256
+            build/android/UNJAM-1.0.1-v2-unsigned.aab
+            build/android/UNJAM-1.0.1-v2-unsigned.aab.sha256
             build/android/v2-permissions.txt
             build/android/v2-badging.txt
-            build/android/v2-jarsigner.log
+            build/android/v2-manifest.txt
           if-no-files-found: error
           retention-days: 14
