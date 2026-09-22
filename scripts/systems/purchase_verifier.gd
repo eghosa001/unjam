@@ -108,7 +108,7 @@ func _new_request() -> HTTPRequest:
 
 func _function_endpoint() -> String:
 	var base := String(ProjectSettings.get_setting("monetization/supabase_url", "")).strip_edges().trim_suffix("/")
-	if not base.begins_with("https://") or not ".supabase.co" in base:
+	if not base.begins_with("https://"):
 		return ""
 	return "%s/functions/v1/%s" % [base, FUNCTION_NAME]
 
