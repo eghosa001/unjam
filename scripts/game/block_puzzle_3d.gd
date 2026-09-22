@@ -310,7 +310,8 @@ func place_selected(origin: Vector2i) -> void:
 		"cells": cells.duplicate(true),
 		"cell_colors": cell_colors.duplicate(true),
 		"pieces": pieces.duplicate(true),
-		"piece_colors": piece_colors.duplicate(true),
+		# Colors are value types; a shallow array copy is enough for undo isolation.
+		"piece_colors": piece_colors.duplicate(),
 		"selected": selected_piece,
 		"score": score,
 		"lines": lines_cleared,

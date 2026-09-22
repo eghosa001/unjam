@@ -603,8 +603,22 @@ func any_move_available() -> bool:
 	for shape in pieces:
 		if shape.is_empty():
 			continue
-		for y in range(GRID_SIZE):
-			for x in range(GRID_SIZE):
+		# Limit scans to origins where the shape can geometrically fit. This keeps
+		# loss checks cheap on crowded late-game boards without changing legality.
+		var max_x := 0
+		var max_y := 0
+		var valid_shape := true
+		for raw in shape:
+			var point := _as_point(raw)
+			if point.x < 0 or point.y < 0:
+				valid_shape = false
+				break
+			max_x = maxi(max_x, point.x)
+			max_y = maxi(max_y, point.y)
+		if not valid_shape or max_x >= GRID_SIZE or max_y >= GRID_SIZE:
+			continue
+		for y in range(GRID_SIZE - max_y):
+			for x in range(GRID_SIZE - max_x):
 				if can_place(shape, Vector2i(x, y)):
 					return true
 	return false
@@ -667,7 +681,11 @@ func restart_level() -> void:
 func _save_checkpoint() -> void:
 	if completed:
 		return
-	MultiGameManager.save_checkpoint(GAME_ID, {"level": level_number, "daily": daily_mode, "cells": cells.duplicate(true), "cell_colors": cell_colors.duplicate(true), "pieces": pieces.duplicate(true), "piece_colors": piece_colors.duplicate(true), "selected": selected_piece, "score": score, "lines": lines_cleared, "placements": placements, "batch": piece_batch, "rng_state": rng.state, "history": history.duplicate(true)})
+	# Current board/piece geometry must be detached because it keeps mutating.
+	# Undo entries themselves are immutable snapshots, so copying the history
+	# container shallowly avoids recursively cloning up to five full board states
+	# again on every placement.
+	MultiGameManager.save_checkpoint(GAME_ID, {"level": level_number, "daily": daily_mode, "cells": cells.duplicate(true), "cell_colors": cell_colors.duplicate(true), "pieces": pieces.duplicate(true), "piece_colors": piece_colors.duplicate(), "selected": selected_piece, "score": score, "lines": lines_cleared, "placements": placements, "batch": piece_batch, "rng_state": rng.state, "history": history.duplicate()})
 
 func _restore_checkpoint() -> void:
 	var checkpoint: Dictionary = MultiGameManager.checkpoint(GAME_ID)

@@ -58,7 +58,12 @@ func _process(delta: float) -> void:
 func _set_quality(value: float) -> void:
 	quality_scale = clampf(value, 0.45, 1.0)
 	SaveManager.data["visual_quality"] = quality_scale
-	SaveManager.save()
+	# Quality changes are triggered by sustained frame pressure; never add a
+	# synchronous disk write to the same recovery frame.
+	if SaveManager.has_method("save_deferred"):
+		SaveManager.call("save_deferred")
+	else:
+		SaveManager.save()
 	ambient_sparkles(_ambient_count())
 	low_fps_samples = 0
 	medium_fps_samples = 0
