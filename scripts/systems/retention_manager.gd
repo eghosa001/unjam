@@ -226,7 +226,7 @@ func record_level_complete(level_number: int, stars: int, _moves: int, _par_move
 	if game_id == "rescue_rush" and not rescue_id.is_empty():
 		variant = _maybe_unlock_variant(level_number, rescue_id, stars)
 	_update_profile_title()
-	SaveManager.save()
+	_persist_gameplay_state_deferred()
 	var payload: Dictionary = {
 		"type":"level_retention",
 		"game":game_id,
@@ -244,8 +244,17 @@ func record_level_complete(level_number: int, stars: int, _moves: int, _par_move
 
 func record_level_fail() -> void:
 	SaveManager.data.win_streak = 0
-	SaveManager.save()
+	_persist_gameplay_state_deferred()
 	retention_updated.emit()
+
+func _persist_gameplay_state_deferred() -> void:
+	# Core progression has already been committed when this follows a completed
+	# level. Coalesce the secondary retention write off the result-transition
+	# frame; RobustSaveManager flushes pending writes on app lifecycle exits.
+	if SaveManager.has_method("save_deferred"):
+		SaveManager.call("save_deferred")
+	else:
+		SaveManager.save()
 
 func _increment_mission(id: String, amount: int) -> void:
 	var progress: Dictionary = SaveManager.data.daily_mission_progress
