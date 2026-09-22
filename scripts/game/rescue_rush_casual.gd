@@ -366,7 +366,7 @@ func render_board() -> void:
 		if objective_type == "perfect_rescue":
 			moves_label.text = "MOVES %d/%d   •   LIVES %s%s" % [moves, action_budget, lives_text, chain_suffix]
 		else:
-			moves_label.text = "MOVES %d   •   3★≤%d   •   LIVES %s%s" % [moves, par_moves, lives_text, chain_text]
+			moves_label.text = "MOVES %d   •   3★≤%d   •   LIVES %s%s" % [moves, par_moves, lives_text, chain_suffix]
 		moves_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		moves_label.add_theme_font_size_override("font_size",13)
 	if rescue_label != null:
