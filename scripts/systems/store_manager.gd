@@ -210,7 +210,7 @@ func _on_verified(product_id: String, token: String, claim_id: String, result: D
 	# A new/same server claim is committed only after the local reward/entitlement
 	# has been persisted. Play consume/acknowledge happens after this commit.
 	if grant:
-		PurchaseVerifier.commit(product_id, token, claim_id, func(committed: bool, commit_reason: String): _on_claim_committed(product_id, token, non_consumable, granted_coins, committed, commit_reason))
+		PurchaseVerifier.commit(product_id, token, claim_id, func(committed: bool, commit_reason: String): _on_claim_committed(product_id, token, granted_coins, committed, commit_reason))
 		return
 
 	# Server-side duplicates never regrant currency. A committed claim can safely
@@ -241,7 +241,7 @@ func _on_verified(product_id: String, token: String, claim_id: String, result: D
 		purchase_pending.emit(product_id, "This purchase reward is already claimed or awaiting finalization")
 		_settle_restore(product_id, token, false)
 
-func _on_claim_committed(product_id: String, token: String, non_consumable: bool, granted_coins: int, committed: bool, reason: String) -> void:
+func _on_claim_committed(product_id: String, token: String, granted_coins: int, committed: bool, reason: String) -> void:
 	if committed:
 		_clear_purchase_busy(product_id)
 		purchase_succeeded.emit(product_id)
