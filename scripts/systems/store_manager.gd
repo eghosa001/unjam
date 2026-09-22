@@ -6,6 +6,7 @@ signal purchase_pending(product_id: String, reason: String)
 signal purchase_succeeded(product_id: String)
 signal purchase_failed(product_id: String, reason: String)
 signal restore_completed(count: int)
+signal entitlement_revoked(product_id: String, reason: String)
 
 const PRODUCT_REMOVE_ADS := "unjam_remove_ads"
 const PRODUCT_STARTER_PACK := "unjam_starter_pack"
@@ -44,6 +45,7 @@ func register_provider(value: Node) -> void:
 	# recovers PURCHASED/PENDING transactions whose callback arrived while the
 	# app or Play Billing service was unavailable.
 	reconcile_purchases()
+	reconcile_revocations()
 	catalog_changed.emit()
 
 func provider_ready() -> bool:
@@ -208,17 +210,27 @@ func _on_verified(product_id: String, token: String, claim_id: String, result: D
 	# A new/same server claim is committed only after the local reward/entitlement
 	# has been persisted. Play consume/acknowledge happens after this commit.
 	if grant:
-		PurchaseVerifier.commit(product_id, token, claim_id, func(committed: bool, commit_reason: String): _on_claim_committed(product_id, token, non_consumable, granted_coins, committed, commit_reason))
+		PurchaseVerifier.commit(product_id, token, claim_id, func(committed: bool, commit_reason: String): _on_claim_committed(product_id, token, granted_coins, committed, commit_reason))
 		return
 
 	# Server-side duplicates never regrant currency. A committed claim can safely
 	# be finalized again; an issued claim owned by another install is left alone.
 	if claim_state == "committed":
-		_finalize_verified_purchase(token, non_consumable)
-		_clear_purchase_busy(product_id)
-		purchase_succeeded.emit(product_id)
-		AnalyticsManager.track("purchase_restored_without_regrant", {"product": product_id})
-		_settle_restore(product_id, token, true)
+		# The ledger may have been committed by an older build before server-side
+		# acknowledgement/consumption was introduced. Re-run the idempotent backend
+		# commit so Google Play finalization is guaranteed before reporting success.
+		PurchaseVerifier.commit(product_id, token, claim_id, func(committed: bool, commit_reason: String):
+			if committed:
+				_clear_purchase_busy(product_id)
+				purchase_succeeded.emit(product_id)
+				AnalyticsManager.track("purchase_restored_without_regrant", {"product": product_id})
+				_settle_restore(product_id, token, true)
+			else:
+				_clear_purchase_busy(product_id)
+				purchase_pending.emit(product_id, "Purchase finalization will retry")
+				AnalyticsManager.track("purchase_commit_pending", {"product": product_id, "reason": commit_reason})
+				_settle_restore(product_id, token, false)
+		)
 		return
 
 	_clear_purchase_busy(product_id)
@@ -229,9 +241,8 @@ func _on_verified(product_id: String, token: String, claim_id: String, result: D
 		purchase_pending.emit(product_id, "This purchase reward is already claimed or awaiting finalization")
 		_settle_restore(product_id, token, false)
 
-func _on_claim_committed(product_id: String, token: String, non_consumable: bool, granted_coins: int, committed: bool, reason: String) -> void:
+func _on_claim_committed(product_id: String, token: String, granted_coins: int, committed: bool, reason: String) -> void:
 	if committed:
-		_finalize_verified_purchase(token, non_consumable)
 		_clear_purchase_busy(product_id)
 		purchase_succeeded.emit(product_id)
 		AnalyticsManager.track("purchase_succeeded", {"product": product_id, "coins": granted_coins})
@@ -245,10 +256,6 @@ func _on_claim_committed(product_id: String, token: String, non_consumable: bool
 	AnalyticsManager.track("purchase_commit_pending", {"product": product_id, "reason": reason})
 	_settle_restore(product_id, token, true)
 	call_deferred("reconcile_purchases")
-
-func _finalize_verified_purchase(token: String, non_consumable: bool) -> void:
-	if provider_ready() and provider.has_method("finalize_purchase") and not token.is_empty():
-		provider.call("finalize_purchase", token, not non_consumable)
 
 func restore_purchases() -> bool:
 	if _restore_batch_active:
@@ -323,10 +330,38 @@ func _finish_restore_batch() -> void:
 func reconcile_purchases() -> void:
 	_reconcile_owned_purchases()
 
+func reconcile_revocations() -> void:
+	PurchaseVerifier.sync_revocations(Callable(self, "_on_revocations_synced"))
+
 func _reconcile_owned_purchases() -> void:
-	if not provider_ready() or not provider.has_method("restore_purchases"):
+	if not provider_ready():
 		return
-	provider.call("restore_purchases", Callable(self, "_on_reconcile_result"))
+	if provider.has_method("query_owned_purchases"):
+		provider.call("query_owned_purchases", Callable(self, "_on_owned_purchase_snapshot"))
+		return
+	if provider.has_method("restore_purchases"):
+		provider.call("restore_purchases", Callable(self, "_on_reconcile_result"))
+
+func _on_owned_purchase_snapshot(result: Dictionary) -> void:
+	if not bool(result.get("ok", false)):
+		return
+	var purchases_value = result.get("purchases", [])
+	if not purchases_value is Array:
+		return
+	var purchases: Array = purchases_value
+	var owned_non_consumables: Array[String] = []
+	for purchase_value in purchases:
+		if not purchase_value is Dictionary:
+			continue
+		var purchase: Dictionary = purchase_value
+		if int(purchase.get("purchase_state", PURCHASE_STATE_PURCHASED)) != PURCHASE_STATE_PURCHASED:
+			continue
+		for product_value in _purchase_product_ids(purchase):
+			var product_id := String(product_value)
+			if PRODUCTS.has(product_id) and bool(PRODUCTS[product_id].get("non_consumable", false)) and product_id not in owned_non_consumables:
+				owned_non_consumables.append(product_id)
+	_on_reconcile_result(purchases)
+	_revoke_missing_non_consumables(owned_non_consumables)
 
 func _on_reconcile_result(purchases: Array) -> void:
 	for purchase_value in purchases:
@@ -345,6 +380,73 @@ func _on_reconcile_result(purchases: Array) -> void:
 			elif state == PURCHASE_STATE_PURCHASED:
 				pending_products.erase(product_id)
 				confirm_purchase(product_id, token)
+
+func _revoke_missing_non_consumables(owned: Array[String]) -> void:
+	var purchased_value = SaveManager.data.get("purchased_products", [])
+	var purchased: Array = purchased_value if purchased_value is Array else []
+	var changed := false
+	for product_id in [PRODUCT_REMOVE_ADS, PRODUCT_STARTER_PACK]:
+		if product_id in purchased and product_id not in owned:
+			purchased.erase(product_id)
+			changed = true
+			if product_id == PRODUCT_STARTER_PACK:
+				SaveManager.data.starter_pack_purchased = false
+			entitlement_revoked.emit(product_id, "Google Play no longer reports this purchase as owned")
+			AnalyticsManager.track("purchase_entitlement_revoked", {"product": product_id, "source": "ownership_snapshot"})
+	if not changed:
+		return
+	SaveManager.data.purchased_products = purchased
+	var keep_remove_ads := PRODUCT_REMOVE_ADS in owned or PRODUCT_STARTER_PACK in owned
+	AdManager.set_remove_ads_purchased(keep_remove_ads)
+	SaveManager.save()
+	catalog_changed.emit()
+
+func _on_revocations_synced(result: Dictionary) -> void:
+	if not bool(result.get("ok", false)):
+		return
+	var revocations_value = result.get("revocations", [])
+	if not revocations_value is Array:
+		return
+	for value in revocations_value:
+		if value is Dictionary:
+			_apply_verified_revocation(value)
+
+func _apply_verified_revocation(revocation: Dictionary) -> void:
+	var token_hash := String(revocation.get("token_hash", ""))
+	var product_id := String(revocation.get("product_id", ""))
+	if token_hash.length() != 64 or not PRODUCTS.has(product_id):
+		return
+	var processed_value = SaveManager.data.get("processed_purchase_revocations", [])
+	var processed: Array = processed_value if processed_value is Array else []
+	if token_hash in processed:
+		return
+	var info: Dictionary = PRODUCTS[product_id]
+	var purchased_value = SaveManager.data.get("purchased_products", [])
+	var purchased: Array = purchased_value if purchased_value is Array else []
+	if bool(info.get("non_consumable", false)):
+		purchased.erase(product_id)
+		SaveManager.data.purchased_products = purchased
+		if product_id == PRODUCT_STARTER_PACK:
+			SaveManager.data.starter_pack_purchased = false
+		var keep_remove_ads := PRODUCT_REMOVE_ADS in purchased or PRODUCT_STARTER_PACK in purchased
+		AdManager.set_remove_ads_purchased(keep_remove_ads)
+	var coin_amount := int(info.get("coins", 0)) * maxi(1, int(revocation.get("voided_quantity", 1)))
+	if coin_amount > 0 and EconomyManager.has_method("revoke_purchase_credit"):
+		EconomyManager.call("revoke_purchase_credit", coin_amount, {
+			"product": product_id,
+			"token_hash": token_hash,
+			"voided_reason": int(revocation.get("voided_reason", -1))
+		})
+	processed.append(token_hash)
+	SaveManager.data.processed_purchase_revocations = processed
+	SaveManager.save()
+	entitlement_revoked.emit(product_id, "Google Play reported the purchase as refunded or voided")
+	AnalyticsManager.track("purchase_revoked", {
+		"product": product_id,
+		"voided_reason": int(revocation.get("voided_reason", -1)),
+		"voided_source": int(revocation.get("voided_source", -1))
+	})
+	catalog_changed.emit()
 
 func _provider_purchase_pending(product_id: String, reason: String = "Purchase is pending in Google Play") -> void:
 	pending_products[product_id] = true

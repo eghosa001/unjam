@@ -106,9 +106,37 @@ def main() -> int:
         if token not in project:
             errors.append(f'project.godot missing monetization contract token: {token}')
 
-    for token in ('unjam-purchase', 'google_play', 'postgres', 'UNJAM_SUPABASE_URL'):
+    for token in (
+        'unjam-purchase',
+        'google_play',
+        'postgres',
+        'voided_purchases',
+        'server_finalization',
+        'voided_purchase_sync',
+        'install_bound_revocations',
+        'database_rate_limit',
+        'product_catalog',
+        'product_catalog_validation',
+        'UNJAM_SUPABASE_URL',
+    ):
         if token not in live_checker:
             errors.append(f'live monetization checker missing dependency contract token: {token}')
+
+    lifecycle_migration = root / 'supabase' / 'migrations' / '20260922_harden_monetization_lifecycle.sql'
+    if not lifecycle_migration.exists():
+        errors.append('hardened monetization lifecycle migration is missing')
+    else:
+        lifecycle_text = lifecycle_migration.read_text(encoding='utf-8')
+        for token in (
+            'play_purchase_installations',
+            'play_request_limits',
+            'play_voided_sync_state',
+            'mark_play_purchase_voided',
+            'get_play_install_revocations',
+            'consume_play_request_slot',
+        ):
+            if token not in lifecycle_text:
+                errors.append(f'hardened monetization lifecycle migration missing token: {token}')
 
     for token in (
         'viewBox="0 0 512 512"',

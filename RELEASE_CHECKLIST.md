@@ -32,7 +32,11 @@ Configured in code/CI:
 - [x] Google UMP consent and Privacy Options hooks are implemented and ads fail closed until consent is usable.
 - [x] Poing Godot AdMob 5.1.0 and its Godot 4.7.2 Android native package are pinned in the CI installer.
 - [x] GodotGooglePlayBilling 3.3.0 is pinned in the CI installer; this plugin line uses Google Play Billing Library 9.1.0.
-- [x] Play Billing connection, localized product-price query, purchase, restore, consume, and acknowledge paths are implemented.
+- [x] Play Billing connection, localized product-price query, purchase, pending, restore, and authoritative ownership reconciliation paths are implemented.
+- [x] Google Play acknowledgement/consumption is finalized server-side after the purchase claim is committed.
+- [x] Voided Purchases refund/chargeback synchronization is implemented with install-bound revocation delivery.
+- [x] Refunded consumable coin grants are clawed back without allowing a negative wallet; any remainder becomes purchase-refund debt settled by future grants.
+- [x] Purchase-verifier requests are protected by a database-backed rate limiter.
 - [x] Local purchase-token history stores SHA-256 fingerprints rather than reusable raw Play purchase tokens.
 - [x] Resetting gameplay progress preserves Play-owned non-consumable entitlements and local duplicate-grant history.
 - [x] `app-ads.txt` at repository root and `docs/app-ads.txt` contain the AdMob publisher record.
@@ -43,9 +47,9 @@ Still account-side / external:
 - [ ] Publish `app-ads.txt` at the **hostname root** of the developer website used in the Play listing (for example `https://example.com/app-ads.txt`). A GitHub Pages project URL such as `https://eghosa001.github.io/unjam/` is not sufficient by itself because AdMob checks `https://eghosa001.github.io/app-ads.txt`, not the project subpath.
 - [ ] Confirm the configured privacy policy URL is publicly reachable without login.
 - [x] Purchase-verification backend is implemented for Google Play Developer API verification and production purchases fail closed until the live HTTPS endpoint is injected at release time.
-- [x] Supabase Edge Function exposes a readiness action that verifies Postgres access and Google Play Purchases API authorization; production release fails if either dependency is unavailable.
+- [x] Supabase Edge Function exposes a readiness action that verifies Postgres, Google Play purchase verification, Voided Purchases authorization, and hardened monetization capabilities; production release fails if any dependency is unavailable.
 - [x] Purchase verification is idempotent by SHA-256 purchase-token fingerprint in Supabase Postgres. `unjam_starter_pack` and other non-consumable entitlements cannot be granted twice from duplicate callbacks when the backend is live.
-- [x] Apply `supabase/migrations/20260922_create_purchase_ledger.sql` to the selected Supabase project.
+- [x] Apply `supabase/migrations/20260922_create_purchase_ledger.sql` and `supabase/migrations/20260922_harden_monetization_lifecycle.sql` to the selected Supabase project.
 - [x] Deploy `supabase/functions/unjam-purchase` to that project.
 - [x] Store `GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL` and `GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY` only as Supabase Edge Function secrets. Live readiness reaches the Google Play API, confirming the credentials are present and OAuth succeeds; Cloud Run and Firestore are not used.
 - [ ] In Play Console, grant that service-account identity access to `com.eghosa.unjamgam` with **View financial data** (or the account-level equivalent **View financial data, orders and cancellation survey responses**). The live Purchases API probe currently returns HTTP 403 until this permission is granted.

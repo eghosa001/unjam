@@ -20,7 +20,8 @@ func run() -> void:
 	expect_true("product_ids" in source, "Billing v3.3 purchase payload key is not handled")
 	expect_true("purchase_state" in source and "PURCHASE_STATE_PURCHASED" in source, "Purchase completion state is not validated")
 	expect_true("query_purchases" in source, "Restore-purchases path is missing")
-	expect_true("consume_purchase" in source and "acknowledge_purchase" in source, "Purchase finalization is incomplete")
+	expect_true("query_owned_purchases" in source, "Authoritative owned-purchase snapshot path is missing")
+	expect_true("consume_purchase" not in source and "acknowledge_purchase" not in source, "Client billing bridge must not finalize verified purchases")
 
 	# Google Play can return a pending purchase and later emit PURCHASED. The
 	# purchase-update signal must therefore stay connected for the BillingClient
@@ -47,6 +48,9 @@ func run() -> void:
 		expect_true("_provider_purchase_pending" in store_source, "StoreManager does not release its purchase lock on pending state")
 		expect_true("PURCHASE_TIMEOUT_SECONDS" in store_source and "_watch_purchase_timeout" in store_source, "Store purchase launch has no timeout recovery")
 		expect_true("_on_reconcile_result" in store_source, "Store does not reconcile Play-owned purchases after reconnect/startup")
+		expect_true("_revoke_missing_non_consumables" in store_source, "Store does not revoke stale non-consumable ownership")
+		expect_true("reconcile_revocations" in store_source and "_apply_verified_revocation" in store_source, "Store does not apply backend-verified refunds/voids")
+		expect_true('provider.call("finalize_purchase"' not in store_source, "Play finalization must not be performed by the client StoreManager")
 
 	var verifier_path := "res://scripts/systems/purchase_verifier.gd"
 	expect_true(ResourceLoader.exists(verifier_path), "PurchaseVerifier missing")
@@ -58,6 +62,18 @@ func run() -> void:
 		expect_true('parsed.get("product_id", "")' in verifier_source, "Purchase verification does not require an explicit matching product id")
 		expect_true('"apikey: %s"' in verifier_source, "Supabase publishable key header is not sent")
 		expect_true('"action": "verify"' in verifier_source and '"action": "commit"' in verifier_source, "Supabase purchase action routing is incomplete")
+		expect_true('"action": "sync_revocations"' in verifier_source, "Purchase verifier does not synchronize refunded/voided purchases")
+		expect_true('"install_id"' in verifier_source and "func install_id()" in verifier_source, "Purchase verifier does not bind claims to an installation")
+
+	var backend_path := "res://supabase/functions/unjam-purchase/index.ts"
+	expect_true(FileAccess.file_exists(backend_path), "Supabase purchase backend source missing")
+	if FileAccess.file_exists(backend_path):
+		var backend_source := FileAccess.get_file_as_string(backend_path)
+		expect_true("purchases/voidedpurchases" in backend_source, "Voided Purchases API integration is missing")
+		expect_true('suffix = product.nonConsumable ? "acknowledge" : "consume"' in backend_source, "Server-side Play acknowledge/consume finalization is missing")
+		expect_true("consume_play_request_slot" in backend_source, "Purchase endpoint database rate limiting is missing")
+		expect_true("install_bound_revocations" in backend_source, "Install-bound refund readiness capability is missing")
+		expect_true("oneTimeProducts?pageSize=1000" in backend_source and "product_catalog_validation" in backend_source, "Google Play product-catalog readiness validation is missing")
 
 	expect_true(FileAccess.file_exists("res://tools/install_monetization_plugins.sh"), "Monetization plugin installer missing")
 	if FileAccess.file_exists("res://tools/install_monetization_plugins.sh"):

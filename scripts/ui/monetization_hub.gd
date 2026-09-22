@@ -107,6 +107,7 @@ func _build_ui() -> void:
 	utility_row.add_theme_constant_override("separation", 16)
 	root.add_child(utility_row)
 	var restore := Button.new()
+	restore.name = "ShopRestorePurchases"
 	restore.text = "RESTORE PURCHASES"
 	restore.custom_minimum_size = Vector2(300, 68)
 	restore.pressed.connect(_restore_purchases)
@@ -255,7 +256,7 @@ func _on_node_added(node: Node) -> void:
 	if not node.has_method("monetization_game_id"):
 		return
 	var game_id := String(node.call("monetization_game_id"))
-	if game_id not in ["water_sort", "block_puzzle"]:
+	if game_id not in ["water_sort", "block_puzzle", "rescue_rush"]:
 		return
 	var callback := Callable(self, "_on_puzzle_finished").bind(game_id)
 	if not node.is_connected("finished", callback):
