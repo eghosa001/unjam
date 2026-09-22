@@ -276,11 +276,24 @@ func _build_glass_3d() -> void:
 	stage_3d.add_child(contact_shadow)
 
 func _build_liquid_materials_3d() -> void:
-	# Cache palette materials once. Pour progress changes mesh height only; it no
-	# longer allocates new StandardMaterial3D resources every animation frame.
+	# Cache one saturated material per palette entry. Liquid uses a softer satin
+	# response than glass so highlights cannot wash neighbouring hues together.
 	liquid_materials_3d.clear()
 	for color in PALETTE:
-		liquid_materials_3d.append(_material_3d(color.lightened(0.025), 0.0, 0.10))
+		liquid_materials_3d.append(_liquid_material_3d(color))
+
+func _liquid_material_3d(color: Color) -> StandardMaterial3D:
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	material.metallic = 0.0
+	material.roughness = 0.22
+	material.clearcoat_enabled = true
+	material.clearcoat = 0.24
+	material.clearcoat_roughness = 0.18
+	material.emission_enabled = true
+	material.emission = color.darkened(0.48)
+	material.emission_energy_multiplier = 0.075
+	return material
 
 func _build_liquid_segments_3d() -> void:
 	liquid_root_3d = Node3D.new()

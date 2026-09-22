@@ -317,18 +317,16 @@ func _validate_selector_header_and_navigation() -> bool:
 	main.call("_open_games_surface")
 	await _frames(8)
 	var title := main.find_child("SelectorTitle3D", true, false) as Control
-	var subtitle := main.find_child("SelectorSubtitle", true, false) as Control
 	var settings := main.find_child("SelectorSettingsButton", true, false) as Button
 	var back := main.find_child("SelectorBackButton", true, false) as Button
-	if title == null or subtitle == null or settings == null or back == null:
+	if title == null or settings == null or back == null:
 		main.queue_free(); await process_frame
 		return _fail("Choose-a-Game header/navigation diagnostics are incomplete")
 	var title_rect := title.get_global_rect()
-	var subtitle_rect := subtitle.get_global_rect()
 	var settings_rect := settings.get_global_rect()
-	if title_rect.intersects(settings_rect) or subtitle_rect.intersects(settings_rect):
+	if title_rect.intersects(settings_rect):
 		main.queue_free(); await process_frame
-		return _fail("Choose-a-Game title/subtitle intrudes into Settings: title=%s subtitle=%s settings=%s" % [str(title_rect), str(subtitle_rect), str(settings_rect)])
+		return _fail("Choose-a-Game title intrudes into Settings: title=%s settings=%s" % [str(title_rect), str(settings_rect)])
 	if back.tooltip_text.is_empty() or settings.tooltip_text.is_empty():
 		main.queue_free(); await process_frame
 		return _fail("Choose-a-Game icon navigation lacks descriptive tooltips")
@@ -422,8 +420,10 @@ func _validate_retention_failure_wiring() -> bool:
 	if not rescue.contains("if not daily_mode:\n\t\tRetentionManager.record_level_fail()"):
 		return _fail("Rescue Rush campaign failure does not reset the win streak")
 	var water := _source("res://scripts/game/water_sort_10000.gd")
-	if not water.contains("if not daily_mode:\n\t\tRetentionManager.record_level_fail()"):
-		return _fail("Water Sort campaign failure does not reset the win streak")
+	if water.contains("RetentionManager.record_level_fail()"):
+		return _fail("Water Sort STUCK recovery incorrectly resets the retention streak")
+	if not water.contains("STUCK • NO LEGAL POUR") or not water.contains("water_sort_attempt_stuck"):
+		return _fail("Water Sort dead-end recovery contract is missing")
 	var block := _source("res://scripts/game/block_puzzle_10000.gd")
 	if not block.contains("if not daily_mode and play_mode == \"campaign\":\n\t\tRetentionManager.record_level_fail()"):
 		return _fail("Block Puzzle campaign failure does not reset the win streak")

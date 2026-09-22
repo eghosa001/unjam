@@ -49,13 +49,16 @@ func _run() -> void:
 
 	var arrow_source := _read("res://scripts/ui/rescue_piece_3d_button.gd")
 	for token in [
-		"var readable_scale := scale_value * 1.18",
-		"Color(\"#073b78\"), 5.0",
-		"Color(\"#dff8ff\"), 2.0",
-		"Directional spine reinforces orientation",
+		"func _draw_motion_trail(_center: Vector2, _pulse: float) -> void:",
+		"var bright_tile := accent.get_luminance() >= 0.46",
+		"draw_colored_polygon(points, fill)",
+		"draw_polyline(closed, keyline",
 	]:
 		if not arrow_source.contains(token):
-			return _fail("Rescue arrow clarity contract is missing: %s" % token)
+			return _fail("Rescue flat-arrow clarity contract is missing: %s" % token)
+	for forbidden in ["cast.append(", "side.append(", "draw_polygon(side", "Directional spine reinforces orientation"]:
+		if arrow_source.contains(forbidden):
+			return _fail("Rescue arrow regained 3D/extruded decoration: %s" % forbidden)
 
 	game.queue_free()
 	await process_frame

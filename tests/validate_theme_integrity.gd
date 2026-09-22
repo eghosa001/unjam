@@ -77,10 +77,10 @@ func _run() -> void:
 	var light_bg := main.find_child("FigmaHomeViewportBackground", true, false) as ColorRect
 	if light_bg == null:
 		return _fail("Light Home background is missing")
-	if light_bg.color.get_luminance() < 0.20 or light_bg.color.get_luminance() > 0.50:
-		return _fail("Light theme is outside the premium primary-blue luminance range")
-	if light_bg.color.b < light_bg.color.r + 0.12:
-		return _fail("Light theme drifted away from the approved primary-blue family")
+	if light_bg.color.get_luminance() < 0.20 or light_bg.color.get_luminance() > 0.60:
+		return _fail("Light theme is outside the premium champagne-gold luminance range")
+	if light_bg.color.r < light_bg.color.b + 0.22 or light_bg.color.g < light_bg.color.b + 0.10:
+		return _fail("Light theme drifted away from the approved champagne-gold family")
 	if main.find_child("HomeLightGlassHorizon", true, false) == null:
 		return _fail("Home light mode lost its layered glass horizon")
 	var home_key := main.find_child("HomeKeyLight", true, false) as PanelContainer
@@ -98,7 +98,7 @@ func _run() -> void:
 		return _fail("Choose Game light mode lost its layered glass horizon")
 	var selector_title := main.find_child("SelectorTitle3D", true, false) as Label
 	if selector_title == null or selector_title.get_theme_color("font_color").get_luminance() < 0.70:
-		return _fail("Choose Game light-mode title lost readable light-on-blue contrast")
+		return _fail("Choose Game light-mode title lost readable contrast on the gold shell")
 	var selector_game_title := main.find_child("SelectorGameTitle_rescue_rush", true, false) as Label
 	if selector_game_title == null or selector_game_title.get_theme_color("font_color").get_luminance() < 0.70:
 		return _fail("Choose Game card title lost readable contrast")
@@ -117,9 +117,9 @@ func _run() -> void:
 		"res://scripts/ui/premium_live_hub_3d.gd",
 	]:
 		var source := _read(path)
-		for token in ["#4f76b8", "#3f67aa", "#315596"]:
+		for token in ["#e2c98f", "#b89050", "#805b31"]:
 			if not source.contains(token):
-				return _fail("Premium light scene palette contract missing in %s: %s" % [path, token])
+				return _fail("Premium champagne-gold scene palette contract missing in %s: %s" % [path, token])
 
 	var feedback := root.get_node_or_null("FeedbackManager")
 	if feedback != null and feedback.has_method("shutdown_audio"):

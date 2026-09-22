@@ -4,9 +4,9 @@ const FLAT_GAME_LOGO_SCRIPT = preload("res://scripts/ui/unjam_flat_game_logo.gd"
 
 const RefCanvas = preload("res://scripts/ui/figma_reference_canvas.gd")
 
-const BG_TOP := Color("#4f76b8")
-const BG_MID := Color("#8ea8d1")
-const BG_BOTTOM := Color("#315596")
+const BG_TOP := Color("#e6d4aa")
+const BG_MID := Color("#c3a064")
+const BG_BOTTOM := Color("#9a743f")
 const NAVY := Color("#1f2933")
 const INK := Color("#26323d")
 const MUTED := Color("#52606d")
@@ -15,18 +15,18 @@ const CYAN := Color(0.14, 0.68, 1.0)
 const ORANGE := Color(1.0, 0.55, 0.12)
 const GOLD := Color(1.0, 0.84, 0.24)
 const OFF_WHITE := Color(1.0, 0.995, 0.97)
-const DARK_TOP := Color("#24385f")
-const DARK_MID := Color("#1b2c4d")
-const DARK_BOTTOM := Color("#13213a")
-const DARK_CARD := Color("#1c2d4b")
+const DARK_TOP := Color("#4b3a27")
+const DARK_MID := Color("#382b1d")
+const DARK_BOTTOM := Color("#2a2118")
+const DARK_CARD := Color("#33281c")
 const DARK_INK := Color("#f5f7fa")
 const DARK_MUTED := Color("#a7b1bc")
-const SCENE_TOP := Color("#4f76b8")
-const SCENE_MID := Color("#3f67aa")
-const SCENE_BOTTOM := Color("#315596")
-const DARK_SCENE_TOP := Color("#24385f")
-const DARK_SCENE_MID := Color("#24385f")
-const DARK_SCENE_BOTTOM := Color("#13213a")
+const SCENE_TOP := Color("#e2c98f")
+const SCENE_MID := Color("#b89050")
+const SCENE_BOTTOM := Color("#805b31")
+const DARK_SCENE_TOP := Color("#4b3a27")
+const DARK_SCENE_MID := Color("#382b1d")
+const DARK_SCENE_BOTTOM := Color("#2a2118")
 
 var figma_canvas: FigmaReferenceCanvas
 
@@ -99,13 +99,13 @@ func _add_frame_background(canvas: Control) -> void:
 	var top := DARK_SCENE_TOP if _home_dark() else SCENE_TOP
 	var middle := DARK_SCENE_MID if _home_dark() else SCENE_MID
 	var bottom := DARK_SCENE_BOTTOM if _home_dark() else SCENE_BOTTOM
-	var border := Color("#334c78") if _home_dark() else Color("#5ba6e8")
+	var border := Color("#80613b") if _home_dark() else Color("#d2b06a")
 	bg.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(top, middle, bottom, 34, border, 1, 0.48))
 	RefCanvas.set_rect(bg, 0, 0, 390, 844)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(bg)
 	RefCanvas.add_world_depth(canvas, Color("#59636f") if _home_dark() else Color("#9aa4ae"), _home_dark(), 0.0, "HomeWorldDepth")
-	RefCanvas.add_scene_backdrop_layers(canvas, Color("#365787") if _home_dark() else Color("#6f8fbd"), _home_dark(), "Home")
+	RefCanvas.add_scene_backdrop_layers(canvas, Color("#80613b") if _home_dark() else Color("#c49b55"), _home_dark(), "Home")
 	var home_key_light := canvas.get_node_or_null("HomeKeyLight")
 	var home_accent_glow := canvas.get_node_or_null("HomeAccentGlow")
 	if home_key_light != null:
@@ -119,7 +119,7 @@ func _add_frame_background(canvas: Control) -> void:
 	halo_a.name = "HomeBackdropHaloTop"
 	halo_a.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	halo_a.modulate.a = 0.22 if not _home_dark() else 0.18
-	halo_a.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color("#6f8fc4") if not _home_dark() else Color("#365787"), 110))
+	halo_a.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color("#f0d89e") if not _home_dark() else Color("#6b4f2d"), 110))
 	RefCanvas.set_rect(halo_a, 252, -72, 208, 208)
 	canvas.add_child(halo_a)
 	canvas.move_child(halo_a, 1)
@@ -128,7 +128,7 @@ func _add_frame_background(canvas: Control) -> void:
 	halo_b.name = "HomeBackdropHaloBottom"
 	halo_b.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	halo_b.modulate.a = 0.18 if not _home_dark() else 0.15
-	halo_b.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color("#456ca9") if not _home_dark() else Color("#2b446c"), 105))
+	halo_b.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color("#b88a45") if not _home_dark() else Color("#3d2b1c"), 105))
 	RefCanvas.set_rect(halo_b, -72, 610, 194, 194)
 	canvas.add_child(halo_b)
 	canvas.move_child(halo_b, 1)
@@ -136,7 +136,7 @@ func _add_frame_background(canvas: Control) -> void:
 	var ribbon := Polygon2D.new()
 	ribbon.name = "HomeBackdropRibbon"
 	ribbon.polygon = PackedVector2Array([Vector2(-30,310),Vector2(420,210),Vector2(420,280),Vector2(-30,380)])
-	ribbon.color = Color("#274b86", 0.075 if not _home_dark() else 0.085)
+	ribbon.color = Color("#8a642e", 0.080 if not _home_dark() else 0.090)
 	canvas.add_child(ribbon)
 	canvas.move_child(ribbon, 1)
 
