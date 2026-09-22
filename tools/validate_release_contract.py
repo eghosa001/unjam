@@ -113,7 +113,7 @@ def main() -> int:
         'url(#bg)',
         '<!-- main U silhouette/shadow -->',
         'id="LauncherSafeForeground"',
-        'translate(245 269) scale(.76)',
+        'stroke-width="94"',
     ):
         if token not in icon:
             errors.append(f'launcher icon master missing premium asset token: {token}')
@@ -125,13 +125,15 @@ def main() -> int:
 
     for token in (
         'id="AdaptiveSafeZone"',
-        'translate(216 216) scale(.84) translate(-216 -216)',
-        'translate(53 80) scale(.80)',
+        'stroke-width="74"',
+        'Large, simple foreground: no nested scaling',
     ):
         if token not in adaptive_fg:
             errors.append(f'adaptive foreground safe-zone contract missing token: {token}')
     if '>UNJAM<' in adaptive_fg or '<text' in adaptive_fg:
         errors.append('adaptive foreground must remain U-only with no embedded wordmark')
+    if 'scale(.84)' in adaptive_fg or 'scale(.80)' in adaptive_fg:
+        errors.append('adaptive foreground must not reintroduce nested downscaling that makes the launcher mark unreadable')
 
     for token in (
         'config/icon="res://assets/icon.svg"',
