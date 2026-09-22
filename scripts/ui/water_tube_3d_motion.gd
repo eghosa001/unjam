@@ -473,11 +473,11 @@ func _draw_liquid_identity_markers() -> void:
 	# liquid still reads as premium 3D rather than a labelled UI list.
 	if size.x < 28.0 or size.y < 70.0:
 		return
-	var marker_x := size.x * 0.72
+	var marker_x := size.x * 0.70
 	var liquid_top := size.y * 0.255
 	var liquid_bottom := size.y * 0.765
 	var slot_span := (liquid_bottom - liquid_top) / float(CAPACITY)
-	var mark_size := clampf(size.x * 0.026, 1.4, 2.8)
+	var mark_size := clampf(size.x * 0.040, 2.2, 4.0)
 	var gap := mark_size * 2.7
 	for slot in range(CAPACITY):
 		if _slot_fill(slot) <= 0.18:
@@ -492,8 +492,8 @@ func _draw_liquid_identity_markers() -> void:
 			_draw_identity_marker(p, shape, mark_size)
 
 func _draw_identity_marker(center: Vector2, shape: int, radius: float) -> void:
-	var shadow := Color(0.01, 0.05, 0.10, 0.52)
-	var ink := Color(1.0, 1.0, 1.0, 0.80)
+	var shadow := Color(0.01, 0.05, 0.10, 0.72)
+	var ink := Color(1.0, 1.0, 1.0, 0.94)
 	match shape:
 		0:
 			draw_circle(center + Vector2(0.8, 1.0), radius + 0.8, shadow)
