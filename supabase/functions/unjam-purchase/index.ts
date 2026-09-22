@@ -208,7 +208,7 @@ function validatePurchaseInput(input: any): string {
   ) {
     return "Claim id is invalid";
   }
-  if (!validInstallId(input.install_id)) return "Install id is invalid";
+  if (input.install_id != null && !validInstallId(input.install_id)) return "Install id is invalid";
   return "";
 }
 
@@ -239,7 +239,9 @@ async function rateAllowed(
   input: any,
 ): Promise<boolean> {
   const action = String(input?.action ?? "unknown");
-  const install = validInstallId(input?.install_id) ? input.install_id : "no-install";
+  const install = validInstallId(input?.install_id)
+    ? input.install_id
+    : (typeof input?.claim_id === "string" ? input.claim_id : "no-install");
   const keyHash = await hashText(`${action}|${requestSource(req)}|${install}`);
   const limit = action === "sync_revocations" ? 20 : 60;
   const { data, error } = await admin.rpc("consume_play_request_slot", {
@@ -455,7 +457,7 @@ Deno.serve(async (req) => {
 
     const sync = await syncVoidedPurchases(admin);
     const { data: revocations, error } = await admin.rpc("get_play_install_revocations", {
-      p_install_id: input.install_id,
+      p_install_id: validInstallId(input.install_id) ? input.install_id : input.claim_id,
     });
     if (error) {
       return response({ ok: false, revocations: [], reason: "Revocation ledger unavailable" }, 503);
