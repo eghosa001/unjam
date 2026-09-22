@@ -96,9 +96,12 @@ func _run() -> void:
 	await _frames(5)
 	if main.find_child("SelectorLightGlassHorizon", true, false) == null:
 		return _fail("Choose Game light mode lost its layered glass horizon")
-	var selector_subtitle := main.find_child("SelectorSubtitle", true, false) as Label
-	if selector_subtitle == null or selector_subtitle.get_theme_color("font_color").get_luminance() < 0.70:
-		return _fail("Choose Game light-mode subtitle lost readable light-on-blue contrast")
+	var selector_title := main.find_child("SelectorTitle3D", true, false) as Label
+	if selector_title == null or selector_title.get_theme_color("font_color").get_luminance() < 0.70:
+		return _fail("Choose Game light-mode title lost readable light-on-blue contrast")
+	var selector_game_title := main.find_child("SelectorGameTitle_rescue_rush", true, false) as Label
+	if selector_game_title == null or selector_game_title.get_theme_color("font_color").get_luminance() < 0.70:
+		return _fail("Choose Game card title lost readable contrast")
 
 	main.call("build_settings")
 	await _frames(5)

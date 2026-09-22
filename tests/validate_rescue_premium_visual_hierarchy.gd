@@ -5,6 +5,17 @@ func _initialize() -> void:
 
 func _run() -> void:
 	root.size = Vector2i(540,960)
+	for script_path in [
+		"res://scripts/game/game.gd",
+		"res://scripts/game/rescue_rush_polished.gd",
+		"res://scripts/game/rescue_rush_premium.gd",
+		"res://scripts/game/rescue_rush_motion_final.gd",
+		"res://scripts/game/rescue_rush_casual.gd",
+		"res://scripts/game/rescue_rush_assisted.gd",
+	]:
+		var script_resource := load(script_path)
+		if script_resource == null:
+			return _fail("Rescue hierarchy script failed to load: %s" % script_path)
 	var packed := load("res://scenes/Game.tscn") as PackedScene
 	if packed == null:
 		return _fail("Rescue Rush scene could not be loaded")

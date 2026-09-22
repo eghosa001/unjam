@@ -453,5 +453,7 @@ func build_settings() -> void:
 func _toggle_setting(key: String) -> void:
 	SaveManager.data[key] = not bool(SaveManager.data.get(key, true))
 	SaveManager.save()
+	if key == "fast_animation":
+		MotionSystem.refresh_preferences()
 	FeedbackManager.tap()
 	build_settings()

@@ -152,21 +152,20 @@ func _add_hero(canvas: Control) -> void:
 	hero.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(hero)
 
-	_add_text(canvas, "CURRENT JOURNEY", Rect2(41, 142, 150, 15), 12, ORANGE, true)
 	var level := _home_current_level(selected_game)
 	var world := MultiGameManager.world_for_game_level(selected_game, level)
 	var game_title_size := 23 if selected_game == "block_puzzle" else 27
-	var game_title := _add_text(canvas, _short_game_name(selected_game), Rect2(41, 167, 180, 34), game_title_size, NAVY, true)
+	var game_title := _add_text(canvas, _short_game_name(selected_game), Rect2(41, 151, 180, 34), game_title_size, NAVY, true)
 	game_title.name = "HomeHeroGameTitle"
 	RefCanvas.style_display_title(game_title, Unjam3DTheme.game_accent(selected_game).lightened(0.18), Color("#071d55"), 2)
-	var game_meta := _add_text(canvas, "LEVEL %d • WORLD %d" % [level, world], Rect2(41, 204, 170, 17), 14, BLUE, true)
+	var game_meta := _add_text(canvas, "LEVEL %d • WORLD %d" % [level, world], Rect2(41, 190, 170, 17), 14, BLUE, true)
 	game_meta.name = "HomeHeroGameMeta"
 
 	var continue_button := _add_action(
 		canvas,
 		Rect2(41, 285, 178, 48),
 		BLUE,
-		"CONTINUE • LEVEL %d" % level,
+		"CONTINUE",
 		13,
 		OFF_WHITE,
 		Callable(self, "_continue_selected_game"),
@@ -301,12 +300,12 @@ func _add_world_progress(canvas: Control) -> void:
 	RefCanvas.set_rect(mark, 47, 603, 118, 108)
 	root.add_child(mark)
 
-	var world_title := _add_text(root, "WORLD JOURNEY", Rect2(195, 596, 152, 17), 12, accent, true)
+	var world_title := _add_text(root, "WORLD %d" % world, Rect2(195, 598, 152, 26), 18, OFF_WHITE if _home_dark() else NAVY, true)
 	world_title.name = "HomeWorldProgressTitle"
-	_add_text(root, "WORLD %d" % world, Rect2(195, 615, 152, 26), 18, OFF_WHITE if _home_dark() else NAVY, true)
-	var world_value := _add_text(root, "LEVEL %d • %d/%d" % [level, completed_in_world, total], Rect2(195, 644, 152, 18), 12, MUTED, true)
+	var percent := int(round(float(completed_in_world) / float(total) * 100.0))
+	var world_value := _add_text(root, "LEVEL %d • %d%%" % [level, percent], Rect2(195, 632, 152, 18), 12, MUTED, true)
 	world_value.name = "HomeWorldProgressValue"
-	_add_text(root, "NEXT MILESTONE • L%d" % next_milestone, Rect2(195, 668, 152, 17), 11, ORANGE, true)
+	_add_text(root, "NEXT • LEVEL %d" % next_milestone, Rect2(195, 658, 152, 17), 11, ORANGE, true)
 
 	var progress := ProgressBar.new()
 	progress.name = "HomeWorldProgressBar"
@@ -326,9 +325,6 @@ func _add_world_progress(canvas: Control) -> void:
 	RefCanvas.set_rect(progress_specular, 199, 695, 84, 2)
 	root.add_child(progress_specular)
 
-	var percent := int(round(float(completed_in_world) / float(total) * 100.0))
-	var percent_label := _add_text(root, "%d%% COMPLETE" % percent, Rect2(195, 706, 150, 16), 11, accent, true)
-	percent_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 
 func _add_bottom_nav_reference(canvas: Control) -> void:
 	var shell := PanelContainer.new()
@@ -503,7 +499,7 @@ func _refresh_home_selection() -> void:
 	if top_stars != null:
 		top_stars.text = "   %s" % _compact_number(MultiGameManager.total_stars(selected_game))
 	if primary_button != null and is_instance_valid(primary_button):
-		primary_button.text = "CONTINUE • LEVEL %d" % level
+		primary_button.text = "CONTINUE"
 	var old_preview := figma_canvas.get_node_or_null("HomeHeroPreviewRoot")
 	if old_preview != null:
 		figma_canvas.remove_child(old_preview)

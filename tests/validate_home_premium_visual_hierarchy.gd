@@ -59,13 +59,8 @@ func _run() -> void:
 		return _fail("Home world journey typography nodes are missing")
 	if world_title.get_theme_font_size("font_size") < 12 or world_value.get_theme_font_size("font_size") < 12:
 		return _fail("Home world journey primary metadata fell below 12px reference size")
-	var completion_label: Label = null
-	for child in completion.get_children():
-		if child is Label and "% COMPLETE" in (child as Label).text:
-			completion_label = child as Label
-			break
-	if completion_label == null or completion_label.get_theme_font_size("font_size") < 11:
-		return _fail("Home world journey completion text fell below 11px reference size")
+	if "%" not in world_value.text or world_value.get_theme_font_size("font_size") < 12:
+		return _fail("Home world journey completion percentage is missing or too small")
 	if not _rect_eq(Rect2(nav.position, nav.size), Rect2(13,757,362,70)):
 		return _fail("Home bottom nav drifted from Figma reference")
 	var collection_label := home.find_child("HomeNavLabel_COLLECT", true, false) as Label

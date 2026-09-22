@@ -488,6 +488,7 @@ func _toggle_reduced_motion() -> void:
 	var enabled := not bool(SaveManager.data.get("reduce_motion", false))
 	SaveManager.data["reduce_motion"] = enabled
 	SaveManager.save()
+	MotionSystem.refresh_preferences()
 	PremiumVisuals.apply_motion_preference()
 	FeedbackManager.tap()
 	build_settings()
@@ -688,11 +689,7 @@ func build_collection() -> void:
 	_figma_card(canvas,"Garden",Rect2(17,429,354,96),Color("#fffef8"),Color(0.55,0.86,0.71,0.32),18)
 	_figma_text(canvas,"♥  RESCUE GARDEN",Rect2(33,445,180,19),16,Color("#088c3d"))
 	_figma_text(canvas,"%d friends home • %d / 6 upgrades" % [rescued.size(),owned],Rect2(33,476,240,20),13,FIGMA_MUTED)
-	_figma_text(canvas,"%d / 6 upgrades  •  +%d Daily  •  +%d Gift" % [owned,EconomyManager.collection_daily_bonus(),EconomyManager.garden_gift_amount()],Rect2(33,501,310,20),13,FIGMA_MUTED)
-
-	_figma_card(canvas,"Boost",Rect2(17,539,354,112),Color("#fffef8"),Color(0.55,0.86,0.71,0.32),18)
-	_figma_text(canvas,"PERMANENT BOOST",Rect2(33,555,180,18),15,FIGMA_ORANGE)
-	_figma_text(canvas,"+5 per Daily Game • +10 Garden Gift per upgrade",Rect2(33,578,310,20),13,FIGMA_MUTED)
+	_figma_text(canvas,"BONUS  +%d DAILY • +%d GIFT" % [EconomyManager.collection_daily_bonus(),EconomyManager.garden_gift_amount()],Rect2(33,501,310,20),13,FIGMA_MUTED)
 
 	# Figma state transition: swipe upward through the Garden/Boost region to
 	# reveal the dedicated six-upgrade Collection state.
@@ -708,7 +705,7 @@ func build_collection() -> void:
 	if not can_claim:
 		gift_text = "GARDEN GIFT CLAIMED" if EconomyManager.garden_gift_claimed_today() else "BUY AN UPGRADE IN SHOP"
 	var gift_fill := FIGMA_GREEN if can_claim else Color(0.54,0.64,0.72)
-	var gift := _figma_button(canvas,"CollectionGardenGift",gift_text,Rect2(33,603,250,44),gift_fill,Callable(),FIGMA_OFF_WHITE,16,13)
+	var gift := _figma_button(canvas,"CollectionGardenGift",gift_text,Rect2(33,548,250,44),gift_fill,Callable(),FIGMA_OFF_WHITE,16,13)
 	if can_claim:
 		gift.pressed.connect(_claim_collection_gift)
 	else:
@@ -907,28 +904,6 @@ func _open_games_surface() -> void:
 	FeedbackManager.tap()
 	current_surface = "live"
 
-func _restyle_secondary_nav(active: String) -> void:
-	if content == null or not is_instance_valid(content):
-		return
-	var nav := content.get_node_or_null("SecondaryBottomNav")
-	if nav == null:
-		return
-	var mapping := {
-		"home": "SecondaryNavHome",
-		"games": "SecondaryNavGames",
-		"daily": "SecondaryNavDaily",
-		"collection": "SecondaryNavCollection",
-		"settings": "SecondaryNavSettings",
-	}
-	for key in mapping.keys():
-		var button := nav.find_child(String(mapping[key]), true, false) as Button
-		if button == null:
-			continue
-		var selected: bool = String(key) == active
-		button.disabled = false
-		button.mouse_filter = Control.MOUSE_FILTER_IGNORE if selected else Control.MOUSE_FILTER_STOP
-		button.set_meta("unjam_selected_nav", selected)
-		Unjam3DTheme.gloss_button(button, Unjam3DTheme.WATER if selected else Color("0d6dc2"), selected, 22, _dark())
 
 func _compact_stat(value: int) -> String:
 	if value >= 1000000:
@@ -1178,38 +1153,7 @@ func _figma_switch_level_game(game_id: String) -> void:
 	selected_multi_page = _multi_page_for_level(game_id,_highest_level_for_game(game_id))
 	build_multi_level_select()
 
-func _inject_game_tabs(active_game_id: String) -> void:
-	var root := _find_page_root()
-	if root == null:
-		return
-	var old := root.get_node_or_null("LevelGameTabs")
-	if old != null:
-		root.remove_child(old)
-		old.queue_free()
-	var tabs := HBoxContainer.new()
-	tabs.name = "LevelGameTabs"
-	tabs.custom_minimum_size = Vector2(0, 92)
-	tabs.add_theme_constant_override("separation", 10)
-	root.add_child(tabs)
-	root.move_child(tabs, mini(1, root.get_child_count() - 1))
-	for game_id in MultiGameManager.GAME_IDS:
-		var current: bool = game_id == active_game_id
-		var button := _button(MultiGameManager.display_name(game_id), Vector2(0, 84), "primary" if current else "secondary", game_id)
-		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.add_theme_font_size_override("font_size", 18 if get_viewport_rect().size.x >= 700.0 else 15)
-		button.disabled = current
-		button.pressed.connect(open_game_campaign.bind(game_id))
-		tabs.add_child(button)
 
-func _find_page_root() -> VBoxContainer:
-	if content == null:
-		return null
-	for child in content.get_children():
-		if child is MarginContainer:
-			for inner in child.get_children():
-				if inner is VBoxContainer:
-					return inner as VBoxContainer
-	return null
 
 func _level_column_count(usable_width: float) -> int:
 	if usable_width >= 900.0:
@@ -1253,31 +1197,6 @@ func _upgrade_level_browser(game_id: String) -> void:
 			else:
 				Unjam3DTheme.gloss_button(button, dark_accent, false, 22, _dark())
 
-func _add_surface_diorama(game_id: String, node_name: String) -> void:
-	if content == null or not is_instance_valid(content):
-		return
-	var old := content.get_node_or_null(node_name)
-	if old != null:
-		content.remove_child(old)
-		old.queue_free()
-	var art := Unjam3DGameArt.new()
-	art.name = node_name
-	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	art.anchor_left = 1.0
-	art.anchor_top = 1.0
-	art.anchor_right = 1.0
-	art.anchor_bottom = 1.0
-	var viewport_size := get_viewport_rect().size
-	var art_width := minf(400.0, viewport_size.x * 0.42)
-	var art_height := minf(300.0, viewport_size.y * 0.22)
-	art.offset_left = -art_width - 24.0
-	art.offset_top = -art_height - 24.0
-	art.offset_right = -24.0
-	art.offset_bottom = -24.0
-	art.z_index = -20
-	art.modulate = Color(1, 1, 1, 0.42 if _dark() else 0.58)
-	art.configure(game_id)
-	content.add_child(art)
 
 func _highest_level_for_game(game_id: String) -> int:
 	if game_id == "rescue_rush":

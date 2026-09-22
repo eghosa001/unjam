@@ -122,7 +122,7 @@ func _build_figma_water(canvas: Control) -> void:
 	# Keep status and guidance on independent rows. Sharing one y-band looked
 	# compact at READY but longer recovery/assist messages could collide with
 	# "Best move..." guidance on phone screens.
-	status_label = _make_label("READY", 14, NAVY, true)
+	status_label = _make_label("", 14, NAVY, true)
 	status_label.name = "WaterStatusText"
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	status_label.clip_text = true
@@ -244,8 +244,6 @@ func render_board() -> void:
 	_apply_tube_layout()
 	if move_label != null:
 		move_label.text = "MOVES %d • 3★≤%d" % [moves, par_moves]
-	if status_label != null and status_label.text.strip_edges().is_empty():
-		status_label.text = "READY"
 
 func _apply_tube_layout() -> void:
 	if board == null or not is_instance_valid(board):

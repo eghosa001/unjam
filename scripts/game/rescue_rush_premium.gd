@@ -229,6 +229,10 @@ func build_ui() -> void:
 func _animate_brand() -> void:
 	if rescue_title_label == null:
 		return
+	var motion := get_node_or_null("/root/MotionSystem")
+	if motion != null and bool(motion.call("reduced")):
+		rescue_title_label.modulate.a = 1.0
+		return
 	rescue_title_label.modulate.a = 0.72
 	var tween := create_tween().set_loops()
 	tween.tween_property(rescue_title_label, "modulate:a", 1.0, 1.15).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
@@ -252,7 +256,7 @@ func _piece_visual_color(piece: Dictionary) -> Color:
 		"blocker": return Color("3b4658")
 		_: return _direction_color(String(piece.get("direction", "right")))
 
-func _best_escape_lane() -> Dictionary:
+func _best_escape_lane(piece_lookup: Dictionary = {}) -> Dictionary:
 	var best_direction := Vector2i.UP
 	var best_blockers := 999
 	var best_cells: Array[Vector2i] = []
@@ -262,7 +266,8 @@ func _best_escape_lane() -> Dictionary:
 		var cells: Array[Vector2i] = []
 		while is_inside(cursor):
 			cells.append(cursor)
-			if get_piece_index_at(cursor) >= 0:
+			var occupied := piece_lookup.has(cursor) if not piece_lookup.is_empty() else get_piece_index_at(cursor) >= 0
+			if occupied:
 				blockers += 1
 			cursor += direction
 		if blockers < best_blockers:
@@ -313,7 +318,12 @@ func render_board() -> void:
 	rescue_label.text = "LIVES\n%s" % lives_text
 	chain_label.text = "CHAIN\n×%d" % maxi(chain_count, 1)
 
-	var route := _best_escape_lane()
+	var piece_lookup := {}
+	for i in range(pieces.size()):
+		var piece: Dictionary = pieces[i]
+		if bool(piece.get("active", true)):
+			piece_lookup[Vector2i(int(piece.get("x", -1)), int(piece.get("y", -1)))] = i
+	var route := _best_escape_lane(piece_lookup)
 	var viewport_width := get_viewport_rect().size.x
 	var max_board_width := minf(viewport_width - 112.0, 860.0)
 	var gap := 10.0 if width <= 5 else 7.0
@@ -326,7 +336,7 @@ func render_board() -> void:
 	for y in range(height):
 		for x in range(width):
 			var pos := Vector2i(x, y)
-			var piece_index: int = get_piece_index_at(pos)
+			var piece_index := int(piece_lookup.get(pos, -1))
 			if not rescued and pos == rescue_pos:
 				var slot := PanelContainer.new()
 				slot.custom_minimum_size = Vector2(cell_size, cell_size)

@@ -9,31 +9,43 @@ var _queued_action := ""
 
 const POUR_ARC_SAMPLES := 14
 
+func _ensure_tube_controls(count: int) -> void:
+	while board.get_child_count() > count:
+		var child := board.get_child(board.get_child_count() - 1)
+		board.remove_child(child)
+		child.queue_free()
+	while board.get_child_count() < count:
+		var index := board.get_child_count()
+		var button := MotionTube.new()
+		button.name = "WaterTube%d" % index
+		button.pressed.connect(select_tube.bind(index))
+		board.add_child(button)
+
 func render_board() -> void:
 	if board == null:
 		return
-	for child in board.get_children():
-		board.remove_child(child)
-		child.queue_free()
+	_ensure_tube_controls(tubes.size())
 	board.columns = 5 if tubes.size() <= 10 else 6
 	board.add_theme_constant_override("h_separation", 18 if tubes.size() <= 10 else 10)
 	board.add_theme_constant_override("v_separation", 25)
 	var tube_width := 154.0 if tubes.size() <= 10 else 128.0
 	var tube_height := 316.0 if tubes.size() <= 10 else 286.0
 	for i in range(tubes.size()):
-		var button := MotionTube.new()
+		var button := board.get_child(i) as MotionTube
+		if button == null:
+			continue
 		button.custom_minimum_size = Vector2(tube_width, tube_height)
 		button.tooltip_text = "Tube %d" % (i + 1)
+		button.modulate = Color.WHITE
+		button.disabled = false
 		button.configure(tubes[i], i == selected, i)
-		button.pressed.connect(select_tube.bind(i))
 		if active_source_tubes.has(i) or active_target_tubes.has(i):
 			# Keep the control in the GridContainer so layout stays fixed, but make
 			# the original bottle fully invisible while the animated pour ghost owns
 			# that physical bottle. Partial opacity reads as a duplicate bottle.
 			button.modulate = Color(1, 1, 1, 0.0)
 			button.disabled = true
-		board.add_child(button)
-	move_label.text = "MOVES %d   •   PERFECT ≤ %d   •   %d COLORS" % [moves, par_moves, color_count]
+	move_label.text = "MOVES %d   •   3★ ≤ %d   •   %d COLOURS" % [moves, par_moves, color_count]
 
 func select_tube(index: int) -> void:
 	if completed or pending_completion:
@@ -48,7 +60,7 @@ func select_tube(index: int) -> void:
 			_play_invalid(index)
 			return
 		selected = index
-		status_label.text = "Ready to pour"
+		status_label.text = ""
 		FeedbackManager.lift()
 		render_board()
 		return

@@ -63,51 +63,6 @@ func build_home() -> void:
 		return
 	add_background()
 
-func _add_game_card(parent: VBoxContainer, game_id: String, accent: Color, subtitle_text: String) -> void:
-	var progress := MultiGameManager.progress_for(game_id)
-	var panel := add_glass_card(parent, Vector2(0, 224))
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 22)
-	margin.add_theme_constant_override("margin_right", 22)
-	margin.add_theme_constant_override("margin_top", 15)
-	margin.add_theme_constant_override("margin_bottom", 15)
-	panel.add_child(margin)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 18)
-	margin.add_child(row)
-	var info := VBoxContainer.new()
-	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(info)
-	var name := Label.new()
-	name.text = MultiGameManager.display_name(game_id)
-	name.add_theme_font_size_override("font_size", 29)
-	name.add_theme_color_override("font_color", accent)
-	info.add_child(name)
-	var subtitle := Label.new()
-	subtitle.text = subtitle_text
-	subtitle.add_theme_font_size_override("font_size", 15)
-	subtitle.modulate = Color("95a4bb")
-	info.add_child(subtitle)
-	var highest := mini(MultiGameManager.CAMPAIGN_LEVELS, int(progress.get("highest_level", 1)))
-	var stats := Label.new()
-	stats.text = "LEVEL %d / 10,000   •   %d ★   •   %d PERFECT\nWORLD %d / %d   •   %d BADGES" % [highest, MultiGameManager.total_stars(game_id), int(progress.get("perfect_clears", 0)), MultiGameManager.highest_unlocked_game_world(game_id), MultiGameManager.world_count_for(game_id), (progress.get("world_badges", []) as Array).size()]
-	stats.add_theme_font_size_override("font_size", 16)
-	stats.modulate = Color("c2cde0")
-	info.add_child(stats)
-	var controls := VBoxContainer.new()
-	controls.alignment = BoxContainer.ALIGNMENT_CENTER
-	controls.add_theme_constant_override("separation", 8)
-	row.add_child(controls)
-	var play := make_button("PLAY\nLEVEL %d" % highest, Vector2(230, 82), true)
-	play.add_theme_font_size_override("font_size", 18)
-	play.pressed.connect(open_game_campaign.bind(game_id))
-	controls.add_child(play)
-	var checkpoint := _checkpoint_for(game_id)
-	if not checkpoint.is_empty():
-		var resume := make_button("CONTINUE", Vector2(230, 58))
-		resume.add_theme_font_size_override("font_size", 16)
-		resume.pressed.connect(resume_game.bind(game_id))
-		controls.add_child(resume)
 
 func _daily_done(game_id: String) -> bool:
 	if game_id == "rescue_rush":
@@ -226,11 +181,6 @@ func _change_multi_page(delta: int) -> void:
 			selected_multi_page = 1
 	build_multi_level_select()
 
-func _change_multi_world(delta: int) -> void:
-	# Compatibility entry point for older callers: move to the adjacent world.
-	selected_multi_world = clampi(selected_multi_world + delta, 1, MultiGameManager.world_count_for(selected_game_id))
-	selected_multi_page = 1
-	build_multi_level_select()
 
 func _jump_multi_current() -> void:
 	var highest := MultiGameManager.highest_level(selected_game_id)
