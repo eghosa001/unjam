@@ -30,7 +30,7 @@ permalink: /privacy.html
   <p>Where required, consent or privacy choices may be presented before personalized advertising is used.</p>
 
   <h2>In-App Purchases</h2>
-  <p>If in-app purchases are enabled, transactions are processed by Google Play. UNJAM does not receive or store your full payment-card or bank-account details. Google may provide transaction status or purchase-token information needed to validate purchases and provide purchased content.</p>
+  <p>If in-app purchases are enabled, transactions are processed by Google Play. UNJAM does not receive or store your full payment-card or bank-account details. Purchase tokens may be sent to a Supabase Edge Function for validation with Google Play; the server ledger stores a SHA-256 fingerprint and purchase-claim metadata rather than the reusable raw Play purchase token.</p>
 
   <h2>Local Game Data</h2>
   <p>Game progress, settings, achievements, currencies, and other gameplay information may be stored locally on your device. Removing the app or clearing its data may delete locally stored progress unless a cloud or backup feature is available in the version you are using.</p>
@@ -64,7 +64,7 @@ permalink: /privacy.html
   <p>For privacy questions, data-related requests, or support, use the <a href="support.html">UNJAM support page</a> or the <a href="https://github.com/eghosa001/unjam/issues">public GitHub issue tracker</a>.</p>
 
   <h2>Developer</h2>
-  <p>UNJAM is published under the developer account responsible for the Android application with package name <code>com.eghosa.unjamgam</code>.</p>
+  <p>UNJAM is published under the developer account responsible for the Android application with package name <code>com.eghosa.unjam</code>.</p>
 </article>
 </main>
 <footer class="footer"><div class="footer-inner"><div><strong>UNJAM</strong><br><small>Official privacy information</small></div><div class="footer-links"><a href="./">Home</a><a href="support.html">Support</a></div><small>© 2026 UNJAM</small></div></footer>
