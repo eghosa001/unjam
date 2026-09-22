@@ -13,6 +13,8 @@ const SAMPLE_RATE := 22050
 const MUSIC_RATE := 16000
 const SFX_POOL_SIZE := 5
 const MUSIC_DURATION := 32.0
+const SFX_OUTPUT_DB := 0.0
+const MUSIC_OUTPUT_DB := -7.0
 
 var player: AudioStreamPlayer
 var sfx_players: Array[AudioStreamPlayer] = []
@@ -31,14 +33,14 @@ func _ready() -> void:
 	for i in range(SFX_POOL_SIZE):
 		var sfx := AudioStreamPlayer.new()
 		sfx.name = "CalmSfx%02d" % (i + 1)
-		sfx.volume_db = -3.0
+		sfx.volume_db = SFX_OUTPUT_DB
 		add_child(sfx)
 		sfx_players.append(sfx)
 	player = sfx_players[0]
 
 	music_player = AudioStreamPlayer.new()
 	music_player.name = "CalmAmbientMusic"
-	music_player.volume_db = -11.0
+	music_player.volume_db = MUSIC_OUTPUT_DB
 	add_child(music_player)
 	music_stream = _build_calm_ambient_loop()
 	music_player.stream = music_stream
