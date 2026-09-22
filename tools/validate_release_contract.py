@@ -5,7 +5,7 @@ from pathlib import Path
 EXPECTED_PACKAGE = 'package/unique_name="com.eghosa.unjamgam"'
 EXPECTED_VERSION_CODE = 'version/code=1'
 EXPECTED_VERSION_NAME = 'version/name="1.0.0"'
-EXPECTED_BACKEND_EXCLUSION = 'backend/*'
+EXPECTED_BACKEND_EXCLUSION = 'supabase/*'
 EXPECTED_UPLOAD_SECRET = 'secrets.UNJAM_ANDROID_UPLOAD_SHA1'
 
 REQUIRED_RELEASE_TESTS = (
@@ -58,7 +58,7 @@ def main() -> int:
         'unzip -t',
         'sha256sum',
         'validate_purchase_claim_protocol.py',
-        'supabase/functions/unjam-purchase',
+        'Validate Supabase purchase backend contract',
         'UNJAM_SUPABASE_URL',
         'UNJAM_SUPABASE_PUBLISHABLE_KEY',
         'UNJAM_DEVELOPER_WEBSITE_URL',
