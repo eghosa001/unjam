@@ -22,14 +22,14 @@ func _initialize() -> void:
 				failures.append("Water colours %d and %d are too similar for dense late-level play (RGB distance %.3f; minimum 0.34)" % [i, j, distance])
 
 	var motion_source := _read("res://scripts/ui/water_tube_3d_motion.gd")
-	for token in [
-		"func _draw_liquid_identity_markers()",
+	for forbidden in [
+		"_draw_liquid_identity_markers",
+		"_draw_identity_marker",
 		"var shape := color_index % 4",
 		"var count := int(color_index / 4) + 1",
-		"func _draw_identity_marker",
 	]:
-		if not motion_source.contains(token):
-			failures.append("Water liquid secondary identity cue is missing: %s" % token)
+		if motion_source.contains(forbidden):
+			failures.append("Water side identity markers returned after colour separation was fixed: %s" % forbidden)
 
 	var reference_source := _read("res://scripts/ui/water_tube_reference_button.gd")
 	var legacy_source := _read("res://scripts/ui/water_tube_button.gd")
