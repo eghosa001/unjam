@@ -319,9 +319,22 @@ func render_board() -> void:
 	rescue_label.text = "LIVES\n%s" % lives_text
 	chain_label.text = "CHAIN\n×%d" % maxi(chain_count, 1)
 
+	var piece_lookup := {}
+	for i in range(pieces.size()):
+		var piece: Dictionary = pieces[i]
+		if bool(piece.get("active", true)):
+			piece_lookup[Vector2i(int(piece.get("x", -1)), int(piece.get("y", -1)))] = i
+	var route := _best_escape_lane(piece_lookup)
+	if int(route.get("blockers", 1)) == 0 and not rescued:
+		hint_label.text = "Escape lane open — free the rescue!"
+		hint_label.add_theme_color_override("font_color", Color("8ff5b5"))
+	else:
+		hint_label.add_theme_color_override("font_color", Color("b9c9dc"))
+
 	# Some UI/navigation paths request a board refresh even when authoritative
 	# gameplay state has not changed. Keep the existing controls in that case
 	# instead of rebuilding every 3D piece, token, panel and signal connection.
+	# Labels and route messaging above still refresh exactly as before.
 	var board_signature := hash([level_number, daily_mode, width, height, rescue_pos, rescued, rescue_id, pieces])
 	if _board_render_signature_valid and _board_render_signature == board_signature and board_grid.get_child_count() == width * height:
 		return
@@ -331,12 +344,6 @@ func render_board() -> void:
 		board_grid.remove_child(child)
 		child.queue_free()
 
-	var piece_lookup := {}
-	for i in range(pieces.size()):
-		var piece: Dictionary = pieces[i]
-		if bool(piece.get("active", true)):
-			piece_lookup[Vector2i(int(piece.get("x", -1)), int(piece.get("y", -1)))] = i
-	var route := _best_escape_lane(piece_lookup)
 	var viewport_width := get_viewport_rect().size.x
 	var max_board_width := minf(viewport_width - 112.0, 860.0)
 	var gap := 10.0 if width <= 5 else 7.0
@@ -378,9 +385,3 @@ func render_board() -> void:
 				var empty := _make_empty_cell(cell_size, pos, route)
 				board_grid.add_child(empty)
 				_animate_cell(empty, x, y)
-
-	if int(route.get("blockers", 1)) == 0 and not rescued:
-		hint_label.text = "Escape lane open — free the rescue!"
-		hint_label.add_theme_color_override("font_color", Color("8ff5b5"))
-	else:
-		hint_label.add_theme_color_override("font_color", Color("b9c9dc"))
