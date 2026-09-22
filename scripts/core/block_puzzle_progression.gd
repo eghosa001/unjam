@@ -42,12 +42,12 @@ static func profile(raw_level: int) -> Dictionary:
 	var span := maxi(1, band_end - band_start)
 	var progress := float(level - band_start) / float(span)
 	var base_score := lerpf(float(floor_score), float(ceiling_score), progress)
-	var retention_role := retention_role(level)
+	var pace_role := retention_role(level)
 	var objective := objective_family(level)
 	var intro_age := objective_introduction_age(level)
 	var intro_modifier := -6.0 if intro_age == 0 else (-4.0 if intro_age in [1, 2] else 0.0)
 	var difficulty_score := clampi(
-		int(round(base_score + _pacing_offset(level, retention_role) + intro_modifier)),
+		int(round(base_score + _pacing_offset(level, pace_role) + intro_modifier)),
 		floor_score,
 		ceiling_score
 	)
@@ -60,22 +60,22 @@ static func profile(raw_level: int) -> Dictionary:
 	var horizon := planning_horizon(level)
 	var tier := piece_tier(level)
 	var occupancy := initial_occupancy(level)
-	if retention_role in ["recovery", "confidence", "learn"]:
+	if pace_role in ["recovery", "confidence", "learn"]:
 		horizon = maxi(1, horizon - 1)
 		occupancy = maxf(0.0, occupancy - 0.035)
-	elif retention_role == "practice":
+	elif pace_role == "practice":
 		occupancy = maxf(0.0, occupancy - 0.02)
 	var target_lines := clampi(2 + int(round(float(difficulty_score) / 9.0)), 2, 14)
-	if retention_role in ["recovery", "confidence", "learn"]:
+	if pace_role in ["recovery", "confidence", "learn"]:
 		target_lines = maxi(2, target_lines - 1)
-	elif retention_role == "peak":
+	elif pace_role == "peak":
 		target_lines = mini(14, target_lines + 1)
 	if milestone in ["mini_boss", "boss", "world_finale", "mastery", "finale"]:
 		target_lines += 1
 	var target_score := 80 + target_lines * 125 + difficulty_score * 10
 	var par := maxi(14, target_lines * 2 + horizon + 4)
-	var move_limited := is_move_limited(level, retention_role)
-	var move_limit := par + (8 if retention_role in ["learn", "practice"] else (7 if level <= 2000 else (5 if level <= 7500 else 3))) if move_limited else -1
+	var move_limited := is_move_limited(level, pace_role)
+	var move_limit := par + (8 if pace_role in ["learn", "practice"] else (7 if level <= 2000 else (5 if level <= 7500 else 3))) if move_limited else -1
 
 	return {
 		"level_id": level,
@@ -87,7 +87,7 @@ static func profile(raw_level: int) -> Dictionary:
 		"chapter_global": chapter_global,
 		"chapter_in_world": chapter_in_world,
 		"milestone": milestone,
-		"retention_role": retention_role,
+		"retention_role": pace_role,
 		"objective_intro_age": intro_age,
 		"difficulty_score": difficulty_score,
 		"difficulty_floor": floor_score,
@@ -102,7 +102,7 @@ static func profile(raw_level: int) -> Dictionary:
 		"move_limited": move_limited,
 		"move_limit": move_limit,
 		"objective": objective,
-		"first_attempt_target": first_attempt_target(difficulty_score, milestone, retention_role),
+		"first_attempt_target": first_attempt_target(difficulty_score, milestone, pace_role),
 		"deterministic_trays": true,
 		"fixed_orientation": true,
 		"booster_required": false,
