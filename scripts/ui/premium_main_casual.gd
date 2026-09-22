@@ -1,11 +1,11 @@
 extends "res://scripts/ui/premium_main.gd"
 
 const FIGMA_LEVEL_PAGE_SIZE := 20
-const FIGMA_BG_TOP := Color("#dcebe8")
-const FIGMA_BG_BOTTOM := Color("#c3d2df")
-const FIGMA_NAVY := Color(0.03, 0.23, 0.47)
-const FIGMA_INK := Color(0.07, 0.20, 0.35)
-const FIGMA_MUTED := Color(0.31, 0.42, 0.52)
+const FIGMA_BG_TOP := Color("#eef2f5")
+const FIGMA_BG_BOTTOM := Color("#d8dee5")
+const FIGMA_NAVY := Color("#1f2933")
+const FIGMA_INK := Color("#26323d")
+const FIGMA_MUTED := Color("#52606d")
 const FIGMA_OFF_WHITE := Color(1.0, 0.995, 0.97)
 const FIGMA_BLUE := Color(0.03, 0.43, 0.78)
 const FIGMA_GREEN := Color(0.13, 0.78, 0.39)
@@ -13,17 +13,17 @@ const FIGMA_CYAN := Color(0.14, 0.68, 1.0)
 const FIGMA_ORANGE := Color(1.0, 0.55, 0.12)
 const FIGMA_GOLD := Color(1.0, 0.84, 0.24)
 
-const FIGMA_DARK_TOP := Color("#182a3b")
-const FIGMA_DARK_BOTTOM := Color("#29465b")
-const FIGMA_DARK_CARD := Color("#223b50")
-const FIGMA_DARK_INK := Color("#eef7ff")
-const FIGMA_DARK_MUTED := Color("#b6c7d6")
-const FIGMA_SCENE_TOP := Color("#d7f8ff")
-const FIGMA_SCENE_MID := Color("#72c7dc")
-const FIGMA_SCENE_BOTTOM := Color("#287fa8")
-const FIGMA_SCENE_DARK_TOP := Color("#101932")
-const FIGMA_SCENE_DARK_MID := Color("#0b1631")
-const FIGMA_SCENE_DARK_BOTTOM := Color("#060d22")
+const FIGMA_DARK_TOP := Color("#12171d")
+const FIGMA_DARK_BOTTOM := Color("#0e1318")
+const FIGMA_DARK_CARD := Color("#1a2129")
+const FIGMA_DARK_INK := Color("#f5f7fa")
+const FIGMA_DARK_MUTED := Color("#a7b1bc")
+const FIGMA_SCENE_TOP := Color("#eef2f5")
+const FIGMA_SCENE_MID := Color("#e6eaee")
+const FIGMA_SCENE_BOTTOM := Color("#d6dce2")
+const FIGMA_SCENE_DARK_TOP := Color("#171c22")
+const FIGMA_SCENE_DARK_MID := Color("#12171d")
+const FIGMA_SCENE_DARK_BOTTOM := Color("#0b0f13")
 
 var _collection_scroll_tracking := false
 var _collection_scroll_origin_y := 0.0
@@ -140,8 +140,8 @@ func _figma_surface(active: String, bottom_tint: Color = FIGMA_BG_BOTTOM, top_ti
 		"collection": scene_accent = FIGMA_GREEN
 		"settings": scene_accent = FIGMA_CYAN
 		_: scene_accent = _accent()
-	FigmaReferenceCanvas.add_world_depth(canvas, scene_accent, _dark(), 0.12 if _dark() else 0.10, "SurfaceWorldDepth")
-	FigmaReferenceCanvas.add_scene_backdrop_layers(canvas, scene_accent, _dark(), "Surface")
+	FigmaReferenceCanvas.add_world_depth(canvas, Color("#59636f") if _dark() else Color("#9aa4ae"), _dark(), 0.10 if _dark() else 0.07, "SurfaceWorldDepth")
+	FigmaReferenceCanvas.add_scene_backdrop_layers(canvas, Color("#68737f") if _dark() else Color("#a9b1ba"), _dark(), "Surface")
 	var surface_key_light := canvas.get_node_or_null("SurfaceKeyLight")
 	var surface_accent_glow := canvas.get_node_or_null("SurfaceAccentGlow")
 	if surface_key_light != null:
@@ -299,8 +299,8 @@ func _figma_open_shop() -> void:
 
 func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false) -> void:
 	var use_dark := dark_mode or _dark()
-	var bar_fill := Color(0.055,0.085,0.15,0.985) if use_dark else Color("#d9edf3")
-	var bar_border := Color(0.24,0.39,0.54,0.94) if use_dark else Color("#5ca7c2")
+	var bar_fill := Color("#1a2129") if use_dark else Color("#e3e8ed")
+	var bar_border := Color("#34404c") if use_dark else Color("#c3cbd3")
 	if use_dark:
 		_figma_solid_card(canvas, "StdNav/Bar", Rect2(13,757,362,70), bar_fill, bar_border, 18)
 	else:
