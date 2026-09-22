@@ -81,21 +81,26 @@ func _rescue_refresh_is_settled() -> bool:
 	return true
 
 func _retention_period_cache_is_isolated() -> bool:
-	var missions_a: Array[Dictionary] = RetentionManager.daily_missions()
-	var missions_b: Array[Dictionary] = RetentionManager.daily_missions()
+	var retention = root.get_node_or_null("RetentionManager")
+	if retention == null:
+		return _fail("RetentionManager autoload missing")
+	var missions_a: Array[Dictionary] = retention.call("daily_missions")
+	var missions_b: Array[Dictionary] = retention.call("daily_missions")
 	if missions_a != missions_b or missions_a.is_empty():
 		return _fail("Daily mission cache changed deterministic output")
 	var original_mission_title := String(missions_b[0].get("title", ""))
 	missions_a[0]["title"] = "MUTATED"
-	if String(RetentionManager.daily_missions()[0].get("title", "")) != original_mission_title:
+	var missions_c: Array[Dictionary] = retention.call("daily_missions")
+	if String(missions_c[0].get("title", "")) != original_mission_title:
 		return _fail("Daily mission caller mutated the internal period cache")
-	var rivals_a: Array[Dictionary] = RetentionManager.weekly_rivals()
-	var rivals_b: Array[Dictionary] = RetentionManager.weekly_rivals()
+	var rivals_a: Array[Dictionary] = retention.call("weekly_rivals")
+	var rivals_b: Array[Dictionary] = retention.call("weekly_rivals")
 	if rivals_a != rivals_b or rivals_a.is_empty():
 		return _fail("Weekly rival cache changed deterministic output")
 	var original_points := int(rivals_b[0].get("points", -1))
 	rivals_a[0]["points"] = -999
-	if int(RetentionManager.weekly_rivals()[0].get("points", -1)) != original_points:
+	var rivals_c: Array[Dictionary] = retention.call("weekly_rivals")
+	if int(rivals_c[0].get("points", -1)) != original_points:
 		return _fail("Weekly rival caller mutated the internal period cache")
 	return true
 
