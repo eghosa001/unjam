@@ -148,10 +148,9 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 
 func generate_tubes_with_solution(seed_value: int, colors: int) -> Dictionary:
 	var p := Progression.profile(level_number)
-	# The first ten levels are deliberately authored rather than sampled from the
-	# procedural pool. Tutorial retention depends on visible novelty and a clean
-	# one-step-at-a-time difficulty ramp; these boards have replayable proofs and
-	# unique canonical structures.
+	# Most opening boards are deliberately authored for visual novelty. Level 7
+	# intentionally falls through to the constructive generator because it is the
+	# first five-colour pressure step and must follow the live profile exactly.
 	if level_number <= 10:
 		var curated := _curated_opening_level(level_number)
 		if not curated.is_empty():
@@ -252,10 +251,10 @@ func _curated_opening_level(level: int) -> Dictionary:
 				"solution": [Vector2i(4,2), Vector2i(1,5), Vector2i(1,2), Vector2i(5,4), Vector2i(3,1), Vector2i(0,1), Vector2i(0,3), Vector2i(4,0)]
 			}
 		7:
-			return {
-				"tubes": [[1,1,1,3], [], [], [2,3,3,3], [0,0,2,0], [1,2,2,0]],
-				"solution": [Vector2i(5,1), Vector2i(4,2), Vector2i(4,5), Vector2i(1,2), Vector2i(4,2), Vector2i(0,1), Vector2i(3,1), Vector2i(5,3), Vector2i(5,0)]
-			}
+			# Level 7 is the first five-colour board. Let the constructive generator
+			# author it from the live profile so tube count, workspace and proof stay
+			# synchronized with the post-onboarding difficulty curve.
+			return {}
 		8:
 			return {
 				"tubes": [[1,3,3,3], [4,4,4,3], [2,2,2,2], [1,1,0,4], [], [0,0,0,1], []],

@@ -24,6 +24,10 @@ static func profile(level_number: int) -> Dictionary:
 	var board_size := _board_size(n)
 	var dependency_range := _dependency_range(n)
 	var dependency_target := _paced_range_target(dependency_range, local, role, n, 7)
+	if n <= 10:
+		difficulty_target = [10, 16, 22, 30, 36, 42, 48, 54, 58, 62][n - 1]
+		piece_target = [7, 8, 9, 10, 11, 11, 12, 12, 13, 14][n - 1]
+		dependency_target = [2, 2, 3, 3, 3, 4, 4, 4, 4, 4][n - 1]
 	var frontier_range := _frontier_range(n)
 	var objective := _objective_for_level(n, local)
 	var mechanic_count := _mechanic_count(n, difficulty_target)
@@ -200,7 +204,7 @@ static func _mistake_limit(n: int, role: String) -> int:
 
 static func _level_role(n: int, local: int) -> String:
 	if n <= 10:
-		return ["tutorial", "tutorial", "confidence", "build", "challenge", "recovery", "build", "stretch", "recovery", "peak"][n - 1]
+		return ["tutorial", "tutorial", "tutorial", "build", "challenge", "build", "challenge", "stretch", "build", "peak"][n - 1]
 	var intro_age := _mechanic_intro_age(n)
 	if intro_age == 0:
 		return "learn"
@@ -260,6 +264,7 @@ static func _milestone_name(local: int) -> String:
 
 static func _difficulty_label(score: int, role: String) -> String:
 	if role == "world_boss": return "boss"
+	if role == "tutorial": return "tutorial"
 	if score < 30: return "easy"
 	if score < 55: return "medium"
 	if score < 75: return "hard"

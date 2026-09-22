@@ -77,10 +77,10 @@ func _run() -> void:
 	var light_bg := main.find_child("FigmaHomeViewportBackground", true, false) as ColorRect
 	if light_bg == null:
 		return _fail("Light Home background is missing")
-	if light_bg.color.get_luminance() < 0.20 or light_bg.color.get_luminance() > 0.60:
-		return _fail("Light theme is outside the premium champagne-gold luminance range")
-	if light_bg.color.r < light_bg.color.b + 0.22 or light_bg.color.g < light_bg.color.b + 0.10:
-		return _fail("Light theme drifted away from the approved champagne-gold family")
+	if light_bg.color.get_luminance() < 0.35 or light_bg.color.get_luminance() > 0.70:
+		return _fail("Light theme is outside the premium warm-neutral luminance range")
+	if absf(light_bg.color.r - light_bg.color.g) > 0.10 or absf(light_bg.color.g - light_bg.color.b) > 0.10:
+		return _fail("Light theme drifted away from the approved warm-neutral family")
 	if main.find_child("HomeLightGlassHorizon", true, false) == null:
 		return _fail("Home light mode lost its layered glass horizon")
 	var home_key := main.find_child("HomeKeyLight", true, false) as PanelContainer
@@ -117,7 +117,7 @@ func _run() -> void:
 		"res://scripts/ui/premium_live_hub_3d.gd",
 	]:
 		var source := _read(path)
-		for token in ["#e2c98f", "#b89050", "#805b31"]:
+		for token in ["#e4dfd5", "#b3aca2", "#80786e"]:
 			if not source.contains(token):
 				return _fail("Premium champagne-gold scene palette contract missing in %s: %s" % [path, token])
 

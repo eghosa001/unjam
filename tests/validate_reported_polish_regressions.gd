@@ -16,7 +16,7 @@ func _init() -> void:
 	_require_source("res://scripts/game/water_sort_casual.gd", ["func apply_theme_mode"], "Water Sort immediate dark theme", errors)
 	_require_source("res://scripts/game/block_puzzle_final_polish.gd", ["func apply_theme_mode", "BlockPuzzle3DEnvironment"], "Block Puzzle immediate dark theme", errors)
 	_require_source("res://scripts/ui/premium_home_direct_levels.gd", ["HomeWorldProgressRoot", "HomeWorldFlatGameLogo", "_add_world_progress(figma_canvas)", "progress_accent"], "Home Quick Switch world-progress synchronization", errors)
-	_require_source("res://scripts/ui/premium_home_direct_levels.gd", ["WORLD %d\" % world, Rect2(195, 598, 152, 26), 18", "LEVEL %d • %d%%", "CONTINUE\"", "\"GAMES\""], "Home concise journey readability", errors)
+	_require_source("res://scripts/ui/premium_home_direct_levels.gd", ["WORLD %d\" % world, Rect2(195, 598, 152, 26), 18", "LEVEL %d • %d/%d", "CONTINUE • LEVEL %d", "\"GAMES\""], "Home concise journey readability", errors)
 	_require_source("res://scripts/ui/premium_main_casual.gd", ["SurfaceGlossSweep", "SurfaceWorldDepth", "COMPLETED", "\"PLAY\"", "FIGMA_DARK_INK if _dark() else FIGMA_INK"], "gloss/independent-Daily/dark-level readability", errors)
 	_require_source("res://scripts/ui/ux_shell_casual.gd", ["TutorialStepCard", "Rect2(43,409,302,76)", "Rect2(43,598,302,58)"], "tutorial collision-safe layout", errors)
 	_require_source("res://scripts/ui/premium_result_overlay.gd", ["Rect2(27,76,334,570 if has_secondary else 500)", "Rect2(47,568,294,48)"], "result collision-safe layout", errors)
@@ -54,8 +54,11 @@ func _validate_opening_rhythm(errors: Array[String]) -> void:
 	for level_number in range(1, 11):
 		var level: Dictionary = CampaignGeneratorScript.generate(level_number)
 		var score := int(level.get("difficulty_score", -1))
-		if score < 10 or score > 25:
-			errors.append("Rescue Rush level %d opening difficulty score is outside 10..25: %d" % [level_number, score])
+		if level_number <= 3:
+			if score < 10 or score > 25:
+				errors.append("Rescue Rush level %d baseline difficulty is outside 10..25: %d" % [level_number, score])
+		elif score < 26 or score > 65:
+			errors.append("Rescue Rush level %d post-intro difficulty is outside 26..65: %d" % [level_number, score])
 		if int(level.get("mistake_limit", -1)) != 0:
 			errors.append("Rescue Rush level %d should not punish blocked taps during onboarding" % level_number)
 		if int(level.get("width", 0)) != 7 or int(level.get("height", 0)) != 7:

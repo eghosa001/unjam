@@ -35,8 +35,8 @@ func _run() -> void:
 			return _fail("Selector game title is too small for %s" % game_id)
 		if game_title.get_theme_constant("outline_size") < 2:
 			return _fail("Selector game title lost its high-contrast outline for %s" % game_id)
-		if game_title.get_theme_color("font_color").get_luminance() < 0.80:
-			return _fail("Selector game title lost its bright foreground for %s" % game_id)
+		if game_title.get_theme_color("font_color").get_luminance() > 0.42:
+			return _fail("Selector game title lost its dark-on-neutral foreground for %s" % game_id)
 		var game_subtitle := _find(main, "SelectorGameSubtitle_%s" % game_id) as Label
 		if game_subtitle == null:
 			return _fail("Selector game subtitle is missing for %s" % game_id)

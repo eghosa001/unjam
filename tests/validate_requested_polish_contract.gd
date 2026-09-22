@@ -3,7 +3,7 @@ extends SceneTree
 func _init() -> void:
 	var errors: Array[String] = []
 	_require("res://project.godot", ["theme/default_font_multichannel_signed_distance_field=true"], errors)
-	_require("res://scripts/ui/premium_home_direct_levels.gd", ["RESCUE RUSH", "WATER SORT", "BLOCK PUZZLE", "daily_done_count", "HomeHeroFlatGameLogo", "HomeWorldFlatGameLogo", "#e2c98f", "#2a2118"], errors)
+	_require("res://scripts/ui/premium_home_direct_levels.gd", ["RESCUE RUSH", "WATER SORT", "BLOCK PUZZLE", "daily_done_count", "HomeHeroFlatGameLogo", "HomeWorldFlatGameLogo", "#e4dfd5", "#1f1f1f"], errors)
 	_require("res://scripts/ui/premium_home_direct_levels.gd", ["HomeNavTopGloss", "HomeNavActivePlate", "HomeNavGlyph_", "HomeGamesNavButton", "\"GAMES\", \"▦\"", "\"DAILY\", \"✦\"", "\"COLLECT\", \"◆\""], errors)
 	_require("res://scripts/ui/premium_home_overhaul.gd", ["Progress, stars, wallet", "_sync()"], errors)
 	_require("res://scripts/ui/premium_home_casual.gd", ["HomeCoinShopButton", "HomeGamesNavButton", "HomeDailyNavButton", "HomeCollectionNavButton", "HomeSettingsNavButton", "GAMES", "DAILY", "COLLECT"], errors)
@@ -15,14 +15,14 @@ func _init() -> void:
 	_require("res://scripts/ui/unjam_3d_backdrop.gd", ["_sky_gradient_texture", "_river_gradient_texture", "draw_texture_rect(_sky_gradient()", "draw_texture_rect(_river_gradient()", "TEXTURE_FILTER_LINEAR"], errors)
 	_require("res://scripts/ui/figma_button_backdrop.gd", ["Premium toy-like controls", "var pressed := false", "button_down.connect", "height_loss"], errors)
 	_require("res://scripts/ui/unjam_3d_backdrop.gd", ["Fewer, larger foliage clusters"], errors)
-	_require("res://scripts/ui/premium_main_casual.gd", ["SurfaceKeyLight", "SurfaceAccentGlow", "#e2c98f", "#b89050", "#805b31"], errors)
+	_require("res://scripts/ui/premium_main_casual.gd", ["SurfaceKeyLight", "SurfaceAccentGlow", "#e4dfd5", "#b3aca2", "#80786e"], errors)
 	_require("res://scripts/ui/premium_main_casual.gd", ["StdNavTopGloss", "StdNavActivePlate_", "StdNavGlyph_", "\"games\":\"▦\"", "\"daily\":\"✦\"", "\"collection\":\"◆\"", "\"settings\":\"⚙\""], errors)
 	_require("res://scripts/ui/premium_home_direct_levels.gd", ["HomeKeyLight", "HomeAccentGlow", "HomeCurrencyGem3D", "HomeCurrencyStar3D", "WorldProgressSpecular"], errors)
 	_require("res://scripts/ui/premium_result_overlay.gd", ["ResultKeyLight", "ResultStar3D", "ResultGameArt3D", "add_collectible_star"], errors)
 	_require("res://scripts/ui/ux_shell_casual.gd", ["TutorialKeyLight", "add_scene_backdrop_layers"], errors)
 	_require("res://scripts/ui/ux_shell_casual.gd", ["FigmaReferenceCanvas.label(\"EXIT\",12", "TutorialDemoExitLabel", "FigmaReferenceCanvas.set_rect(exit_label,160,34,46,17)"], errors)
 	_require("res://scripts/ui/premium_gameplay_feedback.gd", ["is_intro_banner", "BlockPremiumFeedback", "RescuePremiumFeedback", "viewport_size.y * 0.68"], errors)
-	_require("res://scripts/ui/premium_live_hub_3d.gd", ["SelectorWorldDepth", "SelectorFlatGameLogo_", "SelectorKeyLight", "#e2c98f", "#b89050", "#805b31", "\"CHOOSE A GAME\", Rect2(83, 28, 186, 32), 21", "style_display_title", "mark.configure(game_id)", "SelectorGamePreviewFrame_"], errors)
+	_require("res://scripts/ui/premium_live_hub_3d.gd", ["SelectorWorldDepth", "SelectorFlatGameLogo_", "SelectorKeyLight", "#e4dfd5", "#b3aca2", "#80786e", "\"CHOOSE A GAME\", Rect2(83, 28, 186, 32), 21", "style_display_title", "mark.configure(game_id)", "SelectorGamePreviewFrame_"], errors)
 	_require("res://scripts/ui/unjam_3d_game_art.gd", ["PROJECTION_ORTHOGONAL", "camera.size = 9.15", "camera.fov = 39.0", "flat_selector_mode", "Vector2i(416, 448) if flat_selector_mode else Vector2i(576, 432)", "unjam_flat_3d_preview", "Game-specific card-scale composition", "display_root.scale = Vector3.ONE * 1.05", "Vector3(-0.14, 0.05, 0.08)"], errors)
 	_require("res://scripts/ui/monetization_hub_3d.gd", ["ShopWorldDepth", "ShopKeyLight", "ShopCurrencyGem3D", "add_collectible_gem", "style_display_title"], errors)
 	_require("res://scripts/ui/premium_home_direct_levels.gd", ["rounded_gradient3(stage_mid", "rounded_gradient3(nav_fill", "rounded_gradient3(fill.lightened"], errors)
@@ -47,7 +47,7 @@ func _init() -> void:
 	_reject("res://scripts/ui/premium_home_direct_levels.gd", ["HomeLevelsNavButton", "HomeShopNavButton", "HomeNavSelectedDot", "HomeNavSelectedUnderline"], errors)
 	_reject("res://scripts/ui/premium_home_casual.gd", ["HomeLevelsNavButton", "HomeShopNavButton"], errors)
 	_reject("res://scripts/ui/premium_main_casual.gd", ["Daily level %d", "Three fresh challenges every day", "TODAY: %s", "One challenge per game today", "Sound, motion & theme", "game-tinted lacquer", "Each Daily is independent • play in any order", "ACHIEVEMENT CABINET"], errors)
-	_reject("res://scripts/ui/premium_home_direct_levels.gd", ["NEXT • LEVEL %d", "QUICK SWITCH", "HomeSelectedGameLevel"], errors)
+	_reject("res://scripts/ui/premium_home_direct_levels.gd", ["NEXT • LEVEL %d", "QUICK SWITCH"], errors)
 	_reject("res://scripts/game/block_puzzle_3d.gd", ["BlockCampaignSubtitle", "\"CAMPAIGN\""], errors)
 	if not errors.is_empty():
 		for error in errors:
