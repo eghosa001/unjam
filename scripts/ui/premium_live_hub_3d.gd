@@ -70,7 +70,7 @@ func _build_reference_selector(canvas: Control) -> void:
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(background)
 	RefCanvas.add_world_depth(canvas, Color("#59636f") if _selector_dark() else Color("#9aa4ae"), _selector_dark(), 0.0, "SelectorWorldDepth")
-	RefCanvas.add_scene_backdrop_layers(canvas, Color("#68737f") if _selector_dark() else Color("#a9b1ba"), _selector_dark(), "Selector")
+	RefCanvas.add_scene_backdrop_layers(canvas, Color("#314467") if _selector_dark() else Color("#6f8fbd"), _selector_dark(), "Selector")
 	var selector_key_light := canvas.get_node_or_null("SelectorKeyLight")
 	if selector_key_light != null:
 		selector_key_light.set_meta("unjam_figma_scene_light", true)
