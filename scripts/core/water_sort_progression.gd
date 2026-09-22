@@ -321,7 +321,7 @@ static func _difficulty_rank(level: int) -> int:
 
 static func _retention_role(level: int) -> String:
 	if level <= 10:
-		return ["tutorial", "tutorial", "tutorial", "build", "challenge", "build", "challenge", "stretch", "stretch", "peak"][level - 1]
+		return ["tutorial", "tutorial", "tutorial", "build", "challenge", "build", "challenge", "stretch", "build", "peak"][level - 1]
 	if _is_color_intro(level):
 		return "learn"
 	if _is_color_intro(level - 1) or _is_color_intro(level - 2):
