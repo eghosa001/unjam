@@ -4,7 +4,10 @@ const ROBUST_SAVE_PATH := "user://unjam_save.json"
 const BACKUP_PATH := "user://unjam_save.backup.json"
 const TEMP_PATH := "user://unjam_save.tmp.json"
 const SAVE_VERSION := 14
-const DEFERRED_SAVE_DELAY_SECONDS := 0.12
+# Active-run checkpoints are high-frequency but non-financial. Debounce them
+# long enough to coalesce rapid puzzle moves; pause/focus-loss/close still
+# forces an immediate flush, while rewards and purchases continue using save().
+const DEFERRED_SAVE_DELAY_SECONDS := 1.25
 
 var _deferred_save_timer: Timer
 var _last_saved_payload := ""
