@@ -13,17 +13,17 @@ const FIGMA_CYAN := Color(0.14, 0.68, 1.0)
 const FIGMA_ORANGE := Color(1.0, 0.55, 0.12)
 const FIGMA_GOLD := Color(1.0, 0.84, 0.24)
 
-const FIGMA_DARK_TOP := Color("#12171d")
-const FIGMA_DARK_BOTTOM := Color("#0e1318")
-const FIGMA_DARK_CARD := Color("#1a2129")
+const FIGMA_DARK_TOP := Color("#242b33")
+const FIGMA_DARK_BOTTOM := Color("#161b22")
+const FIGMA_DARK_CARD := Color("#20272f")
 const FIGMA_DARK_INK := Color("#f5f7fa")
 const FIGMA_DARK_MUTED := Color("#a7b1bc")
 const FIGMA_SCENE_TOP := Color("#eef2f5")
 const FIGMA_SCENE_MID := Color("#e6eaee")
 const FIGMA_SCENE_BOTTOM := Color("#d6dce2")
-const FIGMA_SCENE_DARK_TOP := Color("#171c22")
-const FIGMA_SCENE_DARK_MID := Color("#12171d")
-const FIGMA_SCENE_DARK_BOTTOM := Color("#0b0f13")
+const FIGMA_SCENE_DARK_TOP := Color("#252c34")
+const FIGMA_SCENE_DARK_MID := Color("#242b33")
+const FIGMA_SCENE_DARK_BOTTOM := Color("#14191f")
 
 var _collection_scroll_tracking := false
 var _collection_scroll_origin_y := 0.0
@@ -218,7 +218,7 @@ func _figma_card(canvas: Control, name_value: String, rect: Rect2, tint: Color =
 	FigmaReferenceCanvas.add_shadow(canvas, rect, radius, Color(0.01,0.04,0.08,0.30 if _dark() else 0.22), 7 if not _dark() else 5, Vector2(0,5 if not _dark() else 4))
 	var card := PanelContainer.new()
 	card.name = name_value
-	var resolved_tint := Color("#1a2129") if _dark() else Color("#e3e8ed")
+	var resolved_tint := Color("#20272f") if _dark() else Color("#e3e8ed")
 	var resolved_accent := Color(accent.r, accent.g, accent.b, 0.78) if _dark() else Color(accent.r, accent.g, accent.b, maxf(accent.a, 0.62))
 	card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(resolved_tint.lightened(0.025 if _dark() else 0.07), resolved_tint, resolved_tint.darkened(0.07 if _dark() else 0.13), radius, resolved_accent, 1.4 if not _dark() else 1.2, 0.44 if not _dark() else 0.48))
 	FigmaReferenceCanvas.set_rect(card, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
@@ -301,7 +301,7 @@ func _figma_open_shop() -> void:
 
 func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false) -> void:
 	var use_dark := dark_mode or _dark()
-	var bar_fill := Color("#1a2129") if use_dark else Color("#e3e8ed")
+	var bar_fill := Color("#20272f") if use_dark else Color("#e3e8ed")
 	var bar_border := Color("#34404c") if use_dark else Color("#c3cbd3")
 	if use_dark:
 		_figma_solid_card(canvas, "StdNav/Bar", Rect2(13,757,362,70), bar_fill, bar_border, 18)
