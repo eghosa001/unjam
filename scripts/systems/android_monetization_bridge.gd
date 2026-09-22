@@ -262,10 +262,3 @@ func query_owned_purchases(callback: Callable) -> bool:
 	billing_client.query_purchases(PRODUCT_TYPE_INAPP)
 	return true
 
-func finalize_purchase(token: String, consumable: bool) -> void:
-	if not billing_ready() or token.is_empty():
-		return
-	if consumable:
-		billing_client.consume_purchase(token)
-	else:
-		billing_client.acknowledge_purchase(token)
