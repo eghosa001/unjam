@@ -3,12 +3,13 @@ class_name WaterTubeButton
 
 const CAPACITY := 4
 const PALETTE := [
-	# High-separation palette: red, royal blue, yellow, emerald, violet, orange,
-	# cyan and magenta. Adjacent colours differ strongly in both hue and value.
-	Color("ff355d"), Color("2478ff"), Color("ffd42a"), Color("19c56f"),
-	Color("8b4dff"), Color("ff7a00"), Color("00cfe8"), Color("ff3db8")
+	# Perceptually separated late-game palette. The first eight cover the primary
+	# hue wheel; the four late-game additions deliberately differ in value as well
+	# as hue so 10-12 colour boards remain readable on small phone screens.
+	Color("e53935"), Color("1e5eff"), Color("ffd400"), Color("00a86b"),
+	Color("a100f2"), Color("ff7a00"), Color("00b8d9"), Color("e0008a"),
+	Color("263238"), Color("a8e600"), Color("9a5a24"), Color("ff8fbd")
 ]
-
 var layers: Array = []
 var is_selected := false
 var tube_index := 0

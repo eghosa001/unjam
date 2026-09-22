@@ -269,35 +269,47 @@ static func add_scene_backdrop_layers(parent: Control, accent: Color, dark: bool
 	var key_light := PanelContainer.new()
 	key_light.name = "%sKeyLight" % prefix
 	key_light.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	key_light.add_theme_stylebox_override("panel", solid_box(Color(1, 1, 1, 0.16 if not dark else 0.09), 110))
+	key_light.add_theme_stylebox_override("panel", solid_box(Color(1, 1, 1, 0.24 if not dark else 0.09), 110))
 	set_rect(key_light, -55, -72, 270, 220)
 	parent.add_child(key_light)
 
 	var accent_glow := PanelContainer.new()
 	accent_glow.name = "%sAccentGlow" % prefix
 	accent_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	accent_glow.add_theme_stylebox_override("panel", solid_box(Color(accent.r, accent.g, accent.b, 0.12 if not dark else 0.08), 120))
+	accent_glow.add_theme_stylebox_override("panel", solid_box(Color(accent.r, accent.g, accent.b, 0.18 if not dark else 0.08), 120))
 	set_rect(accent_glow, 230, 575, 250, 230)
 	parent.add_child(accent_glow)
 
 	var sweep := Polygon2D.new()
 	sweep.name = "%sLightSweep" % prefix
 	sweep.polygon = PackedVector2Array([Vector2(-45,118),Vector2(435,22),Vector2(435,118),Vector2(-45,226)])
-	sweep.color = Color(1,1,1,0.095 if not dark else 0.055)
+	sweep.color = Color(1,1,1,0.16 if not dark else 0.055)
 	parent.add_child(sweep)
 
 	var vignette := Polygon2D.new()
 	vignette.name = "%sBottomVignette" % prefix
 	vignette.polygon = PackedVector2Array([Vector2(-30,692),Vector2(430,604),Vector2(430,844),Vector2(-30,844)])
-	vignette.color = Color(0.005,0.015,0.06,0.28 if not dark else 0.42)
+	vignette.color = Color(0.005,0.015,0.06,0.18 if not dark else 0.42)
 	parent.add_child(vignette)
+
+	# Light mode gets a quiet glass horizon so the background reads as a layered
+	# game world rather than a pale utility page. Dark mode keeps its existing look.
+	if not dark:
+		var horizon := Polygon2D.new()
+		horizon.name = "%sLightGlassHorizon" % prefix
+		horizon.polygon = PackedVector2Array([
+			Vector2(-25, 470), Vector2(415, 402),
+			Vector2(415, 520), Vector2(-25, 584)
+		])
+		horizon.color = Color(0.88, 0.98, 1.0, 0.16)
+		parent.add_child(horizon)
 
 	for i in range(4):
 		var vein := Line2D.new()
 		vein.name = "%sMaterialVein%d" % [prefix, i]
 		vein.width = 1.0
 		vein.antialiased = true
-		vein.default_color = Color(0.84,0.95,1.0,0.055 if not dark else 0.035) if i % 2 == 0 else Color(0.02,0.07,0.18,0.055)
+		vein.default_color = Color(0.84,0.95,1.0,0.085 if not dark else 0.035) if i % 2 == 0 else Color(0.02,0.07,0.18,0.070 if not dark else 0.055)
 		var start := Vector2(18.0 + float(i) * 82.0, 260.0 + float(i) * 116.0)
 		var length := 120.0 + float(i) * 18.0
 		var angle := deg_to_rad(-8.0 if i % 2 == 0 else 11.0)

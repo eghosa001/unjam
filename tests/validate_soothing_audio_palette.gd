@@ -20,9 +20,9 @@ func _initialize() -> void:
 		"func _chime_stream",
 		"func _build_calm_ambient_loop",
 		"Fmaj7 -> Dm7 -> Bbmaj7 -> Cadd9",
-		"music_player.volume_db = -9.0",
-		"var body_tone := sin(TAU * float(chord[0]) * t) * 0.010 * edge",
-		"sfx.volume_db = 0.0",
+		"music_player.volume_db = -10.0",
+		"var body_tone := sin(TAU * float(chord[0]) * t) * 0.008 * edge",
+		"sfx.volume_db = -2.5",
 		"release_raw",
 		"var loop_edge := _smooth_edge(t, MUSIC_DURATION, 0.38)",
 		"var pulse_edge := _smooth_edge(pulse_phase, 2.0, 0.035)",
@@ -39,8 +39,14 @@ func _initialize() -> void:
 		failures.append("Legacy piercing rescue tone must not remain")
 	if source.contains("float(chord[0]) * 0.5"):
 		failures.append("Ambient loop must not reintroduce a half-frequency sub-bass oscillator")
+	if source.contains("base * 0.501"):
+		failures.append("Ambient pad must not reintroduce the near-half-frequency 58-87 Hz partial")
+	if source.contains("TAU * 0.083 * t"):
+		failures.append("Ambient loop must not mix sub-audible oscillator energy directly into PCM")
 	if source.contains("[58.27, 73.42, 87.31, 110.00]"):
 		failures.append("Ambient chord voicings must stay above phone-rumble bass territory")
+	if not source.contains("[196.00, 293.66, 392.00, 440.00]"):
+		failures.append("Ambient voicings must keep their lowest fundamental at or above 196 Hz")
 
 	var script = load(path)
 	if script == null:

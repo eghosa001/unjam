@@ -2,11 +2,13 @@ extends Button
 
 const CAPACITY := 4
 const PALETTE := [
-	Color("6c35bd"), Color("19a9e8"), Color("f4cf25"), Color("20c8b2"),
-	Color("e65b72"), Color("f19b2c"), Color("ef7bb0"), Color("2d60c8"),
-	Color("43a047"), Color("8d6e63"), Color("9ccc2e"), Color("455a64")
+	# Perceptually separated late-game palette. The first eight cover the primary
+	# hue wheel; the four late-game additions deliberately differ in value as well
+	# as hue so 10-12 colour boards remain readable on small phone screens.
+	Color("e53935"), Color("1e5eff"), Color("ffd400"), Color("00a86b"),
+	Color("a100f2"), Color("ff7a00"), Color("00b8d9"), Color("e0008a"),
+	Color("263238"), Color("a8e600"), Color("9a5a24"), Color("ff8fbd")
 ]
-
 var layers: Array = []
 var is_selected := false
 var tube_index := 0
