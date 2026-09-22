@@ -10,7 +10,10 @@ func _ready() -> void:
 	call_deferred("_refresh", true)
 
 func _on_surface_changed(_surface: String) -> void:
-	call_deferred("_refresh", true)
+	# The signature already includes surface, game, theme and content instance.
+	# Let it suppress duplicate emissions for the same live surface instead of
+	# recursively restyling the entire tree again.
+	call_deferred("_refresh", false)
 
 func _refresh(force: bool) -> void:
 	var main := get_parent()
