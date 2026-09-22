@@ -40,7 +40,8 @@ jobs:
           KEYSTORE_B64: ${{ secrets.UNJAM_ANDROID_KEYSTORE_BASE64 }}
           KEY_ALIAS: ${{ secrets.UNJAM_ANDROID_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.UNJAM_ANDROID_KEY_PASSWORD }}
-          VERIFY_URL: ${{ secrets.UNJAM_PURCHASE_VERIFICATION_URL }}
+          SUPABASE_URL: ${{ vars.UNJAM_SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.UNJAM_SUPABASE_PUBLISHABLE_KEY }}
         shell: bash
         run: |
           set -euo pipefail
@@ -51,34 +52,26 @@ jobs:
           [[ "$EXPECTED_UPLOAD_SHA1" =~ ^([0-9A-Fa-f]{2}:){19}[0-9A-Fa-f]{2}$ ]]
           test -n "$EXPECTED_BLOCK_REVIEW_SHA256"
           [[ "$EXPECTED_BLOCK_REVIEW_SHA256" =~ ^[0-9A-Fa-f]{64}$ ]]
-          [[ "$VERIFY_URL" == https://*/verify ]]
+          [[ "$SUPABASE_URL" == https://*.supabase.co ]]
+          test -n "$SUPABASE_PUBLISHABLE_KEY"
           [[ "${{ inputs.version_code }}" =~ ^[1-9][0-9]*$ ]]
           test "${{ inputs.version_code }}" -ge 1
           test "${{ inputs.version_code }}" -le 2100000000
           test -n "${{ inputs.version_name }}"
       - name: Verify live monetization endpoints
         env:
-          UNJAM_PURCHASE_VERIFICATION_URL: ${{ secrets.UNJAM_PURCHASE_VERIFICATION_URL }}
+          UNJAM_SUPABASE_URL: ${{ vars.UNJAM_SUPABASE_URL }}
+          UNJAM_SUPABASE_PUBLISHABLE_KEY: ${{ vars.UNJAM_SUPABASE_PUBLISHABLE_KEY }}
           UNJAM_DEVELOPER_WEBSITE_URL: ${{ vars.UNJAM_DEVELOPER_WEBSITE_URL }}
         shell: bash
         run: |
           set -euo pipefail
           python3 tools/check_live_monetization.py
-      - name: Setup Node 22
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Validate purchase verifier backend
+      - name: Validate Supabase purchase backend contract
         shell: bash
         run: |
           set -euxo pipefail
           python3 tools/validate_purchase_claim_protocol.py
-          cd backend/play-verifier
-          npm install --omit=dev --no-audit --no-fund
-          npm test
-          node --check src/server.js
-          node --check src/google_play.js
-          node --check src/firestore_ledger.js
       - name: Setup JDK 17
         uses: actions/setup-java@v5
         with:
@@ -115,7 +108,8 @@ jobs:
           KEYSTORE_B64: ${{ secrets.UNJAM_ANDROID_KEYSTORE_BASE64 }}
           KEY_ALIAS: ${{ secrets.UNJAM_ANDROID_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.UNJAM_ANDROID_KEY_PASSWORD }}
-          VERIFY_URL: ${{ secrets.UNJAM_PURCHASE_VERIFICATION_URL }}
+          SUPABASE_URL: ${{ vars.UNJAM_SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.UNJAM_SUPABASE_PUBLISHABLE_KEY }}
           VERSION_NAME: ${{ inputs.version_name }}
           VERSION_CODE: ${{ inputs.version_code }}
         shell: bash
@@ -139,8 +133,10 @@ jobs:
 
           p = Path('project.godot')
           text = p.read_text()
-          url = os.environ['VERIFY_URL']
-          text = re.sub(r'purchase_verification_url="[^"]*"', f'purchase_verification_url="{url}"', text)
+          supabase_url = os.environ['SUPABASE_URL']
+          supabase_key = os.environ['SUPABASE_PUBLISHABLE_KEY']
+          text = re.sub(r'supabase_url="[^"]*"', f'supabase_url="{supabase_url}"', text)
+          text = re.sub(r'supabase_publishable_key="[^"]*"', f'supabase_publishable_key="{supabase_key}"', text)
           p.write_text(text)
 
           cfg = Path('export_presets.cfg')
