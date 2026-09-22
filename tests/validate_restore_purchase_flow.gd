@@ -19,7 +19,8 @@ func run() -> void:
 		return
 
 	var old_test_mode := bool(ProjectSettings.get_setting("monetization/test_mode", false))
-	var old_verify_url := String(ProjectSettings.get_setting("monetization/purchase_verification_url", ""))
+	var old_supabase_url := String(ProjectSettings.get_setting("monetization/supabase_url", ""))
+	var old_supabase_key := String(ProjectSettings.get_setting("monetization/supabase_publishable_key", ""))
 	var original_purchased: Array = (save.data.get("purchased_products", []) as Array).duplicate(true)
 	var original_tokens: Array = (save.data.get("processed_purchase_tokens", []) as Array).duplicate(true)
 	var original_remove := bool(save.data.get("remove_ads", false))
@@ -29,7 +30,8 @@ func run() -> void:
 	# asynchronous and then fails. The critical contract is that Restore must not
 	# announce success before that verification settles.
 	ProjectSettings.set_setting("monetization/test_mode", false)
-	ProjectSettings.set_setting("monetization/purchase_verification_url", "https://127.0.0.1:1/verify")
+	ProjectSettings.set_setting("monetization/supabase_url", "https://127.0.0.1:1")
+	ProjectSettings.set_setting("monetization/supabase_publishable_key", "qa-publishable-key")
 	save.data.purchased_products = []
 	save.data.processed_purchase_tokens = []
 	save.data.remove_ads = false
@@ -95,7 +97,8 @@ func run() -> void:
 	if store.restore_completed.is_connected(restore_callback):
 		store.restore_completed.disconnect(restore_callback)
 	ProjectSettings.set_setting("monetization/test_mode", old_test_mode)
-	ProjectSettings.set_setting("monetization/purchase_verification_url", old_verify_url)
+	ProjectSettings.set_setting("monetization/supabase_url", old_supabase_url)
+	ProjectSettings.set_setting("monetization/supabase_publishable_key", old_supabase_key)
 	save.data.purchased_products = original_purchased
 	save.data.processed_purchase_tokens = original_tokens
 	save.data.remove_ads = original_remove
