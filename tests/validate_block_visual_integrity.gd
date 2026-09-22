@@ -75,7 +75,7 @@ func _validate_runtime(viewport_size: Vector2i) -> bool:
 	await _frames(8)
 
 	var title := game.get("title_label") as Label
-	var subtitle := game.find_child("BlockCampaignSubtitle", true, false) as Label
+	var subtitle := game.find_child("BlockLevelMeta", true, false) as Label
 	var profile := game.get("campaign_profile") as Dictionary
 	var expected_world := int(profile.get("world", 1))
 	if title == null or title.text != "BLOCK PUZZLE":
@@ -83,7 +83,7 @@ func _validate_runtime(viewport_size: Vector2i) -> bool:
 		return _fail("Block gameplay header lost its game identity")
 	if subtitle == null or subtitle.text != "LEVEL 1800 • WORLD %d" % expected_world:
 		game.queue_free()
-		return _fail("Block gameplay header is not reporting live level/world data")
+		return _fail("Block gameplay minimalist meta line is not reporting live level/world data")
 	if "HARD" in subtitle.text:
 		game.queue_free()
 		return _fail("Block gameplay header still exposes the retired hard-coded difficulty")
