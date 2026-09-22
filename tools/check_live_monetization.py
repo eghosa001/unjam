@@ -98,6 +98,9 @@ def readiness_failure(status: int, final_url: str, body: str) -> None:
         if deps.get("postgres") is True and deps.get("voided_purchases") is False:
             voided_detail = str(parsed.get("voided_purchases_detail", "")) if isinstance(parsed, dict) else ""
             fail(f"Google Play Voided Purchases API authorization is not ready ({voided_detail or 'unknown'})")
+        if deps.get("product_catalog") is False:
+            catalog_detail = str(parsed.get("product_catalog_detail", "")) if isinstance(parsed, dict) else ""
+            fail(f"Google Play one-time product catalog is not release-ready ({catalog_detail or 'unknown'})")
     except json.JSONDecodeError:
         pass
     fail(f"Supabase purchase verifier readiness returned HTTP {status} at {final_url}{detail}")
@@ -139,10 +142,12 @@ def main() -> int:
         or dependencies.get("postgres") is not True
         or dependencies.get("google_play") is not True
         or dependencies.get("voided_purchases") is not True
+        or dependencies.get("product_catalog") is not True
         or capabilities.get("server_finalization") is not True
         or capabilities.get("voided_purchase_sync") is not True
         or capabilities.get("install_bound_revocations") is not True
         or capabilities.get("database_rate_limit") is not True
+        or capabilities.get("product_catalog_validation") is not True
         or readiness.get("package_name") != EXPECTED_PACKAGE
     ):
         readiness_failure(status, final_url, body)
