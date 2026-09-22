@@ -463,6 +463,16 @@ func build_settings() -> void:
 	privacy.pressed.connect(PrivacyManager.show_privacy_options)
 	canvas.add_child(privacy)
 
+	_figma_settings_card(canvas,"SettingsCard/Purchases",Rect2(17,607,354,98),card_fill,card_border,dark_mode)
+	_figma_text(canvas,"PURCHASES",Rect2(33,621,170,18),15,FIGMA_GOLD if not dark_mode else heading_color)
+	FigmaReferenceCanvas.add_shadow(canvas, Rect2(33,645,318,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
+	var purchases := FigmaReferenceCanvas.premium_button("SHOP & RESTORE",14,utility_text,utility_fill,16,utility_border,1.2)
+	purchases.name = "SettingsPurchases"
+	FigmaReferenceCanvas.set_rect(purchases,33,645,318,46)
+	purchases.tooltip_text = "Buy upgrades or restore previous Google Play purchases"
+	purchases.pressed.connect(_figma_open_shop)
+	canvas.add_child(purchases)
+
 	_figma_bottom_nav(canvas,"settings",dark_mode)
 
 func _figma_settings_card(canvas: Control, name_value: String, rect: Rect2, fill: Color, border: Color, dark_mode: bool) -> PanelContainer:
