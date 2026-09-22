@@ -488,6 +488,7 @@ func _toggle_reduced_motion() -> void:
 	var enabled := not bool(SaveManager.data.get("reduce_motion", false))
 	SaveManager.data["reduce_motion"] = enabled
 	SaveManager.save()
+	MotionSystem.refresh_preferences()
 	PremiumVisuals.apply_motion_preference()
 	FeedbackManager.tap()
 	build_settings()
@@ -1153,15 +1154,6 @@ func _figma_switch_level_game(game_id: String) -> void:
 	build_multi_level_select()
 
 
-func _find_page_root() -> VBoxContainer:
-	if content == null:
-		return null
-	for child in content.get_children():
-		if child is MarginContainer:
-			for inner in child.get_children():
-				if inner is VBoxContainer:
-					return inner as VBoxContainer
-	return null
 
 func _level_column_count(usable_width: float) -> int:
 	if usable_width >= 900.0:
