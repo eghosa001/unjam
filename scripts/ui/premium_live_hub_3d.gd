@@ -88,7 +88,7 @@ func _build_reference_selector(canvas: Control) -> void:
 	selector_title.clip_text = true
 	RefCanvas.style_display_title(selector_title, Color("#ffca45"), Color("#071d55"), 2)
 	RefCanvas.add_shadow(canvas, Rect2(285, 21, 84, 46), 23, Color(0.02,0.15,0.30,0.16), 3, Vector2(0,2))
-	var settings := RefCanvas.premium_button("⚙", 18, OFF_WHITE, Color(0.03, 0.43, 0.78), 23)
+	var settings := RefCanvas.premium_button("⚙", 18, NAVY if not _selector_dark() else OFF_WHITE, Color("#d8c294") if not _selector_dark() else Color("#3a2d20"), 23, Color("#b89050"), 1.1)
 	settings.name = "SelectorSettingsButton"
 	settings.tooltip_text = "Settings"
 	RefCanvas.set_rect(settings, 285, 21, 84, 46)
@@ -104,14 +104,17 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 	RefCanvas.add_shadow(canvas, rect, 20, Color(0.03,0.10,0.20,0.22), 8, Vector2(0,6))
 	var card := PanelContainer.new()
 	card.name = "GameCard3D_%s" % game_id
-	card.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(highlight, accent, accent.darkened(0.18), 20, highlight.lightened(0.35), 1.6, 0.55))
+	var neutral_top := Color("#3a2d20") if _selector_dark() else Color("#fffaf0")
+	var neutral_mid := Color("#33281c") if _selector_dark() else Color("#f4ead6")
+	var neutral_bottom := Color("#2a2118") if _selector_dark() else Color("#eadfc8")
+	card.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(neutral_top, neutral_mid, neutral_bottom, 20, Color(accent,0.58), 1.2, 0.26))
 	RefCanvas.set_rect(card, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(card)
 
-	var game_title := _add_text(canvas, title, Rect2(34, rect.position.y + 12.6, 184, 24), 20, OFF_WHITE, true)
+	var game_title := _add_text(canvas, title, Rect2(34, rect.position.y + 12.6, 184, 24), 20, accent.lightened(0.18) if _selector_dark() else accent.darkened(0.18), true)
 	game_title.name = "SelectorGameTitle_%s" % game_id
-	RefCanvas.style_display_title(game_title, Color("#fff7df"), accent.darkened(0.62), 2)
+	game_title.add_theme_color_override("font_color", accent.lightened(0.18) if _selector_dark() else accent.darkened(0.18))
 	# Keep body copy in a hard clipping region. Label intrinsic minimum size can
 	# exceed its authored width for longer localized strings, so the wrapper is
 	# the authoritative boundary before the 3D emblem.
@@ -121,7 +124,7 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 	subtitle_clip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	RefCanvas.set_rect(subtitle_clip, 34, rect.position.y + 39.6, 184, 38)
 	canvas.add_child(subtitle_clip)
-	var game_subtitle := _make_label(subtitle, 13, OFF_WHITE, false)
+	var game_subtitle := _make_label(subtitle, 13, DARK_MUTED if _selector_dark() else MUTED, false)
 	game_subtitle.name = "SelectorGameSubtitle_%s" % game_id
 	game_subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	game_subtitle.clip_text = true
@@ -132,12 +135,12 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 	var level := maxi(1, MultiGameManager.highest_level(game_id))
 	RefCanvas.add_shadow(canvas, Rect2(33, rect.position.y + 100.7, 112, 36), 13, Color(0.02,0.10,0.20,0.16), 3, Vector2(0,2))
 	var level_pill := PanelContainer.new()
-	var pill_mid := Color(0.04, 0.30, 0.55)
-	level_pill.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(pill_mid.lightened(0.20), pill_mid, pill_mid.darkened(0.16), 13, pill_mid.lightened(0.28), 1, 0.40))
+	var pill_mid := Color("#3a2d20") if _selector_dark() else Color("#eadfc8")
+	level_pill.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(pill_mid.lightened(0.04), pill_mid, pill_mid.darkened(0.04), 13, Color(accent,0.42), 1, 0.24))
 	RefCanvas.set_rect(level_pill, 33, rect.position.y + 100.7, 112, 36)
 	level_pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(level_pill)
-	var level_label := _add_text(canvas, "LEVEL %d" % level, Rect2(45, rect.position.y + 111, 88, 16), 13, OFF_WHITE, true)
+	var level_label := _add_text(canvas, "LEVEL %d" % level, Rect2(45, rect.position.y + 111, 88, 16), 13, DARK_INK if _selector_dark() else INK, true)
 	level_label.name = "SelectorLevelLabel_%s" % game_id
 	_add_card_preview(canvas, game_id, rect.position.y)
 
@@ -154,8 +157,8 @@ func _add_card_preview(canvas: Control, game_id: String, card_y: float) -> void:
 	var origin_y := card_y + 22.5
 	var stage := PanelContainer.new()
 	stage.name = "SelectorGamePreviewFrame_%s" % game_id
-	var stage_mid := Color(0.92, 1.0, 0.86, 0.50) if game_id == "rescue_rush" else (Color(0.91, 0.99, 1.0, 0.54) if game_id == "water_sort" else Color(0.94, 0.91, 1.0, 0.46))
-	stage.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(stage_mid.lightened(0.12), stage_mid, stage_mid.darkened(0.10), 16, Color(1,1,1,0.24), 1, 0.40))
+	var stage_mid := Color("#33281c") if _selector_dark() else Color("#eee1c8")
+	stage.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(stage_mid.lightened(0.05), stage_mid, stage_mid.darkened(0.05), 16, Color(1,1,1,0.16), 1, 0.24))
 	RefCanvas.set_rect(stage, 243, origin_y, 104, 112)
 	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(stage)
@@ -178,17 +181,17 @@ func _add_bottom_nav(canvas: Control) -> void:
 
 	var top_gloss := PanelContainer.new()
 	top_gloss.name = "SelectorNavTopGloss"
-	top_gloss.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.64,0.88,1.0,0.22 if _selector_dark() else 0.34), 1))
+	top_gloss.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(1.0,0.94,0.78,0.18 if _selector_dark() else 0.30), 1))
 	RefCanvas.set_rect(top_gloss, 28, 760, 332, 2)
 	top_gloss.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(top_gloss)
 
 	var items := [
-		["HOME", "⌂", 22.0, Callable(self, "_go_home"), false, Color("#33b9ff")],
-		["GAMES", "▦", 91.0, Callable(), true, Color("#7b6cff")],
+		["HOME", "⌂", 22.0, Callable(self, "_go_home"), false, Color("#ffd54f")],
+		["GAMES", "▦", 91.0, Callable(), true, Color("#ffd54f")],
 		["DAILY", "✦", 150.0, func(): get_parent().call("build_daily_games"), false, Color("#ffd54f")],
-		["COLLECT", "◆", 225.0, func(): get_parent().call("build_collection"), false, Color("#21c763")],
-		["SETTINGS", "⚙", 310.0, func(): get_parent().call("build_settings"), false, CYAN],
+		["COLLECT", "◆", 225.0, func(): get_parent().call("build_collection"), false, Color("#ffd54f")],
+		["SETTINGS", "⚙", 310.0, func(): get_parent().call("build_settings"), false, Color("#ffd54f")],
 	]
 	for item in items:
 		var selected: bool = bool(item[4])
