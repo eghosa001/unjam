@@ -53,8 +53,6 @@ def main() -> int:
         errors.append(f'live monetization checker has invalid Python syntax: {exc.msg} at line {exc.lineno}')
 
     for token in (
-        'default: 1',
-        'default: 1.0.0',
         'EXPECTED_UPLOAD_SHA1',
         EXPECTED_UPLOAD_SECRET,
         '--export-release Android build/android/unjam-release.aab',
@@ -69,6 +67,8 @@ def main() -> int:
         "targetSdkVersion:'36'",
         "native-code: 'arm64-v8a'",
         '16 KB native page compatibility',
+        'Refuse unsigned release artifact',
+        'grep -F "jar verified." build/android/jarsigner-verify.log',
     ):
         if token not in workflow:
             errors.append(f'missing release workflow contract token: {token}')
@@ -92,6 +92,13 @@ def main() -> int:
     for token in (
         EXPECTED_PACKAGE,
         EXPECTED_BACKEND_EXCLUSION,
+        'package/signed=true',
+        'gradle_build/export_format=1',
+        'gradle_build/target_sdk="36"',
+        'architectures/arm64-v8a=true',
+        'architectures/armeabi-v7a=false',
+        'architectures/x86=false',
+        'architectures/x86_64=false',
         'permissions/internet=true',
         'permissions/access_network_state=true',
         'com.google.android.gms.permission.AD_ID',
