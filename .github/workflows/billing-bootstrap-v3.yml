@@ -1,0 +1,155 @@
+name: UNJAM v3 Billing Bootstrap AAB
+
+on:
+  push:
+    branches:
+      - release/v3-billing-bootstrap
+    paths:
+      - ".github/workflows/billing-bootstrap-v3.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: unjam-v3-billing-bootstrap
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      EXPECTED_PACKAGE: com.eghosa.unjamgam
+      VERSION_NAME: "1.0.2"
+      VERSION_CODE: "3"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify billing source contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F 'package/unique_name="com.eghosa.unjamgam"' export_presets.cfg
+          grep -F 'permissions/custom_permissions=PackedStringArray("com.google.android.gms.permission.AD_ID")' export_presets.cfg
+          grep -F 'res://addons/GodotGooglePlayBilling/plugin.cfg' project.godot
+          grep -F 'BILLING_VERSION="3.3.0"' tools/install_monetization_plugins.sh
+          python3 tools/validate_purchase_claim_protocol.py
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Godot 4.7.2
+        uses: solarlabyrinth/action-setup-godot@v3
+        with:
+          version: 4.7.2-stable
+          export-templates: true
+
+      - name: Install Android API 36
+        shell: bash
+        run: |
+          set -euxo pipefail
+          ANDROID_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          test -n "$ANDROID_ROOT"
+          SDKMANAGER=$(find "$ANDROID_ROOT/cmdline-tools" -name sdkmanager -type f | sort | tail -1)
+          test -x "$SDKMANAGER"
+          set +o pipefail
+          yes | "$SDKMANAGER" --sdk_root="$ANDROID_ROOT" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+          SDK_STATUS=${PIPESTATUS[1]}
+          set -o pipefail
+          test "$SDK_STATUS" -eq 0
+          echo "ANDROID_HOME=$ANDROID_ROOT" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_ROOT" >> "$GITHUB_ENV"
+
+      - name: Install AdMob and Play Billing plugins
+        shell: bash
+        run: |
+          set -euxo pipefail
+          chmod +x tools/install_monetization_plugins.sh
+          tools/install_monetization_plugins.sh
+
+      - name: Configure version 3 unsigned export
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          p = Path("export_presets.cfg")
+          s = p.read_text()
+          s = re.sub(r'version/code=\d+', 'version/code=3', s)
+          s = re.sub(r'version/name="[^"]*"', 'version/name="1.0.2"', s)
+          s = s.replace('package/signed=true', 'package/signed=false')
+          p.write_text(s)
+          PY
+          grep -Fx 'package/unique_name="com.eghosa.unjamgam"' export_presets.cfg
+          grep -Fx 'version/code=3' export_presets.cfg
+          grep -Fx 'version/name="1.0.2"' export_presets.cfg
+          grep -Fx 'package/signed=false' export_presets.cfg
+
+      - name: Import and run targeted monetization tests
+        shell: bash
+        run: |
+          set -euxo pipefail
+          godot --headless --path . --editor --quit
+          for t in validate_billing_production validate_admob_production validate_monetization validate_restore_purchase_flow; do
+            timeout 90s godot --headless --path . --script "res://tests/$t.gd"
+          done
+
+      - name: Export verification APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/android
+          cp export_presets.cfg "$RUNNER_TEMP/export_presets.v3-aab.cfg"
+          sed -i 's/gradle_build\/export_format=1/gradle_build\/export_format=0/' export_presets.cfg
+          godot --headless --verbose --path . --install-android-build-template --export-release Android build/android/unjam-v3-check.apk 2>&1 | tee build/android/v3-apk-export.log
+          test -s build/android/unjam-v3-check.apk
+          cp "$RUNNER_TEMP/export_presets.v3-aab.cfg" export_presets.cfg
+
+      - name: Verify packaged Android manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=build/android/unjam-v3-check.apk
+          AAPT="$(find "$ANDROID_SDK_ROOT/build-tools" -type f -name aapt | sort | tail -1)"
+          "$AAPT" dump badging "$APK" | tee build/android/v3-badging.txt
+          "$AAPT" dump permissions "$APK" | tee build/android/v3-permissions.txt
+          "$AAPT" dump xmltree "$APK" AndroidManifest.xml | tee build/android/v3-manifest.txt
+          grep -F "package: name='com.eghosa.unjamgam'" build/android/v3-badging.txt
+          grep -F "versionCode='3'" build/android/v3-badging.txt
+          grep -F "versionName='1.0.2'" build/android/v3-badging.txt
+          grep -F "targetSdkVersion:'36'" build/android/v3-badging.txt
+          grep -F "native-code: 'arm64-v8a'" build/android/v3-badging.txt
+          grep -F "com.android.vending.BILLING" build/android/v3-permissions.txt
+          grep -F "com.google.android.gms.permission.AD_ID" build/android/v3-permissions.txt
+          grep -F "com.google.android.gms.ads.APPLICATION_ID" build/android/v3-manifest.txt
+          grep -F "ca-app-pub-7517898921176341~1892369383" build/android/v3-manifest.txt
+          grep -F "com.google.android.play.billingclient.version" build/android/v3-manifest.txt
+          rm -f "$APK"
+
+      - name: Export unsigned version 3 AAB
+        shell: bash
+        run: |
+          set -o pipefail
+          godot --headless --verbose --path . --export-release Android build/android/UNJAM-1.0.2-v3-unsigned.aab 2>&1 | tee build/android/v3-aab-export.log
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" build/android/v3-aab-export.log; then exit 1; fi
+          test -s build/android/UNJAM-1.0.2-v3-unsigned.aab
+          unzip -t build/android/UNJAM-1.0.2-v3-unsigned.aab > build/android/v3-aab-zip-test.log
+          sha256sum build/android/UNJAM-1.0.2-v3-unsigned.aab > build/android/UNJAM-1.0.2-v3-unsigned.aab.sha256
+
+      - name: Upload unsigned v3 AAB and manifest evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: UNJAM-1.0.2-versionCode-3-unsigned
+          path: |
+            build/android/UNJAM-1.0.2-v3-unsigned.aab
+            build/android/UNJAM-1.0.2-v3-unsigned.aab.sha256
+            build/android/v3-permissions.txt
+            build/android/v3-badging.txt
+            build/android/v3-manifest.txt
+          if-no-files-found: error
+          retention-days: 14
