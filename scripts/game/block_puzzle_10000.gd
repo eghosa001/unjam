@@ -184,15 +184,9 @@ func load_level() -> void:
 			push_error("Block Puzzle %s generator produced no proof for level %d" % [play_mode, level_number])
 
 	_reset_objective_state()
-	var proof_moves := int((campaign_plan.get("metadata", {}) as Dictionary).get("proof_moves", 0))
+	# Block Puzzle is space-limited, not move-limited. Placements still feed
+	# par/star scoring, but the attempt only fails when no block can fit.
 	campaign_move_limit = -1
-	if play_mode == "campaign":
-		campaign_move_limit = int(campaign_profile.get("move_limit", -1))
-		if campaign_move_limit > 0 and proof_moves > 0:
-			var margin := 3 if level_number <= 5000 else (2 if level_number < 9000 else 1)
-			campaign_move_limit = maxi(campaign_move_limit, proof_moves + margin)
-	elif play_mode == "extreme" and proof_moves > 0:
-		campaign_move_limit = proof_moves + (2 if level_number < 7500 else 1)
 
 	var checkpoint := MultiGameManager.checkpoint(GAME_ID)
 	var checkpoint_mode := String(checkpoint.get("play_mode", "campaign"))
@@ -220,9 +214,7 @@ func load_level() -> void:
 			call_deferred("_handle_no_legal_moves")
 	else:
 		render()
-		if play_mode in ["campaign", "extreme"] and campaign_move_limit > 0 and placements >= campaign_move_limit and not reached_goal():
-			call_deferred("_fail_campaign", "MOVE LIMIT REACHED")
-		elif not any_move_available():
+		if not any_move_available():
 			call_deferred("_handle_no_legal_moves")
 	call_deferred("_show_level_intro")
 	AnalyticsManager.track("block_puzzle_attempt_started", {
@@ -259,9 +251,11 @@ func _level_intro_banner_center() -> Vector2:
 func refill_pieces() -> void:
 	if daily_mode:
 		super.refill_pieces()
+		_ensure_playable_tray()
 		return
 	if play_mode in ["endless", "zen"]:
 		_refill_free_mode()
+		_ensure_playable_tray()
 		return
 
 	pieces.clear()
@@ -270,7 +264,8 @@ func refill_pieces() -> void:
 	var trays: Array = campaign_plan.get("trays", [])
 	var tray_index := piece_batch - 1
 	if tray_index < 0 or tray_index >= trays.size():
-		selected_piece = -1
+		_refill_continuation_tray()
+		_ensure_playable_tray()
 		return
 	var tray: Array = trays[tray_index]
 	var color_rng := RandomNumberGenerator.new()
@@ -279,6 +274,50 @@ func refill_pieces() -> void:
 		var shape_index := clampi(int(raw_index), 0, CampaignGenerator.SHAPES.size() - 1)
 		pieces.append(CampaignGenerator.SHAPES[shape_index].duplicate())
 		piece_colors.append(COLOR_PALETTE[color_rng.randi_range(0, COLOR_PALETTE.size() - 1)])
+	selected_piece = -1
+	_ensure_playable_tray()
+
+func _refill_continuation_tray() -> void:
+	# The authored campaign proof has a finite number of trays. If a player
+	# chooses a different path, continue supplying blocks instead of treating an
+	# exhausted proof tray as a loss while the board still has usable space.
+	var random := RandomNumberGenerator.new()
+	random.seed = int(_profile().get("seed", level_number * 104729)) + piece_batch * 99991 + 8675309
+	var tier := clampi(int(_profile().get("piece_tier", 1)), 1, 6)
+	var pool: Array = (CampaignGenerator.TIER_POOLS.get(tier, CampaignGenerator.TIER_POOLS[1]) as Array)
+	for _i in range(3):
+		var shape_index := int(pool[random.randi_range(0, pool.size() - 1)])
+		pieces.append(CampaignGenerator.SHAPES[shape_index].duplicate())
+		piece_colors.append(COLOR_PALETTE[random.randi_range(0, COLOR_PALETTE.size() - 1)])
+	selected_piece = -1
+
+func _ensure_playable_tray() -> void:
+	# A fresh tray must not manufacture an early game-over. If none of its
+	# pieces fits but any shape can still fit the board, replace the first piece
+	# with the smallest legal shape. Because the shape set contains a 1x1 block,
+	# failure now means there is genuinely no usable board space left.
+	if any_move_available():
+		return
+	var legal_shape_index := -1
+	for shape_index in range(CampaignGenerator.SHAPES.size()):
+		if _shape_has_legal_move(CampaignGenerator.SHAPES[shape_index]):
+			legal_shape_index = shape_index
+			break
+	if legal_shape_index < 0:
+		return
+	var replacement: Array = CampaignGenerator.SHAPES[legal_shape_index].duplicate()
+	var random := RandomNumberGenerator.new()
+	random.seed = int(_profile().get("seed", level_number * 104729)) + piece_batch * 99991 + 424242
+	if pieces.is_empty():
+		pieces.append(replacement)
+		piece_colors.append(COLOR_PALETTE[random.randi_range(0, COLOR_PALETTE.size() - 1)])
+		for _i in range(2):
+			pieces.append(replacement.duplicate())
+			piece_colors.append(COLOR_PALETTE[random.randi_range(0, COLOR_PALETTE.size() - 1)])
+	else:
+		pieces[0] = replacement
+		if piece_colors.is_empty():
+			piece_colors.append(COLOR_PALETTE[random.randi_range(0, COLOR_PALETTE.size() - 1)])
 	selected_piece = -1
 
 func render() -> void:
@@ -310,11 +349,8 @@ func render() -> void:
 		var milestone := String(campaign_profile.get("milestone", "normal"))
 		if campaign_label != null:
 			campaign_label.text = ("EXTREME • LEVEL %d" % level_number) if play_mode == "extreme" else "LEVEL %d • WORLD %d" % [level_number, world]
-		var move_text := ""
-		if campaign_move_limit > 0:
-			move_text = " • %d/%d MOVES" % [placements, campaign_move_limit]
-		goal_label.text = "WIN • %d/%d PTS • %d/%d LINES%s" % [
-			score, target_score, lines_cleared, target_lines, move_text
+		goal_label.text = "WIN • %d/%d PTS • %d/%d LINES" % [
+			score, target_score, lines_cleared, target_lines
 		]
 		_render_special_cells()
 		var special_text := _objective_status_text()
@@ -437,10 +473,6 @@ func place_selected(origin: Vector2i) -> void:
 
 	if reached_goal():
 		complete_level()
-		return
-
-	if campaign_move_limit > 0 and placements >= campaign_move_limit:
-		_fail_campaign("MOVE LIMIT REACHED")
 		return
 
 	if all_pieces_used():
@@ -724,7 +756,7 @@ func complete_level() -> void:
 			"piece_tier": int(_profile().get("piece_tier", 1)),
 			"planning_horizon": int(_profile().get("planning_horizon", 1)),
 			"milestone": String(_profile().get("milestone", "normal")),
-			"move_limited": campaign_move_limit > 0,
+			"move_limited": false,
 			"proof_moves": int((campaign_plan.get("metadata", {}) as Dictionary).get("proof_moves", 0)),
 			"constructive_verified": bool((campaign_plan.get("metadata", {}) as Dictionary).get("verified_constructive", false)),
 			"objective_family": String((campaign_plan.get("special_plan", {}) as Dictionary).get("family", "score")),
@@ -850,7 +882,7 @@ func _complete_extreme_mode() -> void:
 	result.configure(
 		"EXTREME COMPLETE",
 		"You cleared the expert variant without changing campaign progression.",
-		"SCORE %d   •   %d LINES\n%d PLACEMENTS   •   LIMIT %d" % [score, lines_cleared, placements, campaign_move_limit],
+		"SCORE %d   •   %d LINES\n%d PLACEMENTS" % [score, lines_cleared, placements],
 		3 if placements <= par_placements else 2,
 		Color("ff5f72"),
 		"BACK TO LEVELS"
@@ -1076,12 +1108,6 @@ func _handle_no_legal_moves() -> void:
 	_fail_campaign("NO LEGAL MOVES")
 
 func _failure_presentation(reason: String) -> Dictionary:
-	if reason.begins_with("MOVE LIMIT"):
-		return {
-			"title": "OUT OF MOVES",
-			"subtitle": "The move limit ended before every win goal was completed.",
-			"badge": "MOVE LIMIT"
-		}
 	if reason.begins_with("NO LEGAL MOVES"):
 		return {
 			"title": "NO MOVES LEFT",
