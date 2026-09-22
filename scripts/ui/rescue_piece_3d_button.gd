@@ -2,10 +2,9 @@ extends "res://scripts/ui/premium_piece_button.gd"
 class_name RescuePiece3DButton
 
 # Legacy class name retained so Rescue Rush gameplay and escape-animation code do
-# not need to change. Active arrows use lightweight 2.5D CanvasItem geometry:
-# deep sidewalls, directional cast shadow, lacquer highlights and a raised glyph.
-# This keeps every puzzle tile cheap and perfectly aligned while reading much
-# closer to a sculpted premium-game object than a flat button.
+# not need to change. The tile itself keeps premium depth, but the directional
+# arrow is intentionally flat and high-contrast. Direction must read instantly
+# on a dense phone board without highlights, extrusion or visual fatigue.
 
 func _ready() -> void:
 	super._ready()
@@ -73,18 +72,21 @@ func _draw_shell(rect: Rect2, center: Vector2, pulse: float) -> void:
 	if hover_amount > 0.01:
 		draw_arc(center - Vector2(0, depth * 0.30), front.size.x * 0.54, 0, TAU, 36, Color(glow, 0.20), 4.0, true)
 
+func _draw_motion_trail(_center: Vector2, _pulse: float) -> void:
+	# Direction is communicated by the printed glyph itself. Motion trails made
+	# dense late-game boards visually noisy and competed with the arrow silhouette.
+	return
+
 func _draw_arrow(center: Vector2, dir: String, scale_value: float) -> void:
 	var v := _dir_vec(dir)
 	var n := Vector2(-v.y, v.x)
-	# Make direction readable before material detail. The previous glyph was
-	# visually attractive but too small inside dense late-game boards.
-	var readable_scale := scale_value * 1.18
-	var glyph_center := center - Vector2(0, 3.0)
+	var readable_scale := scale_value * 1.16
+	var glyph_center := center - Vector2(0, 2.0)
 	var tip := glyph_center + v * readable_scale
-	var tail := glyph_center - v * readable_scale * 0.74
+	var tail := glyph_center - v * readable_scale * 0.76
 	var neck := glyph_center + v * readable_scale * 0.10
-	var half := readable_scale * 0.25
-	var wing := readable_scale * 0.56
+	var half := readable_scale * 0.24
+	var wing := readable_scale * 0.54
 	var points := PackedVector2Array([
 		tail + n * half,
 		neck + n * half,
@@ -94,27 +96,11 @@ func _draw_arrow(center: Vector2, dir: String, scale_value: float) -> void:
 		neck - n * half,
 		tail - n * half,
 	])
-	# Strong separated shadow and sidewall preserve the raised 2.5D treatment.
-	var cast := PackedVector2Array()
-	var side := PackedVector2Array()
-	var top := PackedVector2Array()
-	for point in points:
-		cast.append(point + Vector2(1.8, 6.5))
-		side.append(point + Vector2(0, 3.8))
-		top.append(point - Vector2(0, 1.0))
-	draw_polygon(cast, PackedColorArray([Color(0.005, 0.035, 0.08, 0.48)]))
-	draw_polygon(side, PackedColorArray([Color("8fbfd7")]))
-	# Dark keyline first, then a warm-white face and cyan rim. This stays clear
-	# on green, blue, red, purple and yellow tiles instead of washing into gloss.
-	draw_polygon(top, PackedColorArray([Color("fffdf5")]))
-	var closed := top + PackedVector2Array([top[0]])
-	draw_polyline(closed, Color("#073b78"), 5.0, true)
-	draw_polyline(closed, Color("#dff8ff"), 2.0, true)
-	# Directional spine reinforces orientation at compact 40px cells.
-	draw_line(
-		glyph_center - v * readable_scale * 0.43,
-		glyph_center + v * readable_scale * 0.16,
-		Color("#ffffff"),
-		maxf(2.4, readable_scale * 0.085),
-		true
-	)
+	# One face, one keyline: no cast shadow, sidewall, bevel or glossy highlight.
+	# Bright bricks receive a navy arrow; dark bricks receive warm white.
+	var bright_tile := accent.get_luminance() >= 0.46
+	var fill := Color("#0b2f52") if bright_tile else Color("#fffdf7")
+	var keyline := Color(1, 1, 1, 0.78) if bright_tile else Color("#102f4a")
+	draw_colored_polygon(points, fill)
+	var closed := points + PackedVector2Array([points[0]])
+	draw_polyline(closed, keyline, maxf(1.8, readable_scale * 0.075), true)
