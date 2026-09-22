@@ -242,6 +242,26 @@ func restore_purchases(callback: Callable) -> bool:
 	billing_client.query_purchases(PRODUCT_TYPE_INAPP)
 	return true
 
+func query_owned_purchases(callback: Callable) -> bool:
+	if not billing_ready():
+		if callback.is_valid():
+			callback.call({"ok": false, "purchases": [], "reason": "Google Play Billing is not connected"})
+		return false
+	var handler := func(response: Dictionary):
+		var ok := int(response.get("response_code", -1)) == BILLING_OK
+		var purchases = response.get("purchases", []) if ok else []
+		if not purchases is Array:
+			purchases = []
+		if callback.is_valid():
+			callback.call({
+				"ok": ok,
+				"purchases": purchases,
+				"reason": "" if ok else String(response.get("debug_message", "Could not query owned purchases"))
+			})
+	billing_client.query_purchases_response.connect(handler, CONNECT_ONE_SHOT)
+	billing_client.query_purchases(PRODUCT_TYPE_INAPP)
+	return true
+
 func finalize_purchase(token: String, consumable: bool) -> void:
 	if not billing_ready() or token.is_empty():
 		return
