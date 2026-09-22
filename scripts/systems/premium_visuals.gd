@@ -8,11 +8,6 @@ var _motion_reduced := false
 var _ambient_nodes: Array[Polygon2D] = []
 var _ambient_wrap_y := 1040.0
 var _ambient_accumulator := 0.0
-# Exposed for procedural surfaces that already scale particle/glow work.
-# Keep full quality by default; the frame-rate cap below removes waste without
-# changing art density.
-var quality_scale := 1.0
-
 const AMBIENT_UPDATE_FPS := 30.0
 const AMBIENT_UPDATE_INTERVAL := 1.0 / AMBIENT_UPDATE_FPS
 
