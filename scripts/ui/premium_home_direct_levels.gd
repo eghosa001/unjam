@@ -75,13 +75,11 @@ func _build_reference_home(canvas: Control) -> void:
 	brand_title.name = "HomeBrandTitle3D"
 	RefCanvas.style_display_title(brand_title, Color("#ffb92f"), Color("#071d55"), 2)
 
-	var selected_level := _home_current_level(selected_game)
-	_add_pill(canvas, Rect2(21, 64, 78, 40), Color(0.03, 0.43, 0.78), "LV %d" % selected_level, 13, OFF_WHITE, "HomeSelectedGameLevel")
-	home_coin_button = _add_action(canvas, Rect2(107, 62, 112, 44), Color(1.0, 0.55, 0.12), "   %s +" % _compact_number(EconomyManager.balance()), 12, OFF_WHITE, Callable(self, "_open_shop"), 20)
+	home_coin_button = _add_action(canvas, Rect2(151, 62, 102, 44), Color("#d8c294"), "   %s +" % _compact_number(EconomyManager.balance()), 12, NAVY, Callable(self, "_open_shop"), 20)
 	home_coin_button.name = "HomeCoinShopButton"
-	RefCanvas.add_collectible_gem(canvas, Vector2(122, 84), 8.0, "HomeCurrencyGem3D")
-	_add_pill(canvas, Rect2(227, 64, 92, 40), GOLD, "   %s" % _compact_number(MultiGameManager.total_stars(selected_game)), 12, NAVY, "HomeSelectedGameStars")
-	RefCanvas.add_collectible_star(canvas, Vector2(242, 84), 8.0, true, "HomeCurrencyStar3D")
+	RefCanvas.add_collectible_gem(canvas, Vector2(166, 84), 8.0, "HomeCurrencyGem3D")
+	_add_pill(canvas, Rect2(261, 64, 108, 40), Color("#ead7a3"), "   %s" % _compact_number(MultiGameManager.total_stars(selected_game)), 12, NAVY, "HomeSelectedGameStars")
+	RefCanvas.add_collectible_star(canvas, Vector2(277, 84), 8.0, true, "HomeCurrencyStar3D")
 
 	_add_hero(canvas)
 	_add_quick_actions(canvas)
@@ -118,7 +116,7 @@ func _add_frame_background(canvas: Control) -> void:
 	var halo_a := PanelContainer.new()
 	halo_a.name = "HomeBackdropHaloTop"
 	halo_a.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	halo_a.modulate.a = 0.22 if not _home_dark() else 0.18
+	halo_a.modulate.a = 0.12 if not _home_dark() else 0.10
 	halo_a.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color("#f0d89e") if not _home_dark() else Color("#6b4f2d"), 110))
 	RefCanvas.set_rect(halo_a, 252, -72, 208, 208)
 	canvas.add_child(halo_a)
@@ -127,7 +125,7 @@ func _add_frame_background(canvas: Control) -> void:
 	var halo_b := PanelContainer.new()
 	halo_b.name = "HomeBackdropHaloBottom"
 	halo_b.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	halo_b.modulate.a = 0.18 if not _home_dark() else 0.15
+	halo_b.modulate.a = 0.10 if not _home_dark() else 0.08
 	halo_b.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color("#b88a45") if not _home_dark() else Color("#3d2b1c"), 105))
 	RefCanvas.set_rect(halo_b, -72, 610, 194, 194)
 	canvas.add_child(halo_b)
@@ -136,7 +134,7 @@ func _add_frame_background(canvas: Control) -> void:
 	var ribbon := Polygon2D.new()
 	ribbon.name = "HomeBackdropRibbon"
 	ribbon.polygon = PackedVector2Array([Vector2(-30,310),Vector2(420,210),Vector2(420,280),Vector2(-30,380)])
-	ribbon.color = Color("#8a642e", 0.080 if not _home_dark() else 0.090)
+	ribbon.color = Color("#8a642e", 0.035 if not _home_dark() else 0.045)
 	canvas.add_child(ribbon)
 	canvas.move_child(ribbon, 1)
 
@@ -145,9 +143,9 @@ func _add_hero(canvas: Control) -> void:
 	var hero := PanelContainer.new()
 	hero.name = "FigmaHomeHero"
 	if _home_dark():
-		hero.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#162a40"), Color("#12243a"), Color("#0f1d30"), 20, Color(0.24,0.62,0.88,0.62), 1.2))
+		hero.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#3a2d20"), Color("#302319"), Color("#261b13"), 20, Color("#80613b"), 1.2, 0.32))
 	else:
-		hero.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#c9d7ee"), Color("#aabedc"), Color("#879fc8"), 20, Color("#6f8fbd"), 1.7, 0.40))
+		hero.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#fffaf0"), Color("#f3e7cf"), Color("#e5d3ae"), 20, Color("#c8aa70"), 1.2, 0.30))
 	RefCanvas.set_rect(hero, 21, 121, 346, 224)
 	hero.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(hero)
@@ -158,13 +156,13 @@ func _add_hero(canvas: Control) -> void:
 	var game_title := _add_text(canvas, _short_game_name(selected_game), Rect2(41, 151, 180, 34), game_title_size, NAVY, true)
 	game_title.name = "HomeHeroGameTitle"
 	RefCanvas.style_display_title(game_title, Unjam3DTheme.game_accent(selected_game).lightened(0.18), Color("#071d55"), 2)
-	var game_meta := _add_text(canvas, "LEVEL %d • WORLD %d" % [level, world], Rect2(41, 190, 170, 17), 14, BLUE, true)
+	var game_meta := _add_text(canvas, "LEVEL %d • WORLD %d" % [level, world], Rect2(41, 190, 170, 17), 14, MUTED, true)
 	game_meta.name = "HomeHeroGameMeta"
 
 	var continue_button := _add_action(
 		canvas,
 		Rect2(41, 285, 178, 48),
-		BLUE,
+		Unjam3DTheme.game_accent(selected_game),
 		"CONTINUE",
 		13,
 		OFF_WHITE,
@@ -183,7 +181,7 @@ func _add_hero_preview(canvas: Control, game_id: String) -> void:
 	canvas.add_child(preview_root)
 	var stage := PanelContainer.new()
 	stage.name = "FigmaHomeHeroPreview"
-	var stage_mid := Color(0.12,0.24,0.34,0.78) if _home_dark() else Color("#9fb4d4")
+	var stage_mid := Color("#33281c") if _home_dark() else Color("#eee1c8")
 	stage.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(stage_mid.lightened(0.15), stage_mid, stage_mid.darkened(0.12), 16, Color(1,1,1,0.20), 1, 0.40))
 	RefCanvas.set_rect(stage, 229, 144, 115, 136)
 	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -195,7 +193,7 @@ func _add_hero_preview(canvas: Control, game_id: String) -> void:
 	preview_root.add_child(mark)
 
 func _add_quick_actions(canvas: Control) -> void:
-	var choose := _add_action(canvas, Rect2(21, 365, 166, 52), BLUE, "◈ CHOOSE GAME", 12, OFF_WHITE, Callable(self, "_open_game_selector"), 16)
+	var choose := _add_action(canvas, Rect2(21, 365, 166, 52), Color("#d8c294") if not _home_dark() else Color("#3a2d20"), "CHOOSE GAME", 12, NAVY if not _home_dark() else DARK_INK, Callable(self, "_open_game_selector"), 16)
 	choose.name = "HomeChooseGameButton"
 	var main := get_parent()
 	var daily_done_count := 0
@@ -203,12 +201,12 @@ func _add_quick_actions(canvas: Control) -> void:
 		for game_id in MultiGameManager.GAME_IDS:
 			if bool(main.call("_daily_done", game_id)):
 				daily_done_count += 1
-	var daily_label := "☀ DAILY • DONE" if daily_done_count >= MultiGameManager.GAME_IDS.size() else "☀ DAILY • %d/3" % daily_done_count
-	var daily := _add_action(canvas, Rect2(197, 365, 170, 52), GOLD, daily_label, 11, NAVY, Callable(self, "_open_daily_games"), 16)
+	var daily_label := "DAILY • DONE" if daily_done_count >= MultiGameManager.GAME_IDS.size() else "DAILY • %d/3" % daily_done_count
+	var daily := _add_action(canvas, Rect2(197, 365, 170, 52), Color("#ead7a3") if not _home_dark() else Color("#3a2d20"), daily_label, 11, NAVY if not _home_dark() else DARK_INK, Callable(self, "_open_daily_games"), 16)
 	daily.name = "HomeDailyGamesButton"
 
 func _add_quick_switch(canvas: Control) -> void:
-	_add_text(canvas, "QUICK SWITCH", Rect2(21, 437, 160, 18), 14, OFF_WHITE, true)
+	_add_text(canvas, "GAMES", Rect2(21, 437, 160, 18), 13, OFF_WHITE if _home_dark() else INK, true)
 	var games := [
 		["rescue_rush", "RESCUE RUSH", Color(0.13, 0.78, 0.39), 21.0],
 		["water_sort", "WATER SORT", Color(0.10, 0.66, 1.0), 137.0],
@@ -276,7 +274,7 @@ func _add_world_progress(canvas: Control) -> void:
 	RefCanvas.add_shadow(root, showcase_rect, 20, Color(0.01,0.06,0.12,0.25 if _home_dark() else 0.16), 6, Vector2(0,5))
 	var panel := PanelContainer.new()
 	panel.name = "HomeWorldProgress"
-	var fill := Color("#20384b") if _home_dark() else Color("#9fb4d4")
+	var fill := Color("#33281c") if _home_dark() else Color("#f4ead6")
 	var edge := Color(accent,0.76 if _home_dark() else 0.66)
 	panel.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(fill.lightened(0.18), fill, fill.darkened(0.15), 20, edge, 1.5, 0.46))
 	RefCanvas.set_rect(panel, showcase_rect.position.x, showcase_rect.position.y, showcase_rect.size.x, showcase_rect.size.y)
@@ -288,7 +286,7 @@ func _add_world_progress(canvas: Control) -> void:
 	# mode after its initial frames, so the Home screen keeps its idle budget.
 	var art_stage := PanelContainer.new()
 	art_stage.name = "HomeWorldShowcaseStage"
-	var stage_fill := Color("#13263b") if _home_dark() else Color("#93a9ce").lerp(accent.lightened(0.76), 0.30)
+	var stage_fill := Color("#2a2118") if _home_dark() else Color("#eadfc8")
 	art_stage.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(stage_fill.lightened(0.10), stage_fill, stage_fill.darkened(0.15), 16, Color(accent,0.42), 1.0, 0.42))
 	RefCanvas.set_rect(art_stage, 31, 592, 150, 130)
 	art_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -305,7 +303,6 @@ func _add_world_progress(canvas: Control) -> void:
 	var percent := int(round(float(completed_in_world) / float(total) * 100.0))
 	var world_value := _add_text(root, "LEVEL %d • %d%%" % [level, percent], Rect2(195, 632, 152, 18), 12, MUTED, true)
 	world_value.name = "HomeWorldProgressValue"
-	_add_text(root, "NEXT • LEVEL %d" % next_milestone, Rect2(195, 658, 152, 17), 11, ORANGE, true)
 
 	var progress := ProgressBar.new()
 	progress.name = "HomeWorldProgressBar"
@@ -313,8 +310,8 @@ func _add_world_progress(canvas: Control) -> void:
 	progress.min_value = 0
 	progress.max_value = total
 	progress.value = completed_in_world
-	progress.add_theme_stylebox_override("background", RefCanvas.rounded_gradient3(Color("#132642"), Color("#091a34"), Color("#051126"), 6, Color(0.38,0.58,0.78,0.55), 1.0, 0.50))
-	progress.add_theme_stylebox_override("fill", RefCanvas.rounded_gradient3(accent.lightened(0.48), accent.lightened(0.12), accent.darkened(0.18), 6, Color(accent.lightened(0.62),0.72), 1.0, 0.32))
+	progress.add_theme_stylebox_override("background", RefCanvas.solid_box(Color("#2a2118") if _home_dark() else Color("#d9ccb3"), 6))
+	progress.add_theme_stylebox_override("fill", RefCanvas.solid_box(accent, 6))
 	RefCanvas.set_rect(progress, 195, 694, 150, 10)
 	root.add_child(progress)
 
@@ -330,8 +327,8 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 	var shell := PanelContainer.new()
 	shell.name = "HomeBottomNav3D"
 	RefCanvas.add_shadow(canvas, Rect2(13, 757, 362, 70), 18, Color(0.02, 0.10, 0.18, 0.16), 5, Vector2(0, 4))
-	var nav_fill := Color("#1c2d4b") if _home_dark() else Color("#9fb5d5")
-	var nav_border := Color("#365787") if _home_dark() else Color("#6f8fbd")
+	var nav_fill := Color("#2a2117") if _home_dark() else Color("#c8aa70")
+	var nav_border := Color("#80613b") if _home_dark() else Color("#d2b06a")
 	shell.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(nav_fill.lightened(0.12), nav_fill, nav_fill.darkened(0.10), 18, nav_border, 1, 0.40))
 	RefCanvas.set_rect(shell, 13, 757, 362, 70)
 	shell.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -340,16 +337,16 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 	var top_gloss := PanelContainer.new()
 	top_gloss.name = "HomeNavTopGloss"
 	top_gloss.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	top_gloss.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(0.64,0.88,1.0,0.22 if _home_dark() else 0.34), 1))
+	top_gloss.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(1.0,0.94,0.78,0.18 if _home_dark() else 0.30), 1))
 	RefCanvas.set_rect(top_gloss, 28, 760, 332, 2)
 	canvas.add_child(top_gloss)
 
 	var items := [
-		["HOME", "⌂", 22.0, Callable(), "HomeNavButton", true, Color("#33b9ff")],
-		["GAMES", "▦", 91.0, Callable(self, "_open_game_selector"), "HomeGamesNavButton", false, Color("#7b6cff")],
+		["HOME", "⌂", 22.0, Callable(), "HomeNavButton", true, GOLD],
+		["GAMES", "▦", 91.0, Callable(self, "_open_game_selector"), "HomeGamesNavButton", false, GOLD],
 		["DAILY", "✦", 150.0, Callable(self, "_open_daily_games"), "HomeDailyNavButton", false, GOLD],
-		["COLLECT", "◆", 225.0, func(): get_parent().call("build_collection"), "HomeCollectionNavButton", false, Color("#24c96b")],
-		["SETTINGS", "⚙", 310.0, func(): get_parent().call("build_settings"), "HomeSettingsNavButton", false, CYAN],
+		["COLLECT", "◆", 225.0, func(): get_parent().call("build_collection"), "HomeCollectionNavButton", false, GOLD],
+		["SETTINGS", "⚙", 310.0, func(): get_parent().call("build_settings"), "HomeSettingsNavButton", false, GOLD],
 	]
 	for item in items:
 		var selected: bool = bool(item[5])
@@ -467,15 +464,17 @@ func _open_daily_games() -> void:
 
 func _switch_card_style(game_id: String, accent: Color) -> StyleBox:
 	var selected := game_id == selected_game
-	var card_fill := accent.darkened(0.64) if selected and _home_dark() else (DARK_CARD if _home_dark() else (accent.lightened(0.76) if selected else Color("#9fb4d4")))
-	var border_width := 2.4 if selected else 1.25
+	var card_fill := Color("#33281c") if _home_dark() else Color("#f4ead6")
+	var border_width := 2.0 if selected else 1.0
+	var border_color := Color(accent, 0.78 if selected else 0.30)
 	return RefCanvas.rounded_gradient3(
-		card_fill.lightened(0.04),
+		card_fill.lightened(0.03),
 		card_fill,
-		card_fill.darkened(0.035),
+		card_fill.darkened(0.03),
 		18,
-		accent,
-		border_width
+		border_color,
+		border_width,
+		0.24
 	)
 
 func _refresh_home_selection() -> void:
@@ -492,9 +491,6 @@ func _refresh_home_selection() -> void:
 	var meta := figma_canvas.get_node_or_null("HomeHeroGameMeta") as Label
 	if meta != null:
 		meta.text = "LEVEL %d • WORLD %d" % [level, world]
-	var top_level := figma_canvas.get_node_or_null("HomeSelectedGameLevel") as Label
-	if top_level != null:
-		top_level.text = "LV %d" % level
 	var top_stars := figma_canvas.get_node_or_null("HomeSelectedGameStars") as Label
 	if top_stars != null:
 		top_stars.text = "   %s" % _compact_number(MultiGameManager.total_stars(selected_game))
