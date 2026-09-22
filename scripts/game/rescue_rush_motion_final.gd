@@ -6,6 +6,7 @@ const BOARD_HEIGHT_RATIO := 0.60
 const MAX_CELL_SIZE := 168.0
 
 var _board_has_rendered := false
+var _board_entrance_settled := false
 var _last_fit_viewport := Vector2(-1.0, -1.0)
 var _last_fit_gap := Vector2(-1.0, -1.0)
 var _last_fit_first_child_id := 0
@@ -23,12 +24,19 @@ func _queue_board_fit() -> void:
 func render_board() -> void:
 	# Preserve the established first-refresh contract: if the initial entrance
 	# tween is still visibly in flight, rebuild once with _board_has_rendered=true
-	# so the replacement controls are immediately settled. After that, unchanged
-	# refreshes are free to reuse the stable controls.
-	if _board_has_rendered and not _board_entrance_is_settled():
-		_board_render_signature_valid = false
+	# so the replacement controls are immediately settled. Once that entrance has
+	# been resolved, never rescan every board child on later gameplay renders.
+	var settle_after_rebuild := false
+	if _board_has_rendered and not _board_entrance_settled:
+		if _board_entrance_is_settled():
+			_board_entrance_settled = true
+		else:
+			_board_render_signature_valid = false
+			settle_after_rebuild = true
 	super.render_board()
 	_board_has_rendered = true
+	if settle_after_rebuild:
+		_board_entrance_settled = true
 	_fit_board_to_viewport()
 
 func _board_entrance_is_settled() -> bool:

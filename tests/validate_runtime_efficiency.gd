@@ -65,6 +65,9 @@ func _rescue_refresh_is_settled() -> bool:
 			if control.modulate.a < 0.99 or control.scale.distance_to(Vector2.ONE) > 0.01:
 				game.queue_free()
 				return _fail("Rescue Rush replayed full-board entrance animation during refresh")
+	if not bool(game.get("_board_entrance_settled")):
+		game.queue_free()
+		return _fail("Rescue Rush did not retire its entrance-settlement scan")
 	# Once settled, another unchanged refresh must reuse the exact controls.
 	var before: Array[int] = []
 	for child in board.get_children():
