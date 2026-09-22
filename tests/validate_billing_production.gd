@@ -21,7 +21,7 @@ func run() -> void:
 	expect_true("purchase_state" in source and "PURCHASE_STATE_PURCHASED" in source, "Purchase completion state is not validated")
 	expect_true("query_purchases" in source, "Restore-purchases path is missing")
 	expect_true("query_owned_purchases" in source, "Authoritative owned-purchase snapshot path is missing")
-	expect_true("consume_purchase" in source and "acknowledge_purchase" in source, "Purchase finalization is incomplete")
+	expect_true("consume_purchase" not in source and "acknowledge_purchase" not in source, "Client billing bridge must not finalize verified purchases")
 
 	# Google Play can return a pending purchase and later emit PURCHASED. The
 	# purchase-update signal must therefore stay connected for the BillingClient
