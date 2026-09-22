@@ -68,7 +68,7 @@ static func profile(raw_level: int) -> Dictionary:
 		# retaining the normal sawtooth relief/challenge rhythm.
 		var early_progress: float = float(level - 11) / 89.0
 		var early_base: int = roundi(lerpf(25.0, 34.0, early_progress))
-		var early_bonus: int = int([0, 2, 4, 6, 8, 10][clampi(rank, 0, 5)])
+		var early_bonus: int = int([0, 1, 2, 3, 4, 5][clampi(rank, 0, 5)])
 		target_moves = clampi(early_base + early_bonus, 25, 44)
 		var early_score_base: int = roundi(lerpf(50.0, 55.0, early_progress))
 		var early_score_bonus: int = int([0, 2, 4, 6, 8, 10][clampi(rank, 0, 5)])
