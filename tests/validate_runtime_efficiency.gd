@@ -111,6 +111,7 @@ func _hot_paths_stay_lightweight() -> bool:
 	var manager := FileAccess.get_file_as_string("res://scripts/core/multi_game_manager.gd")
 	var water := FileAccess.get_file_as_string("res://scripts/ui/water_tube_3d_motion.gd")
 	var water_game := FileAccess.get_file_as_string("res://scripts/game/water_sort.gd")
+	var block_game := FileAccess.get_file_as_string("res://scripts/game/block_puzzle_3d.gd")
 	var visuals := FileAccess.get_file_as_string("res://scripts/systems/robust_premium_visuals.gd")
 	var retention := FileAccess.get_file_as_string("res://scripts/systems/retention_manager.gd")
 	var checkpoint_fn := manager.get_slice("func _checkpoint_payload_matches", 1).get_slice("func save_checkpoint", 0)
@@ -122,6 +123,11 @@ func _hot_paths_stay_lightweight() -> bool:
 	var water_checkpoint := water_game.get_slice("func _save_checkpoint", 1).get_slice("func _restore_checkpoint", 0)
 	if "history.duplicate(true)" in water_checkpoint:
 		return _fail("Water checkpoint regressed to recursive undo-history copying")
+	var block_place := block_game.get_slice("func place_selected", 1).get_slice("func undo_move", 0)
+	if "\n\trender()\n" in block_place:
+		return _fail("Block placement regressed to a full-board render pass")
+	if not "_sync_placed_cells" in block_place or not "render_pieces()" in block_place:
+		return _fail("Block incremental placement refresh contract is incomplete")
 	var quality_fn := visuals.get_slice("func _set_quality", 1).get_slice("func _ambient_count", 0)
 	if not "save_deferred" in quality_fn:
 		return _fail("Adaptive quality persistence is synchronous again")

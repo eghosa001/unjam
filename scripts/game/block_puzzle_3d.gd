@@ -367,7 +367,12 @@ func place_selected(origin: Vector2i) -> void:
 			status_label.text = "No legal moves"
 		return
 	selected_piece = -1
-	render()
+	# Changed cells were already synchronized incrementally by _sync_placed_cells()
+	# and _commit_line_clear(). Refresh only labels/tray here instead of rescanning
+	# and reconfiguring every board cell after every successful placement.
+	score_label.text = "%d" % score
+	goal_label.text = "CLEAR %d/%d LINES  •  TARGET %d" % [lines_cleared, target_lines, target_score]
+	render_pieces()
 	_save_checkpoint()
 
 func undo_move() -> void:
