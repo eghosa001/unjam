@@ -457,7 +457,9 @@ Deno.serve(async (req) => {
 
     const sync = await syncVoidedPurchases(admin);
     const { data: revocations, error } = await admin.rpc("get_play_install_revocations", {
-      p_install_id: validInstallId(input.install_id) ? input.install_id : input.claim_id,
+      p_install_id: validInstallId(input.install_id)
+        ? input.install_id
+        : await hashText(`legacy-install|${input.claim_id}`),
     });
     if (error) {
       return response({ ok: false, revocations: [], reason: "Revocation ledger unavailable" }, 503);
