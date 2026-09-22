@@ -147,6 +147,15 @@ async function oneTimeProductsResponse(): Promise<Response> {
   });
 }
 
+async function legacyInAppProductsResponse(): Promise<Response> {
+  const accessToken = await googleToken();
+  const url =
+    `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${encodeURIComponent(PACKAGE_NAME)}/inappproducts`;
+  return fetch(url, {
+    headers: { authorization: `Bearer ${accessToken}`, accept: "application/json" },
+  });
+}
+
 function catalogReadiness(data: any): { ok: boolean; detail: string } {
   const products = Array.isArray(data?.oneTimeProducts) ? data.oneTimeProducts : [];
   const problems: string[] = [];
@@ -176,6 +185,31 @@ function catalogReadiness(data: any): { ok: boolean; detail: string } {
   return {
     ok: problems.length === 0,
     detail: problems.length === 0 ? "catalog_ready" : problems.join(","),
+  };
+}
+
+function legacyCatalogReadiness(data: any): { ok: boolean; detail: string } {
+  const products = Array.isArray(data?.inappproduct) ? data.inappproduct : [];
+  const problems: string[] = [];
+  for (const productId of Object.keys(PRODUCTS)) {
+    const product = products.find((value: any) => String(value?.sku ?? "") === productId);
+    if (!product) {
+      problems.push(`${productId}:missing`);
+      continue;
+    }
+    if (String(product?.status ?? "").toLowerCase() !== "active") {
+      problems.push(`${productId}:inactive`);
+      continue;
+    }
+    const price = product?.defaultPrice;
+    const priceMicros = Number(price?.priceMicros ?? 0);
+    if (!price || !price?.currency || !(priceMicros > 0)) {
+      problems.push(`${productId}:missing_price`);
+    }
+  }
+  return {
+    ok: problems.length === 0,
+    detail: problems.length === 0 ? "legacy_catalog_ready" : problems.join(","),
   };
 }
 
@@ -478,12 +512,23 @@ Deno.serve(async (req) => {
 
     try {
       const catalog = await oneTimeProductsResponse();
-      if (catalog.ok) {
-        const catalogState = catalogReadiness(await catalog.json());
+      const modernText = catalog.ok ? await catalog.text() : "";
+      if (catalog.ok && modernText.trim()) {
+        const catalogState = catalogReadiness(JSON.parse(modernText));
         dependencies.product_catalog = catalogState.ok;
         productCatalogDetail = catalogState.detail;
       } else {
-        productCatalogDetail = `product_catalog_http_${catalog.status}`;
+        const legacy = await legacyInAppProductsResponse();
+        const legacyText = legacy.ok ? await legacy.text() : "";
+        if (legacy.ok && legacyText.trim()) {
+          const catalogState = legacyCatalogReadiness(JSON.parse(legacyText));
+          dependencies.product_catalog = catalogState.ok;
+          productCatalogDetail = `legacy:${catalogState.detail}`;
+        } else {
+          productCatalogDetail = catalog.ok
+            ? `product_catalog_empty;legacy_http_${legacy.status}`
+            : `product_catalog_http_${catalog.status};legacy_http_${legacy.status}`;
+        }
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : "unknown";
