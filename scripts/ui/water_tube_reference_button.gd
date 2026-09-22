@@ -14,6 +14,10 @@ var tube_index := 0
 var pulse := 0.0
 var invalid_flash := 0.0
 var success_flash := 0.0
+var _redraw_accumulator := 0.0
+
+const ACTIVE_REDRAW_FPS := 30.0
+const ACTIVE_REDRAW_INTERVAL := 1.0 / ACTIVE_REDRAW_FPS
 
 func configure(values: Array, selected: bool, index: int) -> void:
 	layers = values.duplicate()
@@ -24,12 +28,16 @@ func configure(values: Array, selected: bool, index: int) -> void:
 	focus_mode = Control.FOCUS_NONE
 	mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	queue_redraw()
+	if is_inside_tree():
+		_sync_reference_processing()
 
 func _ready() -> void:
 	resized.connect(func() -> void: pivot_offset = size * 0.5)
 	button_down.connect(_press)
 	button_up.connect(_release)
 	pivot_offset = size * 0.5
+	set_process(false)
+	_sync_reference_processing()
 
 func _press() -> void:
 	var t := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
@@ -42,6 +50,7 @@ func _release() -> void:
 
 func play_invalid() -> void:
 	invalid_flash = 1.0
+	set_process(true)
 	var original := position
 	var t := create_tween()
 	for dx in [7.0, -7.0, 5.0, -5.0, 0.0]:
@@ -49,16 +58,30 @@ func play_invalid() -> void:
 
 func play_success() -> void:
 	success_flash = 1.0
+	set_process(true)
 	var t := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	t.tween_property(self, "scale", Vector2(1.08, 0.97), 0.07)
 	t.tween_property(self, "scale", Vector2.ONE, 0.14)
+
+func _sync_reference_processing() -> void:
+	set_process(is_selected or invalid_flash > 0.001 or success_flash > 0.001)
+	if not is_selected:
+		_redraw_accumulator = 0.0
 
 func _process(delta: float) -> void:
 	pulse += delta
 	invalid_flash = maxf(0.0, invalid_flash - delta * 3.8)
 	success_flash = maxf(0.0, success_flash - delta * 2.8)
-	if is_selected or invalid_flash > 0.0 or success_flash > 0.0:
+	var transient := invalid_flash > 0.001 or success_flash > 0.001
+	if is_selected:
+		_redraw_accumulator += delta
+		if _redraw_accumulator >= ACTIVE_REDRAW_INTERVAL:
+			_redraw_accumulator = fmod(_redraw_accumulator, ACTIVE_REDRAW_INTERVAL)
+			queue_redraw()
+	elif transient:
 		queue_redraw()
+	else:
+		set_process(false)
 
 func _visual_body_rect() -> Rect2:
 	var lift := -13.0 if is_selected else 0.0
