@@ -331,7 +331,7 @@ static func _retention_role(level: int) -> String:
 		6: return "recovery"
 		7: return "build"
 		8: return "stretch"
-		9: return "challenge"
+		9: return "recovery"
 		_: return "peak"
 
 static func _is_color_intro(level: int) -> bool:
