@@ -92,10 +92,11 @@ func _build_figma_water(canvas: Control) -> void:
 	RefCanvas.set_rect(objective, 17, 129, 354, 30)
 	objective.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(objective)
-	var objective_label := _make_label("SORT • POUR • SOLVE", 16, NAVY, true)
+	var objective_label := _make_label("WIN • ONE COLOUR PER FULL TUBE", 14, NAVY, true)
 	objective_label.name = "WaterObjectiveLabel"
 	objective_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	RefCanvas.set_rect(objective_label, 76, 129, 250, 30)
+	objective_label.tooltip_text = "Win when every non-empty tube is full and contains only one colour."
+	RefCanvas.set_rect(objective_label, 52, 129, 286, 30)
 	canvas.add_child(objective_label)
 	_add_water_drop_icon(canvas)
 
