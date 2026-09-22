@@ -209,7 +209,7 @@ func _add_quick_actions(canvas: Control) -> void:
 	daily.name = "HomeDailyGamesButton"
 
 func _add_quick_switch(canvas: Control) -> void:
-	_add_text(canvas, "QUICK SWITCH", Rect2(21, 437, 160, 18), 14, INK, true)
+	_add_text(canvas, "QUICK SWITCH", Rect2(21, 437, 160, 18), 14, OFF_WHITE, true)
 	var games := [
 		["rescue_rush", "RESCUE RUSH", Color(0.13, 0.78, 0.39), 21.0],
 		["water_sort", "WATER SORT", Color(0.10, 0.66, 1.0), 137.0],
