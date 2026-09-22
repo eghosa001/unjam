@@ -3,7 +3,7 @@ extends SceneTree
 func _init() -> void:
 	var errors: Array[String] = []
 	_require("res://project.godot", ["theme/default_font_multichannel_signed_distance_field=true"], errors)
-	_require("res://scripts/ui/premium_home_direct_levels.gd", ["RESCUE RUSH", "WATER SORT", "BLOCK PUZZLE", "daily_done_count", "HomeHeroFlatGameLogo", "HomeWorldFlatGameLogo", "#e2c98f", "#2a2118"], errors)
+	_require("res://scripts/ui/premium_home_direct_levels.gd", ["RESCUE RUSH", "WATER SORT", "BLOCK PUZZLE", "daily_done_count", "HomeHeroFlatGameLogo", "HomeWorldFlatGameLogo", "#e4dfd5", "#1f1f1f"], errors)
 	_require("res://scripts/ui/premium_home_direct_levels.gd", ["HomeNavTopGloss", "HomeNavActivePlate", "HomeNavGlyph_", "HomeGamesNavButton", "\"GAMES\", \"▦\"", "\"DAILY\", \"✦\"", "\"COLLECT\", \"◆\""], errors)
 	_require("res://scripts/ui/premium_home_overhaul.gd", ["Progress, stars, wallet", "_sync()"], errors)
 	_require("res://scripts/ui/premium_home_casual.gd", ["HomeCoinShopButton", "HomeGamesNavButton", "HomeDailyNavButton", "HomeCollectionNavButton", "HomeSettingsNavButton", "GAMES", "DAILY", "COLLECT"], errors)
@@ -15,7 +15,7 @@ func _init() -> void:
 	_require("res://scripts/ui/unjam_3d_backdrop.gd", ["_sky_gradient_texture", "_river_gradient_texture", "draw_texture_rect(_sky_gradient()", "draw_texture_rect(_river_gradient()", "TEXTURE_FILTER_LINEAR"], errors)
 	_require("res://scripts/ui/figma_button_backdrop.gd", ["Premium toy-like controls", "var pressed := false", "button_down.connect", "height_loss"], errors)
 	_require("res://scripts/ui/unjam_3d_backdrop.gd", ["Fewer, larger foliage clusters"], errors)
-	_require("res://scripts/ui/premium_main_casual.gd", ["SurfaceKeyLight", "SurfaceAccentGlow", "#e2c98f", "#b89050", "#805b31"], errors)
+	_require("res://scripts/ui/premium_main_casual.gd", ["SurfaceKeyLight", "SurfaceAccentGlow", "#e4dfd5", "#b3aca2", "#80786e"], errors)
 	_require("res://scripts/ui/premium_main_casual.gd", ["StdNavTopGloss", "StdNavActivePlate_", "StdNavGlyph_", "\"games\":\"▦\"", "\"daily\":\"✦\"", "\"collection\":\"◆\"", "\"settings\":\"⚙\""], errors)
 	_require("res://scripts/ui/premium_home_direct_levels.gd", ["HomeKeyLight", "HomeAccentGlow", "HomeCurrencyGem3D", "HomeCurrencyStar3D", "WorldProgressSpecular"], errors)
 	_require("res://scripts/ui/premium_result_overlay.gd", ["ResultKeyLight", "ResultStar3D", "ResultGameArt3D", "add_collectible_star"], errors)
@@ -47,7 +47,7 @@ func _init() -> void:
 	_reject("res://scripts/ui/premium_home_direct_levels.gd", ["HomeLevelsNavButton", "HomeShopNavButton", "HomeNavSelectedDot", "HomeNavSelectedUnderline"], errors)
 	_reject("res://scripts/ui/premium_home_casual.gd", ["HomeLevelsNavButton", "HomeShopNavButton"], errors)
 	_reject("res://scripts/ui/premium_main_casual.gd", ["Daily level %d", "Three fresh challenges every day", "TODAY: %s", "One challenge per game today", "Sound, motion & theme", "game-tinted lacquer", "Each Daily is independent • play in any order", "ACHIEVEMENT CABINET"], errors)
-	_reject("res://scripts/ui/premium_home_direct_levels.gd", ["NEXT • LEVEL %d", "QUICK SWITCH", "HomeSelectedGameLevel"], errors)
+	_reject("res://scripts/ui/premium_home_direct_levels.gd", ["NEXT • LEVEL %d", "QUICK SWITCH"], errors)
 	_reject("res://scripts/game/block_puzzle_3d.gd", ["BlockCampaignSubtitle", "\"CAMPAIGN\""], errors)
 	if not errors.is_empty():
 		for error in errors:
