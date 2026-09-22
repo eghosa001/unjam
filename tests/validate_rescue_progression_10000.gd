@@ -42,8 +42,10 @@ func _initialize() -> void:
 		failures.append("10000 object density below grandmaster target")
 	if int(Generator.generate(20).get("mistake_limit", -1)) != 0:
 		failures.append("tutorial blocked-tap safety")
-	if int(Generator.generate(501).get("mistake_limit", 0)) != 3:
-		failures.append("post-500 three-mistake rule")
+	if int(Generator.generate(501).get("mistake_limit", 0)) < 4:
+		failures.append("gate introduction should have extra mistake forgiveness")
+	if int(Generator.generate(504).get("mistake_limit", 0)) != 3:
+		failures.append("post-introduction three-mistake rule")
 	if not failures.is_empty():
 		for failure in failures:
 			push_error(failure)
