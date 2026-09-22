@@ -138,6 +138,47 @@ async function playResponse(packageName: string, purchaseToken: string): Promise
   });
 }
 
+async function oneTimeProductsResponse(): Promise<Response> {
+  const accessToken = await googleToken();
+  const url =
+    `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${encodeURIComponent(PACKAGE_NAME)}/oneTimeProducts?pageSize=1000`;
+  return fetch(url, {
+    headers: { authorization: `Bearer ${accessToken}`, accept: "application/json" },
+  });
+}
+
+function catalogReadiness(data: any): { ok: boolean; detail: string } {
+  const products = Array.isArray(data?.oneTimeProducts) ? data.oneTimeProducts : [];
+  const problems: string[] = [];
+  for (const productId of Object.keys(PRODUCTS)) {
+    const product = products.find((value: any) => String(value?.productId ?? "") === productId);
+    if (!product) {
+      problems.push(`${productId}:missing`);
+      continue;
+    }
+    const options = Array.isArray(product?.purchaseOptions) ? product.purchaseOptions : [];
+    const activePricedBuy = options.some((option: any) => {
+      if (String(option?.state ?? "") !== "ACTIVE" || !option?.buyOption) return false;
+      const regions = Array.isArray(option?.regionalPricingAndAvailabilityConfigs)
+        ? option.regionalPricingAndAvailabilityConfigs
+        : [];
+      return regions.some((region: any) => {
+        if (String(region?.availability ?? "") !== "AVAILABLE") return false;
+        const price = region?.price;
+        if (!price || typeof price !== "object") return false;
+        const units = Number(price?.units ?? 0);
+        const nanos = Number(price?.nanos ?? 0);
+        return Boolean(price?.currencyCode) && (units > 0 || nanos > 0);
+      });
+    });
+    if (!activePricedBuy) problems.push(`${productId}:no_active_priced_buy_option`);
+  }
+  return {
+    ok: problems.length === 0,
+    detail: problems.length === 0 ? "catalog_ready" : problems.join(","),
+  };
+}
+
 async function voidedPurchasesResponse(
   startTimeMs: number,
   endTimeMs: number,
@@ -409,9 +450,11 @@ Deno.serve(async (req) => {
       postgres: false,
       google_play: false,
       voided_purchases: false,
+      product_catalog: false,
     };
     let googlePlayDetail = "";
     let voidedDetail = "";
+    let productCatalogDetail = "";
 
     try {
       const { error } = await admin.from("play_purchase_claims").select("token_hash").limit(1);
@@ -434,6 +477,19 @@ Deno.serve(async (req) => {
     }
 
     try {
+      const catalog = await oneTimeProductsResponse();
+      if (catalog.ok) {
+        const catalogState = catalogReadiness(await catalog.json());
+        dependencies.product_catalog = catalogState.ok;
+        productCatalogDetail = catalogState.detail;
+      } else {
+        productCatalogDetail = `product_catalog_http_${catalog.status}`;
+      }
+    } catch {
+      productCatalogDetail = "product_catalog_probe_failed";
+    }
+
+    try {
       const now = Date.now();
       const probe = await voidedPurchasesResponse(now - 60_000, now);
       dependencies.voided_purchases = probe.ok;
@@ -444,18 +500,21 @@ Deno.serve(async (req) => {
 
     const ok = dependencies.postgres &&
       dependencies.google_play &&
-      dependencies.voided_purchases;
+      dependencies.voided_purchases &&
+      dependencies.product_catalog;
     return response({
       ok,
       dependencies,
       google_play_detail: googlePlayDetail,
       voided_purchases_detail: voidedDetail,
+      product_catalog_detail: productCatalogDetail,
       package_name: PACKAGE_NAME,
       capabilities: {
         server_finalization: true,
         voided_purchase_sync: true,
         install_bound_revocations: true,
         database_rate_limit: true,
+        product_catalog_validation: true,
       },
     }, ok ? 200 : 503);
   }
