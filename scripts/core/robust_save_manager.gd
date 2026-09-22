@@ -4,9 +4,21 @@ const ROBUST_SAVE_PATH := "user://unjam_save.json"
 const BACKUP_PATH := "user://unjam_save.backup.json"
 const TEMP_PATH := "user://unjam_save.tmp.json"
 const SAVE_VERSION := 14
+const DEFERRED_SAVE_DELAY_SECONDS := 0.12
+
+var _deferred_save_timer: Timer
+var _last_saved_payload := ""
 
 func _ready() -> void:
 	load_save()
+	_deferred_save_timer = Timer.new()
+	_deferred_save_timer.name = "DeferredSaveTimer"
+	_deferred_save_timer.one_shot = true
+	_deferred_save_timer.wait_time = DEFERRED_SAVE_DELAY_SECONDS
+	_deferred_save_timer.process_callback = Timer.TIMER_PROCESS_IDLE
+	_deferred_save_timer.process_mode = Node.PROCESS_MODE_ALWAYS
+	_deferred_save_timer.timeout.connect(_flush_deferred_save)
+	add_child(_deferred_save_timer)
 
 func load_save() -> void:
 	data = DEFAULT_DATA.duplicate(true)
@@ -172,9 +184,29 @@ func _looks_like_sha256(value: String) -> bool:
 			return false
 	return true
 
+func save_deferred() -> void:
+	if _deferred_save_timer == null or not is_instance_valid(_deferred_save_timer):
+		save()
+		return
+	_deferred_save_timer.start(DEFERRED_SAVE_DELAY_SECONDS)
+
+func flush_pending_save() -> void:
+	if _deferred_save_timer != null and is_instance_valid(_deferred_save_timer) and not _deferred_save_timer.is_stopped():
+		_deferred_save_timer.stop()
+		save()
+
+func _flush_deferred_save() -> void:
+	save()
+
+func _notification(what: int) -> void:
+	if what in [NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_WM_CLOSE_REQUEST]:
+		flush_pending_save()
+
 func save() -> void:
 	data["save_version"] = SAVE_VERSION
 	var payload := JSON.stringify(data)
+	if payload == _last_saved_payload:
+		return
 	var temp := FileAccess.open(TEMP_PATH, FileAccess.WRITE)
 	if temp == null:
 		return
@@ -185,6 +217,10 @@ func save() -> void:
 		var current := FileAccess.open(ROBUST_SAVE_PATH, FileAccess.READ)
 		if current != null:
 			var current_text := current.get_as_text()
+			if current_text == payload:
+				_last_saved_payload = payload
+				DirAccess.remove_absolute(ProjectSettings.globalize_path(TEMP_PATH))
+				return
 			if JSON.parse_string(current_text) is Dictionary:
 				var backup := FileAccess.open(BACKUP_PATH, FileAccess.WRITE)
 				if backup != null:
@@ -195,11 +231,14 @@ func save() -> void:
 	if FileAccess.file_exists(ROBUST_SAVE_PATH):
 		DirAccess.remove_absolute(absolute_main)
 	var rename_error := DirAccess.rename_absolute(absolute_temp, absolute_main)
-	if rename_error != OK:
-		var fallback := FileAccess.open(ROBUST_SAVE_PATH, FileAccess.WRITE)
-		if fallback != null:
-			fallback.store_string(payload)
-			fallback.flush()
+	if rename_error == OK:
+		_last_saved_payload = payload
+		return
+	var fallback := FileAccess.open(ROBUST_SAVE_PATH, FileAccess.WRITE)
+	if fallback != null:
+		fallback.store_string(payload)
+		fallback.flush()
+		_last_saved_payload = payload
 
 func complete_level(level_number: int, stars: int, rescue_id: String, coin_reward: int = 25) -> Dictionary:
 	level_number = clampi(level_number, 1, 10000)
