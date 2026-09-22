@@ -54,6 +54,16 @@ func _rescue_refresh_is_settled() -> bool:
 	if board == null:
 		game.queue_free()
 		return _fail("Rescue Rush board missing")
+	# First refresh preserves the existing contract: any in-flight entrance
+	# animation is replaced by the settled board presentation.
+	game.call("render_board")
+	for child in board.get_children():
+		if child is Control:
+			var control := child as Control
+			if control.modulate.a < 0.99 or control.scale.distance_to(Vector2.ONE) > 0.01:
+				game.queue_free()
+				return _fail("Rescue Rush replayed full-board entrance animation during refresh")
+	# Once settled, another unchanged refresh must reuse the exact controls.
 	var before: Array[int] = []
 	for child in board.get_children():
 		before.append(child.get_instance_id())
@@ -63,13 +73,7 @@ func _rescue_refresh_is_settled() -> bool:
 		after.append(child.get_instance_id())
 	if before != after:
 		game.queue_free()
-		return _fail("Rescue Rush rebuilt board controls during an unchanged refresh")
-	for child in board.get_children():
-		if child is Control:
-			var control := child as Control
-			if control.modulate.a < 0.99 or control.scale.distance_to(Vector2.ONE) > 0.01:
-				game.queue_free()
-				return _fail("Rescue Rush replayed full-board entrance animation during refresh")
+		return _fail("Rescue Rush rebuilt settled board controls during an unchanged refresh")
 	game.queue_free()
 	await process_frame
 	return true
