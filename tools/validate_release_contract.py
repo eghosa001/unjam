@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import ast
+import re
 from pathlib import Path
 
 EXPECTED_PACKAGE = 'package/unique_name="com.eghosa.unjamgam"'
-EXPECTED_VERSION_CODE = 'version/code=1'
-EXPECTED_VERSION_NAME = 'version/name="1.0.0"'
 EXPECTED_BACKEND_EXCLUSION = 'supabase/*'
 EXPECTED_UPLOAD_SECRET = 'secrets.UNJAM_ANDROID_UPLOAD_SHA1'
 
@@ -82,10 +81,232 @@ def main() -> int:
         if test_name in workflow:
             errors.append(f'obsolete release test still referenced: {test_name}')
 
+    version_code_match = re.search(r'^version/code=(\\d+)
+        'permissions/access_network_state=true',
+        'com.google.android.gms.permission.AD_ID',
+    ):
+        if token not in preset:
+            errors.append(f'export preset does not preserve fresh-app/monetization contract: {token}')
+
+    for token in (
+        'supabase_url="https://sotwqajpcyjlpxntjddr.supabase.co"',
+        'supabase_publishable_key="sb_publishable_',
+        'res://addons/admob/plugin.cfg',
+        'res://addons/GodotGooglePlayBilling/plugin.cfg',
+        'ca-app-pub-7517898921176341~1892369383',
+        'privacy_policy_url="https://unjam-site-prod-production.up.railway.app/privacy.html"',
+        'developer_website_url="https://unjam-site-prod-production.up.railway.app"',
+    ):
+        if token not in project:
+            errors.append(f'project.godot missing monetization contract token: {token}')
+
+    for token in (
+        'unjam-purchase',
+        'google_play',
+        'postgres',
+        'voided_purchases',
+        'server_finalization',
+        'voided_purchase_sync',
+        'install_bound_revocations',
+        'database_rate_limit',
+        'product_catalog',
+        'product_catalog_validation',
+        'UNJAM_SUPABASE_URL',
+    ):
+        if token not in live_checker:
+            errors.append(f'live monetization checker missing dependency contract token: {token}')
+
+    lifecycle_migration = root / 'supabase' / 'migrations' / '20260922_harden_monetization_lifecycle.sql'
+    if not lifecycle_migration.exists():
+        errors.append('hardened monetization lifecycle migration is missing')
+    else:
+        lifecycle_text = lifecycle_migration.read_text(encoding='utf-8')
+        for token in (
+            'play_purchase_installations',
+            'play_request_limits',
+            'play_voided_sync_state',
+            'mark_play_purchase_voided',
+            'get_play_install_revocations',
+            'consume_play_request_slot',
+        ):
+            if token not in lifecycle_text:
+                errors.append(f'hardened monetization lifecycle migration missing token: {token}')
+
+    for token in (
+        'viewBox="0 0 512 512"',
+        'url(#bg)',
+        '<!-- main U silhouette/shadow -->',
+        'id="LauncherSafeForeground"',
+        'stroke-width="94"',
+    ):
+        if token not in icon:
+            errors.append(f'launcher icon master missing premium asset token: {token}')
+    if '>UNJAM<' in icon or '<text' in icon:
+        errors.append('launcher icon master must remain U-only with no embedded wordmark')
+
+    if 'viewBox="0 0 432 432"' not in adaptive_bg:
+        errors.append('adaptive icon background must remain a 432x432 Android layer')
+
+    for token in (
+        'id="AdaptiveSafeZone"',
+        'stroke-width="74"',
+        'Large, simple foreground: no nested scaling',
+    ):
+        if token not in adaptive_fg:
+            errors.append(f'adaptive foreground safe-zone contract missing token: {token}')
+    if '>UNJAM<' in adaptive_fg or '<text' in adaptive_fg:
+        errors.append('adaptive foreground must remain U-only with no embedded wordmark')
+    if 'scale(.84)' in adaptive_fg or 'scale(.80)' in adaptive_fg:
+        errors.append('adaptive foreground must not reintroduce nested downscaling that makes the launcher mark unreadable')
+
+    for token in (
+        'config/icon="res://assets/icon.svg"',
+    ):
+        if token not in project:
+            errors.append(f'project launcher icon is not wired to the U-only SVG source: {token}')
+
+    for token in (
+        'launcher_icons/main_192x192="res://assets/icon.svg"',
+        'launcher_icons/adaptive_foreground_432x432="res://assets/icon_adaptive_foreground.svg"',
+        'launcher_icons/adaptive_background_432x432="res://assets/icon_adaptive_background.svg"',
+    ):
+        if token not in preset:
+            errors.append(f'Android launcher icon is not wired to the current SVG source: {token}')
+
+    if errors:
+        print('Release contract validation failed:')
+        for error in errors:
+            print(f' - {error}')
+        return 1
+
+    print('Release contract validation passed.')
+    print('Package: com.eghosa.unjamgam')
+    version_code = version_code_match.group(1) if version_code_match else 'unknown'
+    version_name = version_name_match.group(1) if version_name_match else 'unknown'
+    print(f'Android release metadata: versionCode {version_code} / versionName {version_name}')
+    print('Upload certificate fingerprint is supplied at release time by UNJAM_ANDROID_UPLOAD_SHA1.')
+    return 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())
+, preset, re.MULTILINE)
+    if version_code_match is None or int(version_code_match.group(1)) < 1:
+        errors.append('export preset must define a positive Android version/code')
+
+    version_name_match = re.search(r'^version/name="([^"]+)"
+        'permissions/access_network_state=true',
+        'com.google.android.gms.permission.AD_ID',
+    ):
+        if token not in preset:
+            errors.append(f'export preset does not preserve fresh-app/monetization contract: {token}')
+
+    for token in (
+        'supabase_url="https://sotwqajpcyjlpxntjddr.supabase.co"',
+        'supabase_publishable_key="sb_publishable_',
+        'res://addons/admob/plugin.cfg',
+        'res://addons/GodotGooglePlayBilling/plugin.cfg',
+        'ca-app-pub-7517898921176341~1892369383',
+        'privacy_policy_url="https://unjam-site-prod-production.up.railway.app/privacy.html"',
+        'developer_website_url="https://unjam-site-prod-production.up.railway.app"',
+    ):
+        if token not in project:
+            errors.append(f'project.godot missing monetization contract token: {token}')
+
+    for token in (
+        'unjam-purchase',
+        'google_play',
+        'postgres',
+        'voided_purchases',
+        'server_finalization',
+        'voided_purchase_sync',
+        'install_bound_revocations',
+        'database_rate_limit',
+        'product_catalog',
+        'product_catalog_validation',
+        'UNJAM_SUPABASE_URL',
+    ):
+        if token not in live_checker:
+            errors.append(f'live monetization checker missing dependency contract token: {token}')
+
+    lifecycle_migration = root / 'supabase' / 'migrations' / '20260922_harden_monetization_lifecycle.sql'
+    if not lifecycle_migration.exists():
+        errors.append('hardened monetization lifecycle migration is missing')
+    else:
+        lifecycle_text = lifecycle_migration.read_text(encoding='utf-8')
+        for token in (
+            'play_purchase_installations',
+            'play_request_limits',
+            'play_voided_sync_state',
+            'mark_play_purchase_voided',
+            'get_play_install_revocations',
+            'consume_play_request_slot',
+        ):
+            if token not in lifecycle_text:
+                errors.append(f'hardened monetization lifecycle migration missing token: {token}')
+
+    for token in (
+        'viewBox="0 0 512 512"',
+        'url(#bg)',
+        '<!-- main U silhouette/shadow -->',
+        'id="LauncherSafeForeground"',
+        'stroke-width="94"',
+    ):
+        if token not in icon:
+            errors.append(f'launcher icon master missing premium asset token: {token}')
+    if '>UNJAM<' in icon or '<text' in icon:
+        errors.append('launcher icon master must remain U-only with no embedded wordmark')
+
+    if 'viewBox="0 0 432 432"' not in adaptive_bg:
+        errors.append('adaptive icon background must remain a 432x432 Android layer')
+
+    for token in (
+        'id="AdaptiveSafeZone"',
+        'stroke-width="74"',
+        'Large, simple foreground: no nested scaling',
+    ):
+        if token not in adaptive_fg:
+            errors.append(f'adaptive foreground safe-zone contract missing token: {token}')
+    if '>UNJAM<' in adaptive_fg or '<text' in adaptive_fg:
+        errors.append('adaptive foreground must remain U-only with no embedded wordmark')
+    if 'scale(.84)' in adaptive_fg or 'scale(.80)' in adaptive_fg:
+        errors.append('adaptive foreground must not reintroduce nested downscaling that makes the launcher mark unreadable')
+
+    for token in (
+        'config/icon="res://assets/icon.svg"',
+    ):
+        if token not in project:
+            errors.append(f'project launcher icon is not wired to the U-only SVG source: {token}')
+
+    for token in (
+        'launcher_icons/main_192x192="res://assets/icon.svg"',
+        'launcher_icons/adaptive_foreground_432x432="res://assets/icon_adaptive_foreground.svg"',
+        'launcher_icons/adaptive_background_432x432="res://assets/icon_adaptive_background.svg"',
+    ):
+        if token not in preset:
+            errors.append(f'Android launcher icon is not wired to the current SVG source: {token}')
+
+    if errors:
+        print('Release contract validation failed:')
+        for error in errors:
+            print(f' - {error}')
+        return 1
+
+    print('Release contract validation passed.')
+    print('Package: com.eghosa.unjamgam')
+    print('Fresh-app default release: versionCode 1 / versionName 1.0.0')
+    print('Upload certificate fingerprint is supplied at release time by UNJAM_ANDROID_UPLOAD_SHA1.')
+    return 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())
+, preset, re.MULTILINE)
+    if version_name_match is None or not version_name_match.group(1).strip():
+        errors.append('export preset must define a non-empty Android version/name')
+
     for token in (
         EXPECTED_PACKAGE,
-        EXPECTED_VERSION_CODE,
-        EXPECTED_VERSION_NAME,
         EXPECTED_BACKEND_EXCLUSION,
         'permissions/internet=true',
         'permissions/access_network_state=true',
