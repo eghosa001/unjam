@@ -412,8 +412,8 @@ func build_settings() -> void:
 		if settings_title != null:
 			settings_title.add_theme_color_override("font_color",FIGMA_INK)
 
-	var card_fill := Color(0.09,0.13,0.21,0.96) if dark_mode else Color("#fffef8")
-	var card_border := Color(0.22,0.36,0.48,0.72) if dark_mode else Color(0.51,0.77,0.95,0.32)
+	var card_fill := Color("#33281c") if dark_mode else Color("#fffaf0")
+	var card_border := Color("#80613b") if dark_mode else Color("#c8aa70")
 	var heading_color := Color(0.91,0.97,1.0) if dark_mode else FIGMA_INK
 	var muted_color := Color(0.76,0.84,0.90) if dark_mode else FIGMA_INK
 
@@ -444,7 +444,7 @@ func build_settings() -> void:
 	if dark_mode:
 		help_card = _figma_solid_card(canvas,"HelpPrivacy",Rect2(17,499,354,94),card_fill,card_border,18)
 	else:
-		help_card = _figma_solid_card(canvas,"HelpPrivacy",Rect2(17,499,354,94),Color("#fffef7"),Color("#1aa8ff"),18)
+		help_card = _figma_solid_card(canvas,"HelpPrivacy",Rect2(17,499,354,94),Color("#fffaf0"),Color("#c8aa70"),18)
 		help_card.modulate.a = 0.70
 	_figma_text(canvas,"SUPPORT",Rect2(33,515,170,18),15,FIGMA_GOLD if not dark_mode else heading_color)
 	var utility_fill := Color("#3a2d20") if dark_mode else Color("#d8c294")
@@ -549,8 +549,8 @@ func _daily_ui_state(game_id: String, accent: Color) -> Dictionary:
 	# Each Daily card is independent. Completing, abandoning or failing one game
 	# must never disable either of the other two.
 	if _daily_done(game_id):
-		return {"text":"DONE TODAY", "fill":FIGMA_GREEN, "disabled":true, "done":true}
-	return {"text":"PLAY TODAY", "fill":accent, "disabled":false, "done":false}
+		return {"text":"COMPLETED", "fill":Color("#cbb98f"), "disabled":true, "done":true}
+	return {"text":"PLAY", "fill":FIGMA_GOLD, "disabled":false, "done":false}
 
 func _figma_daily_card(canvas: Control, game_id: String, y: float, collection_bonus: int) -> void:
 	var accent := Unjam3DTheme.game_accent(game_id)
@@ -572,7 +572,7 @@ func _figma_daily_card(canvas: Control, game_id: String, y: float, collection_bo
 	_figma_text(canvas, reward, Rect2(33,y+72,130,16), 13, FIGMA_GOLD if _dark() else Color("#8a642e"))
 	var daily_state := _daily_ui_state(game_id, accent)
 	var fill: Color = daily_state.get("fill", accent)
-	var button_text := String(daily_state.get("text", "PLAY TODAY"))
+	var button_text := String(daily_state.get("text", "PLAY"))
 	var button := _figma_button(
 		canvas,
 		"DailyPlay_%s" % game_id,
@@ -580,7 +580,7 @@ func _figma_daily_card(canvas: Control, game_id: String, y: float, collection_bo
 		Rect2(236,y+42,116,48),
 		fill,
 		Callable(),
-		FIGMA_OFF_WHITE,
+		FIGMA_NAVY,
 		14,
 		14
 	)
@@ -939,9 +939,11 @@ func _build_figma_level_browser(game_id: String) -> void:
 	if game_id == "block_puzzle":
 		_add_figma_block_modes(canvas)
 
-	var prev := _figma_button(canvas,"LevelPrev","◀ PREV",Rect2(17,page_y - 3.0,100,44),FIGMA_BLUE,Callable(),FIGMA_OFF_WHITE,13,13)
+	var prev_fill := Color("#33281c") if _dark() else Color("#fffaf0")
+	var prev_text := FIGMA_DARK_INK if _dark() else FIGMA_MUTED
+	var prev := _figma_button(canvas,"LevelPrev","◀ PREV",Rect2(17,page_y - 3.0,100,44),prev_fill,Callable(),prev_text,13,13)
 	prev.disabled = selected_multi_world <= 1 and selected_multi_page <= 1
-	_style_figma_page_button(prev,FIGMA_BLUE,accent,prev.disabled)
+	_style_figma_page_button(prev,prev_fill,accent,prev.disabled,true)
 	if not prev.disabled:
 		prev.pressed.connect(_change_multi_page.bind(-1))
 	var current := _figma_button(canvas,"LevelCurrent","CURRENT",Rect2(125,page_y - 3.0,118,44),accent,Callable(self,"_jump_multi_current"),FIGMA_OFF_WHITE,13,13)
@@ -964,13 +966,13 @@ func _build_figma_level_browser(game_id: String) -> void:
 		var stars := MultiGameManager.get_stars(game_id,level_number)
 		var is_current := unlocked and level_number == current_level
 		var milestone := level_number % 25 == 0
-		var fill := Color("#20384b") if _dark() else Color("#fefefa")
+		var fill := Color("#33281c") if _dark() else Color("#fffaf0")
 		var border := Color(accent,0.62 if _dark() else 0.40)
 		var text_color := FIGMA_DARK_INK if _dark() else FIGMA_INK
 		if not unlocked:
-			fill = Color("#1a2938") if _dark() else Color("#dee5eb")
-			border = Color("#52687a",0.72) if _dark() else Color("#b8c4cf",0.45)
-			text_color = Color("#8296a8") if _dark() else Color("#8c9ca8")
+			fill = Color("#2a2118") if _dark() else Color("#e5ddce")
+			border = Color("#80613b",0.58) if _dark() else Color("#c7bda9",0.55)
+			text_color = Color("#9e9485") if _dark() else Color("#958b7c")
 		elif is_current:
 			fill = accent
 			border = Color(accent.lightened(0.24),0.75)
@@ -986,7 +988,7 @@ func _build_figma_level_browser(game_id: String) -> void:
 			else:
 				card.pressed.connect(start_multi_level.bind(game_id,level_number,false))
 		var star_text := "LOCK" if not unlocked else ("★".repeat(stars) if stars > 0 else "···")
-		var star_color := (Color("#8296a8") if _dark() else Color("#8c9ca8")) if not unlocked else (FIGMA_DARK_MUTED if _dark() else FIGMA_MUTED)
+		var star_color := (Color("#9e9485") if _dark() else Color("#958b7c")) if not unlocked else (FIGMA_DARK_MUTED if _dark() else FIGMA_MUTED)
 		_figma_text(canvas,star_text,Rect2(x+9,y+38,64,18),12,star_color,true)
 		index += 1
 
