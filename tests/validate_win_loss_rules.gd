@@ -25,6 +25,9 @@ func _check_water() -> bool:
 	if objective == null or not objective.text.begins_with("WIN •"):
 		game.queue_free()
 		return _fail("Water Sort objective does not state the win condition")
+	if not _label_fits(objective):
+		game.queue_free()
+		return _fail("Water Sort win condition does not fit its phone label")
 
 	game.set("tubes", [[0,0,0,0], [1,1,1,1], [], []])
 	if not bool(game.call("is_complete")):
@@ -67,9 +70,12 @@ func _check_block() -> bool:
 	await process_frame
 
 	var goal := game.get("goal_label") as Label
-	if goal == null or not goal.text.begins_with("WIN • SCORE"):
+	if goal == null or not goal.text.begins_with("WIN •"):
 		game.queue_free()
 		return _fail("Block Puzzle does not show a clear win checklist")
+	if not _label_fits(goal):
+		game.queue_free()
+		return _fail("Block Puzzle win checklist does not fit its phone label")
 
 	game.set("play_mode", "campaign")
 	game.set("daily_mode", false)
@@ -120,11 +126,17 @@ func _check_rescue() -> bool:
 	if objective == null or not objective.text.begins_with("WIN •"):
 		game.queue_free()
 		return _fail("Rescue Rush objective does not state the win condition")
+	if not _label_fits(objective):
+		game.queue_free()
+		return _fail("Rescue Rush win condition does not fit its phone label")
 
 	var moves_label := game.get("moves_label") as Label
 	if moves_label == null or "LIVES" not in moves_label.text:
 		game.queue_free()
 		return _fail("Rescue Rush does not show remaining lives")
+	if not _label_fits(moves_label):
+		game.queue_free()
+		return _fail("Rescue Rush move/lives rule does not fit its phone label")
 	if String(game.get("objective_type")) != "perfect_rescue" and "3★" not in moves_label.text:
 		game.queue_free()
 		return _fail("Rescue Rush ordinary levels do not distinguish the 3-star target from a loss limit")
@@ -152,6 +164,9 @@ func _check_rescue() -> bool:
 	game.queue_free()
 	await process_frame
 	return true
+
+func _label_fits(label: Label) -> bool:
+	return label.get_minimum_size().x <= label.size.x + 4.0
 
 func _fail(message: String) -> bool:
 	push_error(message)
