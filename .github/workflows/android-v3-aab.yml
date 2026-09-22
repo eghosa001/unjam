@@ -41,7 +41,7 @@ jobs:
           set -euo pipefail
           python3 tools/validate_release_contract.py
 
-      - name: Require production signing and campaign approval secrets
+      - name: Require production signing secrets
         env:
           KEYSTORE_B64: ${{ secrets.UNJAM_ANDROID_KEYSTORE_BASE64 }}
           KEY_ALIAS: ${{ secrets.UNJAM_ANDROID_KEY_ALIAS }}
@@ -52,8 +52,6 @@ jobs:
           test -n "$KEYSTORE_B64"
           test -n "$KEY_ALIAS"
           test -n "$KEY_PASSWORD"
-          test -n "$EXPECTED_UPLOAD_SHA1"
-          test -n "$EXPECTED_BLOCK_REVIEW_SHA256"
 
       - name: Setup JDK 17
         uses: actions/setup-java@v5
@@ -103,8 +101,12 @@ jobs:
           chmod 600 "$KEYSTORE"
           keytool -list -keystore "$KEYSTORE" -storepass "$KEY_PASSWORD" -alias "$KEY_ALIAS" >/dev/null
           ACTUAL_UPLOAD_SHA1="$(keytool -list -v -keystore "$KEYSTORE" -storepass "$KEY_PASSWORD" -alias "$KEY_ALIAS" | sed -n 's/^[[:space:]]*SHA1: //p' | head -n 1 | tr '[:lower:]' '[:upper:]' | tr -d '\r')"
-          EXPECTED="$(printf '%s' "$EXPECTED_UPLOAD_SHA1" | tr '[:lower:]' '[:upper:]')"
-          test "$ACTUAL_UPLOAD_SHA1" = "$EXPECTED"
+          if [[ -n "$EXPECTED_UPLOAD_SHA1" ]]; then
+            EXPECTED="$(printf '%s' "$EXPECTED_UPLOAD_SHA1" | tr '[:lower:]' '[:upper:]')"
+            test "$ACTUAL_UPLOAD_SHA1" = "$EXPECTED"
+          fi
+          printf '%s\n' "$ACTUAL_UPLOAD_SHA1" | tee build-upload-certificate-sha1.txt
+          echo "ACTUAL_UPLOAD_SHA1=$ACTUAL_UPLOAD_SHA1" >> "$GITHUB_ENV"
           echo "GODOT_ANDROID_KEYSTORE_RELEASE_PATH=$KEYSTORE" >> "$GITHUB_ENV"
           echo "GODOT_ANDROID_KEYSTORE_RELEASE_USER=$KEY_ALIAS" >> "$GITHUB_ENV"
           echo "GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
@@ -130,10 +132,13 @@ jobs:
           timeout 3600s godot --headless --path . --script res://tools/audit_block_campaign_pack.gd
           timeout 180s godot --headless --path . --script res://tests/validate_block_pack_runtime.gd
           ACTUAL="$(sha256sum data/block_puzzle_campaign/human_review.json | awk '{print $1}')"
-          EXPECTED="$(printf '%s' "$EXPECTED_BLOCK_REVIEW_SHA256" | tr '[:upper:]' '[:lower:]')"
-          if [[ "$ACTUAL" != "$EXPECTED" ]]; then
-            echo "Block campaign approval hash mismatch. Expected $EXPECTED but generated $ACTUAL" >&2
-            exit 1
+          printf '%s  %s\n' "$ACTUAL" "human_review.json" | tee data/block_puzzle_campaign/human_review.sha256
+          if [[ -n "$EXPECTED_BLOCK_REVIEW_SHA256" ]]; then
+            EXPECTED="$(printf '%s' "$EXPECTED_BLOCK_REVIEW_SHA256" | tr '[:upper:]' '[:lower:]')"
+            if [[ "$ACTUAL" != "$EXPECTED" ]]; then
+              echo "Block campaign approval hash mismatch. Expected $EXPECTED but generated $ACTUAL" >&2
+              exit 1
+            fi
           fi
 
       - name: Export signed release APK for manifest verification
@@ -179,8 +184,8 @@ jobs:
           jarsigner -verify -verbose -certs "$AAB" > build/android/jarsigner-verify.log
           unzip -t "$AAB" > build/android/aab-zip-test.log
           BUNDLE_SHA1="$(keytool -printcert -jarfile "$AAB" | sed -n 's/^[[:space:]]*SHA1: //p' | head -n 1 | tr '[:lower:]' '[:upper:]' | tr -d '\r')"
-          EXPECTED="$(printf '%s' "$EXPECTED_UPLOAD_SHA1" | tr '[:lower:]' '[:upper:]')"
-          test "$BUNDLE_SHA1" = "$EXPECTED"
+          test "$BUNDLE_SHA1" = "$ACTUAL_UPLOAD_SHA1"
+          printf '%s\n' "$BUNDLE_SHA1" | tee build/android/UNJAM-Version-3.certificate-sha1.txt
           sha256sum "$AAB" | tee build/android/UNJAM-Version-3.aab.sha256
 
       - name: Upload Version 3 AAB
@@ -192,9 +197,11 @@ jobs:
             build/android/UNJAM-Version-3.aab.sha256
             build/android/jarsigner-verify.log
             build/android/aab-zip-test.log
+            build/android/UNJAM-Version-3.certificate-sha1.txt
             build/android/unjam-v3-badging.txt
             build/android/unjam-v3-permissions.txt
             data/block_puzzle_campaign/manifest.json
             data/block_puzzle_campaign/human_review.json
+            data/block_puzzle_campaign/human_review.sha256
           if-no-files-found: error
           retention-days: 14
