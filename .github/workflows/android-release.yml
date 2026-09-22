@@ -6,11 +6,11 @@ on:
       version_name:
         description: Human-readable version (for example 1.0.0)
         required: true
-        default: 1.0.0
+        default: 1.0.3
       version_code:
         description: Monotonically increasing Google Play version code
         required: true
-        default: 1
+        default: 3
 
 permissions:
   contents: read
@@ -144,6 +144,11 @@ jobs:
           grep -Fx "package/unique_name=\"$EXPECTED_PACKAGE\"" export_presets.cfg
           grep -Fx "version/code=$VERSION_CODE" export_presets.cfg
           grep -Fx "version/name=\"$VERSION_NAME\"" export_presets.cfg
+          grep -Fx 'package/signed=true' export_presets.cfg
+          grep -Fx 'gradle_build/export_format=1' export_presets.cfg
+          grep -Fx 'gradle_build/target_sdk="36"' export_presets.cfg
+          grep -Fx 'architectures/arm64-v8a=true' export_presets.cfg
+          grep -Fx 'architectures/armeabi-v7a=false' export_presets.cfg
 
           echo "GODOT_ANDROID_KEYSTORE_RELEASE_PATH=$KEYSTORE" >> "$GITHUB_ENV"
           echo "GODOT_ANDROID_KEYSTORE_RELEASE_USER=$KEY_ALIAS" >> "$GITHUB_ENV"
@@ -281,6 +286,14 @@ jobs:
           sha256sum "$AAB" | tee build/android/unjam-release.aab.sha256
           echo "Verified package identity source: $EXPECTED_PACKAGE"
           echo "Verified upload certificate SHA-1: $BUNDLE_SHA1"
+      - name: Refuse unsigned release artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s build/android/jarsigner-verify.log
+          grep -F "jar verified." build/android/jarsigner-verify.log
+          test -s build/android/unjam-release.aab
+          test -s build/android/unjam-release.aab.sha256
       - name: Upload release AAB and verification records
         uses: actions/upload-artifact@v4
         with:
