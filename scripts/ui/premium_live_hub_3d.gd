@@ -11,17 +11,17 @@ const INK := Color("#26323d")
 const MUTED := Color("#52606d")
 const OFF_WHITE := Color(1.0, 0.995, 0.97)
 const CYAN := Color(0.14, 0.68, 1.0)
-const DARK_TOP := Color("#1b2742")
-const DARK_MID := Color("#131d33")
-const DARK_BOTTOM := Color("#0c1324")
+const DARK_TOP := Color("#24385f")
+const DARK_MID := Color("#1b2c4d")
+const DARK_BOTTOM := Color("#13213a")
 const DARK_INK := Color("#f5f7fa")
 const DARK_MUTED := Color("#a7b1bc")
 const SCENE_TOP := Color("#4f76b8")
 const SCENE_MID := Color("#3f67aa")
 const SCENE_BOTTOM := Color("#315596")
-const DARK_SCENE_TOP := Color("#1b2742")
-const DARK_SCENE_MID := Color("#1b2742")
-const DARK_SCENE_BOTTOM := Color("#0c1324")
+const DARK_SCENE_TOP := Color("#24385f")
+const DARK_SCENE_MID := Color("#24385f")
+const DARK_SCENE_BOTTOM := Color("#13213a")
 
 var figma_canvas: FigmaReferenceCanvas
 
@@ -70,7 +70,7 @@ func _build_reference_selector(canvas: Control) -> void:
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(background)
 	RefCanvas.add_world_depth(canvas, Color("#59636f") if _selector_dark() else Color("#9aa4ae"), _selector_dark(), 0.0, "SelectorWorldDepth")
-	RefCanvas.add_scene_backdrop_layers(canvas, Color("#314467") if _selector_dark() else Color("#6f8fbd"), _selector_dark(), "Selector")
+	RefCanvas.add_scene_backdrop_layers(canvas, Color("#365787") if _selector_dark() else Color("#6f8fbd"), _selector_dark(), "Selector")
 	var selector_key_light := canvas.get_node_or_null("SelectorKeyLight")
 	if selector_key_light != null:
 		selector_key_light.set_meta("unjam_figma_scene_light", true)
@@ -175,8 +175,8 @@ func _add_bottom_nav(canvas: Control) -> void:
 	var shell := PanelContainer.new()
 	shell.name = "SelectorBottomNav"
 	RefCanvas.add_shadow(canvas, Rect2(13, 757, 362, 70), 18, Color(0.02,0.10,0.18,0.16), 5, Vector2(0,4))
-	var nav_fill := Color("#18243b") if _selector_dark() else Color("#9fb5d5")
-	var nav_border := Color("#314467") if _selector_dark() else Color("#6f8fbd")
+	var nav_fill := Color("#1c2d4b") if _selector_dark() else Color("#9fb5d5")
+	var nav_border := Color("#365787") if _selector_dark() else Color("#6f8fbd")
 	shell.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(nav_fill.lightened(0.12), nav_fill, nav_fill.darkened(0.10), 18, nav_border, 1, 0.40))
 	RefCanvas.set_rect(shell, 13, 757, 362, 70)
 	shell.mouse_filter = Control.MOUSE_FILTER_IGNORE
