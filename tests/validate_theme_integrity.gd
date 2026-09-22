@@ -117,7 +117,7 @@ func _run() -> void:
 		"res://scripts/ui/premium_live_hub_3d.gd",
 	]:
 		var source := _read(path)
-		for token in ["#e2c98f", "#b89050", "#805b31"]:
+		for token in ["#e4dfd5", "#b3aca2", "#80786e"]:
 			if not source.contains(token):
 				return _fail("Premium champagne-gold scene palette contract missing in %s: %s" % [path, token])
 
