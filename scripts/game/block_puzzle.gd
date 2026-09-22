@@ -707,7 +707,8 @@ func _restore_checkpoint() -> void:
 		rng.state = int(checkpoint.get("rng_state", rng.state))
 		var saved_history = checkpoint.get("history", [])
 		if saved_history is Array:
-			history = saved_history.duplicate(true)
+			# checkpoint() already detached the nested snapshots recursively.
+			history = saved_history
 
 func _quit() -> void:
 	_save_checkpoint()
