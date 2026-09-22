@@ -62,7 +62,7 @@ GROUP_TESTS = {
         "validate_production_hardening_regressions",
     ],
     "progression": [
-        "validate_gameplay_interactions",
+        "validate_retention_pacing",
         "validate_progression_transitions",
     ],
     "daily": [
@@ -127,6 +127,16 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
     is_code = suffix in CODE_SUFFIXES or p.startswith(("scripts/", "scenes/", "addons/", "data/"))
     if not is_code:
         return False
+
+    progression_contracts = {
+        "scripts/core/water_sort_progression.gd": "validate_water_constructive_solvability",
+        "scripts/core/block_puzzle_progression.gd": "validate_block_progression_10000",
+        "scripts/core/rescue_rush_progression.gd": "validate_rescue_progression_10000",
+    }
+    if p in progression_contracts:
+        add(groups, "progression")
+        explicit_tests.add(progression_contracts[p])
+        return True
 
     if any(token in p for token in ("water_sort", "water_tube", "/water_", "water_")):
         add(groups, "water")
@@ -287,6 +297,18 @@ def git_changed_files(base: str, head: str) -> list[str]:
 
 PREMIUM_MAIN_PATH = "scripts/ui/premium_main_casual.gd"
 PREMIUM_MAIN_BROAD_SCOPES = {"home", "levels", "collection", "daily", "settings"}
+WATER_CAMPAIGN_PATH = "scripts/game/water_sort_10000.gd"
+WATER_CAMPAIGN_GENERATOR_FUNCTIONS = {
+    "generate_tubes_with_solution",
+    "_curated_opening_level",
+    "_construct_progression_candidate",
+    "_construct_balanced_fallback",
+    "_top_run_size",
+    "_count_empty_tubes",
+    "_is_solved_state",
+    "_raw_state_key",
+    "_shuffle_int_array",
+}
 
 def _git_changed_line_numbers(base: str, head: str, path: str) -> tuple[list[int], bool]:
     if not base:
@@ -317,10 +339,10 @@ def _git_changed_line_numbers(base: str, head: str, path: str) -> tuple[list[int
 def _git_file_text(ref: str, path: str) -> str:
     return subprocess.check_output(["git", "show", f"{ref}:{path}"], text=True)
 
-def _premium_main_changed_functions(base: str, head: str) -> set[str]:
+def _changed_functions(base: str, head: str, path: str) -> set[str]:
     try:
-        lines = _git_file_text(head, PREMIUM_MAIN_PATH).splitlines()
-        changed_lines, deletion_only_hunk = _git_changed_line_numbers(base, head, PREMIUM_MAIN_PATH)
+        lines = _git_file_text(head, path).splitlines()
+        changed_lines, deletion_only_hunk = _git_changed_line_numbers(base, head, path)
     except subprocess.CalledProcessError:
         return set()
     if deletion_only_hunk:
@@ -335,6 +357,13 @@ def _premium_main_changed_functions(base: str, head: str) -> set[str]:
                 break
             index -= 1
     return functions
+
+def _premium_main_changed_functions(base: str, head: str) -> set[str]:
+    return _changed_functions(base, head, PREMIUM_MAIN_PATH)
+
+def _water_campaign_generator_only(base: str, head: str) -> bool:
+    functions = _changed_functions(base, head, WATER_CAMPAIGN_PATH)
+    return bool(functions) and functions.issubset(WATER_CAMPAIGN_GENERATOR_FUNCTIONS)
 
 def _premium_main_scopes(functions: set[str]) -> set[str]:
     if not functions:
@@ -390,10 +419,23 @@ def _combine_plans(*plans: dict[str, object]) -> dict[str, object]:
     }
 
 def plan_for_changes(paths: list[str], base: str, head: str) -> dict[str, object]:
-    if PREMIUM_MAIN_PATH not in paths:
-        return plan_for_paths(paths)
+    effective_paths = list(paths)
+    focused_plans: list[dict[str, object]] = []
 
-    other_paths = [path for path in paths if path != PREMIUM_MAIN_PATH]
+    if WATER_CAMPAIGN_PATH in effective_paths and _water_campaign_generator_only(base, head):
+        effective_paths.remove(WATER_CAMPAIGN_PATH)
+        focused_plans.append({
+            "groups": [],
+            "tests": ["validate_water_constructive_solvability"],
+            "visual": [],
+            "needs_godot": True,
+            "release_contract": False,
+        })
+
+    if PREMIUM_MAIN_PATH not in effective_paths:
+        return _combine_plans(plan_for_paths(effective_paths), *focused_plans)
+
+    other_paths = [path for path in effective_paths if path != PREMIUM_MAIN_PATH]
     other_plan = plan_for_paths(other_paths)
     premium_plan = plan_for_paths([PREMIUM_MAIN_PATH])
     scopes = _premium_main_scopes(_premium_main_changed_functions(base, head))
@@ -405,7 +447,7 @@ def plan_for_changes(paths: list[str], base: str, head: str) -> dict[str, object
     if ("collection" in scopes or "daily" in scopes) and "validate_collection_daily_value" not in premium_plan["tests"]:
         premium_plan["tests"].append("validate_collection_daily_value")
 
-    return _combine_plans(other_plan, premium_plan)
+    return _combine_plans(other_plan, premium_plan, *focused_plans)
 
 def emit_github_output(path: str, plan: dict[str, object], changed: list[str]) -> None:
     values = {
@@ -435,6 +477,9 @@ def self_test() -> None:
         (["scripts/ui/premium_main_casual.gd"], ["secondary_ui"], ["collection", "daily", "home", "levels", "settings"], True),
         (["scripts/systems/premium_visuals.gd"], ["ui"], ["collection", "daily", "games", "levels", "settings", "shop"], True),
         (["scripts/ui/monetization_hub_3d.gd"], ["monetization"], ["shop"], True),
+        (["scripts/core/water_sort_progression.gd"], ["progression"], [], True),
+        (["scripts/core/block_puzzle_progression.gd"], ["progression"], [], True),
+        (["scripts/core/rescue_rush_progression.gd"], ["progression"], [], True),
         (["scripts/core/feedback_manager.gd"], ["audio"], [], True),
         (["scripts/core/store_manager.gd"], ["monetization"], [], True),
         (["tests/validate_viewport_fit.gd"], [], [], True),
@@ -454,6 +499,8 @@ def self_test() -> None:
     assert _premium_main_scopes({"_figma_bottom_nav"}) == {"collection", "daily", "settings"}
     assert _premium_main_scopes({"_figma_surface"}) == PREMIUM_MAIN_BROAD_SCOPES
     assert _premium_main_tests({"daily"}) == ["validate_daily_readability", "validate_collection_daily_value"]
+    assert "_curated_opening_level" in WATER_CAMPAIGN_GENERATOR_FUNCTIONS
+    assert "render_board" not in WATER_CAMPAIGN_GENERATOR_FUNCTIONS
     assert "validate_viewport_fit" in _premium_main_tests({"settings"})
     assert "validate_requested_polish_contract" in GROUP_TESTS["secondary_ui"]
     assert GROUP_TESTS["tutorial"] == [
@@ -464,6 +511,13 @@ def self_test() -> None:
     assert GROUP_TESTS["games_ui"] == [
         "validate_selector_navigation",
     ]
+    progression_plan = plan_for_paths(["scripts/core/water_sort_progression.gd"])
+    assert progression_plan["tests"] == [
+        "validate_retention_pacing",
+        "validate_progression_transitions",
+        "validate_water_constructive_solvability",
+    ], progression_plan
+    assert progression_plan["visual"] == [], progression_plan
     assert "validate_compact_gameplay_stack" not in GROUP_TESTS["water"]
     assert "validate_water_constructive_solvability" in GROUP_TESTS["water"]
     assert "validate_water_palette_accessibility" in GROUP_TESTS["water"]

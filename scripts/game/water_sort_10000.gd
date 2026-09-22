@@ -148,6 +148,25 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 
 func generate_tubes_with_solution(seed_value: int, colors: int) -> Dictionary:
 	var p := Progression.profile(level_number)
+	# The first ten levels are deliberately authored rather than sampled from the
+	# procedural pool. Tutorial retention depends on visible novelty and a clean
+	# one-step-at-a-time difficulty ramp; these boards have replayable proofs and
+	# unique canonical structures.
+	if level_number <= 10:
+		var curated := _curated_opening_level(level_number)
+		if not curated.is_empty():
+			var curated_tubes: Array = curated.get("tubes", [])
+			var curated_solution: Array = curated.get("solution", [])
+			var metrics := Progression.score_board(curated_tubes, curated_solution.size())
+			generation_meta = metrics.duplicate(true)
+			generation_meta["target_difficulty"] = int(p.get("target_difficulty", 20))
+			generation_meta["difficulty_floor"] = int(p.get("difficulty_floor", 0))
+			generation_meta["difficulty_ceiling"] = int(p.get("difficulty_ceiling", 100))
+			generation_meta["empty_bottles"] = int(p.get("empty_bottles", 2))
+			generation_meta["generator_version"] = int(p.get("generator_version", 1))
+			generation_meta["milestone"] = String(p.get("milestone", "normal"))
+			curated["metadata"] = generation_meta.duplicate(true)
+			return curated
 	var target_score := int(p.get("target_difficulty", 20))
 	var empty_bottles := int(p.get("empty_bottles", 2))
 	var base_steps := int(p.get("scramble_steps", 8))
@@ -198,6 +217,61 @@ func generate_tubes_with_solution(seed_value: int, colors: int) -> Dictionary:
 	generation_meta["generator_version"] = int(p.get("generator_version", 1))
 	generation_meta["milestone"] = String(p.get("milestone", "normal"))
 	return best
+
+
+func _curated_opening_level(level: int) -> Dictionary:
+	match level:
+		1:
+			return {
+				"tubes": [[1,1,0,0], [], [2,2,2,2], [], [1,1,0,0]],
+				"solution": [Vector2i(0,1), Vector2i(4,1), Vector2i(0,4)]
+			}
+		2:
+			return {
+				"tubes": [[], [2,2,2,2], [], [0,1,0,0], [1,1,1,0]],
+				"solution": [Vector2i(3,2), Vector2i(4,2), Vector2i(3,4), Vector2i(2,3)]
+			}
+		3:
+			return {
+				"tubes": [[3,3,3,0], [2,2,2,3], [], [], [0,0,0,2], [1,1,1,1]],
+				"solution": [Vector2i(4,3), Vector2i(0,4), Vector2i(1,2), Vector2i(3,1), Vector2i(2,0)]
+			}
+		4:
+			return {
+				"tubes": [[2,1,0,0], [1,1,1,0], [3,3,3,0], [], [], [3,2,2,2]],
+				"solution": [Vector2i(0,4), Vector2i(1,4), Vector2i(0,1), Vector2i(5,0), Vector2i(2,4), Vector2i(5,2)]
+			}
+		5:
+			return {
+				"tubes": [[], [], [1,1,0,3], [0,2,2,2], [1,1,0,0], [3,3,3,2]],
+				"solution": [Vector2i(2,0), Vector2i(3,1), Vector2i(5,1), Vector2i(2,3), Vector2i(5,0), Vector2i(4,3), Vector2i(4,2)]
+			}
+		6:
+			return {
+				"tubes": [[3,0,2,2], [2,1,1,3], [], [0,0,0,2], [3,3,1,1], []],
+				"solution": [Vector2i(4,2), Vector2i(1,5), Vector2i(1,2), Vector2i(5,4), Vector2i(3,1), Vector2i(0,1), Vector2i(0,3), Vector2i(4,0)]
+			}
+		7:
+			return {
+				"tubes": [[1,1,1,3], [], [], [2,3,3,3], [0,0,2,0], [1,2,2,0]],
+				"solution": [Vector2i(5,1), Vector2i(4,2), Vector2i(4,5), Vector2i(1,2), Vector2i(4,2), Vector2i(0,1), Vector2i(3,1), Vector2i(5,3), Vector2i(5,0)]
+			}
+		8:
+			return {
+				"tubes": [[1,3,3,3], [4,4,4,3], [2,2,2,2], [1,1,0,4], [], [0,0,0,1], []],
+				"solution": [Vector2i(0,6), Vector2i(5,4), Vector2i(0,4), Vector2i(1,6), Vector2i(3,0), Vector2i(0,1), Vector2i(3,0), Vector2i(5,0), Vector2i(3,4)]
+			}
+		9:
+			return {
+				"tubes": [[1,4,2,2], [1,3,0,0], [0,0,2,4], [], [], [3,3,3,4], [1,1,2,4]],
+				"solution": [Vector2i(0,3), Vector2i(2,4), Vector2i(2,3), Vector2i(6,4), Vector2i(1,2), Vector2i(5,4), Vector2i(1,5), Vector2i(6,3), Vector2i(0,4), Vector2i(1,6), Vector2i(6,0)]
+			}
+		10:
+			return {
+				"tubes": [[0,0,0,3], [1,2,3,0], [], [1,1,2,3], [4,4,4,2], [4,2,1,3], []],
+				"solution": [Vector2i(0,6), Vector2i(1,0), Vector2i(5,6), Vector2i(3,2), Vector2i(1,6), Vector2i(2,6), Vector2i(1,3), Vector2i(3,2), Vector2i(5,1), Vector2i(1,3), Vector2i(4,5), Vector2i(5,2), Vector2i(4,5)]
+			}
+	return {}
 
 func _construct_progression_candidate(
 	seed_value: int,

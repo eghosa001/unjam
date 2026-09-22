@@ -6,7 +6,7 @@ const BOARD_SIZE := 8
 const WORLD_SIZE := 500
 const WORLD_COUNT := 20
 const CHAPTER_SIZE := 50
-const GENERATOR_VERSION := 1
+const GENERATOR_VERSION := 2
 
 # [start, end, difficulty_floor, difficulty_ceiling]
 const DIFFICULTY_BANDS := [
@@ -42,7 +42,15 @@ static func profile(raw_level: int) -> Dictionary:
 	var span := maxi(1, band_end - band_start)
 	var progress := float(level - band_start) / float(span)
 	var base_score := lerpf(float(floor_score), float(ceiling_score), progress)
-	var difficulty_score := clampi(int(round(base_score + _sawtooth_offset(level))), floor_score, ceiling_score)
+	var pace_role := retention_role(level)
+	var objective := objective_family(level)
+	var intro_age := objective_introduction_age(level)
+	var intro_modifier := -6.0 if intro_age == 0 else (-4.0 if intro_age in [1, 2] else 0.0)
+	var difficulty_score := clampi(
+		int(round(base_score + _pacing_offset(level, pace_role) + intro_modifier)),
+		floor_score,
+		ceiling_score
+	)
 
 	var world := int((level - 1) / WORLD_SIZE) + 1
 	var level_in_world := ((level - 1) % WORLD_SIZE) + 1
@@ -52,13 +60,22 @@ static func profile(raw_level: int) -> Dictionary:
 	var horizon := planning_horizon(level)
 	var tier := piece_tier(level)
 	var occupancy := initial_occupancy(level)
+	if pace_role in ["recovery", "confidence", "learn"]:
+		horizon = maxi(1, horizon - 1)
+		occupancy = maxf(0.0, occupancy - 0.035)
+	elif pace_role == "practice":
+		occupancy = maxf(0.0, occupancy - 0.02)
 	var target_lines := clampi(2 + int(round(float(difficulty_score) / 9.0)), 2, 14)
+	if pace_role in ["recovery", "confidence", "learn"]:
+		target_lines = maxi(2, target_lines - 1)
+	elif pace_role == "peak":
+		target_lines = mini(14, target_lines + 1)
 	if milestone in ["mini_boss", "boss", "world_finale", "mastery", "finale"]:
 		target_lines += 1
 	var target_score := 80 + target_lines * 125 + difficulty_score * 10
 	var par := maxi(14, target_lines * 2 + horizon + 4)
-	var move_limited := is_move_limited(level)
-	var move_limit := par + (7 if level <= 2000 else (5 if level <= 7500 else 3)) if move_limited else -1
+	var move_limited := is_move_limited(level, pace_role)
+	var move_limit := par + (8 if pace_role in ["learn", "practice"] else (7 if level <= 2000 else (5 if level <= 7500 else 3))) if move_limited else -1
 
 	return {
 		"level_id": level,
@@ -70,6 +87,8 @@ static func profile(raw_level: int) -> Dictionary:
 		"chapter_global": chapter_global,
 		"chapter_in_world": chapter_in_world,
 		"milestone": milestone,
+		"retention_role": pace_role,
+		"objective_intro_age": intro_age,
 		"difficulty_score": difficulty_score,
 		"difficulty_floor": floor_score,
 		"difficulty_ceiling": ceiling_score,
@@ -82,8 +101,8 @@ static func profile(raw_level: int) -> Dictionary:
 		"par": par,
 		"move_limited": move_limited,
 		"move_limit": move_limit,
-		"objective": objective_family(level),
-		"first_attempt_target": first_attempt_target(difficulty_score, milestone),
+		"objective": objective,
+		"first_attempt_target": first_attempt_target(difficulty_score, milestone, pace_role),
 		"deterministic_trays": true,
 		"fixed_orientation": true,
 		"booster_required": false,
@@ -144,43 +163,97 @@ static func initial_occupancy(level: int) -> float:
 	return lerpf(0.20, 0.40, float(level - 7501) / 2499.0)
 
 static func objective_family(level: int) -> String:
+	# New objective families begin on recovery levels immediately after major
+	# milestones, so players learn one new rule before it is combined with pressure.
 	if level < 10: return "score"
-	if level < 25: return "clear_lines"
-	if level < 40: return "clear_columns"
-	if level < 75: return "row_column"
-	if level < 100: return "double_clear"
-	if level < 150: return "combo"
-	if level < 250: return "limited_moves"
-	if level < 400: return "marked_cells"
-	if level < 600: return "designated_rows"
-	if level < 1000: return "crates"
-	if level < 1400: return "ice"
-	if level < 1750: return "locks"
-	if level < 2100: return "steel"
-	if level < 2400: return "layered_obstacle"
-	if level < 2500: return "preserve_cells"
-	if level < 4000: return "dual_objective"
-	if level < 6000: return "triple_objective"
+	if level < 26: return "clear_lines"
+	if level < 41: return "clear_columns"
+	if level < 76: return "row_column"
+	if level < 101: return "double_clear"
+	if level < 151: return "combo"
+	if level < 251: return "limited_moves"
+	if level < 401: return "marked_cells"
+	if level < 601: return "designated_rows"
+	if level < 1001: return "crates"
+	if level < 1401: return "ice"
+	if level < 1751: return "locks"
+	if level < 2101: return "steel"
+	if level < 2401: return "layered_obstacle"
+	if level < 2501: return "preserve_cells"
+	if level < 4001: return "dual_objective"
+	if level < 6001: return "triple_objective"
 	return "advanced_conditional"
 
-static func is_move_limited(level: int) -> bool:
-	var rate := 10
-	if level > 500: rate = 20
-	if level > 2000: rate = 25
-	if level > 5000: rate = 30
-	if level > 7500: rate = 35
-	var roll := posmod(level * 73 + int((level - 1) / WORLD_SIZE) * 19, 100)
-	return roll < rate or milestone_type(level) in ["boss", "world_finale", "mastery", "finale"]
+static func objective_introduction_age(level: int) -> int:
+	var starts := [10, 26, 41, 76, 101, 151, 251, 401, 601, 1001, 1401, 1751, 2101, 2401, 2501, 4001, 6001]
+	for start in starts:
+		var age := level - int(start)
+		if age >= 0 and age <= 2:
+			return age
+	return -1
 
-static func first_attempt_target(score: int, milestone: String) -> Vector2:
-	if milestone in ["boss", "mastery", "finale"]:
-		return Vector2(0.05, 0.20)
-	if score < 25: return Vector2(0.80, 0.95)
+static func retention_role(level: int) -> String:
+	if level <= 9:
+		return ["tutorial", "tutorial", "confidence", "build", "challenge", "recovery", "build", "challenge", "peak"][level - 1]
+	var intro_age := objective_introduction_age(level)
+	if intro_age == 0:
+		return "learn"
+	if intro_age in [1, 2]:
+		return "practice"
+	var previous := milestone_type(level - 1)
+	if previous in ["hard_challenge", "mini_boss", "boss", "world_finale", "mastery"]:
+		return "recovery"
+	var slot := posmod(level - 1, 10) + 1
+	match slot:
+		1: return "recovery"
+		2: return "confidence"
+		3, 4: return "build"
+		5: return "challenge"
+		6: return "recovery"
+		7: return "build"
+		8: return "stretch"
+		9: return "recovery"
+		_: return "peak"
+
+static func is_move_limited(level: int, role: String = "") -> bool:
+	var milestone := milestone_type(level)
+	if role.is_empty():
+		role = retention_role(level)
+	if role in ["recovery", "confidence", "learn", "practice"] and milestone not in ["boss", "world_finale", "mastery", "finale"]:
+		return false
+	var rate := 10
+	if level > 500: rate = 18
+	if level > 2000: rate = 23
+	if level > 5000: rate = 28
+	if level > 7500: rate = 32
+	if role in ["stretch", "peak"]:
+		rate += 8
+	var roll := posmod(level * 73 + int((level - 1) / WORLD_SIZE) * 19, 100)
+	return roll < rate or milestone in ["boss", "world_finale", "mastery", "finale"]
+
+static func first_attempt_target(score: int, milestone: String, role: String = "") -> Vector2:
+	if milestone == "finale":
+		return Vector2(0.16, 0.30)
+	if milestone in ["mastery", "world_finale", "boss"]:
+		return Vector2(0.22, 0.38)
+	if role.is_empty():
+		role = "build"
+	match role:
+		"tutorial", "confidence", "learn":
+			return Vector2(0.82, 0.95)
+		"recovery", "practice":
+			return Vector2(0.72, 0.88)
+		"build":
+			return Vector2(0.60, 0.78)
+		"challenge":
+			return Vector2(0.44, 0.62)
+		"stretch":
+			return Vector2(0.34, 0.52)
+		"peak":
+			return Vector2(0.28, 0.45)
 	if score < 50: return Vector2(0.65, 0.80)
-	if score < 65: return Vector2(0.45, 0.65)
-	if score < 80: return Vector2(0.30, 0.50)
-	if score < 90: return Vector2(0.18, 0.35)
-	return Vector2(0.08, 0.20)
+	if score < 70: return Vector2(0.48, 0.66)
+	return Vector2(0.30, 0.48)
 
 static func difficulty_class(score: int, milestone: String = "normal") -> String:
 	if milestone == "finale": return "finale"
@@ -199,11 +272,15 @@ static func _band_for(level: int) -> Array:
 			return band
 	return DIFFICULTY_BANDS.back()
 
-static func _sawtooth_offset(level: int) -> float:
-	var slot := ((level - 1) % 100) + 1
-	if slot <= 42: return -4.0
-	if slot <= 70: return -2.0
-	if slot <= 87: return 0.0
-	if slot <= 95: return 2.0
-	if slot <= 99: return 4.0
-	return 6.0
+static func _pacing_offset(level: int, role: String) -> float:
+	match role:
+		"tutorial": return -6.0
+		"recovery": return -6.0
+		"confidence": return -4.0
+		"learn": return -5.0
+		"practice": return -3.0
+		"build": return -1.0
+		"challenge": return 2.0
+		"stretch": return 4.0
+		"peak": return 6.0
+		_: return 0.0

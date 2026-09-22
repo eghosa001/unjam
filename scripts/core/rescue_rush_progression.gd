@@ -17,26 +17,28 @@ static func profile(level_number: int) -> Dictionary:
 	var n := clampi(level_number, 1, TOTAL_LEVELS)
 	var world := int((n - 1) / LEVELS_PER_WORLD) + 1
 	var local := posmod(n - 1, LEVELS_PER_WORLD) + 1
-	var difficulty_target := _difficulty_target(n, local)
+	var role := _level_role(n, local)
+	var difficulty_target := _difficulty_target(n, local, role)
 	var piece_range := _piece_range(n)
-	var piece_span := int(piece_range[1]) - int(piece_range[0])
-	var piece_target := int(piece_range[0]) + posmod(n * 17 + world * 11, maxi(1, piece_span + 1))
+	var piece_target := _paced_range_target(piece_range, local, role, n, 17)
 	var board_size := _board_size(n)
 	var dependency_range := _dependency_range(n)
-	var dependency_span := int(dependency_range[1]) - int(dependency_range[0])
-	var dependency_target := int(dependency_range[0]) + posmod(n * 7 + world * 3, maxi(1, dependency_span + 1))
+	var dependency_target := _paced_range_target(dependency_range, local, role, n, 7)
 	var frontier_range := _frontier_range(n)
 	var objective := _objective_for_level(n, local)
-	var role := _level_role(local)
 	var mechanic_count := _mechanic_count(n, difficulty_target)
 	var mistake_limit := _mistake_limit(n, role)
 	var action_budget := maxi(2, dependency_target + 2 + int(float(piece_target) * 0.16))
+	if role in ["recovery", "learn", "practice"]:
+		action_budget += 2
 	return {
 		"level": n,
 		"world": world,
 		"local_level": local,
 		"level_role": role,
+		"retention_role": role,
 		"milestone": _milestone_name(local),
+		"first_attempt_target": _first_attempt_target(role),
 		"difficulty_target": difficulty_target,
 		"difficulty_label": _difficulty_label(difficulty_target, role),
 		"board_size": board_size,
@@ -52,31 +54,26 @@ static func profile(level_number: int) -> Dictionary:
 		"required_chain": clampi(2 + int(difficulty_target / 25), 2, 5),
 	}
 
-static func _difficulty_target(n: int, local: int) -> int:
+static func _difficulty_target(n: int, local: int, role: String) -> int:
 	var band := _difficulty_band(n)
 	var start_level := int((n - 1) / 1000) * 1000 + 1
 	var end_level := mini(start_level + 999, TOTAL_LEVELS)
 	var progress := 0.0 if end_level == start_level else float(n - start_level) / float(end_level - start_level)
 	var score := int(round(lerpf(float(band[0]), float(band[1]), progress)))
-	# Rising sawtooth: recovery levels dip, but never back to early-game floors.
-	if local in range(1, 16):
-		score -= 2
-	elif local in range(16, 25):
-		score += 1
-	elif local == 25:
-		score += 4
-	elif local in range(45, 50):
-		score += 3
-	elif local == 50:
-		score += 6
-	elif local == 75:
-		score += 7
-	elif local in range(90, 95):
-		score += 5
-	elif local in range(95, 100):
-		score += 7
-	elif local == 100:
-		score += 10
+	match role:
+		"tutorial": score -= 6
+		"recovery": score -= 6
+		"confidence": score -= 4
+		"learn": score -= 6
+		"practice": score -= 4
+		"build": score -= 1
+		"challenge": score += 3
+		"stretch": score += 5
+		"hard": score += 4
+		"very_hard": score += 6
+		"expert": score += 7
+		"peak": score += 7
+		"world_boss": score += 10
 	return clampi(score, int(band[0]), 99)
 
 static func _difficulty_band(n: int) -> Array[int]:
@@ -125,13 +122,19 @@ static func _frontier_range(n: int) -> Array[int]:
 	return [2, 5]
 
 static func _mechanic_count(n: int, score: int) -> int:
-	if n <= 500: return 0
-	if n <= 1000: return 1
+	if _mechanic_intro_age(n) in [0, 1, 2]:
+		return 1
+	if n <= 200: return 0
+	if n <= 500: return 1
+	if n <= 1000: return 1 if score < 58 else 2
 	if n <= 3000: return 1 if score < 68 else 2
 	if n <= 7000: return 2
 	return 3 if score >= 86 else 2
 
 static func _mechanics_for_level(n: int, count: int) -> Array[String]:
+	var intro := _mechanic_intro(n)
+	if not intro.is_empty() and _mechanic_intro_age(n) in [0, 1, 2]:
+		return [intro]
 	var unlocked: Array[String] = []
 	if n >= 201: unlocked.append("rotate")
 	if n >= 501: unlocked.append("gate")
@@ -143,12 +146,27 @@ static func _mechanics_for_level(n: int, count: int) -> Array[String]:
 	var start := posmod(n * 13, unlocked.size())
 	for i in range(mini(count, unlocked.size())):
 		result.append(unlocked[(start + i) % unlocked.size()])
-	# Late game should favor the dependency-producing systems.
 	if n >= 7000 and "gate" in unlocked and "gate" not in result:
 		result[0] = "gate"
 	return result
 
+static func _mechanic_intro(n: int) -> String:
+	if n in [201, 202, 203]: return "rotate"
+	if n in [501, 502, 503]: return "gate"
+	if n in [1001, 1002, 1003]: return "linked"
+	if n in [2001, 2002, 2003]: return "bomb"
+	return ""
+
+static func _mechanic_intro_age(n: int) -> int:
+	for start in [201, 501, 1001, 2001]:
+		var age := n - int(start)
+		if age >= 0 and age <= 2:
+			return age
+	return -1
+
 static func _objective_for_level(n: int, local: int) -> String:
+	if _mechanic_intro_age(n) in [0, 1, 2]:
+		return OBJECTIVE_RESCUE_ROUTE
 	if n <= 500:
 		return OBJECTIVE_RESCUE_ROUTE
 	if local == 100:
@@ -173,24 +191,65 @@ static func _objective_for_level(n: int, local: int) -> String:
 
 static func _mistake_limit(n: int, role: String) -> int:
 	if n <= 20: return 0
+	if role in ["learn", "practice", "recovery"]:
+		return 5 if n <= 1000 else 4
 	if n <= 100: return 5
 	if n <= 500: return 4
 	if role == "world_boss" and n >= 3000: return 2
 	return 3
 
-static func _level_role(local: int) -> String:
-	if local <= 15: return "progression"
-	if local <= 24: return "rising"
+static func _level_role(n: int, local: int) -> String:
+	if n <= 10:
+		return ["tutorial", "tutorial", "confidence", "build", "challenge", "recovery", "build", "stretch", "recovery", "peak"][n - 1]
+	var intro_age := _mechanic_intro_age(n)
+	if intro_age == 0:
+		return "learn"
+	if intro_age in [1, 2]:
+		return "practice"
+	if local == 100: return "world_boss"
 	if local == 25: return "challenge"
-	if local <= 44: return "progression"
-	if local <= 49: return "hard_run"
-	if local == 50: return "mini_boss"
-	if local <= 74: return "progression"
-	if local == 75: return "major_challenge"
-	if local <= 89: return "hard"
-	if local <= 94: return "very_hard"
-	if local <= 99: return "expert_run"
-	return "world_boss"
+	if local == 50: return "peak"
+	if local == 75: return "peak"
+	if local in [26, 51, 76] or posmod(n - 1, 100) == 0:
+		return "recovery"
+	var slot := posmod(local - 1, 10) + 1
+	match slot:
+		1: return "recovery"
+		2: return "confidence"
+		3, 4: return "build"
+		5: return "challenge"
+		6: return "recovery"
+		7: return "build"
+		8: return "stretch"
+		9: return "recovery"
+		_: return "peak"
+
+static func _paced_range_target(bounds: Array[int], local: int, role: String, n: int, salt: int) -> int:
+	var minimum := int(bounds[0])
+	var maximum := int(bounds[1])
+	if minimum >= maximum:
+		return minimum
+	var progress := float(local - 1) / float(LEVELS_PER_WORLD - 1)
+	var center := int(round(lerpf(float(minimum), float(maximum), progress)))
+	var jitter := posmod(n * salt + 11, 3) - 1
+	var modifier := 0
+	match role:
+		"tutorial", "recovery", "learn": modifier = -2
+		"confidence", "practice": modifier = -1
+		"stretch", "challenge": modifier = 1
+		"peak", "world_boss": modifier = 2
+	return clampi(center + jitter + modifier, minimum, maximum)
+
+static func _first_attempt_target(role: String) -> Vector2:
+	match role:
+		"tutorial", "confidence", "learn": return Vector2(0.84, 0.96)
+		"recovery", "practice": return Vector2(0.74, 0.90)
+		"build": return Vector2(0.60, 0.78)
+		"challenge": return Vector2(0.44, 0.62)
+		"stretch": return Vector2(0.34, 0.52)
+		"peak": return Vector2(0.28, 0.45)
+		"world_boss": return Vector2(0.20, 0.36)
+		_: return Vector2(0.55, 0.75)
 
 static func _milestone_name(local: int) -> String:
 	if local == 25: return "challenge"
