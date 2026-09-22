@@ -625,13 +625,10 @@ func build_collection() -> void:
 	var total_perfect := 0
 	var total_badges := 0
 	for game_id in MultiGameManager.GAME_IDS:
-		var p := MultiGameManager.progress_for(game_id)
-		total_completed += int(p.get("levels_completed",0))
+		total_completed += MultiGameManager.levels_completed(game_id)
 		total_stars += MultiGameManager.total_stars(game_id)
-		total_perfect += int(p.get("perfect_clears",0))
-		var badges = p.get("world_badges",[])
-		if badges is Array:
-			total_badges += (badges as Array).size()
+		total_perfect += MultiGameManager.perfect_clears(game_id)
+		total_badges += MultiGameManager.world_badge_count(game_id)
 
 	_figma_card(canvas,"Journey",Rect2(17,89,354,96),Color("#fffef8"),Color(0.55,0.86,0.71,0.32),18)
 	_figma_text(canvas,"PROGRESS",Rect2(33,107,210,19),16,FIGMA_GOLD)
