@@ -301,7 +301,7 @@ static func add_scene_backdrop_layers(parent: Control, accent: Color, dark: bool
 			Vector2(-25, 470), Vector2(415, 402),
 			Vector2(415, 520), Vector2(-25, 584)
 		])
-		horizon.color = Color("#f7f8fa", 0.18)
+		horizon.color = Color("#b7cae8", 0.18)
 		parent.add_child(horizon)
 
 	for i in range(4):
@@ -309,7 +309,7 @@ static func add_scene_backdrop_layers(parent: Control, accent: Color, dark: bool
 		vein.name = "%sMaterialVein%d" % [prefix, i]
 		vein.width = 1.0
 		vein.antialiased = true
-		vein.default_color = Color("#ffffff",0.070 if not dark else 0.028) if i % 2 == 0 else Color("#4c5661",0.060 if not dark else 0.045)
+		vein.default_color = Color("#dce8fb",0.070 if not dark else 0.028) if i % 2 == 0 else Color("#4e6791",0.060 if not dark else 0.045)
 		var start := Vector2(18.0 + float(i) * 82.0, 260.0 + float(i) * 116.0)
 		var length := 120.0 + float(i) * 18.0
 		var angle := deg_to_rad(-8.0 if i % 2 == 0 else 11.0)
