@@ -3,25 +3,25 @@ extends "res://scripts/ui/premium_live_hub.gd"
 const RefCanvas = preload("res://scripts/ui/figma_reference_canvas.gd")
 const FLAT_GAME_LOGO_SCRIPT = preload("res://scripts/ui/unjam_flat_game_logo.gd")
 
-const BG_TOP := Color("#e6d4aa")
-const BG_MID := Color("#c3a064")
-const BG_BOTTOM := Color("#9a743f")
-const NAVY := Color("#1f2933")
+const BG_TOP := Color("#e9e5dd")
+const BG_MID := Color("#b9b2a7")
+const BG_BOTTOM := Color("#8f887f")
+const NAVY := Color("#252a30")
 const INK := Color("#26323d")
-const MUTED := Color("#52606d")
+const MUTED := Color("#62676e")
 const OFF_WHITE := Color(1.0, 0.995, 0.97)
 const CYAN := Color(0.14, 0.68, 1.0)
-const DARK_TOP := Color("#4b3a27")
-const DARK_MID := Color("#382b1d")
-const DARK_BOTTOM := Color("#2a2118")
+const DARK_TOP := Color("#363636")
+const DARK_MID := Color("#272727")
+const DARK_BOTTOM := Color("#1f1f1f")
 const DARK_INK := Color("#f5f7fa")
 const DARK_MUTED := Color("#a7b1bc")
-const SCENE_TOP := Color("#e2c98f")
-const SCENE_MID := Color("#b89050")
-const SCENE_BOTTOM := Color("#805b31")
-const DARK_SCENE_TOP := Color("#4b3a27")
-const DARK_SCENE_MID := Color("#382b1d")
-const DARK_SCENE_BOTTOM := Color("#2a2118")
+const SCENE_TOP := Color("#e4dfd5")
+const SCENE_MID := Color("#b3aca2")
+const SCENE_BOTTOM := Color("#80786e")
+const DARK_SCENE_TOP := Color("#363636")
+const DARK_SCENE_MID := Color("#272727")
+const DARK_SCENE_BOTTOM := Color("#1f1f1f")
 
 var figma_canvas: FigmaReferenceCanvas
 
@@ -64,13 +64,13 @@ func _build_reference_selector(canvas: Control) -> void:
 	var bg_top := DARK_SCENE_TOP if _selector_dark() else SCENE_TOP
 	var bg_mid := DARK_SCENE_MID if _selector_dark() else SCENE_MID
 	var bg_bottom := DARK_SCENE_BOTTOM if _selector_dark() else SCENE_BOTTOM
-	var bg_border := Color("#80613b") if _selector_dark() else Color("#d2b06a")
+	var bg_border := Color("#5b5347") if _selector_dark() else Color("#d2b06a")
 	background.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(bg_top, bg_mid, bg_bottom, 34, bg_border, 1, 0.48))
 	RefCanvas.set_rect(background, 0, 0, 390, 844)
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(background)
 	RefCanvas.add_world_depth(canvas, Color("#59636f") if _selector_dark() else Color("#9aa4ae"), _selector_dark(), 0.0, "SelectorWorldDepth")
-	RefCanvas.add_scene_backdrop_layers(canvas, Color("#80613b") if _selector_dark() else Color("#c49b55"), _selector_dark(), "Selector")
+	RefCanvas.add_scene_backdrop_layers(canvas, Color("#5b5347") if _selector_dark() else Color("#b7aa91"), _selector_dark(), "Selector")
 	var selector_key_light := canvas.get_node_or_null("SelectorKeyLight")
 	if selector_key_light != null:
 		selector_key_light.set_meta("unjam_figma_scene_light", true)
@@ -88,7 +88,7 @@ func _build_reference_selector(canvas: Control) -> void:
 	selector_title.clip_text = true
 	RefCanvas.style_display_title(selector_title, Color("#ffca45"), Color("#071d55"), 2)
 	RefCanvas.add_shadow(canvas, Rect2(285, 21, 84, 46), 23, Color(0.02,0.15,0.30,0.16), 3, Vector2(0,2))
-	var settings := RefCanvas.premium_button("⚙", 18, NAVY if not _selector_dark() else OFF_WHITE, Color("#d8c294") if not _selector_dark() else Color("#3a2d20"), 23, Color("#b89050"), 1.1)
+	var settings := RefCanvas.premium_button("⚙", 18, NAVY if not _selector_dark() else OFF_WHITE, Color("#cbc4b8") if not _selector_dark() else Color("#2c2c2c"), 23, Color("#b3aca2"), 1.1)
 	settings.name = "SelectorSettingsButton"
 	settings.tooltip_text = "Settings"
 	RefCanvas.set_rect(settings, 285, 21, 84, 46)
@@ -104,9 +104,9 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 	RefCanvas.add_shadow(canvas, rect, 20, Color(0.03,0.10,0.20,0.22), 8, Vector2(0,6))
 	var card := PanelContainer.new()
 	card.name = "GameCard3D_%s" % game_id
-	var neutral_top := Color("#3a2d20") if _selector_dark() else Color("#fffaf0")
-	var neutral_mid := Color("#33281c") if _selector_dark() else Color("#f4ead6")
-	var neutral_bottom := Color("#2a2118") if _selector_dark() else Color("#eadfc8")
+	var neutral_top := Color("#2c2c2c") if _selector_dark() else Color("#dedad2")
+	var neutral_mid := Color("#252525") if _selector_dark() else Color("#d8d4cc")
+	var neutral_bottom := Color("#1f1f1f") if _selector_dark() else Color("#cec8be")
 	card.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(neutral_top, neutral_mid, neutral_bottom, 20, Color(accent,0.58), 1.2, 0.26))
 	RefCanvas.set_rect(card, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -135,7 +135,7 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 	var level := maxi(1, MultiGameManager.highest_level(game_id))
 	RefCanvas.add_shadow(canvas, Rect2(33, rect.position.y + 100.7, 112, 36), 13, Color(0.02,0.10,0.20,0.16), 3, Vector2(0,2))
 	var level_pill := PanelContainer.new()
-	var pill_mid := Color("#3a2d20") if _selector_dark() else Color("#eadfc8")
+	var pill_mid := Color("#2c2c2c") if _selector_dark() else Color("#cec8be")
 	level_pill.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(pill_mid.lightened(0.04), pill_mid, pill_mid.darkened(0.04), 13, Color(accent,0.42), 1, 0.24))
 	RefCanvas.set_rect(level_pill, 33, rect.position.y + 100.7, 112, 36)
 	level_pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -157,7 +157,7 @@ func _add_card_preview(canvas: Control, game_id: String, card_y: float) -> void:
 	var origin_y := card_y + 22.5
 	var stage := PanelContainer.new()
 	stage.name = "SelectorGamePreviewFrame_%s" % game_id
-	var stage_mid := Color("#33281c") if _selector_dark() else Color("#eee1c8")
+	var stage_mid := Color("#252525") if _selector_dark() else Color("#d6d1c7")
 	stage.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(stage_mid.lightened(0.05), stage_mid, stage_mid.darkened(0.05), 16, Color(1,1,1,0.16), 1, 0.24))
 	RefCanvas.set_rect(stage, 243, origin_y, 104, 112)
 	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -172,8 +172,8 @@ func _add_bottom_nav(canvas: Control) -> void:
 	var shell := PanelContainer.new()
 	shell.name = "SelectorBottomNav"
 	RefCanvas.add_shadow(canvas, Rect2(13, 757, 362, 70), 18, Color(0.02,0.10,0.18,0.16), 5, Vector2(0,4))
-	var nav_fill := Color("#2a2117") if _selector_dark() else Color("#c8aa70")
-	var nav_border := Color("#80613b") if _selector_dark() else Color("#d2b06a")
+	var nav_fill := Color("#232323") if _selector_dark() else Color("#bcb5a9")
+	var nav_border := Color("#5b5347") if _selector_dark() else Color("#d2b06a")
 	shell.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(nav_fill.lightened(0.12), nav_fill, nav_fill.darkened(0.10), 18, nav_border, 1, 0.40))
 	RefCanvas.set_rect(shell, 13, 757, 362, 70)
 	shell.mouse_filter = Control.MOUSE_FILTER_IGNORE
