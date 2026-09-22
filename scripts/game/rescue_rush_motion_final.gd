@@ -21,11 +21,25 @@ func _queue_board_fit() -> void:
 	call_deferred("_fit_board_to_viewport")
 
 func render_board() -> void:
-	# The premium layer now owns state-aware rebuilding. Do not pre-clear here or
-	# an unchanged refresh would defeat control reuse before the parent can skip it.
+	# Preserve the established first-refresh contract: if the initial entrance
+	# tween is still visibly in flight, rebuild once with _board_has_rendered=true
+	# so the replacement controls are immediately settled. After that, unchanged
+	# refreshes are free to reuse the stable controls.
+	if _board_has_rendered and not _board_entrance_is_settled():
+		_board_render_signature_valid = false
 	super.render_board()
 	_board_has_rendered = true
 	_fit_board_to_viewport()
+
+func _board_entrance_is_settled() -> bool:
+	if board_grid == null:
+		return true
+	for child in board_grid.get_children():
+		if child is Control:
+			var control := child as Control
+			if control.modulate.a < 0.99 or control.scale.distance_to(Vector2.ONE) > 0.01:
+				return false
+	return true
 
 func _animate_cell(cell: Control, x: int, y: int) -> void:
 	# Subsequent state refreshes should never replay a whole-board pulse. Reduced
