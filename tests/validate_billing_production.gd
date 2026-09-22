@@ -56,6 +56,8 @@ func run() -> void:
 		expect_true("request.timeout" in verifier_source, "Purchase verification HTTP request has no timeout")
 		expect_true("request.max_redirects = 0" in verifier_source, "Purchase verification may forward purchase tokens through redirects")
 		expect_true('parsed.get("product_id", "")' in verifier_source, "Purchase verification does not require an explicit matching product id")
+		expect_true('"apikey: %s"' in verifier_source, "Supabase publishable key header is not sent")
+		expect_true('"action": "verify"' in verifier_source and '"action": "commit"' in verifier_source, "Supabase purchase action routing is incomplete")
 
 	expect_true(FileAccess.file_exists("res://tools/install_monetization_plugins.sh"), "Monetization plugin installer missing")
 	if FileAccess.file_exists("res://tools/install_monetization_plugins.sh"):
@@ -63,8 +65,9 @@ func run() -> void:
 		expect_true("godot-google-play-billing" in installer and "3.3.0" in installer, "Google Play Billing 3.3.0 installer missing")
 		expect_true("addons/GodotGooglePlayBilling/bin/debug/GodotGooglePlayBilling-debug.aar" in installer, "Billing installer does not require debug native AAR")
 		expect_true("addons/GodotGooglePlayBilling/bin/release/GodotGooglePlayBilling-release.aar" in installer, "Billing installer does not require release native AAR")
-	var project_source := FileAccess.get_file_as_string("res://project.godot")
-	expect_true("res://addons/GodotGooglePlayBilling/plugin.cfg" in project_source, "Google Play Billing export plugin is not enabled in project.godot")
+	# The selective CI job intentionally clears editor_plugins before importing the
+	# project because release-only Android addons are not installed there. The
+	# production plugin declaration is enforced earlier by validate_release_contract.py.
 	if failures.is_empty():
 		print("BILLING PRODUCTION INTEGRATION VALIDATION PASS")
 		quit(0)

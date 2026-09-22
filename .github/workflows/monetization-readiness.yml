@@ -26,7 +26,8 @@ jobs:
           grep -F 'com.google.android.gms.permission.AD_ID' export_presets.cfg
       - name: Check live verifier, app-ads and privacy policy
         env:
-          UNJAM_PURCHASE_VERIFICATION_URL: ${{ secrets.UNJAM_PURCHASE_VERIFICATION_URL }}
+          UNJAM_SUPABASE_URL: ${{ vars.UNJAM_SUPABASE_URL }}
+          UNJAM_SUPABASE_PUBLISHABLE_KEY: ${{ vars.UNJAM_SUPABASE_PUBLISHABLE_KEY }}
           UNJAM_DEVELOPER_WEBSITE_URL: ${{ vars.UNJAM_DEVELOPER_WEBSITE_URL }}
         shell: bash
         run: |

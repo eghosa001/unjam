@@ -12,7 +12,8 @@ This repository is now prepared to start the replacement Play listing at **versi
 - [ ] Generate a new RSA upload keystore and keep at least two secure backups outside the repository.
 - [ ] Add the new keystore and credentials to GitHub Actions secrets: `UNJAM_ANDROID_KEYSTORE_BASE64`, `UNJAM_ANDROID_KEY_ALIAS`, and `UNJAM_ANDROID_KEY_PASSWORD`.
 - [ ] Add the new upload certificate SHA-1 to GitHub Actions secret `UNJAM_ANDROID_UPLOAD_SHA1`.
-- [ ] Add the production HTTPS purchase-verification endpoint to GitHub Actions secret `UNJAM_PURCHASE_VERIFICATION_URL`.
+- [ ] Add GitHub Actions variable `UNJAM_SUPABASE_URL` for the selected Supabase project.
+- [ ] Add GitHub Actions variable `UNJAM_SUPABASE_PUBLISHABLE_KEY` for that same project.
 - [ ] Add GitHub Actions repository variable `UNJAM_DEVELOPER_WEBSITE_URL` using the exact developer website URL entered in Play Console. Production release now checks the crawler hostname root for `app-ads.txt`.
 - [ ] Run the `Android Production Release` workflow with `version_name=1.0.0` and `version_code=1`; download the verified release AAB and upload that AAB to the new Play listing.
 - [ ] After the first accepted Play upload, every subsequent upload must use a higher `versionCode`.
@@ -43,8 +44,11 @@ Still account-side / external:
 - [ ] Publish `app-ads.txt` at the **hostname root** of the developer website used in the Play listing (for example `https://example.com/app-ads.txt`). A GitHub Pages project URL such as `https://eghosa001.github.io/unjam/` is not sufficient by itself because AdMob checks `https://eghosa001.github.io/app-ads.txt`, not the project subpath.
 - [ ] Confirm the configured privacy policy URL is publicly reachable without login.
 - [x] Purchase-verification backend is implemented for Google Play Developer API verification and production purchases fail closed until the live HTTPS endpoint is injected at release time.
-- [x] Backend exposes `/readiness`, which verifies Firestore access and Google Play Purchases API authorization; production release fails if either dependency is unavailable.
-- [x] Purchase verification is idempotent by SHA-256 purchase-token fingerprint in Firestore. `unjam_starter_pack` and other non-consumable entitlements cannot be granted twice from duplicate callbacks when the backend is live.
+- [x] Supabase Edge Function exposes a readiness action that verifies Postgres access and Google Play Purchases API authorization; production release fails if either dependency is unavailable.
+- [x] Purchase verification is idempotent by SHA-256 purchase-token fingerprint in Supabase Postgres. `unjam_starter_pack` and other non-consumable entitlements cannot be granted twice from duplicate callbacks when the backend is live.
+- [ ] Apply `supabase/migrations/20260922_create_purchase_ledger.sql` to the selected Supabase project.
+- [ ] Deploy `supabase/functions/unjam-purchase` to that project.
+- [ ] Store `GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL` and `GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY` only as Supabase Edge Function secrets. They are used solely to call the Google Play Developer API; Cloud Run and Firestore are not used.
 - [ ] Create `unjam_remove_ads`, `unjam_starter_pack`, `unjam_coins_500`, `unjam_coins_1500`, and `unjam_coins_4000` as one-time products in the **new** Play Console app.
 - [ ] Configure the matching product prices in the new Play Console app.
 - [ ] Complete Play Console Data Safety based on the exact production SDK set.
@@ -64,7 +68,7 @@ Still account-side / external:
 - Difficulty stays intentionally variable within each 25-level chapter, while later worlds raise the baseline difficulty. Every 25th level is a milestone and every 100th is a boss.
 - Save data is sanitized, backed up and written through a temporary file before replacement.
 - Release builds do not emit the development analytics event stream.
-- CI must pass project import, all validation suites, boot smoke, rendered visual audit, Android API 36 APK/AAB export, packaged AdMob/Play Billing manifest checks, and live monetization readiness including Firestore + Play Purchases API authorization on the exact release commit.
+- CI must pass project import, all validation suites, boot smoke, rendered visual audit, Android API 36 APK/AAB export, packaged AdMob/Play Billing manifest checks, and live monetization readiness including Supabase Postgres + Play Purchases API authorization on the exact release commit.
 
 ## Google Play store listing assets
 

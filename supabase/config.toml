@@ -1,0 +1,4 @@
+project_id = ""
+
+[functions.unjam-purchase]
+verify_jwt = false

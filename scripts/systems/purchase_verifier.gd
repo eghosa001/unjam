@@ -5,17 +5,13 @@ signal commit_completed(product_id: String, token: String, committed: bool, reas
 
 const VERIFICATION_TIMEOUT_SECONDS := 20.0
 const PACKAGE_NAME := "com.eghosa.unjamgam"
+const FUNCTION_NAME := "unjam-purchase"
 
 func verify(product_id: String, token: String, claim_id: String, callback: Callable) -> void:
 	if OS.get_name() != "Android" and bool(ProjectSettings.get_setting("monetization/test_mode", false)):
 		var desktop_result := {
-			"valid": true,
-			"grant": true,
-			"entitlement": true,
-			"claim_state": "issued",
-			"product_id": product_id,
-			"claim_id": claim_id,
-			"reason": "desktop-test"
+			"valid": true, "grant": true, "entitlement": true, "claim_state": "issued",
+			"product_id": product_id, "claim_id": claim_id, "reason": "desktop-test"
 		}
 		callback.call(desktop_result)
 		verification_completed.emit(product_id, token, desktop_result)
@@ -26,9 +22,10 @@ func verify(product_id: String, token: String, claim_id: String, callback: Calla
 	if claim_id.length() < 8 or claim_id.length() > 128:
 		_emit_verification(product_id, token, callback, _failure(product_id, claim_id, "Purchase claim is invalid"))
 		return
-	var endpoint := _verification_endpoint()
-	if endpoint.is_empty():
-		_emit_verification(product_id, token, callback, _failure(product_id, claim_id, "Secure purchase verification is not configured"))
+	var endpoint := _function_endpoint()
+	var headers := _request_headers()
+	if endpoint.is_empty() or headers.is_empty():
+		_emit_verification(product_id, token, callback, _failure(product_id, claim_id, "Supabase purchase verification is not configured"))
 		return
 	var request := _new_request()
 	request.request_completed.connect(func(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray):
@@ -53,8 +50,11 @@ func verify(product_id: String, token: String, claim_id: String, callback: Calla
 		_emit_verification(product_id, token, callback, verification)
 		request.queue_free()
 	)
-	var payload := JSON.stringify({"package_name": PACKAGE_NAME, "product_id": product_id, "purchase_token": token, "claim_id": claim_id})
-	var err := request.request(endpoint, ["Content-Type: application/json"], HTTPClient.METHOD_POST, payload)
+	var payload := JSON.stringify({
+		"action": "verify", "package_name": PACKAGE_NAME, "product_id": product_id,
+		"purchase_token": token, "claim_id": claim_id
+	})
+	var err := request.request(endpoint, headers, HTTPClient.METHOD_POST, payload)
 	if err != OK:
 		request.queue_free()
 		_emit_verification(product_id, token, callback, _failure(product_id, claim_id, "Could not start purchase verification"))
@@ -68,10 +68,11 @@ func commit(product_id: String, token: String, claim_id: String, callback: Calla
 		callback.call(false, "Purchase claim is invalid")
 		commit_completed.emit(product_id, token, false, "Purchase claim is invalid")
 		return
-	var endpoint := _commit_endpoint()
-	if endpoint.is_empty():
-		callback.call(false, "Secure purchase verification is not configured")
-		commit_completed.emit(product_id, token, false, "Secure purchase verification is not configured")
+	var endpoint := _function_endpoint()
+	var headers := _request_headers()
+	if endpoint.is_empty() or headers.is_empty():
+		callback.call(false, "Supabase purchase verification is not configured")
+		commit_completed.emit(product_id, token, false, "Supabase purchase verification is not configured")
 		return
 	var request := _new_request()
 	request.request_completed.connect(func(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray):
@@ -88,8 +89,11 @@ func commit(product_id: String, token: String, claim_id: String, callback: Calla
 		commit_completed.emit(product_id, token, committed, reason)
 		request.queue_free()
 	)
-	var payload := JSON.stringify({"package_name": PACKAGE_NAME, "product_id": product_id, "purchase_token": token, "claim_id": claim_id})
-	var err := request.request(endpoint, ["Content-Type: application/json"], HTTPClient.METHOD_POST, payload)
+	var payload := JSON.stringify({
+		"action": "commit", "package_name": PACKAGE_NAME, "product_id": product_id,
+		"purchase_token": token, "claim_id": claim_id
+	})
+	var err := request.request(endpoint, headers, HTTPClient.METHOD_POST, payload)
 	if err != OK:
 		request.queue_free()
 		callback.call(false, "Could not start purchase commit")
@@ -98,23 +102,21 @@ func commit(product_id: String, token: String, claim_id: String, callback: Calla
 func _new_request() -> HTTPRequest:
 	var request := HTTPRequest.new()
 	request.timeout = VERIFICATION_TIMEOUT_SECONDS
-	# Purchase tokens are bearer-like credentials. Never follow redirects to a
-	# different endpoint; the configured HTTPS verifier must answer directly.
 	request.max_redirects = 0
 	add_child(request)
 	return request
 
-func _verification_endpoint() -> String:
-	var endpoint := String(ProjectSettings.get_setting("monetization/purchase_verification_url", "")).strip_edges()
-	return endpoint if endpoint.begins_with("https://") else ""
-
-func _commit_endpoint() -> String:
-	var endpoint := _verification_endpoint()
-	if endpoint.is_empty():
+func _function_endpoint() -> String:
+	var base := String(ProjectSettings.get_setting("monetization/supabase_url", "")).strip_edges().trim_suffix("/")
+	if not base.begins_with("https://"):
 		return ""
-	if endpoint.ends_with("/verify"):
-		return endpoint.left(endpoint.length() - 7) + "/commit"
-	return endpoint.trim_suffix("/") + "/commit"
+	return "%s/functions/v1/%s" % [base, FUNCTION_NAME]
+
+func _request_headers() -> PackedStringArray:
+	var key := String(ProjectSettings.get_setting("monetization/supabase_publishable_key", "")).strip_edges()
+	if key.is_empty():
+		return PackedStringArray()
+	return PackedStringArray(["Content-Type: application/json", "apikey: %s" % key])
 
 func _failure(product_id: String, claim_id: String, reason: String) -> Dictionary:
 	return {"valid": false, "grant": false, "entitlement": false, "claim_state": "", "product_id": product_id, "claim_id": claim_id, "reason": reason}
