@@ -9,7 +9,6 @@ var rescue_title_label: Label
 var difficulty_chip: Label
 var world_subtitle_label: Label
 var footer_label: Label
-var _board_has_rendered := false
 
 func style_button(button: Button, accent: bool = false) -> void:
 	var base := Color("e7a72b") if accent else Color("183b70")
@@ -230,7 +229,8 @@ func build_ui() -> void:
 func _animate_brand() -> void:
 	if rescue_title_label == null:
 		return
-	if MotionSystem.reduced():
+	var motion := get_node_or_null("/root/MotionSystem")
+	if motion != null and bool(motion.call("reduced")):
 		rescue_title_label.modulate.a = 1.0
 		return
 	rescue_title_label.modulate.a = 0.72
@@ -307,10 +307,6 @@ func _make_empty_cell(cell_size: int, pos: Vector2i, route: Dictionary) -> Contr
 		slot.add_theme_stylebox_override("panel", style_box(Color(1, 1, 1, 0.022), 24, Color(1, 1, 1, 0.045), 1))
 	return slot
 
-func load_level() -> void:
-	_board_has_rendered = false
-	super.load_level()
-
 func render_board() -> void:
 	if board_grid == null:
 		return
@@ -327,7 +323,6 @@ func render_board() -> void:
 		var piece: Dictionary = pieces[i]
 		if bool(piece.get("active", true)):
 			piece_lookup[Vector2i(int(piece.get("x", -1)), int(piece.get("y", -1)))] = i
-	var animate_cells := not _board_has_rendered
 	var route := _best_escape_lane(piece_lookup)
 	var viewport_width := get_viewport_rect().size.x
 	var max_board_width := minf(viewport_width - 112.0, 860.0)
@@ -351,8 +346,7 @@ func render_board() -> void:
 				token.configure(rescue_id, Color("ffd166"))
 				slot.add_child(token)
 				board_grid.add_child(slot)
-				if animate_cells:
-					_animate_cell(slot, x, y)
+				_animate_cell(slot, x, y)
 				var rescue_pulse := create_tween().set_loops(1)
 				rescue_pulse.tween_property(slot, "modulate", Color(1.08, 1.04, 0.86, 1), 0.46).set_trans(Tween.TRANS_CUBIC)
 				rescue_pulse.tween_property(slot, "modulate", Color.WHITE, 0.46).set_trans(Tween.TRANS_CUBIC)
@@ -366,15 +360,11 @@ func render_board() -> void:
 				if not button.disabled:
 					button.pressed.connect(try_move.bind(piece_index))
 				board_grid.add_child(button)
-				if animate_cells:
-					_animate_cell(button, x, y)
+				_animate_cell(button, x, y)
 			else:
 				var empty := _make_empty_cell(cell_size, pos, route)
 				board_grid.add_child(empty)
-				if animate_cells:
-					_animate_cell(empty, x, y)
-
-	_board_has_rendered = true
+				_animate_cell(empty, x, y)
 
 	if int(route.get("blockers", 1)) == 0 and not rescued:
 		hint_label.text = "Escape lane open — free the rescue!"
