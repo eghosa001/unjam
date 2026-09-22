@@ -312,13 +312,16 @@ func render() -> void:
 			campaign_label.text = ("EXTREME • LEVEL %d" % level_number) if play_mode == "extreme" else "LEVEL %d • WORLD %d" % [level_number, world]
 		var move_text := ""
 		if campaign_move_limit > 0:
-			move_text = "  •  MOVES %d/%d" % [placements, campaign_move_limit]
-		goal_label.text = "WIN • SCORE %d/%d  •  LINES %d/%d%s%s" % [
-			score, target_score, lines_cleared, target_lines, move_text, _objective_status_text()
+			move_text = " • %d/%d MOVES" % [placements, campaign_move_limit]
+		goal_label.text = "WIN • %d/%d PTS • %d/%d LINES%s" % [
+			score, target_score, lines_cleared, target_lines, move_text
 		]
 		_render_special_cells()
+		var special_text := _objective_status_text()
 		if campaign_failed:
-			hint_label.text = "This attempt is blocked. Undo a mistake or restart the same deterministic puzzle."
+			hint_label.text = "ATTEMPT ENDED • RETRY OR GO BACK"
+		elif not special_text.is_empty():
+			hint_label.text = "ALSO CLEAR • " + special_text
 		elif play_mode == "extreme":
 			hint_label.text = "EXTREME  •  DIFFICULTY %d/100  •  NO MERCY" % score_value
 		elif milestone != "normal":
@@ -978,16 +981,16 @@ func _objective_status_text() -> String:
 		elif kind == "steel": steel_layers += layers
 		elif kind == "target": targets += layers
 	var parts := PackedStringArray()
-	if crates > 0: parts.append("CRATES %d LEFT" % crates)
-	if ice_layers > 0: parts.append("ICE %d LEFT" % ice_layers)
-	if locks > 0: parts.append("LOCKS %d LEFT" % locks)
-	if steel_layers > 0: parts.append("STEEL %d LEFT" % steel_layers)
-	if targets > 0: parts.append("TARGETS %d LEFT" % targets)
-	if not target_rows_pending.is_empty(): parts.append("ROWS %d LEFT" % target_rows_pending.size())
-	if not target_cols_pending.is_empty(): parts.append("COLS %d LEFT" % target_cols_pending.size())
+	if crates > 0: parts.append("%d CRATES" % crates)
+	if ice_layers > 0: parts.append("%d ICE" % ice_layers)
+	if locks > 0: parts.append("%d LOCKS" % locks)
+	if steel_layers > 0: parts.append("%d STEEL" % steel_layers)
+	if targets > 0: parts.append("%d TARGETS" % targets)
+	if not target_rows_pending.is_empty(): parts.append("%d ROWS" % target_rows_pending.size())
+	if not target_cols_pending.is_empty(): parts.append("%d COLS" % target_cols_pending.size())
 	var doubles_left := maxi(0, required_double_clears - double_clear_progress)
-	if doubles_left > 0: parts.append("DOUBLES %d LEFT" % doubles_left)
-	return "" if parts.is_empty() else "  •  " + "  •  ".join(parts)
+	if doubles_left > 0: parts.append("%d DOUBLES" % doubles_left)
+	return " • ".join(parts)
 
 func _to_int_array(raw: Variant) -> Array[int]:
 	var out: Array[int] = []
