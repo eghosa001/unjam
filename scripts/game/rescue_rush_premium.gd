@@ -233,10 +233,11 @@ func _animate_brand() -> void:
 	if motion != null and bool(motion.call("reduced")):
 		rescue_title_label.modulate.a = 1.0
 		return
-	rescue_title_label.modulate.a = 0.72
-	var tween := create_tween().set_loops()
-	tween.tween_property(rescue_title_label, "modulate:a", 1.0, 1.15).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	tween.tween_property(rescue_title_label, "modulate:a", 0.78, 1.15).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	rescue_title_label.modulate.a = 0.78
+	var tween := create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tween.tween_property(rescue_title_label, "modulate:a", 1.0, 0.32)
+	# Settle at full opacity. The old infinite title pulse kept a tween alive for
+	# the entire level even though it added no gameplay information.
 
 func _direction_color(direction: String) -> Color:
 	match direction:
