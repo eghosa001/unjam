@@ -64,7 +64,7 @@ permalink: /privacy.html
   <p>For privacy questions, data-related requests, or support, use the <a href="support.html">UNJAM support page</a> or the <a href="https://github.com/eghosa001/unjam/issues">public GitHub issue tracker</a>.</p>
 
   <h2>Developer</h2>
-  <p>UNJAM is published under the developer account responsible for the Android application with package name <code>com.eghosa.unjam</code>.</p>
+  <p>UNJAM is published under the developer account responsible for the Android application with package name <code>com.eghosa.unjamgam</code>.</p>
 </article>
 </main>
 <footer class="footer"><div class="footer-inner"><div><strong>UNJAM</strong><br><small>Official privacy information</small></div><div class="footer-links"><a href="./">Home</a><a href="support.html">Support</a></div><small>© 2026 UNJAM</small></div></footer>
