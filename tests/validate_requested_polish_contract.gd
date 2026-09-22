@@ -7,7 +7,7 @@ func _init() -> void:
 	_require("res://scripts/ui/premium_home_direct_levels.gd", ["HomeNavTopGloss", "HomeNavActivePlate", "HomeNavGlyph_", "HomeGamesNavButton", "\"GAMES\", \"▦\"", "\"DAILY\", \"✦\"", "\"COLLECT\", \"◆\""], errors)
 	_require("res://scripts/ui/premium_home_overhaul.gd", ["Progress, stars, wallet", "_sync()"], errors)
 	_require("res://scripts/ui/premium_home_casual.gd", ["HomeCoinShopButton", "HomeGamesNavButton", "HomeDailyNavButton", "HomeCollectionNavButton", "HomeSettingsNavButton", "GAMES", "DAILY", "COLLECT"], errors)
-	_require("res://scripts/ui/premium_main_casual.gd", ["DONE TODAY", "PLAY TODAY", "DailyAccent/", "CLEAR THE ROUTE", "SORT THE COLOURS", "CLEAR THE BOARD", "SurfaceWorldDepth", "SurfaceBackdropHaloTop", "SurfaceGlossSweep", "\"SETTINGS\", \"\", \"\""], errors)
+	_require("res://scripts/ui/premium_main_casual.gd", ["COMPLETED", "\"PLAY\"", "DailyAccent/", "CLEAR THE ROUTE", "SORT THE COLOURS", "CLEAR THE BOARD", "SurfaceWorldDepth", "SurfaceBackdropHaloTop", "SurfaceGlossSweep", "\"SETTINGS\", \"\", \"\""], errors)
 	_require("res://scripts/ui/premium_design_system.gd", ["PremiumGlossBackdrop", "func _gloss_style", "func _install_gloss"], errors)
 	_require("res://scripts/ui/figma_reference_canvas.gd", ["Premium casual-game gloss", "lower_rolloff", "center_boost"], errors)
 	_require("res://scripts/ui/figma_reference_canvas.gd", ["TEXTURE_FILTER_LINEAR", "var image_size := 160", "Unjam3DTheme.strong_font()", "Unjam3DTheme.readable_font()", "shadow_offset_y\", 1", "shadow_outline_size\", 0", "func add_world_depth", "func add_scene_backdrop_layers", "func add_collectible_star", "func add_collectible_gem", "Localized key-light hotspot", "Premium 3D bevel side"], errors)
