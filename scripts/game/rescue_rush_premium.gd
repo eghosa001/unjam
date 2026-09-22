@@ -308,9 +308,9 @@ func render_board() -> void:
 	for child in board_grid.get_children():
 		child.queue_free()
 
-	moves_label.text = "MOVES\n%d / %d" % [moves, par_moves]
-	var mistake_text := "FREE" if mistake_limit <= 0 else "%d / %d" % [mistakes_this_level, mistake_limit]
-	rescue_label.text = "MISTAKES\n%s" % mistake_text
+	moves_label.text = ("MOVES\n%d / %d" % [moves, action_budget]) if objective_type == "perfect_rescue" else "MOVES\n%d • 3★≤%d" % [moves, par_moves]
+	var lives_text := "∞" if mistake_limit <= 0 else str(maxi(0, mistake_limit - mistakes_this_level))
+	rescue_label.text = "LIVES\n%s" % lives_text
 	chain_label.text = "CHAIN\n×%d" % maxi(chain_count, 1)
 
 	var route := _best_escape_lane()
