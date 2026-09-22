@@ -24,7 +24,27 @@ func _run() -> void:
 		return _fail("Block first-ten ramp is too flat")
 	if int(Rescue.profile(10).difficulty_target) <= int(Rescue.profile(3).difficulty_target) + 25:
 		return _fail("Rescue first-ten ramp is too flat")
-	print("OPENING_PACING_OK: three onboarding levels, meaningful challenge from level 4.")
+
+	var water9 := int(Water.profile(9).target_difficulty)
+	var water10 := int(Water.profile(10).target_difficulty)
+	var water11 := int(Water.profile(11).target_difficulty)
+	var block9 := int(Block.profile(9).difficulty_score)
+	var block10 := int(Block.profile(10).difficulty_score)
+	var block11 := int(Block.profile(11).difficulty_score)
+	var rescue9 := int(Rescue.profile(9).difficulty_target)
+	var rescue10 := int(Rescue.profile(10).difficulty_target)
+	var rescue11 := int(Rescue.profile(11).difficulty_target)
+
+	if water9 - water11 > 4 or water10 - water11 > 6:
+		return _fail("Water level 11 falls too far below levels 9-10")
+	if block9 - block11 > 4 or block10 - block11 > 6:
+		return _fail("Block level 11 falls too far below levels 9-10")
+	if rescue9 - rescue11 > 4 or rescue10 - rescue11 > 6:
+		return _fail("Rescue level 11 falls too far below levels 9-10")
+	if int(Rescue.profile(11).piece_target) < 13 or int(Rescue.profile(11).dependency_target) < 3:
+		return _fail("Rescue level 11 loses too much structural pressure")
+
+	print("OPENING_PACING_OK: three onboarding levels, meaningful challenge from level 4, smooth 10 -> 11 handoff.")
 	quit(0)
 
 func _fail(message: String) -> void:
