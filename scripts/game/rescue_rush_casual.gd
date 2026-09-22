@@ -83,18 +83,18 @@ func build_ui() -> void:
 
 func _build_figma_rescue(canvas: Control) -> void:
 	var sky := PanelContainer.new()
-	sky.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#45ccff"), Color("#a8f0f2"), Color("#e0fad4"), 34, Color("#b8d1e0"), 1, 0.55))
+	sky.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#a9c4b9"), Color("#c8d8cc"), Color("#eee6d6"), 34, Color("#aebeb4"), 1, 0.28))
 	RefCanvas.set_rect(sky, -15.9, -58.12, 419.81, 908.51)
 	sky.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(sky)
 	var ground := PanelContainer.new()
-	ground.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#78d16e"), Color("#33a861"), Color("#146e4f"), 0, Color.TRANSPARENT, 0, 0.50))
+	ground.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#789477"), Color("#547562"), Color("#365648"), 0, Color.TRANSPARENT, 0, 0.24))
 	RefCanvas.set_rect(ground, -15.9, 43.06, 419.81, 441.34)
 	ground.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(ground)
 	var platform := Polygon2D.new()
 	platform.polygon = PackedVector2Array([Vector2(22,481),Vector2(368,481),Vector2(340,147),Vector2(50,147)])
-	platform.color = Color(0.59,0.78,0.55,0.65)
+	platform.color = Color(0.55,0.66,0.53,0.42)
 	canvas.add_child(platform)
 
 	RefCanvas.add_shadow(canvas, Rect2(15,15,54,54), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
@@ -126,7 +126,7 @@ func _build_figma_rescue(canvas: Control) -> void:
 	var status_panel := PanelContainer.new()
 	status_panel.name = "CompactStatusStrip"
 	RefCanvas.add_shadow(canvas, Rect2(17,81,354,48), 15, Color(0.02,0.10,0.18,0.22), 5, Vector2(0,4))
-	status_panel.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#2c82bd"),Color("#0a6eb2"),Color("#085a92"),15,Color(0.47,0.69,0.84,0.52),1.4))
+	status_panel.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#365448"),Color("#29483d"),Color("#20392f"),15,Color(0.49,0.72,0.56,0.36),1.1,0.24))
 	RefCanvas.set_rect(status_panel,17,81,354,48)
 	status_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(status_panel)
@@ -145,7 +145,7 @@ func _build_figma_rescue(canvas: Control) -> void:
 	var objective := PanelContainer.new()
 	objective.name = "RescueObjectiveCard"
 	RefCanvas.add_shadow(canvas, Rect2(17,137,354,34), 12, Color(0.02,0.10,0.18,0.14), 3, Vector2(0,3))
-	objective.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color(1,1,1,0.98),Color(0.97,1.0,0.98,0.98),Color("#ebfaf1"),12,Color(0.55,0.89,0.68,0.45),1.2))
+	objective.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#fffdf7"),Color("#faf7ef"),Color("#f1ede2"),12,Color(0.55,0.76,0.61,0.32),1.0,0.22))
 	RefCanvas.set_rect(objective,17,137,354,34)
 	objective.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(objective)
@@ -180,14 +180,14 @@ func _build_figma_rescue(canvas: Control) -> void:
 	actions.add_theme_constant_override("separation",14)
 	RefCanvas.set_rect(actions,21,566,346,62)
 	canvas.add_child(actions)
-	var undo := _action("↶  UNDO",Color("#088c3d"))
+	var undo := _action("↶  UNDO",GREEN)
 	undo.name = "RescueUndoAction"
 	undo.pressed.connect(undo_move)
 	actions.add_child(undo)
-	var hint := _action("💡  HINT",ORANGE)
+	var hint := _action("HINT",GREEN)
 	hint.name = "RescueHintAction"
 	actions.add_child(hint)
-	var restart := _action("↻  RESTART",BLUE)
+	var restart := _action("↻  RESTART",GREEN)
 	restart.name = "RescueRestartAction"
 	restart.pressed.connect(restart_level)
 	actions.add_child(restart)
@@ -206,8 +206,10 @@ func _build_figma_rescue(canvas: Control) -> void:
 	frame_border.z_index = 900
 	canvas.add_child(frame_border)
 
-func _action(text_value: String, fill: Color) -> Button:
-	var result := RefCanvas.premium_button(text_value,13,OFF_WHITE,fill,16,fill.lightened(0.30),1.3)
+func _action(text_value: String, _fill: Color) -> Button:
+	var fill := Color("#365448")
+	var border := Color(0.45,0.78,0.56,0.46)
+	var result := RefCanvas.premium_button(text_value,13,OFF_WHITE,fill,16,border,1.1)
 	result.custom_minimum_size = Vector2(106,60)
 	result.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	return result
