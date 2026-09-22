@@ -18,8 +18,8 @@ func _initialize() -> void:
 			var db := a.b - b.b
 			var distance := sqrt(dr * dr + dg * dg + db * db)
 			minimum_distance = minf(minimum_distance, distance)
-			if distance < 0.30:
-				failures.append("Water colours %d and %d are too similar for dense late-level play (RGB distance %.3f)" % [i, j, distance])
+			if distance < 0.34:
+				failures.append("Water colours %d and %d are too similar for dense late-level play (RGB distance %.3f; minimum 0.34)" % [i, j, distance])
 
 	var motion_source := _read("res://scripts/ui/water_tube_3d_motion.gd")
 	for token in [
@@ -33,14 +33,23 @@ func _initialize() -> void:
 
 	var reference_source := _read("res://scripts/ui/water_tube_reference_button.gd")
 	var legacy_source := _read("res://scripts/ui/water_tube_button.gd")
+	var gameplay_source := _read("res://scripts/game/water_sort.gd")
 	for token in [
-		"Color(\"e53935\")", "Color(\"1e5eff\")", "Color(\"ffd400\")",
+		"Color(\"c62828\")", "Color(\"1e5eff\")", "Color(\"ffd400\")",
 		"Color(\"00a86b\")", "Color(\"a100f2\")", "Color(\"ff7a00\")",
 		"Color(\"00b8d9\")", "Color(\"e0008a\")", "Color(\"263238\")",
-		"Color(\"a8e600\")", "Color(\"9a5a24\")", "Color(\"ff8fbd\")",
+		"Color(\"8bc34a\")", "Color(\"795548\")", "Color(\"b2f0e8\")",
 	]:
-		if not reference_source.contains(token) or not legacy_source.contains(token):
-			failures.append("Water renderers disagree on accessible palette token: %s" % token)
+		if not reference_source.contains(token) or not legacy_source.contains(token) or not gameplay_source.contains(token):
+			failures.append("Water bottle/stream renderers disagree on accessible palette token: %s" % token)
+	for token in [
+		"func _liquid_material_3d(color: Color)",
+		"material.roughness = 0.22",
+		"material.clearcoat = 0.24",
+		"material.emission_energy_multiplier = 0.075",
+	]:
+		if not motion_source.contains(token):
+			failures.append("Water liquid anti-wash material contract is missing: %s" % token)
 
 	if not failures.is_empty():
 		for failure in failures:
