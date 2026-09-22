@@ -28,10 +28,10 @@ var _arrival_impulse := 0.0
 var _arrival_phase := 0.0
 
 func configure(values: Array, selected: bool, index: int) -> void:
+	var liquid_changed := layers != values
 	super.configure(values, selected, index)
-	if viewport_3d != null:
+	if viewport_3d != null and liquid_changed:
 		_refresh_liquid_3d()
-		_request_3d_frame()
 	if is_inside_tree():
 		_sync_motion_processing()
 
