@@ -22,7 +22,6 @@ const ACHIEVEMENT_REWARDS := {
 }
 
 func _ready() -> void:
-	ensure_state()
 	process_login()
 
 func ensure_state() -> void:
@@ -36,11 +35,15 @@ func ensure_state() -> void:
 		"rescue_variants":[], "profile_title":"Rookie Rescuer", "missions_completed":0,
 		"achievement_reward_claimed":[]
 	}
+	var changed := false
 	for key in defaults:
 		if not SaveManager.data.has(key):
-			SaveManager.data[key] = defaults[key]
-	_roll_periods()
-	SaveManager.save()
+			var default_value = defaults[key]
+			SaveManager.data[key] = default_value.duplicate(true) if default_value is Array or default_value is Dictionary else default_value
+			changed = true
+	changed = _roll_periods() or changed
+	if changed:
+		SaveManager.save()
 
 func today_key() -> String:
 	var d: Dictionary = Time.get_date_dict_from_system()
@@ -56,25 +59,35 @@ func season_key() -> String:
 func event_key() -> String:
 	return "E%d" % int(int(Time.get_unix_time_from_system()) / (EVENT_DURATION_DAYS * 86400))
 
-func _roll_periods() -> void:
-	if String(SaveManager.data.daily_mission_date) != today_key():
-		SaveManager.data.daily_mission_date = today_key()
+func _roll_periods() -> bool:
+	var changed := false
+	var today := today_key()
+	if String(SaveManager.data.daily_mission_date) != today:
+		SaveManager.data.daily_mission_date = today
 		SaveManager.data.daily_mission_progress = {}
 		SaveManager.data.daily_mission_claimed = []
 		SaveManager.data.daily_all_claimed = false
-	if String(SaveManager.data.weekly_key) != week_key():
-		SaveManager.data.weekly_key = week_key()
+		changed = true
+	var current_week := week_key()
+	if String(SaveManager.data.weekly_key) != current_week:
+		SaveManager.data.weekly_key = current_week
 		SaveManager.data.weekly_points = 0
 		SaveManager.data.weekly_claimed_tiers = []
-	if String(SaveManager.data.season_key) != season_key():
-		SaveManager.data.season_key = season_key()
+		changed = true
+	var current_season := season_key()
+	if String(SaveManager.data.season_key) != current_season:
+		SaveManager.data.season_key = current_season
 		SaveManager.data.season_points = 0
 		SaveManager.data.season_claimed_tiers = []
-	if String(SaveManager.data.event_key) != event_key():
-		SaveManager.data.event_key = event_key()
+		changed = true
+	var current_event := event_key()
+	if String(SaveManager.data.event_key) != current_event:
+		SaveManager.data.event_key = current_event
 		SaveManager.data.event_currency = 0
 		SaveManager.data.event_shop_owned = []
 		SaveManager.data.event_levels_completed = 0
+		changed = true
+	return changed
 
 func process_login() -> Dictionary:
 	ensure_state()
