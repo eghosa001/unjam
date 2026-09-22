@@ -75,8 +75,20 @@ func _process(delta: float) -> void:
 		if node.position.y < -40.0:
 			node.position.y = _ambient_wrap_y
 
+func _owns_gameplay_feedback(node: Node) -> bool:
+	var script = node.get_script()
+	if script == null:
+		return false
+	var path := String(script.resource_path)
+	return path in [
+		"res://scripts/ui/block_cell_button.gd",
+		"res://scripts/ui/smooth_block_piece_button.gd",
+		"res://scripts/ui/water_tube_3d_motion.gd",
+		"res://scripts/ui/rescue_piece_3d_button.gd",
+	]
+
 func _on_node_added(node: Node) -> void:
-	if node is BaseButton:
+	if node is BaseButton and not _owns_gameplay_feedback(node):
 		call_deferred("premium_button", node)
 
 func set_accent(color: Color) -> void:
