@@ -164,8 +164,19 @@ func unlock_decoration(id: String, cost: int) -> bool:
 	if id in data.decorations: return true
 	if not spend_coins(cost): return false
 	data.decorations.append(id); save(); return true
-func record_hint() -> void: data.hints_used = int(data.hints_used) + 1; save()
-func record_undo() -> void: data.undos_used = int(data.undos_used) + 1; save()
+func _persist_gameplay_counter_deferred() -> void:
+	if has_method("save_deferred"):
+		call("save_deferred")
+	else:
+		save()
+
+func record_hint() -> void:
+	data.hints_used = int(data.hints_used) + 1
+	_persist_gameplay_counter_deferred()
+
+func record_undo() -> void:
+	data.undos_used = int(data.undos_used) + 1
+	_persist_gameplay_counter_deferred()
 func complete_daily(date_key: String, reward: int = 100) -> bool:
 	if date_key in data.daily_completed: return false
 	var previous_date := String(data.daily_last_date); var today := Time.get_date_dict_from_system(); var today_unix := Time.get_unix_time_from_datetime_dict({"year": today.year, "month": today.month, "day": today.day, "hour": 0, "minute": 0, "second": 0}); var consecutive := false
