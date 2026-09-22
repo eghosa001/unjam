@@ -20,14 +20,18 @@ const ACTIVE_REDRAW_FPS := 30.0
 const ACTIVE_REDRAW_INTERVAL := 1.0 / ACTIVE_REDRAW_FPS
 
 func configure(values: Array, selected: bool, index: int) -> void:
-	layers = values.duplicate()
+	var liquid_changed := layers != values
+	var selection_changed := is_selected != selected
+	if liquid_changed:
+		layers = values.duplicate()
 	is_selected = selected
 	tube_index = index
 	text = ""
 	flat = true
 	focus_mode = Control.FOCUS_NONE
 	mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	queue_redraw()
+	if liquid_changed or selection_changed:
+		queue_redraw()
 	if is_inside_tree():
 		_sync_reference_processing()
 
