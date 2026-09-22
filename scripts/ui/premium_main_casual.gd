@@ -14,7 +14,7 @@ const FIGMA_ORANGE := Color(1.0, 0.55, 0.12)
 const FIGMA_GOLD := Color(1.0, 0.84, 0.24)
 
 const FIGMA_DARK_TOP := Color("#343434")
-const FIGMA_DARK_BOTTOM := Color("#181818")
+const FIGMA_DARK_BOTTOM := Color("#1c1c1c")
 const FIGMA_DARK_CARD := Color("#252525")
 const FIGMA_DARK_INK := Color("#f5f7fa")
 const FIGMA_DARK_MUTED := Color("#a7b1bc")
@@ -23,7 +23,7 @@ const FIGMA_SCENE_MID := Color("#b3aca2")
 const FIGMA_SCENE_BOTTOM := Color("#80786e")
 const FIGMA_SCENE_DARK_TOP := Color("#363636")
 const FIGMA_SCENE_DARK_MID := Color("#272727")
-const FIGMA_SCENE_DARK_BOTTOM := Color("#181818")
+const FIGMA_SCENE_DARK_BOTTOM := Color("#1c1c1c")
 
 var _collection_scroll_tracking := false
 var _collection_scroll_origin_y := 0.0
