@@ -26,6 +26,9 @@ var liquid_segments_3d: Array[MeshInstance3D] = []
 var liquid_materials_3d: Array[StandardMaterial3D] = []
 var _arrival_impulse := 0.0
 var _arrival_phase := 0.0
+var _liquid_has_runs_3d := false
+var _liquid_top_surface_3d := -1.43
+var _liquid_top_color_3d := 0
 var _rim_projection_cached := false
 var _rim_center_normalized := Vector2(0.5, 0.1)
 var _rim_left_normalized := Vector2(0.5, 0.1)
@@ -86,7 +89,9 @@ func _process(delta: float) -> void:
 	if _arrival_impulse > 0.001:
 		_arrival_phase += delta * 18.0
 		_arrival_impulse = maxf(0.0, _arrival_impulse - delta * 4.8)
-		_refresh_liquid_3d()
+		# Geometry already changed in set_pour_progress(). Arrival animation only
+		# moves the exposed surface, so avoid rebuilding every liquid run again.
+		_refresh_meniscus_3d()
 	_sync_motion_processing()
 
 func _sync_motion_processing() -> void:
@@ -374,8 +379,9 @@ func _refresh_liquid_3d() -> void:
 	for segment in liquid_segments_3d:
 		segment.visible = false
 	var runs := _liquid_runs_3d(slot_height, liquid_bottom)
-	var top_surface := liquid_bottom
-	var top_color := 0
+	_liquid_has_runs_3d = not runs.is_empty()
+	_liquid_top_surface_3d = liquid_bottom
+	_liquid_top_color_3d = 0
 	for run_index in range(mini(runs.size(), liquid_segments_3d.size())):
 		var run: Dictionary = runs[run_index]
 		var segment := liquid_segments_3d[run_index]
@@ -389,20 +395,23 @@ func _refresh_liquid_3d() -> void:
 		if color_index < liquid_materials_3d.size():
 			segment.material_override = liquid_materials_3d[color_index]
 		segment.visible = true
-		top_surface = bottom + height
-		top_color = color_index
+		_liquid_top_surface_3d = bottom + height
+		_liquid_top_color_3d = color_index
+	_refresh_meniscus_3d()
+
+func _refresh_meniscus_3d() -> void:
 	if liquid_meniscus_3d != null:
-		liquid_meniscus_3d.visible = not runs.is_empty()
-		if not runs.is_empty():
+		liquid_meniscus_3d.visible = _liquid_has_runs_3d
+		if _liquid_has_runs_3d:
 			# Arrival ripple: flatten on contact, then rebound with a small lateral
 			# wobble. It affects only the exposed meniscus/root and costs no particles.
 			var arrival_wave := sin(_arrival_phase) * _arrival_impulse
 			var arrival_flatten := _arrival_impulse * (0.030 + 0.010 * absf(arrival_wave))
-			liquid_meniscus_3d.position = Vector3(arrival_wave * 0.035, top_surface - 0.01 - arrival_flatten * 0.20, 0)
+			liquid_meniscus_3d.position = Vector3(arrival_wave * 0.035, _liquid_top_surface_3d - 0.01 - arrival_flatten * 0.20, 0)
 			liquid_meniscus_3d.scale = Vector3(1.0 + arrival_flatten * 1.8, maxf(0.075, 0.11 - arrival_flatten), 1.0 + arrival_flatten * 1.3)
 			liquid_root_3d.rotation.z = deg_to_rad(arrival_wave * 1.8)
-			if top_color < liquid_materials_3d.size():
-				liquid_meniscus_3d.material_override = liquid_materials_3d[top_color]
+			if _liquid_top_color_3d < liquid_materials_3d.size():
+				liquid_meniscus_3d.material_override = liquid_materials_3d[_liquid_top_color_3d]
 		else:
 			liquid_root_3d.rotation.z = 0.0
 	_request_3d_frame()
