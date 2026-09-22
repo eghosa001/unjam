@@ -688,11 +688,7 @@ func build_collection() -> void:
 	_figma_card(canvas,"Garden",Rect2(17,429,354,96),Color("#fffef8"),Color(0.55,0.86,0.71,0.32),18)
 	_figma_text(canvas,"♥  RESCUE GARDEN",Rect2(33,445,180,19),16,Color("#088c3d"))
 	_figma_text(canvas,"%d friends home • %d / 6 upgrades" % [rescued.size(),owned],Rect2(33,476,240,20),13,FIGMA_MUTED)
-	_figma_text(canvas,"%d / 6 upgrades  •  +%d Daily  •  +%d Gift" % [owned,EconomyManager.collection_daily_bonus(),EconomyManager.garden_gift_amount()],Rect2(33,501,310,20),13,FIGMA_MUTED)
-
-	_figma_card(canvas,"Boost",Rect2(17,539,354,112),Color("#fffef8"),Color(0.55,0.86,0.71,0.32),18)
-	_figma_text(canvas,"PERMANENT BOOST",Rect2(33,555,180,18),15,FIGMA_ORANGE)
-	_figma_text(canvas,"+5 per Daily Game • +10 Garden Gift per upgrade",Rect2(33,578,310,20),13,FIGMA_MUTED)
+	_figma_text(canvas,"BONUS  +%d DAILY • +%d GIFT" % [EconomyManager.collection_daily_bonus(),EconomyManager.garden_gift_amount()],Rect2(33,501,310,20),13,FIGMA_MUTED)
 
 	# Figma state transition: swipe upward through the Garden/Boost region to
 	# reveal the dedicated six-upgrade Collection state.
@@ -708,7 +704,7 @@ func build_collection() -> void:
 	if not can_claim:
 		gift_text = "GARDEN GIFT CLAIMED" if EconomyManager.garden_gift_claimed_today() else "BUY AN UPGRADE IN SHOP"
 	var gift_fill := FIGMA_GREEN if can_claim else Color(0.54,0.64,0.72)
-	var gift := _figma_button(canvas,"CollectionGardenGift",gift_text,Rect2(33,603,250,44),gift_fill,Callable(),FIGMA_OFF_WHITE,16,13)
+	var gift := _figma_button(canvas,"CollectionGardenGift",gift_text,Rect2(33,548,250,44),gift_fill,Callable(),FIGMA_OFF_WHITE,16,13)
 	if can_claim:
 		gift.pressed.connect(_claim_collection_gift)
 	else:
