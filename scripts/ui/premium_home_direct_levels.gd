@@ -301,7 +301,7 @@ func _add_world_progress(canvas: Control) -> void:
 
 	var world_title := _add_text(root, "WORLD %d" % world, Rect2(195, 598, 152, 26), 18, OFF_WHITE if _home_dark() else NAVY, true)
 	world_title.name = "HomeWorldProgressTitle"
-	var world_value := _add_text(root, "LEVEL %d • %d/%d" % [level, completed_in_world, total], Rect2(195, 632, 152, 18), 11, MUTED, true)
+	var world_value := _add_text(root, "LEVEL %d • %d/%d" % [level, completed_in_world, total], Rect2(195, 632, 152, 18), 12, MUTED, true)
 	world_value.name = "HomeWorldProgressValue"
 
 	var progress := ProgressBar.new()
