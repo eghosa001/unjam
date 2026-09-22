@@ -81,6 +81,7 @@ func _rescue_refresh_is_settled() -> bool:
 func _hot_paths_stay_lightweight() -> bool:
 	var manager := FileAccess.get_file_as_string("res://scripts/core/multi_game_manager.gd")
 	var water := FileAccess.get_file_as_string("res://scripts/ui/water_tube_3d_motion.gd")
+	var water_game := FileAccess.get_file_as_string("res://scripts/game/water_sort.gd")
 	var visuals := FileAccess.get_file_as_string("res://scripts/systems/robust_premium_visuals.gd")
 	var retention := FileAccess.get_file_as_string("res://scripts/systems/retention_manager.gd")
 	var checkpoint_fn := manager.get_slice("func _checkpoint_payload_matches", 1).get_slice("func save_checkpoint", 0)
@@ -89,6 +90,9 @@ func _hot_paths_stay_lightweight() -> bool:
 	var water_process := water.get_slice("func _process", 1).get_slice("func _sync_motion_processing", 0)
 	if "_refresh_liquid_3d()" in water_process or not "_refresh_meniscus_3d()" in water_process:
 		return _fail("Water arrival ripple regressed to full liquid-run rebuilds")
+	var water_checkpoint := water_game.get_slice("func _save_checkpoint", 1).get_slice("func _restore_checkpoint", 0)
+	if "history.duplicate(true)" in water_checkpoint:
+		return _fail("Water checkpoint regressed to recursive undo-history copying")
 	var quality_fn := visuals.get_slice("func _set_quality", 1).get_slice("func _ambient_count", 0)
 	if not "save_deferred" in quality_fn:
 		return _fail("Adaptive quality persistence is synchronous again")

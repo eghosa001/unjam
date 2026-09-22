@@ -468,7 +468,9 @@ func restart_level() -> void:
 
 func _save_checkpoint() -> void:
 	if completed: return
-	MultiGameManager.save_checkpoint(GAME_ID, {"level": level_number, "daily": daily_mode, "moves": moves, "tubes": tubes.duplicate(true), "history": history.duplicate(true)})
+	# Current tubes keep mutating and must be detached. History entries are already
+	# immutable deep snapshots captured per move, so only copy the history container.
+	MultiGameManager.save_checkpoint(GAME_ID, {"level": level_number, "daily": daily_mode, "moves": moves, "tubes": tubes.duplicate(true), "history": history.duplicate()})
 
 func _restore_checkpoint() -> void:
 	var checkpoint := MultiGameManager.checkpoint(GAME_ID)
