@@ -65,6 +65,18 @@ func run() -> void:
 		await _frames(3)
 		expect_true(String(main.get("current_surface")) == "daily", "Home Daily navigation did not open Daily Games")
 
+	main.call("build_settings")
+	await _frames(2)
+	var settings_purchases := main.find_child("SettingsPurchases", true, false) as Button
+	expect_true(settings_purchases != null and settings_purchases.visible, "Settings has no visible Purchases entry")
+	if settings_purchases != null and hub != null:
+		settings_purchases.emit_signal("pressed")
+		await _frames(2)
+		var settings_overlay: Variant = hub.get("overlay")
+		expect_true(settings_overlay is Control and (settings_overlay as Control).visible, "Settings Purchases entry did not open Shop")
+		if hub.has_method("_close_shop"):
+			hub.call("_close_shop")
+
 	main.queue_free()
 	await _frames(2)
 	if save_manager != null:
