@@ -1,0 +1,106 @@
+name: Android Latest Test APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/android-test-apk.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-latest-test-apk
+  cancel-in-progress: true
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Godot 4.7.2
+        uses: solarlabyrinth/action-setup-godot@v3
+        with:
+          version: 4.7.2-stable
+          export-templates: true
+
+      - name: Install Android API 36
+        shell: bash
+        run: |
+          set -euxo pipefail
+          ANDROID_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          test -n "$ANDROID_ROOT"
+          SDKMANAGER=$(find "$ANDROID_ROOT/cmdline-tools" -name sdkmanager -type f | sort | tail -1)
+          test -x "$SDKMANAGER"
+          set +o pipefail
+          yes | "$SDKMANAGER" --sdk_root="$ANDROID_ROOT" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+          SDK_STATUS=${PIPESTATUS[1]}
+          set -o pipefail
+          test "$SDK_STATUS" -eq 0
+          echo "ANDROID_HOME=$ANDROID_ROOT" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_ROOT" >> "$GITHUB_ENV"
+
+      - name: Install Android monetization plugins
+        shell: bash
+        run: |
+          set -euxo pipefail
+          chmod +x tools/install_monetization_plugins.sh
+          tools/install_monetization_plugins.sh
+
+      - name: Prepare APK export preset
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fx 'package/unique_name="com.eghosa.unjamgam"' export_presets.cfg
+          grep -Fx 'architectures/arm64-v8a=true' export_presets.cfg
+          sed -i 's/gradle_build\/export_format=1/gradle_build\/export_format=0/' export_presets.cfg
+          grep -Fx 'gradle_build/export_format=0' export_presets.cfg
+
+      - name: Import project
+        shell: bash
+        run: |
+          set -o pipefail
+          godot --headless --path . --editor --quit 2>&1 | tee android-test-import.log
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" android-test-import.log; then exit 1; fi
+
+      - name: Export latest test APK
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p build/android
+          godot --headless --verbose --path . --install-android-build-template --export-debug Android build/android/unjam-latest.apk 2>&1 | tee android-test-export.log
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" android-test-export.log; then exit 1; fi
+          test -s build/android/unjam-latest.apk
+
+      - name: Verify APK identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=build/android/unjam-latest.apk
+          AAPT="$(find "$ANDROID_SDK_ROOT/build-tools" -type f -name aapt | sort | tail -1)"
+          test -x "$AAPT"
+          "$AAPT" dump badging "$APK" | tee build/android/unjam-latest-badging.txt
+          grep -F "package: name='com.eghosa.unjamgam'" build/android/unjam-latest-badging.txt
+          grep -F "targetSdkVersion:'36'" build/android/unjam-latest-badging.txt
+          grep -F "native-code: 'arm64-v8a'" build/android/unjam-latest-badging.txt
+          sha256sum "$APK" | tee build/android/unjam-latest.apk.sha256
+
+      - name: Upload latest test APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: unjam-latest-test-apk
+          path: |
+            build/android/unjam-latest.apk
+            build/android/unjam-latest.apk.sha256
+            build/android/unjam-latest-badging.txt
+          if-no-files-found: error
+          retention-days: 7
