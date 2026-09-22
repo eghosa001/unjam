@@ -1,8 +1,8 @@
 extends "res://scripts/ui/premium_main.gd"
 
 const FIGMA_LEVEL_PAGE_SIZE := 20
-const FIGMA_BG_TOP := Color("#eef2f5")
-const FIGMA_BG_BOTTOM := Color("#d8dee5")
+const FIGMA_BG_TOP := Color("#4f76b8")
+const FIGMA_BG_BOTTOM := Color("#315596")
 const FIGMA_NAVY := Color("#1f2933")
 const FIGMA_INK := Color("#26323d")
 const FIGMA_MUTED := Color("#52606d")
@@ -18,9 +18,9 @@ const FIGMA_DARK_BOTTOM := Color("#161b22")
 const FIGMA_DARK_CARD := Color("#20272f")
 const FIGMA_DARK_INK := Color("#f5f7fa")
 const FIGMA_DARK_MUTED := Color("#a7b1bc")
-const FIGMA_SCENE_TOP := Color("#eef2f5")
-const FIGMA_SCENE_MID := Color("#e6eaee")
-const FIGMA_SCENE_BOTTOM := Color("#d6dce2")
+const FIGMA_SCENE_TOP := Color("#4f76b8")
+const FIGMA_SCENE_MID := Color("#3f67aa")
+const FIGMA_SCENE_BOTTOM := Color("#315596")
 const FIGMA_SCENE_DARK_TOP := Color("#252c34")
 const FIGMA_SCENE_DARK_MID := Color("#242b33")
 const FIGMA_SCENE_DARK_BOTTOM := Color("#14191f")
@@ -153,7 +153,7 @@ func _figma_surface(active: String, bottom_tint: Color = FIGMA_BG_BOTTOM, top_ti
 	halo_top.name = "SurfaceBackdropHaloTop"
 	halo_top.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	halo_top.modulate.a = 0.20 if not _dark() else 0.16
-	halo_top.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color("#c4c9cf") if not _dark() else Color("#59636d"), 110))
+	halo_top.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color("#6f8fc4") if not _dark() else Color("#59636d"), 110))
 	FigmaReferenceCanvas.set_rect(halo_top, 268, -68, 205, 205)
 	canvas.add_child(halo_top)
 	canvas.move_child(halo_top, 1)
@@ -162,7 +162,7 @@ func _figma_surface(active: String, bottom_tint: Color = FIGMA_BG_BOTTOM, top_ti
 	halo_bottom.name = "SurfaceBackdropHaloBottom"
 	halo_bottom.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	halo_bottom.modulate.a = 0.16 if not _dark() else 0.13
-	halo_bottom.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color("#b8bec5") if not _dark() else Color("#505a64"), 100))
+	halo_bottom.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color("#456ca9") if not _dark() else Color("#505a64"), 100))
 	FigmaReferenceCanvas.set_rect(halo_bottom, -76, 632, 188, 188)
 	canvas.add_child(halo_bottom)
 	canvas.move_child(halo_bottom, 1)
@@ -170,7 +170,7 @@ func _figma_surface(active: String, bottom_tint: Color = FIGMA_BG_BOTTOM, top_ti
 	var ribbon := Polygon2D.new()
 	ribbon.name = "SurfaceBackdropRibbon"
 	ribbon.polygon = PackedVector2Array([Vector2(-32,330),Vector2(420,235),Vector2(420,296),Vector2(-32,390)])
-	ribbon.color = Color("#8e969f", 0.060 if not _dark() else 0.075)
+	ribbon.color = Color("#274b86", 0.060 if not _dark() else 0.075)
 	canvas.add_child(ribbon)
 	canvas.move_child(ribbon, 1)
 
