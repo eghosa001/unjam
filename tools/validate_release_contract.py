@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 from pathlib import Path
 
 EXPECTED_PACKAGE = 'package/unique_name="com.eghosa.unjamgam"'
@@ -46,6 +47,11 @@ def main() -> int:
     adaptive_fg = adaptive_fg_path.read_text(encoding='utf-8')
 
     errors: list[str] = []
+
+    try:
+        ast.parse(live_checker, filename=str(live_checker_path))
+    except SyntaxError as exc:
+        errors.append(f'live monetization checker has invalid Python syntax: {exc.msg} at line {exc.lineno}')
 
     for token in (
         'default: 1',
