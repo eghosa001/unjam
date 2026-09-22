@@ -123,6 +123,12 @@ func _hot_paths_stay_lightweight() -> bool:
 	var water_checkpoint := water_game.get_slice("func _save_checkpoint", 1).get_slice("func _restore_checkpoint", 0)
 	if "history.duplicate(true)" in water_checkpoint:
 		return _fail("Water checkpoint regressed to recursive undo-history copying")
+	var water_restore := water_game.get_slice("func _restore_checkpoint", 1).get_slice("func _quit", 0)
+	if "saved_tubes.duplicate(true)" in water_restore or "saved_history.duplicate(true)" in water_restore:
+		return _fail("Water checkpoint restore regressed to a second recursive copy")
+	var block_restore := FileAccess.get_file_as_string("res://scripts/game/block_puzzle.gd").get_slice("func _restore_checkpoint", 1).get_slice("func _quit", 0)
+	if "saved_history.duplicate(true)" in block_restore:
+		return _fail("Block checkpoint restore regressed to a second history copy")
 	var block_place := block_game.get_slice("func place_selected", 1).get_slice("func undo_move", 0)
 	if "\n\trender()\n" in block_place:
 		return _fail("Block placement regressed to a full-board render pass")
