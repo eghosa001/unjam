@@ -212,7 +212,7 @@ static func retention_role(level: int) -> String:
 		6: return "recovery"
 		7: return "build"
 		8: return "stretch"
-		9: return "challenge"
+		9: return "recovery"
 		_: return "peak"
 
 static func is_move_limited(level: int, role: String = "") -> bool:
