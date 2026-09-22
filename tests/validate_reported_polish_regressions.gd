@@ -54,8 +54,11 @@ func _validate_opening_rhythm(errors: Array[String]) -> void:
 	for level_number in range(1, 11):
 		var level: Dictionary = CampaignGeneratorScript.generate(level_number)
 		var score := int(level.get("difficulty_score", -1))
-		if score < 10 or score > 25:
-			errors.append("Rescue Rush level %d opening difficulty score is outside 10..25: %d" % [level_number, score])
+		if level_number <= 3:
+			if score < 10 or score > 25:
+				errors.append("Rescue Rush level %d baseline difficulty is outside 10..25: %d" % [level_number, score])
+		elif score < 26 or score > 65:
+			errors.append("Rescue Rush level %d post-intro difficulty is outside 26..65: %d" % [level_number, score])
 		if int(level.get("mistake_limit", -1)) != 0:
 			errors.append("Rescue Rush level %d should not punish blocked taps during onboarding" % level_number)
 		if int(level.get("width", 0)) != 7 or int(level.get("height", 0)) != 7:
