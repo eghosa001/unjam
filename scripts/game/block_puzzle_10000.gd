@@ -185,13 +185,10 @@ func load_level() -> void:
 
 	_reset_objective_state()
 	var proof_moves := int((campaign_plan.get("metadata", {}) as Dictionary).get("proof_moves", 0))
+	# Normal campaign uses placement count only for star grading. A player should
+	# never lose a solvable board simply because a par/move target was exceeded.
 	campaign_move_limit = -1
-	if play_mode == "campaign":
-		campaign_move_limit = int(campaign_profile.get("move_limit", -1))
-		if campaign_move_limit > 0 and proof_moves > 0:
-			var margin := 3 if level_number <= 5000 else (2 if level_number < 9000 else 1)
-			campaign_move_limit = maxi(campaign_move_limit, proof_moves + margin)
-	elif play_mode == "extreme" and proof_moves > 0:
+	if play_mode == "extreme" and proof_moves > 0:
 		campaign_move_limit = proof_moves + (2 if level_number < 7500 else 1)
 
 	var checkpoint := MultiGameManager.checkpoint(GAME_ID)
@@ -269,7 +266,14 @@ func refill_pieces() -> void:
 	piece_batch += 1
 	var trays: Array = campaign_plan.get("trays", [])
 	var tray_index := piece_batch - 1
-	if tray_index < 0 or tray_index >= trays.size():
+	if tray_index < 0:
+		selected_piece = -1
+		return
+	if tray_index >= trays.size():
+		# The constructive pack proves a solution, but players may take a different
+		# route. Do not turn exhaustion of the finite proof trays into a fake loss.
+		if play_mode == "campaign":
+			_refill_campaign_continuation()
 		selected_piece = -1
 		return
 	var tray: Array = trays[tray_index]
@@ -280,6 +284,25 @@ func refill_pieces() -> void:
 		pieces.append(CampaignGenerator.SHAPES[shape_index].duplicate())
 		piece_colors.append(COLOR_PALETTE[color_rng.randi_range(0, COLOR_PALETTE.size() - 1)])
 	selected_piece = -1
+
+func _refill_campaign_continuation() -> void:
+	var random := RandomNumberGenerator.new()
+	random.seed = int(_profile().get("seed", level_number * 104729)) + piece_batch * 99991 + 900001
+	var tier := clampi(int(_profile().get("piece_tier", 1)), 1, 6)
+	var pool: Array = (CampaignGenerator.TIER_POOLS.get(tier, CampaignGenerator.TIER_POOLS[1]) as Array)
+	var has_legal_piece := false
+	for _i in range(3):
+		var shape_index := int(pool[random.randi_range(0, pool.size() - 1)])
+		var shape: Array = CampaignGenerator.SHAPES[shape_index].duplicate()
+		pieces.append(shape)
+		piece_colors.append(COLOR_PALETTE[random.randi_range(0, COLOR_PALETTE.size() - 1)])
+		if _shape_has_legal_move(shape):
+			has_legal_piece = true
+	# A continuation tray must not manufacture a loss while a usable board cell
+	# still exists. A single-cell block is the least invasive recovery piece.
+	var single: Array = CampaignGenerator.SHAPES[0].duplicate()
+	if not has_legal_piece and _shape_has_legal_move(single):
+		pieces[0] = single
 
 func render() -> void:
 	super.render()
