@@ -53,6 +53,10 @@ static func profile(raw_level: int) -> Dictionary:
 	)
 	if level <= 10:
 		difficulty_score = [12, 18, 24, 32, 38, 43, 47, 51, 54, 55][level - 1]
+	elif level <= 20:
+		# Keep the level-10 -> 11 handoff close to the established challenge band.
+		# Recovery/practice levels soften pressure slightly; they never reset to tutorial difficulty.
+		difficulty_score = [52, 53, 55, 57, 60, 54, 58, 62, 56, 64][level - 11]
 
 	var world := int((level - 1) / WORLD_SIZE) + 1
 	var level_in_world := ((level - 1) % WORLD_SIZE) + 1
