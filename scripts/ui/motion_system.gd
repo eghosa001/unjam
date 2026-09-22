@@ -18,11 +18,27 @@ const DURATIONS := {
 const FAST_SCALE := 0.62
 const REDUCED_SCALE := 0.28
 
+var _cached_reduced := false
+var _cached_fast := false
+var _preferences_loaded := false
+
+func _ready() -> void:
+	refresh_preferences()
+
+func refresh_preferences() -> void:
+	_cached_reduced = _save_flag("reduce_motion", false)
+	_cached_fast = _save_flag("fast_animation", false)
+	_preferences_loaded = true
+
 func reduced() -> bool:
-	return _save_flag("reduce_motion", false)
+	if not _preferences_loaded:
+		refresh_preferences()
+	return _cached_reduced
 
 func fast() -> bool:
-	return _save_flag("fast_animation", false)
+	if not _preferences_loaded:
+		refresh_preferences()
+	return _cached_fast
 
 func duration(kind: StringName) -> float:
 	return duration_for_flags(kind, reduced(), fast())
