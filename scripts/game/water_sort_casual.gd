@@ -2,9 +2,9 @@ extends "res://scripts/game/water_sort_ultra_motion.gd"
 
 const RefCanvas = preload("res://scripts/ui/figma_reference_canvas.gd")
 
-const SKY_TOP := Color(0.27, 0.76, 1.0)
-const SKY_MID := Color(0.63, 0.91, 1.0)
-const SKY_BOTTOM := Color(0.91, 0.99, 1.0)
+const SKY_TOP := Color("#6f98ad")
+const SKY_MID := Color("#a9c4ce")
+const SKY_BOTTOM := Color("#e7e8df")
 const NAVY := Color(0.03, 0.23, 0.47)
 const OFF_WHITE := Color(1.0, 0.995, 0.97)
 const BLUE := Color(0.03, 0.43, 0.78)
@@ -39,14 +39,14 @@ func _build_figma_water(canvas: Control) -> void:
 	canvas.add_child(sky)
 	var ground := PanelContainer.new()
 	ground.name = "WaterScenicGround"
-	ground.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#33c2e0"), Color("#1494c7"), Color("#0a63ab"), 0, Color.TRANSPARENT, 0, 0.55))
+	ground.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#5b98a5"), Color("#3c788a"), Color("#28596d"), 0, Color.TRANSPARENT, 0, 0.28))
 	RefCanvas.set_rect(ground, 0, 93, 390, 410)
 	ground.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(ground)
 	var platform := Polygon2D.new()
 	platform.name = "WaterPerspectivePlatform"
 	platform.polygon = PackedVector2Array([Vector2(34, 500), Vector2(356, 500), Vector2(330, 190), Vector2(60, 190)])
-	platform.color = Color(0.45, 0.89, 0.95, 0.72)
+	platform.color = Color(0.52,0.72,0.76,0.42)
 	canvas.add_child(platform)
 
 	RefCanvas.add_shadow(canvas, Rect2(15,15,54,54), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
@@ -69,7 +69,7 @@ func _build_figma_water(canvas: Control) -> void:
 	var info := PanelContainer.new()
 	info.name = "WaterInfo"
 	RefCanvas.add_shadow(canvas, Rect2(17,79,354,42), 14, Color(0.02,0.10,0.18,0.22), 5, Vector2(0,4))
-	info.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#2a82cf"), Color("#086ec7"), Color("#065aa3"), 14, Color(0.47, 0.69, 0.88, 0.52), 1.4))
+	info.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#315d72"), Color("#274f64"), Color("#1f4053"), 14, Color(0.47,0.72,0.82,0.36), 1.1,0.24))
 	RefCanvas.set_rect(info, 17, 79, 354, 42)
 	info.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(info)
@@ -88,7 +88,7 @@ func _build_figma_water(canvas: Control) -> void:
 	var objective := PanelContainer.new()
 	objective.name = "WaterObjective"
 	RefCanvas.add_shadow(canvas, Rect2(17,129,354,30), 12, Color(0.02,0.10,0.18,0.14), 3, Vector2(0,3))
-	objective.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color(1,1,1,0.98), Color(0.96,0.99,1.0,0.98), Color(0.919, 0.9694, 1.0,0.98), 12, Color(0.532, 0.823, 1.0, 0.45), 1.2))
+	objective.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#fffdf7"), Color("#faf8f1"), Color("#efeee8"), 12, Color(0.48,0.72,0.82,0.32), 1.0,0.22))
 	RefCanvas.set_rect(objective, 17, 129, 354, 30)
 	objective.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(objective)
@@ -147,7 +147,7 @@ func _build_figma_water(canvas: Control) -> void:
 	undo.name = "WaterUndoAction"
 	undo.pressed.connect(undo_move)
 	actions.add_child(undo)
-	var hint := _action_button("HINT", ORANGE)
+	var hint := _action_button("HINT", BLUE)
 	hint.name = "WaterHintAction"
 	# HintManager is the single owner of hint cost/reward handling.
 	actions.add_child(hint)
@@ -228,9 +228,11 @@ func _add_water_bulb_icon(button: Button) -> void:
 	base.size = Vector2(6,4)
 	button.add_child(base)
 
-func _action_button(text_value: String, fill: Color) -> Button:
-	var button := RefCanvas.premium_button(text_value, 13, OFF_WHITE, fill, 16, fill.lightened(0.30), 1.3)
-	button.custom_minimum_size = Vector2(106, 60)
+func _action_button(text_value: String, _fill: Color) -> Button:
+	var fill := Color("#315d72")
+	var border := Color(0.48,0.78,0.88,0.44)
+	var button := RefCanvas.premium_button(text_value,13,OFF_WHITE,fill,16,border,1.1)
+	button.custom_minimum_size = Vector2(166,60)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	return button
 

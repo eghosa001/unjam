@@ -6,7 +6,7 @@ func _init() -> void:
 	var errors: Array[String] = []
 	_validate_opening_rhythm(errors)
 	_require_source("res://scripts/ui/smooth_block_piece_button.gd", ["func _get_drag_data", "touch_drag_started", "_clear_single_touch_preview"], "Block Puzzle single touch-preview ownership", errors)
-	_require_source("res://scripts/ui/premium_main_casual.gd", ["func _figma_level_tabs", "YOUR UNJAM JOURNEY", "func _level_column_count"], "Levels/Collection responsive ownership", errors)
+	_require_source("res://scripts/ui/premium_main_casual.gd", ["func _figma_level_tabs", "\"PROGRESS\"", "func _level_column_count"], "Levels/Collection responsive ownership", errors)
 	_require_source("res://scripts/ui/premium_live_hub.gd", ["func _refresh_progress_on_entry"], "Choose Game progress refresh", errors)
 	_require_source("res://scripts/ui/ux_shell_casual.gd", ["apply_theme_mode"], "active-game theme propagation", errors)
 	_require_source("res://scripts/ui/unjam_3d_backdrop.gd", ["dark_mode"], "3D backdrop dark theme", errors)
@@ -16,8 +16,8 @@ func _init() -> void:
 	_require_source("res://scripts/game/water_sort_casual.gd", ["func apply_theme_mode"], "Water Sort immediate dark theme", errors)
 	_require_source("res://scripts/game/block_puzzle_final_polish.gd", ["func apply_theme_mode", "BlockPuzzle3DEnvironment"], "Block Puzzle immediate dark theme", errors)
 	_require_source("res://scripts/ui/premium_home_direct_levels.gd", ["HomeWorldProgressRoot", "HomeWorldFlatGameLogo", "_add_world_progress(figma_canvas)", "progress_accent"], "Home Quick Switch world-progress synchronization", errors)
-	_require_source("res://scripts/ui/premium_home_direct_levels.gd", ["WORLD %d\" % world, Rect2(195, 598, 152, 26), 18", "LEVEL %d • %d%%", "NEXT • LEVEL %d", "CONTINUE\""], "Home concise journey readability", errors)
-	_require_source("res://scripts/ui/premium_main_casual.gd", ["SurfaceGlossSweep", "SurfaceWorldDepth", "DONE TODAY", "PLAY TODAY", "FIGMA_DARK_INK if _dark() else FIGMA_INK"], "gloss/independent-Daily/dark-level readability", errors)
+	_require_source("res://scripts/ui/premium_home_direct_levels.gd", ["WORLD %d\" % world, Rect2(195, 598, 152, 26), 18", "LEVEL %d • %d%%", "CONTINUE\"", "\"GAMES\""], "Home concise journey readability", errors)
+	_require_source("res://scripts/ui/premium_main_casual.gd", ["SurfaceGlossSweep", "SurfaceWorldDepth", "COMPLETED", "\"PLAY\"", "FIGMA_DARK_INK if _dark() else FIGMA_INK"], "gloss/independent-Daily/dark-level readability", errors)
 	_require_source("res://scripts/ui/ux_shell_casual.gd", ["TutorialStepCard", "Rect2(43,409,302,76)", "Rect2(43,598,302,58)"], "tutorial collision-safe layout", errors)
 	_require_source("res://scripts/ui/premium_result_overlay.gd", ["Rect2(27,76,334,570 if has_secondary else 500)", "Rect2(47,568,294,48)"], "result collision-safe layout", errors)
 	_require_source("res://scripts/game/game.gd", ["moves > par_moves", "moves > par_moves + 3", "assist_penalty"], "Rescue star move/assist scoring", errors)
@@ -27,7 +27,7 @@ func _init() -> void:
 	_require_source("res://scripts/ui/block_piece_button.gd", ["pedestal_rect", "pedestal_gloss"], "Block tray visual hierarchy", errors)
 	_require_source("res://scripts/game/water_sort_reference_motion.gd", ["tilt_degrees := 32.0 if MotionSystem.reduced() else 62.0"], "Water pour silhouette cohesion", errors)
 	_require_source("res://scripts/ui/water_tube_3d_motion.gd", ["Color(0.76, 0.95, 1.0, 0.44)", "Color(0.86, 0.995, 1.0, 0.54)"], "Water bottle glass readability", errors)
-	_require_source("res://scripts/ui/premium_main_casual.gd", ["Rect2(83,49,186,34), 14", "premium_button(\"PRIVACY OPTIONS\",14", "premium_button(\"HOW TO PLAY\",14"], "Header/Settings readable action text", errors)
+	_require_source("res://scripts/ui/premium_main_casual.gd", ["if not subtitle_text.strip_edges().is_empty()", "premium_button(\"PRIVACY\",14", "premium_button(\"HOW TO PLAY\",14"], "Header/Settings readable action text", errors)
 	_require_source("res://scripts/ui/ux_shell_casual.gd", ["premium_button(\"‹ BACK\",14", "premium_button(\"NEXT ›\",14"], "Tutorial navigation readability", errors)
 	_require_source("res://scripts/ui/monetization_hub_3d.gd", ["premium_button(\"▶ +50 COINS\",14", "premium_button(\"RESTORE PURCHASES\",14", "premium_button(buy_text,14"], "Shop readable action text", errors)
 	_require_source("res://scripts/ui/premium_result_overlay.gd", ["premium_button(secondary_text, 14"], "Result secondary action readability", errors)
@@ -37,7 +37,7 @@ func _init() -> void:
 	_require_source("res://scripts/ui/figma_reference_canvas.gd", ["second dark glyph", "font_shadow_color\", Color.TRANSPARENT", "shadow_offset_y\", 1", "shadow_outline_size\", 0"], "crisp scaled Figma text", errors)
 	_require_source("res://scripts/ui/premium_main_casual.gd", ["Rect2(34,label_y-7,210,30),14", "button_text_color,19,14", "theme_text,19,14"], "Settings compact text minimums", errors)
 	_require_source("res://scripts/ui/premium_main_casual.gd", ["BONUS  +%d DAILY • +%d GIFT", "Rect2(33,548,250,44)", "Rect2(37,y+8,184,18),14", "Rect2(37,y+48,192,15),12", "Rect2(251,y+13,96,44)", "state_text_color,\n\t\t\t12,\n\t\t\t13"], "Collection compact spacing/readability", errors)
-	_require_source("res://scripts/ui/premium_main_casual.gd", ["func _figma_daily_progress", "DailyProgressBar", "Each Daily is independent • play in any order", "Rect2(33,703,318,18), 12", "Rect2(17,610,354,116)"], "Daily independent progress panel", errors)
+	_require_source("res://scripts/ui/premium_main_casual.gd", ["func _figma_daily_progress", "DailyProgressBar", "Rect2(17,505,354,78)", "\"%d / 3 COMPLETE\"", "_figma_daily_card(canvas, \"rescue_rush\", 115"], "Daily independent progress panel", errors)
 
 	if not errors.is_empty():
 		for error in errors:

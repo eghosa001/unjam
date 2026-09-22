@@ -108,18 +108,18 @@ func build_ui() -> void:
 
 func _build_figma_block(canvas: Control) -> void:
 	var sky := PanelContainer.new()
-	sky.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(Color("#705cfa"), Color("#b094ff"), Color("#f0e8ff"), 34, Color("#b8d1e0"), 1, 0.55))
+	sky.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(Color("#81778f"), Color("#b8afbf"), Color("#ece7ed"), 34, Color("#b9b1c0"), 1, 0.28))
 	FigmaReferenceCanvas.set_rect(sky, -24.88, -128.55, 437.76, 947.35)
 	sky.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(sky)
 	var ground := PanelContainer.new()
-	ground.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(Color("#784fc2"), Color("#4a3087"), Color("#241a52"), 0, Color.TRANSPARENT, 0, 0.50))
+	ground.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(Color("#574b67"), Color("#40364e"), Color("#2b2435"), 0, Color.TRANSPARENT, 0, 0.26))
 	FigmaReferenceCanvas.set_rect(ground, -24.88, -23.04, 437.76, 460.20)
 	ground.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(ground)
 	var platform := Polygon2D.new()
 	platform.polygon = PackedVector2Array([Vector2(14, 434), Vector2(376, 434), Vector2(350, 86), Vector2(40, 86)])
-	platform.color = Color(0.64, 0.43, 0.91, 0.62)
+	platform.color = Color(0.50,0.43,0.58,0.40)
 	canvas.add_child(platform)
 
 	FigmaReferenceCanvas.add_shadow(canvas, Rect2(15,15,54,54), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
@@ -144,16 +144,15 @@ func _build_figma_block(canvas: Control) -> void:
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	FigmaReferenceCanvas.set_rect(title_label, 115, 15, 184, 30)
 	canvas.add_child(title_label)
-	var campaign := FigmaReferenceCanvas.label("CAMPAIGN", 12, Color(0.92,0.98,1.0), false)
-	campaign.name = "BlockCampaignSubtitle"
-	campaign.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	FigmaReferenceCanvas.set_rect(campaign, 115, 43, 184, 20)
-	canvas.add_child(campaign)
-
+	var level_meta := FigmaReferenceCanvas.label("", 12, Color(0.92,0.98,1.0), false)
+	level_meta.name = "BlockLevelMeta"
+	level_meta.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	FigmaReferenceCanvas.set_rect(level_meta, 115, 43, 184, 20)
+	canvas.add_child(level_meta)
 	var score_card := PanelContainer.new()
 	score_card.name = "BlockScoreCard"
 	FigmaReferenceCanvas.add_shadow(canvas, Rect2(17,85,354,58), 16, Color(0.02,0.10,0.18,0.22), 5, Vector2(0,4))
-	score_card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(Color("#9f52d8"), Color("#8f36d1"), Color("#752cab"), 16, Color(0.758,0.566,0.901,0.52), 1.4))
+	score_card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(Color("#55465f"), Color("#493a54"), Color("#3b3045"), 16, Color(0.72,0.52,1.0,0.38), 1.1,0.24))
 	FigmaReferenceCanvas.set_rect(score_card, 17, 85, 354, 58)
 	score_card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(score_card)
@@ -209,8 +208,8 @@ func _build_figma_block(canvas: Control) -> void:
 	tray.name = "BlockTray"
 	FigmaReferenceCanvas.add_shadow(canvas, Rect2(17,526,354,150), 22, Color(0.07,0.03,0.16,0.20), 6, Vector2(0,5))
 	tray.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(
-		Color("#fffaff"), Color("#fbf4ff"), Color("#eee1fb"), 22,
-		Color(0.88,0.68,1.0,0.78), 1.5, 0.42
+		Color("#fffdf8"), Color("#f7f2e9"), Color("#ece4d8"), 22,
+		Color(0.67,0.55,0.72,0.46), 1.1, 0.24
 	))
 	FigmaReferenceCanvas.set_rect(tray, 17, 526, 354, 150)
 	tray.mouse_filter = Control.MOUSE_FILTER_IGNORE

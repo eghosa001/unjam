@@ -7,7 +7,7 @@ func _init() -> void:
 	_require("res://scripts/ui/premium_home_direct_levels.gd", ["HomeNavTopGloss", "HomeNavActivePlate", "HomeNavGlyph_", "HomeGamesNavButton", "\"GAMES\", \"▦\"", "\"DAILY\", \"✦\"", "\"COLLECT\", \"◆\""], errors)
 	_require("res://scripts/ui/premium_home_overhaul.gd", ["Progress, stars, wallet", "_sync()"], errors)
 	_require("res://scripts/ui/premium_home_casual.gd", ["HomeCoinShopButton", "HomeGamesNavButton", "HomeDailyNavButton", "HomeCollectionNavButton", "HomeSettingsNavButton", "GAMES", "DAILY", "COLLECT"], errors)
-	_require("res://scripts/ui/premium_main_casual.gd", ["One challenge per game today", "DONE TODAY", "PLAY TODAY", "TODAY’S SORT", "\"Sound, motion & theme\"", "DailyAccent/", "game-tinted lacquer", "SurfaceWorldDepth", "SurfaceBackdropHaloTop", "SurfaceGlossSweep"], errors)
+	_require("res://scripts/ui/premium_main_casual.gd", ["COMPLETED", "\"PLAY\"", "DailyAccent/", "CLEAR THE ROUTE", "SORT THE COLOURS", "CLEAR THE BOARD", "SurfaceWorldDepth", "SurfaceBackdropHaloTop", "SurfaceGlossSweep", "\"SETTINGS\", \"\", \"\""], errors)
 	_require("res://scripts/ui/premium_design_system.gd", ["PremiumGlossBackdrop", "func _gloss_style", "func _install_gloss"], errors)
 	_require("res://scripts/ui/figma_reference_canvas.gd", ["Premium casual-game gloss", "lower_rolloff", "center_boost"], errors)
 	_require("res://scripts/ui/figma_reference_canvas.gd", ["TEXTURE_FILTER_LINEAR", "var image_size := 160", "Unjam3DTheme.strong_font()", "Unjam3DTheme.readable_font()", "shadow_offset_y\", 1", "shadow_outline_size\", 0", "func add_world_depth", "func add_scene_backdrop_layers", "func add_collectible_star", "func add_collectible_gem", "Localized key-light hotspot", "Premium 3D bevel side"], errors)
@@ -46,7 +46,9 @@ func _init() -> void:
 	_reject("res://scripts/game/block_puzzle.gd", ["No moves — new blocks", "pieces[0] = SHAPES[0].duplicate()"], errors)
 	_reject("res://scripts/ui/premium_home_direct_levels.gd", ["HomeLevelsNavButton", "HomeShopNavButton", "HomeNavSelectedDot", "HomeNavSelectedUnderline"], errors)
 	_reject("res://scripts/ui/premium_home_casual.gd", ["HomeLevelsNavButton", "HomeShopNavButton"], errors)
-	_reject("res://scripts/ui/premium_main_casual.gd", ["Daily level %d", "Three fresh challenges every day", "TODAY: %s"], errors)
+	_reject("res://scripts/ui/premium_main_casual.gd", ["Daily level %d", "Three fresh challenges every day", "TODAY: %s", "One challenge per game today", "Sound, motion & theme", "game-tinted lacquer", "Each Daily is independent • play in any order", "ACHIEVEMENT CABINET"], errors)
+	_reject("res://scripts/ui/premium_home_direct_levels.gd", ["NEXT • LEVEL %d", "QUICK SWITCH", "HomeSelectedGameLevel"], errors)
+	_reject("res://scripts/game/block_puzzle_3d.gd", ["BlockCampaignSubtitle", "\"CAMPAIGN\""], errors)
 	if not errors.is_empty():
 		for error in errors:
 			printerr(error)

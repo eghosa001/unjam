@@ -283,7 +283,7 @@ func refill_pieces() -> void:
 
 func render() -> void:
 	super.render()
-	var campaign_label := find_child("BlockCampaignSubtitle", true, false) as Label
+	var campaign_label := find_child("BlockLevelMeta", true, false) as Label
 	if title_label != null:
 		title_label.text = "BLOCK PUZZLE"
 	if daily_mode:
