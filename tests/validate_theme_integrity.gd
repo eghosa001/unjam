@@ -75,8 +75,12 @@ func _run() -> void:
 	main.call("build_home")
 	await _frames(6)
 	var light_bg := main.find_child("FigmaHomeViewportBackground", true, false) as ColorRect
-	if light_bg == null or light_bg.color.get_luminance() < 0.52 or light_bg.color.get_luminance() > 0.88:
-		return _fail("Light theme is outside the premium tinted-neutral range")
+	if light_bg == null:
+		return _fail("Light Home background is missing")
+	if light_bg.color.get_luminance() < 0.20 or light_bg.color.get_luminance() > 0.50:
+		return _fail("Light theme is outside the premium primary-blue luminance range")
+	if light_bg.color.b < light_bg.color.r + 0.12:
+		return _fail("Light theme drifted away from the approved primary-blue family")
 	if main.find_child("HomeLightGlassHorizon", true, false) == null:
 		return _fail("Home light mode lost its layered glass horizon")
 	var home_key := main.find_child("HomeKeyLight", true, false) as PanelContainer
@@ -93,8 +97,8 @@ func _run() -> void:
 	if main.find_child("SelectorLightGlassHorizon", true, false) == null:
 		return _fail("Choose Game light mode lost its layered glass horizon")
 	var selector_subtitle := main.find_child("SelectorSubtitle", true, false) as Label
-	if selector_subtitle == null or selector_subtitle.get_theme_color("font_color").get_luminance() > 0.46:
-		return _fail("Choose Game light-mode subtitle lost readable dark contrast")
+	if selector_subtitle == null or selector_subtitle.get_theme_color("font_color").get_luminance() < 0.70:
+		return _fail("Choose Game light-mode subtitle lost readable light-on-blue contrast")
 
 	main.call("build_settings")
 	await _frames(5)
@@ -110,7 +114,7 @@ func _run() -> void:
 		"res://scripts/ui/premium_live_hub_3d.gd",
 	]:
 		var source := _read(path)
-		for token in ["#eef2f5", "#e6eaee", "#d6dce2"]:
+		for token in ["#4f76b8", "#3f67aa", "#315596"]:
 			if not source.contains(token):
 				return _fail("Premium light scene palette contract missing in %s: %s" % [path, token])
 
