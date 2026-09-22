@@ -101,11 +101,53 @@ func spend(amount: int, reason: String, metadata: Dictionary = {}) -> bool:
 func grant(amount: int, reason: String, metadata: Dictionary = {}) -> int:
 	if amount <= 0 or reason.strip_edges().is_empty():
 		return balance()
+	var remaining := amount
+	var debt := maxi(0, int(SaveManager.data.get("purchase_coin_debt", 0)))
+	if debt > 0:
+		var settled := mini(remaining, debt)
+		remaining -= settled
+		debt -= settled
+		SaveManager.data.purchase_coin_debt = debt
+		SaveManager.save()
+		AnalyticsManager.track("purchase_refund_debt_settled", {
+			"settled": settled,
+			"remaining_debt": debt,
+			"source_reason": reason
+		})
+	if remaining <= 0:
+		return balance()
 	if SaveManager.has_method("economy_add_coins"):
-		SaveManager.call("economy_add_coins", amount)
+		SaveManager.call("economy_add_coins", remaining)
 	else:
-		SaveManager.add_coins(amount)
-	_emit_transaction(amount, reason, metadata)
+		SaveManager.add_coins(remaining)
+	_emit_transaction(remaining, reason, metadata)
+	return balance()
+
+func revoke_purchase_credit(amount: int, metadata: Dictionary = {}) -> int:
+	if amount <= 0:
+		return balance()
+	var current := balance()
+	var removed := mini(current, amount)
+	if removed > 0:
+		var spent := false
+		if SaveManager.has_method("economy_spend_coins"):
+			spent = bool(SaveManager.call("economy_spend_coins", removed))
+		else:
+			spent = bool(SaveManager.spend_coins(removed))
+		if spent:
+			_emit_transaction(-removed, "purchase_refund", metadata)
+		else:
+			removed = 0
+	var debt_add := amount - removed
+	if debt_add > 0:
+		SaveManager.data.purchase_coin_debt = maxi(0, int(SaveManager.data.get("purchase_coin_debt", 0))) + debt_add
+		SaveManager.save()
+	AnalyticsManager.track("purchase_refund_clawback", {
+		"requested": amount,
+		"removed": removed,
+		"debt_added": debt_add,
+		"remaining_debt": int(SaveManager.data.get("purchase_coin_debt", 0))
+	})
 	return balance()
 
 func notify_external_change(previous_balance: int, reason: String, metadata: Dictionary = {}) -> int:
