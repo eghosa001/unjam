@@ -221,7 +221,7 @@ static func _level_role(n: int, local: int) -> String:
 		6: return "recovery"
 		7: return "build"
 		8: return "stretch"
-		9: return "challenge"
+		9: return "recovery"
 		_: return "peak"
 
 static func _paced_range_target(bounds: Array[int], local: int, role: String, n: int, salt: int) -> int:
