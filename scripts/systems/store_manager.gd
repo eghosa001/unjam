@@ -50,14 +50,18 @@ func provider_ready() -> bool:
 	return provider != null and is_instance_valid(provider)
 
 func verifier_ready() -> bool:
-	var endpoint := String(ProjectSettings.get_setting("monetization/purchase_verification_url", ""))
-	return endpoint.begins_with("https://")
+	var supabase_url := String(ProjectSettings.get_setting("monetization/supabase_url", "")).strip_edges()
+	var publishable_key := String(ProjectSettings.get_setting("monetization/supabase_publishable_key", "")).strip_edges()
+	return supabase_url.begins_with("https://") and ".supabase.co" in supabase_url and not publishable_key.is_empty()
 
 func release_configuration_issues() -> Array[String]:
 	var issues: Array[String] = []
-	var verification_url := String(ProjectSettings.get_setting("monetization/purchase_verification_url", ""))
-	if not verification_url.begins_with("https://"):
-		issues.append("Secure purchase verification URL is not configured with HTTPS")
+	var supabase_url := String(ProjectSettings.get_setting("monetization/supabase_url", "")).strip_edges()
+	var publishable_key := String(ProjectSettings.get_setting("monetization/supabase_publishable_key", "")).strip_edges()
+	if not supabase_url.begins_with("https://") or not ".supabase.co" in supabase_url:
+		issues.append("Supabase monetization URL is not configured")
+	if publishable_key.is_empty():
+		issues.append("Supabase publishable key is not configured")
 	var privacy_url := String(ProjectSettings.get_setting("monetization/privacy_policy_url", ""))
 	if not privacy_url.begins_with("https://"):
 		issues.append("Privacy policy URL is not configured with HTTPS")
