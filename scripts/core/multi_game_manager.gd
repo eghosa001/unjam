@@ -259,9 +259,30 @@ func complete_level(id:String,n:int,stars:int,coin_reward:=25)->Dictionary:
   var wk:=str(int(n/badge_span));var b:Array=g.get("world_badges",[])
   if wk not in b:b.append(wk);g["world_badges"]=b;rewards.world_badge=true;SaveManager.data["coins"]=int(SaveManager.data.get("coins",0))+250;SaveManager.data["prestige_points"]=int(SaveManager.data.get("prestige_points",0))+5
  all[id]=g;SaveManager.data["game_progress"]=all;_advance_tasks(id,stars);SaveManager.save();var difficulty:=difficulty_for_game(id,n);RetentionManager.record_level_complete(n,stars,0,0,0,"",-1,id,difficulty);AnalyticsManager.track("multi_game_level_complete",{"game":id,"level":n,"stars":stars,"difficulty":difficulty});return rewards
+func _persist_checkpoint_deferred()->void:
+ if SaveManager.has_method("save_deferred"):SaveManager.call("save_deferred")
+ else:SaveManager.save()
+
 func save_checkpoint(id:String,data:Dictionary)->void:
- ensure_state();var runs:Dictionary=SaveManager.data.get("multi_active_runs",{});var payload:=data.duplicate(true);payload["game"]=id;payload["saved_at"]=int(Time.get_unix_time_from_system());runs[id]=payload;SaveManager.data["multi_active_runs"]=runs;SaveManager.save()
+ ensure_state()
+ var runs:Dictionary=SaveManager.data.get("multi_active_runs",{})
+ var payload:=data.duplicate(true)
+ payload["game"]=id
+ var existing=runs.get(id,{})
+ if existing is Dictionary:
+  var comparable:Dictionary=(existing as Dictionary).duplicate(true)
+  comparable.erase("saved_at")
+  if comparable==payload:return
+ payload["saved_at"]=int(Time.get_unix_time_from_system())
+ runs[id]=payload
+ SaveManager.data["multi_active_runs"]=runs
+ _persist_checkpoint_deferred()
 func checkpoint(id:String)->Dictionary:
  ensure_state();var runs:Dictionary=SaveManager.data.get("multi_active_runs",{});var raw=runs.get(id,{});return raw.duplicate(true) if raw is Dictionary else {}
 func clear_checkpoint(id:String)->void:
- ensure_state();var runs:Dictionary=SaveManager.data.get("multi_active_runs",{});runs.erase(id);SaveManager.data["multi_active_runs"]=runs;SaveManager.save()
+ ensure_state()
+ var runs:Dictionary=SaveManager.data.get("multi_active_runs",{})
+ if not runs.has(id):return
+ runs.erase(id)
+ SaveManager.data["multi_active_runs"]=runs
+ _persist_checkpoint_deferred()
