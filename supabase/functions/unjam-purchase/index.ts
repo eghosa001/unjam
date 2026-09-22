@@ -120,6 +120,7 @@ Deno.serve(async (req) => {
 
   if (input?.action === "readiness") {
     const dependencies = { postgres: false, google_play: false };
+    let googlePlayDetail = "";
     try {
       const { error } = await admin.from("play_purchase_claims").select("token_hash").limit(1);
       dependencies.postgres = !error;
@@ -127,9 +128,19 @@ Deno.serve(async (req) => {
     try {
       const probe = await playResponse(PACKAGE_NAME, "unjam-readiness-probe-invalid-token");
       dependencies.google_play = probe.ok || probe.status === 400 || probe.status === 404;
-    } catch {}
+      if (!dependencies.google_play) googlePlayDetail = `play_api_http_${probe.status}`;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      if (message.includes("service account secrets missing")) {
+        googlePlayDetail = "service_account_secrets_missing";
+      } else if (message.includes("OAuth token exchange failed")) {
+        googlePlayDetail = "google_oauth_token_exchange_failed";
+      } else {
+        googlePlayDetail = "google_play_probe_failed";
+      }
+    }
     const ok = dependencies.postgres && dependencies.google_play;
-    return response({ ok, dependencies, package_name: PACKAGE_NAME }, ok ? 200 : 503);
+    return response({ ok, dependencies, google_play_detail: googlePlayDetail, package_name: PACKAGE_NAME }, ok ? 200 : 503);
   }
 
   const errorMessage = validate(input);

@@ -47,7 +47,8 @@ Still account-side / external:
 - [x] Purchase verification is idempotent by SHA-256 purchase-token fingerprint in Supabase Postgres. `unjam_starter_pack` and other non-consumable entitlements cannot be granted twice from duplicate callbacks when the backend is live.
 - [x] Apply `supabase/migrations/20260922_create_purchase_ledger.sql` to the selected Supabase project.
 - [x] Deploy `supabase/functions/unjam-purchase` to that project.
-- [ ] Store `GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL` and `GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY` only as Supabase Edge Function secrets. They are used solely to call the Google Play Developer API; Cloud Run and Firestore are not used.
+- [x] Store `GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL` and `GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY` only as Supabase Edge Function secrets. Live readiness reaches the Google Play API, confirming the credentials are present and OAuth succeeds; Cloud Run and Firestore are not used.
+- [ ] In Play Console, grant that service-account identity access to `com.eghosa.unjamgam` with **View financial data** (or the account-level equivalent **View financial data, orders and cancellation survey responses**). The live Purchases API probe currently returns HTTP 403 until this permission is granted.
 - [ ] Create `unjam_remove_ads`, `unjam_starter_pack`, `unjam_coins_500`, `unjam_coins_1500`, and `unjam_coins_4000` as one-time products in the **new** Play Console app.
 - [ ] Configure the matching product prices in the new Play Console app.
 - [ ] Complete Play Console Data Safety based on the exact production SDK set.
