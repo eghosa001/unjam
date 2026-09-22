@@ -104,7 +104,7 @@ func _add_frame_background(canvas: Control) -> void:
 	RefCanvas.set_rect(bg, 0, 0, 390, 844)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(bg)
-	RefCanvas.add_world_depth(canvas, Color("#59636f") if _home_dark() else Color("#9aa4ae"), _home_dark(), 0.12 if _home_dark() else 0.08, "HomeWorldDepth")
+	RefCanvas.add_world_depth(canvas, Color("#59636f") if _home_dark() else Color("#9aa4ae"), _home_dark(), 0.0, "HomeWorldDepth")
 	RefCanvas.add_scene_backdrop_layers(canvas, Color("#68737f") if _home_dark() else Color("#a9b1ba"), _home_dark(), "Home")
 	var home_key_light := canvas.get_node_or_null("HomeKeyLight")
 	var home_accent_glow := canvas.get_node_or_null("HomeAccentGlow")
@@ -119,7 +119,7 @@ func _add_frame_background(canvas: Control) -> void:
 	halo_a.name = "HomeBackdropHaloTop"
 	halo_a.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	halo_a.modulate.a = 0.22 if not _home_dark() else 0.18
-	halo_a.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color("#8fb9bd") if not _home_dark() else Color("#52758a"), 110))
+	halo_a.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color("#c4c9cf") if not _home_dark() else Color("#59636d"), 110))
 	RefCanvas.set_rect(halo_a, 252, -72, 208, 208)
 	canvas.add_child(halo_a)
 	canvas.move_child(halo_a, 1)
@@ -128,7 +128,7 @@ func _add_frame_background(canvas: Control) -> void:
 	halo_b.name = "HomeBackdropHaloBottom"
 	halo_b.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	halo_b.modulate.a = 0.18 if not _home_dark() else 0.15
-	halo_b.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color("#9fb2c7") if not _home_dark() else Color("#476579"), 105))
+	halo_b.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color("#b8bec5") if not _home_dark() else Color("#505a64"), 105))
 	RefCanvas.set_rect(halo_b, -72, 610, 194, 194)
 	canvas.add_child(halo_b)
 	canvas.move_child(halo_b, 1)
@@ -136,7 +136,7 @@ func _add_frame_background(canvas: Control) -> void:
 	var ribbon := Polygon2D.new()
 	ribbon.name = "HomeBackdropRibbon"
 	ribbon.polygon = PackedVector2Array([Vector2(-30,310),Vector2(420,210),Vector2(420,280),Vector2(-30,380)])
-	ribbon.color = Color("#6f98a3", 0.075 if not _home_dark() else 0.10)
+	ribbon.color = Color("#8e969f", 0.070 if not _home_dark() else 0.085)
 	canvas.add_child(ribbon)
 	canvas.move_child(ribbon, 1)
 
