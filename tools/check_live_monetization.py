@@ -106,7 +106,7 @@ def main() -> int:
         os.environ.get("UNJAM_SUPABASE_PUBLISHABLE_KEY", "")
         or project_setting("supabase_publishable_key")
     ).strip()
-    developer_website = os.environ.get("UNJAM_DEVELOPER_WEBSITE_URL", "").strip()
+    developer_website = (os.environ.get("UNJAM_DEVELOPER_WEBSITE_URL", "") or project_setting("developer_website_url")).strip()
 
     parsed_supabase = require_https_url(supabase_url, "UNJAM_SUPABASE_URL")
     if not parsed_supabase.hostname.endswith(".supabase.co"):
