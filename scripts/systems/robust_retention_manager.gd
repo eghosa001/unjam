@@ -3,14 +3,15 @@ extends "res://scripts/systems/retention_manager.gd"
 const EVENT_DAILY_CAP := 80
 
 func ensure_state() -> void:
-	_ensure_robust_fields()
-	_settle_previous_week_if_needed()
+	var changed := _ensure_robust_fields()
+	changed = _settle_previous_week_if_needed() or changed
 	super.ensure_state()
-	_ensure_robust_fields()
-	_roll_robust_tracking()
-	SaveManager.save()
+	changed = _ensure_robust_fields() or changed
+	changed = _roll_robust_tracking() or changed
+	if changed:
+		SaveManager.save()
 
-func _ensure_robust_fields() -> void:
+func _ensure_robust_fields() -> bool:
 	var defaults: Dictionary = {
 		"weekly_settlement_key": "",
 		"last_week_result": {},
@@ -21,27 +22,36 @@ func _ensure_robust_fields() -> void:
 		"event_daily_key": "",
 		"event_daily_earned": 0
 	}
+	var changed := false
 	for key in defaults:
 		if not SaveManager.data.has(key):
-			SaveManager.data[key] = defaults[key]
+			var value = defaults[key]
+			SaveManager.data[key] = value.duplicate(true) if value is Array or value is Dictionary else value
+			changed = true
+	return changed
 
-func _roll_robust_tracking() -> void:
+func _roll_robust_tracking() -> bool:
+	var changed := false
 	var current_week: String = week_key()
 	if String(SaveManager.data.weekly_tracking_key) != current_week:
 		SaveManager.data.weekly_tracking_key = current_week
 		SaveManager.data.weekly_played_levels = []
+		changed = true
 	var today: String = today_key()
 	if String(SaveManager.data.daily_unique_date) != today:
 		SaveManager.data.daily_unique_date = today
 		SaveManager.data.daily_unique_levels = []
+		changed = true
 	if String(SaveManager.data.event_daily_key) != today:
 		SaveManager.data.event_daily_key = today
 		SaveManager.data.event_daily_earned = 0
+		changed = true
+	return changed
 
-func _settle_previous_week_if_needed() -> void:
+func _settle_previous_week_if_needed() -> bool:
 	var old_key: String = String(SaveManager.data.get("weekly_key", ""))
 	if old_key.is_empty() or old_key == week_key() or String(SaveManager.data.weekly_settlement_key) == old_key:
-		return
+		return false
 	var points: int = maxi(0, int(SaveManager.data.get("weekly_points", 0)))
 	var rank: int = _rank_for_week(old_key, points)
 	var coins: int = 100
@@ -60,6 +70,7 @@ func _settle_previous_week_if_needed() -> void:
 	SaveManager.data.weekly_settlement_key = old_key
 	SaveManager.data.last_week_result = {"week": old_key, "rank": rank, "points": points, "coins": coins, "prestige": prestige}
 	retention_reward.emit({"type":"weekly_settlement", "title":"WEEKLY LEAGUE #%d" % rank, "coins":coins, "prestige":prestige})
+	return true
 
 func _rank_for_week(key: String, points: int) -> int:
 	var rank: int = 1
