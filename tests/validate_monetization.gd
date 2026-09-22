@@ -35,6 +35,9 @@ func run() -> void:
 	var original_purchased: Array = (save_manager.data.get("purchased_products", []) as Array).duplicate(true)
 	var original_tokens: Array = (save_manager.data.get("processed_purchase_tokens", []) as Array).duplicate(true)
 	var original_claims: Dictionary = (save_manager.data.get("purchase_claim_ids", {}) as Dictionary).duplicate(true)
+	var original_install_id := String(save_manager.data.get("purchase_install_id", ""))
+	var original_revocations: Array = (save_manager.data.get("processed_purchase_revocations", []) as Array).duplicate(true)
+	var original_purchase_debt := int(save_manager.data.get("purchase_coin_debt", 0))
 	var original_decorations: Array = (save_manager.data.get("decorations", []) as Array).duplicate(true)
 	var original_sound := bool(save_manager.data.get("sound", true))
 	var original_vibration := bool(save_manager.data.get("vibration", true))
@@ -102,6 +105,18 @@ func run() -> void:
 	main.queue_free()
 	await _frames(2)
 
+	# Refunded consumables must never create a negative wallet. Any uncovered
+	# amount becomes debt and is automatically settled before future coin grants.
+	save_manager.data.coins = 100
+	save_manager.data.purchase_coin_debt = 0
+	economy.revoke_purchase_credit(150, {"product": store_manager.PRODUCT_COINS_SMALL, "qa": true})
+	expect_true(int(save_manager.data.get("coins", -1)) == 0, "Refund clawback drove the wallet below zero")
+	expect_true(int(save_manager.data.get("purchase_coin_debt", -1)) == 50, "Refund remainder was not recorded as debt")
+	economy.grant(30, "qa_refund_debt_settlement")
+	expect_true(int(save_manager.data.get("coins", -1)) == 0 and int(save_manager.data.get("purchase_coin_debt", -1)) == 20, "Future reward did not settle refund debt first")
+	economy.grant(40, "qa_refund_debt_settlement")
+	expect_true(int(save_manager.data.get("coins", -1)) == 20 and int(save_manager.data.get("purchase_coin_debt", -1)) == 0, "Refund debt did not settle cleanly")
+
 	# Difficulty must stay varied but have a genuinely higher late-game baseline.
 	expect_true(String(multi_game.difficulty_for_level(1)) == "easy", "Level 1 should remain easy onboarding")
 	expect_true(String(multi_game.difficulty_for_level(25)) == "milestone", "Level 25 milestone cadence regressed")
@@ -134,6 +149,9 @@ func run() -> void:
 	save_manager.data.processed_purchase_tokens = [qa_token_fingerprint]
 	save_manager.data.purchase_claim_ids = {}
 	save_manager.data.purchase_claim_ids[qa_token_fingerprint] = "qa-reset-claim-id"
+	save_manager.data.purchase_install_id = "qa-install-1234567890abcdef"
+	save_manager.data.processed_purchase_revocations = ["b".repeat(64)]
+	save_manager.data.purchase_coin_debt = 321
 	save_manager.data.lifetime_purchased_coins = 4321
 	save_manager.call("reset_progress")
 	expect_true(int(save_manager.data.get("coins", -1)) == 777, "Reset Progress erased the wallet, which can contain paid coins")
@@ -151,6 +169,9 @@ func run() -> void:
 	expect_true(store_manager.PRODUCT_STARTER_PACK in (save_manager.data.get("purchased_products", []) as Array), "Reset Progress erased the purchased Starter Pack record")
 	expect_true(qa_token_fingerprint in (save_manager.data.get("processed_purchase_tokens", []) as Array), "Reset Progress erased processed purchase-token fingerprints")
 	expect_true(String((save_manager.data.get("purchase_claim_ids", {}) as Dictionary).get(qa_token_fingerprint, "")) == "qa-reset-claim-id", "Reset Progress erased the purchase claim retry ledger")
+	expect_true(String(save_manager.data.get("purchase_install_id", "")) == "qa-install-1234567890abcdef", "Reset Progress erased the purchase installation id")
+	expect_true("b".repeat(64) in (save_manager.data.get("processed_purchase_revocations", []) as Array), "Reset Progress erased processed refund fingerprints")
+	expect_true(int(save_manager.data.get("purchase_coin_debt", 0)) == 321, "Reset Progress erased refund debt")
 	expect_true(int(save_manager.data.get("lifetime_purchased_coins", 0)) == 4321, "Reset Progress erased lifetime purchased-coin accounting")
 
 	# Restore persistent QA state.
@@ -163,6 +184,9 @@ func run() -> void:
 	save_manager.data.purchased_products = original_purchased
 	save_manager.data.processed_purchase_tokens = original_tokens
 	save_manager.data.purchase_claim_ids = original_claims
+	save_manager.data.purchase_install_id = original_install_id
+	save_manager.data.processed_purchase_revocations = original_revocations
+	save_manager.data.purchase_coin_debt = original_purchase_debt
 	save_manager.data.decorations = original_decorations
 	save_manager.data.sound = original_sound
 	save_manager.data.vibration = original_vibration
