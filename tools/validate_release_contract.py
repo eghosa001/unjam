@@ -59,8 +59,6 @@ def main() -> int:
         'sha256sum',
         'validate_purchase_claim_protocol.py',
         'Validate Supabase purchase backend contract',
-        'UNJAM_SUPABASE_URL',
-        'UNJAM_SUPABASE_PUBLISHABLE_KEY',
         'UNJAM_DEVELOPER_WEBSITE_URL',
         'check_live_monetization.py',
         "targetSdkVersion:'36'",
@@ -91,8 +89,8 @@ def main() -> int:
             errors.append(f'export preset does not preserve fresh-app/monetization contract: {token}')
 
     for token in (
-        'supabase_url=""',
-        'supabase_publishable_key=""',
+        'supabase_url="https://sotwqajpcyjlpxntjddr.supabase.co"',
+        'supabase_publishable_key="sb_publishable_',
         'res://addons/admob/plugin.cfg',
         'res://addons/GodotGooglePlayBilling/plugin.cfg',
         'ca-app-pub-7517898921176341~1892369383',
