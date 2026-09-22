@@ -20,6 +20,7 @@ Each game has its own progression, stars and a deterministic 10,000-level campai
 - Save recovery/sanitization
 - Hints, undo/restart where appropriate and result overlays
 - Ad, purchase, privacy and analytics abstraction layers
+- Supabase Edge Function + Postgres purchase-verification backend; no Cloud Run or Firestore
 - Automated campaign, gameplay, economy, monetization, robustness, motion, 3D/idle-cost and viewport validation
 - GitHub Actions import, test, rendered visual-audit, boot and Android export gates
 
@@ -66,7 +67,7 @@ The package ID is intentionally unchanged while the deleted Play app is checked 
 
 A **debug APK is for installation/testing only**. Google Play deployment must use a release AAB signed with the owner's private upload key. For the new listing, use a newly generated upload key and store its SHA-1 in the GitHub Actions secret `UNJAM_ANDROID_UPLOAD_SHA1`. Store the keystore itself and its credentials only in protected secrets; never commit them.
 
-Before public rollout, complete `RELEASE_CHECKLIST.md`, including Play App Signing, the new upload-key secrets, real AdMob/Play Billing configuration, purchase verification, privacy/data-safety declarations, store listing assets and testing requirements.
+Before public rollout, complete `RELEASE_CHECKLIST.md`, including Play App Signing, the new upload-key secrets, real AdMob/Play Billing configuration, Supabase purchase verification, privacy/data-safety declarations, store listing assets and testing requirements.
 
 ## Project structure
 
@@ -77,6 +78,7 @@ Before public rollout, complete `RELEASE_CHECKLIST.md`, including Play App Signi
 - `data/levels/` — handcrafted Rescue Rush overrides
 - `tests/` — automated validators and progression checks
 - `tools/` — development-only utilities
+- `supabase/` — Postgres purchase ledger migration and Edge Function verifier
 - `.github/workflows/` — CI and Android export validation
 
 ## Release status
