@@ -50,11 +50,20 @@ func _rescue_refresh_is_settled() -> bool:
 	if not bool(game.get("_board_has_rendered")):
 		game.queue_free()
 		return _fail("Rescue Rush did not mark initial board render complete")
-	game.call("render_board")
 	var board = game.get("board_grid") as GridContainer
 	if board == null:
 		game.queue_free()
 		return _fail("Rescue Rush board missing")
+	var before: Array[int] = []
+	for child in board.get_children():
+		before.append(child.get_instance_id())
+	game.call("render_board")
+	var after: Array[int] = []
+	for child in board.get_children():
+		after.append(child.get_instance_id())
+	if before != after:
+		game.queue_free()
+		return _fail("Rescue Rush rebuilt board controls during an unchanged refresh")
 	for child in board.get_children():
 		if child is Control:
 			var control := child as Control
