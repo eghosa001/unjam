@@ -11,8 +11,8 @@ func _initialize() -> void:
 	else:
 		if not icon.contains("LauncherSafeForeground"):
 			failures.append("Legacy launcher foreground safe-zone wrapper is missing")
-		if not icon.contains("scale(.78)"):
-			failures.append("Legacy launcher foreground must retain the approved 78% safe scale")
+		if not icon.contains("translate(245 269) scale(.76)"):
+			failures.append("Legacy launcher foreground lost its approved optical-centering transform")
 		if icon.contains(">UNJAM<"):
 			failures.append("Launcher icon must remain symbol-only without app-name text")
 
@@ -21,8 +21,8 @@ func _initialize() -> void:
 	else:
 		if not adaptive.contains("AdaptiveSafeZone"):
 			failures.append("Adaptive launcher safe-zone group is missing")
-		if not adaptive.contains("scale(.86)"):
-			failures.append("Adaptive launcher foreground must retain extra mask breathing room")
+		if not adaptive.contains("scale(.84)") or not adaptive.contains("translate(53 80) scale(.80)"):
+			failures.append("Adaptive launcher foreground lost its optical-centering safe transform")
 		if adaptive.contains(">UNJAM<"):
 			failures.append("Adaptive launcher foreground must remain symbol-only")
 
