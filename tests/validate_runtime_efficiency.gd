@@ -93,11 +93,14 @@ func _hot_paths_stay_lightweight() -> bool:
 	if not "save_deferred" in quality_fn:
 		return _fail("Adaptive quality persistence is synchronous again")
 	var retention_complete := retention.get_slice("func record_level_complete", 1).get_slice("func record_level_fail", 0)
-	var retention_fail := retention.get_slice("func record_level_fail", 1).get_slice("func _increment_mission", 0)
+	var retention_fail := retention.get_slice("func record_level_fail", 1).get_slice("func _persist_gameplay_state_deferred", 0)
+	var retention_persist := retention.get_slice("func _persist_gameplay_state_deferred", 1).get_slice("func _increment_mission", 0)
 	if "SaveManager.save()" in retention_complete or not "_persist_gameplay_state_deferred()" in retention_complete:
 		return _fail("Level-complete retention regressed to a synchronous second save")
 	if "SaveManager.save()" in retention_fail or not "_persist_gameplay_state_deferred()" in retention_fail:
 		return _fail("Level-fail retention regressed to synchronous persistence")
+	if not "save_deferred" in retention_persist:
+		return _fail("Retention persistence helper is not using the coalesced save path")
 	return true
 
 func _dead_helpers_are_gone() -> bool:
