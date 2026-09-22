@@ -303,7 +303,10 @@ func _persist_checkpoint_deferred()->void:
 func save_checkpoint(id:String,data:Dictionary)->void:
  ensure_state()
  var runs:Dictionary=SaveManager.data.get("multi_active_runs",{})
- var payload:=data.duplicate(true)
+ # Gameplay callers already pass detached checkpoint arrays/dictionaries.
+ # A second recursive duplicate here doubled per-move allocation cost; keep only
+ # a shallow top-level copy while checkpoint() still deep-copies on read.
+ var payload:=data.duplicate(false)
  payload["game"]=id
  var existing=runs.get(id,{})
  if existing is Dictionary:
