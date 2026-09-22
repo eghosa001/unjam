@@ -21,9 +21,9 @@ const DARK_BOTTOM := Color("#29465b")
 const DARK_CARD := Color("#223b50")
 const DARK_INK := Color("#eef7ff")
 const DARK_MUTED := Color("#b6c7d6")
-const SCENE_TOP := Color("#c9f4fb")
-const SCENE_MID := Color("#89d4e8")
-const SCENE_BOTTOM := Color("#4b9fc7")
+const SCENE_TOP := Color("#d7f8ff")
+const SCENE_MID := Color("#72c7dc")
+const SCENE_BOTTOM := Color("#287fa8")
 const DARK_SCENE_TOP := Color("#101932")
 const DARK_SCENE_MID := Color("#0b1631")
 const DARK_SCENE_BOTTOM := Color("#060d22")
@@ -104,7 +104,7 @@ func _add_frame_background(canvas: Control) -> void:
 	RefCanvas.set_rect(bg, 0, 0, 390, 844)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(bg)
-	RefCanvas.add_world_depth(canvas, Unjam3DTheme.game_accent(selected_game), _home_dark(), 0.18 if _home_dark() else 0.24, "HomeWorldDepth")
+	RefCanvas.add_world_depth(canvas, Unjam3DTheme.game_accent(selected_game), _home_dark(), 0.18 if _home_dark() else 0.11, "HomeWorldDepth")
 	RefCanvas.add_scene_backdrop_layers(canvas, Unjam3DTheme.game_accent(selected_game), _home_dark(), "Home")
 	var home_key_light := canvas.get_node_or_null("HomeKeyLight")
 	var home_accent_glow := canvas.get_node_or_null("HomeAccentGlow")
@@ -147,7 +147,7 @@ func _add_hero(canvas: Control) -> void:
 	if _home_dark():
 		hero.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#162a40"), Color("#12243a"), Color("#0f1d30"), 20, Color(0.24,0.62,0.88,0.62), 1.2))
 	else:
-		hero.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#f4fdff"), Color("#d9f1f7"), Color("#b8dae5"), 20, Color("#70bfd9"), 1.5, 0.43))
+		hero.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#f8feff"), Color("#d7ebf0"), Color("#a9c8d2"), 20, Color("#4fa1bd"), 1.7, 0.40))
 	RefCanvas.set_rect(hero, 21, 121, 346, 224)
 	hero.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(hero)
@@ -184,7 +184,7 @@ func _add_hero_preview(canvas: Control, game_id: String) -> void:
 	canvas.add_child(preview_root)
 	var stage := PanelContainer.new()
 	stage.name = "FigmaHomeHeroPreview"
-	var stage_mid := Color(0.12,0.24,0.34,0.78) if _home_dark() else Color(0.87,0.96,0.98,0.62)
+	var stage_mid := Color(0.12,0.24,0.34,0.78) if _home_dark() else Color("#c7e1e9")
 	stage.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(stage_mid.lightened(0.15), stage_mid, stage_mid.darkened(0.12), 16, Color(1,1,1,0.20), 1, 0.40))
 	RefCanvas.set_rect(stage, 229, 144, 115, 136)
 	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -277,8 +277,8 @@ func _add_world_progress(canvas: Control) -> void:
 	RefCanvas.add_shadow(root, showcase_rect, 20, Color(0.01,0.06,0.12,0.25 if _home_dark() else 0.16), 6, Vector2(0,5))
 	var panel := PanelContainer.new()
 	panel.name = "HomeWorldProgress"
-	var fill := Color("#20384b") if _home_dark() else Color("#e4eeec")
-	var edge := Color(accent,0.76 if _home_dark() else 0.50)
+	var fill := Color("#20384b") if _home_dark() else Color("#d5e7ea")
+	var edge := Color(accent,0.76 if _home_dark() else 0.66)
 	panel.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(fill.lightened(0.18), fill, fill.darkened(0.15), 20, edge, 1.5, 0.46))
 	RefCanvas.set_rect(panel, showcase_rect.position.x, showcase_rect.position.y, showcase_rect.size.x, showcase_rect.size.y)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -289,7 +289,7 @@ func _add_world_progress(canvas: Control) -> void:
 	# mode after its initial frames, so the Home screen keeps its idle budget.
 	var art_stage := PanelContainer.new()
 	art_stage.name = "HomeWorldShowcaseStage"
-	var stage_fill := Color("#13263b") if _home_dark() else accent.lightened(0.84)
+	var stage_fill := Color("#13263b") if _home_dark() else Color("#cfe5ea").lerp(accent.lightened(0.76), 0.30)
 	art_stage.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(stage_fill.lightened(0.10), stage_fill, stage_fill.darkened(0.15), 16, Color(accent,0.42), 1.0, 0.42))
 	RefCanvas.set_rect(art_stage, 31, 592, 150, 130)
 	art_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -334,8 +334,8 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 	var shell := PanelContainer.new()
 	shell.name = "HomeBottomNav3D"
 	RefCanvas.add_shadow(canvas, Rect2(13, 757, 362, 70), 18, Color(0.02, 0.10, 0.18, 0.16), 5, Vector2(0, 4))
-	var nav_fill := Color(0.055,0.085,0.15,0.985) if _home_dark() else Color("#e8f6fa")
-	var nav_border := Color(0.24,0.39,0.54,0.94) if _home_dark() else Color("#83c7db")
+	var nav_fill := Color(0.055,0.085,0.15,0.985) if _home_dark() else Color("#d9edf3")
+	var nav_border := Color(0.24,0.39,0.54,0.94) if _home_dark() else Color("#5ca7c2")
 	shell.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(nav_fill.lightened(0.12), nav_fill, nav_fill.darkened(0.10), 18, nav_border, 1, 0.40))
 	RefCanvas.set_rect(shell, 13, 757, 362, 70)
 	shell.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -471,7 +471,7 @@ func _open_daily_games() -> void:
 
 func _switch_card_style(game_id: String, accent: Color) -> StyleBox:
 	var selected := game_id == selected_game
-	var card_fill := accent.darkened(0.64) if selected and _home_dark() else (DARK_CARD if _home_dark() else (accent.lightened(0.88) if selected else OFF_WHITE))
+	var card_fill := accent.darkened(0.64) if selected and _home_dark() else (DARK_CARD if _home_dark() else (accent.lightened(0.76) if selected else Color("#d9eaf0")))
 	var border_width := 2.4 if selected else 1.25
 	return RefCanvas.rounded_gradient3(
 		card_fill.lightened(0.04),
