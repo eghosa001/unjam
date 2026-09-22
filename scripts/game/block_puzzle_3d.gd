@@ -144,6 +144,11 @@ func _build_figma_block(canvas: Control) -> void:
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	FigmaReferenceCanvas.set_rect(title_label, 115, 15, 184, 30)
 	canvas.add_child(title_label)
+	var level_meta := FigmaReferenceCanvas.label("", 12, Color(0.92,0.98,1.0), false)
+	level_meta.name = "BlockLevelMeta"
+	level_meta.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	FigmaReferenceCanvas.set_rect(level_meta, 115, 43, 184, 20)
+	canvas.add_child(level_meta)
 	var score_card := PanelContainer.new()
 	score_card.name = "BlockScoreCard"
 	FigmaReferenceCanvas.add_shadow(canvas, Rect2(17,85,354,58), 16, Color(0.02,0.10,0.18,0.22), 5, Vector2(0,4))
