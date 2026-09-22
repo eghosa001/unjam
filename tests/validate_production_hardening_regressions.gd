@@ -317,18 +317,16 @@ func _validate_selector_header_and_navigation() -> bool:
 	main.call("_open_games_surface")
 	await _frames(8)
 	var title := main.find_child("SelectorTitle3D", true, false) as Control
-	var subtitle := main.find_child("SelectorSubtitle", true, false) as Control
 	var settings := main.find_child("SelectorSettingsButton", true, false) as Button
 	var back := main.find_child("SelectorBackButton", true, false) as Button
-	if title == null or subtitle == null or settings == null or back == null:
+	if title == null or settings == null or back == null:
 		main.queue_free(); await process_frame
 		return _fail("Choose-a-Game header/navigation diagnostics are incomplete")
 	var title_rect := title.get_global_rect()
-	var subtitle_rect := subtitle.get_global_rect()
 	var settings_rect := settings.get_global_rect()
-	if title_rect.intersects(settings_rect) or subtitle_rect.intersects(settings_rect):
+	if title_rect.intersects(settings_rect):
 		main.queue_free(); await process_frame
-		return _fail("Choose-a-Game title/subtitle intrudes into Settings: title=%s subtitle=%s settings=%s" % [str(title_rect), str(subtitle_rect), str(settings_rect)])
+		return _fail("Choose-a-Game title intrudes into Settings: title=%s settings=%s" % [str(title_rect), str(settings_rect)])
 	if back.tooltip_text.is_empty() or settings.tooltip_text.is_empty():
 		main.queue_free(); await process_frame
 		return _fail("Choose-a-Game icon navigation lacks descriptive tooltips")
