@@ -12,8 +12,7 @@ This repository is now prepared to start the replacement Play listing at **versi
 - [ ] Generate a new RSA upload keystore and keep at least two secure backups outside the repository.
 - [ ] Add the new keystore and credentials to GitHub Actions secrets: `UNJAM_ANDROID_KEYSTORE_BASE64`, `UNJAM_ANDROID_KEY_ALIAS`, and `UNJAM_ANDROID_KEY_PASSWORD`.
 - [ ] Add the new upload certificate SHA-1 to GitHub Actions secret `UNJAM_ANDROID_UPLOAD_SHA1`.
-- [ ] Add GitHub Actions variable `UNJAM_SUPABASE_URL` for the selected Supabase project.
-- [ ] Add GitHub Actions variable `UNJAM_SUPABASE_PUBLISHABLE_KEY` for that same project.
+- [x] Bind the selected Supabase project URL and publishable key in `project.godot` (public client configuration).
 - [ ] Add GitHub Actions repository variable `UNJAM_DEVELOPER_WEBSITE_URL` using the exact developer website URL entered in Play Console. Production release now checks the crawler hostname root for `app-ads.txt`.
 - [ ] Run the `Android Production Release` workflow with `version_name=1.0.0` and `version_code=1`; download the verified release AAB and upload that AAB to the new Play listing.
 - [ ] After the first accepted Play upload, every subsequent upload must use a higher `versionCode`.
@@ -46,8 +45,8 @@ Still account-side / external:
 - [x] Purchase-verification backend is implemented for Google Play Developer API verification and production purchases fail closed until the live HTTPS endpoint is injected at release time.
 - [x] Supabase Edge Function exposes a readiness action that verifies Postgres access and Google Play Purchases API authorization; production release fails if either dependency is unavailable.
 - [x] Purchase verification is idempotent by SHA-256 purchase-token fingerprint in Supabase Postgres. `unjam_starter_pack` and other non-consumable entitlements cannot be granted twice from duplicate callbacks when the backend is live.
-- [ ] Apply `supabase/migrations/20260922_create_purchase_ledger.sql` to the selected Supabase project.
-- [ ] Deploy `supabase/functions/unjam-purchase` to that project.
+- [x] Apply `supabase/migrations/20260922_create_purchase_ledger.sql` to the selected Supabase project.
+- [x] Deploy `supabase/functions/unjam-purchase` to that project.
 - [ ] Store `GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL` and `GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY` only as Supabase Edge Function secrets. They are used solely to call the Google Play Developer API; Cloud Run and Firestore are not used.
 - [ ] Create `unjam_remove_ads`, `unjam_starter_pack`, `unjam_coins_500`, `unjam_coins_1500`, and `unjam_coins_4000` as one-time products in the **new** Play Console app.
 - [ ] Configure the matching product prices in the new Play Console app.
