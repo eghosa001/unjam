@@ -100,6 +100,8 @@ def main() -> int:
         'res://addons/admob/plugin.cfg',
         'res://addons/GodotGooglePlayBilling/plugin.cfg',
         'ca-app-pub-7517898921176341~1892369383',
+        'privacy_policy_url="https://unjam-site-prod-production.up.railway.app/privacy.html"',
+        'developer_website_url="https://unjam-site-prod-production.up.railway.app"',
     ):
         if token not in project:
             errors.append(f'project.godot missing monetization contract token: {token}')
