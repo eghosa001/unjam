@@ -60,7 +60,7 @@ func select_tube(index: int) -> void:
 			_play_invalid(index)
 			return
 		selected = index
-		status_label.text = "Ready to pour"
+		status_label.text = ""
 		FeedbackManager.lift()
 		render_board()
 		return
