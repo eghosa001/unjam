@@ -105,7 +105,7 @@ func _add_frame_background(canvas: Control) -> void:
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(bg)
 	RefCanvas.add_world_depth(canvas, Color("#59636f") if _home_dark() else Color("#9aa4ae"), _home_dark(), 0.0, "HomeWorldDepth")
-	RefCanvas.add_scene_backdrop_layers(canvas, Color("#68737f") if _home_dark() else Color("#a9b1ba"), _home_dark(), "Home")
+	RefCanvas.add_scene_backdrop_layers(canvas, Color("#314467") if _home_dark() else Color("#6f8fbd"), _home_dark(), "Home")
 	var home_key_light := canvas.get_node_or_null("HomeKeyLight")
 	var home_accent_glow := canvas.get_node_or_null("HomeAccentGlow")
 	if home_key_light != null:
