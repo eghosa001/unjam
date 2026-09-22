@@ -3,12 +3,11 @@ class_name WaterTubeButton
 
 const CAPACITY := 4
 const PALETTE := [
-	# Perceptually separated late-game palette. The first eight cover the primary
-	# hue wheel; the four late-game additions deliberately differ in value as well
-	# as hue so 10-12 colour boards remain readable on small phone screens.
-	Color("e53935"), Color("1e5eff"), Color("ffd400"), Color("00a86b"),
+	# Late-game high-separation palette. Colours differ by hue and value so
+	# 10-12 colour boards remain readable under phone display/lighting variation.
+	Color("c62828"), Color("1e5eff"), Color("ffd400"), Color("00a86b"),
 	Color("a100f2"), Color("ff7a00"), Color("00b8d9"), Color("e0008a"),
-	Color("263238"), Color("a8e600"), Color("9a5a24"), Color("ff8fbd")
+	Color("263238"), Color("8bc34a"), Color("795548"), Color("b2f0e8")
 ]
 var layers: Array = []
 var is_selected := false
