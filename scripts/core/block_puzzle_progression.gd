@@ -196,7 +196,7 @@ static func objective_introduction_age(level: int) -> int:
 
 static func retention_role(level: int) -> String:
 	if level <= 10:
-		return ["tutorial", "tutorial", "tutorial", "build", "challenge", "build", "challenge", "stretch", "build", "peak"][level - 1]
+		return ["tutorial", "tutorial", "tutorial", "build", "challenge", "build", "challenge", "stretch", "build", "learn"][level - 1]
 	var intro_age := objective_introduction_age(level)
 	if intro_age == 0:
 		return "learn"
