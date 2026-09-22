@@ -14,6 +14,7 @@ const WATER_WORLD_BADGE_SPAN_VERSION := 2
 const BLOCK_WORLD_BADGE_SPAN_VERSION := 2
 
 var _state_initialized := false
+var _total_stars_cache: Dictionary = {}
 
 func _ready()->void: ensure_state()
 
@@ -27,6 +28,7 @@ func _state_containers_present()->bool:
 
 func ensure_state()->void:
  if _state_initialized and _state_containers_present():return
+ _total_stars_cache.clear()
  if not SaveManager.data.get("game_progress",{}) is Dictionary: SaveManager.data["game_progress"]={}
  var all:Dictionary=SaveManager.data.get("game_progress",{})
  for id in GAME_IDS:
@@ -103,10 +105,12 @@ func progress_for(id:String)->Dictionary:
 func highest_level(id:String)->int:return clampi(int(_progress_ref(id).get("highest_level",1)),1,CAMPAIGN_LEVELS+1)
 func get_stars(id:String,n:int)->int:return int((_progress_ref(id).get("stars",{}) as Dictionary).get(str(n),0))
 func total_stars(id:String)->int:
+ if _total_stars_cache.has(id):return int(_total_stars_cache[id])
  var total:=0
  var stars=_progress_ref(id).get("stars",{})
  if not stars is Dictionary:return 0
  for v in (stars as Dictionary).values():total+=int(v)
+ _total_stars_cache[id]=total
  return total
 func is_level_unlocked(id:String,n:int)->bool:return n<=highest_level(id)
 func world_for_level(n:int)->int:return clampi(int((maxi(1,n)-1)/LEVELS_PER_WORLD)+1,1,WORLD_COUNT)
@@ -270,7 +274,10 @@ func complete_daily(id:String,reward:=100)->bool:
  if key in done or previous==key:return false
  g["daily_streak"]=int(g.get("daily_streak",0))+1 if _is_previous_calendar_day(previous,key) else 1;g["daily_best_streak"]=maxi(int(g.get("daily_best_streak",0)),int(g.get("daily_streak",0)));g["daily_last_date"]=key;done.append(key);g["daily_completed"]=_bounded_date_history(done);all[id]=g;SaveManager.data["game_progress"]=all;SaveManager.data["coins"]=int(SaveManager.data.get("coins",0))+reward;SaveManager.save();return true
 func complete_level(id:String,n:int,stars:int,coin_reward:=25)->Dictionary:
- if id=="rescue_rush":_advance_tasks(id,stars);return SaveManager.complete_level(n,stars,"",coin_reward)
+ if id=="rescue_rush":
+  _advance_tasks(id,stars)
+  _total_stars_cache.erase(id)
+  return SaveManager.complete_level(n,stars,"",coin_reward)
  ensure_state();n=clampi(n,1,CAMPAIGN_LEVELS);stars=clampi(stars,1,3);var all:Dictionary=SaveManager.data.get("game_progress",{});var g:Dictionary=all.get(id,{});var sm:Dictionary=g.get("stars",{});var key:=str(n);var previous:=int(sm.get(key,0));var first:=previous==0;var rewards={"first_clear":first,"improved":stars>previous,"perfect":stars==3 and previous<3,"milestone":false,"world_badge":false,"bonus_coins":0,"prestige":0};sm[key]=maxi(previous,stars);g["stars"]=sm;g["highest_level"]=maxi(int(g.get("highest_level",1)),mini(CAMPAIGN_LEVELS+1,n+1))
  if first:g["levels_completed"]=mini(CAMPAIGN_LEVELS,int(g.get("levels_completed",0))+1);SaveManager.data["coins"]=int(SaveManager.data.get("coins",0))+coin_reward
  if stars==3 and previous<3:g["perfect_clears"]=int(g.get("perfect_clears",0))+1;g["perfect_streak"]=int(g.get("perfect_streak",0))+1;g["best_perfect_streak"]=maxi(int(g.get("best_perfect_streak",0)),int(g.get("perfect_streak",0)))
@@ -280,7 +287,15 @@ func complete_level(id:String,n:int,stars:int,coin_reward:=25)->Dictionary:
  if first and n%badge_span==0:
   var wk:=str(int(n/badge_span));var b:Array=g.get("world_badges",[])
   if wk not in b:b.append(wk);g["world_badges"]=b;rewards.world_badge=true;SaveManager.data["coins"]=int(SaveManager.data.get("coins",0))+250;SaveManager.data["prestige_points"]=int(SaveManager.data.get("prestige_points",0))+5
- all[id]=g;SaveManager.data["game_progress"]=all;_advance_tasks(id,stars);SaveManager.save();var difficulty:=difficulty_for_game(id,n);RetentionManager.record_level_complete(n,stars,0,0,0,"",-1,id,difficulty);AnalyticsManager.track("multi_game_level_complete",{"game":id,"level":n,"stars":stars,"difficulty":difficulty});return rewards
+ all[id]=g
+ SaveManager.data["game_progress"]=all
+ if _total_stars_cache.has(id):_total_stars_cache[id]=int(_total_stars_cache[id])+maxi(0,stars-previous)
+ _advance_tasks(id,stars)
+ SaveManager.save()
+ var difficulty:=difficulty_for_game(id,n)
+ RetentionManager.record_level_complete(n,stars,0,0,0,"",-1,id,difficulty)
+ AnalyticsManager.track("multi_game_level_complete",{"game":id,"level":n,"stars":stars,"difficulty":difficulty})
+ return rewards
 func _persist_checkpoint_deferred()->void:
  if SaveManager.has_method("save_deferred"):SaveManager.call("save_deferred")
  else:SaveManager.save()
