@@ -485,8 +485,9 @@ Deno.serve(async (req) => {
       } else {
         productCatalogDetail = `product_catalog_http_${catalog.status}`;
       }
-    } catch {
-      productCatalogDetail = "product_catalog_probe_failed";
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "unknown";
+      productCatalogDetail = `product_catalog_probe_failed:${message.slice(0, 160)}`;
     }
 
     try {
