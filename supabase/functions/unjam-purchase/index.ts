@@ -233,6 +233,20 @@ function requestSource(req: Request): string {
   return ip.slice(0, 128);
 }
 
+async function consumeRateSlot(
+  admin: ReturnType<typeof createClient>,
+  rawKey: string,
+  limit: number,
+): Promise<boolean> {
+  const keyHash = await hashText(rawKey);
+  const { data, error } = await admin.rpc("consume_play_request_slot", {
+    p_key_hash: keyHash,
+    p_limit: limit,
+    p_window_seconds: RATE_WINDOW_SECONDS,
+  });
+  return !error && data === true;
+}
+
 async function rateAllowed(
   admin: ReturnType<typeof createClient>,
   req: Request,
@@ -242,14 +256,14 @@ async function rateAllowed(
   const install = validInstallId(input?.install_id)
     ? input.install_id
     : (typeof input?.claim_id === "string" ? input.claim_id : "no-install");
-  const keyHash = await hashText(`${action}|${requestSource(req)}|${install}`);
-  const limit = action === "sync_revocations" ? 20 : 60;
-  const { data, error } = await admin.rpc("consume_play_request_slot", {
-    p_key_hash: keyHash,
-    p_limit: limit,
-    p_window_seconds: RATE_WINDOW_SECONDS,
-  });
-  return !error && data === true;
+  const source = requestSource(req);
+  const installLimit = action === "sync_revocations" ? 20 : 60;
+  const ipLimit = action === "sync_revocations" ? 60 : 180;
+  const [installAllowed, ipAllowed] = await Promise.all([
+    consumeRateSlot(admin, `install|${action}|${install}`, installLimit),
+    consumeRateSlot(admin, `ip|${action}|${source}`, ipLimit),
+  ]);
+  return installAllowed && ipAllowed;
 }
 
 async function finalizePurchase(
