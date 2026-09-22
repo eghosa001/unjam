@@ -109,6 +109,7 @@ func _retention_period_cache_is_isolated() -> bool:
 
 func _hot_paths_stay_lightweight() -> bool:
 	var manager := FileAccess.get_file_as_string("res://scripts/core/multi_game_manager.gd")
+	var save_manager := FileAccess.get_file_as_string("res://scripts/core/save_manager.gd")
 	var water := FileAccess.get_file_as_string("res://scripts/ui/water_tube_3d_motion.gd")
 	var water_game := FileAccess.get_file_as_string("res://scripts/game/water_sort.gd")
 	var block_game := FileAccess.get_file_as_string("res://scripts/game/block_puzzle_3d.gd")
@@ -157,6 +158,13 @@ func _hot_paths_stay_lightweight() -> bool:
 		return _fail("Robust retention ensure_state regressed to unconditional saving")
 	if not "func _ensure_robust_fields() -> bool" in robust_retention or not "func _roll_robust_tracking() -> bool" in robust_retention or not "func _settle_previous_week_if_needed() -> bool" in robust_retention:
 		return _fail("Robust retention mutation tracking contract is incomplete")
+	var gameplay_counter_persist := save_manager.get_slice("func _persist_gameplay_counter_deferred", 1).get_slice("func record_hint", 0)
+	var hint_fn := save_manager.get_slice("func record_hint", 1).get_slice("func record_undo", 0)
+	var undo_fn := save_manager.get_slice("func record_undo", 1).get_slice("func complete_daily", 0)
+	if not "save_deferred" in gameplay_counter_persist:
+		return _fail("Hint/undo counter persistence is not using the deferred saver")
+	if "save()" in hint_fn or "save()" in undo_fn:
+		return _fail("Hint or undo regressed to synchronous saving")
 	return true
 
 func _dead_helpers_are_gone() -> bool:
