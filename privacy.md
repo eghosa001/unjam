@@ -17,7 +17,7 @@ permalink: /privacy.html
 <div class="site-shell">
 <header class="topbar"><nav class="nav" aria-label="Primary navigation"><a class="brand" href="./"><img src="assets/icon.svg" alt=""><span class="brand-word">UNJAM</span></a><div class="nav-links"><a href="./#games">Games</a><a href="privacy.html">Privacy</a><a href="support.html">Support</a><a class="nav-cta" href="./#release">Android release</a></div></nav></header>
 <main>
-<section class="page-hero"><span class="eyebrow">Official policy</span><h1>Privacy Policy</h1><p>Effective September 15, 2026. This policy explains how information may be handled when you use the UNJAM mobile application.</p></section>
+<section class="page-hero"><span class="eyebrow">Official policy</span><h1>Privacy Policy</h1><p>Effective September 22, 2026. This policy explains how information may be handled when you use the UNJAM mobile application.</p></section>
 <article class="doc">
   <p><strong>UNJAM respects your privacy.</strong> UNJAM does not require you to create an account to play the core games. Game progress and settings may be stored locally on your device.</p>
 
@@ -30,7 +30,7 @@ permalink: /privacy.html
   <p>Where required, consent or privacy choices may be presented before personalized advertising is used.</p>
 
   <h2>In-App Purchases</h2>
-  <p>If in-app purchases are enabled, transactions are processed by Google Play. UNJAM does not receive or store your full payment-card or bank-account details. Purchase tokens may be sent to a Supabase Edge Function for validation with Google Play; the server ledger stores a SHA-256 fingerprint and purchase-claim metadata rather than the reusable raw Play purchase token.</p>
+  <p>If in-app purchases are enabled, transactions are processed by Google Play. UNJAM does not receive or store your full payment-card or bank-account details. Purchase tokens may be sent to a Supabase Edge Function for validation with Google Play; the server ledger stores a SHA-256 fingerprint and purchase-claim metadata rather than the reusable raw Play purchase token. UNJAM also generates a random app-installation identifier used only to associate verified purchase entitlements and refund/revocation status with that installation. Google Play refund, cancellation, chargeback, acknowledgement, and consumption status may be checked to keep paid entitlements accurate and prevent duplicate grants or fraud.</p>
 
   <h2>Local Game Data</h2>
   <p>Game progress, settings, achievements, currencies, and other gameplay information may be stored locally on your device. Removing the app or clearing its data may delete locally stored progress unless a cloud or backup feature is available in the version you are using.</p>
@@ -43,7 +43,7 @@ permalink: /privacy.html
   <p>UNJAM does not sell your personal information. Information may be processed or shared with service providers only as needed to provide app functionality, advertising, analytics, billing, security, fraud prevention, diagnostics, or to comply with legal obligations.</p>
 
   <h2>Data Retention</h2>
-  <p>Local gameplay data remains on your device until it is deleted, cleared, or removed with the app, subject to any backup or cloud features that may be enabled. Third-party service providers retain information according to their own policies and legal obligations.</p>
+  <p>Local gameplay data remains on your device until it is deleted, cleared, or removed with the app, subject to any backup or cloud features that may be enabled. Purchase-verification records may be retained as hashed purchase-token fingerprints, product and claim metadata, installation associations, and refund/revocation status for fraud prevention, entitlement restoration, and transaction integrity. Third-party service providers retain information according to their own policies and legal obligations.</p>
 
   <h2>Data Deletion</h2>
   <p>You can remove locally stored UNJAM data by using available in-app reset options, clearing the app's storage in Android settings, or uninstalling the app. For requests concerning data handled directly by a third-party provider, you may also need to use that provider's privacy or account controls.</p>
