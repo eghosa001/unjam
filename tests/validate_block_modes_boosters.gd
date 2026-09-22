@@ -112,6 +112,26 @@ func _validate_boosters() -> bool:
 	return true
 
 func _validate_modes() -> bool:
+	var campaign = (load("res://scenes/BlockPuzzle.tscn") as PackedScene).instantiate()
+	campaign.level_number = 100
+	campaign.play_mode = "campaign"
+	root.add_child(campaign)
+	await _frames(2)
+	if campaign.campaign_move_limit != -1:
+		campaign.queue_free()
+		return _fail("Normal campaign must not hard-fail on a move limit")
+	var tray_count := (campaign.campaign_plan.get("trays", []) as Array).size()
+	campaign.piece_batch = tray_count
+	campaign.refill_pieces()
+	if campaign.pieces.size() != 3:
+		campaign.queue_free()
+		return _fail("Campaign did not continue after its proof trays were exhausted")
+	if not campaign.any_move_available() and campaign.call("_shape_has_legal_move", Generator.SHAPES[0]):
+		campaign.queue_free()
+		return _fail("Campaign continuation created a false no-move loss while space remained")
+	campaign.queue_free()
+	await _frames(2)
+
 	var zen = (load("res://scenes/BlockPuzzle.tscn") as PackedScene).instantiate()
 	zen.level_number = 100
 	zen.play_mode = "zen"
