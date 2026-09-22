@@ -115,6 +115,8 @@ def main() -> int:
         'voided_purchase_sync',
         'install_bound_revocations',
         'database_rate_limit',
+        'product_catalog',
+        'product_catalog_validation',
         'UNJAM_SUPABASE_URL',
     ):
         if token not in live_checker:
