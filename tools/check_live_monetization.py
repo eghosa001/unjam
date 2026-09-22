@@ -12,7 +12,7 @@ from pathlib import Path
 
 EXPECTED_APP_ADS = "google.com, pub-7517898921176341, DIRECT, f08c47fec0942fa0"
 EXPECTED_PACKAGE = "com.eghosa.unjamgam"
-USER_AGENT = "UNJAM-Monetization-Readiness/1.0"
+USER_AGENT = "UNJAM-Monetization-Readiness/2.0"
 
 
 def fail(message: str) -> None:
@@ -29,6 +29,30 @@ def fetch(url: str, timeout: float = 20.0) -> tuple[int, str, str]:
     except urllib.error.HTTPError as exc:
         body = exc.read(32_000).decode("utf-8", "replace")
         return int(exc.code), exc.geturl(), body
+    except Exception as exc:
+        fail(f"Could not reach {url}: {exc}")
+
+
+def post_json(url: str, body: dict, api_key: str, timeout: float = 20.0) -> tuple[int, str, str]:
+    payload = json.dumps(body).encode("utf-8")
+    req = urllib.request.Request(
+        url,
+        data=payload,
+        method="POST",
+        headers={
+            "User-Agent": USER_AGENT,
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "apikey": api_key,
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as response:
+            text = response.read(256_000).decode("utf-8", "replace")
+            return int(response.status), response.geturl(), text
+    except urllib.error.HTTPError as exc:
+        text = exc.read(32_000).decode("utf-8", "replace")
+        return int(exc.code), exc.geturl(), text
     except Exception as exc:
         fail(f"Could not reach {url}: {exc}")
 
@@ -52,52 +76,39 @@ def privacy_url_from_project() -> str:
 
 
 def main() -> int:
-    verify_url = os.environ.get("UNJAM_PURCHASE_VERIFICATION_URL", "")
+    supabase_url = os.environ.get("UNJAM_SUPABASE_URL", "").strip().rstrip("/")
+    supabase_key = os.environ.get("UNJAM_SUPABASE_PUBLISHABLE_KEY", "").strip()
     developer_website = os.environ.get("UNJAM_DEVELOPER_WEBSITE_URL", "")
 
-    verify = require_https_url(verify_url, "UNJAM_PURCHASE_VERIFICATION_URL")
-    if not verify.path.rstrip("/").endswith("/verify"):
-        fail("UNJAM_PURCHASE_VERIFICATION_URL must end in /verify")
+    parsed_supabase = require_https_url(supabase_url, "UNJAM_SUPABASE_URL")
+    if not parsed_supabase.hostname.endswith(".supabase.co"):
+        fail("UNJAM_SUPABASE_URL must be a managed Supabase project URL")
+    if not supabase_key:
+        fail("UNJAM_SUPABASE_PUBLISHABLE_KEY is not configured")
+    function_url = supabase_url + "/functions/v1/unjam-purchase"
 
     developer = require_https_url(developer_website, "UNJAM_DEVELOPER_WEBSITE_URL")
-    # AdMob crawls the hostname root from the developer website in the store
-    # listing. A project subpath such as /unjam/ is intentionally ignored here.
     app_ads_url = urllib.parse.urlunparse((developer.scheme, developer.netloc, "/app-ads.txt", "", "", ""))
 
     privacy_url = privacy_url_from_project()
     require_https_url(privacy_url, "monetization/privacy_policy_url")
 
-    verifier_root = verify_url.rsplit("/verify", 1)[0]
-    health_url = verifier_root.rstrip("/") + "/healthz"
-    readiness_url = verifier_root.rstrip("/") + "/readiness"
-
-    status, final_url, body = fetch(health_url)
+    status, final_url, body = post_json(function_url, {"action": "readiness"}, supabase_key)
     if status != 200:
-        fail(f"Purchase verifier health check returned HTTP {status} at {final_url}")
-    try:
-        health = json.loads(body)
-    except json.JSONDecodeError:
-        fail("Purchase verifier /healthz did not return JSON")
-    if health.get("ok") is not True:
-        fail("Purchase verifier /healthz did not return {\"ok\": true}")
-    print(f"PASS purchase verifier health: {final_url}")
-
-    status, final_url, body = fetch(readiness_url)
-    if status != 200:
-        fail(f"Purchase verifier dependency readiness returned HTTP {status} at {final_url}")
+        fail(f"Supabase purchase verifier readiness returned HTTP {status} at {final_url}")
     try:
         readiness = json.loads(body)
     except json.JSONDecodeError:
-        fail("Purchase verifier /readiness did not return JSON")
+        fail("Supabase purchase verifier readiness did not return JSON")
     dependencies = readiness.get("dependencies", {})
     if (
         readiness.get("ok") is not True
-        or dependencies.get("firestore") is not True
+        or dependencies.get("postgres") is not True
         or dependencies.get("google_play") is not True
         or readiness.get("package_name") != EXPECTED_PACKAGE
     ):
-        fail("Purchase verifier dependencies are not ready for Firestore + Google Play Purchases API")
-    print(f"PASS purchase verifier dependencies: {final_url}")
+        fail("Purchase verifier dependencies are not ready for Supabase Postgres + Google Play Purchases API")
+    print(f"PASS Supabase purchase verifier readiness: {final_url}")
 
     status, final_url, body = fetch(app_ads_url)
     if status != 200:
