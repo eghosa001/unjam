@@ -77,10 +77,10 @@ func _run() -> void:
 	var light_bg := main.find_child("FigmaHomeViewportBackground", true, false) as ColorRect
 	if light_bg == null:
 		return _fail("Light Home background is missing")
-	if light_bg.color.get_luminance() < 0.20 or light_bg.color.get_luminance() > 0.60:
-		return _fail("Light theme is outside the premium champagne-gold luminance range")
-	if light_bg.color.r < light_bg.color.b + 0.22 or light_bg.color.g < light_bg.color.b + 0.10:
-		return _fail("Light theme drifted away from the approved champagne-gold family")
+	if light_bg.color.get_luminance() < 0.35 or light_bg.color.get_luminance() > 0.70:
+		return _fail("Light theme is outside the premium warm-neutral luminance range")
+	if absf(light_bg.color.r - light_bg.color.g) > 0.10 or absf(light_bg.color.g - light_bg.color.b) > 0.10:
+		return _fail("Light theme drifted away from the approved warm-neutral family")
 	if main.find_child("HomeLightGlassHorizon", true, false) == null:
 		return _fail("Home light mode lost its layered glass horizon")
 	var home_key := main.find_child("HomeKeyLight", true, false) as PanelContainer
