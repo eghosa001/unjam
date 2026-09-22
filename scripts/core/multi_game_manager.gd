@@ -306,6 +306,15 @@ func _persist_checkpoint_deferred()->void:
  if SaveManager.has_method("save_deferred"):SaveManager.call("save_deferred")
  else:SaveManager.save()
 
+func _checkpoint_payload_matches(existing:Dictionary,payload:Dictionary)->bool:
+ # Ignore only the generated timestamp. Compare nested values directly so an
+ # unchanged move checkpoint does not recursively duplicate the whole run.
+ for key in payload:
+  if not existing.has(key) or existing[key]!=payload[key]:return false
+ for key in existing:
+  if key!="saved_at" and not payload.has(key):return false
+ return true
+
 func save_checkpoint(id:String,data:Dictionary)->void:
  ensure_state()
  var runs:Dictionary=SaveManager.data.get("multi_active_runs",{})
@@ -318,10 +327,7 @@ func save_checkpoint(id:String,data:Dictionary)->void:
   payload["history"]=(raw_history as Array).slice((raw_history as Array).size()-CHECKPOINT_HISTORY_LIMIT)
  payload["game"]=id
  var existing=runs.get(id,{})
- if existing is Dictionary:
-  var comparable:Dictionary=(existing as Dictionary).duplicate(true)
-  comparable.erase("saved_at")
-  if comparable==payload:return
+ if existing is Dictionary and _checkpoint_payload_matches(existing as Dictionary,payload):return
  payload["saved_at"]=int(Time.get_unix_time_from_system())
  runs[id]=payload
  SaveManager.data["multi_active_runs"]=runs
