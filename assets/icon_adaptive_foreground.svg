@@ -12,8 +12,8 @@
 <!-- Keep all critical foreground art comfortably inside Android adaptive masks.
      Extra breathing room prevents circular/squircle launchers from making the
      U composition look cropped on real devices. -->
-<g id="AdaptiveSafeZone" transform="translate(216 216) scale(.86) translate(-216 -216)">
-<g transform="translate(55 82) scale(.80)" filter="url(#s)">
+<g id="AdaptiveSafeZone" transform="translate(216 216) scale(.84) translate(-216 -216)">
+<g transform="translate(53 80) scale(.80)" filter="url(#s)">
  <path d="M36 48c0-25 18-38 43-38h79c16 0 26 10 26 27v124c0 24 10 37 31 37s31-13 31-37V38c0-18 10-28 26-28h57c27 0 42 15 42 42v139c0 80-61 140-156 140C111 331 36 276 36 190V48z" fill="#0C075A" opacity=".82" transform="translate(0 8)"/>
  <path d="M42 48c0-22 16-33 38-33h68c16 0 24 8 24 24v126c0 34 14 51 43 51v88c-85 0-143-43-143-108V58c0-7-5-10-13-10H42z" fill="#F8FCFF" stroke="#FFFFFF" stroke-width="6"/>
  <path d="M57 62h96v53H57z" fill="url(#blue)"/><path d="M57 115h96v52H57z" fill="url(#yellow)"/><path d="M57 167h96v53H57z" fill="url(#pink)"/><path d="M57 220h96v48c-31 20-64 24-96 16z" fill="url(#green)"/>
