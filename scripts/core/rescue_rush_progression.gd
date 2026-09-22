@@ -28,6 +28,12 @@ static func profile(level_number: int) -> Dictionary:
 		difficulty_target = [10, 16, 22, 30, 36, 42, 48, 54, 58, 62][n - 1]
 		piece_target = [7, 8, 9, 10, 11, 11, 12, 12, 13, 14][n - 1]
 		dependency_target = [2, 2, 3, 3, 3, 4, 4, 4, 4, 4][n - 1]
+	elif n <= 20:
+		# Level 11 is relief after the opening peak, not a reset. Preserve board
+		# density and dependency pressure while the normal retention rhythm begins.
+		difficulty_target = [56, 57, 59, 60, 63, 57, 60, 64, 58, 66][n - 11]
+		piece_target = [13, 13, 14, 14, 14, 13, 14, 14, 13, 14][n - 11]
+		dependency_target = [3, 3, 4, 4, 4, 3, 4, 4, 3, 4][n - 11]
 	var frontier_range := _frontier_range(n)
 	var objective := _objective_for_level(n, local)
 	var mechanic_count := _mechanic_count(n, difficulty_target)
