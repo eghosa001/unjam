@@ -100,8 +100,8 @@ func _run() -> void:
 	if selector_title == null or selector_title.get_theme_color("font_color").get_luminance() < 0.70:
 		return _fail("Choose Game light-mode title lost readable contrast on the gold shell")
 	var selector_game_title := main.find_child("SelectorGameTitle_rescue_rush", true, false) as Label
-	if selector_game_title == null or selector_game_title.get_theme_color("font_color").get_luminance() < 0.70:
-		return _fail("Choose Game card title lost readable contrast")
+	if selector_game_title == null or selector_game_title.get_theme_color("font_color").get_luminance() > 0.42:
+		return _fail("Choose Game light-card title lost readable dark-on-neutral contrast")
 
 	main.call("build_settings")
 	await _frames(5)
