@@ -7,6 +7,14 @@ var accent := Color("2dd4b6")
 var _motion_reduced := false
 var _ambient_nodes: Array[Polygon2D] = []
 var _ambient_wrap_y := 1040.0
+var _ambient_accumulator := 0.0
+# Exposed for procedural surfaces that already scale particle/glow work.
+# Keep full quality by default; the frame-rate cap below removes waste without
+# changing art density.
+var quality_scale := 1.0
+
+const AMBIENT_UPDATE_FPS := 30.0
+const AMBIENT_UPDATE_INTERVAL := 1.0 / AMBIENT_UPDATE_FPS
 
 func _ready() -> void:
 	layer = CanvasLayer.new()
@@ -31,6 +39,7 @@ func _reduced_motion() -> bool:
 
 func apply_motion_preference() -> void:
 	_motion_reduced = MotionSystem.reduced()
+	_ambient_accumulator = 0.0
 	set_process(not _motion_reduced)
 	if is_instance_valid(overlay):
 		if _motion_reduced:
@@ -50,14 +59,19 @@ func _refresh_ambient_bounds() -> void:
 
 func _process(delta: float) -> void:
 	ambient_time += delta
+	_ambient_accumulator += delta
+	if _ambient_accumulator < AMBIENT_UPDATE_INTERVAL:
+		return
+	var step := _ambient_accumulator
+	_ambient_accumulator = fmod(_ambient_accumulator, AMBIENT_UPDATE_INTERVAL)
 	for i in range(_ambient_nodes.size() - 1, -1, -1):
 		var node := _ambient_nodes[i]
 		if not is_instance_valid(node):
 			_ambient_nodes.remove_at(i)
 			continue
 		var speed := float(node.get_meta("speed", 6.0))
-		node.position.y -= speed * delta
-		node.position.x += sin(ambient_time * 0.45 + float(i)) * 2.2 * delta
+		node.position.y -= speed * step
+		node.position.x += sin(ambient_time * 0.45 + float(i)) * 2.2 * step
 		if node.position.y < -40.0:
 			node.position.y = _ambient_wrap_y
 
