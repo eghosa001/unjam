@@ -4,6 +4,8 @@ var layer: CanvasLayer
 var overlay: Control
 var ambient_time := 0.0
 var accent := Color("2dd4b6")
+var _motion_reduced := false
+var _ambient_nodes: Array[Polygon2D] = []
 
 func _ready() -> void:
 	layer = CanvasLayer.new()
@@ -19,12 +21,13 @@ func _ready() -> void:
 	apply_motion_preference()
 
 func _reduced_motion() -> bool:
-	return MotionSystem.reduced()
+	return _motion_reduced
 
 func apply_motion_preference() -> void:
-	set_process(not _reduced_motion())
+	_motion_reduced = MotionSystem.reduced()
+	set_process(not _motion_reduced)
 	if is_instance_valid(overlay):
-		if _reduced_motion():
+		if _motion_reduced:
 			clear_ambient()
 		else:
 			ambient_sparkles(12)
@@ -35,17 +38,18 @@ func apply_motion_preference() -> void:
 			node.call("apply_motion_preference")
 
 func _process(delta: float) -> void:
-	if _reduced_motion():
-		return
 	ambient_time += delta
-	for i in range(overlay.get_child_count()):
-		var node := overlay.get_child(i)
-		if node.has_meta("ambient"):
-			var speed := float(node.get_meta("speed", 6.0))
-			node.position.y -= speed * delta
-			node.position.x += sin(ambient_time * 0.45 + float(i)) * 2.2 * delta
-			if node.position.y < -40.0:
-				node.position.y = 1960.0
+	var wrap_y := maxf(960.0, get_viewport().get_visible_rect().size.y + 80.0)
+	for i in range(_ambient_nodes.size() - 1, -1, -1):
+		var node := _ambient_nodes[i]
+		if not is_instance_valid(node):
+			_ambient_nodes.remove_at(i)
+			continue
+		var speed := float(node.get_meta("speed", 6.0))
+		node.position.y -= speed * delta
+		node.position.x += sin(ambient_time * 0.45 + float(i)) * 2.2 * delta
+		if node.position.y < -40.0:
+			node.position.y = wrap_y
 
 func _on_node_added(node: Node) -> void:
 	if node is BaseButton:
@@ -75,14 +79,16 @@ func ambient_sparkles(count: int = 12) -> void:
 		dot.set_meta("ambient", true)
 		dot.set_meta("speed", rng.randf_range(3.0, 10.0))
 		overlay.add_child(dot)
+		_ambient_nodes.append(dot)
 
 func clear_ambient() -> void:
-	if not is_instance_valid(overlay):
-		return
-	for child in overlay.get_children():
-		if child.has_meta("ambient"):
-			overlay.remove_child(child)
+	for child in _ambient_nodes:
+		if is_instance_valid(child):
+			var parent := child.get_parent()
+			if parent != null:
+				parent.remove_child(child)
 			child.queue_free()
+	_ambient_nodes.clear()
 
 func burst(global_pos: Vector2, color: Color = Color("2dd4b6"), count: int = 18) -> void:
 	if _reduced_motion() or not is_instance_valid(overlay):
