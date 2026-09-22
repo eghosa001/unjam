@@ -5,7 +5,7 @@ const MAX_LEVEL := 10000
 const WORLD_SIZE := 500
 const WORLD_COUNT := 20
 const CAPACITY := 4
-const GENERATOR_VERSION := 4
+const GENERATOR_VERSION := 5
 
 const SCORE_BANDS := [
 	[15, 55], [45, 60], [50, 63], [54, 66], [57, 69],
