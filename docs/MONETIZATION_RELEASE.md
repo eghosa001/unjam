@@ -39,9 +39,11 @@ Product IDs currently expected by the app:
 - `unjam_coins_1500`
 - `unjam_coins_4000`
 
-The Android bridge uses Google Play Billing 3.3.0 integration and supports connection, localized product detail queries, purchase callbacks, restore, consumption and acknowledgement.
+The Android bridge uses Google Play Billing 3.3.0 integration and supports connection, localized product detail queries, purchase callbacks, pending purchases, restore, and authoritative owned-purchase snapshots.
 
 Purchases fail closed on Android unless the Supabase purchase-verification backend is configured. The client calls `supabase/functions/unjam-purchase`, which validates Google Play `ProductPurchaseV2` status and uses the Supabase Postgres purchase ledger as a SHA-256 token-fingerprint claim store. Raw Play purchase tokens are not persisted in the ledger.
+
+Google Play acknowledgement/consumption is finalized server-side after the reward/entitlement claim is committed. The backend also polls the Voided Purchases API, binds purchase claims to an app installation identifier, returns verified refund/revocation events to the client, and applies database-backed request throttling. Non-consumable ownership is also reconciled against Google Play at startup/reconnect so stale Remove Ads/Starter Pack entitlements can be revoked.
 
 ## Plugin versions
 
@@ -61,7 +63,7 @@ The install entrypoint is `tools/install_monetization_plugins.sh`.
 4. Set Play Console `Contains ads` accurately.
 5. Complete Data Safety and target-audience declarations based on the actual shipped SDKs and audience.
 6. Create the five product IDs above in Play Console if in-app purchases will ship.
-7. Apply `supabase/migrations/20260922_create_purchase_ledger.sql`, deploy `supabase/functions/unjam-purchase`, and store `GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL` plus `GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY` as Supabase Edge Function secrets. Grant that service account Google Play Purchases API access to the UNJAM package. The release readiness check must confirm both Postgres access and Google Play authorization.
+7. Apply both purchase-ledger migrations, including `20260922_harden_monetization_lifecycle.sql`, deploy `supabase/functions/unjam-purchase`, and store `GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL` plus `GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY` as Supabase Edge Function secrets. Grant that service account Google Play Purchases API access to the UNJAM package. The release readiness check must confirm both Postgres access and Google Play authorization.
 8. Use Play license testers and Google test ads during development; do not click live ads during testing.
 9. Require a green exact-commit CI run plus Internal testing before Production.
 
@@ -70,7 +72,7 @@ The install entrypoint is `tools/install_monetization_plugins.sh`.
 
 Before a production AAB can be built, `.github/workflows/android-release.yml` now runs `tools/check_live_monetization.py`. It blocks release unless:
 
-- the configured Supabase `unjam-purchase` Edge Function readiness action proves both Postgres access and Google Play Purchases API authorization;
+- the configured Supabase `unjam-purchase` Edge Function readiness action proves Postgres access, Google Play Purchases API authorization, Voided Purchases API authorization, server-side finalization, refund synchronization, install-bound revocations, and request throttling;
 - the developer website configured in repository variable `UNJAM_DEVELOPER_WEBSITE_URL` serves the exact AdMob seller record from its **hostname root** `/app-ads.txt`;
 - the configured privacy policy URL is publicly reachable and identifies UNJAM;
 - the Android package remains `com.eghosa.unjamgam`.
