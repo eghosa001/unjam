@@ -26,8 +26,10 @@ function publishableKeys(): string[] {
   if (named) try {
     for (const value of Object.values(JSON.parse(named))) if (typeof value === "string" && value) keys.push(value);
   } catch {}
-  const fallback = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ?? "";
-  if (fallback) keys.push(fallback);
+  const legacy = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+  const modern = Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ?? "";
+  if (legacy) keys.push(legacy);
+  if (modern) keys.push(modern);
   return [...new Set(keys)];
 }
 function secretKey(): string {
