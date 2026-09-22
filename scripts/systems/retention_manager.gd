@@ -94,21 +94,22 @@ func process_login() -> Dictionary:
 	var today: String = today_key()
 	var previous: String = String(SaveManager.data.last_login_date)
 	var payload: Dictionary = {}
-	if previous != today:
-		var gap: int = _day_gap(previous, today)
-		if previous.is_empty():
-			SaveManager.data.login_cycle_day = 1
-		elif gap == 1:
-			SaveManager.data.login_cycle_day = (int(SaveManager.data.login_cycle_day) % 7) + 1
-		else:
-			SaveManager.data.login_cycle_day = 1
-		SaveManager.data.last_login_date = today
-		if gap >= 3 and String(SaveManager.data.comeback_claimed_date) != today:
-			var comeback: int = mini(500, 100 + gap * 35)
-			SaveManager.add_coins(comeback)
-			SaveManager.data.comeback_claimed_date = today
-			payload = {"type":"comeback", "coins":comeback, "days":gap, "title":"WELCOME BACK"}
-			retention_reward.emit(payload)
+	if previous == today:
+		return payload
+	var gap: int = _day_gap(previous, today)
+	if previous.is_empty():
+		SaveManager.data.login_cycle_day = 1
+	elif gap == 1:
+		SaveManager.data.login_cycle_day = (int(SaveManager.data.login_cycle_day) % 7) + 1
+	else:
+		SaveManager.data.login_cycle_day = 1
+	SaveManager.data.last_login_date = today
+	if gap >= 3 and String(SaveManager.data.comeback_claimed_date) != today:
+		var comeback: int = mini(500, 100 + gap * 35)
+		SaveManager.add_coins(comeback)
+		SaveManager.data.comeback_claimed_date = today
+		payload = {"type":"comeback", "coins":comeback, "days":gap, "title":"WELCOME BACK"}
+		retention_reward.emit(payload)
 	SaveManager.save()
 	return payload
 
