@@ -67,12 +67,79 @@ def require_https_url(value: str, label: str) -> urllib.parse.ParseResult:
     return parsed
 
 
-def privacy_url_from_project() -> str:
+def project_setting(name: str) -> str:
     text = Path("project.godot").read_text(encoding="utf-8")
-    match = re.search(r'^privacy_policy_url="([^"]+)"$', text, flags=re.MULTILINE)
+    match = re.search(rf'^{re.escape(name)}="([^"]*)"
+
+def main() -> int:
+    supabase_url = (os.environ.get("UNJAM_SUPABASE_URL", "") or project_setting("supabase_url")).strip().rstrip("/")
+    supabase_key = (os.environ.get("UNJAM_SUPABASE_PUBLISHABLE_KEY", "") or project_setting("supabase_publishable_key")).strip()
+    developer_website = os.environ.get("UNJAM_DEVELOPER_WEBSITE_URL", "")
+
+    parsed_supabase = require_https_url(supabase_url, "UNJAM_SUPABASE_URL")
+    if not parsed_supabase.hostname.endswith(".supabase.co"):
+        fail("UNJAM_SUPABASE_URL must be a managed Supabase project URL")
+    if not supabase_key:
+        fail("UNJAM_SUPABASE_PUBLISHABLE_KEY is not configured")
+    function_url = supabase_url + "/functions/v1/unjam-purchase"
+
+    developer = require_https_url(developer_website, "UNJAM_DEVELOPER_WEBSITE_URL")
+    app_ads_url = urllib.parse.urlunparse((developer.scheme, developer.netloc, "/app-ads.txt", "", "", ""))
+
+    privacy_url = privacy_url_from_project()
+    require_https_url(privacy_url, "monetization/privacy_policy_url")
+
+    status, final_url, body = post_json(function_url, {"action": "readiness"}, supabase_key)
+    if status != 200:
+        fail(f"Supabase purchase verifier readiness returned HTTP {status} at {final_url}")
+    try:
+        readiness = json.loads(body)
+    except json.JSONDecodeError:
+        fail("Supabase purchase verifier readiness did not return JSON")
+    dependencies = readiness.get("dependencies", {})
+    if (
+        readiness.get("ok") is not True
+        or dependencies.get("postgres") is not True
+        or dependencies.get("google_play") is not True
+        or readiness.get("package_name") != EXPECTED_PACKAGE
+    ):
+        fail("Purchase verifier dependencies are not ready for Supabase Postgres + Google Play Purchases API")
+    print(f"PASS Supabase purchase verifier readiness: {final_url}")
+
+    status, final_url, body = fetch(app_ads_url)
+    if status != 200:
+        fail(f"AdMob app-ads.txt returned HTTP {status} at {final_url}")
+    normalized = {line.strip() for line in body.splitlines() if line.strip() and not line.lstrip().startswith("#")}
+    if EXPECTED_APP_ADS not in normalized:
+        fail(f"app-ads.txt at hostname root is missing expected publisher record: {EXPECTED_APP_ADS}")
+    print(f"PASS app-ads.txt hostname-root record: {final_url}")
+
+    status, final_url, body = fetch(privacy_url)
+    if status != 200:
+        fail(f"Privacy policy returned HTTP {status} at {final_url}")
+    lowered = body.lower()
+    if "unjam" not in lowered or "privacy" not in lowered:
+        fail("Privacy policy is reachable but does not look like the UNJAM privacy policy")
+    print(f"PASS privacy policy: {final_url}")
+
+    preset = Path("export_presets.cfg").read_text(encoding="utf-8")
+    if f'package/unique_name="{EXPECTED_PACKAGE}"' not in preset:
+        fail(f"Android package is not {EXPECTED_PACKAGE}")
+
+    print("LIVE MONETIZATION READINESS PASS")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+, text, flags=re.MULTILINE)
     if not match:
-        fail("monetization/privacy_policy_url is missing from project.godot")
+        fail(f"{name} is missing from project.godot")
     return match.group(1)
+
+
+def privacy_url_from_project() -> str:
+    return project_setting("privacy_policy_url")
 
 
 def main() -> int:
