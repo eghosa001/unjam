@@ -18,9 +18,9 @@ const FIGMA_DARK_BOTTOM := Color("#29465b")
 const FIGMA_DARK_CARD := Color("#223b50")
 const FIGMA_DARK_INK := Color("#eef7ff")
 const FIGMA_DARK_MUTED := Color("#b6c7d6")
-const FIGMA_SCENE_TOP := Color("#c9f4fb")
-const FIGMA_SCENE_MID := Color("#89d4e8")
-const FIGMA_SCENE_BOTTOM := Color("#4b9fc7")
+const FIGMA_SCENE_TOP := Color("#d7f8ff")
+const FIGMA_SCENE_MID := Color("#72c7dc")
+const FIGMA_SCENE_BOTTOM := Color("#287fa8")
 const FIGMA_SCENE_DARK_TOP := Color("#101932")
 const FIGMA_SCENE_DARK_MID := Color("#0b1631")
 const FIGMA_SCENE_DARK_BOTTOM := Color("#060d22")
@@ -140,7 +140,7 @@ func _figma_surface(active: String, bottom_tint: Color = FIGMA_BG_BOTTOM, top_ti
 		"collection": scene_accent = FIGMA_GREEN
 		"settings": scene_accent = FIGMA_CYAN
 		_: scene_accent = _accent()
-	FigmaReferenceCanvas.add_world_depth(canvas, scene_accent, _dark(), 0.12 if _dark() else 0.17, "SurfaceWorldDepth")
+	FigmaReferenceCanvas.add_world_depth(canvas, scene_accent, _dark(), 0.12 if _dark() else 0.10, "SurfaceWorldDepth")
 	FigmaReferenceCanvas.add_scene_backdrop_layers(canvas, scene_accent, _dark(), "Surface")
 	var surface_key_light := canvas.get_node_or_null("SurfaceKeyLight")
 	var surface_accent_glow := canvas.get_node_or_null("SurfaceAccentGlow")
@@ -299,8 +299,8 @@ func _figma_open_shop() -> void:
 
 func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false) -> void:
 	var use_dark := dark_mode or _dark()
-	var bar_fill := Color(0.055,0.085,0.15,0.985) if use_dark else Color("#e8f6fa")
-	var bar_border := Color(0.24,0.39,0.54,0.94) if use_dark else Color("#83c7db")
+	var bar_fill := Color(0.055,0.085,0.15,0.985) if use_dark else Color("#d9edf3")
+	var bar_border := Color(0.24,0.39,0.54,0.94) if use_dark else Color("#5ca7c2")
 	if use_dark:
 		_figma_solid_card(canvas, "StdNav/Bar", Rect2(13,757,362,70), bar_fill, bar_border, 18)
 	else:
