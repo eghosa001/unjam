@@ -2,6 +2,24 @@ name: Monetization Readiness
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - "project.godot"
+      - "export_presets.cfg"
+      - "app-ads.txt"
+      - "privacy.md"
+      - "docs/privacy.html"
+      - "scripts/systems/admob_config.gd"
+      - "scripts/systems/ad_manager.gd"
+      - "scripts/systems/android_monetization_bridge.gd"
+      - "scripts/systems/privacy_manager.gd"
+      - "scripts/systems/purchase_verifier.gd"
+      - "scripts/systems/store_manager.gd"
+      - "supabase/**"
+      - "tools/check_live_monetization.py"
+      - "tools/validate_purchase_claim_protocol.py"
+      - ".github/workflows/monetization-readiness.yml"
 
 permissions:
   contents: read
