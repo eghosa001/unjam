@@ -16,10 +16,17 @@ var clear_color := Color("8b7cf6")
 var footprint_phase := 0.0
 var special_kind := ""
 var special_layers := 0
+var _game_cache: Node
 
 func configure(value: bool, preview_value: bool = false, color: Color = Color("4f7cff"), index: int = 0) -> void:
 	var old := occupied
 	var old_accent := accent
+	var changed := (
+		occupied != value
+		or preview != preview_value
+		or not accent.is_equal_approx(color)
+		or cell_index != index
+	)
 	occupied = value
 	preview = preview_value
 	accent = color
@@ -34,11 +41,15 @@ func configure(value: bool, preview_value: bool = false, color: Color = Color("4
 		elif old and not occupied:
 			clear_color = old_accent
 			_play_clear()
-	queue_redraw()
+	if changed:
+		queue_redraw()
 
 func set_special(kind: String = "", layers: int = 0) -> void:
+	var safe_layers := maxi(0, layers)
+	if special_kind == kind and special_layers == safe_layers:
+		return
 	special_kind = kind
-	special_layers = maxi(0, layers)
+	special_layers = safe_layers
 	queue_redraw()
 
 func _ready() -> void:
@@ -114,9 +125,12 @@ func set_drag_footprint(active: bool, valid: bool = false, color: Color = Color(
 	queue_redraw()
 
 func _game() -> Node:
+	if _game_cache != null and is_instance_valid(_game_cache):
+		return _game_cache
 	var node: Node = self
 	while node != null:
 		if node.has_method("place_piece_from_drag") and node.has_method("can_place"):
+			_game_cache = node
 			return node
 		node = node.get_parent()
 	return null
