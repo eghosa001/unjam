@@ -114,6 +114,7 @@ func _hot_paths_stay_lightweight() -> bool:
 	var block_game := FileAccess.get_file_as_string("res://scripts/game/block_puzzle_3d.gd")
 	var visuals := FileAccess.get_file_as_string("res://scripts/systems/robust_premium_visuals.gd")
 	var retention := FileAccess.get_file_as_string("res://scripts/systems/retention_manager.gd")
+	var robust_retention := FileAccess.get_file_as_string("res://scripts/systems/robust_retention_manager.gd")
 	var checkpoint_fn := manager.get_slice("func _checkpoint_payload_matches", 1).get_slice("func save_checkpoint", 0)
 	if ".duplicate(true)" in checkpoint_fn:
 		return _fail("Checkpoint equality regressed to recursive copying")
@@ -149,6 +150,13 @@ func _hot_paths_stay_lightweight() -> bool:
 	var weekly_rank_fn := retention.get_slice("func weekly_rank", 1).get_slice("func _weekly_rivals_ref", 0)
 	if "weekly_rivals()" in weekly_rank_fn or not "_weekly_rivals_ref()" in weekly_rank_fn:
 		return _fail("Weekly rank regressed to rebuilding/copying the rival list")
+	var robust_ensure := robust_retention.get_slice("func ensure_state", 1).get_slice("func _ensure_robust_fields", 0)
+	if not "var changed :=" in robust_ensure or not "if changed:" in robust_ensure:
+		return _fail("Robust retention ensure_state lost conditional persistence")
+	if "\n\tSaveManager.save()" in robust_ensure:
+		return _fail("Robust retention ensure_state regressed to unconditional saving")
+	if not "func _ensure_robust_fields() -> bool" in robust_retention or not "func _roll_robust_tracking() -> bool" in robust_retention or not "func _settle_previous_week_if_needed() -> bool" in robust_retention:
+		return _fail("Robust retention mutation tracking contract is incomplete")
 	return true
 
 func _dead_helpers_are_gone() -> bool:
