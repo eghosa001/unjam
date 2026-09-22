@@ -112,9 +112,9 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(card)
 
-	var game_title := _add_text(canvas, title, Rect2(34, rect.position.y + 12.6, 184, 24), 20, accent.lightened(0.18) if _selector_dark() else accent.darkened(0.18), true)
+	var game_title := _add_text(canvas, title, Rect2(34, rect.position.y + 12.6, 184, 24), 20, DARK_INK if _selector_dark() else INK, true)
 	game_title.name = "SelectorGameTitle_%s" % game_id
-	game_title.add_theme_color_override("font_color", accent.lightened(0.18) if _selector_dark() else accent.darkened(0.18))
+	game_title.add_theme_color_override("font_color", DARK_INK if _selector_dark() else INK)
 	# Keep body copy in a hard clipping region. Label intrinsic minimum size can
 	# exceed its authored width for longer localized strings, so the wrapper is
 	# the authoritative boundary before the 3D emblem.
