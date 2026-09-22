@@ -90,6 +90,12 @@ func _initialize() -> void:
 				var pulse_after := _pcm16(music.data, pulse_frame * 4)
 				if absi(pulse_after - pulse_before) > 900:
 					failures.append("Ambient mallet pulse has an audible PCM jump at %ds" % pulse_seconds)
+			var reference_power := _goertzel_power(music.data, int(music.mix_rate), 261.63, 2.0)
+			var low_power := 0.0
+			for hz in [40.0, 60.0, 80.0, 100.0, 120.0, 150.0]:
+				low_power = maxf(low_power, _goertzel_power(music.data, int(music.mix_rate), hz, 2.0))
+			if reference_power <= 0.0 or low_power > reference_power * 0.12:
+				failures.append("Ambient loop still carries excessive low-frequency energy (low/reference %.4f)" % (low_power / maxf(reference_power, 0.000001)))
 		feedback.free()
 
 	if not failures.is_empty():
@@ -111,3 +117,18 @@ func _pcm_peak(bytes: PackedByteArray) -> int:
 		peak = maxi(peak, absi(_pcm16(bytes, offset)))
 		peak = maxi(peak, absi(_pcm16(bytes, offset + 2)))
 	return peak
+
+func _goertzel_power(bytes: PackedByteArray, sample_rate: int, frequency: float, seconds: float) -> float:
+	var frame_count := mini(int(float(sample_rate) * seconds), int(bytes.size() / 4))
+	if frame_count <= 0:
+		return 0.0
+	var omega := TAU * frequency / float(sample_rate)
+	var coeff := 2.0 * cos(omega)
+	var s1 := 0.0
+	var s2 := 0.0
+	for frame in range(frame_count):
+		var sample := float(_pcm16(bytes, frame * 4)) / 32768.0
+		var s0 := sample + coeff * s1 - s2
+		s2 = s1
+		s1 = s0
+	return s1 * s1 + s2 * s2 - coeff * s1 * s2
