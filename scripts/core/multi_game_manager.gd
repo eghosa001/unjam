@@ -13,9 +13,20 @@ const DAILY_HISTORY_LIMIT := 45
 const WATER_WORLD_BADGE_SPAN_VERSION := 2
 const BLOCK_WORLD_BADGE_SPAN_VERSION := 2
 
+var _state_initialized := false
+
 func _ready()->void: ensure_state()
 
+func _state_containers_present()->bool:
+ return (
+  SaveManager.data.get("game_progress",{}) is Dictionary
+  and SaveManager.data.get("multi_active_runs",{}) is Dictionary
+  and SaveManager.data.get("daily_tasks",{}) is Dictionary
+  and SaveManager.data.get("daily_game_choices",{}) is Dictionary
+ )
+
 func ensure_state()->void:
+ if _state_initialized and _state_containers_present():return
  if not SaveManager.data.get("game_progress",{}) is Dictionary: SaveManager.data["game_progress"]={}
  var all:Dictionary=SaveManager.data.get("game_progress",{})
  for id in GAME_IDS:
@@ -38,6 +49,7 @@ func ensure_state()->void:
  var task_store:Dictionary=SaveManager.data.get("daily_tasks",{})
  _prune_daily_task_history(task_store)
  SaveManager.data["daily_tasks"]=task_store
+ _state_initialized=true
 
 
 func _migrate_water_sort_world_badges(g:Dictionary)->Dictionary:
