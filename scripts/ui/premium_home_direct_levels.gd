@@ -59,7 +59,7 @@ func build_home_launcher() -> void:
 	var viewport_bg := ColorRect.new()
 	viewport_bg.name = "FigmaHomeViewportBackground"
 	viewport_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	# The viewport fallback stays neutral for letterboxing; the visible 390x844 scene itself is the rich royal-blue 3D world.
+	# The viewport fallback stays neutral for letterboxing; the visible 390x844 scene itself carries the neutral premium depth treatment.
 	viewport_bg.color = DARK_BOTTOM if _home_dark() else BG_BOTTOM
 	viewport_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(viewport_bg)
@@ -75,6 +75,7 @@ func _build_reference_home(canvas: Control) -> void:
 	brand_title.name = "HomeBrandTitle3D"
 	RefCanvas.style_display_title(brand_title, Color("#ffb92f"), Color("#071d55"), 2)
 
+	_add_pill(canvas, Rect2(21, 64, 108, 40), Color("#d6d1c7") if not _home_dark() else Color("#2c2c2c"), "LV %d" % _home_current_level(selected_game), 12, NAVY if not _home_dark() else DARK_INK, "HomeSelectedGameLevel")
 	home_coin_button = _add_action(canvas, Rect2(151, 62, 102, 44), Color("#cbc4b8"), "   %s +" % _compact_number(EconomyManager.balance()), 12, NAVY, Callable(self, "_open_shop"), 20)
 	home_coin_button.name = "HomeCoinShopButton"
 	RefCanvas.add_collectible_gem(canvas, Vector2(166, 84), 8.0, "HomeCurrencyGem3D")
@@ -163,8 +164,8 @@ func _add_hero(canvas: Control) -> void:
 		canvas,
 		Rect2(41, 285, 178, 48),
 		Unjam3DTheme.game_accent(selected_game),
-		"CONTINUE",
-		13,
+		"CONTINUE • LEVEL %d" % level,
+		12,
 		OFF_WHITE,
 		Callable(self, "_continue_selected_game"),
 		16
@@ -300,8 +301,7 @@ func _add_world_progress(canvas: Control) -> void:
 
 	var world_title := _add_text(root, "WORLD %d" % world, Rect2(195, 598, 152, 26), 18, OFF_WHITE if _home_dark() else NAVY, true)
 	world_title.name = "HomeWorldProgressTitle"
-	var percent := int(round(float(completed_in_world) / float(total) * 100.0))
-	var world_value := _add_text(root, "LEVEL %d • %d%%" % [level, percent], Rect2(195, 632, 152, 18), 12, MUTED, true)
+	var world_value := _add_text(root, "LEVEL %d • %d/%d" % [level, completed_in_world, total], Rect2(195, 632, 152, 18), 11, MUTED, true)
 	world_value.name = "HomeWorldProgressValue"
 
 	var progress := ProgressBar.new()
@@ -491,11 +491,14 @@ func _refresh_home_selection() -> void:
 	var meta := figma_canvas.get_node_or_null("HomeHeroGameMeta") as Label
 	if meta != null:
 		meta.text = "LEVEL %d • WORLD %d" % [level, world]
+	var top_level := figma_canvas.get_node_or_null("HomeSelectedGameLevel") as Label
+	if top_level != null:
+		top_level.text = "LV %d" % level
 	var top_stars := figma_canvas.get_node_or_null("HomeSelectedGameStars") as Label
 	if top_stars != null:
 		top_stars.text = "   %s" % _compact_number(MultiGameManager.total_stars(selected_game))
 	if primary_button != null and is_instance_valid(primary_button):
-		primary_button.text = "CONTINUE"
+		primary_button.text = "CONTINUE • LEVEL %d" % level
 	var old_preview := figma_canvas.get_node_or_null("HomeHeroPreviewRoot")
 	if old_preview != null:
 		figma_canvas.remove_child(old_preview)
