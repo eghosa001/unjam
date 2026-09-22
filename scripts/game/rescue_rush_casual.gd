@@ -12,13 +12,13 @@ var figma_canvas: FigmaReferenceCanvas
 
 func _compact_objective_instruction() -> String:
 	match objective_type:
-		"full_escape": return "WIN • CLEAR ALL MOVABLE ARROWS • RESCUE"
-		"key_rescue": return "WIN • CLEAR ALL KEYS • RESCUE"
-		"gate_run": return "WIN • OPEN ALL GATES • RESCUE"
-		"bomb_route": return "WIN • CLEAR ALL BOMBS • RESCUE"
-		"chain_rescue": return "WIN • CLEAR LINKED ARROWS • RESCUE"
-		"perfect_rescue": return "WIN • RESCUE IN ≤ %d MOVES" % action_budget
-		_: return "WIN • OPEN ONE CLEAR LANE • RESCUE"
+		"full_escape": return "WIN • CLEAR ALL ARROWS"
+		"key_rescue": return "WIN • KEYS + CLEAR LANE"
+		"gate_run": return "WIN • OPEN GATES + CLEAR LANE"
+		"bomb_route": return "WIN • BOMBS + CLEAR LANE"
+		"chain_rescue": return "WIN • LINKS + CLEAR LANE"
+		"perfect_rescue": return "WIN • RESCUE ≤ %d MOVES" % action_budget
+		_: return "WIN • OPEN ONE CLEAR LANE"
 
 func _add_rescue_identity_emblem(canvas: Control) -> void:
 	var emblem := PanelContainer.new()
