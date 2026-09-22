@@ -212,25 +212,30 @@ func save() -> void:
 	var payload := JSON.stringify(data)
 	if payload == _last_saved_payload:
 		return
+
+	var current_text := ""
+	if FileAccess.file_exists(ROBUST_SAVE_PATH):
+		var current := FileAccess.open(ROBUST_SAVE_PATH, FileAccess.READ)
+		if current != null:
+			current_text = current.get_as_text()
+			if current_text == payload:
+				_last_saved_payload = payload
+				return
+
 	var temp := FileAccess.open(TEMP_PATH, FileAccess.WRITE)
 	if temp == null:
 		return
 	temp.store_string(payload)
 	temp.flush()
 	temp = null
-	if FileAccess.file_exists(ROBUST_SAVE_PATH):
-		var current := FileAccess.open(ROBUST_SAVE_PATH, FileAccess.READ)
-		if current != null:
-			var current_text := current.get_as_text()
-			if current_text == payload:
-				_last_saved_payload = payload
-				DirAccess.remove_absolute(ProjectSettings.globalize_path(TEMP_PATH))
-				return
-			if JSON.parse_string(current_text) is Dictionary:
-				var backup := FileAccess.open(BACKUP_PATH, FileAccess.WRITE)
-				if backup != null:
-					backup.store_string(current_text)
-					backup.flush()
+
+	# Preserve the last valid main save only when we are actually replacing it.
+	if not current_text.is_empty() and JSON.parse_string(current_text) is Dictionary:
+		var backup := FileAccess.open(BACKUP_PATH, FileAccess.WRITE)
+		if backup != null:
+			backup.store_string(current_text)
+			backup.flush()
+
 	var absolute_main := ProjectSettings.globalize_path(ROBUST_SAVE_PATH)
 	var absolute_temp := ProjectSettings.globalize_path(TEMP_PATH)
 	if FileAccess.file_exists(ROBUST_SAVE_PATH):
