@@ -4,9 +4,9 @@ const FLAT_GAME_LOGO_SCRIPT = preload("res://scripts/ui/unjam_flat_game_logo.gd"
 
 const RefCanvas = preload("res://scripts/ui/figma_reference_canvas.gd")
 
-const BG_TOP := Color("#eef2f5")
+const BG_TOP := Color("#4f76b8")
 const BG_MID := Color("#e7ebef")
-const BG_BOTTOM := Color("#d8dee5")
+const BG_BOTTOM := Color("#315596")
 const NAVY := Color("#1f2933")
 const INK := Color("#26323d")
 const MUTED := Color("#52606d")
@@ -21,9 +21,9 @@ const DARK_BOTTOM := Color("#161b22")
 const DARK_CARD := Color("#20272f")
 const DARK_INK := Color("#f5f7fa")
 const DARK_MUTED := Color("#a7b1bc")
-const SCENE_TOP := Color("#eef2f5")
-const SCENE_MID := Color("#e6eaee")
-const SCENE_BOTTOM := Color("#d6dce2")
+const SCENE_TOP := Color("#4f76b8")
+const SCENE_MID := Color("#3f67aa")
+const SCENE_BOTTOM := Color("#315596")
 const DARK_SCENE_TOP := Color("#252c34")
 const DARK_SCENE_MID := Color("#242b33")
 const DARK_SCENE_BOTTOM := Color("#14191f")
@@ -119,7 +119,7 @@ func _add_frame_background(canvas: Control) -> void:
 	halo_a.name = "HomeBackdropHaloTop"
 	halo_a.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	halo_a.modulate.a = 0.22 if not _home_dark() else 0.18
-	halo_a.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color("#c4c9cf") if not _home_dark() else Color("#59636d"), 110))
+	halo_a.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color("#6f8fc4") if not _home_dark() else Color("#59636d"), 110))
 	RefCanvas.set_rect(halo_a, 252, -72, 208, 208)
 	canvas.add_child(halo_a)
 	canvas.move_child(halo_a, 1)
@@ -128,7 +128,7 @@ func _add_frame_background(canvas: Control) -> void:
 	halo_b.name = "HomeBackdropHaloBottom"
 	halo_b.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	halo_b.modulate.a = 0.18 if not _home_dark() else 0.15
-	halo_b.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color("#b8bec5") if not _home_dark() else Color("#505a64"), 105))
+	halo_b.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color("#456ca9") if not _home_dark() else Color("#505a64"), 105))
 	RefCanvas.set_rect(halo_b, -72, 610, 194, 194)
 	canvas.add_child(halo_b)
 	canvas.move_child(halo_b, 1)
@@ -136,7 +136,7 @@ func _add_frame_background(canvas: Control) -> void:
 	var ribbon := Polygon2D.new()
 	ribbon.name = "HomeBackdropRibbon"
 	ribbon.polygon = PackedVector2Array([Vector2(-30,310),Vector2(420,210),Vector2(420,280),Vector2(-30,380)])
-	ribbon.color = Color("#8e969f", 0.070 if not _home_dark() else 0.085)
+	ribbon.color = Color("#274b86", 0.070 if not _home_dark() else 0.085)
 	canvas.add_child(ribbon)
 	canvas.move_child(ribbon, 1)
 
