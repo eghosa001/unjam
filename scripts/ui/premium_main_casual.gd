@@ -140,7 +140,7 @@ func _figma_surface(active: String, bottom_tint: Color = FIGMA_BG_BOTTOM, top_ti
 		"collection": scene_accent = FIGMA_GREEN
 		"settings": scene_accent = FIGMA_CYAN
 		_: scene_accent = _accent()
-	FigmaReferenceCanvas.add_world_depth(canvas, Color("#59636f") if _dark() else Color("#9aa4ae"), _dark(), 0.10 if _dark() else 0.07, "SurfaceWorldDepth")
+	FigmaReferenceCanvas.add_world_depth(canvas, Color("#59636f") if _dark() else Color("#9aa4ae"), _dark(), 0.0, "SurfaceWorldDepth")
 	FigmaReferenceCanvas.add_scene_backdrop_layers(canvas, Color("#68737f") if _dark() else Color("#a9b1ba"), _dark(), "Surface")
 	var surface_key_light := canvas.get_node_or_null("SurfaceKeyLight")
 	var surface_accent_glow := canvas.get_node_or_null("SurfaceAccentGlow")
@@ -153,7 +153,7 @@ func _figma_surface(active: String, bottom_tint: Color = FIGMA_BG_BOTTOM, top_ti
 	halo_top.name = "SurfaceBackdropHaloTop"
 	halo_top.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	halo_top.modulate.a = 0.20 if not _dark() else 0.16
-	halo_top.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color("#8fb9bd") if not _dark() else Color("#52758a"), 110))
+	halo_top.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color("#c4c9cf") if not _dark() else Color("#59636d"), 110))
 	FigmaReferenceCanvas.set_rect(halo_top, 268, -68, 205, 205)
 	canvas.add_child(halo_top)
 	canvas.move_child(halo_top, 1)
@@ -162,7 +162,7 @@ func _figma_surface(active: String, bottom_tint: Color = FIGMA_BG_BOTTOM, top_ti
 	halo_bottom.name = "SurfaceBackdropHaloBottom"
 	halo_bottom.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	halo_bottom.modulate.a = 0.16 if not _dark() else 0.13
-	halo_bottom.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color("#9bafc4") if not _dark() else Color("#456579"), 100))
+	halo_bottom.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color("#b8bec5") if not _dark() else Color("#505a64"), 100))
 	FigmaReferenceCanvas.set_rect(halo_bottom, -76, 632, 188, 188)
 	canvas.add_child(halo_bottom)
 	canvas.move_child(halo_bottom, 1)
@@ -170,7 +170,7 @@ func _figma_surface(active: String, bottom_tint: Color = FIGMA_BG_BOTTOM, top_ti
 	var ribbon := Polygon2D.new()
 	ribbon.name = "SurfaceBackdropRibbon"
 	ribbon.polygon = PackedVector2Array([Vector2(-32,330),Vector2(420,235),Vector2(420,296),Vector2(-32,390)])
-	ribbon.color = Color("#7198a4", 0.065 if not _dark() else 0.085)
+	ribbon.color = Color("#8e969f", 0.060 if not _dark() else 0.075)
 	canvas.add_child(ribbon)
 	canvas.move_child(ribbon, 1)
 
