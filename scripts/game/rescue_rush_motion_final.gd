@@ -6,6 +6,10 @@ const BOARD_HEIGHT_RATIO := 0.60
 const MAX_CELL_SIZE := 168.0
 
 var _board_has_rendered := false
+var _last_fit_viewport := Vector2(-1.0, -1.0)
+var _last_fit_gap := Vector2(-1.0, -1.0)
+var _last_fit_first_child_id := 0
+var _last_fit_board_size := Vector2i(-1, -1)
 
 func _ready() -> void:
 	super._ready()
@@ -17,10 +21,8 @@ func _queue_board_fit() -> void:
 	call_deferred("_fit_board_to_viewport")
 
 func render_board() -> void:
-	if board_grid != null:
-		for child in board_grid.get_children():
-			board_grid.remove_child(child)
-			child.queue_free()
+	# The premium layer now owns state-aware rebuilding. Do not pre-clear here or
+	# an unchanged refresh would defeat control reuse before the parent can skip it.
 	super.render_board()
 	_board_has_rendered = true
 	_fit_board_to_viewport()
@@ -50,6 +52,17 @@ func _fit_board_to_viewport() -> void:
 	var viewport_size: Vector2 = get_viewport_rect().size
 	var gap_x := float(board_grid.get_theme_constant("h_separation"))
 	var gap_y := float(board_grid.get_theme_constant("v_separation"))
+	var first_child_id := 0
+	if board_grid.get_child_count() > 0:
+		first_child_id = int(board_grid.get_child(0).get_instance_id())
+	var board_size := Vector2i(width, height)
+	var gap := Vector2(gap_x, gap_y)
+	if _last_fit_viewport.is_equal_approx(viewport_size) and _last_fit_gap.is_equal_approx(gap) and _last_fit_first_child_id == first_child_id and _last_fit_board_size == board_size:
+		return
+	_last_fit_viewport = viewport_size
+	_last_fit_gap = gap
+	_last_fit_first_child_id = first_child_id
+	_last_fit_board_size = board_size
 	var max_board_width := minf(maxf(320.0, viewport_size.x - 80.0), 920.0)
 	var max_board_height := minf(maxf(360.0, viewport_size.y * BOARD_HEIGHT_RATIO), 1120.0)
 	var calculated_width: float = floorf((max_board_width - 40.0 - gap_x * float(maxi(0, width - 1))) / float(width))
