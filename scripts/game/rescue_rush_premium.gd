@@ -9,6 +9,8 @@ var rescue_title_label: Label
 var difficulty_chip: Label
 var world_subtitle_label: Label
 var footer_label: Label
+var _board_render_signature := 0
+var _board_render_signature_valid := false
 
 func style_button(button: Button, accent: bool = false) -> void:
 	var base := Color("e7a72b") if accent else Color("183b70")
@@ -311,8 +313,6 @@ func _make_empty_cell(cell_size: int, pos: Vector2i, route: Dictionary) -> Contr
 func render_board() -> void:
 	if board_grid == null:
 		return
-	for child in board_grid.get_children():
-		child.queue_free()
 
 	moves_label.text = ("MOVES\n%d / %d" % [moves, action_budget]) if objective_type == "perfect_rescue" else "MOVES\n%d • 3★≤%d" % [moves, par_moves]
 	var lives_text := "∞" if mistake_limit <= 0 else str(maxi(0, mistake_limit - mistakes_this_level))
@@ -325,6 +325,25 @@ func render_board() -> void:
 		if bool(piece.get("active", true)):
 			piece_lookup[Vector2i(int(piece.get("x", -1)), int(piece.get("y", -1)))] = i
 	var route := _best_escape_lane(piece_lookup)
+	if int(route.get("blockers", 1)) == 0 and not rescued:
+		hint_label.text = "Escape lane open — free the rescue!"
+		hint_label.add_theme_color_override("font_color", Color("8ff5b5"))
+	else:
+		hint_label.add_theme_color_override("font_color", Color("b9c9dc"))
+
+	# Some UI/navigation paths request a board refresh even when authoritative
+	# gameplay state has not changed. Keep the existing controls in that case
+	# instead of rebuilding every 3D piece, token, panel and signal connection.
+	# Labels and route messaging above still refresh exactly as before.
+	var board_signature := hash([level_number, daily_mode, width, height, rescue_pos, rescued, rescue_id, pieces])
+	if _board_render_signature_valid and _board_render_signature == board_signature and board_grid.get_child_count() == width * height:
+		return
+	_board_render_signature = board_signature
+	_board_render_signature_valid = true
+	for child in board_grid.get_children():
+		board_grid.remove_child(child)
+		child.queue_free()
+
 	var viewport_width := get_viewport_rect().size.x
 	var max_board_width := minf(viewport_width - 112.0, 860.0)
 	var gap := 10.0 if width <= 5 else 7.0
@@ -366,9 +385,3 @@ func render_board() -> void:
 				var empty := _make_empty_cell(cell_size, pos, route)
 				board_grid.add_child(empty)
 				_animate_cell(empty, x, y)
-
-	if int(route.get("blockers", 1)) == 0 and not rescued:
-		hint_label.text = "Escape lane open — free the rescue!"
-		hint_label.add_theme_color_override("font_color", Color("8ff5b5"))
-	else:
-		hint_label.add_theme_color_override("font_color", Color("b9c9dc"))
