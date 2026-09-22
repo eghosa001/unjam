@@ -105,6 +105,11 @@ func progress_for(id:String)->Dictionary:
 
 func highest_level(id:String)->int:return clampi(int(_progress_ref(id).get("highest_level",1)),1,CAMPAIGN_LEVELS+1)
 func get_stars(id:String,n:int)->int:return int((_progress_ref(id).get("stars",{}) as Dictionary).get(str(n),0))
+func levels_completed(id:String)->int:return int(_progress_ref(id).get("levels_completed",0))
+func perfect_clears(id:String)->int:return int(_progress_ref(id).get("perfect_clears",0))
+func world_badge_count(id:String)->int:
+ var badges=_progress_ref(id).get("world_badges",[])
+ return (badges as Array).size() if badges is Array else 0
 func total_stars(id:String)->int:
  if _total_stars_cache.has(id):return int(_total_stars_cache[id])
  var total:=0
