@@ -246,8 +246,8 @@ func render_board() -> void:
 		return
 	for child in board_grid.get_children():
 		child.queue_free()
-	moves_label.text = "MOVES  %d / %d" % [moves, par_moves]
-	rescue_label.text = "SAFE" if rescued else "RESCUE  " + rescue_id.to_upper()
+	moves_label.text = ("MOVES  %d / %d" % [moves, action_budget]) if objective_type == "perfect_rescue" else "MOVES  %d  •  3★ ≤ %d" % [moves, par_moves]
+	rescue_label.text = "SAFE" if rescued else ("LIVES  ∞" if mistake_limit <= 0 else "LIVES  %d" % maxi(0, mistake_limit - mistakes_this_level))
 	chain_label.text = "CHAIN ×%d" % chain_count if chain_count > 1 else ""
 	var cell_size: int = 142 if width <= 5 else 116
 	for y in range(height):
@@ -349,12 +349,12 @@ func try_move(index: int) -> void:
 		var remaining := maxi(0, mistake_limit - mistakes_this_level)
 		hint_label.text = "Blocked — clear its full route first."
 		if mistake_limit > 0:
-			hint_label.text += "  Mistakes left: %d" % remaining
+			hint_label.text += "  Lives left: %d" % remaining
 		FeedbackManager.blocked()
 		shake_board()
 		AnalyticsManager.track("rescue_blocked_tap", {"level": level_number, "mistakes": mistakes_this_level, "limit": mistake_limit})
 		if mistake_limit > 0 and mistakes_this_level >= mistake_limit:
-			await _fail_and_restart("Too many blocked taps — rescue reset.")
+			await _fail_and_restart("No lives left.")
 		else:
 			_save_checkpoint()
 		return
@@ -386,13 +386,39 @@ func _has_any_legal_move() -> bool:
 			return true
 	return false
 
+func _failure_presentation(message: String) -> Dictionary:
+	if message.begins_with("No lives left"):
+		return {
+			"title": "OUT OF LIVES",
+			"subtitle": "A blocked arrow costs one life. Clear its route before tapping.",
+			"badge": "0 LIVES"
+		}
+	if message.begins_with("Action budget"):
+		return {
+			"title": "OUT OF MOVES",
+			"subtitle": "The rescue was not completed within this level's move limit.",
+			"badge": "MOVE LIMIT"
+		}
+	if message.begins_with("No valid arrow"):
+		return {
+			"title": "NO ROUTE LEFT",
+			"subtitle": "No active arrow can leave the board. Retry and choose a different order.",
+			"badge": "NO LEGAL MOVE"
+		}
+	return {
+		"title": "RESCUE FAILED",
+		"subtitle": message,
+		"badge": "TRY AGAIN"
+	}
+
 func _fail_and_restart(message: String) -> void:
 	if failed or rescued:
 		return
+	var presentation := _failure_presentation(message)
 	failed = true
 	board_locked = true
 	if hint_label != null:
-		hint_label.text = message
+		hint_label.text = String(presentation.get("subtitle", message))
 	_clear_checkpoint(true)
 	FeedbackManager.blocked()
 	if not daily_mode:
@@ -400,13 +426,17 @@ func _fail_and_restart(message: String) -> void:
 	AnalyticsManager.track("rescue_attempt_failed", {"level": level_number, "reason": message, "daily": daily_mode})
 	var result := PremiumResultOverlay.new()
 	result.configure(
-		"RESCUE FAILED",
-		message,
-		"%d MOVES   •   %d BLOCKED TAPS\nTRY A DIFFERENT ORDER" % [moves, mistakes_this_level],
+		String(presentation.get("title", "RESCUE FAILED")),
+		String(presentation.get("subtitle", message)),
+		"%d MOVES   •   %d BLOCKED TAPS\n%s" % [
+			moves,
+			mistakes_this_level,
+			("NO MOVE LIMIT" if objective_type != "perfect_rescue" else "LIMIT %d MOVES" % action_budget)
+		],
 		0,
 		world_accent(),
 		"RETRY",
-		"ROUTE BLOCKED"
+		String(presentation.get("badge", "TRY AGAIN"))
 	)
 	result.configure_secondary("BACK HOME" if daily_mode else "BACK TO LEVELS", true)
 	add_child(result)
@@ -572,13 +602,23 @@ func _objective_satisfied() -> bool:
 
 func objective_instruction() -> String:
 	match objective_type:
-		"full_escape": return "Clear every movable arrow, then free the chick"
-		"key_rescue": return "Release every required key, then open the rescue lane"
-		"gate_run": return "Open every gate and free the chick"
-		"bomb_route": return "Resolve the bomb route and free the chick"
-		"chain_rescue": return "Resolve the linked chain and free the chick"
-		"perfect_rescue": return "Free the chick within %d actions" % action_budget
-		_: return "Open a clear lane and free the chick"
+		"full_escape": return "WIN: Clear every movable arrow, then rescue"
+		"key_rescue": return "WIN: Clear all keys, then open a rescue lane"
+		"gate_run": return "WIN: Open all gates, then rescue"
+		"bomb_route": return "WIN: Clear all bombs, then rescue"
+		"chain_rescue": return "WIN: Clear all linked arrows, then rescue"
+		"perfect_rescue": return "WIN: Rescue within %d moves" % action_budget
+		_: return "WIN: Open one clear escape lane to rescue"
+
+func _objective_success_text() -> String:
+	match objective_type:
+		"full_escape": return "Win condition met: every movable arrow was cleared and the rescue escaped."
+		"key_rescue": return "Win condition met: all keys were cleared and a rescue lane opened."
+		"gate_run": return "Win condition met: every gate was opened and the rescue escaped."
+		"bomb_route": return "Win condition met: every bomb was cleared and the rescue escaped."
+		"chain_rescue": return "Win condition met: every linked arrow was cleared and the rescue escaped."
+		"perfect_rescue": return "Win condition met within the %d-move limit." % action_budget
+		_: return "Win condition met: a clear escape lane was opened."
 
 func _active_type_count(type_name: String) -> int:
 	var count := 0
@@ -641,7 +681,7 @@ func show_result(stars: int) -> void:
 	var collection_bonus: int = EconomyManager.collection_daily_bonus() if daily_mode else 0
 	var bonus_reward: int = collection_bonus if daily_mode else int(completion_rewards.get("bonus_coins", 0))
 	var summary := reward_summary()
-	var subtitle := "Rescue secured. The path is clear."
+	var subtitle := _objective_success_text()
 	if not summary.is_empty():
 		subtitle += "\n" + summary
 	var result := PremiumResultOverlay.new()
