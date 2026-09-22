@@ -16,7 +16,7 @@ func _init() -> void:
 	_require_source("res://scripts/game/water_sort_casual.gd", ["func apply_theme_mode"], "Water Sort immediate dark theme", errors)
 	_require_source("res://scripts/game/block_puzzle_final_polish.gd", ["func apply_theme_mode", "BlockPuzzle3DEnvironment"], "Block Puzzle immediate dark theme", errors)
 	_require_source("res://scripts/ui/premium_home_direct_levels.gd", ["HomeWorldProgressRoot", "HomeWorldFlatGameLogo", "_add_world_progress(figma_canvas)", "progress_accent"], "Home Quick Switch world-progress synchronization", errors)
-	_require_source("res://scripts/ui/premium_home_direct_levels.gd", ["WORLD JOURNEY\", Rect2(195, 596, 152, 17), 12", "LEVEL %d • %d/%d", "%d%% COMPLETE", "Rect2(195, 706, 150, 16), 11"], "Home world-journey text readability", errors)
+	_require_source("res://scripts/ui/premium_home_direct_levels.gd", ["WORLD %d\" % world, Rect2(195, 598, 152, 26), 18", "LEVEL %d • %d%%", "NEXT • LEVEL %d", "CONTINUE\""], "Home concise journey readability", errors)
 	_require_source("res://scripts/ui/premium_main_casual.gd", ["SurfaceGlossSweep", "SurfaceWorldDepth", "DONE TODAY", "PLAY TODAY", "FIGMA_DARK_INK if _dark() else FIGMA_INK"], "gloss/independent-Daily/dark-level readability", errors)
 	_require_source("res://scripts/ui/ux_shell_casual.gd", ["TutorialStepCard", "Rect2(43,409,302,76)", "Rect2(43,598,302,58)"], "tutorial collision-safe layout", errors)
 	_require_source("res://scripts/ui/premium_result_overlay.gd", ["Rect2(27,76,334,570 if has_secondary else 500)", "Rect2(47,568,294,48)"], "result collision-safe layout", errors)
@@ -36,7 +36,7 @@ func _init() -> void:
 	_require_source("res://scripts/ui/ux_shell_casual.gd", ["label(\"EXIT\",12,Color.WHITE", "set_rect(exit_label,160,34,46,17)"], "Tutorial exit label containment", errors)
 	_require_source("res://scripts/ui/figma_reference_canvas.gd", ["second dark glyph", "font_shadow_color\", Color.TRANSPARENT", "shadow_offset_y\", 1", "shadow_outline_size\", 0"], "crisp scaled Figma text", errors)
 	_require_source("res://scripts/ui/premium_main_casual.gd", ["Rect2(34,label_y-7,210,30),14", "button_text_color,19,14", "theme_text,19,14"], "Settings compact text minimums", errors)
-	_require_source("res://scripts/ui/premium_main_casual.gd", ["Rect2(17,539,354,112)", "Rect2(37,y+8,184,18),14", "Rect2(37,y+48,192,15),12", "Rect2(251,y+13,96,44)", "state_text_color,\n\t\t\t12,\n\t\t\t13"], "Collection compact spacing/readability", errors)
+	_require_source("res://scripts/ui/premium_main_casual.gd", ["BONUS  +%d DAILY • +%d GIFT", "Rect2(33,548,250,44)", "Rect2(37,y+8,184,18),14", "Rect2(37,y+48,192,15),12", "Rect2(251,y+13,96,44)", "state_text_color,\n\t\t\t12,\n\t\t\t13"], "Collection compact spacing/readability", errors)
 	_require_source("res://scripts/ui/premium_main_casual.gd", ["func _figma_daily_progress", "DailyProgressBar", "Each Daily is independent • play in any order", "Rect2(33,703,318,18), 12", "Rect2(17,610,354,116)"], "Daily independent progress panel", errors)
 
 	if not errors.is_empty():
