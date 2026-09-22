@@ -477,10 +477,12 @@ func _restore_checkpoint() -> void:
 	if checkpoint.is_empty() or int(checkpoint.get("level", -1)) != level_number or bool(checkpoint.get("daily", false)) != daily_mode: return
 	var saved_tubes = checkpoint.get("tubes", [])
 	if saved_tubes is Array and not saved_tubes.is_empty():
-		tubes = saved_tubes.duplicate(true)
+		# checkpoint() already returns a recursive detached copy; adopt those arrays
+		# directly instead of deep-copying the full resumed session a second time.
+		tubes = saved_tubes
 		moves = maxi(0, int(checkpoint.get("moves", 0)))
 		var saved_history = checkpoint.get("history", [])
-		if saved_history is Array: history = saved_history.duplicate(true)
+		if saved_history is Array: history = saved_history
 
 func _quit() -> void:
 	if animating: return
