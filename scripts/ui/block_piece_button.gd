@@ -14,6 +14,10 @@ var piece_index := -1
 var touch_drag_started := false
 var dragging := false
 var phase := 0.0
+var _selected_redraw_accumulator := 0.0
+
+const SELECTED_REDRAW_FPS := 30.0
+const SELECTED_REDRAW_INTERVAL := 1.0 / SELECTED_REDRAW_FPS
 var target_scale := Vector2.ONE
 var touch_preview: Control
 
@@ -50,23 +54,31 @@ func _ready() -> void:
 	set_process(false)
 	_sync_processing()
 
+func _desired_scale() -> Vector2:
+	var hover_scale := 1.05 if hover and not selected else 1.0
+	return target_scale * hover_scale
+
 func _sync_processing() -> void:
-	set_process(selected or hover or dragging)
+	var desired := _desired_scale()
+	var unsettled := scale.distance_to(desired) > 0.002 or absf(rotation) > 0.002
+	set_process(selected or dragging or unsettled)
+	if not selected:
+		_selected_redraw_accumulator = 0.0
 
 func _refresh_pivot() -> void:
 	pivot_offset = size * 0.5
 
 func _process(delta: float) -> void:
 	phase += delta
-	if dragging:
-		queue_redraw()
-		return
-	var hover_scale := 1.05 if hover and not selected else 1.0
-	var desired := target_scale * hover_scale
+	var desired := _desired_scale()
 	scale = scale.lerp(desired, minf(1.0, delta * 13.0))
 	rotation = lerpf(rotation, 0.0, minf(1.0, delta * 14.0))
-	if selected or hover:
-		queue_redraw()
+	if selected and not dragging:
+		_selected_redraw_accumulator += delta
+		if _selected_redraw_accumulator >= SELECTED_REDRAW_INTERVAL:
+			_selected_redraw_accumulator = fmod(_selected_redraw_accumulator, SELECTED_REDRAW_INTERVAL)
+			queue_redraw()
+	_sync_processing()
 
 func _press() -> void:
 	if used:
