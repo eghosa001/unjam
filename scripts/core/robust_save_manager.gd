@@ -3,7 +3,7 @@ extends "res://scripts/core/save_manager.gd"
 const ROBUST_SAVE_PATH := "user://unjam_save.json"
 const BACKUP_PATH := "user://unjam_save.backup.json"
 const TEMP_PATH := "user://unjam_save.tmp.json"
-const SAVE_VERSION := 13
+const SAVE_VERSION := 14
 
 func _ready() -> void:
 	load_save()
@@ -66,6 +66,9 @@ func _sanitize() -> void:
 	data.achievement_points = max(0, int(data.get("achievement_points", 0)))
 	data.rewarded_ads_watched = max(0, int(data.get("rewarded_ads_watched", 0)))
 	data.lifetime_purchased_coins = max(0, int(data.get("lifetime_purchased_coins", 0)))
+	data.purchase_coin_debt = max(0, int(data.get("purchase_coin_debt", 0)))
+	var install_id := String(data.get("purchase_install_id", "")).strip_edges()
+	data.purchase_install_id = install_id if install_id.length() <= 128 else ""
 	data.garden_last_gift_date = String(data.get("garden_last_gift_date", ""))
 	data.garden_gifts_claimed = max(0, int(data.get("garden_gifts_claimed", 0)))
 	var consent := String(data.get("privacy_consent_status", "unknown"))
@@ -78,10 +81,11 @@ func _sanitize() -> void:
 		data.purchase_claim_ids = {}
 	if not data.get("daily_game_choices", {}) is Dictionary:
 		data.daily_game_choices = {}
-	for key in ["rescued", "decorations", "daily_completed", "milestone_chests", "world_badges", "achievements", "purchased_products", "processed_purchase_tokens"]:
+	for key in ["rescued", "decorations", "daily_completed", "milestone_chests", "world_badges", "achievements", "purchased_products", "processed_purchase_tokens", "processed_purchase_revocations"]:
 		if not data.get(key, []) is Array:
 			data[key] = []
 	_sanitize_purchase_tokens()
+	_sanitize_purchase_revocations()
 	_sanitize_purchase_claim_ids()
 	var clean_stars: Dictionary = {}
 	var completed_count := 0
@@ -131,6 +135,16 @@ func _sanitize_purchase_tokens() -> void:
 		if fingerprint not in cleaned:
 			cleaned.append(fingerprint)
 	data.processed_purchase_tokens = cleaned
+
+func _sanitize_purchase_revocations() -> void:
+	var cleaned: Array = []
+	for value in data.get("processed_purchase_revocations", []):
+		var fingerprint := String(value).strip_edges().to_lower()
+		if _looks_like_sha256(fingerprint) and fingerprint not in cleaned:
+			cleaned.append(fingerprint)
+		if cleaned.size() >= 2048:
+			break
+	data.processed_purchase_revocations = cleaned
 
 func _sanitize_purchase_claim_ids() -> void:
 	# Claim IDs are not credentials, but keep this client-side retry map bounded
