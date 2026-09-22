@@ -9,6 +9,7 @@ var rescue_title_label: Label
 var difficulty_chip: Label
 var world_subtitle_label: Label
 var footer_label: Label
+var _board_has_rendered := false
 
 func style_button(button: Button, accent: bool = false) -> void:
 	var base := Color("e7a72b") if accent else Color("183b70")
@@ -229,6 +230,9 @@ func build_ui() -> void:
 func _animate_brand() -> void:
 	if rescue_title_label == null:
 		return
+	if MotionSystem.reduced():
+		rescue_title_label.modulate.a = 1.0
+		return
 	rescue_title_label.modulate.a = 0.72
 	var tween := create_tween().set_loops()
 	tween.tween_property(rescue_title_label, "modulate:a", 1.0, 1.15).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
@@ -252,7 +256,7 @@ func _piece_visual_color(piece: Dictionary) -> Color:
 		"blocker": return Color("3b4658")
 		_: return _direction_color(String(piece.get("direction", "right")))
 
-func _best_escape_lane() -> Dictionary:
+func _best_escape_lane(piece_lookup: Dictionary = {}) -> Dictionary:
 	var best_direction := Vector2i.UP
 	var best_blockers := 999
 	var best_cells: Array[Vector2i] = []
@@ -262,7 +266,8 @@ func _best_escape_lane() -> Dictionary:
 		var cells: Array[Vector2i] = []
 		while is_inside(cursor):
 			cells.append(cursor)
-			if get_piece_index_at(cursor) >= 0:
+			var occupied := piece_lookup.has(cursor) if not piece_lookup.is_empty() else get_piece_index_at(cursor) >= 0
+			if occupied:
 				blockers += 1
 			cursor += direction
 		if blockers < best_blockers:
@@ -302,6 +307,10 @@ func _make_empty_cell(cell_size: int, pos: Vector2i, route: Dictionary) -> Contr
 		slot.add_theme_stylebox_override("panel", style_box(Color(1, 1, 1, 0.022), 24, Color(1, 1, 1, 0.045), 1))
 	return slot
 
+func load_level() -> void:
+	_board_has_rendered = false
+	super.load_level()
+
 func render_board() -> void:
 	if board_grid == null:
 		return
@@ -313,7 +322,13 @@ func render_board() -> void:
 	rescue_label.text = "LIVES\n%s" % lives_text
 	chain_label.text = "CHAIN\n×%d" % maxi(chain_count, 1)
 
-	var route := _best_escape_lane()
+	var piece_lookup := {}
+	for i in range(pieces.size()):
+		var piece: Dictionary = pieces[i]
+		if bool(piece.get("active", true)):
+			piece_lookup[Vector2i(int(piece.get("x", -1)), int(piece.get("y", -1)))] = i
+	var animate_cells := not _board_has_rendered
+	var route := _best_escape_lane(piece_lookup)
 	var viewport_width := get_viewport_rect().size.x
 	var max_board_width := minf(viewport_width - 112.0, 860.0)
 	var gap := 10.0 if width <= 5 else 7.0
@@ -326,7 +341,7 @@ func render_board() -> void:
 	for y in range(height):
 		for x in range(width):
 			var pos := Vector2i(x, y)
-			var piece_index: int = get_piece_index_at(pos)
+			var piece_index := int(piece_lookup.get(pos, -1))
 			if not rescued and pos == rescue_pos:
 				var slot := PanelContainer.new()
 				slot.custom_minimum_size = Vector2(cell_size, cell_size)
@@ -336,7 +351,8 @@ func render_board() -> void:
 				token.configure(rescue_id, Color("ffd166"))
 				slot.add_child(token)
 				board_grid.add_child(slot)
-				_animate_cell(slot, x, y)
+				if animate_cells:
+					_animate_cell(slot, x, y)
 				var rescue_pulse := create_tween().set_loops(1)
 				rescue_pulse.tween_property(slot, "modulate", Color(1.08, 1.04, 0.86, 1), 0.46).set_trans(Tween.TRANS_CUBIC)
 				rescue_pulse.tween_property(slot, "modulate", Color.WHITE, 0.46).set_trans(Tween.TRANS_CUBIC)
@@ -350,11 +366,15 @@ func render_board() -> void:
 				if not button.disabled:
 					button.pressed.connect(try_move.bind(piece_index))
 				board_grid.add_child(button)
-				_animate_cell(button, x, y)
+				if animate_cells:
+					_animate_cell(button, x, y)
 			else:
 				var empty := _make_empty_cell(cell_size, pos, route)
 				board_grid.add_child(empty)
-				_animate_cell(empty, x, y)
+				if animate_cells:
+					_animate_cell(empty, x, y)
+
+	_board_has_rendered = true
 
 	if int(route.get("blockers", 1)) == 0 and not rescued:
 		hint_label.text = "Escape lane open — free the rescue!"
