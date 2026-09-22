@@ -15,14 +15,16 @@ func run() -> void:
 	var save_manager = root.get_node_or_null("SaveManager")
 	var hint_manager = root.get_node_or_null("HintManager")
 	var ad_manager = root.get_node_or_null("AdManager")
+	var economy = root.get_node_or_null("EconomyManager")
 	var store_manager = root.get_node_or_null("StoreManager")
 	var multi_game = root.get_node_or_null("MultiGameManager")
 	expect_true(save_manager != null, "SaveManager autoload missing")
 	expect_true(hint_manager != null, "HintManager autoload missing")
 	expect_true(ad_manager != null, "AdManager autoload missing")
+	expect_true(economy != null, "EconomyManager autoload missing")
 	expect_true(store_manager != null, "StoreManager autoload missing")
 	expect_true(multi_game != null, "MultiGameManager autoload missing")
-	if save_manager == null or hint_manager == null or ad_manager == null or store_manager == null or multi_game == null:
+	if save_manager == null or hint_manager == null or ad_manager == null or economy == null or store_manager == null or multi_game == null:
 		quit(1)
 		return
 
