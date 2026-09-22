@@ -44,6 +44,9 @@ const DIRECTIONS: Dictionary = {
 const WORLD_COLORS: Array[String] = ["182848", "163a5f", "273469", "522546", "214d3f", "4b2e63"]
 const WORLD_ACCENTS: Array[String] = ["2dd4b6", "5da9ff", "8b7cf6", "ff6b7a", "55d68b", "c074ff"]
 
+func monetization_game_id() -> String:
+	return "rescue_rush"
+
 func _ready() -> void:
 	level_data = custom_level_data.duplicate(true) if not custom_level_data.is_empty() else LevelManager.load_level(level_number)
 	if level_data.is_empty():
