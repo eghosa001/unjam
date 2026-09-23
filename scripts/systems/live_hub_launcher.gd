@@ -47,6 +47,8 @@ func open_hub() -> void:
 	launcher.visible = false
 	var packed: PackedScene = load("res://scenes/RetentionHub.tscn") as PackedScene
 	var hub: Control = packed.instantiate() as Control
+	hub.z_index = 120
+	hub.mouse_filter = Control.MOUSE_FILTER_STOP
 	scene.add_child(hub)
 	hub.closed.connect(func():
 		hub_open = false

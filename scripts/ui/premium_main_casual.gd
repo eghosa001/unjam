@@ -1,6 +1,7 @@
 extends "res://scripts/ui/premium_main.gd"
 
 const FIGMA_LEVEL_PAGE_SIZE := 20
+const GardenUpgradePreviewScene = preload("res://scripts/ui/garden_upgrade_preview.gd")
 const FIGMA_BG_TOP := Color("#e9e5dd")
 const FIGMA_BG_BOTTOM := Color("#8f887f")
 const FIGMA_NAVY := Color("#252a30")
@@ -778,9 +779,14 @@ func build_collection_upgrades() -> void:
 			16,
 			false
 		)
-		_figma_text(canvas,display_name,Rect2(37,y+8,184,18),14,title_color)
-		_figma_text(canvas,flavor,Rect2(37,y+30,92,15),12,title_color.lightened(0.12))
-		_figma_text(canvas,"+5 DAILY  •  +10 GIFT",Rect2(37,y+48,192,15),12,Color("#6b8091"))
+		_figma_text(canvas,display_name,Rect2(37,y+8,136,18),14,title_color)
+		_figma_text(canvas,flavor,Rect2(37,y+30,118,15),12,title_color.lightened(0.12))
+		_figma_text(canvas,"+5 DAILY  •  +10 GIFT",Rect2(37,y+48,136,15),11,Color("#6b8091"))
+		var preview := GardenUpgradePreviewScene.new() as GardenUpgradePreview
+		preview.name = "CollectionUpgradePreview/%s" % id
+		preview.configure(id,owned)
+		FigmaReferenceCanvas.set_rect(preview,184,y+9,50,50)
+		canvas.add_child(preview)
 		var state_text := "OWNED" if owned else "%d COINS" % cost
 		var pill_fill := Color("#e0f2e5") if owned else Color("#7a57e0")
 		var state_text_color := Color("#4d7a59") if owned else Color.WHITE

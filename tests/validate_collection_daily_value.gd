@@ -74,6 +74,8 @@ func _run() -> void:
 		"CollectionOpenUpgrades",
 		"func build_collection_upgrades",
 		"CollectionScroll/Upgrade/",
+		"CollectionUpgradePreview/",
+		"GardenUpgradePreviewScene",
 		"+5 DAILY",
 		"+10 GIFT",
 		"rainbow_bridge"
