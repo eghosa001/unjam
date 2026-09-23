@@ -343,10 +343,10 @@ func claim_achievement_reward(id: String) -> Dictionary:
 
 func event_shop() -> Array[Dictionary]:
 	return [
-		{"id":"aurora_trail", "title":"AURORA TRAIL", "cost":120},
-		{"id":"gold_rescue_frame", "title":"GOLD RESCUE FRAME", "cost":180},
-		{"id":"crystal_garden", "title":"CRYSTAL GARDEN", "cost":260},
-		{"id":"royal_piece_skin", "title":"ROYAL PIECE SKIN", "cost":350}
+		{"id":"aurora_trail", "title":"AURORA TRAIL", "cost":120, "effect":"Rescue Rush arrows leave a cyan-violet escape trail"},
+		{"id":"gold_rescue_frame", "title":"GOLD RESCUE FRAME", "cost":180, "effect":"Gold rescue frame and result accent in Rescue Rush"},
+		{"id":"crystal_garden", "title":"CRYSTAL GARDEN", "cost":260, "effect":"Crystal styling on your Rescue Garden"},
+		{"id":"royal_piece_skin", "title":"ROYAL PIECE SKIN", "cost":350, "effect":"Royal palette for Block Puzzle pieces"}
 	]
 
 func buy_event_item(id: String) -> bool:
