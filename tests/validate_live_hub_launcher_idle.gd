@@ -6,6 +6,8 @@ func _initialize() -> void:
 	var source := "" if file == null else file.get_as_text()
 	var selector_file := FileAccess.open("res://scripts/ui/premium_live_hub_3d.gd", FileAccess.READ)
 	var selector := "" if selector_file == null else selector_file.get_as_text()
+	var retention_file := FileAccess.open("res://scripts/ui/retention_hub.gd", FileAccess.READ)
+	var retention := "" if retention_file == null else retention_file.get_as_text()
 	var failures: Array[String] = []
 	if source.contains("func _process("):
 		failures.append("LiveHubLauncher still owns an always-running frame callback")
@@ -15,6 +17,9 @@ func _initialize() -> void:
 		failures.append("LiveHubLauncher must explicitly sleep after setup")
 	if not selector.contains("SelectorRewardsOpenButton") or not selector.contains("LiveHubLauncher.open_hub()"):
 		failures.append("Retention rewards exist in code but are not exposed from the visible game selector")
+	for token in ["DAILY MISSIONS", "WIN-STREAK RUSH", "WEEKLY RESCUE LEAGUE", "SEASON JOURNEY", "ACHIEVEMENT VAULT", "LIMITED EVENT SHOP", "FRIENDS HOME"]:
+		if not retention.contains(token):
+			failures.append("Retention player feature is not visibly expressed: %s" % token)
 	if not failures.is_empty():
 		for failure in failures:
 			push_error(failure)
