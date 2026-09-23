@@ -36,9 +36,13 @@ var _rim_right_normalized := Vector2(0.5, 0.1)
 
 func configure(values: Array, selected: bool, index: int) -> void:
 	var liquid_changed := layers != values
+	var selection_changed := is_selected != selected
 	super.configure(values, selected, index)
-	if viewport_3d != null and liquid_changed:
-		_refresh_liquid_3d()
+	if viewport_3d != null:
+		if liquid_changed:
+			_refresh_liquid_3d()
+		elif selection_changed:
+			_request_3d_frame()
 	if is_inside_tree():
 		_sync_motion_processing()
 
