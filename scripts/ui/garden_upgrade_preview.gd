@@ -59,8 +59,9 @@ func _draw_fountain(accent: Color, ink: Color) -> void:
 func _draw_lanterns(accent: Color, ink: Color) -> void:
 	var c := size * 0.5
 	draw_line(c + Vector2(-17, 20), c + Vector2(17, -15), Color(ink, 0.35), 4.0, true)
-	for p in [Vector2(-13, 10), Vector2(0, -2), Vector2(13, -14)]:
-		var base := c + p
+	var lantern_points: Array[Vector2] = [Vector2(-13, 10), Vector2(0, -2), Vector2(13, -14)]
+	for point in lantern_points:
+		var base: Vector2 = c + point
 		draw_line(base, base + Vector2(0, -10), ink, 2.2, true)
 		draw_rect(Rect2(base + Vector2(-4, -16), Vector2(8, 7)), Color("#ffd34f"))
 		draw_rect(Rect2(base + Vector2(-5, -17), Vector2(10, 2)), accent)
