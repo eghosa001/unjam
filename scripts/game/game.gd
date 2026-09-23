@@ -85,6 +85,22 @@ func world_color() -> Color:
 func world_accent() -> Color:
 	return Color(WORLD_ACCENTS[world_index()])
 
+func _owns_event_item(id: String) -> bool:
+	var owned = SaveManager.data.get("event_shop_owned", [])
+	return owned is Array and id in owned
+
+func _rescue_variant_rarity() -> String:
+	var variants = SaveManager.data.get("rescue_variants", [])
+	if not variants is Array:
+		return ""
+	for rarity_name in ["royal", "gold", "silver"]:
+		if "%s_%s" % [rescue_id, rarity_name] in variants:
+			return rarity_name
+	return ""
+
+func _rescue_result_accent() -> Color:
+	return Color("ffd45c") if _owns_event_item("gold_rescue_frame") else world_accent()
+
 func style_box(color: Color, radius: int = 24, border_color: Color = Color.TRANSPARENT, border_width: int = 0) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = color
@@ -260,10 +276,12 @@ func render_board() -> void:
 			if not rescued and pos == rescue_pos:
 				var slot := PanelContainer.new()
 				slot.custom_minimum_size = Vector2(cell_size, cell_size)
-				slot.add_theme_stylebox_override("panel", style_box(Color("18243d"), 28, Color("ffd166"), 2))
+				var gold_frame := _owns_event_item("gold_rescue_frame")
+				var rescue_frame := Color("ffe06b") if gold_frame else Color(world_accent(), 0.72)
+				slot.add_theme_stylebox_override("panel", style_box(Color("18243d"), 28, rescue_frame, 4 if gold_frame else 2))
 				var token := RescueToken.new()
 				token.custom_minimum_size = Vector2(cell_size, cell_size)
-				token.configure(rescue_id, Color("ffd166"))
+				token.configure(rescue_id, rescue_frame, _rescue_variant_rarity())
 				slot.add_child(token)
 				board_grid.add_child(slot)
 				_animate_cell(slot, x, y)
@@ -437,7 +455,7 @@ func _fail_and_restart(message: String) -> void:
 			("NO MOVE LIMIT" if objective_type != "perfect_rescue" else "LIMIT %d MOVES" % action_budget)
 		],
 		0,
-		world_accent(),
+		_rescue_result_accent(),
 		"RETRY",
 		String(presentation.get("badge", "TRY AGAIN"))
 	)
@@ -501,6 +519,8 @@ func escape_piece(index: int, trigger_effect: bool) -> void:
 	if index < 0 or index >= pieces.size() or not bool(pieces[index].get("active", true)):
 		return
 	var piece: Dictionary = pieces[index]
+	if trigger_effect and _owns_event_item("aurora_trail"):
+		_spawn_aurora_escape_trail(piece)
 	pieces[index]["active"] = false
 	if not trigger_effect:
 		return
@@ -511,6 +531,37 @@ func escape_piece(index: int, trigger_effect: bool) -> void:
 		"linked": activate_link(String(piece.get("link_id", "")), index)
 	if chain_count > 1:
 		FeedbackManager.effect()
+
+func _spawn_aurora_escape_trail(piece: Dictionary) -> void:
+	if board_grid == null:
+		return
+	var pos := piece_position(piece)
+	var child_index := pos.y * width + pos.x
+	if child_index < 0 or child_index >= board_grid.get_child_count():
+		return
+	var cell := board_grid.get_child(child_index) as Control
+	if cell == null:
+		return
+	var direction: Vector2i = DIRECTIONS.get(String(piece.get("direction", "right")), Vector2i.RIGHT)
+	var dir := Vector2(direction.x, direction.y).normalized()
+	var start := cell.global_position - global_position + cell.size * 0.5
+	var trail := Line2D.new()
+	trail.name = "AuroraEscapeTrail"
+	trail.width = 18.0
+	trail.default_color = Color("69f5ff")
+	trail.z_index = 520
+	trail.points = PackedVector2Array([start - dir * 22.0, start + dir * 170.0])
+	trail.modulate = Color(1, 1, 1, 0.92)
+	add_child(trail)
+	var glow := Line2D.new()
+	glow.width = 7.0
+	glow.default_color = Color("c17cff")
+	glow.z_index = 521
+	glow.points = trail.points
+	trail.add_child(glow)
+	var tween := create_tween()
+	tween.tween_property(trail, "modulate:a", 0.0, 0.34).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.finished.connect(trail.queue_free)
 
 func rotate_neighbors(center: Vector2i) -> void:
 	var directions: Array[Vector2i] = [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]
@@ -650,6 +701,17 @@ func complete_level() -> void:
 		SaveManager.complete_daily(String(level_data.get("daily_key", DailyChallenge.date_key())), 100)
 	else:
 		completion_rewards = SaveManager.complete_level(level_number, stars, rescue_id, 25 * stars)
+		RetentionManager.record_level_complete(
+			level_number,
+			stars,
+			moves,
+			par_moves,
+			best_chain,
+			rescue_id,
+			hints_used_this_level,
+			"rescue_rush",
+			String(level_data.get("difficulty", level_data.get("difficulty_label", "medium")))
+		)
 	AdManager.note_level_completed()
 	AnalyticsManager.level_completed(level_number, moves, stars)
 	AnalyticsManager.track("rescue_level_difficulty", {
@@ -693,7 +755,7 @@ func show_result(stars: int) -> void:
 		subtitle,
 		"%d MOVES   •   +%d COINS\n3★: 0 ERRORS • NO HINT/UNDO • ≤ %d" % [moves, base_reward + bonus_reward, par_moves],
 		stars,
-		world_accent(),
+		_rescue_result_accent(),
 		"BACK HOME" if daily_mode else ("NEXT RESCUE" if LevelManager.has_level(level_number + 1) else "CAMPAIGN COMPLETE"),
 		"RESCUE SECURED"
 	)
