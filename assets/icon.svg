@@ -21,7 +21,7 @@
 <ellipse cx="256" cy="422" rx="152" ry="30" fill="#050A3A" opacity=".34"/>
 <!-- main U silhouette/shadow -->
 <path d="M134 126V258c0 89 50 140 122 140s122-51 122-140V126" fill="none" stroke="#080A45" stroke-width="104" stroke-linecap="round" stroke-linejoin="round" opacity=".60" transform="translate(0 11)"/>
-<g id="LauncherSafeForeground" filter="url(#shadow)">
+<g id="LauncherSafeForeground" filter="url(#shadow)" transform="translate(256 256) scale(0.86) translate(-256 -256)">
   <path d="M134 126V258c0 89 50 140 122 140s122-51 122-140V126" fill="none" stroke="url(#u)" stroke-width="94" stroke-linecap="round" stroke-linejoin="round"/>
   <path d="M134 126V258c0 89 50 140 122 140s122-51 122-140V126" fill="none" stroke="url(#gold)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" opacity=".96"/>
   <path d="M142 125V250" fill="none" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" opacity=".62"/>
