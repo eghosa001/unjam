@@ -700,7 +700,9 @@ func complete_level() -> void:
 	if daily_mode:
 		SaveManager.complete_daily(String(level_data.get("daily_key", DailyChallenge.date_key())), 100)
 	else:
-		completion_rewards = SaveManager.complete_level(level_number, stars, rescue_id, 25 * stars)
+		# Route Rescue Rush through the shared multi-game completion path so its
+		# per-game daily tasks progress exactly like Water Sort and Block Puzzle.
+		completion_rewards = MultiGameManager.complete_level("rescue_rush", level_number, stars, 25 * stars)
 		RetentionManager.record_level_complete(
 			level_number,
 			stars,
