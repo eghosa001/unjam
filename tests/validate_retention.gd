@@ -117,6 +117,72 @@ func _run() -> void:
 	if task_store.size() > 45 * 3:
 		errors.append("Daily task history grows without the 45-day bound")
 
+	# End-to-end Rescue Rush retention path: campaign completion must advance
+	# shared per-game tasks plus the retention mission/league/season/event state.
+	save_manager.data["daily_tasks"] = {}
+	save_manager.data["daily_mission_progress"] = {}
+	save_manager.data["daily_mission_claimed"] = []
+	save_manager.data["daily_all_claimed"] = false
+	save_manager.data["weekly_points"] = 0
+	save_manager.data["season_points"] = 0
+	save_manager.data["event_currency"] = 0
+	save_manager.data["event_daily_earned"] = 0
+	save_manager.data["win_streak"] = 0
+	save_manager.data["weekly_played_levels"] = []
+	save_manager.data["daily_unique_levels"] = []
+	save_manager.data["rescue_variants"] = []
+	multi.call("complete_level", "rescue_rush", 25, 3, 0)
+	manager.call("record_level_complete", 25, 3, 6, 8, 2, "puppy", 0, "rescue_rush", "hard")
+	var rescue_tasks: Array = multi.call("daily_tasks", "rescue_rush")
+	var task_advanced := false
+	for task_value in rescue_tasks:
+		if task_value is Dictionary and String((task_value as Dictionary).get("id","")) == "play3":
+			task_advanced = int((task_value as Dictionary).get("progress",0)) >= 1
+	if not task_advanced:
+		errors.append("Rescue Rush completion does not advance per-game daily tasks")
+	var mission_progress: Dictionary = save_manager.data.get("daily_mission_progress", {})
+	if int(mission_progress.get("clear_levels",0)) < 1 or int(mission_progress.get("perfects",0)) < 1 or int(mission_progress.get("hard_levels",0)) < 1:
+		errors.append("Rescue Rush completion does not advance retention missions end-to-end")
+	if int(save_manager.data.get("weekly_points",0)) <= 0 or int(save_manager.data.get("season_points",0)) <= 0:
+		errors.append("Rescue Rush completion does not feed weekly/season progression")
+	if int(save_manager.data.get("event_currency",0)) <= 0 or int(save_manager.data.get("win_streak",0)) != 1:
+		errors.append("Rescue Rush completion does not feed event currency/win streak")
+	if "puppy_silver" not in save_manager.data.get("rescue_variants", []):
+		errors.append("Perfect Rescue Rush milestone does not unlock a visible rescue variant")
+
+	# Event purchases must persist ownership and have a concrete runtime consumer.
+	save_manager.data["event_currency"] = 5000
+	save_manager.data["event_shop_owned"] = []
+	for item_value in manager.call("event_shop"):
+		if not item_value is Dictionary:
+			continue
+		var item: Dictionary = item_value
+		if String(item.get("effect","")).is_empty():
+			errors.append("Event cosmetic is missing an effect description: %s" % String(item.get("id","")))
+		if not bool(manager.call("buy_event_item", String(item.get("id","")))):
+			errors.append("Event cosmetic purchase failed: %s" % String(item.get("id","")))
+	for id in ["aurora_trail","gold_rescue_frame","crystal_garden","royal_piece_skin"]:
+		if id not in save_manager.data.get("event_shop_owned", []):
+			errors.append("Purchased event cosmetic was not persisted: %s" % id)
+	var rescue_source := FileAccess.get_file_as_string("res://scripts/game/game.gd")
+	var block_source := FileAccess.get_file_as_string("res://scripts/game/block_puzzle.gd")
+	var collection_source := FileAccess.get_file_as_string("res://scripts/ui/premium_main_casual.gd")
+	var token_source := FileAccess.get_file_as_string("res://scripts/ui/rescue_token.gd")
+	for token in ["MultiGameManager.complete_level(\"rescue_rush\"", "RetentionManager.record_level_complete", "aurora_trail", "gold_rescue_frame"]:
+		if not rescue_source.contains(token):
+			errors.append("Rescue Rush end-to-end retention/cosmetic consumer missing: %s" % token)
+	if not block_source.contains("royal_piece_skin") or not block_source.contains("ROYAL_PIECE_PALETTE"):
+		errors.append("Royal Piece event cosmetic has no Block Puzzle runtime consumer")
+	if not collection_source.contains("crystal_garden"):
+		errors.append("Crystal Garden event cosmetic has no Collection runtime consumer")
+	for token in ["variant_rarity", "silver", "gold", "royal"]:
+		if not token_source.contains(token):
+			errors.append("Rescue milestone variants are not expressed by the character renderer: %s" % token)
+	var hub_source := FileAccess.get_file_as_string("res://scripts/ui/retention_hub.gd")
+	for token in ["GAME TASKS", "WELCOME BACK", "LAST WEEK", "Purchased cosmetics apply automatically"]:
+		if not hub_source.contains(token):
+			errors.append("Retention outcome is not visibly expressed in the Rewards hub: %s" % token)
+
 	# Restore the exact incoming state so validation never contaminates a later
 	# test in the same runner or a developer's local save.
 	save_manager.data = original_data
