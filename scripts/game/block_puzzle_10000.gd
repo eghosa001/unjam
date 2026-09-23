@@ -282,7 +282,7 @@ func refill_pieces() -> void:
 	for raw_index in tray:
 		var shape_index := clampi(int(raw_index), 0, CampaignGenerator.SHAPES.size() - 1)
 		pieces.append(CampaignGenerator.SHAPES[shape_index].duplicate())
-		piece_colors.append(COLOR_PALETTE[color_rng.randi_range(0, COLOR_PALETTE.size() - 1)])
+		piece_colors.append(_piece_palette()[color_rng.randi_range(0, _piece_palette().size() - 1)])
 	selected_piece = -1
 
 func _refill_campaign_continuation() -> void:
@@ -295,7 +295,7 @@ func _refill_campaign_continuation() -> void:
 		var shape_index := int(pool[random.randi_range(0, pool.size() - 1)])
 		var shape: Array = CampaignGenerator.SHAPES[shape_index].duplicate()
 		pieces.append(shape)
-		piece_colors.append(COLOR_PALETTE[random.randi_range(0, COLOR_PALETTE.size() - 1)])
+		piece_colors.append(_piece_palette()[random.randi_range(0, _piece_palette().size() - 1)])
 		if _shape_has_legal_move(shape):
 			has_legal_piece = true
 	# A continuation tray must not manufacture a loss while a usable board cell
@@ -609,14 +609,14 @@ func _apply_shuffle() -> void:
 	pieces.clear()
 	piece_colors.clear()
 	pieces.append(CampaignGenerator.SHAPES[0].duplicate())
-	piece_colors.append(COLOR_PALETTE[random.randi_range(0, COLOR_PALETTE.size() - 1)])
+	piece_colors.append(_piece_palette()[random.randi_range(0, _piece_palette().size() - 1)])
 	for _i in range(2):
 		var shape_index := int(pool[random.randi_range(0, pool.size() - 1)])
 		var shape: Array = CampaignGenerator.SHAPES[shape_index].duplicate()
 		if not _shape_has_legal_move(shape):
 			shape = CampaignGenerator.SHAPES[random.randi_range(1, 2)].duplicate()
 		pieces.append(shape)
-		piece_colors.append(COLOR_PALETTE[random.randi_range(0, COLOR_PALETTE.size() - 1)])
+		piece_colors.append(_piece_palette()[random.randi_range(0, _piece_palette().size() - 1)])
 	selected_piece = -1
 	campaign_failed = false
 	status_label.text = "Tray shuffled"
@@ -815,7 +815,7 @@ func _refill_free_mode() -> void:
 		if play_mode == "zen" and i == 0:
 			shape_index = random.randi_range(0, 4)
 		pieces.append(CampaignGenerator.SHAPES[shape_index].duplicate())
-		piece_colors.append(COLOR_PALETTE[random.randi_range(0, COLOR_PALETTE.size() - 1)])
+		piece_colors.append(_piece_palette()[random.randi_range(0, _piece_palette().size() - 1)])
 	selected_piece = -1
 
 func _apply_free_mode_board() -> void:
@@ -837,7 +837,7 @@ func _apply_free_mode_board() -> void:
 		var y := int(idx / GRID_SIZE)
 		var x := idx % GRID_SIZE
 		cells[y][x] = true
-		cell_colors[y][x] = COLOR_PALETTE[random.randi_range(0, COLOR_PALETTE.size() - 1)]
+		cell_colors[y][x] = _piece_palette()[random.randi_range(0, _piece_palette().size() - 1)]
 
 func _reset_zen_board() -> void:
 	for y in range(GRID_SIZE):
@@ -918,7 +918,7 @@ func _apply_campaign_plan_board() -> void:
 			continue
 		for x in range(GRID_SIZE):
 			cells[y][x] = bool(row[x])
-			cell_colors[y][x] = COLOR_PALETTE[posmod(x * 7 + y * 11 + level_number, COLOR_PALETTE.size())] if bool(row[x]) else Color.TRANSPARENT
+			cell_colors[y][x] = _piece_palette()[posmod(x * 7 + y * 11 + level_number, _piece_palette().size())] if bool(row[x]) else Color.TRANSPARENT
 
 func _reset_objective_state() -> void:
 	campaign_special_cells.clear()
