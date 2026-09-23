@@ -10,6 +10,10 @@ const COLOR_PALETTE := [
 	Color("39df63"), Color("466df2"), Color("ef4248"), Color("f4b83d"),
 	Color("9d5add"), Color("35c9e8"), Color("ff8b3e")
 ]
+const ROYAL_PIECE_PALETTE := [
+	Color("ffd45c"), Color("8f6cff"), Color("3fa7ff"), Color("ff63b6"),
+	Color("54d6a2"), Color("f4f0ff"), Color("c77dff")
+]
 const SHAPES := [
 	[Vector2i(0,0)],
 	[Vector2i(0,0), Vector2i(1,0)],
@@ -35,6 +39,10 @@ var cell_buttons: Array[BlockCellButton] = []
 var pieces: Array = []
 var piece_colors: Array = []
 var selected_piece := -1
+
+func _piece_palette() -> Array:
+	var owned = SaveManager.data.get("event_shop_owned", [])
+	return ROYAL_PIECE_PALETTE if owned is Array and "royal_piece_skin" in owned else COLOR_PALETTE
 var score := 0
 var lines_cleared := 0
 var placements := 0
@@ -272,7 +280,7 @@ func refill_pieces() -> void:
 			max_shape = 11
 		var shape_index := rng.randi_range(0, max_shape)
 		pieces.append(SHAPES[shape_index].duplicate())
-		piece_colors.append(COLOR_PALETTE[rng.randi_range(0, COLOR_PALETTE.size() - 1)])
+		piece_colors.append(_piece_palette()[rng.randi_range(0, _piece_palette().size() - 1)])
 	selected_piece = -1
 
 func render() -> void:
@@ -573,7 +581,7 @@ func _normalize_piece_colors(raw: Variant, count: int) -> Array:
 	var result: Array = []
 	var source: Array = raw if raw is Array else []
 	for i in range(count):
-		var fallback: Color = COLOR_PALETTE[posmod(piece_batch * 3 + i, COLOR_PALETTE.size())]
+		var fallback: Color = _piece_palette()[posmod(piece_batch * 3 + i, _piece_palette().size())]
 		result.append(_as_color(source[i], fallback) if i < source.size() else fallback)
 	return result
 
