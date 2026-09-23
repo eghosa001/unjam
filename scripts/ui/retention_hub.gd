@@ -146,6 +146,16 @@ func build_login(parent: VBoxContainer) -> void:
 		label.custom_minimum_size = Vector2(120, 62)
 		label.modulate = Color("67e8cf") if i + 1 == day else Color("8c9bb0")
 		row.add_child(label)
+	var comeback = SaveManager.data.get("last_comeback_reward", {})
+	if comeback is Dictionary and String((comeback as Dictionary).get("date","")) == RetentionManager.today_key():
+		var welcome := Label.new()
+		welcome.text = "WELCOME BACK  •  +%d COINS AFTER %d DAYS AWAY" % [
+			int((comeback as Dictionary).get("coins",0)),
+			int((comeback as Dictionary).get("days",0))
+		]
+		welcome.add_theme_font_size_override("font_size", 17)
+		welcome.add_theme_color_override("font_color", Color("ffd166"))
+		box.add_child(welcome)
 	var claim := make_button("CLAIM TODAY'S REWARD", true)
 	claim.disabled = not RetentionManager.can_claim_login_reward()
 	claim.pressed.connect(func(): RetentionManager.claim_login_reward())
@@ -276,7 +286,8 @@ func build_achievements(parent: VBoxContainer) -> void:
 
 func build_event_shop(parent: VBoxContainer) -> void:
 	var box := section(parent, "LIMITED EVENT SHOP", "Earn ◆ from missions and campaign play. Purchased cosmetics apply automatically.")
-	var cap := int(RetentionManager.EVENT_DAILY_CAP) if "EVENT_DAILY_CAP" in RetentionManager else 80
+	var retention_profile: Dictionary = RetentionManager.profile_snapshot()
+	var cap := int(retention_profile.get("event_daily_cap",80))
 	var earned_today := int(SaveManager.data.get("event_daily_earned",0))
 	var cap_label := Label.new()
 	cap_label.text = "TODAY'S EVENT EARNINGS  •  %d/%d ◆" % [earned_today, cap]
