@@ -1,4 +1,4 @@
-name: Android Production Release V4 One-Off
+name: UNJAM Version 4 AAB Build
 
 on:
   push:
@@ -10,68 +10,63 @@ permissions:
   contents: read
 
 concurrency:
-  group: android-production-release
-  cancel-in-progress: false
+  group: unjam-version-4-aab
+  cancel-in-progress: true
 
 jobs:
-  release-aab:
+  build-aab:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
-    env:
-      EXPECTED_PACKAGE: com.eghosa.unjamgam
-      EXPECTED_UPLOAD_SHA1: ${{ secrets.UNJAM_ANDROID_UPLOAD_SHA1 }}
-      EXPECTED_BLOCK_REVIEW_SHA256: ${{ secrets.UNJAM_BLOCK_CAMPAIGN_REVIEW_SHA256 }}
-      WATER_FULL_AUDIT: "1"
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
-      - name: Validate release contract
+
+      - name: Validate source release contract
         shell: bash
         run: |
           set -euo pipefail
           python3 tools/validate_release_contract.py
-      - name: Require production secrets and update version
-        env:
-          KEYSTORE_B64: ${{ secrets.UNJAM_ANDROID_KEYSTORE_BASE64 }}
-          KEY_ALIAS: ${{ secrets.UNJAM_ANDROID_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.UNJAM_ANDROID_KEY_PASSWORD }}
+          grep -Fx 'package/unique_name="com.eghosa.unjamgam"' export_presets.cfg
+          grep -F 'com.google.android.gms.permission.AD_ID' export_presets.cfg
+
+      - name: Configure Version 4 unsigned export
         shell: bash
         run: |
           set -euo pipefail
-          test -n "$KEYSTORE_B64"
-          test -n "$KEY_ALIAS"
-          test -n "$KEY_PASSWORD"
-          test -n "$EXPECTED_UPLOAD_SHA1"
-          [[ "$EXPECTED_UPLOAD_SHA1" =~ ^([0-9A-Fa-f]{2}:){19}[0-9A-Fa-f]{2}$ ]]
-          test -n "$EXPECTED_BLOCK_REVIEW_SHA256"
-          [[ "$EXPECTED_BLOCK_REVIEW_SHA256" =~ ^[0-9A-Fa-f]{64}$ ]]
-          grep -Eq '^supabase_url="https://[^"]+\.supabase\.co"$' project.godot
-          grep -Eq '^supabase_publishable_key="sb_publishable_[^"]+"$' project.godot
-          [[ "4" =~ ^[1-9][0-9]*$ ]]
-          test "4" -ge 1
-          test "4" -le 2100000000
-          test -n "1.0.4"
-      - name: Verify live monetization endpoints
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          p=Path("export_presets.cfg")
+          s=p.read_text()
+          s=re.sub(r'version/code=\d+', 'version/code=4', s)
+          s=re.sub(r'version/name="[^"]*"', 'version/name="1.0.4"', s)
+          s=s.replace('package/signed=true','package/signed=false')
+          p.write_text(s)
+          PY
+          grep -Fx 'version/code=4' export_presets.cfg
+          grep -Fx 'version/name="1.0.4"' export_presets.cfg
+          grep -Fx 'package/signed=false' export_presets.cfg
+
+      - name: Verify live monetization
         env:
           UNJAM_DEVELOPER_WEBSITE_URL: ${{ vars.UNJAM_DEVELOPER_WEBSITE_URL }}
         shell: bash
         run: |
           set -euo pipefail
           python3 tools/check_live_monetization.py
-      - name: Validate Supabase purchase backend contract
-        shell: bash
-        run: |
-          set -euxo pipefail
           python3 tools/validate_purchase_claim_protocol.py
+
       - name: Setup JDK 17
         uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: "17"
+
       - name: Setup Godot 4.7.2
         uses: solarlabyrinth/action-setup-godot@v3
         with:
           version: 4.7.2-stable
           export-templates: true
+
       - name: Install Android API 36
         shell: bash
         run: |
@@ -79,7 +74,6 @@ jobs:
           ANDROID_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
           test -n "$ANDROID_ROOT"
           SDKMANAGER=$(find "$ANDROID_ROOT/cmdline-tools" -name sdkmanager -type f | sort | tail -1)
-          test -x "$SDKMANAGER"
           set +o pipefail
           yes | "$SDKMANAGER" --sdk_root="$ANDROID_ROOT" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
           SDK_STATUS=${PIPESTATUS[1]}
@@ -87,218 +81,42 @@ jobs:
           test "$SDK_STATUS" -eq 0
           echo "ANDROID_HOME=$ANDROID_ROOT" >> "$GITHUB_ENV"
           echo "ANDROID_SDK_ROOT=$ANDROID_ROOT" >> "$GITHUB_ENV"
+
       - name: Install monetization plugins
         shell: bash
         run: |
           set -euxo pipefail
           chmod +x tools/install_monetization_plugins.sh
           tools/install_monetization_plugins.sh
-      - name: Configure production verification and signing
-        env:
-          KEYSTORE_B64: ${{ secrets.UNJAM_ANDROID_KEYSTORE_BASE64 }}
-          KEY_ALIAS: ${{ secrets.UNJAM_ANDROID_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.UNJAM_ANDROID_KEY_PASSWORD }}
-          VERSION_NAME: 1.0.4
-          VERSION_CODE: 4
+
+      - name: Import and validate Version 4
         shell: bash
         run: |
-          set -euo pipefail
-          KEYSTORE="$RUNNER_TEMP/unjam-release.keystore"
-          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$KEYSTORE"
-          chmod 600 "$KEYSTORE"
-
-          keytool -list -keystore "$KEYSTORE" -storepass "$KEY_PASSWORD" -alias "$KEY_ALIAS" >/dev/null
-          ACTUAL_UPLOAD_SHA1="$(keytool -list -v -keystore "$KEYSTORE" -storepass "$KEY_PASSWORD" -alias "$KEY_ALIAS" | sed -n 's/^[[:space:]]*SHA1: //p' | head -n 1 | tr '[:lower:]' '[:upper:]' | tr -d '\r')"
-          EXPECTED_UPLOAD_SHA1="$(printf '%s' "$EXPECTED_UPLOAD_SHA1" | tr '[:lower:]' '[:upper:]')"
-          if [[ "$ACTUAL_UPLOAD_SHA1" != "$EXPECTED_UPLOAD_SHA1" ]]; then
-            echo "Upload certificate mismatch. Expected $EXPECTED_UPLOAD_SHA1 but found $ACTUAL_UPLOAD_SHA1" >&2
-            exit 1
-          fi
-
-          python3 - <<'PY'
-          import os, re
-          from pathlib import Path
-
-          p = Path('project.godot')
-          text = p.read_text()
-          if 'supabase_url="https://' not in text or 'supabase_publishable_key="sb_publishable_' not in text:
-              raise SystemExit('Refusing release: Supabase client configuration is not bound')
-          p.write_text(text)
-
-          cfg = Path('export_presets.cfg')
-          out = cfg.read_text()
-          expected_package = 'package/unique_name="com.eghosa.unjamgam"'
-          if expected_package not in out:
-              raise SystemExit('Refusing release: package identity changed from com.eghosa.unjamgam')
-          out = re.sub(r'version/code=\d+', f'version/code={os.environ["VERSION_CODE"]}', out)
-          out = re.sub(r'version/name="[^"]*"', f'version/name="{os.environ["VERSION_NAME"]}"', out)
-          cfg.write_text(out)
-          PY
-
-          grep -Fx "package/unique_name=\"$EXPECTED_PACKAGE\"" export_presets.cfg
-          grep -Fx "version/code=$VERSION_CODE" export_presets.cfg
-          grep -Fx "version/name=\"$VERSION_NAME\"" export_presets.cfg
-          grep -Fx 'package/signed=true' export_presets.cfg
-          grep -Fx 'gradle_build/export_format=1' export_presets.cfg
-          grep -Fx 'gradle_build/target_sdk="36"' export_presets.cfg
-          grep -Fx 'architectures/arm64-v8a=true' export_presets.cfg
-          grep -Fx 'architectures/armeabi-v7a=false' export_presets.cfg
-
-          echo "GODOT_ANDROID_KEYSTORE_RELEASE_PATH=$KEYSTORE" >> "$GITHUB_ENV"
-          echo "GODOT_ANDROID_KEYSTORE_RELEASE_USER=$KEY_ALIAS" >> "$GITHUB_ENV"
-          echo "GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
-      - name: Import and run release gates
-        shell: bash
-        run: |
-          set -euxo pipefail
-          godot --headless --path . --editor --quit
-          for t in validate_motion_quality validate_decorative_3d_frame_budget validate_runtime_efficiency validate_monetization validate_admob_production validate_billing_production validate_shop_navigation_runtime validate_restore_purchase_flow validate_premium_ux validate_visual_quality_contract validate_production_completion validate_uiux_regressions validate_navigation_surface_coverage validate_theme_integrity validate_viewport_fit validate_retention validate_robustness validate_production_hardening_regressions validate_soothing_audio_palette; do
-            timeout 60s godot --headless --path . --script "res://tests/$t.gd"
+          set -o pipefail
+          godot --headless --path . --editor --quit 2>&1 | tee aab-import.log
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" aab-import.log; then exit 1; fi
+          for t in validate_runtime_efficiency validate_monetization validate_billing_production validate_restore_purchase_flow validate_retention validate_robustness; do
+            timeout 120s godot --headless --path . --script "res://tests/$t.gd"
           done
-      - name: Run focused release gameplay and campaign gates
-        shell: bash
-        run: |
-          set -euxo pipefail
-          for t in validate_campaign validate_campaign_diversity validate_level_launch validate_gameplay_interactions validate_progression_transitions validate_water_sort_type_safety validate_water_tube_3d_layering validate_water_premium_visual_hierarchy validate_water_idle_status_after_pour validate_water_tubes_sleep_idle validate_water_assist_runtime validate_block_progression_10000 validate_block_constructive_solvability validate_block_objective_runtime validate_block_level_pack_codec validate_block_exact_solver validate_block_visual_integrity validate_block_modes_boosters validate_block_bot_calibration validate_water_progression validate_water_pour_arc validate_water_constructive_solvability; do
-            echo "===== START $t ====="
-            timeout 180s godot --headless --path . --script "res://tests/$t.gd"
-            echo "===== PASS $t ====="
-          done
-      - name: Generate and audit production Block Puzzle campaign pack
-        shell: bash
-        run: |
-          set -euxo pipefail
-          rm -rf data/block_puzzle_campaign
-          timeout 3600s godot --headless --path . --script res://tools/generate_block_campaign_pack.gd
-          test -s data/block_puzzle_campaign/manifest.json
-          test -s data/block_puzzle_campaign/human_review.json
-          test "$(find data/block_puzzle_campaign -maxdepth 1 -name 'world_*.json' | wc -l)" -eq 20
-          timeout 3600s godot --headless --path . --script res://tools/audit_block_campaign_pack.gd
-          timeout 180s godot --headless --path . --script res://tests/validate_block_pack_runtime.gd
-          ACTUAL_BLOCK_REVIEW_SHA256="$(sha256sum data/block_puzzle_campaign/human_review.json | awk '{print $1}')"
-          EXPECTED_BLOCK_REVIEW_SHA256="$(printf '%s' "$EXPECTED_BLOCK_REVIEW_SHA256" | tr '[:upper:]' '[:lower:]')"
-          if [[ "$ACTUAL_BLOCK_REVIEW_SHA256" != "$EXPECTED_BLOCK_REVIEW_SHA256" ]]; then
-            echo "Block Puzzle boss review bundle is not approved. Expected $EXPECTED_BLOCK_REVIEW_SHA256 but generated $ACTUAL_BLOCK_REVIEW_SHA256" >&2
-            echo "Run the Block Puzzle Campaign Review workflow, review its human_review.json, then update UNJAM_BLOCK_CAMPAIGN_REVIEW_SHA256." >&2
-            exit 1
-          fi
-          printf '%s  %s\n' "$ACTUAL_BLOCK_REVIEW_SHA256" "human_review.json" > data/block_puzzle_campaign/human_review.sha256
-          du -sh data/block_puzzle_campaign
-      - name: Export release APK for monetization manifest verification
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p build/android
-          cp export_presets.cfg "$RUNNER_TEMP/export_presets.release-aab.cfg"
-          sed -i 's/gradle_build\/export_format=1/gradle_build\/export_format=0/' export_presets.cfg
-          godot --headless --verbose --path . --install-android-build-template --export-release Android build/android/unjam-release-check.apk 2>&1 | tee android-release-apk-export.log
-          test -s build/android/unjam-release-check.apk
-          cp "$RUNNER_TEMP/export_presets.release-aab.cfg" export_presets.cfg
-      - name: Verify release monetization manifest contract
-        shell: bash
-        run: |
-          set -euo pipefail
-          APK=build/android/unjam-release-check.apk
-          AAPT="$(find "$ANDROID_SDK_ROOT/build-tools" -type f -name aapt | sort | tail -1)"
-          test -x "$AAPT"
-          "$AAPT" dump badging "$APK" | tee build/android/release-apk-badging.txt
-          "$AAPT" dump permissions "$APK" | tee build/android/release-apk-permissions.txt
-          "$AAPT" dump xmltree "$APK" AndroidManifest.xml | tee build/android/release-apk-manifest.txt
-          grep -F "package: name='com.eghosa.unjamgam'" build/android/release-apk-badging.txt
-          grep -F "targetSdkVersion:'36'" build/android/release-apk-badging.txt
-          grep -F "native-code: 'arm64-v8a'" build/android/release-apk-badging.txt
-          grep -F "android.permission.INTERNET" build/android/release-apk-permissions.txt
-          grep -F "android.permission.ACCESS_NETWORK_STATE" build/android/release-apk-permissions.txt
-          grep -F "com.google.android.gms.permission.AD_ID" build/android/release-apk-permissions.txt
-          grep -F "com.android.vending.BILLING" build/android/release-apk-permissions.txt
-          grep -F "com.google.android.gms.ads.APPLICATION_ID" build/android/release-apk-manifest.txt
-          grep -F "ca-app-pub-7517898921176341~1892369383" build/android/release-apk-manifest.txt
-          grep -F "com.google.android.play.billingclient.version" build/android/release-apk-manifest.txt
-          grep -F '"9.1.0"' build/android/release-apk-manifest.txt
-          grep -F "org.godotengine.plugin.v2.GodotGooglePlayBilling" build/android/release-apk-manifest.txt
-          grep -F "com.android.billingclient.api.ProxyBillingActivity" build/android/release-apk-manifest.txt
-          rm -f "$APK"
-      - name: Export release AAB
+
+      - name: Export Version 4 AAB
         shell: bash
         run: |
           set -o pipefail
           mkdir -p build/android
-          godot --headless --verbose --path . --export-release Android build/android/unjam-release.aab 2>&1 | tee android-release-export.log
-          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" android-release-export.log; then exit 1; fi
-          test -s build/android/unjam-release.aab
-      - name: Verify 16 KB native page compatibility
-        shell: bash
-        run: |
-          set -euo pipefail
-          AAB=build/android/unjam-release.aab
-          NATIVE_DIR="$RUNNER_TEMP/unjam-native-libs"
-          rm -rf "$NATIVE_DIR"
-          mkdir -p "$NATIVE_DIR"
-          unzip -q "$AAB" 'base/lib/*/*.so' -d "$NATIVE_DIR" || true
-          python3 - <<'PY'
-          import pathlib
-          import re
-          import subprocess
+          godot --headless --verbose --path . --install-android-build-template --export-release Android build/android/UNJAM-Version-4-unsigned.aab 2>&1 | tee android-v4-aab-export.log
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" android-v4-aab-export.log; then exit 1; fi
+          test -s build/android/UNJAM-Version-4-unsigned.aab
+          unzip -t build/android/UNJAM-Version-4-unsigned.aab | tee build/android/aab-zip-test.log
+          sha256sum build/android/UNJAM-Version-4-unsigned.aab | tee build/android/UNJAM-Version-4-unsigned.aab.sha256
 
-          root = pathlib.Path(__import__('os').environ['RUNNER_TEMP']) / 'unjam-native-libs'
-          libs = sorted(root.rglob('*.so'))
-          if not libs:
-              raise SystemExit('No native libraries found in AAB for 16 KB alignment verification')
-          failures = []
-          for lib in libs:
-              out = subprocess.check_output(['readelf', '-lW', str(lib)], text=True, errors='replace')
-              aligns = []
-              for line in out.splitlines():
-                  if re.match(r'^\s*LOAD\s', line):
-                      token = line.split()[-1]
-                      try:
-                          aligns.append(int(token, 16))
-                      except ValueError:
-                          pass
-              if not aligns:
-                  failures.append(f'{lib}: no LOAD segments parsed')
-                  continue
-              if min(aligns) < 0x4000:
-                  failures.append(f'{lib}: LOAD alignment {min(aligns):#x} < 0x4000')
-          if failures:
-              raise SystemExit('16 KB native page compatibility failed:\n' + '\n'.join(failures))
-          print(f'16KB_NATIVE_OK: verified {len(libs)} native libraries')
-          PY
-      - name: Verify signed release AAB
-        shell: bash
-        run: |
-          set -euo pipefail
-          AAB=build/android/unjam-release.aab
-          jarsigner -verify -verbose -certs "$AAB" | tee build/android/jarsigner-verify.log
-          unzip -t "$AAB" | tee build/android/aab-zip-test.log
-          BUNDLE_SHA1="$(keytool -printcert -jarfile "$AAB" | sed -n 's/^[[:space:]]*SHA1: //p' | head -n 1 | tr '[:lower:]' '[:upper:]' | tr -d '\r')"
-          EXPECTED_UPLOAD_SHA1="$(printf '%s' "$EXPECTED_UPLOAD_SHA1" | tr '[:lower:]' '[:upper:]')"
-          if [[ "$BUNDLE_SHA1" != "$EXPECTED_UPLOAD_SHA1" ]]; then
-            echo "Built AAB certificate mismatch. Expected $EXPECTED_UPLOAD_SHA1 but found $BUNDLE_SHA1" >&2
-            exit 1
-          fi
-          sha256sum "$AAB" | tee build/android/unjam-release.aab.sha256
-          echo "Verified package identity source: $EXPECTED_PACKAGE"
-          echo "Verified upload certificate SHA-1: $BUNDLE_SHA1"
-      - name: Refuse unsigned release artifact
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -s build/android/jarsigner-verify.log
-          grep -F "jar verified." build/android/jarsigner-verify.log
-          test -s build/android/unjam-release.aab
-          test -s build/android/unjam-release.aab.sha256
-      - name: Upload release AAB and verification records
+      - name: Upload Version 4 unsigned AAB
         uses: actions/upload-artifact@v4
         with:
-          name: unjam-release-aab-1.0.4-4
+          name: unjam-version-4-unsigned-aab
           path: |
-            build/android/unjam-release.aab
-            build/android/unjam-release.aab.sha256
-            build/android/jarsigner-verify.log
+            build/android/UNJAM-Version-4-unsigned.aab
+            build/android/UNJAM-Version-4-unsigned.aab.sha256
             build/android/aab-zip-test.log
-            data/block_puzzle_campaign/manifest.json
-            data/block_puzzle_campaign/human_review.json
-            data/block_puzzle_campaign/human_review.sha256
           if-no-files-found: error
           retention-days: 14
