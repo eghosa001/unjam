@@ -229,16 +229,26 @@ func build_achievements(parent: VBoxContainer) -> void:
 		box.add_child(b)
 
 func build_event_shop(parent: VBoxContainer) -> void:
-	var box := section(parent, "LIMITED EVENT SHOP", "Earn ◆ from missions and normal campaign play. Event cosmetics never block progression.")
+	var box := section(parent, "LIMITED EVENT SHOP", "Earn ◆ from missions and campaign play. Purchased cosmetics apply automatically.")
 	for item in RetentionManager.event_shop():
 		var owned: bool = String(item.id) in SaveManager.data.event_shop_owned
-		var b := make_button("%s  •  %d ◆%s" % [String(item.title), int(item.cost), "  OWNED" if owned else ""])
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 12)
+		box.add_child(row)
+		var detail := Label.new()
+		detail.text = "%s\n%s" % [String(item.title), String(item.get("effect","Cosmetic reward"))]
+		detail.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		detail.add_theme_font_size_override("font_size", 17)
+		row.add_child(detail)
+		var b := make_button("ACTIVE" if owned else "%d ◆" % int(item.cost), owned)
+		b.custom_minimum_size.x = 150
 		b.disabled = owned or int(SaveManager.data.event_currency) < int(item.cost)
 		b.pressed.connect(func(id = String(item.id)): RetentionManager.buy_event_item(id))
-		box.add_child(b)
+		row.add_child(b)
 
 func build_collection(parent: VBoxContainer) -> void:
-	var box := section(parent, "RESCUE COLLECTION", "Your rescued friends and milestone variants live here.")
+	var box := section(parent, "RESCUE COLLECTION", "Your rescued friends and milestone variants live here. Highest unlocked rarity applies automatically in Rescue Rush.")
 	var rescued: Array = SaveManager.data.get("rescued", [])
 	var friends := Label.new()
 	friends.text = "FRIENDS HOME  •  NONE YET" if rescued.is_empty() else "FRIENDS HOME  •  %s" % "  •  ".join(rescued)
