@@ -108,6 +108,24 @@ func price_text(product_id: String) -> String:
 func is_purchase_pending(product_id: String) -> bool:
 	return bool(pending_products.get(product_id, false))
 
+func is_product_owned(product_id: String) -> bool:
+	if not PRODUCTS.has(product_id):
+		return false
+	var info: Dictionary = PRODUCTS[product_id]
+	if not bool(info.get("non_consumable", false)):
+		return false
+	var purchased_value = SaveManager.data.get("purchased_products", [])
+	var purchased: Array = purchased_value if purchased_value is Array else []
+	if product_id in purchased:
+		return true
+	if product_id == PRODUCT_REMOVE_ADS:
+		# Starter Pack includes Remove Ads, so never offer a redundant Remove Ads
+		# purchase after the bundle entitlement is already active.
+		return bool(SaveManager.data.get("remove_ads", false)) or bool(SaveManager.data.get("starter_pack_purchased", false)) or PRODUCT_STARTER_PACK in purchased
+	if product_id == PRODUCT_STARTER_PACK:
+		return bool(SaveManager.data.get("starter_pack_purchased", false))
+	return false
+
 func purchase(product_id: String) -> bool:
 	if purchase_in_progress:
 		purchase_failed.emit(product_id, "Another purchase is already in progress")
@@ -117,6 +135,9 @@ func purchase(product_id: String) -> bool:
 		return false
 	if not PRODUCTS.has(product_id):
 		purchase_failed.emit(product_id, "Unknown product")
+		return false
+	if is_product_owned(product_id):
+		purchase_failed.emit(product_id, "Already owned")
 		return false
 	if OS.get_name() == "Android" and not verifier_ready():
 		purchase_failed.emit(product_id, "Secure purchase verification is not configured")

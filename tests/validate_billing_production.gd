@@ -69,6 +69,13 @@ func run() -> void:
 	expect_true(FileAccess.file_exists(backend_path), "Supabase purchase backend source missing")
 	if FileAccess.file_exists(backend_path):
 		var backend_source := FileAccess.get_file_as_string(backend_path)
+		expect_true("unjam_remove_ads: { nonConsumable: true, coins: 0 }" in backend_source, "Backend Remove Ads mapping does not match Play product")
+		expect_true("unjam_starter_pack: { nonConsumable: true, coins: 1000 }" in backend_source, "Backend Starter Pack mapping does not match Play product")
+		expect_true("unjam_coins_500: { nonConsumable: false, coins: 500 }" in backend_source, "Backend 500 coin mapping does not match Play product")
+		expect_true("unjam_coins_1500: { nonConsumable: false, coins: 1500 }" in backend_source, "Backend 1,500 coin mapping does not match Play product")
+		expect_true("unjam_coins_4000: { nonConsumable: false, coins: 4000 }" in backend_source, "Backend 4,000 coin mapping does not match Play product")
+		expect_true("no_active_priced_buy_option" in backend_source, "Live readiness does not require an active priced Buy option for every Play product")
+		expect_true("productCatalogReadiness" in backend_source, "Live readiness does not validate the complete Play product catalog")
 		expect_true("purchases/voidedpurchases" in backend_source, "Voided Purchases API integration is missing")
 		expect_true('suffix = product.nonConsumable ? "acknowledge" : "consume"' in backend_source, "Server-side Play acknowledge/consume finalization is missing")
 		expect_true("consume_play_request_slot" in backend_source, "Purchase endpoint database rate limiting is missing")

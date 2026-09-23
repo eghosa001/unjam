@@ -48,16 +48,76 @@ func run() -> void:
 	var original_fast_animation := bool(save_manager.data.get("fast_animation", false))
 	var original_privacy_status := String(save_manager.data.get("privacy_consent_status", "unknown"))
 
+	# Exact Google Play catalog contract. These IDs are immutable once created in
+	# Play Console, so the client reward table is intentionally locked by tests.
+	expect_true(store_manager.PRODUCTS.size() == 5, "Play product catalog must contain exactly five products")
 	expect_true(store_manager.PRODUCTS.has(store_manager.PRODUCT_REMOVE_ADS), "remove ads product missing")
 	expect_true(store_manager.PRODUCTS.has(store_manager.PRODUCT_STARTER_PACK), "starter pack missing")
-	expect_true(store_manager.PRODUCTS.size() >= 5, "coin catalog incomplete")
+	expect_true(store_manager.PRODUCTS.has(store_manager.PRODUCT_COINS_SMALL), "500 coin product missing")
+	expect_true(store_manager.PRODUCTS.has(store_manager.PRODUCT_COINS_MEDIUM), "1,500 coin product missing")
+	expect_true(store_manager.PRODUCTS.has(store_manager.PRODUCT_COINS_LARGE), "4,000 coin product missing")
+	expect_true(int(store_manager.PRODUCTS[store_manager.PRODUCT_REMOVE_ADS].get("coins", -1)) == 0 and bool(store_manager.PRODUCTS[store_manager.PRODUCT_REMOVE_ADS].get("non_consumable", false)), "Remove Ads product semantics changed")
+	expect_true(int(store_manager.PRODUCTS[store_manager.PRODUCT_STARTER_PACK].get("coins", -1)) == 1000 and bool(store_manager.PRODUCTS[store_manager.PRODUCT_STARTER_PACK].get("non_consumable", false)), "Starter Pack must be 1,000 coins + permanent Remove Ads")
+	expect_true(int(store_manager.PRODUCTS[store_manager.PRODUCT_COINS_SMALL].get("coins", -1)) == 500 and not bool(store_manager.PRODUCTS[store_manager.PRODUCT_COINS_SMALL].get("non_consumable", true)), "500 coin pack semantics changed")
+	expect_true(int(store_manager.PRODUCTS[store_manager.PRODUCT_COINS_MEDIUM].get("coins", -1)) == 1500 and not bool(store_manager.PRODUCTS[store_manager.PRODUCT_COINS_MEDIUM].get("non_consumable", true)), "1,500 coin pack semantics changed")
+	expect_true(int(store_manager.PRODUCTS[store_manager.PRODUCT_COINS_LARGE].get("coins", -1)) == 4000 and not bool(store_manager.PRODUCTS[store_manager.PRODUCT_COINS_LARGE].get("non_consumable", true)), "4,000 coin pack semantics changed")
+
+	# Exercise all five SKU grants through the same verified-purchase path used in
+	# production. Desktop test mode makes verification deterministic while keeping
+	# StoreManager's persistence and duplicate-protection logic real.
+	save_manager.data.coins = 0
+	save_manager.data.remove_ads = false
+	save_manager.data.starter_pack_purchased = false
+	save_manager.data.purchased_products = []
+	save_manager.data.processed_purchase_tokens = []
+	ad_manager.ads_enabled = true
+	save_manager.save()
+
 	store_manager.confirm_purchase(store_manager.PRODUCT_COINS_SMALL, "desktop-test")
 	await process_frame
-	expect_true(int(save_manager.data.get("coins", 0)) == original_coins + 500, "coin purchase grant incorrect")
+	expect_true(int(save_manager.data.get("coins", -1)) == 500, "500 coin purchase did not grant exactly 500 coins")
+	store_manager.confirm_purchase(store_manager.PRODUCT_COINS_MEDIUM, "desktop-test")
+	await process_frame
+	expect_true(int(save_manager.data.get("coins", -1)) == 2000, "1,500 coin purchase did not grant exactly 1,500 coins")
+	store_manager.confirm_purchase(store_manager.PRODUCT_COINS_LARGE, "desktop-test")
+	await process_frame
+	expect_true(int(save_manager.data.get("coins", -1)) == 6000, "4,000 coin purchase did not grant exactly 4,000 coins")
+
+	# Consumables must remain repeatable after Play consumes/finalizes them.
+	store_manager.confirm_purchase(store_manager.PRODUCT_COINS_SMALL, "desktop-test")
+	await process_frame
+	expect_true(int(save_manager.data.get("coins", -1)) == 6500, "500 coin consumable could not be granted on a later purchase")
+
 	store_manager.confirm_purchase(store_manager.PRODUCT_REMOVE_ADS, "desktop-test")
 	await process_frame
-	expect_true(bool(save_manager.data.get("remove_ads", false)), "remove ads not persisted")
-	expect_true(not ad_manager.ads_enabled, "ads should be disabled after remove ads")
+	expect_true(bool(save_manager.data.get("remove_ads", false)), "Remove Ads entitlement was not persisted")
+	expect_true(not ad_manager.ads_enabled, "Interstitial ads should be disabled after Remove Ads")
+	expect_true(int(save_manager.data.get("coins", -1)) == 6500, "Remove Ads incorrectly changed the coin balance")
+
+	store_manager.confirm_purchase(store_manager.PRODUCT_STARTER_PACK, "desktop-test")
+	await process_frame
+	expect_true(bool(save_manager.data.get("starter_pack_purchased", false)), "Starter Pack entitlement was not persisted")
+	expect_true(bool(save_manager.data.get("remove_ads", false)) and not ad_manager.ads_enabled, "Starter Pack did not preserve permanent Remove Ads")
+	expect_true(int(save_manager.data.get("coins", -1)) == 7500, "Starter Pack did not grant exactly 1,000 coins")
+
+	# Starter Pack is one-time and its bundled Remove Ads makes the standalone
+	# Remove Ads SKU redundant. Neither path may grant paid value twice.
+	store_manager.confirm_purchase(store_manager.PRODUCT_STARTER_PACK, "desktop-test")
+	await process_frame
+	expect_true(int(save_manager.data.get("coins", -1)) == 7500, "Starter Pack was granted more than once")
+	expect_true(store_manager.is_product_owned(store_manager.PRODUCT_STARTER_PACK), "Starter Pack is not reported as owned")
+	expect_true(store_manager.is_product_owned(store_manager.PRODUCT_REMOVE_ADS), "Remove Ads is not reported as owned after Starter Pack")
+	expect_true(not store_manager.is_product_owned(store_manager.PRODUCT_COINS_SMALL), "Consumable coin pack must never be reported as permanently owned")
+	expect_true(not store_manager.purchase(store_manager.PRODUCT_REMOVE_ADS), "Store allowed a redundant Remove Ads purchase after ad-free entitlement")
+
+	# Restore the normal starting balance/state for the remaining economy tests.
+	save_manager.data.coins = original_coins
+	save_manager.data.remove_ads = original_remove
+	save_manager.data.starter_pack_purchased = original_starter
+	save_manager.data.purchased_products = original_purchased.duplicate(true)
+	save_manager.data.processed_purchase_tokens = original_tokens.duplicate(true)
+	ad_manager.ads_enabled = not original_remove
+	save_manager.save()
 
 	# Hint economy: paid path consumes exactly the configured cost.
 	save_manager.data.coins = int(hint_manager.HINT_COST)

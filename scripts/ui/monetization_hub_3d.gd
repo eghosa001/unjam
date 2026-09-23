@@ -271,17 +271,8 @@ func _shop_status_chip(canvas: Control, name_value: String, title: String, state
 	state_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	state_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 
-func _is_owned_product(product_id: String, info: Dictionary) -> bool:
-	if not bool(info.get("non_consumable",false)):
-		return false
-	var purchased: Array = SaveManager.data.get("purchased_products",[])
-	if product_id in purchased:
-		return true
-	if product_id == StoreManager.PRODUCT_REMOVE_ADS:
-		return bool(SaveManager.data.get("remove_ads",false))
-	if product_id == StoreManager.PRODUCT_STARTER_PACK:
-		return bool(SaveManager.data.get("starter_pack_purchased",false))
-	return false
+func _is_owned_product(product_id: String, _info: Dictionary) -> bool:
+	return StoreManager.is_product_owned(product_id)
 
 func _add_text(canvas: Control, text_value: String, rect: Rect2, font_size: int, color: Color) -> Label:
 	var label := FigmaReferenceCanvas.label(text_value,font_size,_shop_text(color),true)
