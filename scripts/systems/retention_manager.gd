@@ -31,7 +31,7 @@ func _ready() -> void:
 
 func ensure_state() -> void:
 	var defaults: Dictionary = {
-		"last_login_date":"", "login_cycle_day":0, "login_claim_date":"", "comeback_claimed_date":"",
+		"last_login_date":"", "login_cycle_day":0, "login_claim_date":"", "comeback_claimed_date":"", "last_comeback_reward":{},
 		"daily_mission_date":"", "daily_mission_progress":{}, "daily_mission_claimed":[], "daily_all_claimed":false,
 		"win_streak":0, "best_win_streak":0,
 		"weekly_key":"", "weekly_points":0, "weekly_claimed_tiers":[], "weekly_best_rank":0,
@@ -113,6 +113,7 @@ func process_login() -> Dictionary:
 		var comeback: int = mini(500, 100 + gap * 35)
 		SaveManager.add_coins(comeback)
 		SaveManager.data.comeback_claimed_date = today
+		SaveManager.data.last_comeback_reward = {"date":today, "coins":comeback, "days":gap}
 		payload = {"type":"comeback", "coins":comeback, "days":gap, "title":"WELCOME BACK"}
 		retention_reward.emit(payload)
 	SaveManager.save()
