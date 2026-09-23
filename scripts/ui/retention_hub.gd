@@ -104,6 +104,7 @@ func refresh() -> void:
 	scroll.add_child(body)
 	build_login(body)
 	build_missions(body)
+	build_game_tasks(body)
 	build_streak(body)
 	build_weekly(body)
 	build_season(body)
@@ -172,6 +173,39 @@ func build_missions(parent: VBoxContainer) -> void:
 	all.pressed.connect(func(): RetentionManager.claim_daily_all())
 	box.add_child(all)
 
+func build_game_tasks(parent: VBoxContainer) -> void:
+	var box := section(parent, "GAME TASKS", "Campaign play advances three claimable tasks for each game every day.")
+	for game_id in MultiGameManager.GAME_IDS:
+		var game_label := Label.new()
+		game_label.text = MultiGameManager.display_name(game_id)
+		game_label.add_theme_font_size_override("font_size", 20)
+		game_label.add_theme_color_override("font_color", Unjam3DTheme.game_accent(game_id))
+		box.add_child(game_label)
+		for task_value in MultiGameManager.daily_tasks(game_id):
+			if not task_value is Dictionary:
+				continue
+			var task: Dictionary = task_value
+			var row := HBoxContainer.new()
+			row.add_theme_constant_override("separation", 12)
+			box.add_child(row)
+			var detail := Label.new()
+			var progress := mini(int(task.get("progress",0)), int(task.get("target",0)))
+			detail.text = "%s   %d/%d" % [String(task.get("title","TASK")), progress, int(task.get("target",0))]
+			detail.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			detail.add_theme_font_size_override("font_size", 17)
+			row.add_child(detail)
+			var claimed := bool(task.get("claimed",false))
+			var claim := make_button("CLAIMED" if claimed else "%d COINS • 10 AP" % MultiGameManager.TASK_REWARD, not claimed)
+			claim.custom_minimum_size.x = 220
+			claim.disabled = claimed or progress < int(task.get("target",0))
+			claim.pressed.connect(_claim_game_task.bind(game_id, String(task.get("id",""))))
+			row.add_child(claim)
+
+func _claim_game_task(game_id: String, task_id: String) -> void:
+	if MultiGameManager.claim_daily_task(game_id, task_id):
+		FeedbackManager.effect()
+		refresh()
+
 func build_streak(parent: VBoxContainer) -> void:
 	var current := int(SaveManager.data.win_streak)
 	var best := int(SaveManager.data.best_win_streak)
@@ -191,6 +225,18 @@ func build_weekly(parent: VBoxContainer) -> void:
 	headline.add_theme_font_size_override("font_size", 22)
 	headline.add_theme_color_override("font_color", Color("ffd166"))
 	box.add_child(headline)
+	var last_result = SaveManager.data.get("last_week_result", {})
+	if last_result is Dictionary and not (last_result as Dictionary).is_empty():
+		var previous := Label.new()
+		previous.text = "LAST WEEK  •  #%d  •  %d PTS  •  +%d COINS  •  +%d PRESTIGE" % [
+			int((last_result as Dictionary).get("rank",0)),
+			int((last_result as Dictionary).get("points",0)),
+			int((last_result as Dictionary).get("coins",0)),
+			int((last_result as Dictionary).get("prestige",0))
+		]
+		previous.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		previous.add_theme_font_size_override("font_size", 16)
+		box.add_child(previous)
 	var rivals: Array = RetentionManager.weekly_rivals()
 	for i in range(mini(5, rivals.size())):
 		var r: Dictionary = rivals[i]
@@ -230,6 +276,12 @@ func build_achievements(parent: VBoxContainer) -> void:
 
 func build_event_shop(parent: VBoxContainer) -> void:
 	var box := section(parent, "LIMITED EVENT SHOP", "Earn ◆ from missions and campaign play. Purchased cosmetics apply automatically.")
+	var cap := int(RetentionManager.EVENT_DAILY_CAP) if "EVENT_DAILY_CAP" in RetentionManager else 80
+	var earned_today := int(SaveManager.data.get("event_daily_earned",0))
+	var cap_label := Label.new()
+	cap_label.text = "TODAY'S EVENT EARNINGS  •  %d/%d ◆" % [earned_today, cap]
+	cap_label.add_theme_font_size_override("font_size", 16)
+	box.add_child(cap_label)
 	for item in RetentionManager.event_shop():
 		var owned: bool = String(item.id) in SaveManager.data.event_shop_owned
 		var row := HBoxContainer.new()
