@@ -71,6 +71,7 @@ func _run() -> void:
 		"if _daily_done(game_id)",
 		"collection_daily_bonus()",
 		"Proto/ScrollToUpgrades",
+		"CollectionOpenUpgrades",
 		"func build_collection_upgrades",
 		"CollectionScroll/Upgrade/",
 		"+5 DAILY",

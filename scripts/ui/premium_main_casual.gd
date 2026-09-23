@@ -676,13 +676,25 @@ func build_collection() -> void:
 	var can_claim := EconomyManager.can_claim_garden_gift()
 	var gift_text := "CLAIM GARDEN GIFT • +%d" % EconomyManager.garden_gift_amount()
 	if not can_claim:
-		gift_text = "GARDEN GIFT CLAIMED" if EconomyManager.garden_gift_claimed_today() else "BUY AN UPGRADE IN SHOP"
+		gift_text = "GIFT CLAIMED" if EconomyManager.garden_gift_claimed_today() else "GIFT UNLOCKS WITH UPGRADE"
 	var gift_fill := FIGMA_GREEN if can_claim else Color(0.54,0.64,0.72)
-	var gift := _figma_button(canvas,"CollectionGardenGift",gift_text,Rect2(33,548,250,44),gift_fill,Callable(),FIGMA_OFF_WHITE,16,13)
+	var gift := _figma_button(canvas,"CollectionGardenGift",gift_text,Rect2(33,548,200,44),gift_fill,Callable(),FIGMA_OFF_WHITE,16,12)
+	gift.disabled = not can_claim
 	if can_claim:
 		gift.pressed.connect(_claim_collection_gift)
-	else:
-		gift.pressed.connect(_figma_open_shop)
+
+	var upgrades_button := _figma_button(
+		canvas,
+		"CollectionOpenUpgrades",
+		"UPGRADES",
+		Rect2(243,548,114,44),
+		Color("#7a57e0"),
+		Callable(self,"build_collection_upgrades"),
+		Color.WHITE,
+		14,
+		12
+	)
+	upgrades_button.tooltip_text = "Buy permanent Rescue Garden upgrades with coins"
 
 	_figma_bottom_nav(canvas,"collection")
 

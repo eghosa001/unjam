@@ -40,10 +40,10 @@ func render_board() -> void:
 		button.disabled = false
 		button.configure(tubes[i], i == selected, i)
 		if active_source_tubes.has(i) or active_target_tubes.has(i):
-			# Keep the control in the GridContainer so layout stays fixed, but make
-			# the original bottle fully invisible while the animated pour ghost owns
-			# that physical bottle. Partial opacity reads as a duplicate bottle.
-			button.modulate = Color(1, 1, 1, 0.0)
+			# Keep the authoritative bottle visible beneath the animated 3D ghost.
+			# Some Android GPUs can miss the first SubViewport frame; a fully transparent
+			# base control then looks like the bottle vanished. Dim instead of hiding.
+			button.modulate = Color(1, 1, 1, 0.58)
 			button.disabled = true
 	move_label.text = "MOVES %d   •   3★ ≤ %d   •   %d COLOURS" % [moves, par_moves, color_count]
 
