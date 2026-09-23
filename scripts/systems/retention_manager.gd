@@ -31,7 +31,7 @@ func _ready() -> void:
 
 func ensure_state() -> void:
 	var defaults: Dictionary = {
-		"last_login_date":"", "login_cycle_day":0, "login_claim_date":"", "comeback_claimed_date":"",
+		"last_login_date":"", "login_cycle_day":0, "login_claim_date":"", "comeback_claimed_date":"", "last_comeback_reward":{},
 		"daily_mission_date":"", "daily_mission_progress":{}, "daily_mission_claimed":[], "daily_all_claimed":false,
 		"win_streak":0, "best_win_streak":0,
 		"weekly_key":"", "weekly_points":0, "weekly_claimed_tiers":[], "weekly_best_rank":0,
@@ -113,6 +113,7 @@ func process_login() -> Dictionary:
 		var comeback: int = mini(500, 100 + gap * 35)
 		SaveManager.add_coins(comeback)
 		SaveManager.data.comeback_claimed_date = today
+		SaveManager.data.last_comeback_reward = {"date":today, "coins":comeback, "days":gap}
 		payload = {"type":"comeback", "coins":comeback, "days":gap, "title":"WELCOME BACK"}
 		retention_reward.emit(payload)
 	SaveManager.save()
@@ -343,10 +344,10 @@ func claim_achievement_reward(id: String) -> Dictionary:
 
 func event_shop() -> Array[Dictionary]:
 	return [
-		{"id":"aurora_trail", "title":"AURORA TRAIL", "cost":120},
-		{"id":"gold_rescue_frame", "title":"GOLD RESCUE FRAME", "cost":180},
-		{"id":"crystal_garden", "title":"CRYSTAL GARDEN", "cost":260},
-		{"id":"royal_piece_skin", "title":"ROYAL PIECE SKIN", "cost":350}
+		{"id":"aurora_trail", "title":"AURORA TRAIL", "cost":120, "effect":"Rescue Rush arrows leave a cyan-violet escape trail"},
+		{"id":"gold_rescue_frame", "title":"GOLD RESCUE FRAME", "cost":180, "effect":"Gold rescue frame and result accent in Rescue Rush"},
+		{"id":"crystal_garden", "title":"CRYSTAL GARDEN", "cost":260, "effect":"Crystal styling on your Rescue Garden"},
+		{"id":"royal_piece_skin", "title":"ROYAL PIECE SKIN", "cost":350, "effect":"Royal palette for Block Puzzle pieces"}
 	]
 
 func buy_event_item(id: String) -> bool:

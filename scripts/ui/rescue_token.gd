@@ -6,6 +6,7 @@ extends SubViewportContainer
 # can use it without changing puzzle behavior.
 var rescue_id := "chick"
 var accent := Color("ffd166")
+var rarity := ""
 var viewport_3d: SubViewport
 var stage: Node3D
 var character_root: Node3D
@@ -17,9 +18,10 @@ var _render_accumulator := 0.0
 const DECORATIVE_RENDER_FPS := 30.0
 const DECORATIVE_RENDER_INTERVAL := 1.0 / DECORATIVE_RENDER_FPS
 
-func configure(id: String, color: Color = Color("ffd166")) -> void:
+func configure(id: String, color: Color = Color("ffd166"), variant_rarity: String = "") -> void:
 	rescue_id = id
 	accent = color
+	rarity = variant_rarity.to_lower()
 	if is_inside_tree() and viewport_3d != null:
 		call_deferred("_rebuild")
 
@@ -228,15 +230,25 @@ func _add_variant_details(body_color: Color, detail_color: Color, dark_color: Co
 			_add_sphere(character_root,0.13,Vector3(0.10,1.51,0),Color("ffed70"),Vector3(0.52,1.16,0.52))
 
 func _variant_colors() -> Array[Color]:
+	var base: Array[Color]
 	match rescue_id:
-		"puppy": return [Color("d8945f"), Color("8b5a3c"), Color("273342")]
-		"kitten": return [Color("ffb0c9"), Color("fff0e6"), Color("3e3150")]
-		"robot": return [Color("91dff5"), Color("3d8ec6"), Color("17304a")]
-		"slime": return [Color("6be56e"), Color("2faf50"), Color("173b32")]
-		"panda": return [Color("f5f6f0"), Color("282e39"), Color("1f2631")]
-		"fox": return [Color("f58c42"), Color("fff0da"), Color("3b2c2e")]
-		"alien": return [Color("7ef0bd"), Color("36bc91"), Color("23334e")]
-		_: return [accent, Color("ff9b2f"), Color("23334e")]
+		"puppy": base = [Color("d8945f"), Color("8b5a3c"), Color("273342")]
+		"kitten": base = [Color("ffb0c9"), Color("fff0e6"), Color("3e3150")]
+		"robot": base = [Color("91dff5"), Color("3d8ec6"), Color("17304a")]
+		"slime": base = [Color("6be56e"), Color("2faf50"), Color("173b32")]
+		"panda": base = [Color("f5f6f0"), Color("282e39"), Color("1f2631")]
+		"fox": base = [Color("f58c42"), Color("fff0da"), Color("3b2c2e")]
+		"alien": base = [Color("7ef0bd"), Color("36bc91"), Color("23334e")]
+		_: base = [accent, Color("ff9b2f"), Color("23334e")]
+	match rarity:
+		"silver":
+			return [base[0].lerp(Color("dbe4ee"), 0.58), base[1].lerp(Color("9eacba"), 0.62), Color("334353")]
+		"gold":
+			return [base[0].lerp(Color("ffd45c"), 0.64), base[1].lerp(Color("d99a18"), 0.68), Color("5f4310")]
+		"royal":
+			return [base[0].lerp(Color("9b6cff"), 0.58), Color("ffd45c"), Color("2a164f")]
+		_:
+			return base
 
 func _material(color: Color, metallic_value: float = 0.0, roughness_value: float = 0.28) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()

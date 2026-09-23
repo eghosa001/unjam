@@ -659,9 +659,13 @@ func build_collection() -> void:
 
 	var decorations: Array = SaveManager.data.get("decorations",[])
 	var rescued: Array = SaveManager.data.get("rescued",[])
+	var event_owned: Array = SaveManager.data.get("event_shop_owned",[])
+	var crystal_garden := "crystal_garden" in event_owned
 	var owned := decorations.size()
-	_figma_card(canvas,"Garden",Rect2(17,429,354,96),Color("#fffef8"),Color(0.55,0.86,0.71,0.32),18)
-	_figma_text(canvas,"RESCUE GARDEN",Rect2(33,445,180,19),16,FIGMA_GOLD)
+	var garden_tint := Color("#e8fbff") if crystal_garden else Color("#fffef8")
+	var garden_border := Color(0.36,0.88,1.0,0.72) if crystal_garden else Color(0.55,0.86,0.71,0.32)
+	_figma_card(canvas,"Garden",Rect2(17,429,354,96),garden_tint,garden_border,18)
+	_figma_text(canvas,"RESCUE GARDEN" + ("  ✦ CRYSTAL" if crystal_garden else ""),Rect2(33,445,220,19),16,Color("#43c9f3") if crystal_garden else FIGMA_GOLD)
 	_figma_text(canvas,"%d friends home • %d / 6 upgrades" % [rescued.size(),owned],Rect2(33,476,240,20),13,FIGMA_MUTED)
 	_figma_text(canvas,"BONUS  +%d DAILY • +%d GIFT" % [EconomyManager.collection_daily_bonus(),EconomyManager.garden_gift_amount()],Rect2(33,501,310,20),13,FIGMA_MUTED)
 
