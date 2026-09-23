@@ -13,8 +13,8 @@ func _initialize() -> void:
 			failures.append("Legacy launcher foreground safe-zone wrapper is missing")
 		if not icon.contains("stroke-width=\"94\""):
 			failures.append("Legacy launcher foreground is not using the approved large readable U stroke")
-		if icon.contains("scale(.76)"):
-			failures.append("Legacy launcher foreground must not reintroduce downscaling")
+		if not icon.contains("scale(0.86)"):
+			failures.append("Legacy launcher foreground must use the approved uniform safe-zone scale")
 		if icon.contains(">UNJAM<"):
 			failures.append("Launcher icon must remain symbol-only without app-name text")
 
@@ -25,8 +25,8 @@ func _initialize() -> void:
 			failures.append("Adaptive launcher safe-zone group is missing")
 		if not adaptive.contains("stroke-width=\"74\""):
 			failures.append("Adaptive launcher foreground is not using the approved large readable U stroke")
-		if adaptive.contains("scale(.84)") or adaptive.contains("scale(.80)"):
-			failures.append("Adaptive launcher foreground must not reintroduce nested downscaling")
+		if not adaptive.contains("scale(0.82)"):
+			failures.append("Adaptive launcher foreground must use the approved uniform Android safe-zone scale")
 		if adaptive.contains(">UNJAM<"):
 			failures.append("Adaptive launcher foreground must remain symbol-only")
 
