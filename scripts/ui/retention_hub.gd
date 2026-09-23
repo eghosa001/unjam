@@ -238,10 +238,16 @@ func build_event_shop(parent: VBoxContainer) -> void:
 		box.add_child(b)
 
 func build_collection(parent: VBoxContainer) -> void:
-	var box := section(parent, "RESCUE VARIANTS", "Perfect clears on milestone levels unlock Silver, Gold and Royal rescue variants.")
+	var box := section(parent, "RESCUE COLLECTION", "Your rescued friends and milestone variants live here.")
+	var rescued: Array = SaveManager.data.get("rescued", [])
+	var friends := Label.new()
+	friends.text = "FRIENDS HOME  •  NONE YET" if rescued.is_empty() else "FRIENDS HOME  •  %s" % "  •  ".join(rescued)
+	friends.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	friends.add_theme_font_size_override("font_size", 18)
+	box.add_child(friends)
 	var variants: Array = SaveManager.data.rescue_variants
 	var text := Label.new()
-	text.text = "NONE YET" if variants.is_empty() else "  •  ".join(variants)
+	text.text = "VARIANTS  •  NONE YET" if variants.is_empty() else "VARIANTS  •  %s" % "  •  ".join(variants)
 	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	text.add_theme_font_size_override("font_size", 18)
 	box.add_child(text)
