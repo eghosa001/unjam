@@ -140,8 +140,7 @@ func _add_product(parent: VBoxContainer, product_id: String) -> void:
 	var buy := Button.new()
 	buy.custom_minimum_size = Vector2(280, 82)
 	buy.add_theme_font_size_override("font_size", 18)
-	var purchased: Array = SaveManager.data.get("purchased_products", [])
-	if bool(info.get("non_consumable", false)) and product_id in purchased:
+	if StoreManager.is_product_owned(product_id):
 		buy.text = "OWNED"
 		buy.disabled = true
 	elif StoreManager.is_purchase_pending(product_id):
