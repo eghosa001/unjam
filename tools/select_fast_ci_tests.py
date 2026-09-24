@@ -24,6 +24,7 @@ GROUP_TESTS = {
     ],
     "games_ui": [
         "validate_selector_navigation",
+        "validate_selector_premium_card_hierarchy",
     ],
     "home": [
         "validate_home_direct_levels_runtime",
@@ -565,6 +566,7 @@ def self_test() -> None:
     ]
     assert GROUP_TESTS["games_ui"] == [
         "validate_selector_navigation",
+        "validate_selector_premium_card_hierarchy",
     ]
     progression_plan = plan_for_paths(["scripts/core/water_sort_progression.gd"])
     assert progression_plan["tests"] == [
