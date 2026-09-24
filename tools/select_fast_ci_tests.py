@@ -115,7 +115,10 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
     suffix = Path(p).suffix
 
     if p.startswith("tests/validate_") and p.endswith(".gd"):
-        explicit_tests.add(Path(p).stem)
+        # Deleted validation files still appear in git diff paths. Run only tests
+        # that exist in the post-change checkout.
+        if Path(path).exists():
+            explicit_tests.add(Path(p).stem)
         return True
     if p == "tests/capture_visual_audit.gd":
         visual.update({
