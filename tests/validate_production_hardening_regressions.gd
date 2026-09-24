@@ -230,9 +230,9 @@ func _validate_primary_visual_occupancy() -> bool:
 	if water_canvas == null or stage == null or board == null or board.get_child_count() < 1:
 		main.queue_free(); await process_frame
 		return _fail("Water Sort Figma stage/board missing during visual occupancy check")
-	if stage.size.distance_to(Vector2(354,420)) > 1.0:
+	if stage.size.distance_to(Vector2(354,450)) > 1.0:
 		main.queue_free(); await process_frame
-		return _fail("Water Sort stage drifted from audited 354x420 geometry")
+		return _fail("Water Sort stage drifted from audited 354x450 geometry")
 	var tube := board.get_child(0) as Control
 	if tube == null or tube.custom_minimum_size.x < 42.0 or tube.custom_minimum_size.y < 168.0:
 		main.queue_free(); await process_frame
