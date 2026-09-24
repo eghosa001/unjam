@@ -424,6 +424,20 @@ func _run_fast_visual_audit(main: Node, shell: Node) -> void:
 		else:
 			push_error("Fast visual audit could not open Shop")
 
+	if _fast_visual_enabled("coins"):
+		var fast_coin_prompt := main.get_node_or_null("InsufficientCoinsPrompt")
+		if fast_coin_prompt != null and fast_coin_prompt.has_method("show_for"):
+			var fast_balance := EconomyManager.balance()
+			fast_coin_prompt.call("show_for", "HINT", fast_balance + 25)
+			await _settle(5)
+			await _capture("06f-insufficient-coins-540x960-dark")
+			var fast_coin_overlay = fast_coin_prompt.get("overlay")
+			if fast_coin_overlay != null and is_instance_valid(fast_coin_overlay):
+				fast_coin_overlay.visible = false
+			await _settle(2)
+		else:
+			push_error("Fast visual audit could not open insufficient-coins recovery")
+
 	if _fast_visual_enabled("retention"):
 		LiveHubLauncher.open_hub()
 		await _settle(6)
