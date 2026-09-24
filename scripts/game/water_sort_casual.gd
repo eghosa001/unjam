@@ -73,12 +73,12 @@ func _build_figma_water(canvas: Control) -> void:
 	RefCanvas.set_rect(info, 17, 79, 354, 42)
 	info.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(info)
-	meta_label = _make_label("", 13, Color(0.92, 0.98, 1.0), true)
+	meta_label = _make_label("", 14, Color(0.92, 0.98, 1.0), true)
 	meta_label.clip_text = true
 	meta_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	RefCanvas.set_rect(meta_label, 37, 91, 170, 20)
 	canvas.add_child(meta_label)
-	move_label = _make_label("", 13, OFF_WHITE, true)
+	move_label = _make_label("", 14, OFF_WHITE, true)
 	move_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	move_label.clip_text = true
 	move_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
@@ -92,7 +92,7 @@ func _build_figma_water(canvas: Control) -> void:
 	RefCanvas.set_rect(objective, 17, 129, 354, 30)
 	objective.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(objective)
-	var objective_label := _make_label("WIN • ONE COLOUR PER FULL TUBE", 14, NAVY, true)
+	var objective_label := _make_label("WIN • ONE COLOUR PER FULL TUBE", 15, NAVY, true)
 	objective_label.name = "WaterObjectiveLabel"
 	objective_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	objective_label.tooltip_text = "Win when every non-empty tube is full and contains only one colour."
@@ -102,12 +102,12 @@ func _build_figma_water(canvas: Control) -> void:
 
 	gameplay_stage = PanelContainer.new()
 	gameplay_stage.name = "GameplayStage"
-	RefCanvas.add_shadow(canvas, Rect2(17,169,354,420), 20, Color(0.01,0.12,0.23,0.18), 8, Vector2(0,7))
+	RefCanvas.add_shadow(canvas, Rect2(17,169,354,450), 20, Color(0.01,0.12,0.23,0.18), 8, Vector2(0,7))
 	# Premium glass needs contrast. Keep the overall Water screen bright, but give
 	# the playfield a deep ocean-glass surface so crystal edges and liquid volume
 	# remain readable even with many bottles at late levels.
 	gameplay_stage.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#173d67"), Color("#0b3158"), Color("#061f3c"), 20, Color(0.52, 0.90, 1.0, 0.72), 1.5))
-	RefCanvas.set_rect(gameplay_stage, 17, 169, 354, 420)
+	RefCanvas.set_rect(gameplay_stage, 17, 169, 354, 450)
 	gameplay_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(gameplay_stage)
 
@@ -122,25 +122,25 @@ func _build_figma_water(canvas: Control) -> void:
 	# Keep status and guidance on independent rows. Sharing one y-band looked
 	# compact at READY but longer recovery/assist messages could collide with
 	# "Best move..." guidance on phone screens.
-	status_label = _make_label("", 14, NAVY, true)
+	status_label = _make_label("", 15, NAVY, true)
 	status_label.name = "WaterStatusText"
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	status_label.clip_text = true
 	status_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	RefCanvas.set_rect(status_label, 17, 596, 354, 21)
+	RefCanvas.set_rect(status_label, 17, 626, 354, 22)
 	canvas.add_child(status_label)
-	hint_label = _make_label("", 14, GUIDANCE_ORANGE, true)
+	hint_label = _make_label("", 15, GUIDANCE_ORANGE, true)
 	hint_label.name = "WaterGuidanceText"
 	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	hint_label.clip_text = true
 	hint_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	RefCanvas.set_rect(hint_label, 17, 620, 354, 21)
+	RefCanvas.set_rect(hint_label, 17, 652, 354, 22)
 	canvas.add_child(hint_label)
 
 	var actions := HBoxContainer.new()
 	actions.name = "CompactGameActions"
 	actions.add_theme_constant_override("separation", 14)
-	RefCanvas.set_rect(actions, 21, 650, 346, 60)
+	RefCanvas.set_rect(actions, 21, 686, 346, 60)
 	canvas.add_child(actions)
 
 	var undo := _action_button("↶  UNDO", BLUE)
@@ -153,7 +153,7 @@ func _build_figma_water(canvas: Control) -> void:
 	actions.add_child(hint)
 	_add_water_bulb_icon(hint)
 
-	title_label = _make_label("",20,OFF_WHITE,true)
+	title_label = _make_label("",21,OFF_WHITE,true)
 	title_label.name = "WaterLevelTitle"
 	RefCanvas.style_display_title(title_label, Color("#38d5ff"), Color("#063770"), 2)
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -231,7 +231,7 @@ func _add_water_bulb_icon(button: Button) -> void:
 func _action_button(text_value: String, _fill: Color) -> Button:
 	var fill := Color("#315d72")
 	var border := Color(0.48,0.78,0.88,0.44)
-	var button := RefCanvas.premium_button(text_value,13,OFF_WHITE,fill,16,border,1.1)
+	var button := RefCanvas.premium_button(text_value,15,OFF_WHITE,fill,16,border,1.1)
 	button.custom_minimum_size = Vector2(166,60)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	return button
@@ -260,12 +260,12 @@ func _apply_tube_layout() -> void:
 	var columns := count if count <= 5 else (3 if count <= 6 else (4 if count <= 8 else (5 if count <= 10 else (4 if count <= 12 else 5))))
 	var rows := int(ceil(float(count) / float(columns)))
 	var stage_width := 326.0
-	var stage_height := 390.0
+	var stage_height := 420.0
 	var h_gap := 12.0 if columns <= 4 else (8.0 if rows == 1 else 9.0)
 	var v_gap := 14.0 if rows <= 2 else 10.0
 	# Premium water-sort bottles should read as substantial vessels, not needles.
 	var ratio := 3.8 if rows == 1 else (2.55 if rows == 2 else 2.30)
-	var preferred_width := 60.0 if rows == 1 else (70.0 if rows == 2 else 54.0)
+	var preferred_width := 60.0 if rows == 1 else (70.0 if rows == 2 else 58.0)
 	var width_limit := floorf((stage_width - h_gap * float(maxi(columns - 1, 0))) / float(columns))
 	var row_height_limit := floorf((stage_height - v_gap * float(maxi(rows - 1, 0))) / float(rows))
 	var height_width_limit := row_height_limit / ratio
@@ -282,7 +282,7 @@ func _apply_tube_layout() -> void:
 	var content_h := tube_size.y * rows + v_gap * float(maxi(rows - 1, 0))
 	board.size = Vector2(content_w, content_h)
 	board.custom_minimum_size = Vector2(content_w, content_h)
-	board.position = Vector2(194.0 - content_w * 0.5, 169.0 + (420.0 - content_h) * 0.5)
+	board.position = Vector2(194.0 - content_w * 0.5, 169.0 + (450.0 - content_h) * 0.5)
 
 func apply_theme_mode(_dark: bool) -> void:
 	# Production Figma gameplay is intentionally bright; Settings owns the
