@@ -12,11 +12,10 @@ func _initialize() -> void:
 	var block := source.substr(start, finish - start)
 	var coin := block.find("InsufficientCoinsPrompt")
 	var shop := block.find("MonetizationHub")
-	var retention := block.find("RetentionHub")
 	var surface := block.find("var surface :=")
-	if coin < 0 or shop < 0 or retention < 0 or surface < 0:
-		return _fail("Back handler does not cover every transient overlay")
-	if not (coin < shop and shop < retention and retention < surface):
+	if coin < 0 or shop < 0 or surface < 0:
+		return _fail("Back handler does not cover every remaining transient overlay")
+	if not (coin < shop and shop < surface):
 		return _fail("Back handler does not dismiss overlays before surface navigation")
 	print("Modal Back priority validated.")
 	quit(0)
