@@ -112,13 +112,13 @@ func _build_figma_rescue(canvas: Control) -> void:
 	retry.pressed.connect(restart_level)
 	canvas.add_child(retry)
 	_add_rescue_identity_emblem(canvas)
-	var title := RefCanvas.label("RESCUE RUSH",20,OFF_WHITE,true)
+	var title := RefCanvas.label("RESCUE RUSH",21,OFF_WHITE,true)
 	RefCanvas.style_display_title(title, Color("#67f2a1"), Color("#06452c"), 2)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	RefCanvas.set_rect(title,115,15,184,30)
 	canvas.add_child(title)
 	var world := int(level_data.get("world", 1))
-	var subtitle := RefCanvas.label("LEVEL %d • WORLD %d" % [level_number,world],12,Color(0.92,0.98,1.0),false)
+	var subtitle := RefCanvas.label("LEVEL %d • WORLD %d" % [level_number,world],13,Color(0.92,0.98,1.0),false)
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	RefCanvas.set_rect(subtitle,115,43,184,20)
 	canvas.add_child(subtitle)
@@ -138,7 +138,7 @@ func _build_figma_rescue(canvas: Control) -> void:
 	RefCanvas.set_rect(status_row,27,81,334,48)
 	canvas.add_child(status_row)
 	for label in [moves_label,rescue_label,chain_label]:
-		label.add_theme_font_size_override("font_size",13)
+		label.add_theme_font_size_override("font_size",14)
 		label.add_theme_color_override("font_color",OFF_WHITE)
 		status_row.add_child(label)
 
@@ -192,7 +192,7 @@ func _build_figma_rescue(canvas: Control) -> void:
 	restart.pressed.connect(restart_level)
 	actions.add_child(restart)
 
-	hint_label = RefCanvas.label("",13,NAVY,true)
+	hint_label = RefCanvas.label("",14,NAVY,true)
 	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	RefCanvas.set_rect(hint_label,21,636,346,42)
@@ -209,7 +209,7 @@ func _build_figma_rescue(canvas: Control) -> void:
 func _action(text_value: String, _fill: Color) -> Button:
 	var fill := Color("#365448")
 	var border := Color(0.45,0.78,0.56,0.46)
-	var result := RefCanvas.premium_button(text_value,13,OFF_WHITE,fill,16,border,1.1)
+	var result := RefCanvas.premium_button(text_value,15,OFF_WHITE,fill,16,border,1.1)
 	result.custom_minimum_size = Vector2(106,60)
 	result.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	return result
@@ -370,7 +370,7 @@ func render_board() -> void:
 		else:
 			moves_label.text = "MOVES %d   •   3★≤%d   •   LIVES %s%s" % [moves, par_moves, lives_text, chain_suffix]
 		moves_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		moves_label.add_theme_font_size_override("font_size",13)
+		moves_label.add_theme_font_size_override("font_size",14)
 	if rescue_label != null:
 		rescue_label.visible = false
 	if chain_label != null:
