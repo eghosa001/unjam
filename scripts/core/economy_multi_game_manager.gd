@@ -33,9 +33,9 @@ func complete_daily(id: String, reward := 100) -> bool:
 		})
 	return completed
 
-func complete_level(id: String, n: int, stars: int, coin_reward := 25) -> Dictionary:
+func complete_level(id: String, n: int, stars: int, coin_reward := 25, context: Dictionary = {}) -> Dictionary:
 	var safe_reward := maxi(0, int(coin_reward))
-	var rewards := super.complete_level(id, n, stars, safe_reward)
+	var rewards := super.complete_level(id, n, stars, safe_reward, context)
 	# Rescue Rush delegates to SaveManager.complete_level() and is already synced.
 	if id == "rescue_rush":
 		return rewards
