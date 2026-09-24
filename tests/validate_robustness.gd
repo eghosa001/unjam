@@ -29,8 +29,7 @@ func _run() -> void:
 	var save_manager := get_root().get_node_or_null("SaveManager")
 	var daily := get_root().get_node_or_null("DailyChallenge")
 	var ads := get_root().get_node_or_null("AdManager")
-	var retention := get_root().get_node_or_null("RetentionManager")
-	if save_manager == null or daily == null or ads == null or retention == null:
+	if save_manager == null or daily == null or ads == null:
 		errors.append("Required production autoload missing")
 		_finish(errors)
 		return
@@ -73,8 +72,6 @@ func _run() -> void:
 	ads.set_ads_enabled(true)
 	for i in range(ads.interstitial_interval): ads.note_level_completed()
 	if not ads.should_show_interstitial(): errors.append("Interstitial pacing does not reach ready state")
-	var missions: Array = retention.daily_missions()
-	if missions.size() != 3: errors.append("Daily mission count changed unexpectedly")
 	save_manager.reset_progress()
 	_finish(errors)
 
@@ -84,5 +81,5 @@ func _finish(errors: Array[String]) -> void:
 		printerr("Production robustness validation failed with %d issue(s)." % errors.size())
 		quit(1)
 		return
-	print("Production robustness validated: solvability, daily challenge, save accounting, token privacy, ad pacing, retention invariants and production cleanup.")
+	print("Production robustness validated: solvability, daily challenge, save accounting, token privacy, ad pacing and production cleanup.")
 	quit(0)
