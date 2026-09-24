@@ -6,6 +6,7 @@ var selected_game := "rescue_rush"
 var built := false
 var last_theme := ""
 var primary_button: Button
+var _last_home_signature := ""
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -28,9 +29,9 @@ func _on_surface_changed(surface: String) -> void:
 	var current = main.get("selected_game_id")
 	if current != null and String(current) in MultiGameManager.GAME_IDS:
 		selected_game = String(current)
-	# Progress, stars, wallet and selected-game metadata can change while Home is
-	# hidden. Rebuild the lightweight fixed-reference launcher whenever Home
-	# becomes visible so the top LV/★ pills and quick-switch cards are never stale.
+	# Progress, stars, wallet and selected-game state stay fresh without paying
+	# for a full Home rebuild on every return. Wallet balance is event-driven;
+	# the signature covers the remaining launcher-visible state.
 	_sync()
 
 func _sync() -> void:
@@ -45,7 +46,22 @@ func _sync() -> void:
 	var current = main.get("selected_game_id")
 	if current != null and String(current) in MultiGameManager.GAME_IDS:
 		selected_game = String(current)
+	var signature := _home_state_signature(main)
+	if built and signature == _last_home_signature:
+		visible = true
+		mouse_filter = Control.MOUSE_FILTER_STOP
+		return
 	build_home_launcher()
+	_last_home_signature = signature
+
+func _home_state_signature(main: Node) -> String:
+	var parts: Array[String] = [_theme_mode(), selected_game]
+	for game_id in MultiGameManager.GAME_IDS:
+		var level := int(SaveManager.data.get("highest_level", 1)) if game_id == "rescue_rush" else MultiGameManager.highest_level(game_id)
+		parts.append("%s:%d:%d" % [game_id, level, MultiGameManager.total_stars(game_id)])
+		if main != null and main.has_method("_daily_done"):
+			parts.append("daily:%s:%d" % [game_id, 1 if bool(main.call("_daily_done", game_id)) else 0])
+	return "|".join(parts)
 
 func _theme_mode() -> String:
 	var shell := get_parent().get_node_or_null("UXShell")
