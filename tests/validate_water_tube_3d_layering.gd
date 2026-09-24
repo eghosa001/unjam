@@ -17,8 +17,8 @@ func _initialize() -> void:
 		push_error("Every configured 3D bottle must request one fresh SubViewport frame after board relayout")
 		quit(1)
 		return
-	if motion.contains("Color(1, 1, 1, 0.0)") or not motion.contains("Color(1, 1, 1, 0.58)"):
-		push_error("Active Water Sort bottles must retain the Android-safe dim fallback during pour animation")
+	if not motion.contains("button.modulate = Color(1, 1, 1, 0.0)"):
+		push_error("Active pour originals must remain hidden so animated ghosts have single visual ownership")
 		quit(1)
 		return
 	print("Water tube 3D visibility validated.")
