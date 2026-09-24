@@ -33,17 +33,15 @@ def main() -> int:
     preset_path = root / 'export_presets.cfg'
     project_path = root / 'project.godot'
     live_checker_path = root / 'tools' / 'check_live_monetization.py'
-    icon_path = root / 'assets' / 'icon.svg'
+    icon_path = root / 'assets' / 'icon_user_512.png'
     adaptive_bg_path = root / 'assets' / 'icon_adaptive_background.svg'
-    adaptive_fg_path = root / 'assets' / 'icon_adaptive_foreground.svg'
+    adaptive_fg_path = root / 'assets' / 'icon_user_adaptive_432.png'
 
     workflow = workflow_path.read_text(encoding='utf-8')
     preset = preset_path.read_text(encoding='utf-8')
     project = project_path.read_text(encoding='utf-8')
     live_checker = live_checker_path.read_text(encoding='utf-8')
-    icon = icon_path.read_text(encoding='utf-8')
     adaptive_bg = adaptive_bg_path.read_text(encoding='utf-8')
-    adaptive_fg = adaptive_fg_path.read_text(encoding='utf-8')
 
     errors: list[str] = []
 
@@ -150,46 +148,23 @@ def main() -> int:
             if token not in lifecycle_text:
                 errors.append(f'hardened monetization lifecycle migration missing token: {token}')
 
-    for token in (
-        'viewBox="0 0 512 512"',
-        'url(#bg)',
-        '<!-- main U silhouette/shadow -->',
-        'id="LauncherSafeForeground"',
-        'stroke-width="94"',
-    ):
-        if token not in icon:
-            errors.append(f'launcher icon master missing premium asset token: {token}')
-    if '>UNJAM<' in icon or '<text' in icon:
-        errors.append('launcher icon master must remain U-only with no embedded wordmark')
-
+    if not icon_path.exists():
+        errors.append('512x512 supplied glossy U launcher PNG is missing')
+    if not adaptive_fg_path.exists():
+        errors.append('432x432 adaptive glossy U foreground PNG is missing')
     if 'viewBox="0 0 432 432"' not in adaptive_bg:
         errors.append('adaptive icon background must remain a 432x432 Android layer')
 
-    for token in (
-        'id="AdaptiveSafeZone"',
-        'stroke-width="74"',
-        'Large, simple foreground: no nested scaling',
-    ):
-        if token not in adaptive_fg:
-            errors.append(f'adaptive foreground safe-zone contract missing token: {token}')
-    if '>UNJAM<' in adaptive_fg or '<text' in adaptive_fg:
-        errors.append('adaptive foreground must remain U-only with no embedded wordmark')
-    if 'scale(.84)' in adaptive_fg or 'scale(.80)' in adaptive_fg:
-        errors.append('adaptive foreground must not reintroduce nested downscaling that makes the launcher mark unreadable')
+    if 'config/icon="res://assets/icon_user_512.png"' not in project:
+        errors.append('project launcher icon is not wired to the supplied glossy U PNG')
 
     for token in (
-        'config/icon="res://assets/icon.svg"',
-    ):
-        if token not in project:
-            errors.append(f'project launcher icon is not wired to the U-only SVG source: {token}')
-
-    for token in (
-        'launcher_icons/main_192x192="res://assets/icon.svg"',
-        'launcher_icons/adaptive_foreground_432x432="res://assets/icon_adaptive_foreground.svg"',
+        'launcher_icons/main_192x192="res://assets/icon_user_512.png"',
+        'launcher_icons/adaptive_foreground_432x432="res://assets/icon_user_adaptive_432.png"',
         'launcher_icons/adaptive_background_432x432="res://assets/icon_adaptive_background.svg"',
     ):
         if token not in preset:
-            errors.append(f'Android launcher icon is not wired to the current SVG source: {token}')
+            errors.append(f'Android launcher icon is not wired to current PNG assets: {token}')
 
     if errors:
         print('Release contract validation failed:')
