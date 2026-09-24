@@ -60,6 +60,7 @@ GROUP_TESTS = {
         "validate_gameplay_interactions",
         "validate_rescue_token_render_lifecycle",
         "validate_rescue_premium_visual_hierarchy",
+        "validate_rescue_completion_single_path",
     ],
     "shared_gameplay_ui": [
         "validate_compact_gameplay_stack",
