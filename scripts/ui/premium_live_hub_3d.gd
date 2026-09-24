@@ -83,7 +83,7 @@ func _build_reference_selector(canvas: Control) -> void:
 	back.pressed.connect(_go_home)
 	canvas.add_child(back)
 
-	var selector_title := _add_text(canvas, "CHOOSE A GAME", Rect2(83, 26, 186, 34), 23, OFF_WHITE, true)
+	var selector_title := _add_text(canvas, "CHOOSE A GAME", Rect2(78, 26, 196, 34), 22, OFF_WHITE, true)
 	selector_title.name = "SelectorTitle3D"
 	selector_title.clip_text = true
 	RefCanvas.style_display_title(selector_title, Color("#ffca45"), Color("#071d55"), 2)
