@@ -1,0 +1,41 @@
+name: Finalize adaptive launcher icon
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/finalize-adaptive-launcher-icon.yml
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build full-bleed adaptive PNG
+        run: |
+          python -m pip install --disable-pip-version-check pillow
+          python - <<'PY'
+          from pathlib import Path
+          from PIL import Image, ImageFilter
+
+          root = Path(".")
+          main = Image.open(root / "assets/icon_user_512.png").convert("RGB")
+          adaptive = main.resize((432, 432), Image.Resampling.LANCZOS)
+          adaptive = adaptive.filter(ImageFilter.UnsharpMask(radius=0.55, percent=110, threshold=2))
+          adaptive.save(root / "assets/icon_user_adaptive_432.png", "PNG", optimize=True)
+          assert Image.open(root / "assets/icon_user_adaptive_432.png").size == (432, 432)
+          PY
+      - name: Keep final repo clean
+        run: |
+          rm .github/workflows/finalize-adaptive-launcher-icon.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Finalize full-bleed adaptive U icon [skip ci]"
+          git push
