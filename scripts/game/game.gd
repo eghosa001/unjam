@@ -702,17 +702,19 @@ func complete_level() -> void:
 	else:
 		# Route Rescue Rush through the shared multi-game completion path so its
 		# per-game daily tasks progress exactly like Water Sort and Block Puzzle.
-		completion_rewards = MultiGameManager.complete_level("rescue_rush", level_number, stars, 25 * stars)
-		RetentionManager.record_level_complete(
+		completion_rewards = MultiGameManager.complete_level(
+			"rescue_rush",
 			level_number,
 			stars,
-			moves,
-			par_moves,
-			best_chain,
-			rescue_id,
-			hints_used_this_level,
-			"rescue_rush",
-			String(level_data.get("difficulty", level_data.get("difficulty_label", "medium")))
+			25 * stars,
+			{
+				"moves": moves,
+				"par_moves": par_moves,
+				"chain_count": best_chain,
+				"rescue_id": rescue_id,
+				"hints_used": hints_used_this_level,
+				"difficulty": String(level_data.get("difficulty", level_data.get("difficulty_label", "medium")))
+			}
 		)
 	AdManager.note_level_completed()
 	AnalyticsManager.level_completed(level_number, moves, stars)
