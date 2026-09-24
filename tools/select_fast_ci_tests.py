@@ -67,7 +67,6 @@ GROUP_TESTS = {
         "validate_production_hardening_regressions",
     ],
     "progression": [
-        "validate_retention_pacing",
         "validate_progression_transitions",
     ],
     "daily": [
@@ -87,9 +86,6 @@ GROUP_TESTS = {
         "validate_shop_catalog_ui",
         "validate_restore_purchase_flow",
         "validate_coin_economy",
-    ],
-    "retention_ui": [
-        "validate_retention_refresh_atomic",
     ],
     "coin_recovery_ui": [
         "validate_insufficient_coins_prompt",
@@ -124,7 +120,7 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
     if p == "tests/capture_visual_audit.gd":
         visual.update({
             "home", "games", "levels", "collection", "daily", "settings",
-            "shop", "coins", "retention", "rescue", "water", "block", "tutorial", "result"
+            "shop", "coins", "rescue", "water", "block", "tutorial", "result"
         })
         return True
 
@@ -179,16 +175,12 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
     if p.startswith("scripts/ui/"):
         game_specific_ui = bool(groups.intersection({"water", "block", "rescue"}))
         monetization_ui = any(token in p for token in ("monetization_hub", "shop_", "purchase_"))
-        retention_ui = "retention_hub" in p
         coin_recovery_ui = "insufficient_coins_prompt" in p
         result_ui = p.endswith("premium_result_overlay.gd")
         tutorial_ui = "ux_shell" in p or "tutorial" in p
         games_ui = "premium_live_hub" in p or "unjam_3d_game_art" in p or "unjam_flat_game_logo" in p
         home_ui = "premium_home" in p
-        if retention_ui:
-            add(groups, "retention_ui")
-            visual.add("retention")
-        elif coin_recovery_ui:
+        if coin_recovery_ui:
             add(groups, "coin_recovery_ui")
             visual.add("coins")
         elif result_ui:
@@ -531,7 +523,6 @@ def self_test() -> None:
         (["scripts/ui/premium_main_casual.gd"], ["secondary_ui"], ["collection", "daily", "home", "levels", "settings"], True),
         (["scripts/systems/premium_visuals.gd"], ["ui"], ["collection", "daily", "games", "levels", "settings", "shop"], True),
         (["scripts/ui/monetization_hub_3d.gd"], ["monetization"], ["shop"], True),
-        (["scripts/ui/retention_hub_3d.gd"], ["retention_ui"], ["retention"], True),
         (["scripts/ui/insufficient_coins_prompt.gd"], ["coin_recovery_ui"], ["coins"], True),
         (["scripts/ui/premium_result_overlay.gd"], ["result_ui"], ["result"], True),
         (["scripts/core/water_sort_progression.gd"], ["progression"], [], True),
@@ -583,7 +574,6 @@ def self_test() -> None:
     assert GROUP_TESTS["navigation_shell"] == ["validate_modal_back_priority"]
     progression_plan = plan_for_paths(["scripts/core/water_sort_progression.gd"])
     assert progression_plan["tests"] == [
-        "validate_retention_pacing",
         "validate_progression_transitions",
         "validate_water_constructive_solvability",
     ], progression_plan
