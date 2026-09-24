@@ -520,7 +520,7 @@ def self_test() -> None:
         (["scripts/ui/water_tube_3d_motion.gd"], ["water"], ["water"], True),
         (["scripts/game/block_puzzle_3d.gd"], ["block"], ["block"], True),
         (["scripts/ui/device_fit.gd"], ["shared_gameplay_ui", "ui"], ["home"], True),
-        (["scripts/ui/ux_shell_casual.gd"], ["tutorial"], ["tutorial"], True),
+        (["scripts/ui/ux_shell_casual.gd"], ["navigation_shell", "tutorial"], ["tutorial"], True),
         (["scripts/ui/premium_live_hub_3d.gd"], ["games_ui"], ["games"], True),
         (["scripts/ui/unjam_3d_game_art.gd"], ["games_ui"], ["games"], True),
         (["scripts/ui/unjam_flat_game_logo.gd"], ["games_ui", "home"], ["games", "home"], True),
