@@ -85,15 +85,6 @@ func world_color() -> Color:
 func world_accent() -> Color:
 	return Color(WORLD_ACCENTS[world_index()])
 
-func _rescue_variant_rarity() -> String:
-	var variants = SaveManager.data.get("rescue_variants", [])
-	if not variants is Array:
-		return ""
-	for rarity_name in ["royal", "gold", "silver"]:
-		if "%s_%s" % [rescue_id, rarity_name] in variants:
-			return rarity_name
-	return ""
-
 func _rescue_result_accent() -> Color:
 	return world_accent()
 
@@ -276,7 +267,7 @@ func render_board() -> void:
 				slot.add_theme_stylebox_override("panel", style_box(Color("18243d"), 28, rescue_frame, 2))
 				var token := RescueToken.new()
 				token.custom_minimum_size = Vector2(cell_size, cell_size)
-				token.configure(rescue_id, rescue_frame, _rescue_variant_rarity())
+				token.configure(rescue_id, rescue_frame, "")
 				slot.add_child(token)
 				board_grid.add_child(slot)
 				_animate_cell(slot, x, y)
