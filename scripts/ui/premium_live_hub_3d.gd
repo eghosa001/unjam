@@ -111,7 +111,7 @@ func _add_retention_access(canvas: Control) -> void:
 	canvas.add_child(panel)
 	var title := _add_text(canvas, "REWARDS & EVENTS", Rect2(31, 650, 184, 20), 16, OFF_WHITE if _selector_dark() else INK, true)
 	title.name = "SelectorRewardsTitle"
-	var detail := _add_text(canvas, "MISSIONS • STREAKS • LEAGUE • SEASON", Rect2(31, 676, 226, 19), 12, DARK_MUTED if _selector_dark() else MUTED, true)
+	var detail := _add_text(canvas, "MISSIONS • LEAGUE • SEASON", Rect2(31, 676, 226, 19), 12, DARK_MUTED if _selector_dark() else MUTED, true)
 	detail.clip_text = true
 	var open := RefCanvas.premium_button("OPEN", 13, OFF_WHITE, Color("#9a6f18"), 15, Color("#f2cf65"), 1.1)
 	open.name = "SelectorRewardsOpenButton"
