@@ -1031,8 +1031,8 @@ func _build_figma_level_browser(game_id: String) -> void:
 	var bounds := _multi_page_bounds(game_id,selected_multi_world,selected_multi_page)
 	var world_name := MultiGameManager.world_name(game_id,selected_multi_world).to_upper()
 	_figma_card(canvas,"JourneyHero",Rect2(17,149,354,74),Color("#fffaf0"),Color(accent,0.30),15)
-	_figma_text(canvas,world_name,Rect2(35,145,250,23),19,accent)
-	_figma_text(canvas,"LEVELS %d–%d" % [bounds.x,bounds.y],Rect2(35,175,210,16),13,FIGMA_MUTED)
+	_figma_text(canvas,world_name,Rect2(35,144,250,25),20,accent)
+	_figma_text(canvas,"LEVELS %d–%d" % [bounds.x,bounds.y],Rect2(35,173,210,19),14,FIGMA_MUTED)
 
 	var page_y := 247.0 if game_id == "block_puzzle" else 222.0
 	var grid_y := 308.0 if game_id == "block_puzzle" else 269.0
@@ -1041,15 +1041,15 @@ func _build_figma_level_browser(game_id: String) -> void:
 
 	var prev_fill := Color("#33281c") if _dark() else Color("#fffaf0")
 	var prev_text := FIGMA_DARK_INK if _dark() else FIGMA_MUTED
-	var prev := _figma_button(canvas,"LevelPrev","◀ PREV",Rect2(17,page_y - 3.0,100,44),prev_fill,Callable(),prev_text,13,13)
+	var prev := _figma_button(canvas,"LevelPrev","◀ PREV",Rect2(17,page_y - 3.0,100,44),prev_fill,Callable(),prev_text,14,14)
 	prev.disabled = selected_multi_world <= 1 and selected_multi_page <= 1
 	_style_figma_page_button(prev,prev_fill,accent,prev.disabled,true)
 	if not prev.disabled:
 		prev.pressed.connect(_change_multi_page.bind(-1))
-	var current := _figma_button(canvas,"LevelCurrent","CURRENT",Rect2(125,page_y - 3.0,118,44),accent,Callable(self,"_jump_multi_current"),FIGMA_OFF_WHITE,13,13)
+	var current := _figma_button(canvas,"LevelCurrent","CURRENT",Rect2(125,page_y - 3.0,118,44),accent,Callable(self,"_jump_multi_current"),FIGMA_OFF_WHITE,14,14)
 	_style_figma_page_button(current,accent,accent,false)
 	var next_disabled := selected_multi_world >= world_count and selected_multi_page >= _multi_page_count(game_id,selected_multi_world)
-	var next := _figma_button(canvas,"LevelNext","NEXT ▶",Rect2(251,page_y - 3.0,120,44),Color("#fcfeff"),Callable(),FIGMA_MUTED,13,13)
+	var next := _figma_button(canvas,"LevelNext","NEXT ▶",Rect2(251,page_y - 3.0,120,44),Color("#fcfeff"),Callable(),FIGMA_MUTED,14,14)
 	next.disabled = next_disabled
 	_style_figma_page_button(next,Color("#fcfeff"),accent,next_disabled,true)
 	if not next.disabled:
@@ -1079,7 +1079,7 @@ func _build_figma_level_browser(game_id: String) -> void:
 			text_color = FIGMA_OFF_WHITE
 		elif milestone:
 			border = Color(FIGMA_GOLD,0.85)
-		var card := _figma_button(canvas,"Level/%d" % level_number,str(level_number),Rect2(x,y,80,68),fill,Callable(),text_color,15,15)
+		var card := _figma_button(canvas,"Level/%d" % level_number,str(level_number),Rect2(x,y,82,70),fill,Callable(),text_color,16,16)
 		card.disabled = not unlocked
 		_style_figma_level_card(card,accent,border,unlocked,is_current)
 		if unlocked:
@@ -1089,7 +1089,7 @@ func _build_figma_level_browser(game_id: String) -> void:
 				card.pressed.connect(start_multi_level.bind(game_id,level_number,false))
 		var star_text := "LOCK" if not unlocked else ("★".repeat(stars) if stars > 0 else "···")
 		var star_color := (Color("#9e9485") if _dark() else Color("#958b7c")) if not unlocked else (FIGMA_DARK_MUTED if _dark() else FIGMA_MUTED)
-		_figma_text(canvas,star_text,Rect2(x+9,y+38,64,18),12,star_color,true)
+		_figma_text(canvas,star_text,Rect2(x+8,y+39,66,19),13,star_color,true)
 		index += 1
 
 func _figma_level_tabs(canvas: Control, active_game_id: String) -> void:
@@ -1104,7 +1104,7 @@ func _figma_level_tabs(canvas: Control, active_game_id: String) -> void:
 		var active := game_id == active_game_id
 		var fill := active_accent if active else (Color("#33281c") if _dark() else Color("#fffaf0"))
 		var text_color := FIGMA_OFF_WHITE if active else (FIGMA_DARK_MUTED if _dark() else FIGMA_MUTED)
-		var button := _figma_button(canvas,"LevelGameTab/%s" % game_id,String(spec[1]),Rect2(float(spec[2]),81,108,44),fill,Callable(),text_color,14,12)
+		var button := _figma_button(canvas,"LevelGameTab/%s" % game_id,String(spec[1]),Rect2(float(spec[2]),81,108,44),fill,Callable(),text_color,14,13)
 		_style_figma_level_tab(button,active_accent,active)
 		if active:
 			button.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1201,7 +1201,7 @@ func _add_figma_block_modes(canvas: Control) -> void:
 	for spec in specs:
 		var mode := String(spec[0])
 		var fill: Color = spec[3] as Color
-		var button := _figma_button(canvas,"BlockMode/%s" % mode,String(spec[1]),Rect2(float(spec[2]),197,82,44),fill,Callable(),FIGMA_OFF_WHITE,13,12)
+		var button := _figma_button(canvas,"BlockMode/%s" % mode,String(spec[1]),Rect2(float(spec[2]),197,82,44),fill,Callable(),FIGMA_OFF_WHITE,13,13)
 		_style_figma_page_button(button,fill,fill,false)
 		if mode == "campaign":
 			button.mouse_filter = Control.MOUSE_FILTER_IGNORE
