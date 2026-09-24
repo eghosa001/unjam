@@ -64,8 +64,8 @@ func _run() -> void:
 	if not _rect_eq(Rect2(nav.position, nav.size), Rect2(13,757,362,70)):
 		return _fail("Home bottom nav drifted from Figma reference")
 	var collection_label := home.find_child("HomeNavLabel_COLLECT", true, false) as Label
-	if collection_label == null or collection_label.text != "COLLECTION":
-		return _fail("Home bottom nav no longer uses the complete Collection label")
+	if collection_label == null or collection_label.text != "COLLECT":
+		return _fail("Home bottom nav no longer uses the compact Collection label")
 	if collection_label.get_theme_font_size("font_size") < 13:
 		return _fail("Home Collection navigation label became too small")
 	var daily_label := home.find_child("HomeNavLabel_DAILY", true, false) as Label
