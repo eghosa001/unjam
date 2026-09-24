@@ -254,7 +254,7 @@ func _apply_tube_layout() -> void:
 	if count <= 0:
 		return
 
-	# The audited stage is 354×420. Fit every production configuration (up to
+	# The audited stage is 354×450. Fit every production configuration (up to
 	# 14 generated tubes, plus the optional assist tube) inside it instead of
 	# letting a third row overlap the move/status/action layers below.
 	var columns := count if count <= 5 else (3 if count <= 6 else (4 if count <= 8 else (5 if count <= 10 else (4 if count <= 12 else 5))))
