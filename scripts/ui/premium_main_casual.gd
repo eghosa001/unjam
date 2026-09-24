@@ -255,6 +255,7 @@ func _figma_header(canvas: Control, title_text: String, subtitle_text: String, p
 	var back_color := FIGMA_DARK_INK if use_dark else FIGMA_NAVY
 	var back_fill := Color("#cbc4b8") if not use_dark else Color("#2c2c2c")
 	var back_button := _figma_button(canvas, "FigmaBack", "‹", Rect2(17,19,52,52), back_fill, back_callback, back_color, 18, 27)
+	back_button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	back_button.tooltip_text = "Back"
 	var header_title := _figma_text(canvas, title_text, Rect2(83,21,186,28), 23, heading_color)
 	header_title.name = "FigmaHeaderTitle"
@@ -385,6 +386,7 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 		hit.flat = true
 		hit.focus_mode = Control.FOCUS_NONE
 		hit.modulate.a = 0.001
+		hit.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 		FigmaReferenceCanvas.set_rect(hit, float(hit_x[key]),753,72,78)
 		if not selected:
 			var cb: Callable = callbacks[key]
@@ -650,6 +652,7 @@ func _figma_daily_card(canvas: Control, game_id: String, y: float, collection_bo
 	)
 	button.disabled = bool(daily_state.get("disabled", false))
 	if not button.disabled:
+		button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 		button.pressed.connect(start_game_daily.bind(game_id))
 
 func _claim_collection_gift() -> void:
@@ -1045,14 +1048,17 @@ func _build_figma_level_browser(game_id: String) -> void:
 	prev.disabled = selected_multi_world <= 1 and selected_multi_page <= 1
 	_style_figma_page_button(prev,prev_fill,accent,prev.disabled,true)
 	if not prev.disabled:
+		prev.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 		prev.pressed.connect(_change_multi_page.bind(-1))
 	var current := _figma_button(canvas,"LevelCurrent","CURRENT",Rect2(125,page_y - 3.0,118,44),accent,Callable(self,"_jump_multi_current"),FIGMA_OFF_WHITE,14,14)
+	current.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	_style_figma_page_button(current,accent,accent,false)
 	var next_disabled := selected_multi_world >= world_count and selected_multi_page >= _multi_page_count(game_id,selected_multi_world)
 	var next := _figma_button(canvas,"LevelNext","NEXT ▶",Rect2(251,page_y - 3.0,120,44),Color("#fcfeff"),Callable(),FIGMA_MUTED,14,14)
 	next.disabled = next_disabled
 	_style_figma_page_button(next,Color("#fcfeff"),accent,next_disabled,true)
 	if not next.disabled:
+		next.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 		next.pressed.connect(_change_multi_page.bind(1))
 
 	var current_level := _highest_level_for_game(game_id)
@@ -1083,6 +1089,7 @@ func _build_figma_level_browser(game_id: String) -> void:
 		card.disabled = not unlocked
 		_style_figma_level_card(card,accent,border,unlocked,is_current)
 		if unlocked:
+			card.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 			if game_id == "rescue_rush":
 				card.pressed.connect(start_level.bind(level_number))
 			else:
@@ -1109,6 +1116,7 @@ func _figma_level_tabs(canvas: Control, active_game_id: String) -> void:
 		if active:
 			button.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		else:
+			button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 			button.pressed.connect(_figma_switch_level_game.bind(game_id))
 
 func _style_figma_level_header(canvas: Control, accent: Color) -> void:
@@ -1206,6 +1214,7 @@ func _add_figma_block_modes(canvas: Control) -> void:
 		if mode == "campaign":
 			button.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		else:
+			button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 			button.pressed.connect(start_block_mode.bind(mode))
 
 func _figma_switch_level_game(game_id: String) -> void:
