@@ -131,8 +131,14 @@ func _run() -> void:
 	save_manager.data["weekly_played_levels"] = []
 	save_manager.data["daily_unique_levels"] = []
 	save_manager.data["rescue_variants"] = []
-	multi.call("complete_level", "rescue_rush", 25, 3, 0)
-	manager.call("record_level_complete", 25, 3, 6, 8, 2, "puppy", 0, "rescue_rush", "hard")
+	multi.call("complete_level", "rescue_rush", 25, 3, 0, {
+		"moves": 6,
+		"par_moves": 8,
+		"chain_count": 2,
+		"rescue_id": "puppy",
+		"hints_used": 0,
+		"difficulty": "hard"
+	})
 	var rescue_tasks: Array = multi.call("daily_tasks", "rescue_rush")
 	var task_advanced := false
 	for task_value in rescue_tasks:
@@ -168,9 +174,13 @@ func _run() -> void:
 	var block_source := FileAccess.get_file_as_string("res://scripts/game/block_puzzle.gd")
 	var collection_source := FileAccess.get_file_as_string("res://scripts/ui/premium_main_casual.gd")
 	var token_source := FileAccess.get_file_as_string("res://scripts/ui/rescue_token.gd")
-	for token in ["MultiGameManager.complete_level(\"rescue_rush\"", "RetentionManager.record_level_complete", "aurora_trail", "gold_rescue_frame"]:
+	for token in ["MultiGameManager.complete_level(\"rescue_rush\"", "\"rescue_id\": rescue_id", "aurora_trail", "gold_rescue_frame"]:
 		if not rescue_source.contains(token):
 			errors.append("Rescue Rush end-to-end retention/cosmetic consumer missing: %s" % token)
+	if rescue_source.contains("RetentionManager.record_level_complete("):
+		errors.append("Rescue Rush gameplay still performs a second retention completion write")
+	if "puppy" not in save_manager.data.get("rescued", []):
+		errors.append("Shared Rescue completion path did not persist the rescued character")
 	if not block_source.contains("royal_piece_skin") or not block_source.contains("ROYAL_PIECE_PALETTE"):
 		errors.append("Royal Piece event cosmetic has no Block Puzzle runtime consumer")
 	if not collection_source.contains("crystal_garden"):
