@@ -31,11 +31,14 @@ func _run() -> void:
 		var shell := _find_node_named(card, "GameArtShell_%s" % game_id) as PanelContainer
 		if shell == null:
 			failures.append("Selector 3D preview has no framed display shell for %s" % game_id)
-		var play := _find_button_with(card, "PLAY")
-		if play == null or play.custom_minimum_size.x < 116.0:
+		var play := _find_node_named(main, "SelectorPlay_%s" % game_id) as Button
+		if play == null or play.size.x < 72.0 or play.size.y < 42.0 or play.get_theme_font_size("font_size") < 14:
 			failures.append("Selector play CTA is not explicit/readable for %s" % game_id)
-		var desc := _find_label_with(card, _description_fragment(game_id))
-		if desc == null or desc.get_theme_font_size("font_size") < 22:
+		var title := _find_node_named(main, "SelectorGameTitle_%s" % game_id) as Label
+		if title == null or title.get_theme_font_size("font_size") < 22:
+			failures.append("Selector title is too small for %s" % game_id)
+		var desc := _find_node_named(main, "SelectorGameSubtitle_%s" % game_id) as Label
+		if desc == null or desc.get_theme_font_size("font_size") < 14:
 			failures.append("Selector description is too small for %s" % game_id)
 
 	main.queue_free()
