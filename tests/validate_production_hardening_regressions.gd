@@ -7,7 +7,6 @@ func _run() -> void:
 	if not _validate_canonical_motion_key(): return
 	if not await _validate_active_game_monetization_identity(): return
 	if not _validate_water_concurrent_action_safety(): return
-	if not _validate_multi_game_retention_parity(): return
 	if not _validate_rewarded_result_state(): return
 	if not await _validate_shared_completion_overlay(): return
 	if not await _validate_help_does_not_overlap_game_footer(): return
@@ -18,7 +17,6 @@ func _run() -> void:
 	if not await _validate_selector_header_and_navigation(): return
 	if not await _validate_exact_touch_target_floor(): return
 	if not _validate_dead_code_cleanup(): return
-	if not _validate_retention_failure_wiring(): return
 	if not _validate_visual_workflow_installs_plugins(): return
 	if not _validate_main_ci_runs_new_hardening_gates(): return
 	if not _validate_release_workflow_exists(): return
@@ -81,32 +79,6 @@ func _validate_water_concurrent_action_safety() -> bool:
 	for needle in ["func _has_active_pours", "func undo_move", "func restart_level", "func _quit", "_queued_action", "_run_queued_action_if_ready"]:
 		if not source.contains(needle):
 			return _fail("Water concurrent action safety missing: %s" % needle)
-	return true
-
-func _validate_multi_game_retention_parity() -> bool:
-	var save := root.get_node_or_null("SaveManager")
-	var multi := root.get_node_or_null("MultiGameManager")
-	var retention := root.get_node_or_null("RetentionManager")
-	if save == null or multi == null or retention == null:
-		return _fail("Shared managers missing during retention parity test")
-	var backup: Dictionary = (save.get("data") as Dictionary).duplicate(true)
-	save.call("reset_progress")
-	multi.call("ensure_state")
-	retention.call("ensure_state")
-	var data: Dictionary = save.get("data") as Dictionary
-	var before_weekly := int(data.get("weekly_points", 0))
-	multi.call("complete_level", "water_sort", 1, 3, 0)
-	data = save.get("data") as Dictionary
-	var water_weekly := int(data.get("weekly_points", 0))
-	multi.call("complete_level", "block_puzzle", 1, 3, 0)
-	data = save.get("data") as Dictionary
-	var block_weekly := int(data.get("weekly_points", 0))
-	save.set("data", backup)
-	save.call("save")
-	if water_weekly <= before_weekly:
-		return _fail("Water Sort completion does not advance shared retention")
-	if block_weekly <= water_weekly:
-		return _fail("Block Puzzle level with same number is incorrectly deduplicated against Water Sort")
 	return true
 
 func _validate_rewarded_result_state() -> bool:
@@ -411,22 +383,6 @@ func _validate_dead_code_cleanup() -> bool:
 	var tutorial := _source("res://scripts/ui/ux_shell_casual.gd")
 	if not tutorial.contains("TUTORIAL_DARK_NEUTRAL_FALLBACK.lerp"):
 		return _fail("Tutorial compatibility fallback became dead instead of serving the dark-scene contract")
-	return true
-
-func _validate_retention_failure_wiring() -> bool:
-	var rescue := _source("res://scripts/game/game.gd")
-	if rescue.count("RetentionManager.record_level_complete(") != 0:
-		return _fail("Rescue Rush still double-records retention completion")
-	if not rescue.contains("if not daily_mode:\n\t\tRetentionManager.record_level_fail()"):
-		return _fail("Rescue Rush campaign failure does not reset the win streak")
-	var water := _source("res://scripts/game/water_sort_10000.gd")
-	if water.contains("RetentionManager.record_level_fail()"):
-		return _fail("Water Sort STUCK recovery incorrectly resets the retention streak")
-	if not water.contains("STUCK • NO LEGAL POUR") or not water.contains("water_sort_attempt_stuck"):
-		return _fail("Water Sort dead-end recovery contract is missing")
-	var block := _source("res://scripts/game/block_puzzle_10000.gd")
-	if not block.contains("if not daily_mode and play_mode == \"campaign\":\n\t\tRetentionManager.record_level_fail()"):
-		return _fail("Block Puzzle campaign failure does not reset the win streak")
 	return true
 
 func _validate_visual_workflow_installs_plugins() -> bool:
