@@ -536,9 +536,9 @@ func _figma_daily_progress(canvas: Control) -> void:
 		if _daily_done(game_id):
 			done_count += 1
 
-	_figma_card(canvas, "DailyProgress", Rect2(17,505,354,78), Color("#fffef8"), Color(FIGMA_GOLD,0.38), 18)
-	_figma_text(canvas, "TODAY", Rect2(33,521,80,18), 14, FIGMA_INK)
-	var count := _figma_text(canvas, "%d / 3 COMPLETE" % done_count, Rect2(214,521,137,18), 12, FIGMA_MUTED, true)
+	_figma_card(canvas, "DailyProgress", Rect2(17,487,354,106), Color("#fffef8"), Color(FIGMA_GOLD,0.38), 18)
+	_figma_text(canvas, "TODAY", Rect2(33,501,80,18), 14, FIGMA_INK)
+	var count := _figma_text(canvas, "%d / 3 COMPLETE" % done_count, Rect2(214,501,137,18), 12, FIGMA_MUTED, true)
 	count.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var progress := ProgressBar.new()
 	progress.name = "DailyProgressBar"
@@ -548,8 +548,32 @@ func _figma_daily_progress(canvas: Control) -> void:
 	progress.value = done_count
 	progress.add_theme_stylebox_override("background", FigmaReferenceCanvas.solid_box(Color("#d8cdb7"), 6))
 	progress.add_theme_stylebox_override("fill", FigmaReferenceCanvas.solid_box(FIGMA_GOLD, 6))
-	FigmaReferenceCanvas.set_rect(progress, 33, 552, 318, 9)
+	FigmaReferenceCanvas.set_rect(progress, 33, 530, 318, 9)
 	canvas.add_child(progress)
+
+	var status_specs := [
+		["rescue_rush", "RESCUE", 33.0],
+		["water_sort", "WATER", 139.0],
+		["block_puzzle", "BLOCK", 245.0],
+	]
+	for spec in status_specs:
+		var game_id := String(spec[0])
+		var accent := Unjam3DTheme.game_accent(game_id)
+		var done := _daily_done(game_id)
+		var fill := accent.darkened(0.68) if _dark() else accent.lightened(0.82)
+		var border := accent.lightened(0.14 if _dark() else 0.02)
+		_figma_solid_card(canvas, "DailyProgress/%s" % game_id, Rect2(float(spec[2]),550,96,32), fill, border, 12, false)
+		var label := _figma_text(
+			canvas,
+			"%s %s" % [String(spec[1]), "✓" if done else "READY"],
+			Rect2(float(spec[2])+4,555,88,20),
+			12,
+			accent.lightened(0.25) if _dark() else accent.darkened(0.24),
+			true
+		)
+		label.name = "DailyProgressLabel_%s" % game_id
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 
 func _figma_daily_tip(canvas: Control, collection_bonus: int) -> void:
 	# Use the lower Daily space for useful progress context without inventing an
@@ -604,6 +628,7 @@ func _figma_daily_card(canvas: Control, game_id: String, y: float, collection_bo
 	var daily_title := _figma_text(canvas, MultiGameManager.display_name(game_id).to_upper(), Rect2(33,y+18,170,22), 18, FIGMA_DARK_INK if _dark() else FIGMA_INK)
 	daily_title.name = "DailyTitle_%s" % game_id
 	daily_title.add_theme_color_override("font_color", accent.lightened(0.20) if _dark() else accent.darkened(0.18))
+	FigmaReferenceCanvas.style_display_title(daily_title, Color("#fff7df"), accent.darkened(0.62), 2)
 	var detail := "CLEAR THE ROUTE" if game_id == "rescue_rush" else ("SORT THE COLOURS" if game_id == "water_sort" else "CLEAR THE BOARD")
 	_figma_text(canvas, detail, Rect2(33,y+48,175,15), 12, FIGMA_MUTED)
 	var reward := "+%d COINS" % (100 + collection_bonus) if game_id == "rescue_rush" else "+%d–%d COINS" % [125 + collection_bonus,175 + collection_bonus]
