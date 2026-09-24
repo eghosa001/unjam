@@ -216,15 +216,15 @@ func _add_bottom_nav(canvas: Control) -> void:
 	canvas.add_child(top_gloss)
 
 	var items := [
-		["HOME", "⌂", 22.0, Callable(self, "_go_home"), false, Color("#ffd54f")],
-		["GAMES", "▦", 91.0, Callable(), true, Color("#ffd54f")],
-		["DAILY", "✦", 150.0, func(): get_parent().call("build_daily_games"), false, Color("#ffd54f")],
-		["COLLECT", "◆", 225.0, func(): get_parent().call("build_collection"), false, Color("#ffd54f")],
-		["SETTINGS", "⚙", 310.0, func(): get_parent().call("build_settings"), false, Color("#ffd54f")],
+		["HOME", "⌂", 22.0, 14.0, Callable(self, "_go_home"), false, Color("#ffd54f")],
+		["GAMES", "▦", 94.0, 86.0, Callable(), true, Color("#ffd54f")],
+		["DAILY", "✦", 166.0, 158.0, func(): get_parent().call("build_daily_games"), false, Color("#ffd54f")],
+		["COLLECT", "◆", 238.0, 230.0, func(): get_parent().call("build_collection"), false, Color("#ffd54f")],
+		["SETTINGS", "⚙", 310.0, 302.0, func(): get_parent().call("build_settings"), false, Color("#ffd54f")],
 	]
 	for item in items:
-		var selected: bool = bool(item[4])
-		var accent: Color = item[5]
+		var selected: bool = bool(item[5])
+		var accent: Color = item[6]
 		var idle_text := DARK_MUTED if _selector_dark() else Color(0.31, 0.43, 0.54)
 		var label_color := Color.WHITE if selected and _selector_dark() else (INK if selected else idle_text)
 		var glyph_color := accent.lightened(0.18) if selected else idle_text.lightened(0.06)
@@ -234,21 +234,21 @@ func _add_bottom_nav(canvas: Control) -> void:
 			var plate_fill := accent.darkened(0.50) if _selector_dark() else accent.lightened(0.34)
 			var plate_border := accent.lightened(0.16) if _selector_dark() else accent.darkened(0.08)
 			plate.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(plate_fill.lightened(0.14), plate_fill, plate_fill.darkened(0.12), 15, plate_border, 1.0, 0.38))
-			RefCanvas.set_rect(plate, float(item[2]) - 2.0, 762, 60, 57)
+			RefCanvas.set_rect(plate, float(item[3]) + 6.0, 762, 60, 57)
 			plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			canvas.add_child(plate)
 			var shine := PanelContainer.new()
 			shine.name = "SelectorNavActiveShine_%s" % String(item[0])
 			shine.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(1,1,1,0.32 if _selector_dark() else 0.55),1))
-			RefCanvas.set_rect(shine, float(item[2]) + 8.0, 765, 40, 2)
+			RefCanvas.set_rect(shine, float(item[3]) + 16.0, 765, 40, 2)
 			shine.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			canvas.add_child(shine)
 		var glyph := _add_text(canvas, String(item[1]), Rect2(float(item[2]) - 1.0, 763, 58, 24), 21, glyph_color, true)
 		glyph.name = "SelectorNavGlyph_%s" % String(item[0])
 		glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		var display_name := "COLLECTION" if String(item[0]) == "COLLECT" else String(item[0])
-		var label_width := 82.0 if String(item[0]) == "COLLECT" else (66.0 if String(item[0]) == "SETTINGS" else 58.0)
-		var label_x := float(item[2]) - 12.0 if String(item[0]) == "COLLECT" else (float(item[2]) - 5.0 if String(item[0]) == "SETTINGS" else float(item[2]) - 1.0)
+		var label_width := 78.0 if String(item[0]) == "COLLECT" else (66.0 if String(item[0]) == "SETTINGS" else 58.0)
+		var label_x := float(item[3]) + (72.0 - label_width) * 0.5
 		var label := _add_text(canvas, display_name, Rect2(label_x, 789, label_width, 24), 14, label_color, selected)
 		label.name = "SelectorNavLabel_%s" % String(item[0])
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -262,8 +262,8 @@ func _add_bottom_nav(canvas: Control) -> void:
 		hit.flat = true
 		hit.focus_mode = Control.FOCUS_NONE
 		hit.modulate.a = 0.001
-		RefCanvas.set_rect(hit, float(item[2]) - 9.0, 753, 74 if String(item[0]) != "SETTINGS" else 80, 78)
-		var callback: Callable = item[3]
+		RefCanvas.set_rect(hit, float(item[3]), 753, 72, 78)
+		var callback: Callable = item[4]
 		if callback.is_valid():
 			hit.pressed.connect(callback)
 		else:
