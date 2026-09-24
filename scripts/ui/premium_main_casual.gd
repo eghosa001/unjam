@@ -323,7 +323,8 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 		1,
 		false
 	)
-	var xs := {"home":22.0, "games":91.0, "daily":150.0, "collection":225.0, "settings":310.0}
+	var xs := {"home":22.0, "games":94.0, "daily":166.0, "collection":238.0, "settings":310.0}
+	var hit_x := {"home":14.0, "games":86.0, "daily":158.0, "collection":230.0, "settings":302.0}
 	var names := {"home":"HOME", "games":"GAMES", "daily":"DAILY", "collection":"COLLECTION", "settings":"SETTINGS"}
 	var glyphs := {"home":"⌂", "games":"▦", "daily":"✦", "collection":"◆", "settings":"⚙"}
 	var accents := {
@@ -340,7 +341,6 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 		"collection": Callable(self,"build_collection"),
 		"settings": Callable(self,"build_settings"),
 	}
-	var hit_x := {"home":14.0, "games":84.0, "daily":143.0, "collection":216.0, "settings":299.0}
 	for key in ["home","games","daily","collection","settings"]:
 		var selected: bool = String(key) == active
 		var accent: Color = accents[key]
@@ -353,7 +353,7 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 			_figma_solid_card(
 				canvas,
 				"StdNavActivePlate_%s" % String(key),
-				Rect2(float(hit_x[key])+5.0,762,60,57),
+				Rect2(float(hit_x[key])+6.0,762,60,57),
 				plate_fill,
 				plate_border,
 				15
@@ -361,7 +361,7 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 			_figma_solid_card(
 				canvas,
 				"StdNavActiveShine_%s" % String(key),
-				Rect2(float(hit_x[key])+15.0,765,40,2),
+				Rect2(float(hit_x[key])+16.0,765,40,2),
 				Color(1,1,1,0.32 if use_dark else 0.55),
 				Color(1,1,1,0.12),
 				1,
@@ -370,8 +370,8 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 		var glyph := _figma_text(canvas, String(glyphs[key]), Rect2(float(xs[key])-1.0,763,58,24), 21, icon_color, true)
 		glyph.name = "StdNavGlyph_%s" % String(key)
 		glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		var label_width := 82.0 if String(key) == "collection" else (66.0 if String(key) == "settings" else 58.0)
-		var label_x := float(xs[key]) - 12.0 if String(key) == "collection" else (float(xs[key]) - 5.0 if String(key) == "settings" else float(xs[key]) - 1.0)
+		var label_width := 78.0 if String(key) == "collection" else (66.0 if String(key) == "settings" else 58.0)
+		var label_x := float(hit_x[key]) + (72.0 - label_width) * 0.5
 		var nav_label := _figma_text(canvas, String(names[key]), Rect2(label_x,789,label_width,24), 14, selected_text if selected else idle_text, selected)
 		nav_label.name = "StdNavLabel_%s" % String(key)
 		nav_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -385,7 +385,7 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 		hit.flat = true
 		hit.focus_mode = Control.FOCUS_NONE
 		hit.modulate.a = 0.001
-		FigmaReferenceCanvas.set_rect(hit, float(hit_x[key])-1.0,753,74 if key != "settings" else 80,78)
+		FigmaReferenceCanvas.set_rect(hit, float(hit_x[key]),753,72,78)
 		if not selected:
 			var cb: Callable = callbacks[key]
 			hit.pressed.connect(cb)
