@@ -81,30 +81,30 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p build/android
-          godot --headless --verbose --path . --install-android-build-template --export-debug Android build/android/unjam-v3.apk 2>&1 | tee android-test-export.log
+          godot --headless --verbose --path . --install-android-build-template --export-debug Android build/android/unjam-latest-debug.apk 2>&1 | tee android-test-export.log
           if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" android-test-export.log; then exit 1; fi
-          test -s build/android/unjam-v3.apk
+          test -s build/android/unjam-latest-debug.apk
 
       - name: Verify APK identity
         shell: bash
         run: |
           set -euo pipefail
-          APK=build/android/unjam-v3.apk
+          APK=build/android/unjam-latest-debug.apk
           AAPT="$(find "$ANDROID_SDK_ROOT/build-tools" -type f -name aapt | sort | tail -1)"
           test -x "$AAPT"
-          "$AAPT" dump badging "$APK" | tee build/android/unjam-v3-badging.txt
-          grep -F "package: name='com.eghosa.unjamgam' versionCode='3' versionName='1.0.3'" build/android/unjam-v3-badging.txt
-          grep -F "targetSdkVersion:'36'" build/android/unjam-v3-badging.txt
-          grep -F "native-code: 'arm64-v8a'" build/android/unjam-v3-badging.txt
-          sha256sum "$APK" | tee build/android/unjam-v3.apk.sha256
+          "$AAPT" dump badging "$APK" | tee build/android/unjam-latest-debug-badging.txt
+          grep -F "package: name='com.eghosa.unjamgam' versionCode='3' versionName='1.0.3'" build/android/unjam-latest-debug-badging.txt
+          grep -F "targetSdkVersion:'36'" build/android/unjam-latest-debug-badging.txt
+          grep -F "native-code: 'arm64-v8a'" build/android/unjam-latest-debug-badging.txt
+          sha256sum "$APK" | tee build/android/unjam-latest-debug.apk.sha256
 
       - name: Upload latest test APK
         uses: actions/upload-artifact@v4
         with:
-          name: unjam-version-3-test-apk
+          name: unjam-latest-debug-apk
           path: |
-            build/android/unjam-v3.apk
-            build/android/unjam-v3.apk.sha256
-            build/android/unjam-v3-badging.txt
+            build/android/unjam-latest-debug.apk
+            build/android/unjam-latest-debug.apk.sha256
+            build/android/unjam-latest-debug-badging.txt
           if-no-files-found: error
           retention-days: 7
