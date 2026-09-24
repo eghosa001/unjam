@@ -33,7 +33,7 @@ const RESET_PRESERVED_KEYS := [
 
 const RETIRED_REWARDS_EVENTS_KEYS := [
 	"last_login_date", "login_cycle_day", "login_claim_date", "comeback_claimed_date", "last_comeback_reward",
-	"daily_mission_date", "daily_mission_progress", "daily_mission_claimed", "daily_all_claimed",
+	"daily_mission_date", "daily_mission_progress", "daily_mission_claimed", "daily_all_claimed", "daily_tasks",
 	"win_streak", "best_win_streak",
 	"weekly_key", "weekly_points", "weekly_claimed_tiers", "weekly_best_rank",
 	"season_key", "season_points", "season_claimed_tiers",
