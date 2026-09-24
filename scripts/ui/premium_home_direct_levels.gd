@@ -372,8 +372,8 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 		var glyph := _add_text(canvas, item[1], Rect2(float(item[2]) - 1.0, 763, 58, 24), 21, icon_color, true)
 		glyph.name = "HomeNavGlyph_%s" % String(item[0])
 		glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		var display_name := "COLLECTION" if String(item[0]) == "COLLECT" else String(item[0])
-		var label_width := 74.0 if String(item[0]) == "COLLECT" else (64.0 if String(item[0]) == "SETTINGS" else 58.0)
+		var display_name := String(item[0])
+		var label_width := 66.0 if String(item[0]) in ["COLLECT", "SETTINGS"] else 58.0
 		var label_x := float(item[3]) + (72.0 - label_width) * 0.5
 		# Active destination carries weight; inactive labels stay regular so the
 		# five-item bar reads as navigation, not five competing headlines.
