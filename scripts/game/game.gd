@@ -85,10 +85,6 @@ func world_color() -> Color:
 func world_accent() -> Color:
 	return Color(WORLD_ACCENTS[world_index()])
 
-func _owns_event_item(id: String) -> bool:
-	var owned = SaveManager.data.get("event_shop_owned", [])
-	return owned is Array and id in owned
-
 func _rescue_variant_rarity() -> String:
 	var variants = SaveManager.data.get("rescue_variants", [])
 	if not variants is Array:
@@ -99,7 +95,7 @@ func _rescue_variant_rarity() -> String:
 	return ""
 
 func _rescue_result_accent() -> Color:
-	return Color("ffd45c") if _owns_event_item("gold_rescue_frame") else world_accent()
+	return world_accent()
 
 func style_box(color: Color, radius: int = 24, border_color: Color = Color.TRANSPARENT, border_width: int = 0) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
@@ -276,9 +272,8 @@ func render_board() -> void:
 			if not rescued and pos == rescue_pos:
 				var slot := PanelContainer.new()
 				slot.custom_minimum_size = Vector2(cell_size, cell_size)
-				var gold_frame := _owns_event_item("gold_rescue_frame")
-				var rescue_frame := Color("ffe06b") if gold_frame else Color(world_accent(), 0.72)
-				slot.add_theme_stylebox_override("panel", style_box(Color("18243d"), 28, rescue_frame, 4 if gold_frame else 2))
+				var rescue_frame := Color(world_accent(), 0.72)
+				slot.add_theme_stylebox_override("panel", style_box(Color("18243d"), 28, rescue_frame, 2))
 				var token := RescueToken.new()
 				token.custom_minimum_size = Vector2(cell_size, cell_size)
 				token.configure(rescue_id, rescue_frame, _rescue_variant_rarity())
@@ -442,8 +437,6 @@ func _fail_and_restart(message: String) -> void:
 		hint_label.text = String(presentation.get("subtitle", message))
 	_clear_checkpoint(true)
 	FeedbackManager.blocked()
-	if not daily_mode:
-		RetentionManager.record_level_fail()
 	AnalyticsManager.track("rescue_attempt_failed", {"level": level_number, "reason": message, "daily": daily_mode})
 	var result := PremiumResultOverlay.new()
 	result.configure(
@@ -519,8 +512,6 @@ func escape_piece(index: int, trigger_effect: bool) -> void:
 	if index < 0 or index >= pieces.size() or not bool(pieces[index].get("active", true)):
 		return
 	var piece: Dictionary = pieces[index]
-	if trigger_effect and _owns_event_item("aurora_trail"):
-		_spawn_aurora_escape_trail(piece)
 	pieces[index]["active"] = false
 	if not trigger_effect:
 		return
