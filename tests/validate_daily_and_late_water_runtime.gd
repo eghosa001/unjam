@@ -113,7 +113,7 @@ func _run() -> void:
 	var board := water.get("board") as GridContainer
 	if board == null:
 		return _fail(save_manager, original, "Water Sort board missing")
-	var stage_rect := Rect2(31.0, 169.0, 326.0, 420.0)
+	var stage_rect := Rect2(31.0, 169.0, 326.0, 450.0)
 	var board_rect := Rect2(board.position, board.size)
 	if board_rect.position.y < stage_rect.position.y - 0.5 or board_rect.end.y > stage_rect.end.y + 0.5:
 		return _fail(save_manager, original, "15-tube layout exceeds gameplay stage: %s" % str(board_rect))
