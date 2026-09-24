@@ -26,7 +26,7 @@ func _style_retention_button(button: Button, accent: bool) -> void:
 	button.add_theme_color_override("font_color", text_color)
 	button.add_theme_color_override("font_hover_color", text_color)
 	button.add_theme_color_override("font_pressed_color", text_color)
-	button.add_theme_color_override("font_disabled_color", Color(text_color, 0.55))
+	button.add_theme_color_override("font_disabled_color", Color(text_color, 0.68))
 	button.add_theme_constant_override("outline_size", 0)
 
 func refresh() -> void:
@@ -84,15 +84,15 @@ func _restyle_retention_tree(node: Node) -> void:
 		elif child is Label:
 			var label := child as Label
 			var original_size := label.get_theme_font_size("font_size")
-			var target_size := 14
+			var target_size := 15
 			if original_size >= 30:
-				target_size = 23
+				target_size = 24
 			elif original_size >= 25:
-				target_size = 20
+				target_size = 21
 			elif original_size >= 21:
-				target_size = 18
+				target_size = 19
 			elif original_size >= 18:
-				target_size = 15
+				target_size = 16
 			label.add_theme_font_size_override("font_size", target_size)
 			var text_value := label.text.to_upper()
 			var color := Color("#eef7ff") if dark else Color("#26323d")
