@@ -685,7 +685,7 @@ func build_collection() -> void:
 		total_badges += MultiGameManager.world_badge_count(game_id)
 
 	_figma_card(canvas,"Journey",Rect2(17,89,354,96),Color("#fffef8"),Color(0.55,0.86,0.71,0.32),18)
-	_figma_text(canvas,"PROGRESS",Rect2(33,107,210,19),16,FIGMA_GOLD)
+	_figma_text(canvas,"PROGRESS",Rect2(33,106,210,21),17,FIGMA_GOLD)
 	var metrics := [
 		[total_completed,"LEVELS",35.0],
 		[total_stars,"STARS",119.0],
@@ -694,21 +694,21 @@ func build_collection() -> void:
 	]
 	for metric in metrics:
 		_figma_text(canvas,_compact_stat(int(metric[0])),Rect2(float(metric[2]),136,62,26),18,FIGMA_INK)
-		_figma_text(canvas,String(metric[1]),Rect2(float(metric[2])-3,161,70,20),13,FIGMA_MUTED)
+		_figma_text(canvas,String(metric[1]),Rect2(float(metric[2])-3,159,70,22),14,FIGMA_MUTED)
 
-	_figma_text(canvas,"GAMES",Rect2(17,204,190,18),15,FIGMA_INK)
+	_figma_text(canvas,"GAMES",Rect2(17,202,190,21),16,FIGMA_INK)
 	_figma_collection_progress(canvas,"rescue_rush",17)
 	_figma_collection_progress(canvas,"water_sort",135)
 	_figma_collection_progress(canvas,"block_puzzle",253)
 
 	_figma_card(canvas,"Achievements",Rect2(17,339,354,76),Color("#fffef8"),Color(0.55,0.86,0.71,0.32),18)
-	_figma_text(canvas,"ACHIEVEMENTS",Rect2(33,355,220,18),15,FIGMA_GOLD)
+	_figma_text(canvas,"ACHIEVEMENTS",Rect2(33,353,220,21),16,FIGMA_GOLD)
 	var achievement_parts: Array[String] = []
 	for game_id in MultiGameManager.GAME_IDS:
 		var unlocked := MultiGameManager.unlocked_achievements(game_id).size()
 		var total := MultiGameManager.achievement_definitions(game_id).size()
 		achievement_parts.append("%s %d/%d" % [_figma_short_game(game_id),unlocked,total])
-	_figma_text(canvas," • ".join(achievement_parts),Rect2(33,384,310,22),13,FIGMA_MUTED)
+	_figma_text(canvas," • ".join(achievement_parts),Rect2(33,382,310,24),14,FIGMA_MUTED)
 
 	var decorations: Array = SaveManager.data.get("decorations",[])
 	var rescued: Array = SaveManager.data.get("rescued",[])
@@ -718,9 +718,9 @@ func build_collection() -> void:
 	var garden_tint := Color("#e8fbff") if crystal_garden else Color("#fffef8")
 	var garden_border := Color(0.36,0.88,1.0,0.72) if crystal_garden else Color(0.55,0.86,0.71,0.32)
 	_figma_card(canvas,"Garden",Rect2(17,429,354,96),garden_tint,garden_border,18)
-	_figma_text(canvas,"RESCUE GARDEN" + ("  ✦ CRYSTAL" if crystal_garden else ""),Rect2(33,445,220,19),16,Color("#43c9f3") if crystal_garden else FIGMA_GOLD)
-	_figma_text(canvas,"%d friends home • %d / 6 upgrades" % [rescued.size(),owned],Rect2(33,476,240,20),13,FIGMA_MUTED)
-	_figma_text(canvas,"BONUS  +%d DAILY • +%d GIFT" % [EconomyManager.collection_daily_bonus(),EconomyManager.garden_gift_amount()],Rect2(33,501,310,20),13,FIGMA_MUTED)
+	_figma_text(canvas,"RESCUE GARDEN" + ("  ✦ CRYSTAL" if crystal_garden else ""),Rect2(33,443,230,22),17,Color("#43c9f3") if crystal_garden else FIGMA_GOLD)
+	_figma_text(canvas,"%d friends home • %d / 6 upgrades" % [rescued.size(),owned],Rect2(33,474,250,22),14,FIGMA_MUTED)
+	_figma_text(canvas,"BONUS  +%d DAILY • +%d GIFT" % [EconomyManager.collection_daily_bonus(),EconomyManager.garden_gift_amount()],Rect2(33,499,310,22),14,FIGMA_MUTED)
 
 	# Figma state transition: swipe upward through the Garden/Boost region to
 	# reveal the dedicated six-upgrade Collection state.
@@ -736,7 +736,7 @@ func build_collection() -> void:
 	if not can_claim:
 		gift_text = "GIFT CLAIMED" if EconomyManager.garden_gift_claimed_today() else "UNLOCK WITH UPGRADE"
 	var gift_fill := FIGMA_GREEN if can_claim else Color(0.54,0.64,0.72)
-	var gift := _figma_button(canvas,"CollectionGardenGift",gift_text,Rect2(33,548,200,44),gift_fill,Callable(),FIGMA_OFF_WHITE,16,12)
+	var gift := _figma_button(canvas,"CollectionGardenGift",gift_text,Rect2(33,548,200,44),gift_fill,Callable(),FIGMA_OFF_WHITE,16,13)
 	gift.disabled = not can_claim
 	if can_claim:
 		gift.pressed.connect(_claim_collection_gift)
@@ -750,7 +750,7 @@ func build_collection() -> void:
 		Callable(self,"build_collection_upgrades"),
 		Color.WHITE,
 		14,
-		12
+		13
 	)
 	upgrades_button.tooltip_text = "Buy permanent Rescue Garden upgrades with coins"
 
@@ -768,11 +768,11 @@ func _figma_collection_tip(canvas: Control) -> void:
 	_figma_card(canvas, "CollectionTip", Rect2(17, 606, 354, 82), tip_fill, tip_border, 16)
 	var icon := _figma_text(canvas, "◆", Rect2(33, 622, 24, 24), 17, FIGMA_GREEN, true)
 	icon.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	var title := _figma_text(canvas, "GARDEN REWARDS", Rect2(63, 616, 288, 20), 14, FIGMA_INK)
+	var title := _figma_text(canvas, "GARDEN REWARDS", Rect2(63, 615, 288, 22), 15, FIGMA_INK)
 	title.name = "CollectionTipTitle"
-	var current_value := _figma_text(canvas, "+%d DAILY  •  +%d GIFT" % [daily_bonus, gift_amount], Rect2(63, 640, 288, 18), 12, FIGMA_GOLD)
+	var current_value := _figma_text(canvas, "+%d DAILY  •  +%d GIFT" % [daily_bonus, gift_amount], Rect2(63, 639, 288, 20), 13, FIGMA_GOLD)
 	current_value.name = "CollectionTipValue"
-	var detail := _figma_text(canvas, "Each upgrade adds +5 Daily and +10 Gift coins.", Rect2(63, 660, 288, 18), 12, FIGMA_MUTED)
+	var detail := _figma_text(canvas, "Each upgrade adds +5 Daily and +10 Gift coins.", Rect2(63, 659, 288, 20), 13, FIGMA_MUTED)
 	detail.name = "CollectionTipDetail"
 
 func _figma_collection_progress(canvas: Control, game_id: String, x: float) -> void:
@@ -855,9 +855,8 @@ func build_collection_upgrades() -> void:
 			16,
 			false
 		)
-		_figma_text(canvas,display_name,Rect2(37,y+8,136,18),14,title_color)
-		_figma_text(canvas,flavor,Rect2(37,y+30,118,15),12,title_color.lightened(0.12))
-		_figma_text(canvas,"+5 DAILY  •  +10 GIFT",Rect2(37,y+48,136,15),11,Color("#6b8091"))
+		_figma_text(canvas,display_name,Rect2(37,y+8,140,20),15,title_color)
+		_figma_text(canvas,"%s  •  +5 DAILY  •  +10 GIFT" % flavor,Rect2(37,y+34,144,24),12,Color("#6b8091"))
 		var preview := GardenUpgradePreviewScene.new() as GardenUpgradePreview
 		preview.name = "CollectionUpgradePreview/%s" % id
 		preview.configure(id,owned)
