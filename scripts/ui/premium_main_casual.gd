@@ -434,7 +434,7 @@ func build_settings() -> void:
 	_figma_text(canvas,"THEME",Rect2(33,448,210,28),14,muted_color)
 	var theme_fill := FIGMA_GOLD
 	var theme_text := FIGMA_NAVY
-	var theme_button := _figma_button(canvas,"SettingToggle/Theme",theme_name,Rect2(279,439,72,44),theme_fill,Callable(),theme_text,19,14)
+	var theme_button := _figma_button(canvas,"SettingToggle/Theme",theme_name,Rect2(279,439,72,44),theme_fill,Callable(),theme_text,19,15)
 	theme_button.pressed.connect(func() -> void:
 		if shell != null and shell.has_method("_toggle_theme"):
 			shell.call("_toggle_theme")
@@ -452,13 +452,13 @@ func build_settings() -> void:
 	var utility_border := Color("#5b5347") if dark_mode else Color("#b89b61")
 	var utility_text := FIGMA_DARK_INK if dark_mode else FIGMA_NAVY
 	FigmaReferenceCanvas.add_shadow(canvas, Rect2(33,541,144,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
-	var how_to := FigmaReferenceCanvas.premium_button("HOW TO PLAY",14,utility_text,utility_fill,16,utility_border,1.2)
+	var how_to := FigmaReferenceCanvas.premium_button("HOW TO PLAY",15,utility_text,utility_fill,16,utility_border,1.2)
 	how_to.name = "SettingsHowToPlay"
 	FigmaReferenceCanvas.set_rect(how_to,33,541,144,46)
 	how_to.pressed.connect(_show_current_tutorial)
 	canvas.add_child(how_to)
 	FigmaReferenceCanvas.add_shadow(canvas, Rect2(193,541,158,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
-	var privacy := FigmaReferenceCanvas.premium_button("PRIVACY",14,utility_text,utility_fill,16,utility_border,1.2)
+	var privacy := FigmaReferenceCanvas.premium_button("PRIVACY",15,utility_text,utility_fill,16,utility_border,1.2)
 	privacy.name = "SettingsPrivacy"
 	FigmaReferenceCanvas.set_rect(privacy,193,541,158,46)
 	privacy.pressed.connect(PrivacyManager.show_privacy_options)
@@ -467,7 +467,7 @@ func build_settings() -> void:
 	_figma_settings_card(canvas,"SettingsCard/Purchases",Rect2(17,607,354,98),card_fill,card_border,dark_mode)
 	_figma_text(canvas,"PURCHASES",Rect2(33,621,170,18),15,FIGMA_GOLD if not dark_mode else heading_color)
 	FigmaReferenceCanvas.add_shadow(canvas, Rect2(33,645,318,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
-	var purchases := FigmaReferenceCanvas.premium_button("SHOP & RESTORE",14,utility_text,utility_fill,16,utility_border,1.2)
+	var purchases := FigmaReferenceCanvas.premium_button("SHOP & RESTORE",15,utility_text,utility_fill,16,utility_border,1.2)
 	purchases.name = "SettingsPurchases"
 	FigmaReferenceCanvas.set_rect(purchases,33,645,318,46)
 	purchases.tooltip_text = "Buy upgrades or restore previous Google Play purchases"
@@ -487,12 +487,12 @@ func _figma_settings_card(canvas: Control, name_value: String, rect: Rect2, fill
 
 func _figma_setting_row(canvas: Control, key: String, label_text: String, toggle_y: float, label_y: float, default_value: bool = true, reduced_motion: bool = false, dark_mode: bool = false) -> void:
 	var text_color := Color(0.76,0.84,0.90) if dark_mode else FIGMA_INK
-	_figma_text(canvas,label_text,Rect2(34,label_y-7,210,30),14,text_color)
+	_figma_text(canvas,label_text,Rect2(34,label_y-7,210,30),15,text_color)
 	var enabled := bool(SaveManager.data.get(key,default_value))
 	var fill := FIGMA_GOLD if enabled else Color("#b2bfcc")
 	var button_text_color := FIGMA_OFF_WHITE if enabled else FIGMA_NAVY
 	var state := "ON" if enabled else "OFF"
-	var button := _figma_button(canvas,"SettingToggle/%s" % key.capitalize(),state,Rect2(279,toggle_y-3.0,72,44),fill,Callable(),button_text_color,19,14)
+	var button := _figma_button(canvas,"SettingToggle/%s" % key.capitalize(),state,Rect2(279,toggle_y-3.0,72,44),fill,Callable(),button_text_color,19,15)
 	if reduced_motion:
 		button.pressed.connect(_toggle_reduced_motion)
 	else:
