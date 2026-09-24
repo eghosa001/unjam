@@ -29,8 +29,9 @@ func _on_surface_changed(surface: String) -> void:
 	var current = main.get("selected_game_id")
 	if current != null and String(current) in MultiGameManager.GAME_IDS:
 		selected_game = String(current)
-	# Keep Home persistent. Rebuild only when visible state that actually appears
-	# on the launcher changed while it was hidden; wallet balance is event-driven.
+	# Progress, stars, wallet and selected-game state stay fresh without paying
+	# for a full Home rebuild on every return. Wallet balance is event-driven;
+	# the signature covers the remaining launcher-visible state.
 	_sync()
 
 func _sync() -> void:
