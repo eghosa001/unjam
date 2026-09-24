@@ -367,19 +367,19 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 				1,
 				false
 			)
-		var glyph := _figma_text(canvas, String(glyphs[key]), Rect2(float(xs[key])-1.0,764,58,23), 20, icon_color, true)
+		var glyph := _figma_text(canvas, String(glyphs[key]), Rect2(float(xs[key])-1.0,763,58,24), 21, icon_color, true)
 		glyph.name = "StdNavGlyph_%s" % String(key)
 		glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		var label_width := 82.0 if String(key) == "collection" else (66.0 if String(key) == "settings" else 58.0)
 		var label_x := float(xs[key]) - 12.0 if String(key) == "collection" else (float(xs[key]) - 5.0 if String(key) == "settings" else float(xs[key]) - 1.0)
-		var nav_label := _figma_text(canvas, String(names[key]), Rect2(label_x,790,label_width,22), 13, selected_text if selected else idle_text, selected)
+		var nav_label := _figma_text(canvas, String(names[key]), Rect2(label_x,789,label_width,24), 14, selected_text if selected else idle_text, selected)
 		nav_label.name = "StdNavLabel_%s" % String(key)
 		nav_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		nav_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		nav_label.clip_text = true
 		nav_label.custom_minimum_size = Vector2.ZERO
-		nav_label.position = Vector2(label_x, 790)
-		nav_label.size = Vector2(label_width, 22)
+		nav_label.position = Vector2(label_x, 789)
+		nav_label.size = Vector2(label_width, 24)
 		var hit := Button.new()
 		hit.name = "StdNav/Proto/%s" % String(names[key])
 		hit.flat = true
