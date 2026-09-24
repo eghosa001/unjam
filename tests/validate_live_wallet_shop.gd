@@ -29,7 +29,7 @@ func run() -> void:
 	var live := main.get_node_or_null("PremiumLive")
 	expect_true(live != null and live.visible, "Choose Game Figma surface did not open")
 	if live != null:
-		var settings := live.find_child("SelectorSettingsButton", true, false) as Button
+		var settings := live.find_child("SelectorNavHit_SETTINGS", true, false) as Button
 		var legacy_wallet := live.find_child("LiveCoinShopButton", true, false) as Button
 		expect_true(settings != null and settings.visible, "Choose Game Figma Settings action is missing")
 		expect_true(legacy_wallet == null, "Legacy coin wallet was injected into the audited Figma selector")
