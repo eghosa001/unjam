@@ -523,37 +523,6 @@ func escape_piece(index: int, trigger_effect: bool) -> void:
 	if chain_count > 1:
 		FeedbackManager.effect()
 
-func _spawn_aurora_escape_trail(piece: Dictionary) -> void:
-	if board_grid == null:
-		return
-	var pos := piece_position(piece)
-	var child_index := pos.y * width + pos.x
-	if child_index < 0 or child_index >= board_grid.get_child_count():
-		return
-	var cell := board_grid.get_child(child_index) as Control
-	if cell == null:
-		return
-	var direction: Vector2i = DIRECTIONS.get(String(piece.get("direction", "right")), Vector2i.RIGHT)
-	var dir := Vector2(direction.x, direction.y).normalized()
-	var start := cell.global_position - global_position + cell.size * 0.5
-	var trail := Line2D.new()
-	trail.name = "AuroraEscapeTrail"
-	trail.width = 18.0
-	trail.default_color = Color("69f5ff")
-	trail.z_index = 520
-	trail.points = PackedVector2Array([start - dir * 22.0, start + dir * 170.0])
-	trail.modulate = Color(1, 1, 1, 0.92)
-	add_child(trail)
-	var glow := Line2D.new()
-	glow.width = 7.0
-	glow.default_color = Color("c17cff")
-	glow.z_index = 521
-	glow.points = trail.points
-	trail.add_child(glow)
-	var tween := create_tween()
-	tween.tween_property(trail, "modulate:a", 0.0, 0.34).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.finished.connect(trail.queue_free)
-
 func rotate_neighbors(center: Vector2i) -> void:
 	var directions: Array[Vector2i] = [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]
 	for direction in directions:
