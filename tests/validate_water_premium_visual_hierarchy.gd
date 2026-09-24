@@ -44,11 +44,11 @@ func _run() -> void:
 		return _fail("Water Sort board exceeds the audited stage height")
 	if tube.custom_minimum_size.x < 38.0 or tube.custom_minimum_size.y < 90.0:
 		return _fail("Water Sort bottles became too small for reliable compact-phone play")
-	var objective_label := _find_label_with(game,"SORT • POUR • SOLVE")
+	var objective_label := game.find_child("WaterObjectiveLabel", true, false) as Label
 	if objective_label == null:
 		return _fail("Water Sort objective label is missing")
-	if objective_label.text != "SORT • POUR • SOLVE":
-		return _fail("Water Sort objective copy drifted from the composed Figma control")
+	if objective_label.text != "WIN • ONE COLOUR PER FULL TUBE":
+		return _fail("Water Sort objective copy drifted from the explicit win-condition contract")
 	if game.find_child("WaterObjectiveDrop", true, false) == null:
 		return _fail("Water Sort objective droplet icon is missing")
 	if objective_label.get_theme_font_size("font_size") < 15:
