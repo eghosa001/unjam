@@ -279,11 +279,26 @@ func complete_daily(id:String,reward:=100)->bool:
  ensure_state();var all:Dictionary=SaveManager.data.get("game_progress",{});var g:Dictionary=all.get(id,{});var key:=date_key();var done:Array=g.get("daily_completed",[]);var previous:=String(g.get("daily_last_date",""))
  if key in done or previous==key:return false
  g["daily_streak"]=int(g.get("daily_streak",0))+1 if _is_previous_calendar_day(previous,key) else 1;g["daily_best_streak"]=maxi(int(g.get("daily_best_streak",0)),int(g.get("daily_streak",0)));g["daily_last_date"]=key;done.append(key);g["daily_completed"]=_bounded_date_history(done);all[id]=g;SaveManager.data["game_progress"]=all;SaveManager.data["coins"]=int(SaveManager.data.get("coins",0))+reward;SaveManager.save();return true
-func complete_level(id:String,n:int,stars:int,coin_reward:=25)->Dictionary:
+func complete_level(id:String,n:int,stars:int,coin_reward:=25,context:Dictionary={})->Dictionary:
  if id=="rescue_rush":
   _advance_tasks(id,stars)
   _total_stars_cache.erase(id)
-  return SaveManager.complete_level(n,stars,"",coin_reward)
+  var rescue_id:=String(context.get("rescue_id",""))
+  var rewards:=SaveManager.complete_level(n,stars,rescue_id,coin_reward)
+  var difficulty:=String(context.get("difficulty",difficulty_for_game(id,n)))
+  RetentionManager.record_level_complete(
+   n,
+   stars,
+   int(context.get("moves",0)),
+   int(context.get("par_moves",0)),
+   int(context.get("chain_count",0)),
+   rescue_id,
+   int(context.get("hints_used",-1)),
+   id,
+   difficulty
+  )
+  AnalyticsManager.track("multi_game_level_complete",{"game":id,"level":n,"stars":stars,"difficulty":difficulty})
+  return rewards
  ensure_state();n=clampi(n,1,CAMPAIGN_LEVELS);stars=clampi(stars,1,3);var all:Dictionary=SaveManager.data.get("game_progress",{});var g:Dictionary=all.get(id,{});var sm:Dictionary=g.get("stars",{});var key:=str(n);var previous:=int(sm.get(key,0));var first:=previous==0;var rewards={"first_clear":first,"improved":stars>previous,"perfect":stars==3 and previous<3,"milestone":false,"world_badge":false,"bonus_coins":0,"prestige":0};sm[key]=maxi(previous,stars);g["stars"]=sm;g["highest_level"]=maxi(int(g.get("highest_level",1)),mini(CAMPAIGN_LEVELS+1,n+1))
  if first:g["levels_completed"]=mini(CAMPAIGN_LEVELS,int(g.get("levels_completed",0))+1);SaveManager.data["coins"]=int(SaveManager.data.get("coins",0))+coin_reward
  if stars==3 and previous<3:g["perfect_clears"]=int(g.get("perfect_clears",0))+1;g["perfect_streak"]=int(g.get("perfect_streak",0))+1;g["best_perfect_streak"]=maxi(int(g.get("best_perfect_streak",0)),int(g.get("perfect_streak",0)))

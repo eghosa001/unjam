@@ -323,8 +323,9 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 		1,
 		false
 	)
-	var xs := {"home":22.0, "games":91.0, "daily":150.0, "collection":225.0, "settings":310.0}
-	var names := {"home":"HOME", "games":"GAMES", "daily":"DAILY", "collection":"COLLECTION", "settings":"SETTINGS"}
+	var xs := {"home":22.0, "games":94.0, "daily":166.0, "collection":238.0, "settings":310.0}
+	var hit_x := {"home":14.0, "games":86.0, "daily":158.0, "collection":230.0, "settings":302.0}
+	var names := {"home":"HOME", "games":"GAMES", "daily":"DAILY", "collection":"COLLECT", "settings":"SETTINGS"}
 	var glyphs := {"home":"⌂", "games":"▦", "daily":"✦", "collection":"◆", "settings":"⚙"}
 	var accents := {
 		"home":FIGMA_GOLD,
@@ -340,7 +341,6 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 		"collection": Callable(self,"build_collection"),
 		"settings": Callable(self,"build_settings"),
 	}
-	var hit_x := {"home":14.0, "games":84.0, "daily":143.0, "collection":216.0, "settings":299.0}
 	for key in ["home","games","daily","collection","settings"]:
 		var selected: bool = String(key) == active
 		var accent: Color = accents[key]
@@ -353,7 +353,7 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 			_figma_solid_card(
 				canvas,
 				"StdNavActivePlate_%s" % String(key),
-				Rect2(float(hit_x[key])+5.0,762,60,57),
+				Rect2(float(hit_x[key])+6.0,762,60,57),
 				plate_fill,
 				plate_border,
 				15
@@ -361,31 +361,31 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 			_figma_solid_card(
 				canvas,
 				"StdNavActiveShine_%s" % String(key),
-				Rect2(float(hit_x[key])+15.0,765,40,2),
+				Rect2(float(hit_x[key])+16.0,765,40,2),
 				Color(1,1,1,0.32 if use_dark else 0.55),
 				Color(1,1,1,0.12),
 				1,
 				false
 			)
-		var glyph := _figma_text(canvas, String(glyphs[key]), Rect2(float(xs[key])-1.0,764,58,23), 20, icon_color, true)
+		var glyph := _figma_text(canvas, String(glyphs[key]), Rect2(float(xs[key])-1.0,763,58,24), 21, icon_color, true)
 		glyph.name = "StdNavGlyph_%s" % String(key)
 		glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		var label_width := 82.0 if String(key) == "collection" else (66.0 if String(key) == "settings" else 58.0)
-		var label_x := float(xs[key]) - 12.0 if String(key) == "collection" else (float(xs[key]) - 5.0 if String(key) == "settings" else float(xs[key]) - 1.0)
-		var nav_label := _figma_text(canvas, String(names[key]), Rect2(label_x,790,label_width,22), 13, selected_text if selected else idle_text, selected)
+		var label_width := 66.0 if String(key) in ["collection", "settings"] else 58.0
+		var label_x := float(hit_x[key]) + (72.0 - label_width) * 0.5
+		var nav_label := _figma_text(canvas, String(names[key]), Rect2(label_x,789,label_width,24), 14, selected_text if selected else idle_text, selected)
 		nav_label.name = "StdNavLabel_%s" % String(key)
 		nav_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		nav_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		nav_label.clip_text = true
 		nav_label.custom_minimum_size = Vector2.ZERO
-		nav_label.position = Vector2(label_x, 790)
-		nav_label.size = Vector2(label_width, 22)
+		nav_label.position = Vector2(label_x, 789)
+		nav_label.size = Vector2(label_width, 24)
 		var hit := Button.new()
-		hit.name = "StdNav/Proto/%s" % String(names[key])
+		hit.name = "StdNavHit_%s" % String(key).to_upper()
 		hit.flat = true
 		hit.focus_mode = Control.FOCUS_NONE
 		hit.modulate.a = 0.001
-		FigmaReferenceCanvas.set_rect(hit, float(hit_x[key])-1.0,753,74 if key != "settings" else 80,78)
+		FigmaReferenceCanvas.set_rect(hit, float(hit_x[key]),753,72,78)
 		if not selected:
 			var cb: Callable = callbacks[key]
 			hit.pressed.connect(cb)
@@ -434,7 +434,7 @@ func build_settings() -> void:
 	_figma_text(canvas,"THEME",Rect2(33,448,210,28),14,muted_color)
 	var theme_fill := FIGMA_GOLD
 	var theme_text := FIGMA_NAVY
-	var theme_button := _figma_button(canvas,"SettingToggle/Theme",theme_name,Rect2(279,439,72,44),theme_fill,Callable(),theme_text,19,14)
+	var theme_button := _figma_button(canvas,"SettingToggle/Theme",theme_name,Rect2(279,439,72,44),theme_fill,Callable(),theme_text,19,15)
 	theme_button.pressed.connect(func() -> void:
 		if shell != null and shell.has_method("_toggle_theme"):
 			shell.call("_toggle_theme")
@@ -452,13 +452,13 @@ func build_settings() -> void:
 	var utility_border := Color("#5b5347") if dark_mode else Color("#b89b61")
 	var utility_text := FIGMA_DARK_INK if dark_mode else FIGMA_NAVY
 	FigmaReferenceCanvas.add_shadow(canvas, Rect2(33,541,144,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
-	var how_to := FigmaReferenceCanvas.premium_button("HOW TO PLAY",14,utility_text,utility_fill,16,utility_border,1.2)
+	var how_to := FigmaReferenceCanvas.premium_button("HOW TO PLAY",15,utility_text,utility_fill,16,utility_border,1.2)
 	how_to.name = "SettingsHowToPlay"
 	FigmaReferenceCanvas.set_rect(how_to,33,541,144,46)
 	how_to.pressed.connect(_show_current_tutorial)
 	canvas.add_child(how_to)
 	FigmaReferenceCanvas.add_shadow(canvas, Rect2(193,541,158,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
-	var privacy := FigmaReferenceCanvas.premium_button("PRIVACY",14,utility_text,utility_fill,16,utility_border,1.2)
+	var privacy := FigmaReferenceCanvas.premium_button("PRIVACY",15,utility_text,utility_fill,16,utility_border,1.2)
 	privacy.name = "SettingsPrivacy"
 	FigmaReferenceCanvas.set_rect(privacy,193,541,158,46)
 	privacy.pressed.connect(PrivacyManager.show_privacy_options)
@@ -467,7 +467,7 @@ func build_settings() -> void:
 	_figma_settings_card(canvas,"SettingsCard/Purchases",Rect2(17,607,354,98),card_fill,card_border,dark_mode)
 	_figma_text(canvas,"PURCHASES",Rect2(33,621,170,18),15,FIGMA_GOLD if not dark_mode else heading_color)
 	FigmaReferenceCanvas.add_shadow(canvas, Rect2(33,645,318,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
-	var purchases := FigmaReferenceCanvas.premium_button("SHOP & RESTORE",14,utility_text,utility_fill,16,utility_border,1.2)
+	var purchases := FigmaReferenceCanvas.premium_button("SHOP & RESTORE",15,utility_text,utility_fill,16,utility_border,1.2)
 	purchases.name = "SettingsPurchases"
 	FigmaReferenceCanvas.set_rect(purchases,33,645,318,46)
 	purchases.tooltip_text = "Buy upgrades or restore previous Google Play purchases"
@@ -487,12 +487,12 @@ func _figma_settings_card(canvas: Control, name_value: String, rect: Rect2, fill
 
 func _figma_setting_row(canvas: Control, key: String, label_text: String, toggle_y: float, label_y: float, default_value: bool = true, reduced_motion: bool = false, dark_mode: bool = false) -> void:
 	var text_color := Color(0.76,0.84,0.90) if dark_mode else FIGMA_INK
-	_figma_text(canvas,label_text,Rect2(34,label_y-7,210,30),14,text_color)
+	_figma_text(canvas,label_text,Rect2(34,label_y-7,210,30),15,text_color)
 	var enabled := bool(SaveManager.data.get(key,default_value))
 	var fill := FIGMA_GOLD if enabled else Color("#b2bfcc")
 	var button_text_color := FIGMA_OFF_WHITE if enabled else FIGMA_NAVY
 	var state := "ON" if enabled else "OFF"
-	var button := _figma_button(canvas,"SettingToggle/%s" % key.capitalize(),state,Rect2(279,toggle_y-3.0,72,44),fill,Callable(),button_text_color,19,14)
+	var button := _figma_button(canvas,"SettingToggle/%s" % key.capitalize(),state,Rect2(279,toggle_y-3.0,72,44),fill,Callable(),button_text_color,19,15)
 	if reduced_motion:
 		button.pressed.connect(_toggle_reduced_motion)
 	else:
@@ -537,8 +537,8 @@ func _figma_daily_progress(canvas: Control) -> void:
 			done_count += 1
 
 	_figma_card(canvas, "DailyProgress", Rect2(17,487,354,106), Color("#fffef8"), Color(FIGMA_GOLD,0.38), 18)
-	_figma_text(canvas, "TODAY", Rect2(33,501,80,18), 14, FIGMA_INK)
-	var count := _figma_text(canvas, "%d / 3 COMPLETE" % done_count, Rect2(214,501,137,18), 12, FIGMA_MUTED, true)
+	_figma_text(canvas, "TODAY", Rect2(33,500,80,20), 15, FIGMA_INK)
+	var count := _figma_text(canvas, "%d / 3 COMPLETE" % done_count, Rect2(210,500,141,20), 13, FIGMA_MUTED, true)
 	count.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var progress := ProgressBar.new()
 	progress.name = "DailyProgressBar"
@@ -566,8 +566,8 @@ func _figma_daily_progress(canvas: Control) -> void:
 		var label := _figma_text(
 			canvas,
 			"%s %s" % [String(spec[1]), "✓" if done else "READY"],
-			Rect2(float(spec[2])+4,555,88,20),
-			12,
+			Rect2(float(spec[2])+3,554,90,22),
+			13,
 			accent.lightened(0.25) if _dark() else accent.darkened(0.24),
 			true
 		)
@@ -589,7 +589,7 @@ func _figma_daily_tip(canvas: Control, collection_bonus: int) -> void:
 	var star_icon := _figma_text(canvas, "✦", Rect2(33, 614, 24, 24), 18, FIGMA_GOLD, true)
 	star_icon.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	var title_text := "TODAY COMPLETE" if done_count >= 3 else ("%d DAILY GAME LEFT" % remaining if remaining == 1 else "%d DAILY GAMES LEFT" % remaining)
-	var title := _figma_text(canvas, title_text, Rect2(63, 608, 288, 20), 14, FIGMA_GOLD if done_count >= 3 else FIGMA_INK)
+	var title := _figma_text(canvas, title_text, Rect2(63, 607, 288, 22), 15, FIGMA_GOLD if done_count >= 3 else FIGMA_INK)
 	title.name = "DailyTipTitle"
 	var detail_text := "All three Daily Games are complete for today."
 	if done_count < 3:
@@ -597,7 +597,7 @@ func _figma_daily_tip(canvas: Control, collection_bonus: int) -> void:
 			detail_text = "Collection adds +%d coins to each Daily Game." % collection_bonus
 		else:
 			detail_text = "Garden upgrades boost each Daily Game reward."
-	var detail := _figma_text(canvas, detail_text, Rect2(63, 636, 288, 28), 12, FIGMA_MUTED)
+	var detail := _figma_text(canvas, detail_text, Rect2(63, 635, 288, 30), 13, FIGMA_MUTED)
 	detail.name = "DailyTipDetail"
 	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
@@ -625,15 +625,15 @@ func _figma_daily_card(canvas: Control, game_id: String, y: float, collection_bo
 	accent_rail.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(accent.lightened(0.30), accent, accent.darkened(0.24), 3, accent.lightened(0.38), 1, 0.36))
 	FigmaReferenceCanvas.set_rect(accent_rail, 20, y + 14, 5, 78)
 	canvas.add_child(accent_rail)
-	var daily_title := _figma_text(canvas, MultiGameManager.display_name(game_id).to_upper(), Rect2(33,y+18,170,22), 18, FIGMA_DARK_INK if _dark() else FIGMA_INK)
+	var daily_title := _figma_text(canvas, MultiGameManager.display_name(game_id).to_upper(), Rect2(33,y+16,178,25), 19, FIGMA_DARK_INK if _dark() else FIGMA_INK)
 	daily_title.name = "DailyTitle_%s" % game_id
 	var title_fill := accent.lightened(0.22) if _dark() else accent.darkened(0.30)
 	var title_outline := accent.darkened(0.68) if _dark() else Color(1.0, 1.0, 1.0, 0.92)
 	FigmaReferenceCanvas.style_display_title(daily_title, title_fill, title_outline, 2)
 	var detail := "CLEAR THE ROUTE" if game_id == "rescue_rush" else ("SORT THE COLOURS" if game_id == "water_sort" else "CLEAR THE BOARD")
-	_figma_text(canvas, detail, Rect2(33,y+48,175,15), 12, FIGMA_MUTED)
+	_figma_text(canvas, detail, Rect2(33,y+47,182,18), 13, FIGMA_MUTED)
 	var reward := "+%d COINS" % (100 + collection_bonus) if game_id == "rescue_rush" else "+%d–%d COINS" % [125 + collection_bonus,175 + collection_bonus]
-	_figma_text(canvas, reward, Rect2(33,y+72,130,16), 13, FIGMA_GOLD if _dark() else Color("#8a642e"))
+	_figma_text(canvas, reward, Rect2(33,y+70,150,19), 14, FIGMA_GOLD if _dark() else Color("#8a642e"))
 	var daily_state := _daily_ui_state(game_id, accent)
 	var fill: Color = daily_state.get("fill", accent)
 	var button_text := String(daily_state.get("text", "PLAY"))
@@ -645,8 +645,8 @@ func _figma_daily_card(canvas: Control, game_id: String, y: float, collection_bo
 		fill,
 		Callable(),
 		FIGMA_NAVY,
-		14,
-		14
+		15,
+		15
 	)
 	button.disabled = bool(daily_state.get("disabled", false))
 	if not button.disabled:
@@ -685,7 +685,7 @@ func build_collection() -> void:
 		total_badges += MultiGameManager.world_badge_count(game_id)
 
 	_figma_card(canvas,"Journey",Rect2(17,89,354,96),Color("#fffef8"),Color(0.55,0.86,0.71,0.32),18)
-	_figma_text(canvas,"PROGRESS",Rect2(33,107,210,19),16,FIGMA_GOLD)
+	_figma_text(canvas,"PROGRESS",Rect2(33,106,210,21),17,FIGMA_GOLD)
 	var metrics := [
 		[total_completed,"LEVELS",35.0],
 		[total_stars,"STARS",119.0],
@@ -694,21 +694,21 @@ func build_collection() -> void:
 	]
 	for metric in metrics:
 		_figma_text(canvas,_compact_stat(int(metric[0])),Rect2(float(metric[2]),136,62,26),18,FIGMA_INK)
-		_figma_text(canvas,String(metric[1]),Rect2(float(metric[2])-3,161,70,20),13,FIGMA_MUTED)
+		_figma_text(canvas,String(metric[1]),Rect2(float(metric[2])-3,159,70,22),14,FIGMA_MUTED)
 
-	_figma_text(canvas,"GAMES",Rect2(17,204,190,18),15,FIGMA_INK)
+	_figma_text(canvas,"GAMES",Rect2(17,202,190,21),16,FIGMA_INK)
 	_figma_collection_progress(canvas,"rescue_rush",17)
 	_figma_collection_progress(canvas,"water_sort",135)
 	_figma_collection_progress(canvas,"block_puzzle",253)
 
 	_figma_card(canvas,"Achievements",Rect2(17,339,354,76),Color("#fffef8"),Color(0.55,0.86,0.71,0.32),18)
-	_figma_text(canvas,"ACHIEVEMENTS",Rect2(33,355,220,18),15,FIGMA_GOLD)
+	_figma_text(canvas,"ACHIEVEMENTS",Rect2(33,353,220,21),16,FIGMA_GOLD)
 	var achievement_parts: Array[String] = []
 	for game_id in MultiGameManager.GAME_IDS:
 		var unlocked := MultiGameManager.unlocked_achievements(game_id).size()
 		var total := MultiGameManager.achievement_definitions(game_id).size()
 		achievement_parts.append("%s %d/%d" % [_figma_short_game(game_id),unlocked,total])
-	_figma_text(canvas," • ".join(achievement_parts),Rect2(33,384,310,22),13,FIGMA_MUTED)
+	_figma_text(canvas," • ".join(achievement_parts),Rect2(33,382,310,24),14,FIGMA_MUTED)
 
 	var decorations: Array = SaveManager.data.get("decorations",[])
 	var rescued: Array = SaveManager.data.get("rescued",[])
@@ -718,9 +718,9 @@ func build_collection() -> void:
 	var garden_tint := Color("#e8fbff") if crystal_garden else Color("#fffef8")
 	var garden_border := Color(0.36,0.88,1.0,0.72) if crystal_garden else Color(0.55,0.86,0.71,0.32)
 	_figma_card(canvas,"Garden",Rect2(17,429,354,96),garden_tint,garden_border,18)
-	_figma_text(canvas,"RESCUE GARDEN" + ("  ✦ CRYSTAL" if crystal_garden else ""),Rect2(33,445,220,19),16,Color("#43c9f3") if crystal_garden else FIGMA_GOLD)
-	_figma_text(canvas,"%d friends home • %d / 6 upgrades" % [rescued.size(),owned],Rect2(33,476,240,20),13,FIGMA_MUTED)
-	_figma_text(canvas,"BONUS  +%d DAILY • +%d GIFT" % [EconomyManager.collection_daily_bonus(),EconomyManager.garden_gift_amount()],Rect2(33,501,310,20),13,FIGMA_MUTED)
+	_figma_text(canvas,"RESCUE GARDEN" + ("  ✦ CRYSTAL" if crystal_garden else ""),Rect2(33,443,230,22),17,Color("#43c9f3") if crystal_garden else FIGMA_GOLD)
+	_figma_text(canvas,"%d friends home • %d / 6 upgrades" % [rescued.size(),owned],Rect2(33,474,250,22),14,FIGMA_MUTED)
+	_figma_text(canvas,"BONUS  +%d DAILY • +%d GIFT" % [EconomyManager.collection_daily_bonus(),EconomyManager.garden_gift_amount()],Rect2(33,499,310,22),14,FIGMA_MUTED)
 
 	# Figma state transition: swipe upward through the Garden/Boost region to
 	# reveal the dedicated six-upgrade Collection state.
@@ -736,7 +736,7 @@ func build_collection() -> void:
 	if not can_claim:
 		gift_text = "GIFT CLAIMED" if EconomyManager.garden_gift_claimed_today() else "UNLOCK WITH UPGRADE"
 	var gift_fill := FIGMA_GREEN if can_claim else Color(0.54,0.64,0.72)
-	var gift := _figma_button(canvas,"CollectionGardenGift",gift_text,Rect2(33,548,200,44),gift_fill,Callable(),FIGMA_OFF_WHITE,16,12)
+	var gift := _figma_button(canvas,"CollectionGardenGift",gift_text,Rect2(33,548,200,44),gift_fill,Callable(),FIGMA_OFF_WHITE,16,13)
 	gift.disabled = not can_claim
 	if can_claim:
 		gift.pressed.connect(_claim_collection_gift)
@@ -750,7 +750,7 @@ func build_collection() -> void:
 		Callable(self,"build_collection_upgrades"),
 		Color.WHITE,
 		14,
-		12
+		13
 	)
 	upgrades_button.tooltip_text = "Buy permanent Rescue Garden upgrades with coins"
 
@@ -768,11 +768,11 @@ func _figma_collection_tip(canvas: Control) -> void:
 	_figma_card(canvas, "CollectionTip", Rect2(17, 606, 354, 82), tip_fill, tip_border, 16)
 	var icon := _figma_text(canvas, "◆", Rect2(33, 622, 24, 24), 17, FIGMA_GREEN, true)
 	icon.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	var title := _figma_text(canvas, "GARDEN REWARDS", Rect2(63, 616, 288, 20), 14, FIGMA_INK)
+	var title := _figma_text(canvas, "GARDEN REWARDS", Rect2(63, 615, 288, 22), 15, FIGMA_INK)
 	title.name = "CollectionTipTitle"
-	var current_value := _figma_text(canvas, "+%d DAILY  •  +%d GIFT" % [daily_bonus, gift_amount], Rect2(63, 640, 288, 18), 12, FIGMA_GOLD)
+	var current_value := _figma_text(canvas, "+%d DAILY  •  +%d GIFT" % [daily_bonus, gift_amount], Rect2(63, 639, 288, 20), 13, FIGMA_GOLD)
 	current_value.name = "CollectionTipValue"
-	var detail := _figma_text(canvas, "Each upgrade adds +5 Daily and +10 Gift coins.", Rect2(63, 660, 288, 18), 12, FIGMA_MUTED)
+	var detail := _figma_text(canvas, "Each upgrade adds +5 Daily and +10 Gift coins.", Rect2(63, 659, 288, 20), 13, FIGMA_MUTED)
 	detail.name = "CollectionTipDetail"
 
 func _figma_collection_progress(canvas: Control, game_id: String, x: float) -> void:
@@ -855,9 +855,8 @@ func build_collection_upgrades() -> void:
 			16,
 			false
 		)
-		_figma_text(canvas,display_name,Rect2(37,y+8,136,18),14,title_color)
-		_figma_text(canvas,flavor,Rect2(37,y+30,118,15),12,title_color.lightened(0.12))
-		_figma_text(canvas,"+5 DAILY  •  +10 GIFT",Rect2(37,y+48,136,15),11,Color("#6b8091"))
+		_figma_text(canvas,display_name,Rect2(37,y+8,140,20),15,title_color)
+		_figma_text(canvas,"%s  •  +5 DAILY  •  +10 GIFT" % flavor,Rect2(37,y+34,144,24),12,Color("#6b8091"))
 		var preview := GardenUpgradePreviewScene.new() as GardenUpgradePreview
 		preview.name = "CollectionUpgradePreview/%s" % id
 		preview.configure(id,owned)
@@ -1032,8 +1031,8 @@ func _build_figma_level_browser(game_id: String) -> void:
 	var bounds := _multi_page_bounds(game_id,selected_multi_world,selected_multi_page)
 	var world_name := MultiGameManager.world_name(game_id,selected_multi_world).to_upper()
 	_figma_card(canvas,"JourneyHero",Rect2(17,149,354,74),Color("#fffaf0"),Color(accent,0.30),15)
-	_figma_text(canvas,world_name,Rect2(35,145,250,23),19,accent)
-	_figma_text(canvas,"LEVELS %d–%d" % [bounds.x,bounds.y],Rect2(35,175,210,16),13,FIGMA_MUTED)
+	_figma_text(canvas,world_name,Rect2(35,144,250,25),20,accent)
+	_figma_text(canvas,"LEVELS %d–%d" % [bounds.x,bounds.y],Rect2(35,173,210,19),14,FIGMA_MUTED)
 
 	var page_y := 247.0 if game_id == "block_puzzle" else 222.0
 	var grid_y := 308.0 if game_id == "block_puzzle" else 269.0
@@ -1042,15 +1041,15 @@ func _build_figma_level_browser(game_id: String) -> void:
 
 	var prev_fill := Color("#33281c") if _dark() else Color("#fffaf0")
 	var prev_text := FIGMA_DARK_INK if _dark() else FIGMA_MUTED
-	var prev := _figma_button(canvas,"LevelPrev","◀ PREV",Rect2(17,page_y - 3.0,100,44),prev_fill,Callable(),prev_text,13,13)
+	var prev := _figma_button(canvas,"LevelPrev","◀ PREV",Rect2(17,page_y - 3.0,100,44),prev_fill,Callable(),prev_text,14,14)
 	prev.disabled = selected_multi_world <= 1 and selected_multi_page <= 1
 	_style_figma_page_button(prev,prev_fill,accent,prev.disabled,true)
 	if not prev.disabled:
 		prev.pressed.connect(_change_multi_page.bind(-1))
-	var current := _figma_button(canvas,"LevelCurrent","CURRENT",Rect2(125,page_y - 3.0,118,44),accent,Callable(self,"_jump_multi_current"),FIGMA_OFF_WHITE,13,13)
+	var current := _figma_button(canvas,"LevelCurrent","CURRENT",Rect2(125,page_y - 3.0,118,44),accent,Callable(self,"_jump_multi_current"),FIGMA_OFF_WHITE,14,14)
 	_style_figma_page_button(current,accent,accent,false)
 	var next_disabled := selected_multi_world >= world_count and selected_multi_page >= _multi_page_count(game_id,selected_multi_world)
-	var next := _figma_button(canvas,"LevelNext","NEXT ▶",Rect2(251,page_y - 3.0,120,44),Color("#fcfeff"),Callable(),FIGMA_MUTED,13,13)
+	var next := _figma_button(canvas,"LevelNext","NEXT ▶",Rect2(251,page_y - 3.0,120,44),Color("#fcfeff"),Callable(),FIGMA_MUTED,14,14)
 	next.disabled = next_disabled
 	_style_figma_page_button(next,Color("#fcfeff"),accent,next_disabled,true)
 	if not next.disabled:
@@ -1080,7 +1079,7 @@ func _build_figma_level_browser(game_id: String) -> void:
 			text_color = FIGMA_OFF_WHITE
 		elif milestone:
 			border = Color(FIGMA_GOLD,0.85)
-		var card := _figma_button(canvas,"Level/%d" % level_number,str(level_number),Rect2(x,y,80,68),fill,Callable(),text_color,15,15)
+		var card := _figma_button(canvas,"Level/%d" % level_number,str(level_number),Rect2(x,y,82,70),fill,Callable(),text_color,16,16)
 		card.disabled = not unlocked
 		_style_figma_level_card(card,accent,border,unlocked,is_current)
 		if unlocked:
@@ -1090,7 +1089,7 @@ func _build_figma_level_browser(game_id: String) -> void:
 				card.pressed.connect(start_multi_level.bind(game_id,level_number,false))
 		var star_text := "LOCK" if not unlocked else ("★".repeat(stars) if stars > 0 else "···")
 		var star_color := (Color("#9e9485") if _dark() else Color("#958b7c")) if not unlocked else (FIGMA_DARK_MUTED if _dark() else FIGMA_MUTED)
-		_figma_text(canvas,star_text,Rect2(x+9,y+38,64,18),12,star_color,true)
+		_figma_text(canvas,star_text,Rect2(x+8,y+39,66,19),13,star_color,true)
 		index += 1
 
 func _figma_level_tabs(canvas: Control, active_game_id: String) -> void:
@@ -1105,7 +1104,7 @@ func _figma_level_tabs(canvas: Control, active_game_id: String) -> void:
 		var active := game_id == active_game_id
 		var fill := active_accent if active else (Color("#33281c") if _dark() else Color("#fffaf0"))
 		var text_color := FIGMA_OFF_WHITE if active else (FIGMA_DARK_MUTED if _dark() else FIGMA_MUTED)
-		var button := _figma_button(canvas,"LevelGameTab/%s" % game_id,String(spec[1]),Rect2(float(spec[2]),81,108,44),fill,Callable(),text_color,14,12)
+		var button := _figma_button(canvas,"LevelGameTab/%s" % game_id,String(spec[1]),Rect2(float(spec[2]),81,108,44),fill,Callable(),text_color,14,13)
 		_style_figma_level_tab(button,active_accent,active)
 		if active:
 			button.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1202,7 +1201,7 @@ func _add_figma_block_modes(canvas: Control) -> void:
 	for spec in specs:
 		var mode := String(spec[0])
 		var fill: Color = spec[3] as Color
-		var button := _figma_button(canvas,"BlockMode/%s" % mode,String(spec[1]),Rect2(float(spec[2]),197,82,44),fill,Callable(),FIGMA_OFF_WHITE,13,12)
+		var button := _figma_button(canvas,"BlockMode/%s" % mode,String(spec[1]),Rect2(float(spec[2]),197,82,44),fill,Callable(),FIGMA_OFF_WHITE,13,13)
 		_style_figma_page_button(button,fill,fill,false)
 		if mode == "campaign":
 			button.mouse_filter = Control.MOUSE_FILTER_IGNORE

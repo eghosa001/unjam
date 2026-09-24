@@ -21,15 +21,19 @@ GROUP_TESTS = {
         "validate_uiux_regressions",
         "validate_viewport_fit",
         "validate_theme_integrity",
+        "validate_bottom_nav_touch_zones",
     ],
     "games_ui": [
         "validate_selector_navigation",
+        "validate_selector_premium_card_hierarchy",
+        "validate_bottom_nav_touch_zones",
     ],
     "home": [
         "validate_home_direct_levels_runtime",
         "validate_home_premium_visual_hierarchy",
         "validate_home_return_atomic",
         "validate_viewport_fit",
+        "validate_bottom_nav_touch_zones",
     ],
     "tutorial": [
         "validate_tutorial_premium_flow",
@@ -56,6 +60,7 @@ GROUP_TESTS = {
         "validate_gameplay_interactions",
         "validate_rescue_token_render_lifecycle",
         "validate_rescue_premium_visual_hierarchy",
+        "validate_rescue_completion_single_path",
     ],
     "shared_gameplay_ui": [
         "validate_compact_gameplay_stack",
@@ -83,6 +88,18 @@ GROUP_TESTS = {
         "validate_restore_purchase_flow",
         "validate_coin_economy",
     ],
+    "retention_ui": [
+        "validate_retention_refresh_atomic",
+    ],
+    "coin_recovery_ui": [
+        "validate_insufficient_coins_prompt",
+    ],
+    "result_ui": [
+        "validate_result_premium_hierarchy",
+    ],
+    "navigation_shell": [
+        "validate_modal_back_priority",
+    ],
     "fallback": [
         "validate_reported_polish_regressions",
         "validate_gameplay_interactions",
@@ -107,7 +124,7 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
     if p == "tests/capture_visual_audit.gd":
         visual.update({
             "home", "games", "levels", "collection", "daily", "settings",
-            "shop", "rescue", "water", "block", "tutorial", "result"
+            "shop", "coins", "retention", "rescue", "water", "block", "tutorial", "result"
         })
         return True
 
@@ -162,10 +179,22 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
     if p.startswith("scripts/ui/"):
         game_specific_ui = bool(groups.intersection({"water", "block", "rescue"}))
         monetization_ui = any(token in p for token in ("monetization_hub", "shop_", "purchase_"))
+        retention_ui = "retention_hub" in p
+        coin_recovery_ui = "insufficient_coins_prompt" in p
+        result_ui = p.endswith("premium_result_overlay.gd")
         tutorial_ui = "ux_shell" in p or "tutorial" in p
         games_ui = "premium_live_hub" in p or "unjam_3d_game_art" in p or "unjam_flat_game_logo" in p
         home_ui = "premium_home" in p
-        if monetization_ui:
+        if retention_ui:
+            add(groups, "retention_ui")
+            visual.add("retention")
+        elif coin_recovery_ui:
+            add(groups, "coin_recovery_ui")
+            visual.add("coins")
+        elif result_ui:
+            add(groups, "result_ui")
+            visual.add("result")
+        elif monetization_ui:
             add(groups, "monetization")
             visual.add("shop")
         elif not game_specific_ui:
@@ -174,6 +203,8 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
                 visual.update({"games", "home"})
             elif tutorial_ui:
                 add(groups, "tutorial")
+                if "ux_shell" in p:
+                    add(groups, "navigation_shell")
             elif games_ui:
                 add(groups, "games_ui")
             elif home_ui:
@@ -493,14 +524,16 @@ def self_test() -> None:
         (["scripts/ui/water_tube_3d_motion.gd"], ["water"], ["water"], True),
         (["scripts/game/block_puzzle_3d.gd"], ["block"], ["block"], True),
         (["scripts/ui/device_fit.gd"], ["shared_gameplay_ui", "ui"], ["home"], True),
-        (["scripts/ui/ux_shell_casual.gd"], ["tutorial"], ["tutorial"], True),
-        (["scripts/ui/premium_result_overlay.gd"], ["ui"], ["result"], True),
+        (["scripts/ui/ux_shell_casual.gd"], ["navigation_shell", "tutorial"], ["tutorial"], True),
         (["scripts/ui/premium_live_hub_3d.gd"], ["games_ui"], ["games"], True),
         (["scripts/ui/unjam_3d_game_art.gd"], ["games_ui"], ["games"], True),
         (["scripts/ui/unjam_flat_game_logo.gd"], ["games_ui", "home"], ["games", "home"], True),
         (["scripts/ui/premium_main_casual.gd"], ["secondary_ui"], ["collection", "daily", "home", "levels", "settings"], True),
         (["scripts/systems/premium_visuals.gd"], ["ui"], ["collection", "daily", "games", "levels", "settings", "shop"], True),
         (["scripts/ui/monetization_hub_3d.gd"], ["monetization"], ["shop"], True),
+        (["scripts/ui/retention_hub_3d.gd"], ["retention_ui"], ["retention"], True),
+        (["scripts/ui/insufficient_coins_prompt.gd"], ["coin_recovery_ui"], ["coins"], True),
+        (["scripts/ui/premium_result_overlay.gd"], ["result_ui"], ["result"], True),
         (["scripts/core/water_sort_progression.gd"], ["progression"], [], True),
         (["scripts/core/block_puzzle_progression.gd"], ["progression"], [], True),
         (["scripts/core/rescue_rush_progression.gd"], ["progression"], [], True),
@@ -542,7 +575,12 @@ def self_test() -> None:
     ]
     assert GROUP_TESTS["games_ui"] == [
         "validate_selector_navigation",
+        "validate_selector_premium_card_hierarchy",
+        "validate_bottom_nav_touch_zones",
     ]
+    assert "validate_bottom_nav_touch_zones" in GROUP_TESTS["home"]
+    assert "validate_bottom_nav_touch_zones" in GROUP_TESTS["secondary_ui"]
+    assert GROUP_TESTS["navigation_shell"] == ["validate_modal_back_priority"]
     progression_plan = plan_for_paths(["scripts/core/water_sort_progression.gd"])
     assert progression_plan["tests"] == [
         "validate_retention_pacing",

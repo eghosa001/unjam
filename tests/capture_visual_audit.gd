@@ -127,6 +127,22 @@ func _run() -> void:
 			shop.call("_close_shop")
 			await _settle(4)
 
+	# Rewards & Events is a first-class surface, not a hidden utility screen.
+	# Keep compact-phone evidence for its scrolled hub shell and theme treatment.
+	var live_hub_launcher := root.get_node_or_null("LiveHubLauncher")
+	if live_hub_launcher != null and live_hub_launcher.has_method("open_hub"):
+		live_hub_launcher.call("open_hub")
+	else:
+		push_error("Visual audit could not resolve LiveHubLauncher")
+	await _settle(8)
+	var retention_hub := main.get_node_or_null("RetentionHub") as Control
+	if retention_hub != null:
+		await _capture("06g-retention-hub-540x960-dark")
+		retention_hub.call("_close")
+		await _settle(4)
+	else:
+		push_error("Visual audit could not open Rewards & Events hub")
+
 	var coin_prompt := main.get_node_or_null("InsufficientCoinsPrompt")
 	if coin_prompt != null and coin_prompt.has_method("show_for"):
 		var economy := root.get_node_or_null("EconomyManager")
@@ -243,7 +259,7 @@ func _run() -> void:
 	var late_water = main.get("active_game")
 	if late_water != null and is_instance_valid(late_water):
 		var late_board := late_water.get("board") as GridContainer
-		if late_board == null or late_board.position.y < 169.0 or late_board.position.y + late_board.size.y > 589.5:
+		if late_board == null or late_board.position.y < 169.0 or late_board.position.y + late_board.size.y > 619.5:
 			push_error("Late Water Sort board escaped the compact gameplay stage")
 	root.size = Vector2i(1080, 1920)
 	await _settle(6)
@@ -411,6 +427,36 @@ func _run_fast_visual_audit(main: Node, shell: Node) -> void:
 				await _settle(3)
 		else:
 			push_error("Fast visual audit could not open Shop")
+
+	if _fast_visual_enabled("coins"):
+		var fast_coin_prompt := main.get_node_or_null("InsufficientCoinsPrompt")
+		if fast_coin_prompt != null and fast_coin_prompt.has_method("show_for"):
+			var fast_economy := root.get_node_or_null("EconomyManager")
+			var fast_balance := int(fast_economy.call("balance")) if fast_economy != null and fast_economy.has_method("balance") else 0
+			fast_coin_prompt.call("show_for", "HINT", fast_balance + 25)
+			await _settle(5)
+			await _capture("06f-insufficient-coins-540x960-dark")
+			var fast_coin_overlay = fast_coin_prompt.get("overlay")
+			if fast_coin_overlay != null and is_instance_valid(fast_coin_overlay):
+				fast_coin_overlay.visible = false
+			await _settle(2)
+		else:
+			push_error("Fast visual audit could not open insufficient-coins recovery")
+
+	if _fast_visual_enabled("retention"):
+		var fast_live_hub_launcher := root.get_node_or_null("LiveHubLauncher")
+		if fast_live_hub_launcher != null and fast_live_hub_launcher.has_method("open_hub"):
+			fast_live_hub_launcher.call("open_hub")
+		else:
+			push_error("Fast visual audit could not resolve LiveHubLauncher")
+		await _settle(6)
+		var fast_retention := main.get_node_or_null("RetentionHub") as Control
+		if fast_retention != null:
+			await _capture("06g-retention-hub-540x960-dark")
+			fast_retention.call("_close")
+			await _settle(3)
+		else:
+			push_error("Fast visual audit could not open Rewards & Events hub")
 
 	# Light mode now owns a distinct premium material treatment. Capture the
 	# affected navigation/content surfaces explicitly so a green contract test

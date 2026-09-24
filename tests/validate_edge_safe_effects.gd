@@ -22,5 +22,20 @@ func _initialize() -> void:
 		push_error("screen_flash is not using the centered edge-safe pulse")
 		quit(1)
 		return
+	var banner_start := source.find("func show_reward_banner")
+	var banner_end := source.find("func tactile_success", banner_start)
+	var banner_block := source.substr(banner_start, banner_end - banner_start)
+	if banner_start < 0 or not banner_block.contains("get_visible_rect") or not banner_block.contains("banner_width") or banner_block.contains("panel.position = Vector2(160, 180)"):
+		push_error("Reward banner is not viewport-relative")
+		quit(1)
+		return
+	if not source.contains("func _celebration_origin()") or source.contains("burst(Vector2(540, 760)"):
+		push_error("Reward celebration origin is still hard-coded")
+		quit(1)
+		return
+	if not source.contains("rng.randf_range(min_x, max_x)") or not source.contains("rng.randf_range(min_y, max_y)"):
+		push_error("Ambient sparkles are not bounded to the live viewport")
+		quit(1)
+		return
 	print("Edge-safe premium effects validated.")
 	quit(0)

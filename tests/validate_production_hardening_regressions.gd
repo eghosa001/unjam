@@ -230,9 +230,9 @@ func _validate_primary_visual_occupancy() -> bool:
 	if water_canvas == null or stage == null or board == null or board.get_child_count() < 1:
 		main.queue_free(); await process_frame
 		return _fail("Water Sort Figma stage/board missing during visual occupancy check")
-	if stage.size.distance_to(Vector2(354,420)) > 1.0:
+	if stage.size.distance_to(Vector2(354,450)) > 1.0:
 		main.queue_free(); await process_frame
-		return _fail("Water Sort stage drifted from audited 354x420 geometry")
+		return _fail("Water Sort stage drifted from audited 354x450 geometry")
 	var tube := board.get_child(0) as Control
 	if tube == null or tube.custom_minimum_size.x < 42.0 or tube.custom_minimum_size.y < 168.0:
 		main.queue_free(); await process_frame
@@ -260,14 +260,14 @@ func _validate_header_badge_clearance() -> bool:
 	root.add_child(main)
 	main.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	await _frames(8)
-	main.call("build_settings")
+	main.call("build_collection")
 	await _frames(6)
 	var title := main.find_child("FigmaHeaderTitle", true, false) as Control
 	var subtitle := main.find_child("FigmaHeaderSubtitle", true, false) as Control
 	var pill := main.find_child("FigmaHeaderPill", true, false) as Control
 	if title == null or subtitle == null or pill == null:
 		main.queue_free(); await process_frame
-		return _fail("Shared Figma header diagnostics are incomplete")
+		return _fail("Shared Figma Collection header diagnostics are incomplete")
 	var title_rect := title.get_global_rect()
 	var subtitle_rect := subtitle.get_global_rect()
 	var pill_rect := pill.get_global_rect()

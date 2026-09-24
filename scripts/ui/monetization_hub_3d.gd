@@ -123,23 +123,23 @@ func _build_ui() -> void:
 	FigmaReferenceCanvas.set_rect(reward,17,457,354,78)
 	reward.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(reward)
-	_add_text(canvas,"WATCH & EARN",Rect2(33,473,150,18),15,Color("#088c3d"))
-	_add_text(canvas,"Optional • +50 coins",Rect2(33,499,170,18),13,Color("#4f6b85"))
+	_add_text(canvas,"WATCH & EARN",Rect2(33,471,160,21),16,Color("#65e698") if _shop_dark() else Color("#088c3d"))
+	_add_text(canvas,"Optional • +50 coins",Rect2(33,497,180,20),14,Color("#b9c9d9") if _shop_dark() else Color("#4f6b85"))
 	FigmaReferenceCanvas.add_shadow(canvas,Rect2(237,471,116,48),25,Color(0.02,0.15,0.30,0.16),3,Vector2(0,2))
-	var watch := FigmaReferenceCanvas.premium_button("▶ +50 COINS",14,Color.WHITE,Color("#ff8c1f"),25,Color("#ffbd64"),1.2)
+	var watch := FigmaReferenceCanvas.premium_button("▶ +50 COINS",15,Color.WHITE,Color("#ff8c1f"),25,Color("#ffbd64"),1.2)
 	watch.name = "ShopRewardedCoinsButton"
 	FigmaReferenceCanvas.set_rect(watch,237,471,116,48)
 	watch.pressed.connect(_watch_rewarded.bind(watch))
 	canvas.add_child(watch)
 
 	FigmaReferenceCanvas.add_shadow(canvas,Rect2(17,557,170,46),16,Color(0.03,0.10,0.20,0.22),4,Vector2(0,4))
-	var restore := FigmaReferenceCanvas.premium_button("RESTORE PURCHASES",14,Color.WHITE,Color("#086ec7"),16,Color("#70b9ef"),1.2)
+	var restore := FigmaReferenceCanvas.premium_button("RESTORE PURCHASES",15,Color.WHITE,Color("#086ec7"),16,Color("#70b9ef"),1.2)
 	restore.name = "ShopRestorePurchases"
 	FigmaReferenceCanvas.set_rect(restore,17,557,170,46)
 	restore.pressed.connect(_restore_purchases)
 	canvas.add_child(restore)
 	FigmaReferenceCanvas.add_shadow(canvas,Rect2(201,557,170,46),16,Color(0.03,0.10,0.20,0.22),4,Vector2(0,4))
-	var privacy := FigmaReferenceCanvas.premium_button("PRIVACY OPTIONS",14,Color.WHITE,Color("#086ec7"),16,Color("#70b9ef"),1.2)
+	var privacy := FigmaReferenceCanvas.premium_button("PRIVACY OPTIONS",15,Color.WHITE,Color("#086ec7"),16,Color("#70b9ef"),1.2)
 	privacy.name = "ShopPrivacyOptions"
 	FigmaReferenceCanvas.set_rect(privacy,201,557,170,46)
 	privacy.pressed.connect(PrivacyManager.show_privacy_options)
@@ -149,8 +149,8 @@ func _build_ui() -> void:
 	status_label = _add_text(
 		canvas,
 		"Restore purchases anytime\nRewarded ads stay optional",
-		Rect2(37,718,316,38),
-		12,
+		Rect2(37,716,316,40),
+		13,
 		Color("#c6d9ec")
 	)
 	status_label.name = "ShopStatusMessage"
@@ -180,8 +180,10 @@ func _add_product_exact(canvas: Control, product_id: String, rect: Rect2, displa
 	FigmaReferenceCanvas.set_rect(panel,rect.position.x,rect.position.y,rect.size.x,rect.size.y)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(panel)
-	_add_text(canvas,display_title,Rect2(33,rect.position.y+12,180,19),15,Color("#123359"))
-	_add_text(canvas,display_subtitle,Rect2(33,rect.position.y+33,190,17),13,Color("#4f6b85"))
+	var product_title_color := Color("#eef7ff") if _shop_dark() else Color("#123359")
+	var product_subtitle_color := Color("#b9c9d9") if _shop_dark() else Color("#4f6b85")
+	_add_text(canvas,display_title,Rect2(33,rect.position.y+10,190,22),16,product_title_color)
+	_add_text(canvas,display_subtitle,Rect2(33,rect.position.y+34,200,19),13,product_subtitle_color)
 
 	var buy_text := StoreManager.price_text(product_id)
 	var disabled := false
@@ -194,7 +196,7 @@ func _add_product_exact(canvas: Control, product_id: String, rect: Rect2, displa
 	# Localized Play prices, PENDING and UNAVAILABLE need more breathing room than
 	# the old 78 px pill. The wider CTA still leaves a safe gap after product copy.
 	FigmaReferenceCanvas.add_shadow(canvas,Rect2(257,rect.position.y+18,96,46),23,Color(0.02,0.15,0.30,0.16),3,Vector2(0,2))
-	var buy := FigmaReferenceCanvas.premium_button(buy_text,14,Color.WHITE,Color("#ff8c1f"),23,Color("#ffbd64"),1.2)
+	var buy := FigmaReferenceCanvas.premium_button(buy_text,15,Color.WHITE,Color("#ff8c1f"),23,Color("#ffbd64"),1.2)
 	buy.name = "Buy_%s" % product_id
 	FigmaReferenceCanvas.set_rect(buy,257,rect.position.y+18,96,46)
 	buy.disabled = disabled
@@ -223,8 +225,8 @@ func _add_shop_status(canvas: Control) -> void:
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(panel)
 
-	_add_text(canvas,"YOUR SHOP STATUS",Rect2(33,631,190,18),15,Color("#b078ff"))
-	var status_note := _add_text(canvas,"Real entitlements • optional rewards",Rect2(33,650,242,19),12,Color("#91a8bd"))
+	_add_text(canvas,"YOUR SHOP STATUS",Rect2(33,629,200,21),16,Color("#cba6ff") if _shop_dark() else Color("#7b45c5"))
+	var status_note := _add_text(canvas,"Real entitlements • optional rewards",Rect2(33,651,250,20),13,Color("#a9bdd0") if _shop_dark() else Color("#607a91"))
 	status_note.name = "ShopStatusNote"
 
 	_shop_status_chip(
@@ -262,11 +264,11 @@ func _shop_status_chip(canvas: Control, name_value: String, title: String, state
 	FigmaReferenceCanvas.set_rect(chip,rect.position.x,rect.position.y,rect.size.x,rect.size.y)
 	chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(chip)
-	var title_label := _add_text(canvas,title,Rect2(rect.position.x+5,rect.position.y+2,rect.size.x-10,16),12,Color("#d6e2ef"))
+	var title_label := _add_text(canvas,title,Rect2(rect.position.x+5,rect.position.y+1,rect.size.x-10,18),13,Color("#d6e2ef"))
 	title_label.name = "%sTitle" % name_value
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	var state_label := _add_text(canvas,state,Rect2(rect.position.x+5,rect.position.y+20,rect.size.x-10,17),12,accent.lightened(0.28))
+	var state_label := _add_text(canvas,state,Rect2(rect.position.x+5,rect.position.y+19,rect.size.x-10,19),13,accent.lightened(0.28))
 	state_label.name = "%sState" % name_value
 	state_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	state_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER

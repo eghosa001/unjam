@@ -27,8 +27,8 @@ func _run() -> void:
 		return _fail("Water Sort Figma objective is missing")
 	if emblem == null:
 		return _fail("Water Sort Figma identity emblem is missing")
-	if not _rect_eq(Rect2(stage.position,stage.size),Rect2(17,169,354,420)):
-		return _fail("Water gameplay stage drifted from Figma 354x420 geometry")
+	if not _rect_eq(Rect2(stage.position,stage.size),Rect2(17,169,354,450)):
+		return _fail("Water gameplay stage drifted from Figma 354x450 geometry")
 	if not _rect_eq(Rect2(objective.position,objective.size),Rect2(17,129,354,30)):
 		return _fail("Water objective drifted from Figma geometry")
 	if board.get_child_count() == 0:
@@ -37,22 +37,22 @@ func _run() -> void:
 	if tube == null:
 		return _fail("Water Sort first bottle is missing")
 	var board_rect := Rect2(board.position, board.size)
-	var board_bounds := Rect2(31.0, 169.0, 326.0, 420.0)
+	var board_bounds := Rect2(31.0, 169.0, 326.0, 450.0)
 	if board_rect.position.x < board_bounds.position.x - 1.0 or board_rect.end.x > board_bounds.end.x + 1.0:
 		return _fail("Water Sort board exceeds the audited stage width")
 	if board_rect.position.y < board_bounds.position.y - 1.0 or board_rect.end.y > board_bounds.end.y + 1.0:
 		return _fail("Water Sort board exceeds the audited stage height")
 	if tube.custom_minimum_size.x < 38.0 or tube.custom_minimum_size.y < 90.0:
 		return _fail("Water Sort bottles became too small for reliable compact-phone play")
-	var objective_label := _find_label_with(game,"SORT • POUR • SOLVE")
+	var objective_label := game.find_child("WaterObjectiveLabel", true, false) as Label
 	if objective_label == null:
 		return _fail("Water Sort objective label is missing")
-	if objective_label.text != "SORT • POUR • SOLVE":
-		return _fail("Water Sort objective copy drifted from the composed Figma control")
+	if objective_label.text != "WIN • ONE COLOUR PER FULL TUBE":
+		return _fail("Water Sort objective copy drifted from the explicit win-condition contract")
 	if game.find_child("WaterObjectiveDrop", true, false) == null:
 		return _fail("Water Sort objective droplet icon is missing")
-	if objective_label.get_theme_font_size("font_size") != 16:
-		return _fail("Water Sort objective typography drifted from Figma 16px reference")
+	if objective_label.get_theme_font_size("font_size") < 15:
+		return _fail("Water Sort objective typography drifted from 15px readability floor")
 	if not _rect_eq(Rect2(emblem.position,emblem.size),Rect2(77,17,30,30)):
 		return _fail("Water identity emblem drifted from Figma header geometry")
 

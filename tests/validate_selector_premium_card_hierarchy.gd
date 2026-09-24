@@ -25,17 +25,25 @@ func _run() -> void:
 		if card == null:
 			failures.append("Selector card missing for %s" % game_id)
 			continue
-		var style := card.get_theme_stylebox("panel") as StyleBoxFlat
-		if style == null or style.shadow_size < 16:
-			failures.append("Selector card lacks premium depth for %s" % game_id)
-		var shell := _find_node_named(card, "GameArtShell_%s" % game_id) as PanelContainer
-		if shell == null:
-			failures.append("Selector 3D preview has no framed display shell for %s" % game_id)
-		var play := _find_button_with(card, "PLAY")
-		if play == null or play.custom_minimum_size.x < 116.0:
+		var style := card.get_theme_stylebox("panel")
+		if style == null:
+			failures.append("Selector card lost its premium material for %s" % game_id)
+		var shadow := _find_node_named(main, "SelectorCardShadow_%s" % game_id) as PanelContainer
+		if shadow == null:
+			failures.append("Selector card lost its composed depth shadow for %s" % game_id)
+		elif shadow.get_global_rect().position.distance_to(card.get_global_rect().position) > 2.0 or shadow.get_global_rect().size.distance_to(card.get_global_rect().size) > 2.0:
+			failures.append("Selector card shadow geometry drifted for %s" % game_id)
+		var preview_frame := _find_node_named(main, "SelectorGamePreviewFrame_%s" % game_id) as PanelContainer
+		if preview_frame == null or preview_frame.get_theme_stylebox("panel") == null:
+			failures.append("Selector gameplay preview frame is missing its material treatment for %s" % game_id)
+		var play := _find_node_named(main, "SelectorPlay_%s" % game_id) as Button
+		if play == null or play.size.x < 72.0 or play.size.y < 42.0 or play.get_theme_font_size("font_size") < 14:
 			failures.append("Selector play CTA is not explicit/readable for %s" % game_id)
-		var desc := _find_label_with(card, _description_fragment(game_id))
-		if desc == null or desc.get_theme_font_size("font_size") < 22:
+		var title := _find_node_named(main, "SelectorGameTitle_%s" % game_id) as Label
+		if title == null or title.get_theme_font_size("font_size") < 22:
+			failures.append("Selector title is too small for %s" % game_id)
+		var desc := _find_node_named(main, "SelectorGameSubtitle_%s" % game_id) as Label
+		if desc == null or desc.get_theme_font_size("font_size") < 14:
 			failures.append("Selector description is too small for %s" % game_id)
 
 	main.queue_free()
@@ -48,35 +56,11 @@ func _run() -> void:
 	print("Selector premium card hierarchy validated.")
 	quit(0)
 
-func _description_fragment(game_id: String) -> String:
-	match game_id:
-		"water_sort": return "Sort the colors"
-		"block_puzzle": return "Drag. Place. Clear."
-		_: return "Clear the lane."
-
 func _find_node_named(node: Node, wanted: String) -> Node:
 	if node.name == wanted:
 		return node
 	for child in node.get_children():
 		var found := _find_node_named(child, wanted)
-		if found != null:
-			return found
-	return null
-
-func _find_label_with(node: Node, fragment: String) -> Label:
-	if node is Label and fragment in (node as Label).text:
-		return node as Label
-	for child in node.get_children():
-		var found := _find_label_with(child, fragment)
-		if found != null:
-			return found
-	return null
-
-func _find_button_with(node: Node, fragment: String) -> Button:
-	if node is Button and fragment in (node as Button).text:
-		return node as Button
-	for child in node.get_children():
-		var found := _find_button_with(child, fragment)
 		if found != null:
 			return found
 	return null

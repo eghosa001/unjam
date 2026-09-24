@@ -12,7 +12,8 @@ func _run() -> void:
 		"9 MOVES • +75 COINS\n3★: 0 ERRORS • NO HINT/UNDO • ≤ 11",
 		3,
 		Color("2dd4b6"),
-		"NEXT RESCUE"
+		"NEXT RESCUE",
+		"RESCUE SECURED"
 	)
 	overlay.configure_secondary("DOUBLE BASE REWARD",true)
 	root.add_child(overlay)
@@ -21,13 +22,18 @@ func _run() -> void:
 	var card := overlay.find_child("ResultCard3D",true,false) as Control
 	var title := overlay.find_child("ResultTitle",true,false) as Label
 	var subtitle := overlay.find_child("ResultSubtitle",true,false) as Label
+	var badge := overlay.find_child("ResultBadgeText",true,false) as Label
 	var primary := overlay.find_child("PrimaryAction",true,false) as Button
 	var secondary := overlay.find_child("SecondaryAction",true,false) as Button
 	var secondary_shadow := overlay.find_child("SecondaryActionShadow",true,false) as Control
 	var stats := overlay.find_child("ResultStatsText",true,false) as Label
 	var identity_art := overlay.find_child("ResultGameArt3D",true,false) as Control
-	if card == null or title == null or subtitle == null or primary == null or secondary == null or secondary_shadow == null or stats == null or identity_art == null:
+	if card == null or title == null or subtitle == null or badge == null or primary == null or secondary == null or secondary_shadow == null or stats == null or identity_art == null:
 		return _fail("Result hierarchy is incomplete")
+	if badge.text != "RESCUE SECURED":
+		return _fail("Result status badge is missing or stale")
+	if subtitle.size.y < 64.0:
+		return _fail("Result subtitle lost room for multi-line reward summaries")
 	if not _rect_eq(Rect2(card.position,card.size),Rect2(27,76,334,570)):
 		return _fail("Result card geometry drifted")
 	if not _rect_eq(Rect2(primary.position,primary.size),Rect2(47,498,294,58)):
@@ -36,8 +42,12 @@ func _run() -> void:
 		return _fail("Result secondary geometry drifted")
 	if not secondary_shadow.visible:
 		return _fail("Visible secondary action lost its shadow")
+	if badge.get_rect().intersects(title.get_rect()):
+		return _fail("Result status badge overlaps title")
 	if title.get_rect().intersects(subtitle.get_rect()):
 		return _fail("Result title overlaps subtitle")
+	if subtitle.get_rect().intersects(identity_art.get_rect()):
+		return _fail("Result subtitle overlaps game identity art")
 	var stats_panel := overlay.find_child("Stats",true,false) as Control
 	var first_star := overlay.find_child("StarCard",true,false) as Control
 	if first_star != null and subtitle.get_rect().intersects(first_star.get_rect()):

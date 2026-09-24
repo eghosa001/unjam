@@ -349,12 +349,25 @@ func _handle_back() -> void:
 	var main := _main()
 	if main == null:
 		return
+	var coin_prompt := main.get_node_or_null("InsufficientCoinsPrompt")
+	if coin_prompt != null and coin_prompt.get("overlay") != null:
+		var coin_overlay = coin_prompt.get("overlay")
+		if is_instance_valid(coin_overlay) and coin_overlay.visible:
+			coin_prompt.call("_close")
+			return
 	var hub := main.get_node_or_null("MonetizationHub")
 	if hub != null and hub.get("overlay") != null:
 		var overlay = hub.get("overlay")
 		if is_instance_valid(overlay) and overlay.visible:
 			hub.call("_close_shop")
 			return
+	var retention := main.get_node_or_null("RetentionHub")
+	if retention != null and is_instance_valid(retention):
+		if retention.has_method("_close"):
+			retention.call("_close")
+		else:
+			retention.queue_free()
+		return
 	var surface := _current_surface()
 	if surface == "game":
 		if main.has_method("force_back_from_game"):

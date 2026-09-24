@@ -104,10 +104,15 @@ func ambient_sparkles(count: int = 12) -> void:
 		return
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 44321
+	var viewport_rect := get_viewport().get_visible_rect()
+	var min_x := viewport_rect.position.x + 20.0
+	var max_x := maxf(min_x, viewport_rect.end.x - 20.0)
+	var min_y := viewport_rect.position.y + 40.0
+	var max_y := maxf(min_y, viewport_rect.end.y - 40.0)
 	for _i in range(count):
 		var radius := rng.randf_range(1.8, 4.5)
 		var dot := _diamond(radius, Color(accent.lightened(0.20), rng.randf_range(0.05, 0.16)))
-		dot.position = Vector2(rng.randf_range(20.0, 1060.0), rng.randf_range(40.0, 1880.0))
+		dot.position = Vector2(rng.randf_range(min_x, max_x), rng.randf_range(min_y, max_y))
 		dot.rotation = rng.randf_range(0.0, TAU)
 		dot.set_meta("ambient", true)
 		dot.set_meta("speed", rng.randf_range(3.0, 10.0))
@@ -230,34 +235,46 @@ func show_combo(text_value: String, global_pos: Vector2, color: Color = Color("f
 	tween.tween_property(label, "modulate:a", 0.0, 0.20)
 	tween.tween_callback(label.queue_free)
 
+func _celebration_origin() -> Vector2:
+	var viewport_rect := get_viewport().get_visible_rect()
+	return viewport_rect.position + Vector2(
+		viewport_rect.size.x * 0.5,
+		minf(viewport_rect.size.y * 0.40, 760.0)
+	)
+
 func _on_premium_reward(reward: Dictionary) -> void:
 	var achievements: Array = reward.get("achievements", [])
 	if not achievements.is_empty():
 		var first: Dictionary = achievements[0]
 		show_reward_banner("ACHIEVEMENT UNLOCKED", "%s  •  +%d AP" % [String(first.get("title", "ACHIEVEMENT")), int(first.get("points", 0))], Color("f472b6"))
-		burst(Vector2(540, 760), Color("f472b6"), 30)
+		burst(_celebration_origin(), Color("f472b6"), 30)
 		screen_flash(Color("f472b6"), 0.14)
 		return
 	if bool(reward.get("world_badge", false)):
 		show_reward_banner("WORLD MASTERED", "Badge unlocked  •  +250 coins  •  +5 prestige", Color("ffd166"))
-		burst(Vector2(540, 760), Color("ffd166"), 34)
+		burst(_celebration_origin(), Color("ffd166"), 34)
 		screen_flash(Color("ffd166"), 0.16)
 	elif bool(reward.get("milestone", false)):
 		show_reward_banner("MILESTONE CHEST", "+100 bonus coins", Color("7dd3fc"))
-		burst(Vector2(540, 760), Color("7dd3fc"), 24)
+		burst(_celebration_origin(), Color("7dd3fc"), 24)
 	elif int(reward.get("perfect_streak", 0)) >= 5 and int(reward.get("perfect_streak", 0)) % 5 == 0:
 		show_reward_banner("PERFECT STREAK ×%d" % int(reward.get("perfect_streak", 0)), "+50 coins  •  +1 prestige", Color("c084fc"))
-		burst(Vector2(540, 760), Color("c084fc"), 22)
+		burst(_celebration_origin(), Color("c084fc"), 22)
 	elif bool(reward.get("perfect", false)):
 		show_reward_banner("PERFECT CLEAR", "Three-star clear", Color("2dd4b6"))
 
 func show_reward_banner(title: String, subtitle: String, color: Color) -> void:
 	if not is_instance_valid(overlay):
 		return
+	var viewport_rect := get_viewport().get_visible_rect()
+	var banner_width := minf(760.0, maxf(280.0, viewport_rect.size.x - 48.0))
+	var banner_height := 142.0
+	var banner_x := viewport_rect.position.x + (viewport_rect.size.x - banner_width) * 0.5
+	var banner_y := viewport_rect.position.y + clampf(viewport_rect.size.y * 0.094, 72.0, 180.0)
 	var panel := PanelContainer.new()
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.position = Vector2(160, 180)
-	panel.size = Vector2(760, 142)
+	panel.position = Vector2(banner_x, banner_y)
+	panel.size = Vector2(banner_width, banner_height)
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color("0a1423e8")
 	style.corner_radius_top_left = 30
@@ -281,13 +298,13 @@ func show_reward_banner(title: String, subtitle: String, color: Color) -> void:
 	var heading := Label.new()
 	heading.text = title
 	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	heading.add_theme_font_size_override("font_size", 29)
+	heading.add_theme_font_size_override("font_size", 26 if banner_width < 560.0 else 29)
 	heading.add_theme_color_override("font_color", color)
 	box.add_child(heading)
 	var sub := Label.new()
 	sub.text = subtitle
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	sub.add_theme_font_size_override("font_size", 18)
+	sub.add_theme_font_size_override("font_size", 16 if banner_width < 560.0 else 18)
 	sub.add_theme_color_override("font_color", Color("d8e2ef"))
 	box.add_child(sub)
 	if _reduced_motion():
@@ -305,7 +322,7 @@ func show_reward_banner(title: String, subtitle: String, color: Color) -> void:
 	var tween := create_tween()
 	tween.set_parallel(true)
 	tween.tween_property(panel, "modulate:a", 1.0, 0.16)
-	tween.tween_property(panel, "position:y", 180.0, 0.28).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(panel, "position:y", banner_y, 0.28).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tween.tween_property(panel, "scale", Vector2.ONE, 0.28).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tween.set_parallel(false)
 	tween.tween_interval(1.65)

@@ -96,19 +96,35 @@ func _build() -> void:
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_canvas.add_child(card)
 
-	var title := FigmaReferenceCanvas.label(title_text, 26, Color("#eef7ff") if dark else Unjam3DTheme.NAVY, true)
+	var title := FigmaReferenceCanvas.label(title_text, 27, Color("#eef7ff") if dark else Unjam3DTheme.NAVY, true)
 	title.name = "ResultTitle"
 	FigmaReferenceCanvas.style_display_title(title, accent.lightened(0.22), Color("#071d55"), 2)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	FigmaReferenceCanvas.set_rect(title, 47, 100, 294, 44)
+	FigmaReferenceCanvas.set_rect(title, 47, 118, 294, 40)
 	_canvas.add_child(title)
 
-	var subtitle := FigmaReferenceCanvas.label(subtitle_text, 13, Color("#b6c7d6") if dark else Color("45617b"), false)
+	var badge_fill := Color(accent, 0.18 if dark else 0.12)
+	var badge := PanelContainer.new()
+	badge.name = "ResultBadge"
+	badge.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(badge_fill, 12, Color(accent, 0.58), 1))
+	FigmaReferenceCanvas.set_rect(badge, 109, 86, 170, 28)
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_canvas.add_child(badge)
+	var badge_label := FigmaReferenceCanvas.label(badge_text, 13, accent.lightened(0.28) if dark else accent.darkened(0.28), true)
+	badge_label.name = "ResultBadgeText"
+	badge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	badge_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	badge_label.clip_text = true
+	FigmaReferenceCanvas.set_rect(badge_label, 115, 88, 158, 24)
+	_canvas.add_child(badge_label)
+
+	var subtitle := FigmaReferenceCanvas.label(subtitle_text, 14, Color("#b6c7d6") if dark else Color("45617b"), false)
 	subtitle.name = "ResultSubtitle"
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	FigmaReferenceCanvas.set_rect(subtitle, 47, 150, 294, 68)
+	FigmaReferenceCanvas.set_rect(subtitle, 47, 162, 294, 66)
 	_canvas.add_child(subtitle)
 
 	_add_identity(_result_game_id())
@@ -156,7 +172,7 @@ func _build() -> void:
 	FigmaReferenceCanvas.set_rect(stats_panel, 47, 392, 294, 86)
 	stats_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_canvas.add_child(stats_panel)
-	var stats := FigmaReferenceCanvas.label(stats_text, 14, Color("#dceaf5") if dark else Unjam3DTheme.NAVY, true)
+	var stats := FigmaReferenceCanvas.label(stats_text, 15, Color("#dceaf5") if dark else Unjam3DTheme.NAVY, true)
 	stats.name = "ResultStatsText"
 	stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	stats.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -165,7 +181,7 @@ func _build() -> void:
 	_canvas.add_child(stats)
 
 	FigmaReferenceCanvas.add_shadow(_canvas, Rect2(47,498,294,58), 17, Color(0.03,0.10,0.20,0.22), 4, Vector2(0,4))
-	var primary := FigmaReferenceCanvas.premium_button(button_text, 14, Color.WHITE, accent, 17, accent.lightened(0.26), 1.3)
+	var primary := FigmaReferenceCanvas.premium_button(button_text, 16, Color.WHITE, accent, 17, accent.lightened(0.26), 1.3)
 	primary.name = "PrimaryAction"
 	FigmaReferenceCanvas.set_rect(primary, 47, 498, 294, 58)
 	primary.pressed.connect(func(): continue_requested.emit())
@@ -174,7 +190,7 @@ func _build() -> void:
 	_secondary_shadow = FigmaReferenceCanvas.add_shadow(_canvas, Rect2(47,568,294,48), 16, Color(0.03,0.10,0.20,0.22), 4, Vector2(0,4))
 	_secondary_shadow.name = "SecondaryActionShadow"
 	_secondary_shadow.visible = has_secondary
-	_secondary_button = FigmaReferenceCanvas.premium_button(secondary_text, 14, Color.WHITE, Color("#086ec7"), 16, Color("#70b9ef"), 1.3)
+	_secondary_button = FigmaReferenceCanvas.premium_button(secondary_text, 15, Color.WHITE, Color("#086ec7"), 16, Color("#70b9ef"), 1.3)
 	_secondary_button.name = "SecondaryAction"
 	FigmaReferenceCanvas.set_rect(_secondary_button, 47, 568, 294, 48)
 	_secondary_button.visible = has_secondary
@@ -204,7 +220,7 @@ func _add_identity(game_id: String) -> void:
 	var art := GAME_ART_SCRIPT.new()
 	art.name = "ResultGameArt3D"
 	art.configure(game_id)
-	FigmaReferenceCanvas.set_rect(art, 139, 226, 110, 72)
+	FigmaReferenceCanvas.set_rect(art, 139, 232, 110, 66)
 	_canvas.add_child(art)
 
 func _celebrate() -> void:
