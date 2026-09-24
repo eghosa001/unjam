@@ -596,7 +596,7 @@ func _figma_daily_tip(canvas: Control, collection_bonus: int) -> void:
 		if collection_bonus > 0:
 			detail_text = "Collection adds +%d coins to each Daily Game." % collection_bonus
 		else:
-			detail_text = "Garden upgrades add bonus coins to every Daily Game."
+			detail_text = "Garden upgrades boost each Daily Game reward."
 	var detail := _figma_text(canvas, detail_text, Rect2(63, 636, 288, 28), 12, FIGMA_MUTED)
 	detail.name = "DailyTipDetail"
 	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -627,8 +627,9 @@ func _figma_daily_card(canvas: Control, game_id: String, y: float, collection_bo
 	canvas.add_child(accent_rail)
 	var daily_title := _figma_text(canvas, MultiGameManager.display_name(game_id).to_upper(), Rect2(33,y+18,170,22), 18, FIGMA_DARK_INK if _dark() else FIGMA_INK)
 	daily_title.name = "DailyTitle_%s" % game_id
-	daily_title.add_theme_color_override("font_color", accent.lightened(0.20) if _dark() else accent.darkened(0.18))
-	FigmaReferenceCanvas.style_display_title(daily_title, Color("#fff7df"), accent.darkened(0.62), 2)
+	var title_fill := accent.lightened(0.22) if _dark() else accent.darkened(0.30)
+	var title_outline := accent.darkened(0.68) if _dark() else Color(1.0, 1.0, 1.0, 0.92)
+	FigmaReferenceCanvas.style_display_title(daily_title, title_fill, title_outline, 2)
 	var detail := "CLEAR THE ROUTE" if game_id == "rescue_rush" else ("SORT THE COLOURS" if game_id == "water_sort" else "CLEAR THE BOARD")
 	_figma_text(canvas, detail, Rect2(33,y+48,175,15), 12, FIGMA_MUTED)
 	var reward := "+%d COINS" % (100 + collection_bonus) if game_id == "rescue_rush" else "+%d–%d COINS" % [125 + collection_bonus,175 + collection_bonus]
@@ -733,7 +734,7 @@ func build_collection() -> void:
 	var can_claim := EconomyManager.can_claim_garden_gift()
 	var gift_text := "CLAIM GARDEN GIFT • +%d" % EconomyManager.garden_gift_amount()
 	if not can_claim:
-		gift_text = "GIFT CLAIMED" if EconomyManager.garden_gift_claimed_today() else "GIFT UNLOCKS WITH UPGRADE"
+		gift_text = "GIFT CLAIMED" if EconomyManager.garden_gift_claimed_today() else "UNLOCK WITH UPGRADE"
 	var gift_fill := FIGMA_GREEN if can_claim else Color(0.54,0.64,0.72)
 	var gift := _figma_button(canvas,"CollectionGardenGift",gift_text,Rect2(33,548,200,44),gift_fill,Callable(),FIGMA_OFF_WHITE,16,12)
 	gift.disabled = not can_claim
