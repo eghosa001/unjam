@@ -317,7 +317,7 @@ func _validate_selector_header_and_navigation() -> bool:
 	main.call("_open_games_surface")
 	await _frames(8)
 	var title := main.find_child("SelectorTitle3D", true, false) as Control
-	var settings := main.find_child("SelectorSettingsButton", true, false) as Button
+	var settings := main.find_child("SelectorNavHit_SETTINGS", true, false) as Button
 	var back := main.find_child("SelectorBackButton", true, false) as Button
 	if title == null or settings == null or back == null:
 		main.queue_free(); await process_frame
