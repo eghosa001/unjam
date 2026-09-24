@@ -89,6 +89,9 @@ GROUP_TESTS = {
     "coin_recovery_ui": [
         "validate_insufficient_coins_prompt",
     ],
+    "result_ui": [
+        "validate_result_premium_hierarchy",
+    ],
     "fallback": [
         "validate_reported_polish_regressions",
         "validate_gameplay_interactions",
@@ -170,6 +173,7 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
         monetization_ui = any(token in p for token in ("monetization_hub", "shop_", "purchase_"))
         retention_ui = "retention_hub" in p
         coin_recovery_ui = "insufficient_coins_prompt" in p
+        result_ui = p.endswith("premium_result_overlay.gd")
         tutorial_ui = "ux_shell" in p or "tutorial" in p
         games_ui = "premium_live_hub" in p or "unjam_3d_game_art" in p or "unjam_flat_game_logo" in p
         home_ui = "premium_home" in p
@@ -179,6 +183,9 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
         elif coin_recovery_ui:
             add(groups, "coin_recovery_ui")
             visual.add("coins")
+        elif result_ui:
+            add(groups, "result_ui")
+            visual.add("result")
         elif monetization_ui:
             add(groups, "monetization")
             visual.add("shop")
@@ -508,7 +515,6 @@ def self_test() -> None:
         (["scripts/game/block_puzzle_3d.gd"], ["block"], ["block"], True),
         (["scripts/ui/device_fit.gd"], ["shared_gameplay_ui", "ui"], ["home"], True),
         (["scripts/ui/ux_shell_casual.gd"], ["tutorial"], ["tutorial"], True),
-        (["scripts/ui/premium_result_overlay.gd"], ["ui"], ["result"], True),
         (["scripts/ui/premium_live_hub_3d.gd"], ["games_ui"], ["games"], True),
         (["scripts/ui/unjam_3d_game_art.gd"], ["games_ui"], ["games"], True),
         (["scripts/ui/unjam_flat_game_logo.gd"], ["games_ui", "home"], ["games", "home"], True),
@@ -517,6 +523,7 @@ def self_test() -> None:
         (["scripts/ui/monetization_hub_3d.gd"], ["monetization"], ["shop"], True),
         (["scripts/ui/retention_hub_3d.gd"], ["retention_ui"], ["retention"], True),
         (["scripts/ui/insufficient_coins_prompt.gd"], ["coin_recovery_ui"], ["coins"], True),
+        (["scripts/ui/premium_result_overlay.gd"], ["result_ui"], ["result"], True),
         (["scripts/core/water_sort_progression.gd"], ["progression"], [], True),
         (["scripts/core/block_puzzle_progression.gd"], ["progression"], [], True),
         (["scripts/core/rescue_rush_progression.gd"], ["progression"], [], True),
