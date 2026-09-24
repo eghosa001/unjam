@@ -24,12 +24,7 @@ func _run() -> void:
 
 	main.call("build_daily_games")
 	await _frames(3)
-	var standard: Array[Control] = []
-	for node in main.find_children("*", "Button", true, false):
-		var button := node as Button
-		if button != null and absf(button.position.y - 753.0) <= 1.0 and absf(button.size.y - 78.0) <= 1.0:
-			standard.append(button)
-	if not _check_controls(standard, "Shared"):
+	if not _check_named(main, ["StdNavHit_HOME","StdNavHit_GAMES","StdNavHit_DAILY","StdNavHit_COLLECTION","StdNavHit_SETTINGS"], "Shared"):
 		return
 
 	main.queue_free()
