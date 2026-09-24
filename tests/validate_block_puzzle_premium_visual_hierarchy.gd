@@ -23,10 +23,10 @@ func _run() -> void:
 		return _fail("Block board is no longer the required 8x8 grid")
 	if board_grid.get_child_count() != 64:
 		return _fail("Block board does not expose 64 runtime cells")
-	if board_shell.size.distance_to(Vector2(330,330)) > 1.0:
-		return _fail("Block board is not the Figma 330x330 surface")
-	if tray.size.distance_to(Vector2(354,104)) > 1.0:
-		return _fail("Block tray is not the Figma 354x104 surface")
+	if board_shell.size.distance_to(Vector2(346,346)) > 1.0:
+		return _fail("Block board is not the premium 346x346 surface")
+	if tray.size.distance_to(Vector2(354,150)) > 1.0:
+		return _fail("Block tray is not the premium 354x150 surface")
 	var score_card := game.find_child("BlockScoreCard",true,false) as Control
 	var score := game.get("score_label") as Label
 	var goal := game.get("goal_label") as Label
@@ -39,8 +39,8 @@ func _run() -> void:
 		return _fail("Block objective text escapes the score card")
 	if goal.autowrap_mode == TextServer.AUTOWRAP_OFF or not goal.clip_text:
 		return _fail("Block objective text is not bounded for late-game goals")
-	if piece_row.custom_minimum_size.y < 71.0 or piece_row.custom_minimum_size.y > 73.0:
-		return _fail("Block piece row drifted from the 72px Figma tray slot height")
+	if piece_row.custom_minimum_size.y < 111.0 or piece_row.custom_minimum_size.y > 113.0:
+		return _fail("Block piece row drifted from the 112px premium tray slot height")
 	if game.find_child("BlockPuzzle3DEnvironment",true,false) != null:
 		return _fail("Retired oversized Block 3D environment returned above Figma composition")
 	for booster_name in ["Booster_Undo","Booster_Hammer","Booster_Shuffle","Booster_Rotate"]:
