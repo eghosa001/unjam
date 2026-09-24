@@ -174,7 +174,7 @@ func _run() -> void:
 	var block_source := FileAccess.get_file_as_string("res://scripts/game/block_puzzle.gd")
 	var collection_source := FileAccess.get_file_as_string("res://scripts/ui/premium_main_casual.gd")
 	var token_source := FileAccess.get_file_as_string("res://scripts/ui/rescue_token.gd")
-	for token in ["MultiGameManager.complete_level(\"rescue_rush\"", "\"rescue_id\": rescue_id", "aurora_trail", "gold_rescue_frame"]:
+	for token in ["MultiGameManager.complete_level(", "\"rescue_rush\",", "\"rescue_id\": rescue_id", "aurora_trail", "gold_rescue_frame"]:
 		if not rescue_source.contains(token):
 			errors.append("Rescue Rush end-to-end retention/cosmetic consumer missing: %s" % token)
 	if rescue_source.contains("RetentionManager.record_level_complete("):
