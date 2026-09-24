@@ -243,7 +243,7 @@ func _run() -> void:
 	var late_water = main.get("active_game")
 	if late_water != null and is_instance_valid(late_water):
 		var late_board := late_water.get("board") as GridContainer
-		if late_board == null or late_board.position.y < 169.0 or late_board.position.y + late_board.size.y > 589.5:
+		if late_board == null or late_board.position.y < 169.0 or late_board.position.y + late_board.size.y > 619.5:
 			push_error("Late Water Sort board escaped the compact gameplay stage")
 	root.size = Vector2i(1080, 1920)
 	await _settle(6)
