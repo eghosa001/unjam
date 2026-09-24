@@ -14,7 +14,7 @@ func _initialize() -> void:
 func _run() -> void:
 	var failures: Array[String] = []
 	root.size = TALL_VIEWPORT
-	await _check_game_scene("res://scenes/WaterSort.tscn","FigmaWater390x844","GameplayStage",Rect2(17,169,354,420),"CompactGameActions",Rect2(21,650,346,60),failures)
+	await _check_game_scene("res://scenes/WaterSort.tscn","FigmaWater390x844","GameplayStage",Rect2(17,169,354,450),"CompactGameActions",Rect2(21,686,346,60),failures)
 	await _check_water_header(failures)
 	await _check_water_footer(failures)
 	await _check_game_scene("res://scenes/Game.tscn","FigmaRescue390x844","RescueBoardPanel",Rect2(21,180,348,348),"CompactGameActions",Rect2(21,566,346,62),failures)
