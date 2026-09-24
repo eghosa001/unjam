@@ -6,15 +6,6 @@ extends "res://scripts/core/multi_game_manager.gd"
 func _economy() -> Node:
 	return get_node_or_null("/root/EconomyManager")
 
-func claim_daily_task(id: String, task_id: String) -> bool:
-	var previous := int(SaveManager.data.get("coins", 0))
-	var claimed := super.claim_daily_task(id, task_id)
-	if claimed:
-		var economy := _economy()
-		if economy != null:
-			economy.call("notify_external_change", previous, "daily_task_reward", {"game": id, "task": task_id})
-	return claimed
-
 func complete_daily(id: String, reward := 100) -> bool:
 	var safe_reward := maxi(0, int(reward))
 	var economy := _economy()

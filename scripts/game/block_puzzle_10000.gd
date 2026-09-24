@@ -1133,8 +1133,6 @@ func _fail_campaign(reason: String) -> void:
 	status_label.text = String(presentation.get("title", "LEVEL FAILED"))
 	FeedbackManager.blocked()
 	_track_attempt_end("failed", false)
-	if not daily_mode and play_mode == "campaign":
-		RetentionManager.record_level_fail()
 	AnalyticsManager.track("block_puzzle_attempt_blocked", {
 		"level": level_number,
 		"reason": reason,

@@ -14,9 +14,8 @@ func run() -> void:
 	var save = root.get_node_or_null("SaveManager")
 	var economy = root.get_node_or_null("EconomyManager")
 	var multi = root.get_node_or_null("MultiGameManager")
-	var retention = root.get_node_or_null("RetentionManager")
-	expect_true(save != null and economy != null and multi != null and retention != null, "Progression/economy autoloads missing")
-	if save == null or economy == null or multi == null or retention == null:
+	expect_true(save != null and economy != null and multi != null, "Progression/economy autoloads missing")
+	if save == null or economy == null or multi == null:
 		_finish()
 		return
 
@@ -26,14 +25,9 @@ func run() -> void:
 		transactions.append(transaction.duplicate(true))
 	economy.transaction_recorded.connect(callback)
 
-	# Start from deterministic multi-game and retention state. In particular,
-	# keep win_streak away from the 3/5/10/15/25 bonus thresholds so the base
-	# level-reward assertion cannot be polluted by an unrelated streak reward.
+	# Start from deterministic multi-game state so coin-sync assertions are isolated.
 	save.data.coins = 0
 	save.data.game_progress = {}
-	save.data.daily_tasks = {}
-	save.data.win_streak = 0
-	save.data.best_win_streak = 0
 	multi.ensure_state()
 	save.save()
 
@@ -59,36 +53,7 @@ func run() -> void:
 	expect_true(int(save.data.coins) == before_invalid, "Negative multi-game level reward reduced the wallet")
 	expect_true(transactions.size() == transaction_count, "Clamped negative multi-game reward emitted a coin transaction")
 
-	# Force one daily task claim without depending on which seeded task appears.
-	var tasks: Array = multi.daily_tasks("block_puzzle")
-	expect_true(not tasks.is_empty(), "Daily task fixture missing")
-	if not tasks.is_empty():
-		var first: Dictionary = tasks[0]
-		first["progress"] = int(first.get("target", 1))
-		first["claimed"] = false
-		tasks[0] = first
-		var task_key: String = String(multi.date_key()) + ":block_puzzle"
-		var store: Dictionary = save.data.get("daily_tasks", {})
-		store[task_key] = tasks
-		save.data.daily_tasks = store
-		save.save()
-		var before_task := int(save.data.coins)
-		var claimed := bool(multi.claim_daily_task("block_puzzle", String(first.get("id", ""))))
-		expect_true(claimed and int(save.data.coins) == before_task + int(multi.TASK_REWARD), "Daily task coin reward changed unexpectedly")
-		expect_true(String(transactions.back().get("reason", "")) == "daily_task_reward", "Daily task reward did not notify shared economy")
 
-	# Robust retention settles an old week by writing its reward internally. The
-	# economy wrapper must surface that direct mutation exactly once.
-	retention.ensure_state()
-	var current_week := String(retention.week_key())
-	save.data.weekly_key = current_week + "_OLD"
-	save.data.weekly_settlement_key = ""
-	save.data.weekly_points = 0
-	save.save()
-	var before_weekly := int(save.data.coins)
-	retention.ensure_state()
-	expect_true(int(save.data.coins) > before_weekly, "Weekly settlement did not grant its existing coin reward")
-	expect_true(String(transactions.back().get("reason", "")) == "retention_reward", "Weekly settlement did not notify shared economy")
 
 	if economy.transaction_recorded.is_connected(callback):
 		economy.transaction_recorded.disconnect(callback)

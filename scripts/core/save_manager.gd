@@ -31,6 +31,18 @@ const RESET_PRESERVED_KEYS := [
 	"garden_gifts_claimed"
 ]
 
+const RETIRED_REWARDS_EVENTS_KEYS := [
+	"last_login_date", "login_cycle_day", "login_claim_date", "comeback_claimed_date", "last_comeback_reward",
+	"daily_mission_date", "daily_mission_progress", "daily_mission_claimed", "daily_all_claimed", "daily_tasks",
+	"win_streak", "best_win_streak",
+	"weekly_key", "weekly_points", "weekly_claimed_tiers", "weekly_best_rank",
+	"season_key", "season_points", "season_claimed_tiers",
+	"event_key", "event_currency", "event_shop_owned", "event_levels_completed",
+	"rescue_variants", "profile_title", "missions_completed", "achievement_reward_claimed",
+	"weekly_settlement_key", "last_week_result", "weekly_played_levels", "weekly_tracking_key",
+	"daily_unique_levels", "daily_unique_date", "event_daily_key", "event_daily_earned"
+]
+
 const DEFAULT_DATA := {
 	"highest_level": 1,
 	"stars": {},
@@ -97,6 +109,10 @@ func _migrate() -> void:
 	for key in DEFAULT_DATA:
 		if not data.has(key):
 			data[key] = DEFAULT_DATA[key]
+	# Rewards & Events was retired. Purge its old mission/league/season/event
+	# state so existing installs do not keep dead currencies or cosmetic flags.
+	for key in RETIRED_REWARDS_EVENTS_KEYS:
+		data.erase(key)
 	save()
 
 func save() -> void:
@@ -140,10 +156,6 @@ func complete_level(level_number: int, stars: int, rescue_id: String, coin_rewar
 	_check_achievement("world_10", data.world_badges.size() >= 10, "MASTER OF TEN WORLDS", 50, rewards)
 	_check_achievement("levels_1000", int(data.total_levels_completed) >= 1000, "UNJAM LEGEND", 100, rewards)
 	save()
-	if Engine.has_singleton("RetentionManager"):
-		pass
-	elif get_node_or_null("/root/RetentionManager") != null:
-		RetentionManager.record_level_complete(level_number, stars, 0, 0, 0, rescue_id, -1)
 	if bool(rewards.perfect) or bool(rewards.milestone) or bool(rewards.world_badge) or int(rewards.prestige) > 0 or not rewards.achievements.is_empty(): premium_reward.emit(rewards)
 	return rewards
 
@@ -199,4 +211,3 @@ func reset_progress() -> void:
 	for key in RESET_PRESERVED_KEYS:
 		data[key] = preserved[key]
 	save()
-	if get_node_or_null("/root/RetentionManager") != null: RetentionManager.ensure_state()

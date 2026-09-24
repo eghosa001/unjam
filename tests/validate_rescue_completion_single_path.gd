@@ -14,15 +14,6 @@ func _run() -> void:
 	save.data["highest_level"] = 1
 	save.data["rescued"] = []
 	save.data["total_rescues"] = 0
-	save.data["daily_mission_progress"] = {}
-	save.data["daily_unique_levels"] = []
-	save.data["weekly_played_levels"] = []
-	save.data["weekly_points"] = 0
-	save.data["season_points"] = 0
-	save.data["event_currency"] = 0
-	save.data["event_daily_earned"] = 0
-	save.data["win_streak"] = 0
-	save.data["rescue_variants"] = []
 
 	multi.call("complete_level", "rescue_rush", 25, 3, 0, {
 		"moves": 6,
@@ -38,10 +29,6 @@ func _run() -> void:
 		errors.append("Rescue completion did not persist the rescued character")
 	if int(save.data.get("total_rescues", 0)) != 1:
 		errors.append("Rescue completion did not increment total rescues exactly once")
-	if int(save.data.get("win_streak", 0)) != 1:
-		errors.append("Rescue completion did not update retention exactly once")
-	if int(save.data.get("weekly_points", 0)) <= 0 or int(save.data.get("season_points", 0)) <= 0:
-		errors.append("Rescue completion did not reach shared retention progression")
 
 	save.data = original
 	save.save()

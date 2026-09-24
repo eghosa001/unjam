@@ -8,7 +8,6 @@ const LEVELS_PER_WORLD := 100
 const WORLD_COUNT := 100
 const GAME_IDS := ["rescue_rush", "water_sort", "block_puzzle"]
 const GAME_NAMES := {"rescue_rush":"RESCUE RUSH","water_sort":"WATER SORT","block_puzzle":"BLOCK PUZZLE"}
-const TASK_REWARD := 75
 const DAILY_HISTORY_LIMIT := 45
 const WATER_WORLD_BADGE_SPAN_VERSION := 2
 const BLOCK_WORLD_BADGE_SPAN_VERSION := 2
@@ -23,7 +22,6 @@ func _state_containers_present()->bool:
  return (
   SaveManager.data.get("game_progress",{}) is Dictionary
   and SaveManager.data.get("multi_active_runs",{}) is Dictionary
-  and SaveManager.data.get("daily_tasks",{}) is Dictionary
   and SaveManager.data.get("daily_game_choices",{}) is Dictionary
  )
 
@@ -46,12 +44,8 @@ func ensure_state()->void:
   g["daily_last_date"]=String(g.get("daily_last_date","")); all[id]=g
  SaveManager.data["game_progress"]=all
  if not SaveManager.data.get("multi_active_runs",{}) is Dictionary:SaveManager.data["multi_active_runs"]={}
- if not SaveManager.data.get("daily_tasks",{}) is Dictionary:SaveManager.data["daily_tasks"]={}
  if not SaveManager.data.get("daily_game_choices",{}) is Dictionary:SaveManager.data["daily_game_choices"]={}
  _prune_daily_game_choices()
- var task_store:Dictionary=SaveManager.data.get("daily_tasks",{})
- _prune_daily_task_history(task_store)
- SaveManager.data["daily_tasks"]=task_store
  _state_initialized=true
 
 
@@ -184,17 +178,6 @@ func _bounded_date_history(values:Array)->Array:
  if out.size()>DAILY_HISTORY_LIMIT:out=out.slice(out.size()-DAILY_HISTORY_LIMIT)
  return out
 
-func _prune_daily_task_history(store:Dictionary)->void:
- var dates:Array=[]
- for raw_key in store.keys():
-  var date:=String(raw_key).get_slice(":",0)
-  if date.length()==10 and date not in dates:dates.append(date)
- dates.sort()
- while dates.size()>DAILY_HISTORY_LIMIT:
-  var expired:=String(dates.pop_front())
-  for raw_key in store.keys():
-   if String(raw_key).begins_with(expired+":"):store.erase(raw_key)
-
 func _prune_daily_game_choices()->void:
  var choices:Dictionary=SaveManager.data.get("daily_game_choices",{})
  var keys:Array=choices.keys()
@@ -246,27 +229,6 @@ func is_daily_completed(id:String)->bool:
  if id=="rescue_rush":return DailyChallenge.is_completed_today()
  return date_key() in _progress_ref(id).get("daily_completed",[])
 
-func daily_tasks(id:String)->Array:
- ensure_state();var key:=date_key()+":"+id;var store:Dictionary=SaveManager.data.get("daily_tasks",{});var changed:=false
- if not store.has(key) or not store.get(key) is Array:
-  store[key]=[{"id":"play3","title":"Complete 3 levels","target":3,"progress":0,"claimed":false},{"id":"stars6","title":"Earn 6 stars","target":6,"progress":0,"claimed":false},{"id":"perfect1","title":"Get a perfect clear","target":1,"progress":0,"claimed":false}];changed=true
- var before:=store.size();_prune_daily_task_history(store);changed=changed or store.size()!=before;SaveManager.data["daily_tasks"]=store
- if changed:SaveManager.save()
- return (store.get(key,[]) as Array).duplicate(true)
-func _advance_tasks(id:String,stars:int)->void:
- var key:=date_key()+":"+id;daily_tasks(id);var store:Dictionary=SaveManager.data.get("daily_tasks",{});var tasks:Array=(store.get(key,[]) as Array)
- for t in tasks:
-  match String(t.get("id","")):
-   "play3":t["progress"]=mini(int(t.target),int(t.progress)+1)
-   "stars6":t["progress"]=mini(int(t.target),int(t.progress)+stars)
-   "perfect1":
-    if stars==3:t["progress"]=1
- store[key]=tasks;SaveManager.data["daily_tasks"]=store
-func claim_daily_task(id:String,task_id:String)->bool:
- var key:=date_key()+":"+id;daily_tasks(id);var store:Dictionary=SaveManager.data.get("daily_tasks",{});var tasks:Array=(store.get(key,[]) as Array)
- for t in tasks:
-  if String(t.id)==task_id and int(t.progress)>=int(t.target) and not bool(t.claimed):t["claimed"]=true;SaveManager.data["coins"]=int(SaveManager.data.get("coins",0))+TASK_REWARD;SaveManager.data["achievement_points"]=int(SaveManager.data.get("achievement_points",0))+10;store[key]=tasks;SaveManager.data["daily_tasks"]=store;SaveManager.save();return true
- return false
 func achievement_definitions(id:String)->Array:return [{"id":"first","title":"First Victory","need":1},{"id":"century","title":"Century Club","need":100},{"id":"perfect25","title":"Perfectionist","need":25},{"id":"world10","title":"World Traveller","need":10},{"id":"master","title":"10K Master","need":10000}]
 func unlocked_achievements(id:String)->Array:
  var p:=_progress_ref(id);var out:Array=[]
@@ -281,22 +243,10 @@ func complete_daily(id:String,reward:=100)->bool:
  g["daily_streak"]=int(g.get("daily_streak",0))+1 if _is_previous_calendar_day(previous,key) else 1;g["daily_best_streak"]=maxi(int(g.get("daily_best_streak",0)),int(g.get("daily_streak",0)));g["daily_last_date"]=key;done.append(key);g["daily_completed"]=_bounded_date_history(done);all[id]=g;SaveManager.data["game_progress"]=all;SaveManager.data["coins"]=int(SaveManager.data.get("coins",0))+reward;SaveManager.save();return true
 func complete_level(id:String,n:int,stars:int,coin_reward:=25,context:Dictionary={})->Dictionary:
  if id=="rescue_rush":
-  _advance_tasks(id,stars)
   _total_stars_cache.erase(id)
   var rescue_id:=String(context.get("rescue_id",""))
   var rewards:=SaveManager.complete_level(n,stars,rescue_id,coin_reward)
   var difficulty:=String(context.get("difficulty",difficulty_for_game(id,n)))
-  RetentionManager.record_level_complete(
-   n,
-   stars,
-   int(context.get("moves",0)),
-   int(context.get("par_moves",0)),
-   int(context.get("chain_count",0)),
-   rescue_id,
-   int(context.get("hints_used",-1)),
-   id,
-   difficulty
-  )
   AnalyticsManager.track("multi_game_level_complete",{"game":id,"level":n,"stars":stars,"difficulty":difficulty})
   return rewards
  ensure_state();n=clampi(n,1,CAMPAIGN_LEVELS);stars=clampi(stars,1,3);var all:Dictionary=SaveManager.data.get("game_progress",{});var g:Dictionary=all.get(id,{});var sm:Dictionary=g.get("stars",{});var key:=str(n);var previous:=int(sm.get(key,0));var first:=previous==0;var rewards={"first_clear":first,"improved":stars>previous,"perfect":stars==3 and previous<3,"milestone":false,"world_badge":false,"bonus_coins":0,"prestige":0};sm[key]=maxi(previous,stars);g["stars"]=sm;g["highest_level"]=maxi(int(g.get("highest_level",1)),mini(CAMPAIGN_LEVELS+1,n+1))
@@ -311,10 +261,8 @@ func complete_level(id:String,n:int,stars:int,coin_reward:=25,context:Dictionary
  all[id]=g
  SaveManager.data["game_progress"]=all
  if _total_stars_cache.has(id):_total_stars_cache[id]=int(_total_stars_cache[id])+maxi(0,stars-previous)
- _advance_tasks(id,stars)
  SaveManager.save()
  var difficulty:=difficulty_for_game(id,n)
- RetentionManager.record_level_complete(n,stars,0,0,0,"",-1,id,difficulty)
  AnalyticsManager.track("multi_game_level_complete",{"game":id,"level":n,"stars":stars,"difficulty":difficulty})
  return rewards
 func _persist_checkpoint_deferred()->void:

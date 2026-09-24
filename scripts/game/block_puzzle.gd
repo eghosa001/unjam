@@ -10,10 +10,6 @@ const COLOR_PALETTE := [
 	Color("39df63"), Color("466df2"), Color("ef4248"), Color("f4b83d"),
 	Color("9d5add"), Color("35c9e8"), Color("ff8b3e")
 ]
-const ROYAL_PIECE_PALETTE := [
-	Color("ffd45c"), Color("8f6cff"), Color("3fa7ff"), Color("ff63b6"),
-	Color("54d6a2"), Color("f4f0ff"), Color("c77dff")
-]
 const SHAPES := [
 	[Vector2i(0,0)],
 	[Vector2i(0,0), Vector2i(1,0)],
@@ -41,8 +37,7 @@ var piece_colors: Array = []
 var selected_piece := -1
 
 func _piece_palette() -> Array:
-	var owned = SaveManager.data.get("event_shop_owned", [])
-	return ROYAL_PIECE_PALETTE if owned is Array and "royal_piece_skin" in owned else COLOR_PALETTE
+	return COLOR_PALETTE
 var score := 0
 var lines_cleared := 0
 var placements := 0

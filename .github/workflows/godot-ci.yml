@@ -128,7 +128,6 @@ jobs:
               settings) test -s build/visual-audit/06b-settings-540x960-dark.png ;;
               shop) test -s build/visual-audit/06d-shop-540x960-dark.png ;;
               coins) test -s build/visual-audit/06f-insufficient-coins-540x960-dark.png ;;
-              retention) test -s build/visual-audit/06g-retention-hub-540x960-dark.png ;;
               rescue) test -s build/visual-audit/09c-game-rescue-motion-540x960.png ;;
               water) test -s build/visual-audit/10c-game-water-pouring-540x960.png ;;
               block) test -s build/visual-audit/11-game-block.png ;;

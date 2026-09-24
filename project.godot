@@ -43,8 +43,6 @@ AnalyticsManager="*res://scripts/systems/analytics_manager.gd"
 DailyChallenge="*res://scripts/systems/robust_daily_challenge.gd"
 FeedbackManager="*res://scripts/systems/feedback_manager.gd"
 PremiumVisuals="*res://scripts/systems/robust_premium_visuals.gd"
-RetentionManager="*res://scripts/systems/economy_retention_manager.gd"
-LiveHubLauncher="*res://scripts/systems/live_hub_launcher.gd"
 MotionSystem="*res://scripts/ui/motion_system.gd"
 
 [admob]
