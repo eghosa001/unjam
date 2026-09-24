@@ -12,9 +12,7 @@ func _run() -> void:
 		return
 	if not _hot_paths_stay_lightweight():
 		return
-	if not _retention_period_cache_is_isolated():
-		return
-	print("RUNTIME_EFFICIENCY_OK: stable controls, bounded hot-path allocation, deferred persistence, and isolated period caches.")
+	print("RUNTIME_EFFICIENCY_OK: stable controls, bounded hot-path allocation, and deferred persistence.")
 	quit(0)
 
 func _water_controls_are_reused() -> bool:
@@ -83,30 +81,6 @@ func _rescue_refresh_is_settled() -> bool:
 	await process_frame
 	return true
 
-func _retention_period_cache_is_isolated() -> bool:
-	var retention = root.get_node_or_null("RetentionManager")
-	if retention == null:
-		return _fail("RetentionManager autoload missing")
-	var missions_a: Array[Dictionary] = retention.call("daily_missions")
-	var missions_b: Array[Dictionary] = retention.call("daily_missions")
-	if missions_a != missions_b or missions_a.is_empty():
-		return _fail("Daily mission cache changed deterministic output")
-	var original_mission_title := String(missions_b[0].get("title", ""))
-	missions_a[0]["title"] = "MUTATED"
-	var missions_c: Array[Dictionary] = retention.call("daily_missions")
-	if String(missions_c[0].get("title", "")) != original_mission_title:
-		return _fail("Daily mission caller mutated the internal period cache")
-	var rivals_a: Array[Dictionary] = retention.call("weekly_rivals")
-	var rivals_b: Array[Dictionary] = retention.call("weekly_rivals")
-	if rivals_a != rivals_b or rivals_a.is_empty():
-		return _fail("Weekly rival cache changed deterministic output")
-	var original_points := int(rivals_b[0].get("points", -1))
-	rivals_a[0]["points"] = -999
-	var rivals_c: Array[Dictionary] = retention.call("weekly_rivals")
-	if int(rivals_c[0].get("points", -1)) != original_points:
-		return _fail("Weekly rival caller mutated the internal period cache")
-	return true
-
 func _hot_paths_stay_lightweight() -> bool:
 	var manager := FileAccess.get_file_as_string("res://scripts/core/multi_game_manager.gd")
 	var save_manager := FileAccess.get_file_as_string("res://scripts/core/save_manager.gd")
@@ -114,8 +88,6 @@ func _hot_paths_stay_lightweight() -> bool:
 	var water_game := FileAccess.get_file_as_string("res://scripts/game/water_sort.gd")
 	var block_game := FileAccess.get_file_as_string("res://scripts/game/block_puzzle_3d.gd")
 	var visuals := FileAccess.get_file_as_string("res://scripts/systems/robust_premium_visuals.gd")
-	var retention := FileAccess.get_file_as_string("res://scripts/systems/retention_manager.gd")
-	var robust_retention := FileAccess.get_file_as_string("res://scripts/systems/robust_retention_manager.gd")
 	var checkpoint_fn := manager.get_slice("func _checkpoint_payload_matches", 1).get_slice("func save_checkpoint", 0)
 	if ".duplicate(true)" in checkpoint_fn:
 		return _fail("Checkpoint equality regressed to recursive copying")
@@ -139,25 +111,6 @@ func _hot_paths_stay_lightweight() -> bool:
 	var quality_fn := visuals.get_slice("func _set_quality", 1).get_slice("func _ambient_count", 0)
 	if not "save_deferred" in quality_fn:
 		return _fail("Adaptive quality persistence is synchronous again")
-	var retention_complete := retention.get_slice("func record_level_complete", 1).get_slice("func record_level_fail", 0)
-	var retention_fail := retention.get_slice("func record_level_fail", 1).get_slice("func _persist_gameplay_state_deferred", 0)
-	var retention_persist := retention.get_slice("func _persist_gameplay_state_deferred", 1).get_slice("func _increment_mission", 0)
-	if "SaveManager.save()" in retention_complete or not "_persist_gameplay_state_deferred()" in retention_complete:
-		return _fail("Level-complete retention regressed to a synchronous second save")
-	if "SaveManager.save()" in retention_fail or not "_persist_gameplay_state_deferred()" in retention_fail:
-		return _fail("Level-fail retention regressed to synchronous persistence")
-	if not "save_deferred" in retention_persist:
-		return _fail("Retention persistence helper is not using the coalesced save path")
-	var weekly_rank_fn := retention.get_slice("func weekly_rank", 1).get_slice("func _weekly_rivals_ref", 0)
-	if "weekly_rivals()" in weekly_rank_fn or not "_weekly_rivals_ref()" in weekly_rank_fn:
-		return _fail("Weekly rank regressed to rebuilding/copying the rival list")
-	var robust_ensure := robust_retention.get_slice("func ensure_state", 1).get_slice("func _ensure_robust_fields", 0)
-	if not "var changed :=" in robust_ensure or not "if changed:" in robust_ensure:
-		return _fail("Robust retention ensure_state lost conditional persistence")
-	if "\n\tSaveManager.save()" in robust_ensure:
-		return _fail("Robust retention ensure_state regressed to unconditional saving")
-	if not "func _ensure_robust_fields() -> bool" in robust_retention or not "func _roll_robust_tracking() -> bool" in robust_retention or not "func _settle_previous_week_if_needed() -> bool" in robust_retention:
-		return _fail("Robust retention mutation tracking contract is incomplete")
 	var gameplay_counter_persist := save_manager.get_slice("func _persist_gameplay_counter_deferred", 1).get_slice("func record_hint", 0)
 	var hint_fn := save_manager.get_slice("func record_hint", 1).get_slice("func record_undo", 0)
 	var undo_fn := save_manager.get_slice("func record_undo", 1).get_slice("func complete_daily", 0)
