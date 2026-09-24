@@ -80,6 +80,7 @@ func _build_reference_selector(canvas: Control) -> void:
 	back.name = "SelectorBackButton"
 	back.tooltip_text = "Back home"
 	RefCanvas.set_rect(back, 17, 19, 52, 52)
+	back.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	back.pressed.connect(_go_home)
 	canvas.add_child(back)
 
@@ -92,6 +93,7 @@ func _build_reference_selector(canvas: Control) -> void:
 	settings.name = "SelectorSettingsButton"
 	settings.tooltip_text = "Settings"
 	RefCanvas.set_rect(settings, 285, 21, 84, 46)
+	settings.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	settings.pressed.connect(func(): get_parent().call("build_settings"))
 	canvas.add_child(settings)
 
@@ -173,6 +175,7 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 	tap.focus_mode = Control.FOCUS_NONE
 	tap.modulate.a = 0.001
 	RefCanvas.set_rect(tap, rect.position.x - 2, rect.position.y - 5, rect.size.x + 4, rect.size.y + 10)
+	tap.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	tap.pressed.connect(_play.bind(game_id))
 	canvas.add_child(tap)
 
@@ -180,6 +183,7 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 	play.name = "SelectorPlay_%s" % game_id
 	play.tooltip_text = "Play %s" % title.capitalize()
 	RefCanvas.set_rect(play, 153, rect.position.y + 96, 74, 44)
+	play.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	play.pressed.connect(_play.bind(game_id))
 	canvas.add_child(play)
 
@@ -263,6 +267,7 @@ func _add_bottom_nav(canvas: Control) -> void:
 		hit.flat = true
 		hit.focus_mode = Control.FOCUS_NONE
 		hit.modulate.a = 0.001
+		hit.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 		RefCanvas.set_rect(hit, float(item[3]), 753, 72, 78)
 		var callback: Callable = item[4]
 		if callback.is_valid():
