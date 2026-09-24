@@ -171,20 +171,20 @@ func _process(delta: float) -> void:
 
 func _draw() -> void:
 	var rect := Rect2(Vector2(1.5, 1.5), size - Vector2(3, 3))
-	var board_fill := Color(0.23, 0.16, 0.37, 0.98)
+	var board_fill := Color(0.27, 0.19, 0.43, 0.99)
 	if hover_amount > 0.01 and not occupied:
 		board_fill = board_fill.lightened(0.045 * hover_amount)
 	_draw_box(Rect2(rect.position + Vector2(0, 3), rect.size), Color("#241445"), 6, Color.TRANSPARENT, 0)
-	_draw_box(rect, board_fill, 6, Color(0.51, 0.39, 0.67, 0.72), 1)
+	_draw_box(rect, board_fill, 6, Color(0.62, 0.47, 0.80, 0.82), 1)
 	# Production wells are recessed, not raised cubes. A dark inner edge gives the
 	# same inset read without adding another visible block layer.
 	var inner_well := rect.grow(-2.5)
-	_draw_box(inner_well, Color(0.205, 0.135, 0.345, 0.99), 5, Color(0.07, 0.03, 0.14, 0.30), 1)
+	_draw_box(inner_well, Color(0.235, 0.155, 0.395, 0.99), 5, Color(0.055, 0.02, 0.12, 0.42), 1)
 	# Recess lighting: dark top/left edges and a faint lower rim make empty cells
 	# feel carved into the board, while occupied cubes remain visibly raised.
 	draw_line(inner_well.position + Vector2(5, 3), Vector2(inner_well.end.x - 5, inner_well.position.y + 3), Color(0.04,0.015,0.08,0.52), 2.0, true)
 	draw_line(inner_well.position + Vector2(3, 5), Vector2(inner_well.position.x + 3, inner_well.end.y - 5), Color(0.04,0.015,0.08,0.42), 1.7, true)
-	draw_line(Vector2(inner_well.position.x + 6, inner_well.end.y - 3), Vector2(inner_well.end.x - 6, inner_well.end.y - 3), Color(0.66,0.48,0.86,0.20), 1.5, true)
+	draw_line(Vector2(inner_well.position.x + 6, inner_well.end.y - 3), Vector2(inner_well.end.x - 6, inner_well.end.y - 3), Color(0.72,0.54,0.92,0.28), 1.5, true)
 	var inset := rect.grow(-3.0)
 	if occupied or preview:
 		var fill := Color(accent, 0.52) if preview else accent
