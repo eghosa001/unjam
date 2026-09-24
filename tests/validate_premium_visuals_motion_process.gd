@@ -7,8 +7,8 @@ func _initialize() -> void:
 		quit(1)
 		return
 	var source := file.get_as_text()
-	if not source.contains("set_process(not _reduced_motion())"):
-		push_error("Premium visuals still schedules frame processing in Reduced Motion")
+	if not source.contains("set_process(not _motion_reduced)"):
+		push_error("Premium visuals does not gate frame processing with the cached Reduced Motion preference")
 		quit(1)
 		return
 	var ready_start := source.find("func _ready()")
