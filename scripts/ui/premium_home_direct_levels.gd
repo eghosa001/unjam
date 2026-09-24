@@ -245,6 +245,7 @@ func _add_quick_switch(canvas: Control) -> void:
 		tap.flat = true
 		tap.focus_mode = Control.FOCUS_NONE
 		tap.modulate.a = 0.001
+		tap.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 		RefCanvas.set_rect(tap, x - 4, 459, 116, 106)
 		tap.pressed.connect(_select_home_game.bind(id))
 		canvas.add_child(tap)
@@ -390,6 +391,7 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 		hit.flat = true
 		hit.focus_mode = Control.FOCUS_NONE
 		hit.modulate.a = 0.001
+		hit.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 		RefCanvas.set_rect(hit, float(item[3]), 753, 72, 78)
 		var cb: Callable = item[4]
 		if cb.is_valid():
@@ -418,6 +420,7 @@ func _add_action(canvas: Control, rect: Rect2, fill: Color, text_value: String, 
 	RefCanvas.add_shadow(canvas, rect, radius, Color(0.02, 0.10, 0.18, 0.20), 5, Vector2(0, 4))
 	var resolved_text := text_color if fill.get_luminance() > 0.58 else _home_text_color(text_color)
 	var button := RefCanvas.premium_button(text_value, font_size, resolved_text, fill, radius)
+	button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	RefCanvas.set_rect(button, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	if callback.is_valid():
 		button.pressed.connect(callback)
