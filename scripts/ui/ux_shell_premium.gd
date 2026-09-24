@@ -361,13 +361,6 @@ func _handle_back() -> void:
 		if is_instance_valid(overlay) and overlay.visible:
 			hub.call("_close_shop")
 			return
-	var retention := main.get_node_or_null("RetentionHub")
-	if retention != null and is_instance_valid(retention):
-		if retention.has_method("_close"):
-			retention.call("_close")
-		else:
-			retention.queue_free()
-		return
 	var surface := _current_surface()
 	if surface == "game":
 		if main.has_method("force_back_from_game"):
