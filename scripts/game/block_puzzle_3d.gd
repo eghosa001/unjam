@@ -74,10 +74,10 @@ func _fit_figma_board_layout() -> void:
 	board_grid.add_theme_constant_override("v_separation", 5)
 	for child in board_grid.get_children():
 		if child is Control:
-			(child as Control).custom_minimum_size = Vector2(32.6, 32.6)
-	board_shell.custom_minimum_size = Vector2(330, 330)
-	board_shell.position = Vector2(29, 179)
-	board_shell.size = Vector2(330, 330)
+			(child as Control).custom_minimum_size = Vector2(35.0, 35.0)
+	board_shell.custom_minimum_size = Vector2(346, 346)
+	board_shell.position = Vector2(22, 164)
+	board_shell.size = Vector2(346, 346)
 	if piece_row != null:
 		piece_row.custom_minimum_size = Vector2(326, 112)
 		piece_row.position = Vector2(31, 545)
@@ -139,12 +139,12 @@ func _build_figma_block(canvas: Control) -> void:
 
 	_add_block_identity_emblem(canvas)
 
-	title_label = FigmaReferenceCanvas.label("", 20, Color(1,0.995,0.97), true)
+	title_label = FigmaReferenceCanvas.label("", 21, Color(1,0.995,0.97), true)
 	FigmaReferenceCanvas.style_display_title(title_label, Color("#d5a0ff"), Color("#42106f"), 2)
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	FigmaReferenceCanvas.set_rect(title_label, 115, 15, 184, 30)
 	canvas.add_child(title_label)
-	var level_meta := FigmaReferenceCanvas.label("", 12, Color(0.92,0.98,1.0), false)
+	var level_meta := FigmaReferenceCanvas.label("", 13, Color(0.92,0.98,1.0), false)
 	level_meta.name = "BlockLevelMeta"
 	level_meta.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	FigmaReferenceCanvas.set_rect(level_meta, 115, 43, 184, 20)
@@ -160,7 +160,7 @@ func _build_figma_block(canvas: Control) -> void:
 	score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	FigmaReferenceCanvas.set_rect(score_label, 33, 94, 52, 44)
 	canvas.add_child(score_label)
-	goal_label = FigmaReferenceCanvas.label("", 12, Color(0.96,0.87,1.0), false)
+	goal_label = FigmaReferenceCanvas.label("", 14, Color(0.96,0.87,1.0), false)
 	goal_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	goal_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	goal_label.clip_text = true
@@ -178,16 +178,16 @@ func _build_figma_block(canvas: Control) -> void:
 
 	var depth := PanelContainer.new()
 	depth.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color("#241445"), 20))
-	FigmaReferenceCanvas.set_rect(depth, 31.24, 191.35, 330, 330)
+	FigmaReferenceCanvas.set_rect(depth, 24.24, 176.35, 346, 346)
 	canvas.add_child(depth)
 	board_shell = PanelContainer.new()
 	board_shell.name = "BlockBoardShell"
 	board_shell.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(Color("#613894"), Color("#452670"), Color("#2e1a54"), 20, Color(0.72,0.52,1.0,0.80), 2))
-	FigmaReferenceCanvas.set_rect(board_shell, 29, 179, 330, 330)
+	FigmaReferenceCanvas.set_rect(board_shell, 22, 164, 346, 346)
 	canvas.add_child(board_shell)
 	var board_margin := MarginContainer.new()
 	for side in ["left","right","top","bottom"]:
-		board_margin.add_theme_constant_override("margin_%s" % side, 17)
+		board_margin.add_theme_constant_override("margin_%s" % side, 14)
 	board_shell.add_child(board_margin)
 	board_grid = GridContainer.new()
 	board_grid.name = "BlockBoardGrid"
@@ -198,7 +198,7 @@ func _build_figma_block(canvas: Control) -> void:
 	for y in range(GRID_SIZE):
 		for x in range(GRID_SIZE):
 			var cell := BlockCellButton.new()
-			cell.custom_minimum_size = Vector2(32.6, 32.6)
+			cell.custom_minimum_size = Vector2(35.0, 35.0)
 			cell.configure(false, false, Unjam3DTheme.WATER, y * GRID_SIZE + x)
 			cell.pressed.connect(place_selected.bind(Vector2i(x, y)))
 			board_grid.add_child(cell)
@@ -226,7 +226,7 @@ func _build_figma_block(canvas: Control) -> void:
 	status_region.clip_contents = true
 	FigmaReferenceCanvas.set_rect(status_region, 18, 682, 354, 20)
 	canvas.add_child(status_region)
-	status_label = FigmaReferenceCanvas.label("", 13, Color(1,0.995,0.97), true)
+	status_label = FigmaReferenceCanvas.label("", 14, Color(1,0.995,0.97), true)
 	status_label.name = "BlockStatusText"
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status_label.clip_text = true
@@ -239,7 +239,7 @@ func _build_figma_block(canvas: Control) -> void:
 	hint_region.clip_contents = true
 	FigmaReferenceCanvas.set_rect(hint_region, 18, 706, 354, 20)
 	canvas.add_child(hint_region)
-	hint_label = FigmaReferenceCanvas.label("", 13, Color(1,0.995,0.97), true)
+	hint_label = FigmaReferenceCanvas.label("", 14, Color(1,0.995,0.97), true)
 	hint_label.name = "BlockHintText"
 	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint_label.clip_text = true
