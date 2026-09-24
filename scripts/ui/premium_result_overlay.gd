@@ -101,14 +101,14 @@ func _build() -> void:
 	FigmaReferenceCanvas.style_display_title(title, accent.lightened(0.22), Color("#071d55"), 2)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	FigmaReferenceCanvas.set_rect(title, 47, 98, 294, 46)
+	FigmaReferenceCanvas.set_rect(title, 47, 118, 294, 40)
 	_canvas.add_child(title)
 
 	var badge_fill := Color(accent, 0.18 if dark else 0.12)
 	var badge := PanelContainer.new()
 	badge.name = "ResultBadge"
 	badge.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(badge_fill, 12, Color(accent, 0.58), 1))
-	FigmaReferenceCanvas.set_rect(badge, 109, 148, 170, 28)
+	FigmaReferenceCanvas.set_rect(badge, 109, 86, 170, 28)
 	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_canvas.add_child(badge)
 	var badge_label := FigmaReferenceCanvas.label(badge_text, 13, accent.lightened(0.28) if dark else accent.darkened(0.28), true)
@@ -116,7 +116,7 @@ func _build() -> void:
 	badge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	badge_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	badge_label.clip_text = true
-	FigmaReferenceCanvas.set_rect(badge_label, 115, 150, 158, 24)
+	FigmaReferenceCanvas.set_rect(badge_label, 115, 88, 158, 24)
 	_canvas.add_child(badge_label)
 
 	var subtitle := FigmaReferenceCanvas.label(subtitle_text, 14, Color("#b6c7d6") if dark else Color("45617b"), false)
@@ -124,7 +124,7 @@ func _build() -> void:
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	FigmaReferenceCanvas.set_rect(subtitle, 47, 180, 294, 48)
+	FigmaReferenceCanvas.set_rect(subtitle, 47, 162, 294, 66)
 	_canvas.add_child(subtitle)
 
 	_add_identity(_result_game_id())
