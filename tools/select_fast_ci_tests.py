@@ -21,16 +21,19 @@ GROUP_TESTS = {
         "validate_uiux_regressions",
         "validate_viewport_fit",
         "validate_theme_integrity",
+        "validate_bottom_nav_touch_zones",
     ],
     "games_ui": [
         "validate_selector_navigation",
         "validate_selector_premium_card_hierarchy",
+        "validate_bottom_nav_touch_zones",
     ],
     "home": [
         "validate_home_direct_levels_runtime",
         "validate_home_premium_visual_hierarchy",
         "validate_home_return_atomic",
         "validate_viewport_fit",
+        "validate_bottom_nav_touch_zones",
     ],
     "tutorial": [
         "validate_tutorial_premium_flow",
@@ -572,7 +575,10 @@ def self_test() -> None:
     assert GROUP_TESTS["games_ui"] == [
         "validate_selector_navigation",
         "validate_selector_premium_card_hierarchy",
+        "validate_bottom_nav_touch_zones",
     ]
+    assert "validate_bottom_nav_touch_zones" in GROUP_TESTS["home"]
+    assert "validate_bottom_nav_touch_zones" in GROUP_TESTS["secondary_ui"]
     assert GROUP_TESTS["navigation_shell"] == ["validate_modal_back_priority"]
     progression_plan = plan_for_paths(["scripts/core/water_sort_progression.gd"])
     assert progression_plan["tests"] == [
