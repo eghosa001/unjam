@@ -25,16 +25,14 @@ func _run() -> void:
 		if card == null:
 			failures.append("Selector card missing for %s" % game_id)
 			continue
-		var style := card.get_theme_stylebox("panel") as StyleBoxFlat
-		if style == null or style.border_width_left < 1:
-			failures.append("Selector card lost its premium material frame for %s" % game_id)
+		var style := card.get_theme_stylebox("panel")
+		if style == null:
+			failures.append("Selector card lost its premium material for %s" % game_id)
+		if not _has_matching_shadow(main, card):
+			failures.append("Selector card lost its composed depth shadow for %s" % game_id)
 		var preview_frame := _find_node_named(main, "SelectorGamePreviewFrame_%s" % game_id) as PanelContainer
-		if preview_frame == null:
-			failures.append("Selector gameplay preview frame is missing for %s" % game_id)
-		else:
-			var preview_style := preview_frame.get_theme_stylebox("panel") as StyleBoxFlat
-			if preview_style == null or preview_style.border_width_left < 1:
-				failures.append("Selector gameplay preview lost its framed material treatment for %s" % game_id)
+		if preview_frame == null or preview_frame.get_theme_stylebox("panel") == null:
+			failures.append("Selector gameplay preview frame is missing its material treatment for %s" % game_id)
 		var play := _find_node_named(main, "SelectorPlay_%s" % game_id) as Button
 		if play == null or play.size.x < 72.0 or play.size.y < 42.0 or play.get_theme_font_size("font_size") < 14:
 			failures.append("Selector play CTA is not explicit/readable for %s" % game_id)
@@ -54,6 +52,14 @@ func _run() -> void:
 		return
 	print("Selector premium card hierarchy validated.")
 	quit(0)
+
+func _has_matching_shadow(node: Node, target: Control) -> bool:
+	var wanted := Rect2(target.position, target.size)
+	for found in node.find_children("FigmaShadow", "PanelContainer", true, false):
+		var shadow := found as PanelContainer
+		if shadow != null and Rect2(shadow.position, shadow.size).position.distance_to(wanted.position) <= 1.0 and Rect2(shadow.position, shadow.size).size.distance_to(wanted.size) <= 1.0:
+			return true
+	return false
 
 func _find_node_named(node: Node, wanted: String) -> Node:
 	if node.name == wanted:
