@@ -83,6 +83,12 @@ GROUP_TESTS = {
         "validate_restore_purchase_flow",
         "validate_coin_economy",
     ],
+    "retention_ui": [
+        "validate_retention_refresh_atomic",
+    ],
+    "coin_recovery_ui": [
+        "validate_insufficient_coins_prompt",
+    ],
     "fallback": [
         "validate_reported_polish_regressions",
         "validate_gameplay_interactions",
@@ -107,7 +113,7 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
     if p == "tests/capture_visual_audit.gd":
         visual.update({
             "home", "games", "levels", "collection", "daily", "settings",
-            "shop", "rescue", "water", "block", "tutorial", "result"
+            "shop", "coins", "retention", "rescue", "water", "block", "tutorial", "result"
         })
         return True
 
@@ -162,10 +168,18 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
     if p.startswith("scripts/ui/"):
         game_specific_ui = bool(groups.intersection({"water", "block", "rescue"}))
         monetization_ui = any(token in p for token in ("monetization_hub", "shop_", "purchase_"))
+        retention_ui = "retention_hub" in p
+        coin_recovery_ui = "insufficient_coins_prompt" in p
         tutorial_ui = "ux_shell" in p or "tutorial" in p
         games_ui = "premium_live_hub" in p or "unjam_3d_game_art" in p or "unjam_flat_game_logo" in p
         home_ui = "premium_home" in p
-        if monetization_ui:
+        if retention_ui:
+            add(groups, "retention_ui")
+            visual.add("retention")
+        elif coin_recovery_ui:
+            add(groups, "coin_recovery_ui")
+            visual.add("coins")
+        elif monetization_ui:
             add(groups, "monetization")
             visual.add("shop")
         elif not game_specific_ui:
@@ -501,6 +515,8 @@ def self_test() -> None:
         (["scripts/ui/premium_main_casual.gd"], ["secondary_ui"], ["collection", "daily", "home", "levels", "settings"], True),
         (["scripts/systems/premium_visuals.gd"], ["ui"], ["collection", "daily", "games", "levels", "settings", "shop"], True),
         (["scripts/ui/monetization_hub_3d.gd"], ["monetization"], ["shop"], True),
+        (["scripts/ui/retention_hub_3d.gd"], ["retention_ui"], ["retention"], True),
+        (["scripts/ui/insufficient_coins_prompt.gd"], ["coin_recovery_ui"], ["coins"], True),
         (["scripts/core/water_sort_progression.gd"], ["progression"], [], True),
         (["scripts/core/block_puzzle_progression.gd"], ["progression"], [], True),
         (["scripts/core/rescue_rush_progression.gd"], ["progression"], [], True),
