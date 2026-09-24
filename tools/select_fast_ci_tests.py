@@ -93,6 +93,9 @@ GROUP_TESTS = {
     "result_ui": [
         "validate_result_premium_hierarchy",
     ],
+    "navigation_shell": [
+        "validate_modal_back_priority",
+    ],
     "fallback": [
         "validate_reported_polish_regressions",
         "validate_gameplay_interactions",
@@ -196,6 +199,8 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
                 visual.update({"games", "home"})
             elif tutorial_ui:
                 add(groups, "tutorial")
+                if "ux_shell" in p:
+                    add(groups, "navigation_shell")
             elif games_ui:
                 add(groups, "games_ui")
             elif home_ui:
@@ -568,6 +573,7 @@ def self_test() -> None:
         "validate_selector_navigation",
         "validate_selector_premium_card_hierarchy",
     ]
+    assert GROUP_TESTS["navigation_shell"] == ["validate_modal_back_priority"]
     progression_plan = plan_for_paths(["scripts/core/water_sort_progression.gd"])
     assert progression_plan["tests"] == [
         "validate_retention_pacing",
