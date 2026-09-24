@@ -5,6 +5,7 @@ extends Control
 var built := false
 var last_theme := ""
 var _responsive_rebuild_pending := false
+var _last_live_signature := ""
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -33,6 +34,7 @@ func _rebuild_for_viewport() -> void:
 	if not visible or not is_inside_tree():
 		return
 	_build()
+	_last_live_signature = _live_state_signature()
 	_ensure_wallet_shop_action()
 
 func _on_surface_changed(surface: String) -> void:
@@ -43,10 +45,21 @@ func _on_surface_changed(surface: String) -> void:
 	_refresh_progress_on_entry()
 
 func _refresh_progress_on_entry() -> void:
-	# Progress can change while this persistent selector is hidden behind gameplay.
-	# Rebuilding only on entry keeps it event-driven and guarantees fresh cards.
+	# The selector is already a persistent surface. Reuse it when theme/progress
+	# did not change instead of reconstructing its full card tree on every tap.
+	var signature := _live_state_signature()
+	if built and signature == _last_live_signature:
+		_ensure_wallet_shop_action()
+		return
 	_build()
+	_last_live_signature = signature
 	_ensure_wallet_shop_action()
+
+func _live_state_signature() -> String:
+	var parts: Array[String] = [_theme_mode()]
+	for game_id in MultiGameManager.GAME_IDS:
+		parts.append("%s:%d" % [game_id, MultiGameManager.highest_level(game_id)])
+	return "|".join(parts)
 
 func _theme_mode() -> String:
 	var shell := get_parent().get_node_or_null("UXShell")
