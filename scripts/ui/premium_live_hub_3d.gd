@@ -175,6 +175,13 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 	tap.pressed.connect(_play.bind(game_id))
 	canvas.add_child(tap)
 
+	var play := RefCanvas.premium_button("PLAY", 14, OFF_WHITE, accent.darkened(0.22), 14, accent.lightened(0.18), 1.1)
+	play.name = "SelectorPlay_%s" % game_id
+	play.tooltip_text = "Play %s" % title.capitalize()
+	RefCanvas.set_rect(play, 153, rect.position.y + 96, 74, 44)
+	play.pressed.connect(_play.bind(game_id))
+	canvas.add_child(play)
+
 func _add_card_preview(canvas: Control, game_id: String, card_y: float) -> void:
 	var origin_y := card_y + 22.5
 	var stage := PanelContainer.new()
