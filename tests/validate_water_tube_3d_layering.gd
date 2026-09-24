@@ -10,8 +10,15 @@ func _initialize() -> void:
 		push_error("Water tube 3D viewport must render at the normal child layer so the translucent gameplay panel cannot wash it out")
 		quit(1)
 		return
-	if not source.contains("selection_changed") or motion.contains("Color(1, 1, 1, 0.0)"):
-		push_error("Water tube touch/pour visibility regression")
+	var configure_start := source.find("func configure(values: Array, selected: bool, index: int) -> void:")
+	var configure_end := source.find("\nfunc _ready()", configure_start)
+	var configure_source := "" if configure_start < 0 or configure_end < 0 else source.substr(configure_start, configure_end - configure_start)
+	if not configure_source.contains("_request_3d_frame()"):
+		push_error("Every configured 3D bottle must request one fresh SubViewport frame after board relayout")
+		quit(1)
+		return
+	if not motion.contains("button.modulate = Color(1, 1, 1, 0.0)"):
+		push_error("Active pour originals must remain hidden so animated ghosts have single visual ownership")
 		quit(1)
 		return
 	print("Water tube 3D visibility validated.")

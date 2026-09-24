@@ -36,13 +36,15 @@ var _rim_right_normalized := Vector2(0.5, 0.1)
 
 func configure(values: Array, selected: bool, index: int) -> void:
 	var liquid_changed := layers != values
-	var selection_changed := is_selected != selected
 	super.configure(values, selected, index)
 	if viewport_3d != null:
 		if liquid_changed:
 			_refresh_liquid_3d()
-		elif selection_changed:
-			_request_3d_frame()
+		# render_board() reapplies compact bottle geometry on every tap. Android can
+		# invalidate a one-shot SubViewport texture during that relayout even when
+		# the liquid itself did not change, so every configured bottle gets one fresh
+		# frame. UPDATE_ONCE keeps the idle cost bounded to a single render.
+		_request_3d_frame()
 	if is_inside_tree():
 		_sync_motion_processing()
 

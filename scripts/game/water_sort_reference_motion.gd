@@ -40,8 +40,9 @@ func render_board() -> void:
 		button.disabled = false
 		button.configure(tubes[i], i == selected, i)
 		if active_source_tubes.has(i) or active_target_tubes.has(i):
-			# The animated source/receiver ghosts fully own the pour frame. Keeping the
-			# live controls visible underneath produces doubled glass/liquid silhouettes.
+			# The animated source/receiver ghosts own the active pour frame. Hide the
+			# authoritative controls only while those ghosts exist so glass/liquid is
+			# never doubled; ordinary board relayouts now refresh every idle 3D tube.
 			button.modulate = Color(1, 1, 1, 0.0)
 			button.disabled = true
 	move_label.text = "MOVES %d   •   3★ ≤ %d   •   %d COLOURS" % [moves, par_moves, color_count]
