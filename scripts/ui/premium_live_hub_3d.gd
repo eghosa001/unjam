@@ -100,27 +100,7 @@ func _build_reference_selector(canvas: Control) -> void:
 	_add_game_card(canvas, "rescue_rush", Rect2(17, 111, 354, 160), Color("#21c763"), Color("#49d17f"), "RESCUE RUSH", "Tap arrows. Clear paths.")
 	_add_game_card(canvas, "water_sort", Rect2(17, 285, 354, 160), Color("#1aa8ff"), Color("#43b8ff"), "WATER SORT", "Sort colours by tube.")
 	_add_game_card(canvas, "block_puzzle", Rect2(17, 459, 354, 160), Color("#c73dff"), Color("#d160ff"), "BLOCK PUZZLE", "Place blocks. Clear lines.")
-	_add_retention_access(canvas)
 	_add_bottom_nav(canvas)
-
-func _add_retention_access(canvas: Control) -> void:
-	var panel := PanelContainer.new()
-	panel.name = "SelectorRewardsPanel"
-	var fill := Color("#2a2a2a") if _selector_dark() else Color("#d8d4cc")
-	panel.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(fill.lightened(0.10), fill, fill.darkened(0.10), 18, Color("#e1b94f"), 1.2, 0.36))
-	RefCanvas.set_rect(panel, 17, 638, 354, 82)
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	canvas.add_child(panel)
-	var title := _add_text(canvas, "REWARDS & EVENTS", Rect2(31, 650, 184, 20), 16, OFF_WHITE if _selector_dark() else INK, true)
-	title.name = "SelectorRewardsTitle"
-	var detail := _add_text(canvas, "MISSIONS • LEAGUE • SEASON", Rect2(31, 676, 226, 19), 12, DARK_MUTED if _selector_dark() else MUTED, true)
-	detail.clip_text = true
-	var open := RefCanvas.premium_button("OPEN", 13, OFF_WHITE, Color("#9a6f18"), 15, Color("#f2cf65"), 1.1)
-	open.name = "SelectorRewardsOpenButton"
-	open.tooltip_text = "Open Rescue rewards, missions, league, season, achievements and event shop"
-	RefCanvas.set_rect(open, 271, 655, 82, 42)
-	open.pressed.connect(func() -> void: LiveHubLauncher.open_hub())
-	canvas.add_child(open)
 
 func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color, highlight: Color, title: String, subtitle: String) -> void:
 	var card_shadow := RefCanvas.add_shadow(canvas, rect, 20, Color(0.03,0.10,0.20,0.22), 8, Vector2(0,6))
