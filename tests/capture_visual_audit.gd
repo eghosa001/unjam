@@ -129,7 +129,11 @@ func _run() -> void:
 
 	# Rewards & Events is a first-class surface, not a hidden utility screen.
 	# Keep compact-phone evidence for its scrolled hub shell and theme treatment.
-	LiveHubLauncher.open_hub()
+	var live_hub_launcher := root.get_node_or_null("LiveHubLauncher")
+	if live_hub_launcher != null and live_hub_launcher.has_method("open_hub"):
+		live_hub_launcher.call("open_hub")
+	else:
+		push_error("Visual audit could not resolve LiveHubLauncher")
 	await _settle(8)
 	var retention_hub := main.get_node_or_null("RetentionHub") as Control
 	if retention_hub != null:
@@ -427,7 +431,8 @@ func _run_fast_visual_audit(main: Node, shell: Node) -> void:
 	if _fast_visual_enabled("coins"):
 		var fast_coin_prompt := main.get_node_or_null("InsufficientCoinsPrompt")
 		if fast_coin_prompt != null and fast_coin_prompt.has_method("show_for"):
-			var fast_balance := EconomyManager.balance()
+			var fast_economy := root.get_node_or_null("EconomyManager")
+			var fast_balance := int(fast_economy.call("balance")) if fast_economy != null and fast_economy.has_method("balance") else 0
 			fast_coin_prompt.call("show_for", "HINT", fast_balance + 25)
 			await _settle(5)
 			await _capture("06f-insufficient-coins-540x960-dark")
@@ -439,7 +444,11 @@ func _run_fast_visual_audit(main: Node, shell: Node) -> void:
 			push_error("Fast visual audit could not open insufficient-coins recovery")
 
 	if _fast_visual_enabled("retention"):
-		LiveHubLauncher.open_hub()
+		var fast_live_hub_launcher := root.get_node_or_null("LiveHubLauncher")
+		if fast_live_hub_launcher != null and fast_live_hub_launcher.has_method("open_hub"):
+			fast_live_hub_launcher.call("open_hub")
+		else:
+			push_error("Fast visual audit could not resolve LiveHubLauncher")
 		await _settle(6)
 		var fast_retention := main.get_node_or_null("RetentionHub") as Control
 		if fast_retention != null:
