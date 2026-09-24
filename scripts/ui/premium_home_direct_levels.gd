@@ -75,11 +75,11 @@ func _build_reference_home(canvas: Control) -> void:
 	brand_title.name = "HomeBrandTitle3D"
 	RefCanvas.style_display_title(brand_title, Color("#ffb92f"), Color("#071d55"), 2)
 
-	_add_pill(canvas, Rect2(21, 64, 108, 40), Color("#d6d1c7") if not _home_dark() else Color("#2c2c2c"), "LV %d" % _home_current_level(selected_game), 12, NAVY if not _home_dark() else DARK_INK, "HomeSelectedGameLevel")
-	home_coin_button = _add_action(canvas, Rect2(151, 62, 102, 44), Color("#cbc4b8"), "   %s +" % _compact_number(EconomyManager.balance()), 12, NAVY, Callable(self, "_open_shop"), 20)
+	_add_pill(canvas, Rect2(21, 64, 108, 40), Color("#d6d1c7") if not _home_dark() else Color("#2c2c2c"), "LV %d" % _home_current_level(selected_game), 13, NAVY if not _home_dark() else DARK_INK, "HomeSelectedGameLevel")
+	home_coin_button = _add_action(canvas, Rect2(151, 62, 102, 44), Color("#cbc4b8"), "   %s +" % _compact_number(EconomyManager.balance()), 13, NAVY, Callable(self, "_open_shop"), 20)
 	home_coin_button.name = "HomeCoinShopButton"
 	RefCanvas.add_collectible_gem(canvas, Vector2(166, 84), 8.0, "HomeCurrencyGem3D")
-	_add_pill(canvas, Rect2(261, 64, 108, 40), Color("#ead7a3"), "   %s" % _compact_number(MultiGameManager.total_stars(selected_game)), 12, NAVY, "HomeSelectedGameStars")
+	_add_pill(canvas, Rect2(261, 64, 108, 40), Color("#ead7a3"), "   %s" % _compact_number(MultiGameManager.total_stars(selected_game)), 13, NAVY, "HomeSelectedGameStars")
 	RefCanvas.add_collectible_star(canvas, Vector2(277, 84), 8.0, true, "HomeCurrencyStar3D")
 
 	_add_hero(canvas)
@@ -165,7 +165,7 @@ func _add_hero(canvas: Control) -> void:
 		Rect2(41, 285, 178, 48),
 		Unjam3DTheme.game_accent(selected_game),
 		"CONTINUE • LEVEL %d" % level,
-		12,
+		14,
 		OFF_WHITE,
 		Callable(self, "_continue_selected_game"),
 		16
@@ -194,7 +194,7 @@ func _add_hero_preview(canvas: Control, game_id: String) -> void:
 	preview_root.add_child(mark)
 
 func _add_quick_actions(canvas: Control) -> void:
-	var choose := _add_action(canvas, Rect2(21, 365, 166, 52), Color("#cbc4b8") if not _home_dark() else Color("#2c2c2c"), "CHOOSE GAME", 12, NAVY if not _home_dark() else DARK_INK, Callable(self, "_open_game_selector"), 16)
+	var choose := _add_action(canvas, Rect2(21, 365, 166, 52), Color("#cbc4b8") if not _home_dark() else Color("#2c2c2c"), "CHOOSE GAME", 14, NAVY if not _home_dark() else DARK_INK, Callable(self, "_open_game_selector"), 16)
 	choose.name = "HomeChooseGameButton"
 	var main := get_parent()
 	var daily_done_count := 0
@@ -203,11 +203,11 @@ func _add_quick_actions(canvas: Control) -> void:
 			if bool(main.call("_daily_done", game_id)):
 				daily_done_count += 1
 	var daily_label := "DAILY • DONE" if daily_done_count >= MultiGameManager.GAME_IDS.size() else "DAILY • %d/3" % daily_done_count
-	var daily := _add_action(canvas, Rect2(197, 365, 170, 52), Color("#ead7a3") if not _home_dark() else Color("#2c2c2c"), daily_label, 11, NAVY if not _home_dark() else DARK_INK, Callable(self, "_open_daily_games"), 16)
+	var daily := _add_action(canvas, Rect2(197, 365, 170, 52), Color("#ead7a3") if not _home_dark() else Color("#2c2c2c"), daily_label, 13, NAVY if not _home_dark() else DARK_INK, Callable(self, "_open_daily_games"), 16)
 	daily.name = "HomeDailyGamesButton"
 
 func _add_quick_switch(canvas: Control) -> void:
-	_add_text(canvas, "GAMES", Rect2(21, 437, 160, 18), 13, OFF_WHITE if _home_dark() else INK, true)
+	_add_text(canvas, "GAMES", Rect2(21, 437, 160, 18), 14, OFF_WHITE if _home_dark() else INK, true)
 	var games := [
 		["rescue_rush", "RESCUE RUSH", Color(0.13, 0.78, 0.39), 21.0],
 		["water_sort", "WATER SORT", Color(0.10, 0.66, 1.0), 137.0],
@@ -232,12 +232,12 @@ func _add_quick_switch(canvas: Control) -> void:
 		mark.configure(id)
 		RefCanvas.set_rect(mark, x + 38, 471, 32, 32)
 		canvas.add_child(mark)
-		var switch_name := _add_text(canvas, String(entry[1]), Rect2(x + 5, 505, 100, 17), 11, entry[2], true)
+		var switch_name := _add_text(canvas, String(entry[1]), Rect2(x + 5, 504, 100, 19), 12, entry[2], true)
 		switch_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		switch_name.clip_text = true
 		var level := _home_current_level(id)
 		var stars := MultiGameManager.total_stars(id)
-		var switch_meta := _add_text(canvas, "L%d • ★%s" % [level, _compact_number(stars)], Rect2(x + 6, 530, 96, 16), 11, MUTED, false)
+		var switch_meta := _add_text(canvas, "L%d • ★%s" % [level, _compact_number(stars)], Rect2(x + 6, 528, 96, 18), 12, MUTED, false)
 		switch_meta.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		var tap := Button.new()
 		tap.name = "HomeDirect_%s" % id
@@ -301,7 +301,7 @@ func _add_world_progress(canvas: Control) -> void:
 
 	var world_title := _add_text(root, "WORLD %d" % world, Rect2(195, 598, 152, 26), 18, OFF_WHITE if _home_dark() else NAVY, true)
 	world_title.name = "HomeWorldProgressTitle"
-	var world_value := _add_text(root, "LEVEL %d • %d/%d" % [level, completed_in_world, total], Rect2(195, 632, 152, 18), 12, MUTED, true)
+	var world_value := _add_text(root, "LEVEL %d • %d/%d" % [level, completed_in_world, total], Rect2(195, 632, 152, 19), 13, MUTED, true)
 	world_value.name = "HomeWorldProgressValue"
 
 	var progress := ProgressBar.new()
@@ -369,7 +369,7 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 			shine.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(1,1,1,0.34 if _home_dark() else 0.55), 1))
 			RefCanvas.set_rect(shine, float(item[2]) + 7.0, 765, 40, 2)
 			canvas.add_child(shine)
-		var glyph := _add_text(canvas, item[1], Rect2(float(item[2]) - 1.0, 764, 58, 23), 20, icon_color, true)
+		var glyph := _add_text(canvas, item[1], Rect2(float(item[2]) - 1.0, 763, 58, 24), 21, icon_color, true)
 		glyph.name = "HomeNavGlyph_%s" % String(item[0])
 		glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		var display_name := "COLLECTION" if String(item[0]) == "COLLECT" else String(item[0])
@@ -377,14 +377,14 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 		var label_x := float(item[2]) - 12.0 if String(item[0]) == "COLLECT" else (float(item[2]) - 5.0 if String(item[0]) == "SETTINGS" else float(item[2]) - 1.0)
 		# Active destination carries weight; inactive labels stay regular so the
 		# five-item bar reads as navigation, not five competing headlines.
-		var label := _add_text(canvas, display_name, Rect2(label_x, 790, label_width, 22), 13, nav_color, selected)
+		var label := _add_text(canvas, display_name, Rect2(label_x, 789, label_width, 24), 14, nav_color, selected)
 		label.name = "HomeNavLabel_%s" % String(item[0])
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		label.clip_text = true
 		label.custom_minimum_size = Vector2.ZERO
-		label.position = Vector2(label_x, 790)
-		label.size = Vector2(label_width, 22)
+		label.position = Vector2(label_x, 789)
+		label.size = Vector2(label_width, 24)
 		var hit := Button.new()
 		hit.name = item[4]
 		hit.flat = true
