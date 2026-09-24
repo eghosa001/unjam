@@ -127,6 +127,18 @@ func _run() -> void:
 			shop.call("_close_shop")
 			await _settle(4)
 
+	# Rewards & Events is a first-class surface, not a hidden utility screen.
+	# Keep compact-phone evidence for its scrolled hub shell and theme treatment.
+	LiveHubLauncher.open_hub()
+	await _settle(8)
+	var retention_hub := main.get_node_or_null("RetentionHub") as Control
+	if retention_hub != null:
+		await _capture("06g-retention-hub-540x960-dark")
+		retention_hub.call("_close")
+		await _settle(4)
+	else:
+		push_error("Visual audit could not open Rewards & Events hub")
+
 	var coin_prompt := main.get_node_or_null("InsufficientCoinsPrompt")
 	if coin_prompt != null and coin_prompt.has_method("show_for"):
 		var economy := root.get_node_or_null("EconomyManager")
@@ -411,6 +423,17 @@ func _run_fast_visual_audit(main: Node, shell: Node) -> void:
 				await _settle(3)
 		else:
 			push_error("Fast visual audit could not open Shop")
+
+	if _fast_visual_enabled("retention"):
+		LiveHubLauncher.open_hub()
+		await _settle(6)
+		var fast_retention := main.get_node_or_null("RetentionHub") as Control
+		if fast_retention != null:
+			await _capture("06g-retention-hub-540x960-dark")
+			fast_retention.call("_close")
+			await _settle(3)
+		else:
+			push_error("Fast visual audit could not open Rewards & Events hub")
 
 	# Light mode now owns a distinct premium material treatment. Capture the
 	# affected navigation/content surfaces explicitly so a green contract test
