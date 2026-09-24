@@ -40,9 +40,10 @@ func render_board() -> void:
 		button.disabled = false
 		button.configure(tubes[i], i == selected, i)
 		if active_source_tubes.has(i) or active_target_tubes.has(i):
-			# The animated source/receiver ghosts fully own the pour frame. Keeping the
-			# live controls visible underneath produces doubled glass/liquid silhouettes.
-			button.modulate = Color(1, 1, 1, 0.0)
+			# Keep a dim authoritative bottle under the animated ghost. On Android a
+			# SubViewport can occasionally miss the ghost's first frame; fully hiding
+			# the base bottle makes that transient look like the tube disappeared.
+			button.modulate = Color(1, 1, 1, 0.58)
 			button.disabled = true
 	move_label.text = "MOVES %d   •   3★ ≤ %d   •   %d COLOURS" % [moves, par_moves, color_count]
 
