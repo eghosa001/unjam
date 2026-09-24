@@ -121,7 +121,8 @@ func _add_retention_access(canvas: Control) -> void:
 	canvas.add_child(open)
 
 func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color, highlight: Color, title: String, subtitle: String) -> void:
-	RefCanvas.add_shadow(canvas, rect, 20, Color(0.03,0.10,0.20,0.22), 8, Vector2(0,6))
+	var card_shadow := RefCanvas.add_shadow(canvas, rect, 20, Color(0.03,0.10,0.20,0.22), 8, Vector2(0,6))
+	card_shadow.name = "SelectorCardShadow_%s" % game_id
 	var card := PanelContainer.new()
 	card.name = "GameCard3D_%s" % game_id
 	var neutral_top := Color("#2c2c2c") if _selector_dark() else Color("#dedad2")
