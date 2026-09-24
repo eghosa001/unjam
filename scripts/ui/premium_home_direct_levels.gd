@@ -342,39 +342,39 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 	canvas.add_child(top_gloss)
 
 	var items := [
-		["HOME", "⌂", 22.0, Callable(), "HomeNavButton", true, GOLD],
-		["GAMES", "▦", 91.0, Callable(self, "_open_game_selector"), "HomeGamesNavButton", false, GOLD],
-		["DAILY", "✦", 150.0, Callable(self, "_open_daily_games"), "HomeDailyNavButton", false, GOLD],
-		["COLLECT", "◆", 225.0, func(): get_parent().call("build_collection"), "HomeCollectionNavButton", false, GOLD],
-		["SETTINGS", "⚙", 310.0, func(): get_parent().call("build_settings"), "HomeSettingsNavButton", false, GOLD],
+		["HOME", "⌂", 22.0, 14.0, Callable(), "HomeNavButton", true, GOLD],
+		["GAMES", "▦", 94.0, 86.0, Callable(self, "_open_game_selector"), "HomeGamesNavButton", false, GOLD],
+		["DAILY", "✦", 166.0, 158.0, Callable(self, "_open_daily_games"), "HomeDailyNavButton", false, GOLD],
+		["COLLECT", "◆", 238.0, 230.0, func(): get_parent().call("build_collection"), "HomeCollectionNavButton", false, GOLD],
+		["SETTINGS", "⚙", 310.0, 302.0, func(): get_parent().call("build_settings"), "HomeSettingsNavButton", false, GOLD],
 	]
 	for item in items:
-		var selected: bool = bool(item[5])
-		var accent: Color = item[6]
+		var selected: bool = bool(item[6])
+		var accent: Color = item[7]
 		var nav_color := Color.WHITE if selected and _home_dark() else (DARK_MUTED if _home_dark() else (INK if selected else Color(0.31,0.43,0.54)))
 		var icon_color := accent.lightened(0.18) if selected else (DARK_MUTED.lightened(0.08) if _home_dark() else Color(0.38,0.51,0.62))
 		if selected:
 			var plate_fill := accent.darkened(0.50) if _home_dark() else accent.lightened(0.34)
 			var plate_border := accent.lightened(0.16) if _home_dark() else accent.darkened(0.08)
-			RefCanvas.add_shadow(canvas, Rect2(float(item[2]) - 3.0, 762, 60, 57), 15, Color(0.01,0.04,0.08,0.24), 3, Vector2(0,3))
+			RefCanvas.add_shadow(canvas, Rect2(float(item[3]) + 6.0, 762, 60, 57), 15, Color(0.01,0.04,0.08,0.24), 3, Vector2(0,3))
 			var plate := PanelContainer.new()
 			plate.name = "HomeNavActivePlate"
 			plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			plate.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(plate_fill.lightened(0.14), plate_fill, plate_fill.darkened(0.12), 15, plate_border, 1.2, 0.40))
-			RefCanvas.set_rect(plate, float(item[2]) - 3.0, 762, 60, 57)
+			RefCanvas.set_rect(plate, float(item[3]) + 6.0, 762, 60, 57)
 			canvas.add_child(plate)
 			var shine := PanelContainer.new()
 			shine.name = "HomeNavActiveShine"
 			shine.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			shine.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(1,1,1,0.34 if _home_dark() else 0.55), 1))
-			RefCanvas.set_rect(shine, float(item[2]) + 7.0, 765, 40, 2)
+			RefCanvas.set_rect(shine, float(item[3]) + 16.0, 765, 40, 2)
 			canvas.add_child(shine)
 		var glyph := _add_text(canvas, item[1], Rect2(float(item[2]) - 1.0, 763, 58, 24), 21, icon_color, true)
 		glyph.name = "HomeNavGlyph_%s" % String(item[0])
 		glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		var display_name := "COLLECTION" if String(item[0]) == "COLLECT" else String(item[0])
-		var label_width := 82.0 if String(item[0]) == "COLLECT" else (66.0 if String(item[0]) == "SETTINGS" else 58.0)
-		var label_x := float(item[2]) - 12.0 if String(item[0]) == "COLLECT" else (float(item[2]) - 5.0 if String(item[0]) == "SETTINGS" else float(item[2]) - 1.0)
+		var label_width := 78.0 if String(item[0]) == "COLLECT" else (66.0 if String(item[0]) == "SETTINGS" else 58.0)
+		var label_x := float(item[3]) + (72.0 - label_width) * 0.5
 		# Active destination carries weight; inactive labels stay regular so the
 		# five-item bar reads as navigation, not five competing headlines.
 		var label := _add_text(canvas, display_name, Rect2(label_x, 789, label_width, 24), 14, nav_color, selected)
@@ -386,12 +386,12 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 		label.position = Vector2(label_x, 789)
 		label.size = Vector2(label_width, 24)
 		var hit := Button.new()
-		hit.name = item[4]
+		hit.name = item[5]
 		hit.flat = true
 		hit.focus_mode = Control.FOCUS_NONE
 		hit.modulate.a = 0.001
-		RefCanvas.set_rect(hit, item[2] - 9, 753, 74, 78)
-		var cb: Callable = item[3]
+		RefCanvas.set_rect(hit, float(item[3]), 753, 72, 78)
+		var cb: Callable = item[4]
 		if cb.is_valid():
 			hit.pressed.connect(cb)
 		else:
