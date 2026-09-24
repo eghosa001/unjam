@@ -537,8 +537,8 @@ func _figma_daily_progress(canvas: Control) -> void:
 			done_count += 1
 
 	_figma_card(canvas, "DailyProgress", Rect2(17,487,354,106), Color("#fffef8"), Color(FIGMA_GOLD,0.38), 18)
-	_figma_text(canvas, "TODAY", Rect2(33,501,80,18), 14, FIGMA_INK)
-	var count := _figma_text(canvas, "%d / 3 COMPLETE" % done_count, Rect2(214,501,137,18), 12, FIGMA_MUTED, true)
+	_figma_text(canvas, "TODAY", Rect2(33,500,80,20), 15, FIGMA_INK)
+	var count := _figma_text(canvas, "%d / 3 COMPLETE" % done_count, Rect2(210,500,141,20), 13, FIGMA_MUTED, true)
 	count.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var progress := ProgressBar.new()
 	progress.name = "DailyProgressBar"
@@ -566,8 +566,8 @@ func _figma_daily_progress(canvas: Control) -> void:
 		var label := _figma_text(
 			canvas,
 			"%s %s" % [String(spec[1]), "✓" if done else "READY"],
-			Rect2(float(spec[2])+4,555,88,20),
-			12,
+			Rect2(float(spec[2])+3,554,90,22),
+			13,
 			accent.lightened(0.25) if _dark() else accent.darkened(0.24),
 			true
 		)
@@ -589,7 +589,7 @@ func _figma_daily_tip(canvas: Control, collection_bonus: int) -> void:
 	var star_icon := _figma_text(canvas, "✦", Rect2(33, 614, 24, 24), 18, FIGMA_GOLD, true)
 	star_icon.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	var title_text := "TODAY COMPLETE" if done_count >= 3 else ("%d DAILY GAME LEFT" % remaining if remaining == 1 else "%d DAILY GAMES LEFT" % remaining)
-	var title := _figma_text(canvas, title_text, Rect2(63, 608, 288, 20), 14, FIGMA_GOLD if done_count >= 3 else FIGMA_INK)
+	var title := _figma_text(canvas, title_text, Rect2(63, 607, 288, 22), 15, FIGMA_GOLD if done_count >= 3 else FIGMA_INK)
 	title.name = "DailyTipTitle"
 	var detail_text := "All three Daily Games are complete for today."
 	if done_count < 3:
@@ -597,7 +597,7 @@ func _figma_daily_tip(canvas: Control, collection_bonus: int) -> void:
 			detail_text = "Collection adds +%d coins to each Daily Game." % collection_bonus
 		else:
 			detail_text = "Garden upgrades boost each Daily Game reward."
-	var detail := _figma_text(canvas, detail_text, Rect2(63, 636, 288, 28), 12, FIGMA_MUTED)
+	var detail := _figma_text(canvas, detail_text, Rect2(63, 635, 288, 30), 13, FIGMA_MUTED)
 	detail.name = "DailyTipDetail"
 	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
@@ -625,15 +625,15 @@ func _figma_daily_card(canvas: Control, game_id: String, y: float, collection_bo
 	accent_rail.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(accent.lightened(0.30), accent, accent.darkened(0.24), 3, accent.lightened(0.38), 1, 0.36))
 	FigmaReferenceCanvas.set_rect(accent_rail, 20, y + 14, 5, 78)
 	canvas.add_child(accent_rail)
-	var daily_title := _figma_text(canvas, MultiGameManager.display_name(game_id).to_upper(), Rect2(33,y+18,170,22), 18, FIGMA_DARK_INK if _dark() else FIGMA_INK)
+	var daily_title := _figma_text(canvas, MultiGameManager.display_name(game_id).to_upper(), Rect2(33,y+16,178,25), 19, FIGMA_DARK_INK if _dark() else FIGMA_INK)
 	daily_title.name = "DailyTitle_%s" % game_id
 	var title_fill := accent.lightened(0.22) if _dark() else accent.darkened(0.30)
 	var title_outline := accent.darkened(0.68) if _dark() else Color(1.0, 1.0, 1.0, 0.92)
 	FigmaReferenceCanvas.style_display_title(daily_title, title_fill, title_outline, 2)
 	var detail := "CLEAR THE ROUTE" if game_id == "rescue_rush" else ("SORT THE COLOURS" if game_id == "water_sort" else "CLEAR THE BOARD")
-	_figma_text(canvas, detail, Rect2(33,y+48,175,15), 12, FIGMA_MUTED)
+	_figma_text(canvas, detail, Rect2(33,y+47,182,18), 13, FIGMA_MUTED)
 	var reward := "+%d COINS" % (100 + collection_bonus) if game_id == "rescue_rush" else "+%d–%d COINS" % [125 + collection_bonus,175 + collection_bonus]
-	_figma_text(canvas, reward, Rect2(33,y+72,130,16), 13, FIGMA_GOLD if _dark() else Color("#8a642e"))
+	_figma_text(canvas, reward, Rect2(33,y+70,150,19), 14, FIGMA_GOLD if _dark() else Color("#8a642e"))
 	var daily_state := _daily_ui_state(game_id, accent)
 	var fill: Color = daily_state.get("fill", accent)
 	var button_text := String(daily_state.get("text", "PLAY"))
@@ -645,8 +645,8 @@ func _figma_daily_card(canvas: Control, game_id: String, y: float, collection_bo
 		fill,
 		Callable(),
 		FIGMA_NAVY,
-		14,
-		14
+		15,
+		15
 	)
 	button.disabled = bool(daily_state.get("disabled", false))
 	if not button.disabled:
