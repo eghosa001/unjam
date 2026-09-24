@@ -91,7 +91,7 @@ func _build_shell() -> void:
 	tutorial_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	_tutorial_canvas.add_child(tutorial_panel)
 
-	var eyebrow := FigmaReferenceCanvas.label("QUICK PLAY GUIDE",12,Color("#21c763"),true)
+	var eyebrow := FigmaReferenceCanvas.label("QUICK PLAY GUIDE",13,Color("#21c763"),true)
 	eyebrow.name = "TutorialEyebrow"
 	eyebrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	FigmaReferenceCanvas.set_rect(eyebrow,117,68,154,15)
@@ -103,7 +103,7 @@ func _build_shell() -> void:
 	FigmaReferenceCanvas.set_rect(tutorial_title,69,94,250,38)
 	_tutorial_canvas.add_child(tutorial_title)
 
-	tutorial_body = FigmaReferenceCanvas.label("",14,Color(0.31,0.42,0.52),false)
+	tutorial_body = FigmaReferenceCanvas.label("",15,Color(0.31,0.42,0.52),false)
 	tutorial_body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	tutorial_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	FigmaReferenceCanvas.set_rect(tutorial_body,43,138,302,54)
@@ -136,34 +136,34 @@ func _build_shell() -> void:
 	step_card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_tutorial_canvas.add_child(step_card)
 
-	tutorial_step_label = FigmaReferenceCanvas.label("",14,Color(0.07,0.20,0.35),false)
+	tutorial_step_label = FigmaReferenceCanvas.label("",15,Color(0.07,0.20,0.35),false)
 	tutorial_step_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	tutorial_step_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	tutorial_step_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	FigmaReferenceCanvas.set_rect(tutorial_step_label,57,417,274,58)
 	_tutorial_canvas.add_child(tutorial_step_label)
 
-	tutorial_progress_label = FigmaReferenceCanvas.label("STEP 1 OF 3",12,Color(0.31,0.42,0.52),true)
+	tutorial_progress_label = FigmaReferenceCanvas.label("STEP 1 OF 3",13,Color(0.31,0.42,0.52),true)
 	tutorial_progress_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	FigmaReferenceCanvas.set_rect(tutorial_progress_label,147,495,94,16)
 	_tutorial_canvas.add_child(tutorial_progress_label)
 
 	FigmaReferenceCanvas.add_shadow(_tutorial_canvas, Rect2(43,526,142,48), 16, Color(0.03,0.10,0.20,0.22), 4, Vector2(0,4))
-	tutorial_prev_button = FigmaReferenceCanvas.premium_button("‹ BACK",14,Color.WHITE,Color("#c7d6e3"),16,Color("#d0dde7"),1.2)
+	tutorial_prev_button = FigmaReferenceCanvas.premium_button("‹ BACK",15,Color.WHITE,Color("#c7d6e3"),16,Color("#d0dde7"),1.2)
 	tutorial_prev_button.name = "TutorialPrevious"
 	FigmaReferenceCanvas.set_rect(tutorial_prev_button,43,526,142,48)
 	tutorial_prev_button.pressed.connect(_tutorial_previous)
 	_tutorial_canvas.add_child(tutorial_prev_button)
 
 	FigmaReferenceCanvas.add_shadow(_tutorial_canvas, Rect2(203,526,142,48), 16, Color(0.03,0.10,0.20,0.22), 4, Vector2(0,4))
-	tutorial_next_button = FigmaReferenceCanvas.premium_button("NEXT ›",14,Color.WHITE,Color("#21c763"),16,Color("#74d999"),1.2)
+	tutorial_next_button = FigmaReferenceCanvas.premium_button("NEXT ›",15,Color.WHITE,Color("#21c763"),16,Color("#74d999"),1.2)
 	tutorial_next_button.name = "TutorialNext"
 	FigmaReferenceCanvas.set_rect(tutorial_next_button,203,526,142,48)
 	tutorial_next_button.pressed.connect(_tutorial_next)
 	_tutorial_canvas.add_child(tutorial_next_button)
 
 	FigmaReferenceCanvas.add_shadow(_tutorial_canvas, Rect2(43,598,302,58), 17, Color(0.03,0.10,0.20,0.22), 4, Vector2(0,4))
-	var close := FigmaReferenceCanvas.premium_button("PLAY NOW",14,Color.WHITE,Color("#21c763"),17,Color("#74d999"),1.2)
+	var close := FigmaReferenceCanvas.premium_button("PLAY NOW",16,Color.WHITE,Color("#21c763"),17,Color("#74d999"),1.2)
 	close.name = "TutorialClose"
 	FigmaReferenceCanvas.set_rect(close,43,598,302,58)
 	close.pressed.connect(hide_tutorial)
