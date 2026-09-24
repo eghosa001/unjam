@@ -26,6 +26,22 @@ func _run() -> void:
 		if status == null or status.get_theme_font_size("font_size") < 12:
 			return _fail("Daily progress status is too small for %s" % game_id)
 
+	var tip_title := main.find_child("DailyTipTitle", true, false) as Label
+	var tip_detail := main.find_child("DailyTipDetail", true, false) as Label
+	if tip_title == null or tip_title.get_theme_font_size("font_size") < 14:
+		return _fail("Daily reminder title is missing or too small")
+	if tip_detail == null or tip_detail.get_theme_font_size("font_size") < 12:
+		return _fail("Daily reminder detail is missing or too small")
+
+	main.call("build_collection")
+	await _frames(2)
+	var collection_title := main.find_child("CollectionTipTitle", true, false) as Label
+	var collection_detail := main.find_child("CollectionTipDetail", true, false) as Label
+	if collection_title == null or collection_title.get_theme_font_size("font_size") < 14:
+		return _fail("Collection value title is missing or too small")
+	if collection_detail == null or collection_detail.get_theme_font_size("font_size") < 12:
+		return _fail("Collection value detail is missing or too small")
+
 	main.queue_free()
 	await process_frame
 	print("DAILY_READABILITY_OK")

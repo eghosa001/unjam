@@ -1,4 +1,4 @@
-﻿extends "res://scripts/ui/premium_main.gd"
+extends "res://scripts/ui/premium_main.gd"
 
 const FIGMA_LEVEL_PAGE_SIZE := 20
 const GardenUpgradePreviewScene = preload("res://scripts/ui/garden_upgrade_preview.gd")
@@ -536,9 +536,9 @@ func _figma_daily_progress(canvas: Control) -> void:
 		if _daily_done(game_id):
 			done_count += 1
 
-	_figma_card(canvas, "DailyProgress", Rect2(17,505,354,78), Color("#fffef8"), Color(FIGMA_GOLD,0.38), 18)
-	_figma_text(canvas, "TODAY", Rect2(33,521,80,18), 14, FIGMA_INK)
-	var count := _figma_text(canvas, "%d / 3 COMPLETE" % done_count, Rect2(214,521,137,18), 12, FIGMA_MUTED, true)
+	_figma_card(canvas, "DailyProgress", Rect2(17,487,354,106), Color("#fffef8"), Color(FIGMA_GOLD,0.38), 18)
+	_figma_text(canvas, "TODAY", Rect2(33,501,80,18), 14, FIGMA_INK)
+	var count := _figma_text(canvas, "%d / 3 COMPLETE" % done_count, Rect2(214,501,137,18), 12, FIGMA_MUTED, true)
 	count.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var progress := ProgressBar.new()
 	progress.name = "DailyProgressBar"
@@ -548,25 +548,59 @@ func _figma_daily_progress(canvas: Control) -> void:
 	progress.value = done_count
 	progress.add_theme_stylebox_override("background", FigmaReferenceCanvas.solid_box(Color("#d8cdb7"), 6))
 	progress.add_theme_stylebox_override("fill", FigmaReferenceCanvas.solid_box(FIGMA_GOLD, 6))
-	FigmaReferenceCanvas.set_rect(progress, 33, 552, 318, 9)
+	FigmaReferenceCanvas.set_rect(progress, 33, 530, 318, 9)
 	canvas.add_child(progress)
 
-func _figma_daily_tip(canvas: Control, bonus: int) -> void:
-	# Fills the dead zone between the progress panel (ends ~y=595) and the
-	# bottom nav (starts y=757) with a subtle reward-reminder card.
+	var status_specs := [
+		["rescue_rush", "RESCUE", 33.0],
+		["water_sort", "WATER", 139.0],
+		["block_puzzle", "BLOCK", 245.0],
+	]
+	for spec in status_specs:
+		var game_id := String(spec[0])
+		var accent := Unjam3DTheme.game_accent(game_id)
+		var done := _daily_done(game_id)
+		var fill := accent.darkened(0.68) if _dark() else accent.lightened(0.82)
+		var border := accent.lightened(0.14 if _dark() else 0.02)
+		_figma_solid_card(canvas, "DailyProgress/%s" % game_id, Rect2(float(spec[2]),550,96,32), fill, border, 12, false)
+		var label := _figma_text(
+			canvas,
+			"%s %s" % [String(spec[1]), "✓" if done else "READY"],
+			Rect2(float(spec[2])+4,555,88,20),
+			12,
+			accent.lightened(0.25) if _dark() else accent.darkened(0.24),
+			true
+		)
+		label.name = "DailyProgressLabel_%s" % game_id
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+
+func _figma_daily_tip(canvas: Control, collection_bonus: int) -> void:
+	# Use the lower Daily space for useful progress context without inventing an
+	# extra reward that does not exist in the economy contract.
 	var done_count := 0
 	for game_id in MultiGameManager.GAME_IDS:
 		if _daily_done(game_id):
 			done_count += 1
+	var remaining := maxi(0, 3 - done_count)
 	var tip_fill := Color("#33281c") if _dark() else Color("#fffaf0")
-	var tip_border := Color(FIGMA_GOLD, 0.28 if _dark() else 0.20)
-	_figma_card(canvas, "DailyTip", Rect2(17, 598, 354, 72), tip_fill, tip_border, 16)
+	var tip_border := Color(FIGMA_GOLD, 0.34 if _dark() else 0.24)
+	_figma_card(canvas, "DailyTip", Rect2(17, 598, 354, 80), tip_fill, tip_border, 16)
 	var star_icon := _figma_text(canvas, "✦", Rect2(33, 614, 24, 24), 18, FIGMA_GOLD, true)
 	star_icon.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	var tip_title := "ALL 3 COMPLETE — STREAK BONUS" if done_count == 3 else "COMPLETE ALL 3 FOR BONUS COINS"
-	_figma_text(canvas, tip_title, Rect2(63, 610, 290, 18), 13, FIGMA_GOLD if done_count == 3 else FIGMA_MUTED)
-	var tip_detail := "+%d BONUS COINS EARNED TODAY  ✦" % (bonus + 25) if done_count == 3 else "Complete today's Rescue Rush, Water Sort and Block Puzzle"
-	_figma_text(canvas, tip_detail, Rect2(63, 636, 290, 18), 11, FIGMA_MUTED)
+	var title_text := "TODAY COMPLETE" if done_count >= 3 else ("%d DAILY GAME LEFT" % remaining if remaining == 1 else "%d DAILY GAMES LEFT" % remaining)
+	var title := _figma_text(canvas, title_text, Rect2(63, 608, 288, 20), 14, FIGMA_GOLD if done_count >= 3 else FIGMA_INK)
+	title.name = "DailyTipTitle"
+	var detail_text := "All three Daily Games are complete for today."
+	if done_count < 3:
+		if collection_bonus > 0:
+			detail_text = "Collection adds +%d coins to each Daily Game." % collection_bonus
+		else:
+			detail_text = "Garden upgrades boost each Daily Game reward."
+	var detail := _figma_text(canvas, detail_text, Rect2(63, 636, 288, 28), 12, FIGMA_MUTED)
+	detail.name = "DailyTipDetail"
+	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+
 func _figma_today_label() -> String:
 	var d := Time.get_date_dict_from_system()
 	var months := ["JANUARY","FEBRUARY","MARCH","APRIL","MAY","JUNE","JULY","AUGUST","SEPTEMBER","OCTOBER","NOVEMBER","DECEMBER"]
@@ -593,7 +627,9 @@ func _figma_daily_card(canvas: Control, game_id: String, y: float, collection_bo
 	canvas.add_child(accent_rail)
 	var daily_title := _figma_text(canvas, MultiGameManager.display_name(game_id).to_upper(), Rect2(33,y+18,170,22), 18, FIGMA_DARK_INK if _dark() else FIGMA_INK)
 	daily_title.name = "DailyTitle_%s" % game_id
-	daily_title.add_theme_color_override("font_color", accent.lightened(0.20) if _dark() else accent.darkened(0.18))
+	var title_fill := accent.lightened(0.22) if _dark() else accent.darkened(0.30)
+	var title_outline := accent.darkened(0.68) if _dark() else Color(1.0, 1.0, 1.0, 0.92)
+	FigmaReferenceCanvas.style_display_title(daily_title, title_fill, title_outline, 2)
 	var detail := "CLEAR THE ROUTE" if game_id == "rescue_rush" else ("SORT THE COLOURS" if game_id == "water_sort" else "CLEAR THE BOARD")
 	_figma_text(canvas, detail, Rect2(33,y+48,175,15), 12, FIGMA_MUTED)
 	var reward := "+%d COINS" % (100 + collection_bonus) if game_id == "rescue_rush" else "+%d–%d COINS" % [125 + collection_bonus,175 + collection_bonus]
@@ -698,7 +734,7 @@ func build_collection() -> void:
 	var can_claim := EconomyManager.can_claim_garden_gift()
 	var gift_text := "CLAIM GARDEN GIFT • +%d" % EconomyManager.garden_gift_amount()
 	if not can_claim:
-		gift_text = "GIFT CLAIMED" if EconomyManager.garden_gift_claimed_today() else "GIFT UNLOCKS WITH UPGRADE"
+		gift_text = "GIFT CLAIMED" if EconomyManager.garden_gift_claimed_today() else "UNLOCK WITH UPGRADE"
 	var gift_fill := FIGMA_GREEN if can_claim else Color(0.54,0.64,0.72)
 	var gift := _figma_button(canvas,"CollectionGardenGift",gift_text,Rect2(33,548,200,44),gift_fill,Callable(),FIGMA_OFF_WHITE,16,12)
 	gift.disabled = not can_claim
@@ -723,15 +759,22 @@ func build_collection() -> void:
 	_figma_bottom_nav(canvas,"collection")
 
 func _figma_collection_tip(canvas: Control) -> void:
-	# Fills the dead zone below the gift/upgrades row (y~600) and the
-	# bottom nav (y=757) with a summary card showing total earned coins and level today.
-	var balance := EconomyManager.balance()
+	# Explain the Collection's permanent reward value instead of repeating the
+	# wallet balance already exposed in the header.
+	var daily_bonus := EconomyManager.collection_daily_bonus()
+	var gift_amount := EconomyManager.garden_gift_amount()
 	var tip_fill := Color("#33281c") if _dark() else Color("#fffaf0")
-	var tip_border := Color(FIGMA_GREEN, 0.26 if _dark() else 0.18)
-	_figma_card(canvas, "CollectionTip", Rect2(17, 606, 354, 64), tip_fill, tip_border, 16)
-	FigmaReferenceCanvas.add_collectible_gem(canvas, Vector2(42, 638), 7.0, "CollectionTipGem")
-	_figma_text(canvas, "◈ %d COINS" % balance, Rect2(57, 617, 200, 18), 13, FIGMA_GOLD)
-	_figma_text(canvas, "Visit the Shop to spend your coins on upgrades", Rect2(57, 643, 290, 15), 11, FIGMA_MUTED)
+	var tip_border := Color(FIGMA_GREEN, 0.34 if _dark() else 0.24)
+	_figma_card(canvas, "CollectionTip", Rect2(17, 606, 354, 82), tip_fill, tip_border, 16)
+	var icon := _figma_text(canvas, "◆", Rect2(33, 622, 24, 24), 17, FIGMA_GREEN, true)
+	icon.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	var title := _figma_text(canvas, "GARDEN REWARDS", Rect2(63, 616, 288, 20), 14, FIGMA_INK)
+	title.name = "CollectionTipTitle"
+	var current_value := _figma_text(canvas, "+%d DAILY  •  +%d GIFT" % [daily_bonus, gift_amount], Rect2(63, 640, 288, 18), 12, FIGMA_GOLD)
+	current_value.name = "CollectionTipValue"
+	var detail := _figma_text(canvas, "Each upgrade adds +5 Daily and +10 Gift coins.", Rect2(63, 660, 288, 18), 12, FIGMA_MUTED)
+	detail.name = "CollectionTipDetail"
+
 func _figma_collection_progress(canvas: Control, game_id: String, x: float) -> void:
 	var accent := Unjam3DTheme.game_accent(game_id)
 	_figma_card(canvas,"ProgressCard/%s" % game_id,Rect2(x,231,110,86),Color("#fffef7"),Color(accent,0.70),16)
