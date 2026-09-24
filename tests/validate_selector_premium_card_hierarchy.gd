@@ -26,11 +26,15 @@ func _run() -> void:
 			failures.append("Selector card missing for %s" % game_id)
 			continue
 		var style := card.get_theme_stylebox("panel") as StyleBoxFlat
-		if style == null or style.shadow_size < 16:
-			failures.append("Selector card lacks premium depth for %s" % game_id)
-		var shell := _find_node_named(card, "GameArtShell_%s" % game_id) as PanelContainer
-		if shell == null:
-			failures.append("Selector 3D preview has no framed display shell for %s" % game_id)
+		if style == null or style.border_width_left < 1:
+			failures.append("Selector card lost its premium material frame for %s" % game_id)
+		var preview_frame := _find_node_named(main, "SelectorGamePreviewFrame_%s" % game_id) as PanelContainer
+		if preview_frame == null:
+			failures.append("Selector gameplay preview frame is missing for %s" % game_id)
+		else:
+			var preview_style := preview_frame.get_theme_stylebox("panel") as StyleBoxFlat
+			if preview_style == null or preview_style.border_width_left < 1:
+				failures.append("Selector gameplay preview lost its framed material treatment for %s" % game_id)
 		var play := _find_node_named(main, "SelectorPlay_%s" % game_id) as Button
 		if play == null or play.size.x < 72.0 or play.size.y < 42.0 or play.get_theme_font_size("font_size") < 14:
 			failures.append("Selector play CTA is not explicit/readable for %s" % game_id)
@@ -51,35 +55,11 @@ func _run() -> void:
 	print("Selector premium card hierarchy validated.")
 	quit(0)
 
-func _description_fragment(game_id: String) -> String:
-	match game_id:
-		"water_sort": return "Sort the colors"
-		"block_puzzle": return "Drag. Place. Clear."
-		_: return "Clear the lane."
-
 func _find_node_named(node: Node, wanted: String) -> Node:
 	if node.name == wanted:
 		return node
 	for child in node.get_children():
 		var found := _find_node_named(child, wanted)
-		if found != null:
-			return found
-	return null
-
-func _find_label_with(node: Node, fragment: String) -> Label:
-	if node is Label and fragment in (node as Label).text:
-		return node as Label
-	for child in node.get_children():
-		var found := _find_label_with(child, fragment)
-		if found != null:
-			return found
-	return null
-
-func _find_button_with(node: Node, fragment: String) -> Button:
-	if node is Button and fragment in (node as Button).text:
-		return node as Button
-	for child in node.get_children():
-		var found := _find_button_with(child, fragment)
 		if found != null:
 			return found
 	return null
