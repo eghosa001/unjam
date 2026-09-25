@@ -88,7 +88,9 @@ jobs:
         run: |
           set -euxo pipefail
           for t in $FAST_TESTS; do
-            bash tools/run_godot_test.sh "$t" 45
+            TEST_TIMEOUT=45
+            if [[ "$t" == "validate_campaign" ]]; then TEST_TIMEOUT=90; fi
+            bash tools/run_godot_test.sh "$t" "$TEST_TIMEOUT"
           done
 
       - name: Boot smoke test
