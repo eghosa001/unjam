@@ -92,7 +92,7 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p build/android
-          godot --headless --verbose --path . --export-release Android build/android/UNJAM-Version-6-unsigned.aab 2>&1 | tee android-v6-unsigned-export.log
+          godot --headless --verbose --path . --install-android-build-template --export-release Android build/android/UNJAM-Version-6-unsigned.aab 2>&1 | tee android-v6-unsigned-export.log
           if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" android-v6-unsigned-export.log; then exit 1; fi
           test -s build/android/UNJAM-Version-6-unsigned.aab
           unzip -t build/android/UNJAM-Version-6-unsigned.aab > build/android/aab-zip-test.log
