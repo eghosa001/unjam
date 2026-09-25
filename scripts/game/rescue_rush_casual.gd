@@ -87,16 +87,13 @@ func build_ui() -> void:
 func _build_figma_rescue(canvas: Control) -> void:
 	var sky := PanelContainer.new()
 	sky.name = "RescueScenicSky"
-	sky.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#a9c4b9"), Color("#c8d8cc"), Color("#eee6d6"), 34, Color("#aebeb4"), 1, 0.28))
+	# One continuous material from header to footer. The former opaque "ground"
+	# rectangle started at y=43 and ended at y=484, leaving two obvious horizontal
+	# seams across the rendered phone surface.
+	sky.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#a9c4b9"), Color("#789477"), Color("#365648"), 34, Color("#aebeb4"), 1, 0.34))
 	RefCanvas.set_rect(sky, -15.9, -58.12, 419.81, 908.51)
 	sky.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(sky)
-	var ground := PanelContainer.new()
-	ground.name = "RescueScenicGround"
-	ground.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#789477"), Color("#547562"), Color("#365648"), 0, Color.TRANSPARENT, 0, 0.24))
-	RefCanvas.set_rect(ground, -15.9, 43.06, 419.81, 441.34)
-	ground.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	canvas.add_child(ground)
 	var platform := Polygon2D.new()
 	platform.name = "RescuePerspectivePlatform"
 	platform.polygon = PackedVector2Array([Vector2(22,481),Vector2(368,481),Vector2(340,147),Vector2(50,147)])
@@ -193,6 +190,9 @@ func _build_figma_rescue(canvas: Control) -> void:
 	actions.add_child(undo)
 	var hint := _action("HINT",GREEN)
 	hint.name = "RescueHintAction"
+	# HintManager keeps the cost visible; Rescue's compact 60px control needs it
+	# anchored in the upper-right rather than sitting on the lower bevel.
+	hint.set_meta("unjam_hint_badge_top_right", true)
 	actions.add_child(hint)
 	var restart := _action("↻  RESTART",GREEN)
 	restart.name = "RescueRestartAction"
@@ -223,7 +223,14 @@ func _action(text_value: String, _fill: Color) -> Button:
 	return result
 
 func _figma_board_gap() -> int:
-	return 6 if width <= 5 and height <= 5 else 5
+	var span := maxi(width, height)
+	if span <= 5:
+		return 6
+	if span <= 7:
+		return 5
+	# 8x8 boss/finale boards gain two pixels per cell versus the former 5px
+	# spacing while preserving the same 348x348 audited play area.
+	return 3
 
 func _figma_board_cell_size() -> int:
 	if width <= 5 and height <= 5:
@@ -409,17 +416,9 @@ func apply_theme_mode(dark: bool) -> void:
 	if sky != null:
 		sky.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(
 			Color("#1c2823") if dark else Color("#a9c4b9"),
-			Color("#24342d") if dark else Color("#c8d8cc"),
-			Color("#2d3e34") if dark else Color("#eee6d6"),
-			34, Color("#4d6258") if dark else Color("#aebeb4"), 1, 0.28
-		))
-	var ground := find_child("RescueScenicGround", true, false) as PanelContainer
-	if ground != null:
-		ground.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(
-			Color("#21362b") if dark else Color("#789477"),
-			Color("#182c23") if dark else Color("#547562"),
+			Color("#20382d") if dark else Color("#789477"),
 			Color("#102219") if dark else Color("#365648"),
-			0, Color.TRANSPARENT, 0, 0.24
+			34, Color("#4d6258") if dark else Color("#aebeb4"), 1, 0.34
 		))
 	var platform := find_child("RescuePerspectivePlatform", true, false) as Polygon2D
 	if platform != null:
