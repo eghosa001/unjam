@@ -151,7 +151,7 @@ func build_ui() -> void:
 	header.add_theme_constant_override("separation", 12)
 	root.add_child(header)
 	var back := Button.new()
-	back.text = "‹"
+	back.text = "←"
 	back.custom_minimum_size = Vector2(74, 62)
 	style_small_button(back)
 	back.pressed.connect(_quit)

@@ -18,14 +18,16 @@ func _run() -> void:
 		return _fail("UX shell is missing")
 	shell.set("theme_mode", "light")
 	shell.call("_apply_theme")
-	await _frames(2)
-	shell.call("_toggle_theme")
-	await _frames(4)
-	if String(shell.get("theme_mode")) != "dark":
-		return _fail("Settings theme toggle did not enter dark mode")
-
 	main.call("build_settings")
-	await _frames(5)
+	await _frames(4)
+	var theme_toggle := main.find_child("SettingsThemeToggle", true, false) as Button
+	if theme_toggle == null:
+		return _fail("Settings theme button is missing")
+	theme_toggle.emit_signal("pressed")
+	await _frames(6)
+	if String(shell.get("theme_mode")) != "dark":
+		return _fail("Pressing the Settings theme button did not enter dark mode")
+
 	var settings_bg := main.find_child("FigmaSurfaceViewportBackground", true, false) as ColorRect
 	if settings_bg == null or settings_bg.color.get_luminance() > 0.38:
 		return _fail("Settings did not rebuild on the dark palette")
