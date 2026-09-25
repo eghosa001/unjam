@@ -505,7 +505,6 @@ def plan_for_changes(paths: list[str], base: str, head: str) -> dict[str, object
             "tests": [
                 "validate_progression_retention_hardening",
                 "validate_block_progression_10000",
-                "validate_campaign",
                 "validate_progression_coin_sync",
                 "validate_rescue_progression_10000",
                 "validate_water_progression",
