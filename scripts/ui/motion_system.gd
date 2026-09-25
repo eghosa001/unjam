@@ -6,14 +6,14 @@ const DURATIONS := {
 	# Premium puzzle controls should acknowledge input inside a single visual beat.
 	# These values keep motion readable while removing the small "wait" between
 	# touch, travel, settle and the next available decision.
-	&"micro": 0.055,
-	&"press": 0.085,
-	&"travel": 0.19,
-	&"settle": 0.12,
-	&"celebrate": 0.30,
-	&"screen": 0.12,
-	&"pour": 0.235,
-	&"reflow": 0.135,
+	&"micro": 0.045,
+	&"press": 0.065,
+	&"travel": 0.16,
+	&"settle": 0.10,
+	&"celebrate": 0.27,
+	&"screen": 0.085,
+	&"pour": 0.21,
+	&"reflow": 0.11,
 }
 const FAST_SCALE := 0.62
 const REDUCED_SCALE := 0.28
