@@ -11,8 +11,9 @@ const DIR_VECTORS: Array[Vector2i] = [Vector2i.UP, Vector2i.RIGHT, Vector2i.DOWN
 static func generate(level_number: int) -> Dictionary:
 	var n := clampi(level_number, 1, Progression.TOTAL_LEVELS)
 	var profile: Dictionary = Progression.profile(n)
+	var seed_base := int(profile.get("authored_seed", n * 104729))
 	for attempt in range(6):
-		var candidate := _build_candidate(profile, n * 104729 + attempt * 7919)
+		var candidate := _build_candidate(profile, seed_base + attempt * 7919)
 		var solution: Array[int] = Solver.find_solution(candidate, [], 6000)
 		if not solution.is_empty():
 			candidate["solver_verified"] = true
@@ -34,10 +35,10 @@ static func _build_candidate(profile: Dictionary, seed_value: int) -> Dictionary
 	var n := int(profile.get("level", 1))
 	var size := int(profile.get("board_size", 7))
 	var world := int(profile.get("world", 1))
-	var target_index := posmod(n * 5 + world * 3, 4)
+	var target_index := clampi(int(profile.get("exit_index", posmod(n * 5 + world * 3, 4))), 0, 3)
 	var target_dir := DIR_VECTORS[target_index]
 	var target_name := DIR_NAMES[target_index]
-	var rescue_pos := _rescue_position(size, target_index, n)
+	var rescue_pos := _rescue_position(size, target_index, int(profile.get("rescue_variant", n)))
 	var pieces: Array[Dictionary] = []
 	var movable_order: Array[int] = []
 
@@ -117,9 +118,14 @@ static func _build_candidate(profile: Dictionary, seed_value: int) -> Dictionary
 	known_solution.reverse()
 	var level := _base_level(profile, size, world, target_name, rescue_pos, pieces, known_solution)
 	level["mechanics"] = mechanics.duplicate()
+	level["authored"] = bool(profile.get("authored", false))
+	level["catalog_version"] = int(profile.get("catalog_version", 0))
+	level["layout_archetype"] = String(profile.get("layout_archetype", ""))
+	level["design_intent"] = String(profile.get("design_intent", ""))
 	level["human_review_required"] = String(profile.get("level_role", "")) == "world_boss"
 	level["finale_review_required"] = n == Progression.TOTAL_LEVELS
 	level["generation_seed"] = seed_value
+	level["generation_seed"] = int(profile.get("authored_seed", n * 104729))
 	level["actual_piece_count"] = pieces.size()
 	level["initial_frontier"] = _initial_frontier(level)
 	level["dependency_depth"] = _dependency_depth(level)
@@ -153,6 +159,10 @@ static func _base_level(profile: Dictionary, size: int, world: int, target_name:
 		"milestone": String(profile.get("milestone", "")),
 		"boss_archetype": String(profile.get("boss_archetype", "")),
 		"mastery_family": String(profile.get("mastery_family", "route_mastery")),
+		"layout_archetype": String(profile.get("layout_archetype", "")),
+		"design_intent": String(profile.get("design_intent", "")),
+		"authored": bool(profile.get("authored", false)),
+		"catalog_version": int(profile.get("catalog_version", 0)),
 		"target_exit": target_name,
 		"objective": String(profile.get("objective", Progression.OBJECTIVE_RESCUE_ROUTE)),
 		"mistake_limit": int(profile.get("mistake_limit", 3)),
@@ -170,10 +180,10 @@ static func _build_fallback(profile: Dictionary) -> Dictionary:
 	var n := int(profile.get("level", 1))
 	var size := int(profile.get("board_size", 7))
 	var world := int(profile.get("world", 1))
-	var target_index := posmod(n + world, 4)
+	var target_index := clampi(int(profile.get("exit_index", posmod(n + world, 4))), 0, 3)
 	var target_dir := DIR_VECTORS[target_index]
 	var target_name := DIR_NAMES[target_index]
-	var rescue_pos := _rescue_position(size, target_index, n)
+	var rescue_pos := _rescue_position(size, target_index, int(profile.get("rescue_variant", n)))
 	var pieces: Array[Dictionary] = []
 	var movable: Array[int] = []
 	for i in range(4):
