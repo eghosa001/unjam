@@ -524,6 +524,37 @@ def plan_for_changes(paths: list[str], base: str, head: str) -> dict[str, object
             "release_contract": False,
         }
 
+    # Authored Block Puzzle campaign edits are progression/data changes. Keep
+    # their fast CI focused on the 10,000-level catalog, constructive samples,
+    # gameplay contracts, and the Block surface.
+    authored_block_paths = {
+        "scripts/core/block_puzzle_authored_catalog.gd",
+        "scripts/core/block_puzzle_progression.gd",
+        "scripts/core/block_puzzle_campaign_generator.gd",
+        "tests/validate_block_authored_catalog_10000.gd",
+        "tests/validate_block_handcrafted_10000.gd",
+        "tests/validate_block_progression_10000.gd",
+        "tools/select_fast_ci_tests.py",
+    }
+    if effective_paths and all(
+        p.startswith("data/block_puzzle/authored/") or p in authored_block_paths
+        for p in effective_paths
+    ):
+        return {
+            "groups": ["block_authored_10000"],
+            "tests": [
+                "validate_block_authored_catalog_10000",
+                "validate_block_progression_10000",
+                "validate_block_handcrafted_10000",
+                "validate_progression_transitions",
+                "validate_gameplay_interactions",
+                "validate_win_loss_rules",
+            ],
+            "visual": ["block"],
+            "needs_godot": True,
+            "release_contract": False,
+        }
+
     # Dark-theme/device feedback touches the three gameplay shells plus the
     # shared result modal. Keep CI focused on those rendered surfaces.
     if DARK_GAMEPLAY_TEST in effective_paths and set(effective_paths).issubset(DARK_GAMEPLAY_PATHS):
