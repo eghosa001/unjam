@@ -40,10 +40,15 @@ var _rim_right_normalized := Vector2(0.5, 0.1)
 func configure(values: Array, selected: bool, index: int) -> void:
 	var liquid_changed := layers != values
 	super.configure(values, selected, index)
-	if viewport_3d != null and liquid_changed:
-		# Selection is 2D feedback; a stationary bottle does not need another 3D
-		# render unless its liquid state actually changed.
-		_refresh_liquid_3d()
+	if viewport_3d != null:
+		if liquid_changed:
+			_refresh_liquid_3d()
+		else:
+			# Android release rendering can consume a one-shot SubViewport update
+			# while this authoritative bottle is alpha-hidden behind its pour ghost.
+			# Request a fresh frame whenever the control is configured so restoring
+			# it after the pour can never expose a stale/blank render target.
+			_request_3d_frame()
 	if is_inside_tree():
 		_sync_motion_processing()
 
