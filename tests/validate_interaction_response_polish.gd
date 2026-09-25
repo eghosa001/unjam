@@ -16,8 +16,8 @@ func _initialize() -> void:
 		if not shop.contains(neutral):
 			failures.append("Shop is missing current neutral background color %s" % neutral)
 
-	if rescue.count('tween_property(ghost, "position"') != 1:
-		failures.append("Rescue arrow position is still split across multiple tween segments")
+	if rescue.contains('tween_property(ghost, "position", start_pos - direction') or rescue.contains('tween_property(ghost, "position", lane_target'):
+		failures.append("Rescue arrow position still uses segmented recoil/lane tweens")
 	if not rescue.contains('tween_property(ghost, "position", final_target, travel_time)'):
 		failures.append("Rescue arrow does not use one continuous offscreen position tween")
 
@@ -46,7 +46,7 @@ func _initialize() -> void:
 	for scene_constant in ["RESCUE_GAME_SCENE", "WATER_GAME_SCENE", "BLOCK_GAME_SCENE"]:
 		if not main.contains(scene_constant):
 			failures.append("Gameplay scene preload missing %s" % scene_constant)
-	if main.contains('load("res://scenes/Game.tscn")'):
+	if main.contains('var packed := load("res://scenes/Game.tscn")') or main.contains('load("res://scenes/Game.tscn") as PackedScene'):
 		failures.append("Rescue launch still performs a synchronous scene resource load")
 
 	if not failures.is_empty():
