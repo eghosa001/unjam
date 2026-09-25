@@ -66,10 +66,20 @@ func validate_difficulty(level_number: int, level: Dictionary, errors: Array[Str
 	if not bool(level.get("solver_verified", false)):
 		errors.append("Level %d was not solver verified by generation" % level_number)
 	var mistake_limit := int(level.get("mistake_limit", -1))
-	if level_number <= 20 and mistake_limit != 0:
-		errors.append("Level %d tutorial should not punish blocked taps" % level_number)
-	elif level_number >= 501 and mistake_limit not in [2, 3]:
-		errors.append("Level %d late mistake limit should be 2 or 3" % level_number)
+	var role := String(level.get("level_role", ""))
+	var expected_mistakes := 3
+	if level_number <= 20:
+		expected_mistakes = 0
+	elif role in ["learn", "practice", "recovery"]:
+		expected_mistakes = 5 if level_number <= 1000 else 4
+	elif level_number <= 100:
+		expected_mistakes = 5
+	elif level_number <= 500:
+		expected_mistakes = 4
+	elif role == "world_boss" and level_number >= 3000:
+		expected_mistakes = 2
+	if mistake_limit != expected_mistakes:
+		errors.append("Level %d mistake limit mismatch: expected %d, got %d" % [level_number, expected_mistakes, mistake_limit])
 
 func validate(level_number: int, level: Dictionary, errors: Array[String]) -> void:
 	if level.is_empty():
