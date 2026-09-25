@@ -8,9 +8,9 @@ static func readable_font() -> FontVariation:
 	if _readable_font == null:
 		var font := FontVariation.new()
 		font.base_font = ThemeDB.fallback_font
-		# Body copy should stay clean at the 390px reference scale. Heavy synthetic
-		# emboldening made small counters and secondary labels look congested.
-		font.variation_embolden = 0.24
+		# Keep body copy close to the native fallback glyph. Strong synthetic
+		# emboldening can create dark interior patches after fractional phone scaling.
+		font.variation_embolden = 0.08
 		_readable_font = font
 	return _readable_font
 
@@ -18,9 +18,9 @@ static func strong_font() -> FontVariation:
 	if _strong_font == null:
 		var font := FontVariation.new()
 		font.base_font = ThemeDB.fallback_font
-		# Headings/buttons retain a deliberate casual-game weight without the
-		# overfilled glyphs produced by the old 0.85 global embolden.
-		font.variation_embolden = 0.62
+		# Headings/buttons keep a modest casual-game weight without overfilling
+		# counters or narrow letter joins on mobile GPUs.
+		font.variation_embolden = 0.38
 		_strong_font = font
 	return _strong_font
 
