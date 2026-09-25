@@ -37,7 +37,7 @@ func _run() -> void:
 		await _frames(2)
 
 	var motion_source := _read("res://scripts/ui/motion_system.gd")
-	for token in ["&\"micro\": 0.055", "&\"travel\": 0.19", "&\"pour\": 0.235", "&\"screen\": 0.12"]:
+	for token in ["&\"micro\": 0.045", "&\"press\": 0.065", "&\"travel\": 0.16", "&\"pour\": 0.21", "&\"screen\": 0.085"]:
 		if not motion_source.contains(token):
 			return _fail("Premium response timing missing: %s" % token)
 	var audio_source := _read("res://scripts/systems/feedback_manager.gd")
