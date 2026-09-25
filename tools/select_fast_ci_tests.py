@@ -496,21 +496,30 @@ def plan_for_changes(paths: list[str], base: str, head: str) -> dict[str, object
     effective_paths = list(paths)
     focused_plans: list[dict[str, object]] = []
 
-    # Temporary focused verification for the authored 10,000-level Water catalog.
-    # Restored to main policy after this PR-specific validation passes.
-    if "tests/validate_water_curated_catalog_10000.gd" in effective_paths:
+    # Authored Rescue campaign edits are data/progression changes, not broad
+    # UI polish. Keep their CI focused so 10,000-level curation stays fast.
+    authored_rescue_paths = {
+        "scripts/core/rescue_rush_authored_catalog.gd",
+        "scripts/core/rescue_rush_progression.gd",
+        "scripts/core/campaign_generator.gd",
+        "tests/validate_rescue_authored_catalog_10000.gd",
+        "tests/validate_rescue_progression_10000.gd",
+        "tools/select_fast_ci_tests.py",
+    }
+    if effective_paths and all(
+        p.startswith("data/rescue_rush/authored/") or p in authored_rescue_paths
+        for p in effective_paths
+    ):
         return {
-            "groups": ["water_curated_10000"],
+            "groups": ["rescue_authored_10000"],
             "tests": [
-                "validate_water_curated_catalog_10000",
-                "validate_water_constructive_solvability",
-                "validate_daily_and_late_water_runtime",
-                "validate_water_liquid_continuity",
-                "validate_water_pour_arc",
-                "validate_water_palette_accessibility",
+                "validate_rescue_authored_catalog_10000",
+                "validate_rescue_progression_10000",
+                "validate_progression_transitions",
                 "validate_gameplay_interactions",
+                "validate_rescue_completion_single_path",
             ],
-            "visual": ["water"],
+            "visual": ["rescue"],
             "needs_godot": True,
             "release_contract": False,
         }
