@@ -32,6 +32,8 @@ func _initialize() -> void:
 			failures.append("Settings single-game How to Play contract missing %s" % token)
 	if settings.contains('show_tutorial\", selected_game_id'):
 		failures.append("Settings How to Play still depends on the last globally selected game")
+	if not settings.contains("button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS"):
+		failures.append("Figma menu helper still waits for touch release")
 
 	if not touch.contains("func _apply_fast_action_mode"):
 		failures.append("Safe touch-down response helper is missing")
