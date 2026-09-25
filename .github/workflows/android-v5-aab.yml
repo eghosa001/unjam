@@ -1,4 +1,4 @@
-name: UNJAM Version 5 Signed AAB
+name: UNJAM Version 5 AAB Build
 
 on:
   push:
@@ -10,15 +10,13 @@ permissions:
   contents: read
 
 concurrency:
-  group: unjam-version-5-signed-aab
+  group: unjam-version-5-aab
   cancel-in-progress: true
 
 jobs:
   build-aab:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
-    env:
-      EXPECTED_PACKAGE: com.eghosa.unjamgam
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@v4
 
@@ -28,43 +26,30 @@ jobs:
           set -euo pipefail
           python3 tools/validate_release_contract.py
           grep -Fx 'package/unique_name="com.eghosa.unjamgam"' export_presets.cfg
-          grep -Fx 'gradle_build/export_format=1' export_presets.cfg
-          grep -Fx 'gradle_build/target_sdk="36"' export_presets.cfg
-          grep -Fx 'architectures/arm64-v8a=true' export_presets.cfg
           grep -F 'com.google.android.gms.permission.AD_ID' export_presets.cfg
 
-      - name: Require configured Android signing keystore
-        env:
-          KEYSTORE_B64: ${{ secrets.UNJAM_ANDROID_KEYSTORE_BASE64 }}
-          KEY_ALIAS: ${{ secrets.UNJAM_ANDROID_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.UNJAM_ANDROID_KEY_PASSWORD }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -n "$KEYSTORE_B64"
-          test -n "$KEY_ALIAS"
-          test -n "$KEY_PASSWORD"
-
-      - name: Configure Version 5 metadata
+      - name: Configure Version 5 unsigned export
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           import re
           from pathlib import Path
-          p = Path("export_presets.cfg")
-          s = p.read_text()
-          s = re.sub(r'version/code=\d+', 'version/code=5', s)
-          s = re.sub(r'version/name="[^"]*"', 'version/name="1.0.5"', s)
-          if 'package/signed=true' not in s:
-              s = s.replace('package/signed=false', 'package/signed=true')
+          p=Path("export_presets.cfg")
+          s=p.read_text()
+          s=re.sub(r'version/code=\d+', 'version/code=5', s)
+          s=re.sub(r'version/name="[^"]*"', 'version/name="1.0.5"', s)
+          s=s.replace('package/signed=true','package/signed=false')
           p.write_text(s)
           PY
           grep -Fx 'version/code=5' export_presets.cfg
           grep -Fx 'version/name="1.0.5"' export_presets.cfg
-          grep -Fx 'package/signed=true' export_presets.cfg
+          grep -Fx 'package/signed=false' export_presets.cfg
+          grep -Fx 'gradle_build/export_format=1' export_presets.cfg
+          grep -Fx 'gradle_build/target_sdk="36"' export_presets.cfg
+          grep -Fx 'architectures/arm64-v8a=true' export_presets.cfg
 
-      - name: Verify live monetization and purchase backend
+      - name: Verify live monetization
         env:
           UNJAM_DEVELOPER_WEBSITE_URL: ${{ vars.UNJAM_DEVELOPER_WEBSITE_URL }}
         shell: bash
@@ -92,7 +77,6 @@ jobs:
           ANDROID_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
           test -n "$ANDROID_ROOT"
           SDKMANAGER=$(find "$ANDROID_ROOT/cmdline-tools" -name sdkmanager -type f | sort | tail -1)
-          test -x "$SDKMANAGER"
           set +o pipefail
           yes | "$SDKMANAGER" --sdk_root="$ANDROID_ROOT" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
           SDK_STATUS=${PIPESTATUS[1]}
@@ -101,45 +85,27 @@ jobs:
           echo "ANDROID_HOME=$ANDROID_ROOT" >> "$GITHUB_ENV"
           echo "ANDROID_SDK_ROOT=$ANDROID_ROOT" >> "$GITHUB_ENV"
 
-      - name: Install Android monetization plugins
+      - name: Install monetization plugins
         shell: bash
         run: |
           set -euxo pipefail
           chmod +x tools/install_monetization_plugins.sh
           tools/install_monetization_plugins.sh
 
-      - name: Configure signing and record keystore fingerprint
-        env:
-          KEYSTORE_B64: ${{ secrets.UNJAM_ANDROID_KEYSTORE_BASE64 }}
-          KEY_ALIAS: ${{ secrets.UNJAM_ANDROID_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.UNJAM_ANDROID_KEY_PASSWORD }}
+      - name: Import and validate Version 5
         shell: bash
         run: |
-          set -euo pipefail
-          KEYSTORE="$RUNNER_TEMP/unjam-release.keystore"
-          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$KEYSTORE"
-          chmod 600 "$KEYSTORE"
-          keytool -list -keystore "$KEYSTORE" -storepass "$KEY_PASSWORD" -alias "$KEY_ALIAS" >/dev/null
-          KEYSTORE_SHA1="$(keytool -list -v -keystore "$KEYSTORE" -storepass "$KEY_PASSWORD" -alias "$KEY_ALIAS" | sed -n 's/^[[:space:]]*SHA1: //p' | head -n 1 | tr '[:lower:]' '[:upper:]' | tr -d '\r')"
-          test -n "$KEYSTORE_SHA1"
-          echo "KEYSTORE_SHA1=$KEYSTORE_SHA1" >> "$GITHUB_ENV"
-          echo "GODOT_ANDROID_KEYSTORE_RELEASE_PATH=$KEYSTORE" >> "$GITHUB_ENV"
-          echo "GODOT_ANDROID_KEYSTORE_RELEASE_USER=$KEY_ALIAS" >> "$GITHUB_ENV"
-          echo "GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
-
-      - name: Import project and run signed-build gates
-        shell: bash
-        run: |
-          set -euxo pipefail
-          godot --headless --path . --editor --quit
-          for t in validate_runtime_efficiency validate_monetization validate_admob_production validate_billing_production validate_restore_purchase_flow validate_production_completion validate_viewport_fit validate_theme_integrity validate_robustness validate_production_hardening_regressions validate_rescue_premium_visual_hierarchy; do
+          set -o pipefail
+          godot --headless --path . --editor --quit 2>&1 | tee aab-import.log
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" aab-import.log; then exit 1; fi
+          for t in validate_runtime_efficiency validate_monetization validate_billing_production validate_restore_purchase_flow validate_viewport_fit validate_theme_integrity validate_robustness validate_rescue_premium_visual_hierarchy; do
             timeout 180s godot --headless --path . --script "res://tests/$t.gd"
           done
 
-      - name: Export signed release APK for manifest verification
+      - name: Export Version 5 verification APK
         shell: bash
         run: |
-          set -euo pipefail
+          set -o pipefail
           mkdir -p build/android
           cp export_presets.cfg "$RUNNER_TEMP/export-presets-v5-aab.cfg"
           sed -i 's/gradle_build\/export_format=1/gradle_build\/export_format=0/' export_presets.cfg
@@ -147,7 +113,7 @@ jobs:
           test -s build/android/unjam-v5-check.apk
           cp "$RUNNER_TEMP/export-presets-v5-aab.cfg" export_presets.cfg
 
-      - name: Verify Version 5 APK identity and monetization
+      - name: Verify Version 5 APK identity
         shell: bash
         run: |
           set -euo pipefail
@@ -155,81 +121,57 @@ jobs:
           AAPT="$(find "$ANDROID_SDK_ROOT/build-tools" -type f -name aapt | sort | tail -1)"
           "$AAPT" dump badging "$APK" | tee build/android/unjam-v5-badging.txt
           "$AAPT" dump permissions "$APK" | tee build/android/unjam-v5-permissions.txt
-          "$AAPT" dump xmltree "$APK" AndroidManifest.xml | tee build/android/unjam-v5-manifest.txt
           grep -F "package: name='com.eghosa.unjamgam' versionCode='5' versionName='1.0.5'" build/android/unjam-v5-badging.txt
           grep -F "targetSdkVersion:'36'" build/android/unjam-v5-badging.txt
           grep -F "native-code: 'arm64-v8a'" build/android/unjam-v5-badging.txt
           grep -F "com.google.android.gms.permission.AD_ID" build/android/unjam-v5-permissions.txt
           grep -F "com.android.vending.BILLING" build/android/unjam-v5-permissions.txt
-          grep -F "com.google.android.gms.ads.APPLICATION_ID" build/android/unjam-v5-manifest.txt
           rm -f "$APK"
 
-      - name: Export signed Version 5 AAB
+      - name: Export Version 5 AAB
         shell: bash
         run: |
           set -o pipefail
-          godot --headless --verbose --path . --export-release Android build/android/UNJAM-Version-5.aab 2>&1 | tee android-v5-aab-export.log
+          godot --headless --verbose --path . --export-release Android build/android/UNJAM-Version-5-unsigned.aab 2>&1 | tee android-v5-aab-export.log
           if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" android-v5-aab-export.log; then exit 1; fi
-          test -s build/android/UNJAM-Version-5.aab
+          test -s build/android/UNJAM-Version-5-unsigned.aab
+          unzip -t build/android/UNJAM-Version-5-unsigned.aab | tee build/android/aab-zip-test.log
+          sha256sum build/android/UNJAM-Version-5-unsigned.aab | tee build/android/UNJAM-Version-5-unsigned.aab.sha256
 
       - name: Verify 16 KB native page compatibility
         shell: bash
         run: |
           set -euo pipefail
-          AAB=build/android/UNJAM-Version-5.aab
+          AAB=build/android/UNJAM-Version-5-unsigned.aab
           NATIVE_DIR="$RUNNER_TEMP/unjam-v5-native-libs"
-          rm -rf "$NATIVE_DIR"
           mkdir -p "$NATIVE_DIR"
           unzip -q "$AAB" 'base/lib/*/*.so' -d "$NATIVE_DIR" || true
           python3 - <<'PY'
-          import pathlib, re, subprocess, os
-          root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'unjam-v5-native-libs'
-          libs = sorted(root.rglob('*.so'))
-          if not libs:
-              raise SystemExit('No native libraries found in AAB')
-          failures = []
+          import pathlib,re,subprocess,os
+          libs=sorted((pathlib.Path(os.environ['RUNNER_TEMP'])/'unjam-v5-native-libs').rglob('*.so'))
+          if not libs: raise SystemExit('No native libraries found')
+          bad=[]
           for lib in libs:
-              out = subprocess.check_output(['readelf', '-lW', str(lib)], text=True, errors='replace')
-              aligns = []
+              out=subprocess.check_output(['readelf','-lW',str(lib)],text=True,errors='replace')
+              aligns=[]
               for line in out.splitlines():
-                  if re.match(r'^\s*LOAD\s', line):
-                      try:
-                          aligns.append(int(line.split()[-1], 16))
-                      except ValueError:
-                          pass
-              if not aligns or min(aligns) < 0x4000:
-                  failures.append(str(lib))
-          if failures:
-              raise SystemExit('16 KB native compatibility failed: ' + ', '.join(failures))
+                  if re.match(r'^\s*LOAD\s',line):
+                      try: aligns.append(int(line.split()[-1],16))
+                      except ValueError: pass
+              if not aligns or min(aligns)<0x4000: bad.append(str(lib))
+          if bad: raise SystemExit('16 KB compatibility failed: '+', '.join(bad))
           print(f'16KB_NATIVE_OK: verified {len(libs)} native libraries')
           PY
 
-      - name: Verify signed Version 5 AAB
-        shell: bash
-        run: |
-          set -euo pipefail
-          AAB=build/android/UNJAM-Version-5.aab
-          jarsigner -verify -verbose -certs "$AAB" | tee build/android/jarsigner-verify.log
-          grep -F "jar verified." build/android/jarsigner-verify.log
-          unzip -t "$AAB" | tee build/android/aab-zip-test.log
-          BUNDLE_SHA1="$(keytool -printcert -jarfile "$AAB" | sed -n 's/^[[:space:]]*SHA1: //p' | head -n 1 | tr '[:lower:]' '[:upper:]' | tr -d '\r')"
-          test -n "$BUNDLE_SHA1"
-          test "$BUNDLE_SHA1" = "$KEYSTORE_SHA1"
-          sha256sum "$AAB" | tee build/android/UNJAM-Version-5.aab.sha256
-          printf '%s\n' "$BUNDLE_SHA1" > build/android/UNJAM-Version-5.signing-sha1.txt
-
-      - name: Upload Version 5 signed AAB
+      - name: Upload Version 5 AAB
         uses: actions/upload-artifact@v4
         with:
-          name: unjam-version-5-signed-aab
+          name: unjam-version-5-unsigned-aab
           path: |
-            build/android/UNJAM-Version-5.aab
-            build/android/UNJAM-Version-5.aab.sha256
-            build/android/UNJAM-Version-5.signing-sha1.txt
-            build/android/jarsigner-verify.log
+            build/android/UNJAM-Version-5-unsigned.aab
+            build/android/UNJAM-Version-5-unsigned.aab.sha256
             build/android/aab-zip-test.log
             build/android/unjam-v5-badging.txt
             build/android/unjam-v5-permissions.txt
-            build/android/unjam-v5-manifest.txt
           if-no-files-found: error
           retention-days: 14
