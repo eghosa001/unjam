@@ -11,6 +11,16 @@ func _initialize() -> void:
 	for n in samples:
 		var profile: Dictionary = Progression.profile(n)
 		var level: Dictionary = Generator.generate(n)
+		if not bool(profile.get("authored", false)):
+			failures.append("%d did not load authored recipe" % n)
+		if not bool(level.get("authored", false)):
+			failures.append("%d generated board lost authored marker" % n)
+		if String(level.get("layout_archetype", "")).is_empty():
+			failures.append("%d generated board lost layout archetype" % n)
+		var authored_seed := int(profile.get("authored_seed", 0))
+		var generated_seed := int(level.get("generation_seed", 0))
+		if generated_seed < authored_seed or posmod(generated_seed - authored_seed, 7919) != 0:
+			failures.append("%d did not use authored generation seed" % n)
 		if int(level.get("world", 0)) != int((n - 1) / 100) + 1:
 			failures.append("%d world mapping" % n)
 		if int(level.get("width", 0)) not in [7, 8]:

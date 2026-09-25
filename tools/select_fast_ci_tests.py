@@ -496,6 +496,34 @@ def plan_for_changes(paths: list[str], base: str, head: str) -> dict[str, object
     effective_paths = list(paths)
     focused_plans: list[dict[str, object]] = []
 
+    # Authored Rescue campaign edits are data/progression changes, not broad
+    # UI polish. Keep their CI focused so 10,000-level curation stays fast.
+    authored_rescue_paths = {
+        "scripts/core/rescue_rush_authored_catalog.gd",
+        "scripts/core/rescue_rush_progression.gd",
+        "scripts/core/campaign_generator.gd",
+        "tests/validate_rescue_authored_catalog_10000.gd",
+        "tests/validate_rescue_progression_10000.gd",
+        "tools/select_fast_ci_tests.py",
+    }
+    if effective_paths and all(
+        p.startswith("data/rescue_rush/authored/") or p in authored_rescue_paths
+        for p in effective_paths
+    ):
+        return {
+            "groups": ["rescue_authored_10000"],
+            "tests": [
+                "validate_rescue_authored_catalog_10000",
+                "validate_rescue_progression_10000",
+                "validate_progression_transitions",
+                "validate_gameplay_interactions",
+                "validate_rescue_completion_single_path",
+            ],
+            "visual": ["rescue"],
+            "needs_godot": True,
+            "release_contract": False,
+        }
+
     # Dark-theme/device feedback touches the three gameplay shells plus the
     # shared result modal. Keep CI focused on those rendered surfaces.
     if DARK_GAMEPLAY_TEST in effective_paths and set(effective_paths).issubset(DARK_GAMEPLAY_PATHS):
