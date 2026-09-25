@@ -29,6 +29,7 @@ const FIGMA_SCENE_DARK_BOTTOM := Color("#1c1c1c")
 var _collection_scroll_tracking := false
 var _collection_scroll_origin_y := 0.0
 var _settings_help_game := "rescue_rush"
+var _settings_theme_toggle_pending := false
 const SETTINGS_HELP_GAMES := ["rescue_rush", "water_sort", "block_puzzle"]
 
 
@@ -257,7 +258,7 @@ func _figma_header(canvas: Control, title_text: String, subtitle_text: String, p
 	var muted_color := Color("#dbe6f4") if not use_dark else FIGMA_DARK_MUTED
 	var back_color := FIGMA_DARK_INK if use_dark else FIGMA_NAVY
 	var back_fill := Color("#cbc4b8") if not use_dark else Color("#2c2c2c")
-	var back_button := _figma_button(canvas, "FigmaBack", "‹", Rect2(17,19,52,52), back_fill, back_callback, back_color, 18, 27)
+	var back_button := _figma_button(canvas, "FigmaBack", "←", Rect2(17,19,52,52), back_fill, back_callback, back_color, 18, 27)
 	back_button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	back_button.tooltip_text = "Back"
 	var header_title := _figma_text(canvas, title_text, Rect2(83,21,186,28), 23, heading_color)
@@ -398,6 +399,23 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 			hit.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		canvas.add_child(hit)
 
+func _toggle_settings_theme() -> void:
+	if _settings_theme_toggle_pending:
+		return
+	var shell := get_node_or_null("UXShell")
+	if shell == null or not shell.has_method("_toggle_theme"):
+		return
+	_settings_theme_toggle_pending = true
+	shell.call("_toggle_theme")
+	call_deferred("_finish_settings_theme_toggle")
+
+
+func _finish_settings_theme_toggle() -> void:
+	_settings_theme_toggle_pending = false
+	if current_surface == "settings":
+		build_settings()
+
+
 func build_settings() -> void:
 	current_surface = "settings"
 	_remove_active_game()
@@ -439,12 +457,8 @@ func build_settings() -> void:
 	_figma_text(canvas,"THEME",Rect2(33,448,210,28),14,muted_color)
 	var theme_fill := FIGMA_GOLD
 	var theme_text := FIGMA_NAVY
-	var theme_button := _figma_button(canvas,"SettingToggle/Theme",theme_name,Rect2(279,439,72,44),theme_fill,Callable(),theme_text,19,15)
-	theme_button.pressed.connect(func() -> void:
-		if shell != null and shell.has_method("_toggle_theme"):
-			shell.call("_toggle_theme")
-		call_deferred("build_settings")
-	)
+	var theme_button := _figma_button(canvas,"SettingsThemeToggle",theme_name,Rect2(279,439,72,44),theme_fill,Callable(),theme_text,19,15)
+	theme_button.pressed.connect(_toggle_settings_theme)
 
 	var help_card: PanelContainer
 	if dark_mode:
