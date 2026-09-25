@@ -13,6 +13,7 @@ const GUIDANCE_ORANGE := Color("#8a3b00")
 
 var figma_canvas: Control
 var gameplay_stage: PanelContainer
+var star_target_label: Label
 
 func build_ui() -> void:
 	clip_contents = true
@@ -74,17 +75,26 @@ func _build_figma_water(canvas: Control) -> void:
 	RefCanvas.set_rect(info, 17, 79, 354, 42)
 	info.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(info)
-	meta_label = _make_label("", 14, Color(0.92, 0.98, 1.0), true)
+	meta_label = _make_label("", 13, Color(0.92, 0.98, 1.0), true)
 	meta_label.clip_text = true
 	meta_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	RefCanvas.set_rect(meta_label, 37, 91, 170, 20)
+	RefCanvas.set_rect(meta_label, 37, 91, 155, 20)
 	canvas.add_child(meta_label)
-	move_label = _make_label("", 14, OFF_WHITE, true)
+	move_label = _make_label("", 13, OFF_WHITE, true)
+	move_label.name = "WaterMoveCount"
 	move_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	move_label.clip_text = true
 	move_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	RefCanvas.set_rect(move_label, 208, 91, 145, 20)
+	RefCanvas.set_rect(move_label, 196, 91, 86, 20)
 	canvas.add_child(move_label)
+	star_target_label = _make_label("", 13, Color("#ffe08a"), true)
+	star_target_label.name = "WaterThreeStarTarget"
+	star_target_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	star_target_label.clip_text = true
+	star_target_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	star_target_label.tooltip_text = "Finish at or below this move count for 3 stars."
+	RefCanvas.set_rect(star_target_label, 286, 91, 67, 20)
+	canvas.add_child(star_target_label)
 
 	var objective := PanelContainer.new()
 	objective.name = "WaterObjective"
@@ -246,7 +256,9 @@ func render_board() -> void:
 	super.render_board()
 	_apply_tube_layout()
 	if move_label != null:
-		move_label.text = "MOVES %d • 3★≤%d" % [moves, par_moves]
+		move_label.text = "MOVES %d" % moves
+	if star_target_label != null:
+		star_target_label.text = "3★≤%d" % par_moves
 
 func _apply_tube_layout() -> void:
 	if board == null or not is_instance_valid(board):

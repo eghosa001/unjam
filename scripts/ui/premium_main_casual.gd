@@ -471,7 +471,7 @@ func build_settings() -> void:
 	var utility_border := Color("#5b5347") if dark_mode else Color("#b89b61")
 	var utility_text := FIGMA_DARK_INK if dark_mode else FIGMA_NAVY
 	FigmaReferenceCanvas.add_shadow(canvas, Rect2(33,541,126,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
-	var how_to := FigmaReferenceCanvas.premium_button("HOW TO PLAY",13,utility_text,utility_fill,16,utility_border,1.2)
+	var how_to := FigmaReferenceCanvas.premium_button("HOW TO PLAY",15,utility_text,utility_fill,16,utility_border,1.2)
 	how_to.name = "SettingsHowToPlay"
 	FigmaReferenceCanvas.set_rect(how_to,33,541,126,46)
 	how_to.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
@@ -485,7 +485,7 @@ func build_settings() -> void:
 	help_game.pressed.connect(_cycle_settings_help_game.bind(help_game))
 	canvas.add_child(help_game)
 	FigmaReferenceCanvas.add_shadow(canvas, Rect2(265,541,86,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
-	var privacy := FigmaReferenceCanvas.premium_button("PRIVACY",12,utility_text,utility_fill,16,utility_border,1.2)
+	var privacy := FigmaReferenceCanvas.premium_button("PRIVACY",15,utility_text,utility_fill,16,utility_border,1.2)
 	privacy.name = "SettingsPrivacy"
 	FigmaReferenceCanvas.set_rect(privacy,265,541,86,46)
 	privacy.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
