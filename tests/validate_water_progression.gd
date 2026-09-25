@@ -103,6 +103,21 @@ func _run() -> void:
 	if not migration_ok:
 		return _fail("Legacy Water Sort 100-level world badges did not migrate cleanly to 500-level worlds")
 
+	var archetypes := {}
+	for level in range(2500, 10001):
+		var archetype := String(Progression.profile(level).get("challenge_archetype", ""))
+		if not archetype.is_empty():
+			archetypes[archetype] = true
+	for expected in ["fragmentation", "narrow_solution", "space_pressure", "efficiency", "buried_colors"]:
+		if not archetypes.has(expected):
+			return _fail("Late Water Sort archetype missing: %s" % expected)
+	for level in [3000, 5000, 7500, 9000, 10000]:
+		var p := Progression.profile(level)
+		if String(p.get("challenge_archetype", "")).is_empty():
+			return _fail("Water milestone %d has no structural archetype" % level)
+		if bool(p.get("hidden_information", true)):
+			return _fail("Water archetype %d introduced hidden information" % level)
+
 	var scores: Array[int] = []
 	for level in range(1001, 1101):
 		scores.append(int(Progression.profile(level).target_difficulty))
