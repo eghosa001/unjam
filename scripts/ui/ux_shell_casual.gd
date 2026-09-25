@@ -178,6 +178,10 @@ func _after_shell_sync() -> void:
 		theme_button.visible = false
 
 func _apply_theme() -> void:
+	# Preserve the inherited shell refresh/persistence path. The previous casual
+	# override skipped it, so the mode value could change while custom gameplay
+	# surfaces stayed visually on the light palette.
+	super._apply_theme()
 	if help_button != null:
 		help_button.visible = false
 	if theme_button != null:

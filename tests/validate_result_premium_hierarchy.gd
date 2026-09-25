@@ -75,10 +75,18 @@ func _run() -> void:
 	root.add_child(block_result)
 	await _frames(5)
 	var block_card := block_result.find_child("ResultCard3D",true,false) as Control
+	var block_title := block_result.find_child("ResultTitle",true,false) as Label
+	var block_subtitle := block_result.find_child("ResultSubtitle",true,false) as Label
 	var hidden_secondary := block_result.find_child("SecondaryAction",true,false) as Button
 	var hidden_shadow := block_result.find_child("SecondaryActionShadow",true,false) as Control
-	if block_card == null or hidden_secondary == null or hidden_shadow == null:
+	if block_card == null or block_title == null or block_subtitle == null or hidden_secondary == null or hidden_shadow == null:
 		return _fail("Block result hierarchy is incomplete")
+	if block_title.text != "BLOCK PUZZLE":
+		return _fail("Result title redundantly includes completion text: %s" % block_title.text)
+	if block_title.autowrap_mode != TextServer.AUTOWRAP_OFF:
+		return _fail("Result title can still wrap into the subtitle")
+	if block_title.get_rect().intersects(block_subtitle.get_rect()):
+		return _fail("Block result title geometry overlaps subtitle")
 	if not _rect_eq(Rect2(block_card.position,block_card.size),Rect2(27,76,334,500)):
 		return _fail("Result without secondary action did not collapse its empty slot")
 	if hidden_secondary.visible or hidden_shadow.visible:
