@@ -50,6 +50,7 @@ static func generate(profile: Dictionary) -> Dictionary:
 	var initial_board := board.duplicate(true)
 	var tier := clampi(int(profile.get("piece_tier", 1)), 1, 6)
 	var pool: Array = (TIER_POOLS.get(tier, TIER_POOLS[1]) as Array).duplicate()
+	pool = _apply_shape_bias(pool, String(profile.get("shape_bias", "balanced")))
 	if level == 10000:
 		# Hand-authored finale palette: every tray is drawn from the most spatially
 		# demanding families, with small rescue pieces retained for exact finishing.
@@ -131,6 +132,8 @@ static func generate(profile: Dictionary) -> Dictionary:
 		"average_legal_choices": average_ambiguity,
 		"initial_occupancy": _occupied_count(initial_board),
 		"generator_version": GENERATOR_VERSION,
+		"shape_bias": String(profile.get("shape_bias", "balanced")),
+		"curation_version": int(profile.get("curation_version", 0)),
 		"verified_constructive": true,
 	}
 	return {
@@ -142,6 +145,36 @@ static func generate(profile: Dictionary) -> Dictionary:
 		"special_plan": special_plan,
 		"metadata": metrics,
 	}
+
+static func _apply_shape_bias(base_pool: Array, bias: String) -> Array:
+	var pool := base_pool.duplicate()
+	var preferred: Array[int] = []
+	match bias:
+		"compact":
+			preferred = [0, 1, 2, 5, 6, 7, 8, 9]
+		"lines":
+			preferred = [3, 4, 10, 11, 18, 19]
+		"corners":
+			preferred = [6, 7, 8, 9, 15, 16, 17, 23, 24]
+		"advanced":
+			preferred = [10, 11, 12, 15, 16, 17, 20, 21, 22, 23, 24]
+		"large":
+			preferred = [12, 13, 14, 18, 19, 20, 21, 22, 23, 24]
+		"precision":
+			preferred = [0, 1, 2, 6, 7, 8, 9, 12]
+		"mixed":
+			preferred = [0, 3, 5, 6, 10, 12, 15, 16, 17, 21, 23]
+		"clearance":
+			preferred = [0, 1, 2, 3, 4, 10, 11, 12, 15, 16]
+		"endurance":
+			preferred = [0, 3, 4, 10, 11, 12, 13, 14, 18, 19, 21, 22, 23, 24]
+		_:
+			preferred = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+	for shape_index in preferred:
+		if shape_index in base_pool:
+			pool.append(shape_index)
+			pool.append(shape_index)
+	return pool
 
 static func replay_proof(plan: Dictionary, target_lines: int, target_score: int) -> Dictionary:
 	var board: Array = (plan.get("initial_cells", []) as Array).duplicate(true)
