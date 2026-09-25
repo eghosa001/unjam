@@ -17,6 +17,9 @@ var selected_game_id := "rescue_rush"
 var selected_multi_world := 1
 var selected_multi_page := 1
 const MULTI_LEVEL_PAGE_SIZE := 100
+const RESCUE_GAME_SCENE: PackedScene = preload("res://scenes/Game.tscn")
+const WATER_GAME_SCENE: PackedScene = preload("res://scenes/WaterSort.tscn")
+const BLOCK_GAME_SCENE: PackedScene = preload("res://scenes/BlockPuzzle.tscn")
 
 func _ready() -> void:
 	MultiGameManager.ensure_state()
@@ -240,12 +243,7 @@ func start_multi_level_mode(game_id: String, level_number: int, daily: bool = fa
 	_remove_active_game()
 	if content and is_instance_valid(content):
 		content.hide()
-	var scene_path := "res://scenes/WaterSort.tscn" if game_id == "water_sort" else "res://scenes/BlockPuzzle.tscn"
-	var packed := load(scene_path) as PackedScene
-	if packed == null:
-		push_error("Game scene could not be loaded: %s" % scene_path)
-		build_home()
-		return
+	var packed: PackedScene = WATER_GAME_SCENE if game_id == "water_sort" else BLOCK_GAME_SCENE
 	var game_scene := packed.instantiate() as Control
 	game_scene.name = "ActiveGame"
 	game_scene.level_number = level_number
@@ -270,11 +268,7 @@ func _spawn_rescue(level_number: int, daily: bool, custom_data: Dictionary) -> v
 	_remove_active_game()
 	if content and is_instance_valid(content):
 		content.hide()
-	var packed := load("res://scenes/Game.tscn") as PackedScene
-	if packed == null:
-		build_home()
-		return
-	var game_scene := packed.instantiate() as Control
+	var game_scene := RESCUE_GAME_SCENE.instantiate() as Control
 	game_scene.name = "ActiveGame"
 	game_scene.level_number = level_number
 	game_scene.daily_mode = daily
