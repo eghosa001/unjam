@@ -23,7 +23,7 @@ func _initialize() -> void:
 
 	if not hints.contains("const HINT_COST := 25"):
 		failures.append("Hint coin price changed or disappeared")
-	for token in ["EconomyManager", "HintCoinCost", "ACTION_MODE_BUTTON_PRESS", "request_hint_for_game"]:
+	for token in ['economy.call("spend", HINT_COST', "HintCoinCost", "ACTION_MODE_BUTTON_PRESS", "request_hint_for_game"]:
 		if not hints.contains(token):
 			failures.append("Paid Hint contract missing %s" % token)
 
