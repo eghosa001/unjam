@@ -11,14 +11,19 @@ extends Node
 
 const SAMPLE_RATE := 22050
 const MUSIC_RATE := 16000
+const STARTUP_MUSIC_RATE := 12000
 const SFX_POOL_SIZE := 5
 const MUSIC_DURATION := 32.0
-const MUSIC_SYNTH_CHUNK_FRAMES := 4096
+const STARTUP_MUSIC_DURATION := 1.5
+# Keep the expensive full-loop synthesis below the early-frame budget. A tiny
+# primer plays immediately, so the full loop can be built without blocking UI.
+const MUSIC_SYNTH_CHUNK_FRAMES := 2048
 
 var player: AudioStreamPlayer
 var sfx_players: Array[AudioStreamPlayer] = []
 var music_player: AudioStreamPlayer
 var music_stream: AudioStreamWAV
+var _startup_music_stream: AudioStreamWAV
 var last_music_enabled := false
 var _sfx_cursor := 0
 var _stream_cache: Dictionary = {}
@@ -44,7 +49,7 @@ func _ready() -> void:
 	add_child(music_player)
 	last_music_enabled = bool(SaveManager.data.get("music", true))
 	if last_music_enabled:
-		call_deferred("_ensure_music_stream")
+		_start_music_immediately()
 
 func _exit_tree() -> void:
 	shutdown_audio()
@@ -65,14 +70,30 @@ func shutdown_audio() -> void:
 		music_player.free()
 	music_player = null
 	music_stream = null
+	_startup_music_stream = null
 	_stream_cache.clear()
 
 func apply_settings() -> void:
 	last_music_enabled = bool(SaveManager.data.get("music", true))
 	if last_music_enabled and music_stream == null:
-		call_deferred("_ensure_music_stream")
+		_start_music_immediately()
 		return
 	_sync_music()
+
+func _start_music_immediately() -> void:
+	if music_player == null:
+		return
+	if music_stream != null:
+		music_player.stream = music_stream
+	elif _startup_music_stream == null:
+		_startup_music_stream = _build_startup_ambient()
+		music_player.stream = _startup_music_stream
+	elif music_player.stream == null:
+		music_player.stream = _startup_music_stream
+	if music_player.stream != null and not music_player.playing:
+		music_player.play()
+	if music_stream == null:
+		call_deferred("_ensure_music_stream")
 
 func _ensure_music_stream() -> void:
 	if _music_building or music_stream != null or music_player == null:
@@ -91,7 +112,9 @@ func _sync_music() -> void:
 	if music_player == null:
 		return
 	if last_music_enabled:
-		if music_stream != null and not music_player.playing:
+		if music_player.stream == null:
+			music_player.stream = music_stream if music_stream != null else _startup_music_stream
+		if music_player.stream != null and not music_player.playing:
 			music_player.play()
 	else:
 		music_player.stop()
@@ -257,6 +280,29 @@ func _chime_stream(notes: Array, duration: float, volume: float, brightness: flo
 # ---------------------------------------------------------------------------
 # Calm ambient music synthesis
 # ---------------------------------------------------------------------------
+
+func _build_startup_ambient() -> AudioStreamWAV:
+	# A tiny mobile-safe bed starts on the first app frame. It is deliberately
+	# cheap to synthesize; the richer 32-second loop replaces it when ready.
+	var frames := maxi(1, int(STARTUP_MUSIC_RATE * STARTUP_MUSIC_DURATION))
+	var bytes := PackedByteArray()
+	bytes.resize(frames * 4)
+	for i in range(frames):
+		var t := float(i) / float(STARTUP_MUSIC_RATE)
+		var edge := _smooth_edge(t, STARTUP_MUSIC_DURATION, 0.12)
+		var breathe := 0.92 + 0.08 * sin(TAU * t / STARTUP_MUSIC_DURATION)
+		var left := (sin(TAU * 261.63 * t) * 0.044 + sin(TAU * 329.63 * t + 0.25) * 0.022) * edge * breathe
+		var right := (sin(TAU * 261.63 * t + 0.03) * 0.043 + sin(TAU * 392.00 * t + 0.55) * 0.018) * edge * breathe
+		_write_stereo(bytes, i, left, right)
+	var stream := AudioStreamWAV.new()
+	stream.format = AudioStreamWAV.FORMAT_16_BITS
+	stream.mix_rate = STARTUP_MUSIC_RATE
+	stream.stereo = true
+	stream.data = bytes
+	stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	stream.loop_begin = 0
+	stream.loop_end = frames
+	return stream
 
 func _build_calm_ambient_loop() -> AudioStreamWAV:
 	# 32-second original ambient loop: slow F-major/D-minor-family pads, sparse
