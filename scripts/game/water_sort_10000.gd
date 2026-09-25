@@ -1,6 +1,7 @@
 extends "res://scripts/game/water_sort_assisted.gd"
 
 const Progression = preload("res://scripts/core/water_sort_progression.gd")
+const CuratedCatalog = preload("res://scripts/core/water_sort_curated_catalog.gd")
 const PremiumGameplayFeedbackLayer = preload("res://scripts/ui/premium_gameplay_feedback.gd")
 
 var premium_feedback: PremiumGameplayFeedback
@@ -159,6 +160,23 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 
 func generate_tubes_with_solution(seed_value: int, colors: int) -> Dictionary:
 	var p := Progression.profile(level_number)
+	var authored := CuratedCatalog.level(level_number)
+	if not authored.is_empty():
+		var authored_tubes: Array = authored.get("tubes", [])
+		var authored_solution: Array = authored.get("solution", [])
+		var metrics := Progression.score_board(authored_tubes, authored_solution.size())
+		generation_meta = metrics.duplicate(true)
+		generation_meta["target_difficulty"] = int(p.get("target_difficulty", 20))
+		generation_meta["difficulty_floor"] = int(p.get("difficulty_floor", 0))
+		generation_meta["difficulty_ceiling"] = int(p.get("difficulty_ceiling", 100))
+		generation_meta["empty_bottles"] = int(p.get("empty_bottles", 2))
+		generation_meta["generator_version"] = int(p.get("generator_version", 1))
+		generation_meta["catalog_version"] = int(authored.get("catalog_version", 1))
+		generation_meta["source"] = "curated_catalog"
+		generation_meta["milestone"] = String(p.get("milestone", "normal"))
+		generation_meta["challenge_archetype"] = String(p.get("challenge_archetype", ""))
+		authored["metadata"] = generation_meta.duplicate(true)
+		return authored
 	# Most opening boards are deliberately authored for visual novelty. Level 7
 	# intentionally falls through to the constructive generator because it is the
 	# first five-colour pressure step and must follow the live profile exactly.

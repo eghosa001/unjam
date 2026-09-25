@@ -496,6 +496,36 @@ def plan_for_changes(paths: list[str], base: str, head: str) -> dict[str, object
     effective_paths = list(paths)
     focused_plans: list[dict[str, object]] = []
 
+    # Authored Water Sort campaign edits are fixed-data/progression work. Run
+    # the exhaustive stored-catalog proof plus focused Water runtime contracts.
+    authored_water_paths = {
+        "scripts/core/water_sort_curated_catalog.gd",
+        "scripts/game/water_sort_10000.gd",
+        "tests/validate_water_curated_catalog_10000.gd",
+        "export_presets.cfg",
+        ".github/workflows/godot-ci.yml",
+        "tools/select_fast_ci_tests.py",
+    }
+    if effective_paths and all(
+        p.startswith("data/water_sort_curated/") or p in authored_water_paths
+        for p in effective_paths
+    ):
+        return {
+            "groups": ["water_curated_10000"],
+            "tests": [
+                "validate_water_curated_catalog_10000",
+                "validate_water_constructive_solvability",
+                "validate_daily_and_late_water_runtime",
+                "validate_water_liquid_continuity",
+                "validate_water_pour_arc",
+                "validate_water_palette_accessibility",
+                "validate_gameplay_interactions",
+            ],
+            "visual": ["water"],
+            "needs_godot": True,
+            "release_contract": True,
+        }
+
     # Authored Rescue campaign edits are data/progression changes, not broad
     # UI polish. Keep their CI focused so 10,000-level curation stays fast.
     authored_rescue_paths = {
