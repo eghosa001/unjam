@@ -7,7 +7,7 @@ const WORLD_SIZE := 500
 const WORLD_COUNT := 20
 const CHAPTER_SIZE := 50
 const GENERATOR_VERSION := 2
-const CuratedCampaign = preload("res://scripts/core/block_puzzle_curated_campaign.gd")
+const AuthoredCatalog = preload("res://scripts/core/block_puzzle_authored_catalog.gd")
 
 # [start, end, difficulty_floor, difficulty_ceiling]
 const DIFFICULTY_BANDS := [
@@ -34,10 +34,63 @@ const DIFFICULTY_BANDS := [
 ]
 
 static func profile(raw_level: int) -> Dictionary:
-	var curated := CuratedCampaign.profile(raw_level)
-	if not curated.is_empty():
-		return curated
-	return _legacy_profile(raw_level)
+	var level := clampi(raw_level, 1, MAX_LEVEL)
+	var authored := AuthoredCatalog.recipe(level)
+	if not authored.is_empty():
+		return _profile_from_authored(level, authored)
+	return _legacy_profile(level)
+
+static func _profile_from_authored(level: int, authored: Dictionary) -> Dictionary:
+	var band := _band_for(level)
+	var floor_score := int(band[2])
+	var ceiling_score := int(band[3])
+	var role := String(authored.get("level_role", "build"))
+	var milestone := String(authored.get("milestone", "normal"))
+	var difficulty_score := clampi(int(authored.get("difficulty_target", floor_score)), floor_score, ceiling_score)
+	var first_raw = authored.get("first_attempt_target", [0.6, 0.78])
+	var first_attempt := Vector2(0.6, 0.78)
+	if first_raw is Array and (first_raw as Array).size() >= 2:
+		first_attempt = Vector2(float((first_raw as Array)[0]), float((first_raw as Array)[1]))
+	var level_in_world := posmod(level - 1, WORLD_SIZE) + 1
+	var move_limit := int(authored.get("move_limit", -1))
+	return {
+		"level_id": level,
+		"seed": int(authored.get("authored_seed", deterministic_seed(level))),
+		"generator_version": GENERATOR_VERSION,
+		"curation_version": AuthoredCatalog.CATALOG_VERSION,
+		"authored": true,
+		"curated_source": true,
+		"authored_chapter": int((level - 1) / WORLD_SIZE) + 1,
+		"board_size": BOARD_SIZE,
+		"world": int((level - 1) / WORLD_SIZE) + 1,
+		"level_in_world": level_in_world,
+		"chapter_global": int((level - 1) / CHAPTER_SIZE) + 1,
+		"chapter_in_world": int((level_in_world - 1) / CHAPTER_SIZE) + 1,
+		"milestone": milestone,
+		"boss_archetype": String(authored.get("boss_archetype", "")),
+		"retention_role": role,
+		"objective_intro_age": int(authored.get("objective_intro_age", -1)),
+		"difficulty_score": difficulty_score,
+		"difficulty_floor": floor_score,
+		"difficulty_ceiling": ceiling_score,
+		"difficulty_class": difficulty_class(difficulty_score, milestone, role),
+		"piece_tier": int(authored.get("piece_tier", piece_tier(level))),
+		"planning_horizon": int(authored.get("planning_horizon", planning_horizon(level))),
+		"initial_occupancy": float(authored.get("initial_occupancy", initial_occupancy(level))),
+		"target_lines": int(authored.get("target_lines", 2)),
+		"target_score": int(authored.get("target_score", 100)),
+		"par": int(authored.get("par", 14)),
+		"move_limited": bool(authored.get("move_limited", move_limit > 0)),
+		"move_limit": move_limit,
+		"objective": String(authored.get("objective", objective_family(level))),
+		"shape_bias": String(authored.get("shape_bias", "balanced")),
+		"design_intent": String(authored.get("design_intent", "")),
+		"first_attempt_target": first_attempt,
+		"deterministic_trays": true,
+		"fixed_orientation": true,
+		"booster_required": false,
+		"free_rotation": false,
+	}
 
 static func _legacy_profile(raw_level: int) -> Dictionary:
 	var level := clampi(raw_level, 1, MAX_LEVEL)
