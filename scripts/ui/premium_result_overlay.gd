@@ -96,11 +96,15 @@ func _build() -> void:
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_canvas.add_child(card)
 
-	var title := FigmaReferenceCanvas.label(title_text, 27, Color("#eef7ff") if dark else Unjam3DTheme.NAVY, true)
+	var title := FigmaReferenceCanvas.label(_result_display_title(), 27, Color("#eef7ff") if dark else Unjam3DTheme.NAVY, true)
 	title.name = "ResultTitle"
 	FigmaReferenceCanvas.style_display_title(title, accent.lightened(0.22), Color("#071d55"), 2)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	# The status badge already communicates completion. Keep the large heading to
+	# one game-name line so Android font metrics can never wrap "COMPLETE" into
+	# the descriptive subtitle below it.
+	title.autowrap_mode = TextServer.AUTOWRAP_OFF
+	title.clip_text = true
 	FigmaReferenceCanvas.set_rect(title, 47, 118, 294, 40)
 	_canvas.add_child(title)
 
@@ -205,6 +209,12 @@ func _build() -> void:
 	tween.tween_property(card, "modulate:a", 1.0, 0.10)
 	tween.parallel().tween_property(card, "scale", Vector2(1.015, 1.015), 0.18)
 	tween.tween_property(card, "scale", Vector2.ONE, 0.08)
+
+func _result_display_title() -> String:
+	match _result_game_id():
+		"water_sort": return "WATER SORT"
+		"block_puzzle": return "BLOCK PUZZLE"
+		_: return "RESCUE RUSH"
 
 func _result_game_id() -> String:
 	var upper := title_text.to_upper()
