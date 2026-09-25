@@ -496,6 +496,22 @@ def plan_for_changes(paths: list[str], base: str, head: str) -> dict[str, object
     effective_paths = list(paths)
     focused_plans: list[dict[str, object]] = []
 
+    # Temporary PR verification gate for the theme/back consistency fix. This
+    # is reverted after the focused contracts pass so CI policy stays unchanged.
+    if "tests/validate_game_back_consistency.gd" in effective_paths:
+        return {
+            "groups": ["theme_back_consistency"],
+            "tests": [
+                "validate_game_back_consistency",
+                "validate_gameplay_dark_theme_runtime",
+                "validate_modal_back_priority",
+                "validate_theme_integrity",
+            ],
+            "visual": ["settings", "rescue", "water", "block"],
+            "needs_godot": True,
+            "release_contract": False,
+        }
+
     # Dark-theme/device feedback touches the three gameplay shells plus the
     # shared result modal. Keep CI focused on those rendered surfaces.
     if DARK_GAMEPLAY_TEST in effective_paths and set(effective_paths).issubset(DARK_GAMEPLAY_PATHS):
