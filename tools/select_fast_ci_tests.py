@@ -496,28 +496,6 @@ def plan_for_changes(paths: list[str], base: str, head: str) -> dict[str, object
     effective_paths = list(paths)
     focused_plans: list[dict[str, object]] = []
 
-    # Temporary focused verification for the progression-retention hardening PR.
-    # Reverted before merge; it exists only to bypass unrelated legacy polish
-    # assertions while exercising every progression/economy/runtime contract.
-    if "tests/validate_progression_retention_hardening.gd" in effective_paths:
-        return {
-            "groups": ["progression_retention_focus"],
-            "tests": [
-                "validate_progression_retention_hardening",
-                "validate_block_progression_10000",
-                "validate_progression_coin_sync",
-                "validate_rescue_progression_10000",
-                "validate_water_progression",
-                "validate_progression_transitions",
-                "validate_gameplay_interactions",
-                "validate_daily_and_late_water_runtime",
-                "validate_water_constructive_solvability",
-            ],
-            "visual": [],
-            "needs_godot": True,
-            "release_contract": False,
-        }
-
     # Dark-theme/device feedback touches the three gameplay shells plus the
     # shared result modal. Keep CI focused on those rendered surfaces.
     if DARK_GAMEPLAY_TEST in effective_paths and set(effective_paths).issubset(DARK_GAMEPLAY_PATHS):
