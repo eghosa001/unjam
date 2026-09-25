@@ -250,8 +250,11 @@ func start_multi_level_mode(game_id: String, level_number: int, daily: bool = fa
 	game_scene.daily_mode = daily
 	if game_id == "block_puzzle":
 		game_scene.set("play_mode", mode)
+	game_scene.set_meta("unjam_game_id", game_id)
+	game_scene.set_meta("unjam_level_number", level_number)
+	game_scene.set_meta("unjam_daily_mode", daily)
 	game_scene.finished.connect(_on_multi_finished.bind(game_id, daily))
-	game_scene.quit_requested.connect(_on_multi_quit.bind(game_id, daily))
+	game_scene.quit_requested.connect(_on_multi_quit.bind(game_scene, game_id, daily))
 	add_child(game_scene)
 	game_scene.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	game_scene.z_index = 100
@@ -274,8 +277,11 @@ func _spawn_rescue(level_number: int, daily: bool, custom_data: Dictionary) -> v
 	game_scene.daily_mode = daily
 	if not custom_data.is_empty():
 		game_scene.custom_level_data = custom_data.duplicate(true)
+	game_scene.set_meta("unjam_game_id", "rescue_rush")
+	game_scene.set_meta("unjam_level_number", level_number)
+	game_scene.set_meta("unjam_daily_mode", daily)
 	game_scene.finished.connect(_on_rescue_finished.bind(daily))
-	game_scene.quit_requested.connect(_on_rescue_quit.bind(daily))
+	game_scene.quit_requested.connect(_on_rescue_quit.bind(game_scene, daily))
 	add_child(game_scene)
 	game_scene.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	game_scene.z_index = 100
@@ -299,20 +305,67 @@ func _return_from_daily() -> void:
 	else:
 		build_home()
 
-func force_back_from_game() -> void:
-	# Android back must never depend on the active game's animation/busy state.
-	var game_id := selected_game_id
-	var was_daily := active_game != null and is_instance_valid(active_game) and bool(active_game.get("daily_mode"))
+func _game_context(game: Control, fallback_game_id: String, fallback_daily: bool = false) -> Dictionary:
+	var game_id := fallback_game_id
+	var level_number := -1
+	var was_daily := fallback_daily
+	if game != null and is_instance_valid(game):
+		if game.has_meta("unjam_game_id"):
+			game_id = String(game.get_meta("unjam_game_id"))
+		var level_value = game.get("level_number")
+		if level_value != null:
+			level_number = int(level_value)
+		if game.has_meta("unjam_level_number"):
+			level_number = int(game.get_meta("unjam_level_number"))
+		var daily_value = game.get("daily_mode")
+		if daily_value != null:
+			was_daily = bool(daily_value)
+		if game.has_meta("unjam_daily_mode"):
+			was_daily = bool(game.get_meta("unjam_daily_mode"))
+	return {
+		"game_id": game_id,
+		"level_number": level_number,
+		"was_daily": was_daily,
+	}
+
+
+func _active_game_context() -> Dictionary:
+	var game := active_game
+	if game == null or not is_instance_valid(game):
+		game = get_node_or_null("ActiveGame") as Control
+	return _game_context(game, selected_game_id, false)
+
+
+func _return_from_game(game_id: String, was_daily: bool, level_number: int = -1) -> void:
 	_remove_active_game()
 	if was_daily:
 		_return_from_daily()
-	elif game_id == "rescue_rush":
+		return
+	if game_id == "rescue_rush":
+		selected_game_id = "rescue_rush"
+		if level_number > 0:
+			selected_world = LevelManager.world_for_level(level_number)
 		build_level_select()
-	else:
-		selected_game_id = game_id
-		selected_multi_world = MultiGameManager.world_for_game_level(game_id, MultiGameManager.highest_level(game_id))
-		selected_multi_page = _multi_page_for_level(game_id, MultiGameManager.highest_level(game_id))
-		build_multi_level_select()
+		return
+	if game_id not in ["water_sort", "block_puzzle"]:
+		build_home()
+		return
+	selected_game_id = game_id
+	var target_level := level_number if level_number > 0 else MultiGameManager.highest_level(game_id)
+	selected_multi_world = MultiGameManager.world_for_game_level(game_id, target_level)
+	selected_multi_page = _multi_page_for_level(game_id, target_level)
+	build_multi_level_select()
+
+
+func force_back_from_game() -> void:
+	# System Back and every in-game Back control resolve from the game that is
+	# actually open, never from a selector value that may have changed behind it.
+	var context := _active_game_context()
+	_return_from_game(
+		String(context.get("game_id", selected_game_id)),
+		bool(context.get("was_daily", false)),
+		int(context.get("level_number", -1))
+	)
 
 func _on_rescue_finished(completed_level: int, was_daily: bool = false) -> void:
 	active_game = null
@@ -325,12 +378,15 @@ func _on_rescue_finished(completed_level: int, was_daily: bool = false) -> void:
 	else:
 		build_home()
 
-func _on_rescue_quit(was_daily: bool = false) -> void:
-	active_game = null
-	if was_daily:
-		_return_from_daily()
-	else:
-		build_level_select()
+func _on_rescue_quit(source_game: Control, was_daily: bool = false) -> void:
+	if active_game != null and is_instance_valid(active_game) and source_game != active_game:
+		return
+	var context := _game_context(source_game, "rescue_rush", was_daily)
+	_return_from_game(
+		String(context.get("game_id", "rescue_rush")),
+		bool(context.get("was_daily", was_daily)),
+		int(context.get("level_number", -1))
+	)
 
 func _on_multi_finished(completed_level: int, game_id: String, was_daily: bool = false) -> void:
 	active_game = null
@@ -343,15 +399,15 @@ func _on_multi_finished(completed_level: int, game_id: String, was_daily: bool =
 	else:
 		build_home()
 
-func _on_multi_quit(game_id: String, was_daily: bool = false) -> void:
-	active_game = null
-	if was_daily:
-		_return_from_daily()
+func _on_multi_quit(source_game: Control, game_id: String, was_daily: bool = false) -> void:
+	if active_game != null and is_instance_valid(active_game) and source_game != active_game:
 		return
-	selected_game_id = game_id
-	selected_multi_world = MultiGameManager.world_for_game_level(game_id, MultiGameManager.highest_level(game_id))
-	selected_multi_page = _multi_page_for_level(game_id, MultiGameManager.highest_level(game_id))
-	build_multi_level_select()
+	var context := _game_context(source_game, game_id, was_daily)
+	_return_from_game(
+		String(context.get("game_id", game_id)),
+		bool(context.get("was_daily", was_daily)),
+		int(context.get("level_number", -1))
+	)
 
 func _checkpoint_for(game_id: String) -> Dictionary:
 	var checkpoint: Dictionary = SaveManager.data.get("active_run", {}) if game_id == "rescue_rush" else MultiGameManager.checkpoint(game_id)
