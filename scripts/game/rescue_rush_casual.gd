@@ -2,6 +2,8 @@ extends "res://scripts/game/rescue_rush_motion_final.gd"
 
 const RefCanvas = preload("res://scripts/ui/figma_reference_canvas.gd")
 
+# Rescue render-audit marker: keeps selective CI scoped to the live Rescue surface.
+
 const NAVY := Color(0.03,0.23,0.47)
 const OFF_WHITE := Color(1.0,0.995,0.97)
 const GREEN := Color(0.13,0.78,0.39)
