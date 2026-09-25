@@ -26,6 +26,12 @@ func _validate_all_profiles() -> bool:
 		var world := int(p.get("world", -1))
 		if int(p.get("level_id", -1)) != level:
 			return _fail("Profile id mismatch at level %d" % level)
+		if not bool(p.get("curated_source", false)):
+			return _fail("Level %d did not load from the handcrafted campaign manifest" % level)
+		if int(p.get("curation_version", 0)) < 1:
+			return _fail("Level %d is missing curation version metadata" % level)
+		if String(p.get("shape_bias", "")).is_empty():
+			return _fail("Level %d is missing its handcrafted shape bias" % level)
 		if int(p.get("board_size", -1)) != 8:
 			return _fail("Level %d is not using the 8x8 campaign board" % level)
 		if score < floor_score or score > ceiling_score:
