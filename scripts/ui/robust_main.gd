@@ -112,7 +112,7 @@ func build_multi_level_select() -> void:
 	back.pressed.connect(build_home)
 	header.add_child(back)
 	var title := Label.new()
-	title.text = "%s  •  WORLD %d / %d" % [MultiGameManager.display_name(selected_game_id), selected_multi_world, MultiGameManager.world_count_for(selected_game_id)]
+	title.text = "%s  •  %s %d / %d" % [MultiGameManager.display_name(selected_game_id), MultiGameManager.progression_scope_label(selected_game_id), selected_multi_world, MultiGameManager.world_count_for(selected_game_id)]
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
