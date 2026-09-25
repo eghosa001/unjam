@@ -56,6 +56,19 @@ func _run() -> void:
 	if not _rect_eq(Rect2(emblem.position,emblem.size),Rect2(77,17,30,30)):
 		return _fail("Water identity emblem drifted from Figma header geometry")
 
+	game.set("moves", 12345)
+	game.set("par_moves", 6789)
+	game.call("render_board")
+	await _frames(2)
+	var move_count := game.find_child("WaterMoveCount", true, false) as Label
+	var star_target := game.find_child("WaterThreeStarTarget", true, false) as Label
+	if move_count == null or star_target == null:
+		return _fail("Water compact move/star HUD is missing")
+	if move_count.text != "MOVES 12345" or star_target.text != "3★≤6789":
+		return _fail("Water compact move/star HUD does not preserve large values")
+	if move_count.position.x + move_count.size.x > 273.0 or star_target.position.x + star_target.size.x > 354.0:
+		return _fail("Water move/star HUD can escape the audited info strip")
+
 	game.queue_free()
 	await process_frame
 	print("Water Sort Figma visual hierarchy validated.")
