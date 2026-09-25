@@ -1,0 +1,46 @@
+name: Temporary Exhaustive Progression Audit
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/progression-exhaustive-temp.yml"
+      - "scripts/core/rescue_rush_progression.gd"
+      - "scripts/core/campaign_generator.gd"
+      - "tests/validate_campaign.gd"
+
+permissions:
+  contents: read
+
+jobs:
+  rescue-campaign:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Godot 4.7.2
+        uses: solarlabyrinth/action-setup-godot@v3
+        with:
+          version: 4.7.2-stable
+          export-templates: false
+      - name: Disable release-only editor plugins
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("project.godot")
+          text = p.read_text()
+          enabled = 'enabled=PackedStringArray("res://addons/admob/plugin.cfg", "res://addons/GodotGooglePlayBilling/plugin.cfg")'
+          if enabled not in text:
+              raise SystemExit("Expected monetization plugin declaration missing")
+          p.write_text(text.replace(enabled, "enabled=PackedStringArray()"))
+          PY
+      - name: Import project
+        shell: bash
+        run: |
+          set -o pipefail
+          godot --headless --path . --editor --quit 2>&1 | tee import.log
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" import.log; then exit 1; fi
+      - name: Validate all 10000 Rescue levels
+        shell: bash
+        run: bash tools/run_godot_test.sh validate_campaign 90
