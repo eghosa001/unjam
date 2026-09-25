@@ -37,12 +37,12 @@ func _run() -> void:
 		await _frames(2)
 
 	var motion_source := _read("res://scripts/ui/motion_system.gd")
-	for token in ["&\"micro\": 0.055", "&\"travel\": 0.19", "&\"pour\": 0.235", "&\"screen\": 0.12"]:
+	for token in ["&\"micro\": 0.045", "&\"press\": 0.065", "&\"travel\": 0.16", "&\"pour\": 0.21", "&\"screen\": 0.085"]:
 		if not motion_source.contains(token):
 			return _fail("Premium response timing missing: %s" % token)
 	var audio_source := _read("res://scripts/systems/feedback_manager.gd")
-	if not audio_source.contains("func snap()") or not audio_source.contains("_vibrate(7)") or not audio_source.contains("MUSIC_DURATION := 32.0"):
-		return _fail("Premium snap/pour haptics or longer calm music phrase is missing")
+	if not audio_source.contains("func snap()") or not audio_source.contains("MUSIC_DURATION := 32.0") or not audio_source.contains("Landing remains audio-only"):
+		return _fail("Premium snap/pour audio or longer calm music phrase is missing")
 	var drag_source := _read("res://scripts/ui/block_drag_preview.gd")
 	if not drag_source.contains("became_valid") or not drag_source.contains("feedback.call(\"snap\")"):
 		return _fail("Block Puzzle magnetic snap confirmation is missing")
@@ -75,7 +75,7 @@ func _run() -> void:
 	if not tray_source.contains("minf(32.0, fit_cell)") or not tray_source.contains("size.x - 10.0"):
 		return _fail("Block Puzzle tray pieces are still undersized against the board")
 	var rescue_ui_source := _read("res://scripts/game/rescue_rush_casual.gd")
-	if not rescue_ui_source.contains("set_rect(actions,21,638,346,62)"):
+	if not rescue_ui_source.contains("set_rect(actions,21,566,346,62)"):
 		return _fail("Rescue controls are not in the premium thumb-zone position")
 	var performance_source := _read("res://scripts/systems/robust_premium_visuals.gd")
 	if not performance_source.contains("_set_quality(0.75)") or not performance_source.contains("_set_quality(0.50)") or not performance_source.contains("fps < 53"):

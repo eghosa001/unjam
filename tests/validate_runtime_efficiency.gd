@@ -88,12 +88,24 @@ func _hot_paths_stay_lightweight() -> bool:
 	var water_game := FileAccess.get_file_as_string("res://scripts/game/water_sort.gd")
 	var block_game := FileAccess.get_file_as_string("res://scripts/game/block_puzzle_3d.gd")
 	var visuals := FileAccess.get_file_as_string("res://scripts/systems/robust_premium_visuals.gd")
+	var touch_enhancer := FileAccess.get_file_as_string("res://scripts/ui/ui_touch_enhancer.gd")
+	var water_reference := FileAccess.get_file_as_string("res://scripts/game/water_sort_reference_motion.gd")
 	var checkpoint_fn := manager.get_slice("func _checkpoint_payload_matches", 1).get_slice("func save_checkpoint", 0)
 	if ".duplicate(true)" in checkpoint_fn:
 		return _fail("Checkpoint equality regressed to recursive copying")
 	var water_process := water.get_slice("func _process", 1).get_slice("func _sync_motion_processing", 0)
 	if "_refresh_liquid_3d()" in water_process or not "_refresh_meniscus_3d()" in water_process:
 		return _fail("Water arrival ripple regressed to full liquid-run rebuilds")
+	var water_configure := water.get_slice("func configure", 1).get_slice("func _ready", 0)
+	if "_request_3d_frame()" in water_configure:
+		return _fail("Water selection/configure path still redraws unchanged 3D bottles")
+	if not "Vector2i(160, 320)" in water:
+		return _fail("Water one-shot 3D viewport budget regressed")
+	var touch_added := touch_enhancer.get_slice("func _on_node_added", 1).get_slice("func _queue_enhancements", 0)
+	if "_queue_enhancements()" in touch_added or not "_apply_button_size" in touch_added:
+		return _fail("Touch enhancer regressed to whole-tree rescans for each new node")
+	if not "button.custom_minimum_size != target_tube_size" in water_reference:
+		return _fail("Water board still invalidates unchanged tube layout on every tap")
 	var water_checkpoint := water_game.get_slice("func _save_checkpoint", 1).get_slice("func _restore_checkpoint", 0)
 	if "history.duplicate(true)" in water_checkpoint:
 		return _fail("Water checkpoint regressed to recursive undo-history copying")

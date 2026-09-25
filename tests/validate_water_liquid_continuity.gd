@@ -27,6 +27,9 @@ func _run() -> void:
 	var meniscus := tube.get("liquid_meniscus_3d") as MeshInstance3D
 	if meniscus == null or not meniscus.visible:
 		return _fail("Continuous Water volume has no exposed meniscus")
+	var meniscus_mesh := meniscus.mesh as SphereMesh
+	if meniscus_mesh == null or absf(first_mesh.top_radius - meniscus_mesh.radius) > 0.001:
+		return _fail("Water body and meniscus no longer share one uniform container-aligned radius")
 
 	tube.configure([0, 0, 1, 1], false, 0)
 	await _frames(2)
@@ -46,6 +49,9 @@ func _run() -> void:
 	await _frames(2)
 	if _visible_volume_count(tube) != 1:
 		return _fail("Mid-pour same-colour Water still splits into stacked 3D solids")
+	var liquid_root := tube.get("liquid_root_3d") as Node3D
+	if liquid_root == null or absf(liquid_root.rotation.z) > 0.0001:
+		return _fail("Water arrival ripple tilted the bulk liquid away from the bottle walls")
 
 	tube.queue_free()
 	await _frames(2)

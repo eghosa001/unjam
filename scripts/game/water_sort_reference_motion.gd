@@ -25,16 +25,23 @@ func render_board() -> void:
 	if board == null:
 		return
 	_ensure_tube_controls(tubes.size())
-	board.columns = 5 if tubes.size() <= 10 else 6
-	board.add_theme_constant_override("h_separation", 18 if tubes.size() <= 10 else 10)
-	board.add_theme_constant_override("v_separation", 25)
+	var target_columns := 5 if tubes.size() <= 10 else 6
+	var target_h_gap := 18 if tubes.size() <= 10 else 10
+	if board.columns != target_columns:
+		board.columns = target_columns
+	if board.get_theme_constant("h_separation") != target_h_gap:
+		board.add_theme_constant_override("h_separation", target_h_gap)
+	if board.get_theme_constant("v_separation") != 25:
+		board.add_theme_constant_override("v_separation", 25)
 	var tube_width := 154.0 if tubes.size() <= 10 else 128.0
 	var tube_height := 316.0 if tubes.size() <= 10 else 286.0
+	var target_tube_size := Vector2(tube_width, tube_height)
 	for i in range(tubes.size()):
 		var button := board.get_child(i) as MotionTube
 		if button == null:
 			continue
-		button.custom_minimum_size = Vector2(tube_width, tube_height)
+		if button.custom_minimum_size != target_tube_size:
+			button.custom_minimum_size = target_tube_size
 		button.tooltip_text = "Tube %d" % (i + 1)
 		button.modulate = Color.WHITE
 		button.disabled = false
