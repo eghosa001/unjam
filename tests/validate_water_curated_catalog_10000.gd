@@ -19,6 +19,11 @@ func _run() -> void:
 			return _fail("Curated Water level %d is missing" % level)
 		if int(authored.get("authored_level", -1)) != level:
 			return _fail("Curated Water level id mismatch at %d" % level)
+		if int(authored.get("catalog_version", -1)) != Catalog.CATALOG_VERSION:
+			return _fail("Curated Water catalog version mismatch at %d" % level)
+		var expected_chapter := int((level - 1) / Catalog.CHAPTER_SIZE) + 1
+		if int(authored.get("chapter", -1)) != expected_chapter:
+			return _fail("Curated Water chapter mismatch at %d" % level)
 		var profile: Dictionary = Progression.profile(level)
 		var tubes: Array = (authored.get("tubes", []) as Array).duplicate(true)
 		var solution: Array = authored.get("solution", [])
