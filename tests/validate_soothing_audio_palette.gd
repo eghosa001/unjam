@@ -12,6 +12,10 @@ func _initialize() -> void:
 	for token in [
 		"const SFX_POOL_SIZE := 5",
 		"const MUSIC_DURATION := 32.0",
+		"const STARTUP_MUSIC_DURATION := 1.5",
+		"const MUSIC_SYNTH_CHUNK_FRAMES := 2048",
+		"func _start_music_immediately",
+		"func _build_startup_ambient",
 		"func _play_chime",
 		"func _next_available_sfx_player",
 		"not candidate.playing",
@@ -70,6 +74,9 @@ func _initialize() -> void:
 				failures.append("Calm chime became too quiet to provide tactile confirmation")
 			if chime_peak > 20000:
 				failures.append("Calm chime lost safe PCM headroom")
+		var startup = feedback.call("_build_startup_ambient")
+		if startup == null or startup.data.size() < 8 or int(startup.mix_rate) != 12000:
+			failures.append("Startup ambient primer must be immediately available at 12000 Hz")
 		var music = feedback.call("_build_calm_ambient_loop")
 		if music == null or music.data.size() < 8:
 			failures.append("Ambient loop generated no samples")
