@@ -1,6 +1,10 @@
 name: Android Production Release
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/android-release.yml"
   workflow_dispatch:
     inputs:
       version_name:
@@ -52,10 +56,10 @@ jobs:
           [[ "$EXPECTED_BLOCK_REVIEW_SHA256" =~ ^[0-9A-Fa-f]{64}$ ]]
           grep -Eq '^supabase_url="https://[^"]+\.supabase\.co"$' project.godot
           grep -Eq '^supabase_publishable_key="sb_publishable_[^"]+"$' project.godot
-          [[ "${{ inputs.version_code }}" =~ ^[1-9][0-9]*$ ]]
-          test "${{ inputs.version_code }}" -ge 1
-          test "${{ inputs.version_code }}" -le 2100000000
-          test -n "${{ inputs.version_name }}"
+          [[ "5" =~ ^[1-9][0-9]*$ ]]
+          test "5" -ge 1
+          test "5" -le 2100000000
+          test -n "1.0.5"
       - name: Verify live monetization endpoints
         env:
           UNJAM_DEVELOPER_WEBSITE_URL: ${{ vars.UNJAM_DEVELOPER_WEBSITE_URL }}
@@ -104,8 +108,8 @@ jobs:
           KEYSTORE_B64: ${{ secrets.UNJAM_ANDROID_KEYSTORE_BASE64 }}
           KEY_ALIAS: ${{ secrets.UNJAM_ANDROID_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.UNJAM_ANDROID_KEY_PASSWORD }}
-          VERSION_NAME: ${{ inputs.version_name }}
-          VERSION_CODE: ${{ inputs.version_code }}
+          VERSION_NAME: 1.0.5
+          VERSION_CODE: 5
         shell: bash
         run: |
           set -euo pipefail
@@ -297,7 +301,7 @@ jobs:
       - name: Upload release AAB and verification records
         uses: actions/upload-artifact@v4
         with:
-          name: unjam-release-aab-${{ inputs.version_name }}-${{ inputs.version_code }}
+          name: unjam-release-aab-1.0.5-5
           path: |
             build/android/unjam-release.aab
             build/android/unjam-release.aab.sha256
