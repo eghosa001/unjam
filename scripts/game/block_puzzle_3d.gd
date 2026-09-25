@@ -98,6 +98,7 @@ func build_ui() -> void:
 	canvas.name = "FigmaBlock390x844"
 	add_child(canvas)
 	_build_figma_block(canvas)
+	call_deferred("apply_theme_mode", _shell_dark_mode())
 
 	effects_layer = Control.new()
 	effects_layer.name = "BlockEffectsLayer"
@@ -108,16 +109,19 @@ func build_ui() -> void:
 
 func _build_figma_block(canvas: Control) -> void:
 	var sky := PanelContainer.new()
+	sky.name = "BlockScenicSky"
 	sky.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(Color("#81778f"), Color("#b8afbf"), Color("#ece7ed"), 34, Color("#b9b1c0"), 1, 0.28))
 	FigmaReferenceCanvas.set_rect(sky, -24.88, -128.55, 437.76, 947.35)
 	sky.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(sky)
 	var ground := PanelContainer.new()
+	ground.name = "BlockScenicGround"
 	ground.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(Color("#574b67"), Color("#40364e"), Color("#2b2435"), 0, Color.TRANSPARENT, 0, 0.26))
 	FigmaReferenceCanvas.set_rect(ground, -24.88, -23.04, 437.76, 460.20)
 	ground.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(ground)
 	var platform := Polygon2D.new()
+	platform.name = "BlockPerspectivePlatform"
 	platform.polygon = PackedVector2Array([Vector2(14, 434), Vector2(376, 434), Vector2(350, 86), Vector2(40, 86)])
 	platform.color = Color(0.50,0.43,0.58,0.40)
 	canvas.add_child(platform)
@@ -177,6 +181,7 @@ func _build_figma_block(canvas: Control) -> void:
 	_add_block_hint_bulb(hint)
 
 	var depth := PanelContainer.new()
+	depth.name = "BlockBoardDepth"
 	depth.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color("#241445"), 20))
 	FigmaReferenceCanvas.set_rect(depth, 24.24, 176.35, 346, 346)
 	canvas.add_child(depth)
@@ -254,6 +259,96 @@ func _build_figma_block(canvas: Control) -> void:
 	FigmaReferenceCanvas.set_rect(frame_border, 0, 0, 390, 844)
 	frame_border.z_index = 900
 	canvas.add_child(frame_border)
+
+func _shell_dark_mode() -> bool:
+	var main := get_tree().current_scene
+	var shell := main.get_node_or_null("UXShell") if main != null else null
+	return shell != null and String(shell.get("theme_mode")) == "dark"
+
+func _style_block_header_button(button: Button, dark: bool, accent: Color) -> void:
+	if button == null or not is_instance_valid(button):
+		return
+	var fill := Color("#251a2d") if dark else Color(0.98,0.96,1.0)
+	var text := Color("#f3eaff") if dark else (Color("#7d21d6") if accent.get_luminance() > 0.35 else Color(0.03,0.23,0.47))
+	var border := Color(accent, 0.72 if dark else 0.52)
+	button.add_theme_stylebox_override("normal", FigmaReferenceCanvas.rounded_gradient3(fill.lightened(0.08 if dark else 0.02), fill, fill.darkened(0.12 if dark else 0.05), 16, border, 1.3))
+	button.add_theme_stylebox_override("hover", FigmaReferenceCanvas.rounded_gradient3(fill.lightened(0.14), fill.lightened(0.04), fill.darkened(0.08), 16, border.lightened(0.10), 1.3))
+	button.add_theme_stylebox_override("pressed", FigmaReferenceCanvas.rounded_gradient3(fill, fill.darkened(0.08), fill.darkened(0.18), 16, border, 1.3))
+	for key in ["font_color", "font_hover_color", "font_pressed_color"]:
+		button.add_theme_color_override(key, text)
+
+func _apply_figma_block_theme(dark: bool) -> void:
+	var bg := find_child("BlockFigmaViewportBackground", true, false) as ColorRect
+	if bg != null:
+		bg.color = Color("#100b18") if dark else Color(0.14,0.10,0.32)
+	var sky := find_child("BlockScenicSky", true, false) as PanelContainer
+	if sky != null:
+		sky.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(
+			Color("#211a29") if dark else Color("#81778f"),
+			Color("#2d2436") if dark else Color("#b8afbf"),
+			Color("#392e43") if dark else Color("#ece7ed"),
+			34, Color("#594c64") if dark else Color("#b9b1c0"), 1, 0.28
+		))
+	var ground := find_child("BlockScenicGround", true, false) as PanelContainer
+	if ground != null:
+		ground.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(
+			Color("#271e30") if dark else Color("#574b67"),
+			Color("#1d1725") if dark else Color("#40364e"),
+			Color("#130f19") if dark else Color("#2b2435"),
+			0, Color.TRANSPARENT, 0, 0.26
+		))
+	var platform := find_child("BlockPerspectivePlatform", true, false) as Polygon2D
+	if platform != null:
+		platform.color = Color(0.20,0.15,0.25,0.54) if dark else Color(0.50,0.43,0.58,0.40)
+	var score_card := find_child("BlockScoreCard", true, false) as PanelContainer
+	if score_card != null:
+		score_card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(
+			Color("#382c42") if dark else Color("#55465f"),
+			Color("#2e2538") if dark else Color("#493a54"),
+			Color("#231c2c") if dark else Color("#3b3045"),
+			16, Color(0.72,0.52,1.0,0.48 if dark else 0.38), 1.1, 0.24
+		))
+	var depth := find_child("BlockBoardDepth", true, false) as PanelContainer
+	if depth != null:
+		depth.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color("#160d29") if dark else Color("#241445"), 20))
+	if board_shell != null:
+		board_shell.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(
+			Color("#44285f") if dark else Color("#613894"),
+			Color("#321d4d") if dark else Color("#452670"),
+			Color("#211333") if dark else Color("#2e1a54"),
+			20, Color(0.72,0.52,1.0,0.82), 2
+		))
+	var tray := find_child("BlockTray", true, false) as PanelContainer
+	if tray != null:
+		tray.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(
+			Color("#29202f") if dark else Color("#fffdf8"),
+			Color("#211a28") if dark else Color("#f7f2e9"),
+			Color("#18131e") if dark else Color("#ece4d8"),
+			22, Color(0.67,0.55,0.72,0.58 if dark else 0.46), 1.1, 0.24
+		))
+	if score_label != null:
+		score_label.add_theme_color_override("font_color", Color("#f7efff"))
+	if goal_label != null:
+		goal_label.add_theme_color_override("font_color", Color("#ead8f8") if dark else Color(0.96,0.87,1.0))
+	if status_label != null:
+		status_label.add_theme_color_override("font_color", Color("#f4edff"))
+	if hint_label != null:
+		hint_label.add_theme_color_override("font_color", Color("#ead8f8"))
+	var level_meta := find_child("BlockLevelMeta", true, false) as Label
+	if level_meta != null:
+		level_meta.add_theme_color_override("font_color", Color("#dfd4e8") if dark else Color(0.92,0.98,1.0))
+	_style_block_header_button(find_child("BackAction", true, false) as Button, dark, Color("#7a6b8b"))
+	_style_block_header_button(find_child("RetryAction", true, false) as Button, dark, Color("#a855f7"))
+	var hint_button := find_child("HintAction", true, false) as Button
+	if hint_button != null:
+		var hint_fill := Color("#6d28a8") if dark else Color("#c73dff")
+		var hint_border := Color(0.89,0.62,1.0,0.70 if dark else 0.56)
+		hint_button.add_theme_stylebox_override("normal", FigmaReferenceCanvas.rounded_gradient3(hint_fill.lightened(0.10), hint_fill, hint_fill.darkened(0.15), 16, hint_border, 1.3))
+		hint_button.add_theme_stylebox_override("hover", FigmaReferenceCanvas.rounded_gradient3(hint_fill.lightened(0.18), hint_fill.lightened(0.05), hint_fill.darkened(0.10), 16, hint_border.lightened(0.08), 1.3))
+		hint_button.add_theme_stylebox_override("pressed", FigmaReferenceCanvas.rounded_gradient3(hint_fill, hint_fill.darkened(0.08), hint_fill.darkened(0.22), 16, hint_border, 1.3))
+	var frame := find_child("BlockFrameBorder", true, false) as PanelContainer
+	if frame != null:
+		frame.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color.TRANSPARENT, 34, Color("#5f5069") if dark else Color("#b8d1e0"), 1))
 
 func _tray_piece_button_size() -> Vector2:
 	# This scene is authored on a 390x844 Figma canvas and scales uniformly as a
