@@ -328,12 +328,11 @@ func _build_calm_ambient_loop() -> AudioStreamWAV:
 
 	for i in range(frames):
 		if i > 0 and i % MUSIC_SYNTH_CHUNK_FRAMES == 0:
-			var tree := get_tree()
 			# Unit/headless callers may invoke the pure waveform builder without
-			# attaching this node to a tree. Generate synchronously in that case;
-			# the real autoload is in-tree and yields to protect frame time.
-			if tree != null and is_inside_tree():
-				await tree.process_frame
+			# attaching this node to a tree. Never call get_tree() until attached;
+			# the real autoload yields here to protect frame time.
+			if is_inside_tree():
+				await get_tree().process_frame
 		var t := float(i) / float(MUSIC_RATE)
 		var section := mini(3, int(t / section_length))
 		var local_t := fmod(t, section_length)
