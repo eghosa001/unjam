@@ -8,7 +8,9 @@ var _motion_reduced := false
 var _ambient_nodes: Array[Polygon2D] = []
 var _ambient_wrap_y := 1040.0
 var _ambient_accumulator := 0.0
-const AMBIENT_UPDATE_FPS := 30.0
+# Decorative ambient drift does not need gameplay frame rate. Updating it at
+# 20 Hz removes continuous CanvasItem work while interpolation remains smooth.
+const AMBIENT_UPDATE_FPS := 20.0
 const AMBIENT_UPDATE_INTERVAL := 1.0 / AMBIENT_UPDATE_FPS
 
 func _ready() -> void:
