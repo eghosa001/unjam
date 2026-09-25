@@ -1,0 +1,83 @@
+name: Cleanup Obsolete Branches
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/branch-cleanup.yml"
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Delete only proven-obsolete branches
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin '+refs/heads/*:refs/remotes/origin/*' --prune
+          : > deleted-branches.txt
+          : > kept-branches.txt
+
+          while IFS= read -r ref; do
+            branch="${ref#refs/remotes/origin/}"
+            case "$branch" in
+              HEAD|main|gh-pages) continue ;;
+            esac
+
+            sha="$(git rev-parse "$ref")"
+            safe_delete=0
+            reason=""
+
+            # Branch tips already reachable from main are unambiguously obsolete.
+            if git merge-base --is-ancestor "$sha" origin/main; then
+              safe_delete=1
+              reason="ancestor-of-main"
+            else
+              # Squash-merged PR heads are not ancestors of main. GitHub can
+              # still prove that the exact current tip belonged to a merged PR.
+              merged_prs="$(gh api                 -H "Accept: application/vnd.github+json"                 "repos/$REPO/commits/$sha/pulls"                 --jq '[.[] | select(.merged_at != null)] | length' 2>/dev/null || echo 0)"
+              if [[ "$merged_prs" =~ ^[0-9]+$ ]] && (( merged_prs > 0 )); then
+                safe_delete=1
+                reason="merged-pr-head"
+              fi
+            fi
+
+            # This branch was created only for the zero-diff reachability audit.
+            if [[ "$branch" == "chore/dead-code-cleanup-20260925" ]]; then
+              safe_delete=1
+              reason="temporary-zero-diff-audit"
+            fi
+
+            if (( safe_delete == 1 )); then
+              echo "$branch | $reason" | tee -a deleted-branches.txt
+              git push origin --delete "$branch"
+            else
+              echo "$branch | unique-or-unproven" >> kept-branches.txt
+            fi
+          done < <(git for-each-ref --format='%(refname)' refs/remotes/origin/ | sort)
+
+          echo "Deleted $(wc -l < deleted-branches.txt) obsolete branch(es)."
+          echo "Kept $(wc -l < kept-branches.txt) branch(es) with unique or unproven work."
+          cat kept-branches.txt
+
+      - name: Upload cleanup report
+        uses: actions/upload-artifact@v4
+        with:
+          name: obsolete-branch-cleanup-report
+          path: |
+            deleted-branches.txt
+            kept-branches.txt
+          if-no-files-found: error
+          retention-days: 7
