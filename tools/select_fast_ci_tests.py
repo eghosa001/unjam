@@ -336,6 +336,19 @@ WATER_CAMPAIGN_GENERATOR_FUNCTIONS = {
     "_shuffle_int_array",
 }
 
+DARK_GAMEPLAY_TEST = "tests/validate_gameplay_dark_theme_runtime.gd"
+DARK_GAMEPLAY_PATHS = {
+    DARK_GAMEPLAY_TEST,
+    "tests/validate_result_premium_hierarchy.gd",
+    "scripts/ui/premium_result_overlay.gd",
+    "scripts/ui/ux_shell_casual.gd",
+    "scripts/game/water_sort_casual.gd",
+    "scripts/game/rescue_rush_casual.gd",
+    "scripts/game/block_puzzle_3d.gd",
+    "scripts/game/block_puzzle_final_polish.gd",
+    "tools/select_fast_ci_tests.py",
+}
+
 CRISP_TEXT_TEST = "tests/validate_crisp_text_rendering.gd"
 CRISP_TEXT_PATHS = {
     CRISP_TEXT_TEST,
@@ -482,6 +495,21 @@ def _combine_plans(*plans: dict[str, object]) -> dict[str, object]:
 def plan_for_changes(paths: list[str], base: str, head: str) -> dict[str, object]:
     effective_paths = list(paths)
     focused_plans: list[dict[str, object]] = []
+
+    # Dark-theme/device feedback touches the three gameplay shells plus the
+    # shared result modal. Keep CI focused on those rendered surfaces.
+    if DARK_GAMEPLAY_TEST in effective_paths and set(effective_paths).issubset(DARK_GAMEPLAY_PATHS):
+        return {
+            "groups": ["dark_gameplay_result"],
+            "tests": [
+                "validate_gameplay_dark_theme_runtime",
+                "validate_result_premium_hierarchy",
+                "validate_theme_integrity",
+            ],
+            "visual": ["settings", "rescue", "water", "block", "result"],
+            "needs_godot": True,
+            "release_contract": False,
+        }
 
     # Shared font/rasterization work needs every major surface rendered, but it
     # does not need unrelated gameplay geometry/progression suites.
