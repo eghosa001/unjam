@@ -109,4 +109,4 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-# manual-apk-build-marker 2026-09-25 dark-mode-result-overlap
+# manual-apk-build-marker 2026-09-25 responsiveness-validation
