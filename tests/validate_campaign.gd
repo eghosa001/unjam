@@ -132,3 +132,5 @@ func validate(level_number: int, level: Dictionary, errors: Array[String]) -> vo
 
 func inside(pos: Vector2i, width: int, height: int) -> bool:
 	return pos.x >= 0 and pos.y >= 0 and pos.x < width and pos.y < height
+
+# exhaustive-audit-trigger 2026-09-25
