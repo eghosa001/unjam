@@ -72,6 +72,7 @@ func _migrate_block_puzzle_world_badges(g:Dictionary)->Dictionary:
  return g
 
 func display_name(id:String)->String:return String(GAME_NAMES.get(id,id.to_upper()))
+func progression_scope_label(id:String)->String:return "ZONE" if id=="rescue_rush" else "WORLD"
 
 func _rescue_achievements()->Array:
  var out:Array=[]
