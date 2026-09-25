@@ -496,6 +496,25 @@ def plan_for_changes(paths: list[str], base: str, head: str) -> dict[str, object
     effective_paths = list(paths)
     focused_plans: list[dict[str, object]] = []
 
+    # Temporary focused verification for the authored 10,000-level Water catalog.
+    # Restored to main policy after this PR-specific validation passes.
+    if "tests/validate_water_curated_catalog_10000.gd" in effective_paths:
+        return {
+            "groups": ["water_curated_10000"],
+            "tests": [
+                "validate_water_curated_catalog_10000",
+                "validate_water_constructive_solvability",
+                "validate_daily_and_late_water_runtime",
+                "validate_water_liquid_continuity",
+                "validate_water_pour_arc",
+                "validate_water_palette_accessibility",
+                "validate_gameplay_interactions",
+            ],
+            "visual": ["water"],
+            "needs_godot": True,
+            "release_contract": False,
+        }
+
     # Dark-theme/device feedback touches the three gameplay shells plus the
     # shared result modal. Keep CI focused on those rendered surfaces.
     if DARK_GAMEPLAY_TEST in effective_paths and set(effective_paths).issubset(DARK_GAMEPLAY_PATHS):
