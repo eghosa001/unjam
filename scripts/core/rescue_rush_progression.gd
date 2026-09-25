@@ -1,6 +1,8 @@
 extends RefCounted
 class_name RescueRushProgression
 
+const AuthoredCatalog = preload("res://scripts/core/rescue_rush_authored_catalog.gd")
+
 const TOTAL_LEVELS := 10000
 const LEVELS_PER_WORLD := 100
 const WORLD_COUNT := 100
@@ -17,6 +19,26 @@ const OBJECTIVE_GATE_RUN := "gate_run"
 
 static func profile(level_number: int) -> Dictionary:
 	var n := clampi(level_number, 1, TOTAL_LEVELS)
+	var authored := AuthoredCatalog.recipe(n)
+	if not authored.is_empty():
+		var result: Dictionary = authored.duplicate(true)
+		for key in [
+			"level", "world", "chapter", "local_level", "difficulty_target",
+			"board_size", "piece_target", "dependency_target", "frontier_min",
+			"frontier_max", "mistake_limit", "action_budget", "required_chain",
+			"authored_seed", "exit_index", "rescue_variant"
+		]:
+			result[key] = int(result.get(key, 0))
+		var mechanics: Array = result.get("mechanics", [])
+		result["mechanics"] = mechanics.duplicate()
+		result["mechanic_count"] = mechanics.size()
+		result["first_attempt_target"] = Vector2(
+			float(result.get("first_attempt_low", 0.55)),
+			float(result.get("first_attempt_high", 0.75))
+		)
+		result["authored"] = true
+		result["catalog_version"] = AuthoredCatalog.CATALOG_VERSION
+		return result
 	var world := int((n - 1) / LEVELS_PER_WORLD) + 1
 	var chapter := int((n - 1) / CHAPTER_SIZE) + 1
 	var local := posmod(n - 1, LEVELS_PER_WORLD) + 1
