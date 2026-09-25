@@ -25,8 +25,21 @@ func _state_containers_present()->bool:
   and SaveManager.data.get("daily_game_choices",{}) is Dictionary
  )
 
+func _world_badge_migrations_current()->bool:
+ var all = SaveManager.data.get("game_progress", {})
+ if not all is Dictionary:
+  return false
+ for id in ["water_sort", "block_puzzle"]:
+  var raw = (all as Dictionary).get(id, {})
+  if not raw is Dictionary:
+   return false
+  var required_version := WATER_WORLD_BADGE_SPAN_VERSION if id == "water_sort" else BLOCK_WORLD_BADGE_SPAN_VERSION
+  if int((raw as Dictionary).get("world_badge_span_version", 0)) < required_version:
+   return false
+ return true
+
 func ensure_state()->void:
- if _state_initialized and _state_containers_present():return
+ if _state_initialized and _state_containers_present() and _world_badge_migrations_current():return
  _total_stars_cache.clear()
  if not SaveManager.data.get("game_progress",{}) is Dictionary: SaveManager.data["game_progress"]={}
  var all:Dictionary=SaveManager.data.get("game_progress",{})
@@ -72,6 +85,7 @@ func _migrate_block_puzzle_world_badges(g:Dictionary)->Dictionary:
  return g
 
 func display_name(id:String)->String:return String(GAME_NAMES.get(id,id.to_upper()))
+func progression_scope_label(id:String)->String:return "ZONE" if id=="rescue_rush" else "WORLD"
 
 func _rescue_achievements()->Array:
  var out:Array=[]

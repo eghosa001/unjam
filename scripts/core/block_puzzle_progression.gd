@@ -63,6 +63,9 @@ static func profile(raw_level: int) -> Dictionary:
 	var chapter_global := int((level - 1) / CHAPTER_SIZE) + 1
 	var chapter_in_world := int((level_in_world - 1) / CHAPTER_SIZE) + 1
 	var milestone := milestone_type(level)
+	var boss_archetype := boss_archetype_for(level, milestone)
+	if milestone in ["boss", "world_finale", "mastery", "finale"]:
+		objective = _boss_objective_family(level, objective)
 	var horizon := planning_horizon(level)
 	var tier := piece_tier(level)
 	var occupancy := initial_occupancy(level)
@@ -93,6 +96,7 @@ static func profile(raw_level: int) -> Dictionary:
 		"chapter_global": chapter_global,
 		"chapter_in_world": chapter_in_world,
 		"milestone": milestone,
+		"boss_archetype": boss_archetype,
 		"retention_role": pace_role,
 		"objective_intro_age": intro_age,
 		"difficulty_score": difficulty_score,
@@ -156,22 +160,25 @@ static func piece_tier(level: int) -> int:
 	return 6
 
 static func initial_occupancy(level: int) -> float:
+	# Campaign pressure is monotonic across macro bands. Temporary relief belongs
+	# to retention_role modifiers, not to a hidden reset at 501/2001/5001/7501.
 	if level <= 50:
 		return lerpf(0.0, 0.05, float(level - 1) / 49.0)
 	if level <= 500:
 		return lerpf(0.05, 0.15, float(level - 51) / 449.0)
 	if level <= 2000:
-		return lerpf(0.10, 0.25, float(level - 501) / 1499.0)
+		return lerpf(0.15, 0.25, float(level - 501) / 1499.0)
 	if level <= 5000:
-		return lerpf(0.15, 0.30, float(level - 2001) / 2999.0)
+		return lerpf(0.25, 0.30, float(level - 2001) / 2999.0)
 	if level <= 7500:
-		return lerpf(0.20, 0.35, float(level - 5001) / 2499.0)
-	return lerpf(0.20, 0.40, float(level - 7501) / 2499.0)
+		return lerpf(0.30, 0.35, float(level - 5001) / 2499.0)
+	return lerpf(0.35, 0.40, float(level - 7501) / 2499.0)
 
 static func objective_family(level: int) -> String:
 	# New objective families begin on recovery levels immediately after major
 	# milestones, so players learn one new rule before it is combined with pressure.
-	if level < 10: return "score"
+	# Level 10 remains the opening mastery check; the first new rule begins at 11.
+	if level < 11: return "score"
 	if level < 26: return "clear_lines"
 	if level < 41: return "clear_columns"
 	if level < 76: return "row_column"
@@ -188,10 +195,38 @@ static func objective_family(level: int) -> String:
 	if level < 2501: return "preserve_cells"
 	if level < 4001: return "dual_objective"
 	if level < 6001: return "triple_objective"
-	return "advanced_conditional"
+	if level < 7001: return "conditional_chain"
+	if level < 8001: return "constraint_combo"
+	if level < 9001: return "pressure_mastery"
+	return "grandmaster_conditional"
+
+static func boss_archetype_for(level: int, milestone: String = "") -> String:
+	if milestone.is_empty():
+		milestone = milestone_type(level)
+	if milestone not in ["boss", "world_finale", "mastery", "finale"]:
+		return ""
+	var archetypes: Array[String] = ["precision", "obstacle", "combo", "preservation", "mastery_mix"]
+	return archetypes[posmod(int(level / 100), archetypes.size())]
+
+static func _boss_objective_family(level: int, fallback: String) -> String:
+	if level < 76: return fallback
+	if level < 401: return "double_clear"
+	if level < 601: return "marked_cells"
+	if level < 1001: return "designated_rows"
+	if level < 1401: return "crates"
+	if level < 1751: return "ice"
+	if level < 2101: return "locks"
+	if level < 2401: return "steel"
+	if level < 2501: return "layered_obstacle"
+	if level < 4001: return "dual_objective"
+	if level < 6001: return "triple_objective"
+	if level < 7001: return "conditional_chain"
+	if level < 8001: return "constraint_combo"
+	if level < 9001: return "pressure_mastery"
+	return "grandmaster_conditional"
 
 static func objective_introduction_age(level: int) -> int:
-	var starts := [10, 26, 41, 76, 101, 151, 251, 401, 601, 1001, 1401, 1751, 2101, 2401, 2501, 4001, 6001]
+	var starts := [11, 26, 41, 76, 101, 151, 251, 401, 601, 1001, 1401, 1751, 2101, 2401, 2501, 4001, 6001, 7001, 8001, 9001]
 	for start in starts:
 		var age := level - int(start)
 		if age >= 0 and age <= 2:

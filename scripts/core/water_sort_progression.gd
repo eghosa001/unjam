@@ -36,6 +36,7 @@ static func profile(raw_level: int) -> Dictionary:
 	var retention_role := _retention_role(level)
 	var rank := _difficulty_rank(level)
 	var milestone := milestone_kind(level)
+	var challenge_archetype := _challenge_archetype(level, milestone, retention_role)
 	if milestone == "boss":
 		rank = maxi(rank, 4)
 	elif milestone in ["world_finale", "mastery", "finale"]:
@@ -80,7 +81,15 @@ static func profile(raw_level: int) -> Dictionary:
 
 	var colors := _colors_for_level(level, band, local_progress)
 	var empty_bottles := _empty_bottles_for_level(level, retention_role)
+	if challenge_archetype == "space_pressure" and level > 1000 and retention_role not in ["recovery", "learn", "practice"]:
+		empty_bottles = 1
+	match challenge_archetype:
+		"fragmentation", "buried_colors": target_score = mini(int(score_band[1]), target_score + 2)
+		"narrow_solution": target_score = mini(int(score_band[1]), target_score + 1)
+		"efficiency": target_score = mini(int(score_band[1]), target_score + 1)
 	var three_star_limit := maxi(target_moves, 6)
+	if challenge_archetype == "efficiency":
+		three_star_limit = maxi(6, roundi(float(three_star_limit) * 0.94))
 	var two_star_limit := three_star_limit + maxi(5, ceili(float(three_star_limit) * 0.15))
 	var scramble_steps := clampi(target_moves, 4, 80)
 	if level <= 3:
@@ -93,6 +102,8 @@ static func profile(raw_level: int) -> Dictionary:
 		scramble_steps = maxi(4, roundi(float(scramble_steps) * 0.92))
 	elif retention_role == "peak":
 		scramble_steps = mini(80, scramble_steps + 3)
+	if challenge_archetype in ["fragmentation", "buried_colors"]:
+		scramble_steps = mini(80, scramble_steps + 3)
 
 	var flags: Array[String] = []
 	if empty_bottles == 1:
@@ -101,6 +112,8 @@ static func profile(raw_level: int) -> Dictionary:
 		flags.append("efficiency_challenge")
 	if milestone != "normal":
 		flags.append(milestone)
+	if not challenge_archetype.is_empty():
+		flags.append("archetype:%s" % challenge_archetype)
 	if level == MAX_LEVEL:
 		flags.append("final_mastery")
 
@@ -118,6 +131,7 @@ static func profile(raw_level: int) -> Dictionary:
 		"target_difficulty": target_score,
 		"difficulty_label": _difficulty_label(rank, level),
 		"milestone": milestone,
+		"challenge_archetype": challenge_archetype,
 		"retention_role": retention_role,
 		"first_attempt_target": _first_attempt_target(retention_role, rank, milestone),
 		"target_moves_min": int(move_band[0]),
@@ -129,6 +143,22 @@ static func profile(raw_level: int) -> Dictionary:
 		"mechanic_flags": flags,
 		"hidden_information": false
 	}
+
+static func _challenge_archetype(level: int, milestone: String, role: String) -> String:
+	# Late Water Sort stays fully visible. Variety comes from measurable board
+	# structure instead of hidden colours or memory gimmicks.
+	if level < 2500:
+		return ""
+	if milestone == "normal" and role not in ["challenge", "stretch", "peak"]:
+		return ""
+	var archetypes: Array[String] = [
+		"fragmentation",
+		"narrow_solution",
+		"space_pressure",
+		"efficiency",
+		"buried_colors",
+	]
+	return archetypes[posmod(int(level / 10) + int(level / 500), archetypes.size())]
 
 static func milestone_kind(level: int) -> String:
 	if level == MAX_LEVEL:

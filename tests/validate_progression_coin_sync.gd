@@ -42,6 +42,25 @@ func run() -> void:
 	expect_true(int(save.data.coins) == before_level + 25, "Water Sort first-clear base reward changed unexpectedly")
 	expect_true(String(transactions.back().get("reason", "")) == "level_reward", "Multi-game level reward did not notify shared economy")
 
+	# Rescue keeps 100-level zone bosses, but major badge/prestige rewards are now
+	# aligned to 500-level chapters so all three campaigns expose 20 major clears.
+	save.data.stars = {}
+	save.data.world_badges = []
+	save.data.milestone_chests = []
+	save.data.highest_level = 1
+	save.data.total_levels_completed = 0
+	save.data.perfect_clears = 0
+	save.data.prestige_points = 0
+	var before_zone := int(save.data.coins)
+	var zone_rewards: Dictionary = multi.complete_level("rescue_rush", 100, 2, 25)
+	expect_true(not bool(zone_rewards.get("world_badge", false)), "Rescue level 100 incorrectly grants a major chapter badge")
+	expect_true(int(save.data.coins) == before_zone + 125, "Rescue zone boss reward should be base + milestone chest only")
+	var before_chapter := int(save.data.coins)
+	var chapter_rewards: Dictionary = multi.complete_level("rescue_rush", 500, 2, 25)
+	expect_true(bool(chapter_rewards.get("world_badge", false)) and int(chapter_rewards.get("world", 0)) == 1, "Rescue level 500 must grant Chapter 1 badge")
+	expect_true(int(chapter_rewards.get("prestige", 0)) >= 5, "Rescue chapter boss prestige reward missing")
+	expect_true(int(save.data.coins) == before_chapter + 375, "Rescue chapter boss reward should be base + milestone + chapter bonus")
+
 	# Caller-supplied negative rewards must never reduce the shared wallet. The
 	# completion itself may still be recorded; only the coin component is clamped.
 	var before_invalid := int(save.data.coins)

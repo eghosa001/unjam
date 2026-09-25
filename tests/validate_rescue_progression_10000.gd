@@ -29,12 +29,12 @@ func _initialize() -> void:
 		signatures[sig] = true
 	if String(Generator.generate(25).get("milestone", "")) != "challenge":
 		failures.append("25 challenge role")
-	if String(Generator.generate(50).get("milestone", "")) != "mini_boss":
-		failures.append("50 mini-boss role")
+	if String(Generator.generate(50).get("milestone", "")) != "elite":
+		failures.append("50 elite role")
 	if String(Generator.generate(75).get("milestone", "")) != "major_challenge":
 		failures.append("75 major challenge role")
 	var final_level := Generator.generate(10000)
-	if String(final_level.get("milestone", "")) != "world_finale":
+	if String(final_level.get("milestone", "")) != "finale":
 		failures.append("10000 finale role")
 	if int(final_level.get("difficulty_score", 0)) < 98:
 		failures.append("10000 difficulty below 98")
@@ -46,6 +46,17 @@ func _initialize() -> void:
 		failures.append("gate introduction should have extra mistake forgiveness")
 	if int(Generator.generate(504).get("mistake_limit", 0)) != 3:
 		failures.append("post-introduction three-mistake rule")
+	if String(Generator.generate(100).get("milestone", "")) != "zone_boss":
+		failures.append("100 zone boss role")
+	if String(Generator.generate(500).get("milestone", "")) != "chapter_finale":
+		failures.append("500 chapter boss role")
+	if String(Generator.generate(500).get("objective", "")) == Progression.OBJECTIVE_RESCUE_ROUTE:
+		failures.append("500 boss should remix an unlocked mechanic objective")
+	var late_objectives := {}
+	for level in [2500, 3000, 3500, 4000, 4500, 5000, 6000, 7000, 8000, 9000, 10000]:
+		late_objectives[String(Generator.generate(level).get("objective", ""))] = true
+	if late_objectives.size() < 4:
+		failures.append("late Rescue bosses do not rotate enough objective families")
 	if not failures.is_empty():
 		for failure in failures:
 			push_error(failure)

@@ -157,7 +157,7 @@ func _add_hero(canvas: Control) -> void:
 	var game_title := _add_text(canvas, _short_game_name(selected_game), Rect2(41, 151, 180, 34), game_title_size, NAVY, true)
 	game_title.name = "HomeHeroGameTitle"
 	RefCanvas.style_display_title(game_title, Unjam3DTheme.game_accent(selected_game).lightened(0.18), Color("#071d55"), 2)
-	var game_meta := _add_text(canvas, "LEVEL %d • WORLD %d" % [level, world], Rect2(41, 190, 170, 17), 14, MUTED, true)
+	var game_meta := _add_text(canvas, "LEVEL %d • %s %d" % [level, MultiGameManager.progression_scope_label(selected_game), world], Rect2(41, 190, 170, 17), 14, MUTED, true)
 	game_meta.name = "HomeHeroGameMeta"
 
 	var continue_button := _add_action(
@@ -300,7 +300,7 @@ func _add_world_progress(canvas: Control) -> void:
 	RefCanvas.set_rect(mark, 47, 603, 118, 108)
 	root.add_child(mark)
 
-	var world_title := _add_text(root, "WORLD %d" % world, Rect2(195, 598, 152, 26), 18, OFF_WHITE if _home_dark() else NAVY, true)
+	var world_title := _add_text(root, "%s %d" % [MultiGameManager.progression_scope_label(selected_game), world], Rect2(195, 598, 152, 26), 18, OFF_WHITE if _home_dark() else NAVY, true)
 	world_title.name = "HomeWorldProgressTitle"
 	var world_value := _add_text(root, "LEVEL %d • %d/%d" % [level, completed_in_world, total], Rect2(195, 632, 152, 19), 13, MUTED, true)
 	world_value.name = "HomeWorldProgressValue"

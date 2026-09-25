@@ -11,6 +11,12 @@ var level_profile: Dictionary = {}
 var generation_meta: Dictionary = {}
 var two_star_moves := 0
 var stuck := false
+var attempt_number := 1
+var attempt_restarts := 0
+var attempt_hint_uses := 0
+var attempt_undo_uses := 0
+var attempt_started_msec := 0
+var attempt_closed := false
 
 func build_ui() -> void:
 	super.build_ui()
@@ -75,6 +81,7 @@ func load_level() -> void:
 	_refresh_extra_tube_button()
 	call_deferred("_check_no_legal_pours")
 	call_deferred("_show_level_intro")
+	_begin_attempt()
 
 func _show_level_intro() -> void:
 	if daily_mode or premium_feedback == null or not is_instance_valid(premium_feedback):
@@ -83,8 +90,12 @@ func _show_level_intro() -> void:
 	if milestone == "normal":
 		return
 	var label := milestone.replace("_", " ").to_upper()
-	if milestone == "world_finale":
-		label = "FINALE"
+	match milestone:
+		"mini_boss": label = "HARD"
+		"boss": label = "ELITE"
+		"world_finale": label = "WORLD BOSS"
+		"mastery": label = "MASTER BOSS"
+		"finale": label = "FINAL BOSS"
 	var accent := Color("#ffd166") if milestone in ["boss", "world_finale", "mastery", "finale"] else Color("#5da9ff")
 	# Dense late-game boards use the header treatment only. A center banner over
 	# 11+ tubes blocks the first row and makes the premium intro harm gameplay.
@@ -164,6 +175,7 @@ func generate_tubes_with_solution(seed_value: int, colors: int) -> Dictionary:
 			generation_meta["empty_bottles"] = int(p.get("empty_bottles", 2))
 			generation_meta["generator_version"] = int(p.get("generator_version", 1))
 			generation_meta["milestone"] = String(p.get("milestone", "normal"))
+			generation_meta["challenge_archetype"] = String(p.get("challenge_archetype", ""))
 			curated["metadata"] = generation_meta.duplicate(true)
 			return curated
 	var target_score := int(p.get("target_difficulty", 20))
@@ -173,6 +185,7 @@ func generate_tubes_with_solution(seed_value: int, colors: int) -> Dictionary:
 	var best: Dictionary = {}
 	var best_error := 100000
 	var best_score := -1
+	var archetype := String(p.get("challenge_archetype", ""))
 
 	for attempt in range(candidate_count):
 		var step_delta := attempt - int(candidate_count / 2)
@@ -190,7 +203,7 @@ func generate_tubes_with_solution(seed_value: int, colors: int) -> Dictionary:
 			continue
 		var metrics := Progression.score_board(candidate_tubes, candidate_solution.size())
 		var score := int(metrics.get("difficulty_score", 0))
-		var error := absi(score - target_score)
+		var error := absi(score - target_score) + _archetype_penalty(metrics, archetype, colors)
 		# Prefer the closer board. On a tie, prefer the more demanding board so
 		# late-game candidate pools do not quietly drift toward filler levels.
 		if best.is_empty() or error < best_error or (error == best_error and score > best_score):
@@ -215,8 +228,23 @@ func generate_tubes_with_solution(seed_value: int, colors: int) -> Dictionary:
 	generation_meta["empty_bottles"] = empty_bottles
 	generation_meta["generator_version"] = int(p.get("generator_version", 1))
 	generation_meta["milestone"] = String(p.get("milestone", "normal"))
+	generation_meta["challenge_archetype"] = archetype
 	return best
 
+func _archetype_penalty(metrics: Dictionary, archetype: String, colors: int) -> int:
+	match archetype:
+		"fragmentation":
+			return maxi(0, colors - int(metrics.get("fragmentation", 0))) * 2
+		"narrow_solution":
+			return maxi(0, int(metrics.get("legal_moves", 0)) - 4) * 2
+		"buried_colors":
+			return roundi(maxf(0.0, 0.48 - float(metrics.get("burial_score", 0.0))) * 20.0)
+		"space_pressure":
+			return 0 if float(metrics.get("empty_pressure", 0.0)) >= 0.9 else 8
+		"efficiency":
+			return maxi(0, int(metrics.get("proof_moves", 0)) - int(_profile().get("target_moves", 80)))
+		_:
+			return 0
 
 func _curated_opening_level(level: int) -> Dictionary:
 	match level:
@@ -546,6 +574,7 @@ func _check_no_legal_pours() -> void:
 func complete_level() -> void:
 	if completed:
 		return
+	_track_attempt_end("complete", true)
 	completed = true
 	animating = true
 	MultiGameManager.clear_checkpoint(GAME_ID)
@@ -584,6 +613,58 @@ func complete_level() -> void:
 		finished.emit(-1 if daily_mode else level_number)
 		queue_free()
 	)
+
+func _begin_attempt() -> void:
+	attempt_closed = false
+	attempt_started_msec = Time.get_ticks_msec()
+	attempt_hint_uses = 0
+	attempt_undo_uses = 0
+	AnalyticsManager.track("water_sort_attempt_started", {
+		"level": level_number,
+		"daily": daily_mode,
+		"attempt": attempt_number,
+		"restarts": attempt_restarts,
+		"difficulty_score": int(generation_meta.get("difficulty_score", -1)),
+		"milestone": String(level_profile.get("milestone", "normal")),
+		"archetype": String(level_profile.get("challenge_archetype", ""))
+	})
+
+func _track_attempt_end(outcome: String, success: bool) -> void:
+	if attempt_closed:
+		return
+	attempt_closed = true
+	AnalyticsManager.track("water_sort_attempt_finished", {
+		"level": level_number,
+		"daily": daily_mode,
+		"attempt": attempt_number,
+		"first_attempt_success": success and attempt_number == 1,
+		"success": success,
+		"outcome": outcome,
+		"moves": moves,
+		"restarts": attempt_restarts,
+		"hint_uses": attempt_hint_uses,
+		"undo_uses": attempt_undo_uses,
+		"elapsed_seconds": maxf(0.0, float(Time.get_ticks_msec() - attempt_started_msec) / 1000.0),
+		"difficulty_score": int(generation_meta.get("difficulty_score", -1)),
+		"milestone": String(level_profile.get("milestone", "normal")),
+		"archetype": String(level_profile.get("challenge_archetype", ""))
+	})
+
+func _before_restart_level() -> void:
+	if not attempt_closed:
+		_track_attempt_end("restart", false)
+	attempt_number += 1
+	attempt_restarts += 1
+
+func _before_quit_level() -> void:
+	if not completed and not attempt_closed:
+		_track_attempt_end("quit", false)
+
+func _note_attempt_hint() -> void:
+	attempt_hint_uses += 1
+
+func _note_attempt_undo() -> void:
+	attempt_undo_uses += 1
 
 func _profile() -> Dictionary:
 	if level_profile.is_empty() or int(level_profile.get("level_id", -1)) != level_number:

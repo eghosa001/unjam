@@ -27,6 +27,10 @@ var mistake_limit: int = 3
 var objective_type: String = "rescue_route"
 var action_budget: int = 999999
 var best_chain: int = 0
+var attempt_number: int = 1
+var attempt_restarts: int = 0
+var attempt_started_msec: int = 0
+var attempt_closed: bool = false
 
 var board_grid: GridContainer
 var moves_label: Label
@@ -74,6 +78,7 @@ func _ready() -> void:
 	build_ui()
 	_restore_checkpoint()
 	render_board()
+	_begin_attempt_tracking()
 
 func world_index() -> int:
 	var world: int = int(level_data.get("world", LevelManager.world_for_level(maxi(level_number, 1))))
@@ -428,6 +433,7 @@ func _fail_and_restart(message: String) -> void:
 		hint_label.text = String(presentation.get("subtitle", message))
 	_clear_checkpoint(true)
 	FeedbackManager.blocked()
+	_track_attempt_end("failed", false, message)
 	AnalyticsManager.track("rescue_attempt_failed", {"level": level_number, "reason": message, "daily": daily_mode})
 	var result := PremiumResultOverlay.new()
 	result.configure(
@@ -640,6 +646,7 @@ func _active_type_count_excluding(excluded: Array[String]) -> int:
 	return count
 
 func complete_level() -> void:
+	_track_attempt_end("complete", true)
 	var stars: int = 3
 	var assist_penalty := mistakes_this_level + hints_used_this_level + undos_used_this_level
 	if assist_penalty > 0 or moves > par_moves:
@@ -691,7 +698,7 @@ func reward_summary() -> String:
 	if bool(completion_rewards.get("milestone", false)):
 		lines.append("MILESTONE CHEST UNLOCKED")
 	if bool(completion_rewards.get("world_badge", false)):
-		lines.append("WORLD %d BADGE EARNED" % int(completion_rewards.get("world", 0)))
+		lines.append("CHAPTER %d BADGE EARNED" % int(completion_rewards.get("world", 0)))
 	if int(completion_rewards.get("prestige", 0)) > 0:
 		lines.append("+%d PRESTIGE" % int(completion_rewards.get("prestige", 0)))
 	return "\n".join(lines)
@@ -767,6 +774,10 @@ func show_hint() -> void:
 	hint_label.text = "Dead end. Use Undo or Retry to recover."
 
 func restart_level() -> void:
+	if not attempt_closed:
+		_track_attempt_end("restart", false)
+	attempt_number += 1
+	attempt_restarts += 1
 	AnalyticsManager.level_restarted(level_number)
 	_clear_checkpoint(true)
 	var original_level: int = level_number
@@ -809,6 +820,45 @@ func _restart_in_place() -> void:
 			pieces.append(piece)
 	build_ui()
 	render_board()
+	_begin_attempt_tracking()
+
+func _begin_attempt_tracking() -> void:
+	attempt_closed = false
+	attempt_started_msec = Time.get_ticks_msec()
+	AnalyticsManager.track("rescue_attempt_started", {
+		"level": level_number,
+		"daily": daily_mode,
+		"attempt": attempt_number,
+		"restarts": attempt_restarts,
+		"difficulty_score": int(level_data.get("difficulty_score", -1)),
+		"milestone": String(level_data.get("milestone", "")),
+		"boss_archetype": String(level_data.get("boss_archetype", "")),
+		"objective": objective_type
+	})
+
+func _track_attempt_end(outcome: String, success: bool, reason: String = "") -> void:
+	if attempt_closed:
+		return
+	attempt_closed = true
+	AnalyticsManager.track("rescue_attempt_finished", {
+		"level": level_number,
+		"daily": daily_mode,
+		"attempt": attempt_number,
+		"first_attempt_success": success and attempt_number == 1,
+		"success": success,
+		"outcome": outcome,
+		"reason": reason,
+		"moves": moves,
+		"mistakes": mistakes_this_level,
+		"hint_uses": hints_used_this_level,
+		"undo_uses": undos_used_this_level,
+		"restarts": attempt_restarts,
+		"elapsed_seconds": maxf(0.0, float(Time.get_ticks_msec() - attempt_started_msec) / 1000.0),
+		"difficulty_score": int(level_data.get("difficulty_score", -1)),
+		"milestone": String(level_data.get("milestone", "")),
+		"boss_archetype": String(level_data.get("boss_archetype", "")),
+		"objective": objective_type
+	})
 
 func _save_checkpoint() -> void:
 	if daily_mode or rescued or level_data.is_empty():
@@ -865,6 +915,8 @@ func _clear_checkpoint(save_now: bool = true) -> void:
 		SaveManager.save()
 
 func _quit() -> void:
+	if not rescued and not attempt_closed:
+		_track_attempt_end("quit", false)
 	_save_checkpoint()
 	quit_requested.emit()
 	queue_free()

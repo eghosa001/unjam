@@ -4,6 +4,8 @@ class_name RescueRushProgression
 const TOTAL_LEVELS := 10000
 const LEVELS_PER_WORLD := 100
 const WORLD_COUNT := 100
+const CHAPTER_SIZE := 500
+const CHAPTER_COUNT := 20
 
 const OBJECTIVE_RESCUE_ROUTE := "rescue_route"
 const OBJECTIVE_FULL_ESCAPE := "full_escape"
@@ -16,6 +18,7 @@ const OBJECTIVE_GATE_RUN := "gate_run"
 static func profile(level_number: int) -> Dictionary:
 	var n := clampi(level_number, 1, TOTAL_LEVELS)
 	var world := int((n - 1) / LEVELS_PER_WORLD) + 1
+	var chapter := int((n - 1) / CHAPTER_SIZE) + 1
 	var local := posmod(n - 1, LEVELS_PER_WORLD) + 1
 	var role := _level_role(n, local)
 	var difficulty_target := _difficulty_target(n, local, role)
@@ -44,10 +47,13 @@ static func profile(level_number: int) -> Dictionary:
 	return {
 		"level": n,
 		"world": world,
+		"chapter": chapter,
 		"local_level": local,
 		"level_role": role,
 		"retention_role": role,
-		"milestone": _milestone_name(local),
+		"milestone": _milestone_name(n, local),
+		"boss_archetype": _boss_archetype(n, local),
+		"mastery_family": _mastery_family(n),
 		"first_attempt_target": _first_attempt_target(role),
 		"difficulty_target": difficulty_target,
 		"difficulty_label": _difficulty_label(difficulty_target, role),
@@ -177,12 +183,12 @@ static func _mechanic_intro_age(n: int) -> int:
 static func _objective_for_level(n: int, local: int) -> String:
 	if _mechanic_intro_age(n) in [0, 1, 2]:
 		return OBJECTIVE_RESCUE_ROUTE
+	if local == 100:
+		return _boss_objective(n)
 	if n <= 500:
 		return OBJECTIVE_RESCUE_ROUTE
-	if local == 100:
-		return OBJECTIVE_RESCUE_ROUTE
-	if n <= 5000:
-		return OBJECTIVE_FULL_ESCAPE if local in [25, 75] and n >= 1200 else OBJECTIVE_RESCUE_ROUTE
+	if n <= 1200:
+		return OBJECTIVE_FULL_ESCAPE if local in [25, 75] else OBJECTIVE_RESCUE_ROUTE
 	var options: Array[String] = [
 		OBJECTIVE_RESCUE_ROUTE,
 		OBJECTIVE_FULL_ESCAPE,
@@ -192,12 +198,53 @@ static func _objective_for_level(n: int, local: int) -> String:
 		OBJECTIVE_BOMB_ROUTE,
 		OBJECTIVE_GATE_RUN,
 	]
-	var objective := options[posmod(int(n / 25) + local, options.size())]
-	if objective == OBJECTIVE_KEY_RESCUE and n < 501:
+	# After the early campaign, milestone and peak slots deliberately rotate
+	# objective families so thousands of levels do not devolve into denser
+	# versions of the same rescue-route puzzle.
+	if n >= 2500 and (local in [25, 50, 75] or posmod(local, 10) == 0):
+		var objective := options[posmod(int(n / 25) + local, options.size())]
+		if objective == OBJECTIVE_KEY_RESCUE and n < 501:
+			return OBJECTIVE_RESCUE_ROUTE
+		if objective == OBJECTIVE_BOMB_ROUTE and n < 2001:
+			return OBJECTIVE_RESCUE_ROUTE
+		return objective
+	return OBJECTIVE_FULL_ESCAPE if local in [25, 75] else OBJECTIVE_RESCUE_ROUTE
+
+static func _boss_objective(n: int) -> String:
+	# Bosses remix mechanics the player already learned instead of merely
+	# increasing density. Objective requirements are enforced by CampaignGenerator.
+	if n <= 200:
 		return OBJECTIVE_RESCUE_ROUTE
-	if objective == OBJECTIVE_BOMB_ROUTE and n < 2001:
-		return OBJECTIVE_RESCUE_ROUTE
-	return objective
+	if n <= 500:
+		return OBJECTIVE_FULL_ESCAPE if posmod(int(n / 100), 2) == 1 else OBJECTIVE_PERFECT_RESCUE
+	if n <= 1000:
+		return OBJECTIVE_GATE_RUN
+	if n <= 2000:
+		return OBJECTIVE_CHAIN_RESCUE if posmod(int(n / 100), 2) == 0 else OBJECTIVE_GATE_RUN
+	var late_bosses: Array[String] = [
+		OBJECTIVE_BOMB_ROUTE,
+		OBJECTIVE_CHAIN_RESCUE,
+		OBJECTIVE_PERFECT_RESCUE,
+		OBJECTIVE_GATE_RUN,
+		OBJECTIVE_FULL_ESCAPE,
+		OBJECTIVE_KEY_RESCUE,
+	]
+	return late_bosses[posmod(int(n / 100) - 20, late_bosses.size())]
+
+static func _boss_archetype(n: int, local: int) -> String:
+	if local != 100:
+		return ""
+	if n % CHAPTER_SIZE == 0:
+		return "chapter_boss"
+	return "zone_boss"
+
+static func _mastery_family(n: int) -> String:
+	if n < 2500: return "route_mastery"
+	if n < 4000: return "objective_rotation"
+	if n < 5500: return "dual_mechanic"
+	if n < 7000: return "constraint_mix"
+	if n < 8500: return "three_mechanic"
+	return "grandmaster_mix"
 
 static func _mistake_limit(n: int, role: String) -> int:
 	if n <= 20: return 0
@@ -261,11 +308,13 @@ static func _first_attempt_target(role: String) -> Vector2:
 		"world_boss": return Vector2(0.20, 0.36)
 		_: return Vector2(0.55, 0.75)
 
-static func _milestone_name(local: int) -> String:
+static func _milestone_name(n: int, local: int) -> String:
+	if n == TOTAL_LEVELS: return "finale"
+	if n % CHAPTER_SIZE == 0: return "chapter_finale"
 	if local == 25: return "challenge"
-	if local == 50: return "mini_boss"
+	if local == 50: return "elite"
 	if local == 75: return "major_challenge"
-	if local == 100: return "world_finale"
+	if local == 100: return "zone_boss"
 	return ""
 
 static func _difficulty_label(score: int, role: String) -> String:

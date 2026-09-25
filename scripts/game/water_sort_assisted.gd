@@ -114,6 +114,8 @@ func show_hint() -> void:
 		FeedbackManager.blocked()
 		return
 	SaveManager.record_hint()
+	if has_method("_note_attempt_hint"):
+		call("_note_attempt_hint")
 	FeedbackManager.tap()
 	var guidance := "Best move: tube %d → tube %d" % [move.x + 1, move.y + 1]
 	hint_label.text = guidance

@@ -1058,7 +1058,7 @@ func _build_figma_level_browser(game_id: String) -> void:
 	_figma_header(
 		canvas,
 		title,
-		"WORLD %d / %d" % [selected_multi_world,world_count],
+		"%s %d / %d" % [MultiGameManager.progression_scope_label(game_id),selected_multi_world,world_count],
 		"◈ +",
 		accent,
 		Callable(self,"_open_games_surface"),

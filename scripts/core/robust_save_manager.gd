@@ -3,7 +3,7 @@ extends "res://scripts/core/save_manager.gd"
 const ROBUST_SAVE_PATH := "user://unjam_save.json"
 const BACKUP_PATH := "user://unjam_save.backup.json"
 const TEMP_PATH := "user://unjam_save.tmp.json"
-const SAVE_VERSION := 14
+const SAVE_VERSION := 15
 # Active-run checkpoints are high-frequency but non-financial. Debounce them
 # long enough to coalesce rapid puzzle moves; pause/focus-loss/close still
 # forces an immediate flush, while rewards and purchases continue using save().
@@ -67,6 +67,15 @@ func _migrate_robust() -> void:
 	# so upgrading does not preserve the aggressive old phone vibration.
 	if previous_version < 7:
 		data["vibration"] = false
+	# Version 15 normalizes Rescue Rush's major progression economy to the same
+	# 20 x 500-level chapter cadence used by the other games. Old 100-level
+	# "world" badges are rebuilt from actual completed progress.
+	if previous_version < 15:
+		var completed_level := clampi(int(data.get("highest_level", 1)) - 1, 0, 10000)
+		var migrated_chapters: Array = []
+		for chapter in range(1, int(completed_level / 500) + 1):
+			migrated_chapters.append(str(chapter))
+		data["world_badges"] = migrated_chapters
 	# Version 8 consolidates Rescue Rush achievements into the same canonical
 	# `achievements` array used by the save manager. Merge rather than replace so
 	# unlocks survive builds that briefly wrote `rescue_achievements` separately.
@@ -127,8 +136,8 @@ func _sanitize() -> void:
 		highest_from_stars = max(highest_from_stars, min(10001, level_number + 1))
 		if level_number % 10 == 0:
 			completed_milestones.append(str(level_number))
-		if level_number % 100 == 0:
-			completed_worlds.append(str(int(level_number / 100)))
+		if level_number % 500 == 0:
+			completed_worlds.append(str(int(level_number / 500)))
 	data.stars = clean_stars
 	data.total_levels_completed = completed_count
 	data.perfect_clears = perfect_count
@@ -302,8 +311,8 @@ func complete_level(level_number: int, stars: int, rescue_id: String, coin_rewar
 			rewards.milestone = true
 			rewards.bonus_coins = int(rewards.bonus_coins) + 100
 			data.coins = int(data.coins) + 100
-	if first_clear and level_number % 100 == 0:
-		var world := int(level_number / 100)
+	if first_clear and level_number % 500 == 0:
+		var world := int(level_number / 500)
 		var badge_key := str(world)
 		if not badge_key in data.world_badges:
 			data.world_badges.append(badge_key)
@@ -317,7 +326,7 @@ func complete_level(level_number: int, stars: int, rescue_id: String, coin_rewar
 	_check_achievement("perfect_10", int(data.perfect_clears) >= 10, "PRECISION TEN", 20, rewards)
 	_check_achievement("perfect_streak_10", int(data.best_perfect_streak) >= 10, "FLAWLESS RUN", 30, rewards)
 	_check_achievement("levels_100", int(data.total_levels_completed) >= 100, "CENTURY RESCUER", 40, rewards)
-	_check_achievement("world_10", data.world_badges.size() >= 10, "MASTER OF TEN WORLDS", 50, rewards)
+	_check_achievement("world_10", data.world_badges.size() >= 10, "MASTER OF TEN CHAPTERS", 50, rewards)
 	_check_achievement("levels_1000", int(data.total_levels_completed) >= 1000, "UNJAM LEGEND", 100, rewards)
 	save()
 	if bool(rewards.perfect) or bool(rewards.milestone) or bool(rewards.world_badge) or int(rewards.prestige) > 0 or not rewards.achievements.is_empty():

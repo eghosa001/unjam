@@ -435,13 +435,25 @@ static func _build_special_plan(
 			_add_specials(specials, cleared_cells, "ice", target_count, 1)
 			_add_specials(specials, preserve_candidates, "preserve", mini(2, target_count), 1)
 			target_rows = cleared_rows.slice(0, mini(1, cleared_rows.size()))
-		"advanced_conditional":
+		"conditional_chain":
+			var chain_source := repeated_cells if not repeated_cells.is_empty() else cleared_cells
+			_add_specials(specials, chain_source, "steel", mini(3, target_count), 2 if not repeated_cells.is_empty() else 1)
+			required_double_clears = mini(1, double_events)
+		"constraint_combo":
+			_add_specials(specials, preserve_candidates, "preserve", mini(3, target_count), 1)
+			target_rows = cleared_rows.slice(0, mini(1, cleared_rows.size()))
+			target_cols = cleared_cols.slice(0, mini(1, cleared_cols.size()))
+		"pressure_mastery":
+			var pressure_source := repeated_cells if not repeated_cells.is_empty() else cleared_cells
+			_add_specials(specials, pressure_source, "steel", mini(3, target_count), 2 if not repeated_cells.is_empty() else 1)
+			_add_specials(specials, cleared_cells, "ice", mini(2, target_count), 1)
+			_add_specials(specials, preserve_candidates, "preserve", mini(2, target_count), 1)
+		"grandmaster_conditional", "advanced_conditional":
 			var durable_source := repeated_cells if not repeated_cells.is_empty() else cleared_cells
 			_add_specials(specials, durable_source, "steel", mini(3, target_count), 2 if not repeated_cells.is_empty() else 1)
 			_add_specials(specials, preserve_candidates, "preserve", mini(2, target_count), 1)
 			required_double_clears = mini(1, double_events)
-			if level == 10000:
-				target_rows = cleared_rows.slice(0, mini(1, cleared_rows.size()))
+			target_rows = cleared_rows.slice(0, mini(1, cleared_rows.size()))
 
 	return {
 		"family": family,

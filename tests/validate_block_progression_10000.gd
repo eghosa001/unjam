@@ -42,6 +42,25 @@ func _validate_all_profiles() -> bool:
 		previous_seed = seed
 		previous_world = world
 
+	if String(Progression.profile(10).get("objective", "")) != "score":
+		return _fail("Level 10 must remain the opening mastery check")
+	if String(Progression.profile(11).get("objective", "")) != "clear_lines":
+		return _fail("The first new Block objective must begin on recovery level 11")
+	for boundary in [500, 2000, 5000, 7500]:
+		var before_occ := float(Progression.initial_occupancy(boundary))
+		var after_occ := float(Progression.initial_occupancy(boundary + 1))
+		if after_occ + 0.0001 < before_occ:
+			return _fail("Block occupancy resets at %d -> %d: %.3f -> %.3f" % [boundary, boundary + 1, before_occ, after_occ])
+	var endgame_families := [
+		String(Progression.profile(6500).get("objective", "")),
+		String(Progression.profile(7500).get("objective", "")),
+		String(Progression.profile(8500).get("objective", "")),
+		String(Progression.profile(9500).get("objective", "")),
+	]
+	for expected_family in ["conditional_chain", "constraint_combo", "pressure_mastery", "grandmaster_conditional"]:
+		if expected_family not in endgame_families:
+			return _fail("Block endgame family missing: %s" % expected_family)
+
 	var finale: Dictionary = Progression.profile(10000)
 	if int(finale.get("world", 0)) != 20:
 		return _fail("Level 10000 must be World 20")
