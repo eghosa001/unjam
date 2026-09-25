@@ -7,6 +7,7 @@ const WORLD_SIZE := 500
 const WORLD_COUNT := 20
 const CHAPTER_SIZE := 50
 const GENERATOR_VERSION := 2
+const CuratedCampaign = preload("res://scripts/core/block_puzzle_curated_campaign.gd")
 
 # [start, end, difficulty_floor, difficulty_ceiling]
 const DIFFICULTY_BANDS := [
@@ -33,6 +34,12 @@ const DIFFICULTY_BANDS := [
 ]
 
 static func profile(raw_level: int) -> Dictionary:
+	var curated := CuratedCampaign.profile(raw_level)
+	if not curated.is_empty():
+		return curated
+	return _legacy_profile(raw_level)
+
+static func _legacy_profile(raw_level: int) -> Dictionary:
 	var level := clampi(raw_level, 1, MAX_LEVEL)
 	var band := _band_for(level)
 	var band_start := int(band[0])
