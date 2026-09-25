@@ -75,7 +75,7 @@ func _run() -> void:
 	if not tray_source.contains("minf(32.0, fit_cell)") or not tray_source.contains("size.x - 10.0"):
 		return _fail("Block Puzzle tray pieces are still undersized against the board")
 	var rescue_ui_source := _read("res://scripts/game/rescue_rush_casual.gd")
-	if not rescue_ui_source.contains("set_rect(actions,21,638,346,62)"):
+	if not rescue_ui_source.contains("set_rect(actions,21,566,346,62)"):
 		return _fail("Rescue controls are not in the premium thumb-zone position")
 	var performance_source := _read("res://scripts/systems/robust_premium_visuals.gd")
 	if not performance_source.contains("_set_quality(0.75)") or not performance_source.contains("_set_quality(0.50)") or not performance_source.contains("fps < 53"):
