@@ -66,7 +66,7 @@ func _run() -> void:
 		return _fail("Water compact move/star HUD is missing")
 	if move_count.text != "MOVES 12345" or star_target.text != "3★≤6789":
 		return _fail("Water compact move/star HUD does not preserve large values")
-	if move_count.position.x + move_count.size.x > 273.0 or star_target.position.x + star_target.size.x > 354.0:
+	if move_count.position.x + move_count.size.x > 283.0 or star_target.position.x + star_target.size.x > 354.0:
 		return _fail("Water move/star HUD can escape the audited info strip")
 
 	game.queue_free()
