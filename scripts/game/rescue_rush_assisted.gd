@@ -33,7 +33,14 @@ func _show_level_intro() -> void:
 	var role := String(level_data.get("level_role", "standard"))
 	if milestone == "normal" and role not in ["world_boss", "boss"]:
 		return
-	var label := ("WORLD BOSS" if role == "world_boss" else milestone.replace("_", " ").to_upper())
+	var label := milestone.replace("_", " ").to_upper()
+	match milestone:
+		"elite": label = "ELITE"
+		"zone_boss": label = "ZONE BOSS"
+		"chapter_finale": label = "CHAPTER BOSS"
+		"finale": label = "FINAL BOSS"
+	if role == "world_boss" and milestone.is_empty():
+		label = "ZONE BOSS"
 	var center := _level_intro_banner_center()
 	premium_feedback.show_banner(label, Color("#ffd166"), center, 176.0)
 
