@@ -496,6 +496,16 @@ def plan_for_changes(paths: list[str], base: str, head: str) -> dict[str, object
     effective_paths = list(paths)
     focused_plans: list[dict[str, object]] = []
 
+    # Temporary one-off exhaustive progression audit. Reverted before merge.
+    if "tests/validate_progression_retention_hardening.gd" in effective_paths:
+        return {
+            "groups": ["progression_exhaustive_focus"],
+            "tests": ["validate_campaign"],
+            "visual": [],
+            "needs_godot": True,
+            "release_contract": False,
+        }
+
     # Dark-theme/device feedback touches the three gameplay shells plus the
     # shared result modal. Keep CI focused on those rendered surfaces.
     if DARK_GAMEPLAY_TEST in effective_paths and set(effective_paths).issubset(DARK_GAMEPLAY_PATHS):
