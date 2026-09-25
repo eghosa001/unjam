@@ -213,8 +213,10 @@ static func _objective_for_level(n: int, local: int) -> String:
 static func _boss_objective(n: int) -> String:
 	# Bosses remix mechanics the player already learned instead of merely
 	# increasing density. Objective requirements are enforced by CampaignGenerator.
-	if n <= 500:
+	if n <= 200:
 		return OBJECTIVE_RESCUE_ROUTE
+	if n <= 500:
+		return OBJECTIVE_FULL_ESCAPE if posmod(int(n / 100), 2) == 1 else OBJECTIVE_PERFECT_RESCUE
 	if n <= 1000:
 		return OBJECTIVE_GATE_RUN
 	if n <= 2000:
