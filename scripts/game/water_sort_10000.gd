@@ -74,7 +74,7 @@ func load_level() -> void:
 	if title_label != null:
 		title_label.text = "WATER SORT"
 	if meta_label != null:
-		meta_label.text = "DAILY CHALLENGE" if daily_mode else "LEVEL %d • WORLD %d" % [
+		meta_label.text = "DAILY CHALLENGE" if daily_mode else "LEVEL %d • W%d" % [
 			level_number,
 			int(level_profile.get("world", 1))
 		]
@@ -108,7 +108,9 @@ func _show_level_intro() -> void:
 func render_board() -> void:
 	super.render_board()
 	if move_label != null:
-		move_label.text = "MOVES %d   •   3★ ≤ %d" % [moves, par_moves]
+		move_label.text = "MOVES %d" % moves
+	if star_target_label != null:
+		star_target_label.text = "3★≤%d" % par_moves
 
 func _tube_is_solved(values: Array) -> bool:
 	if values.size() != CAPACITY:
