@@ -78,14 +78,14 @@ func _build_figma_water(canvas: Control) -> void:
 	meta_label = _make_label("", 13, Color(0.92, 0.98, 1.0), true)
 	meta_label.clip_text = true
 	meta_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	RefCanvas.set_rect(meta_label, 37, 91, 140, 20)
+	RefCanvas.set_rect(meta_label, 37, 91, 155, 20)
 	canvas.add_child(meta_label)
 	move_label = _make_label("", 13, OFF_WHITE, true)
 	move_label.name = "WaterMoveCount"
 	move_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	move_label.clip_text = true
 	move_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	RefCanvas.set_rect(move_label, 181, 91, 91, 20)
+	RefCanvas.set_rect(move_label, 196, 91, 86, 20)
 	canvas.add_child(move_label)
 	star_target_label = _make_label("", 13, Color("#ffe08a"), true)
 	star_target_label.name = "WaterThreeStarTarget"
@@ -93,7 +93,7 @@ func _build_figma_water(canvas: Control) -> void:
 	star_target_label.clip_text = true
 	star_target_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	star_target_label.tooltip_text = "Finish at or below this move count for 3 stars."
-	RefCanvas.set_rect(star_target_label, 276, 91, 77, 20)
+	RefCanvas.set_rect(star_target_label, 286, 91, 67, 20)
 	canvas.add_child(star_target_label)
 
 	var objective := PanelContainer.new()
