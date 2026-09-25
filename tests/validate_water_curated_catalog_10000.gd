@@ -1,3 +1,4 @@
+# Validation trigger for PR-specific Water catalog CI.
 extends SceneTree
 
 const MAX_LEVEL := 10000
