@@ -426,6 +426,9 @@ func undo_move() -> void:
 	selected = -1
 	status_label.text = "Move undone"
 	SaveManager.record_undo()
+	AnalyticsManager.undo_used(level_number)
+	if has_method("_note_attempt_undo"):
+		call("_note_attempt_undo")
 	render_board()
 	_save_checkpoint()
 
@@ -463,6 +466,8 @@ func complete_level() -> void:
 
 func restart_level() -> void:
 	if animating: return
+	if has_method("_before_restart_level"):
+		call("_before_restart_level")
 	MultiGameManager.clear_checkpoint(GAME_ID)
 	load_level()
 
@@ -486,5 +491,7 @@ func _restore_checkpoint() -> void:
 
 func _quit() -> void:
 	if animating: return
+	if has_method("_before_quit_level"):
+		call("_before_quit_level")
 	_save_checkpoint()
 	quit_requested.emit()
