@@ -20,7 +20,7 @@ window/stretch/aspect="expand"
 window/handheld/orientation=1
 
 [gui]
-theme/default_font_multichannel_signed_distance_field=true
+theme/default_font_multichannel_signed_distance_field=false
 
 [rendering]
 renderer/rendering_method="gl_compatibility"
