@@ -228,7 +228,10 @@ func load_level() -> void:
 		"daily": daily_mode,
 		"attempt": attempt_number,
 		"restarts": attempt_restarts,
-		"difficulty_score": int(campaign_profile.get("difficulty_score", -1))
+		"difficulty_score": int(campaign_profile.get("difficulty_score", -1)),
+		"milestone": String(campaign_profile.get("milestone", "normal")),
+		"boss_archetype": String(campaign_profile.get("boss_archetype", "")),
+		"objective_family": String(campaign_profile.get("objective", "score"))
 	})
 
 func _show_level_intro() -> void:
@@ -238,6 +241,12 @@ func _show_level_intro() -> void:
 	if milestone == "normal":
 		return
 	var label := milestone.replace("_", " ").to_upper()
+	match milestone:
+		"mini_boss": label = "HARD"
+		"boss": label = "ELITE"
+		"world_finale": label = "WORLD BOSS"
+		"mastery": label = "MASTER BOSS"
+		"finale": label = "FINAL BOSS"
 	var accent := Color("#ffd166") if milestone in ["boss", "world_finale", "mastery", "finale", "extreme"] else Color("#c084fc")
 	var center := _level_intro_banner_center()
 	premium_feedback.show_banner(label, accent, center, 176.0)
@@ -1085,7 +1094,10 @@ func _track_attempt_end(outcome: String, success: bool) -> void:
 		"booster_uses": booster_total,
 		"booster_breakdown": booster_uses.duplicate(true),
 		"elapsed_seconds": elapsed_seconds,
-		"difficulty_score": int(campaign_profile.get("difficulty_score", -1))
+		"difficulty_score": int(campaign_profile.get("difficulty_score", -1)),
+		"milestone": String(campaign_profile.get("milestone", "normal")),
+		"boss_archetype": String(campaign_profile.get("boss_archetype", "")),
+		"objective_family": String(campaign_profile.get("objective", "score"))
 	})
 
 func _handle_no_legal_moves() -> void:
