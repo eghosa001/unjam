@@ -80,19 +80,23 @@ func build_ui() -> void:
 	figma_canvas.name = "FigmaRescue390x844"
 	add_child(figma_canvas)
 	_build_figma_rescue(figma_canvas)
+	call_deferred("apply_theme_mode", _shell_dark_mode())
 
 func _build_figma_rescue(canvas: Control) -> void:
 	var sky := PanelContainer.new()
+	sky.name = "RescueScenicSky"
 	sky.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#a9c4b9"), Color("#c8d8cc"), Color("#eee6d6"), 34, Color("#aebeb4"), 1, 0.28))
 	RefCanvas.set_rect(sky, -15.9, -58.12, 419.81, 908.51)
 	sky.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(sky)
 	var ground := PanelContainer.new()
+	ground.name = "RescueScenicGround"
 	ground.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#789477"), Color("#547562"), Color("#365648"), 0, Color.TRANSPARENT, 0, 0.24))
 	RefCanvas.set_rect(ground, -15.9, 43.06, 419.81, 441.34)
 	ground.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(ground)
 	var platform := Polygon2D.new()
+	platform.name = "RescuePerspectivePlatform"
 	platform.polygon = PackedVector2Array([Vector2(22,481),Vector2(368,481),Vector2(340,147),Vector2(50,147)])
 	platform.color = Color(0.55,0.66,0.53,0.42)
 	canvas.add_child(platform)
@@ -156,6 +160,7 @@ func _build_figma_rescue(canvas: Control) -> void:
 	canvas.add_child(objective_label)
 
 	var depth := PanelContainer.new()
+	depth.name = "RescueBoardDepth"
 	depth.add_theme_stylebox_override("panel",RefCanvas.rounded_gradient3(Color("#335257"),Color("#25434b"),Color("#1a3340"),26))
 	RefCanvas.set_rect(depth,23,194,344,344)
 	canvas.add_child(depth)
@@ -193,6 +198,7 @@ func _build_figma_rescue(canvas: Control) -> void:
 	actions.add_child(restart)
 
 	hint_label = RefCanvas.label("",14,NAVY,true)
+	hint_label.name = "RescueGuidanceText"
 	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	RefCanvas.set_rect(hint_label,21,636,346,42)
@@ -376,5 +382,88 @@ func render_board() -> void:
 	if chain_label != null:
 		chain_label.visible = false
 
-func apply_theme_mode(_dark: bool) -> void:
-	pass
+func _shell_dark_mode() -> bool:
+	var main := get_tree().current_scene
+	var shell := main.get_node_or_null("UXShell") if main != null else null
+	return shell != null and String(shell.get("theme_mode")) == "dark"
+
+func _style_rescue_button(button: Button, dark: bool, accent: Color = GREEN, compact_header: bool = false) -> void:
+	if button == null or not is_instance_valid(button):
+		return
+	var fill := Color("#182a22") if dark else (Color(0.97,1.0,0.96) if compact_header else Color("#365448"))
+	var text := Color("#eafbf0") if dark else (Color("#088c3d") if compact_header else OFF_WHITE)
+	var border := Color(accent, 0.72 if dark else 0.52)
+	button.add_theme_stylebox_override("normal", RefCanvas.rounded_gradient3(fill.lightened(0.08 if dark else 0.02), fill, fill.darkened(0.12 if dark else 0.05), 16, border, 1.2))
+	button.add_theme_stylebox_override("hover", RefCanvas.rounded_gradient3(fill.lightened(0.14), fill.lightened(0.04), fill.darkened(0.08), 16, border.lightened(0.10), 1.2))
+	button.add_theme_stylebox_override("pressed", RefCanvas.rounded_gradient3(fill, fill.darkened(0.08), fill.darkened(0.18), 16, border, 1.2))
+	for key in ["font_color", "font_hover_color", "font_pressed_color"]:
+		button.add_theme_color_override(key, text)
+
+func apply_theme_mode(dark: bool) -> void:
+	var bg := find_child("RescueFigmaViewportBackground", true, false) as ColorRect
+	if bg != null:
+		bg.color = Color("#101a16") if dark else Color(0.10,0.30,0.22)
+	var sky := find_child("RescueScenicSky", true, false) as PanelContainer
+	if sky != null:
+		sky.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(
+			Color("#1c2823") if dark else Color("#a9c4b9"),
+			Color("#24342d") if dark else Color("#c8d8cc"),
+			Color("#2d3e34") if dark else Color("#eee6d6"),
+			34, Color("#4d6258") if dark else Color("#aebeb4"), 1, 0.28
+		))
+	var ground := find_child("RescueScenicGround", true, false) as PanelContainer
+	if ground != null:
+		ground.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(
+			Color("#21362b") if dark else Color("#789477"),
+			Color("#182c23") if dark else Color("#547562"),
+			Color("#102219") if dark else Color("#365648"),
+			0, Color.TRANSPARENT, 0, 0.24
+		))
+	var platform := find_child("RescuePerspectivePlatform", true, false) as Polygon2D
+	if platform != null:
+		platform.color = Color(0.18,0.29,0.22,0.52) if dark else Color(0.55,0.66,0.53,0.42)
+	var status_panel := find_child("CompactStatusStrip", true, false) as PanelContainer
+	if status_panel != null:
+		status_panel.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(
+			Color("#20372e") if dark else Color("#365448"),
+			Color("#192e26") if dark else Color("#29483d"),
+			Color("#11221b") if dark else Color("#20392f"),
+			15, Color(0.49,0.72,0.56,0.44), 1.1, 0.24
+		))
+	var objective := find_child("RescueObjectiveCard", true, false) as PanelContainer
+	if objective != null:
+		objective.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(
+			Color("#213229") if dark else Color("#fffdf7"),
+			Color("#1b2a22") if dark else Color("#faf7ef"),
+			Color("#152119") if dark else Color("#f1ede2"),
+			12, Color(0.55,0.76,0.61,0.48 if dark else 0.32), 1.0, 0.22
+		))
+	var objective_label := find_child("RescueObjectiveLabel", true, false) as Label
+	if objective_label != null:
+		objective_label.add_theme_color_override("font_color", Color("#dff8e8") if dark else Color("#088c3d"))
+	var depth := find_child("RescueBoardDepth", true, false) as PanelContainer
+	if depth != null:
+		depth.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(
+			Color("#172a2d") if dark else Color("#335257"),
+			Color("#102328") if dark else Color("#25434b"),
+			Color("#0a1a20") if dark else Color("#1a3340"), 26
+		))
+	if board_panel != null:
+		board_panel.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(
+			Color("#28483c") if dark else Color("#d1ebc2"),
+			Color("#1e392f") if dark else Color("#99c4ab"),
+			Color("#152b25") if dark else Color("#5e8c85"),
+			26, Color(0.46,0.78,0.58,0.72) if dark else Color(0.94,1.0,0.88,0.72), 2, 0.45
+		))
+	for label in [moves_label, rescue_label, chain_label]:
+		if label != null:
+			label.add_theme_color_override("font_color", Color("#eafbf0") if dark else OFF_WHITE)
+	if hint_label != null:
+		hint_label.add_theme_color_override("font_color", Color("#bdeecb") if dark else NAVY)
+	_style_rescue_button(find_child("RescueBackAction", true, false) as Button, dark, GREEN, true)
+	_style_rescue_button(find_child("RescueRetryAction", true, false) as Button, dark, GREEN, true)
+	for name in ["RescueUndoAction", "RescueHintAction", "RescueRestartAction"]:
+		_style_rescue_button(find_child(name, true, false) as Button, dark, GREEN, false)
+	var frame := find_child("RescueFrameBorder", true, false) as PanelContainer
+	if frame != null:
+		frame.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color.TRANSPARENT, 34, Color("#4c685b") if dark else Color("#b8d1e0"), 1))
