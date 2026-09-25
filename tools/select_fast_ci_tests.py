@@ -336,6 +336,17 @@ WATER_CAMPAIGN_GENERATOR_FUNCTIONS = {
     "_shuffle_int_array",
 }
 
+CRISP_TEXT_TEST = "tests/validate_crisp_text_rendering.gd"
+CRISP_TEXT_PATHS = {
+    CRISP_TEXT_TEST,
+    "project.godot",
+    "scripts/ui/unjam_3d_theme.gd",
+    "scripts/ui/figma_reference_canvas.gd",
+    "scripts/ui/premium_design_system.gd",
+    "tests/validate_requested_polish_contract.gd",
+    "tools/select_fast_ci_tests.py",
+}
+
 INTERACTION_POLISH_TEST = "tests/validate_interaction_response_polish.gd"
 INTERACTION_POLISH_PATHS = {
     INTERACTION_POLISH_TEST,
@@ -471,6 +482,24 @@ def _combine_plans(*plans: dict[str, object]) -> dict[str, object]:
 def plan_for_changes(paths: list[str], base: str, head: str) -> dict[str, object]:
     effective_paths = list(paths)
     focused_plans: list[dict[str, object]] = []
+
+    # Shared font/rasterization work needs every major surface rendered, but it
+    # does not need unrelated gameplay geometry/progression suites.
+    if CRISP_TEXT_TEST in effective_paths and set(effective_paths).issubset(CRISP_TEXT_PATHS):
+        return {
+            "groups": ["crisp_text"],
+            "tests": [
+                "validate_crisp_text_rendering",
+                "validate_theme_integrity",
+                "validate_requested_polish_contract",
+            ],
+            "visual": [
+                "home", "games", "levels", "collection", "daily", "settings",
+                "shop", "rescue", "water", "block", "tutorial", "result",
+            ],
+            "needs_godot": True,
+            "release_contract": True,
+        }
 
     # This interaction pass touches several surfaces but has one focused
     # regression contract. Keep iteration fast while still rendering the three

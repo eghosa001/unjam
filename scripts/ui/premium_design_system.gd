@@ -173,8 +173,9 @@ static func apply_label(label: Label, dark: bool, kind: String = "body", accent:
 	match kind:
 		"title":
 			label.add_theme_color_override("font_color", ink(dark))
-			label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.18 if dark else 0.05))
-			label.add_theme_constant_override("shadow_offset_y", 2)
+			label.add_theme_color_override("font_shadow_color", Color.TRANSPARENT)
+			label.add_theme_constant_override("shadow_offset_x", 0)
+			label.add_theme_constant_override("shadow_offset_y", 0)
 		"accent":
 			label.add_theme_color_override("font_color", accent)
 		"muted":
