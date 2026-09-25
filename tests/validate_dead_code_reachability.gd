@@ -18,7 +18,7 @@ func _run() -> void:
 		if path.begins_with("res://tests/") or path.begins_with("res://tools/") or path.begins_with("res://addons/"):
 			continue
 		var own := String(text_by_path.get(path, ""))
-		var class_name := _class_name(own)
+		var class_id := _class_name(own)
 		var path_refs := 0
 		var class_refs := 0
 		for other_path in text_by_path.keys():
@@ -26,12 +26,12 @@ func _run() -> void:
 				continue
 			var other := String(text_by_path[other_path])
 			path_refs += other.count(path)
-			if not class_name.is_empty():
-				class_refs += _word_count(other, class_name)
+			if not class_id.is_empty():
+				class_refs += _word_count(other, class_id)
 		if path_refs == 0 and class_refs == 0:
 			candidates.append({
 				"path": path,
-				"class_name": class_name,
+				"class_name": class_id,
 				"lines": own.split("\n").size()
 			})
 
