@@ -78,5 +78,11 @@ static func _chapter(chapter: int) -> Array:
 		_chapter_cache[chapter] = []
 		return []
 	var out := entries as Array
+	# Parsed JSON expands significantly in memory. Keep at most two 500-level
+	# chapters resident so long play sessions do not accumulate all 10,000 boards.
+	if not _chapter_cache.has(chapter) and _chapter_cache.size() >= 2:
+		var oldest_keys := _chapter_cache.keys()
+		if not oldest_keys.is_empty():
+			_chapter_cache.erase(oldest_keys[0])
 	_chapter_cache[chapter] = out
 	return out
