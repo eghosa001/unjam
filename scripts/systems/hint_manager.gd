@@ -175,10 +175,12 @@ func _attach_game(game: Node) -> void:
 		button.set_meta("unjam_hint_prefix", prefix)
 	var figma_owned := _inside_figma_reference(button)
 	button.set_meta("unjam_figma_hint", figma_owned)
+	button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	if figma_owned:
-		# Figma owns the visual label and geometry. Keep monetization details in the
-		# tooltip/accessibility copy instead of expanding a 52-60px audited control.
+		# Keep the authored compact control, but show the coin cost directly on it
+		# instead of hiding monetization information in a mobile tooltip.
 		button.set_meta("unjam_hint_authored_text", button.text)
+		_ensure_figma_cost_badge(button)
 	else:
 		button.custom_minimum_size.y = maxf(button.custom_minimum_size.y, 116.0)
 	button.pressed.connect(request_hint_for_game.bind(game))
@@ -195,9 +197,36 @@ func _refresh_hint_button(game: Node, button: Button = null) -> void:
 	var prefix := String(target.get_meta("unjam_hint_prefix", ""))
 	if bool(target.get_meta("unjam_figma_hint", false)):
 		target.text = String(target.get_meta("unjam_hint_authored_text", target.text))
+		var badge := target.get_node_or_null("HintCoinCost") as Label
+		if badge != null:
+			badge.text = "◈%d" % HINT_COST
 	else:
 		target.text = "%sHINT • %d\n◈ %d" % [prefix, HINT_COST, coin_balance()]
 	target.tooltip_text = "Hint costs %d coins. Balance: %d. If you are short, Shop or an optional rewarded ad can help." % [HINT_COST, coin_balance()]
+
+
+func _ensure_figma_cost_badge(button: Button) -> void:
+	var existing := button.get_node_or_null("HintCoinCost") as Label
+	if existing != null:
+		existing.text = "◈%d" % HINT_COST
+		return
+	var badge := Label.new()
+	badge.name = "HintCoinCost"
+	badge.text = "◈%d" % HINT_COST
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	badge.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+	badge.add_theme_font_size_override("font_size", 10)
+	badge.add_theme_color_override("font_color", Color(1.0, 0.92, 0.48))
+	badge.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.72))
+	badge.add_theme_constant_override("shadow_offset_x", 1)
+	badge.add_theme_constant_override("shadow_offset_y", 1)
+	badge.set_anchors_preset(Control.PRESET_FULL_RECT)
+	badge.offset_left = 2.0
+	badge.offset_top = 2.0
+	badge.offset_right = -4.0
+	badge.offset_bottom = -2.0
+	button.add_child(badge)
 
 func _on_balance_changed(_new_balance: int, _delta: int, _reason: String) -> void:
 	for id in _attached_games.keys().duplicate():

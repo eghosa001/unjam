@@ -125,38 +125,26 @@ func _spawn_escape_visual(index: int, route: Array[Vector2i] = []) -> void:
 	_spawn_chain_popup(center, chain_count)
 	_spawn_speed_lines(cell.get_global_rect().get_center(), direction, world_accent())
 
-	# Physical launch: compress against the socket, then stretch along travel.
-	# The old route advanced one cell per tween, which introduced tiny velocity
-	# resets at every grid boundary and made fast arrows feel stepped rather than free.
+	# Keep position under one tween owner from the socket to beyond the viewport.
+	# The former recoil/lane/exit position segments restarted velocity at each
+	# boundary; on phones this read as tiny hesitations while the arrow escaped.
 	var horizontal := absf(direction.x) > absf(direction.y)
-	var recoil_scale := Vector2(0.92, 1.05) if horizontal else Vector2(1.05, 0.92)
-	var launch_scale := Vector2(1.18, 0.91) if horizontal else Vector2(0.91, 1.18)
+	var launch_scale := Vector2(1.14, 0.94) if horizontal else Vector2(0.94, 1.14)
+	var settle_scale := Vector2(0.88, 0.78) if horizontal else Vector2(0.78, 0.88)
 	var rotation_sign := 1.0 if direction.x + direction.y > 0.0 else -1.0
-	var tween := create_tween()
-	tween.tween_property(ghost, "position", start_pos - direction * 13.0, MotionSystem.duration(&"micro") * 0.52).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.parallel().tween_property(ghost, "scale", recoil_scale, MotionSystem.duration(&"micro") * 0.52)
-	tween.parallel().tween_property(ghost, "rotation", deg_to_rad(-2.4 * rotation_sign), MotionSystem.duration(&"micro") * 0.52)
-	tween.tween_property(ghost, "position", start_pos + direction * 34.0, MotionSystem.duration(&"micro") * 0.66).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.parallel().tween_property(ghost, "scale", launch_scale, MotionSystem.duration(&"micro") * 0.66)
-	tween.parallel().tween_property(ghost, "rotation", deg_to_rad(3.6 * rotation_sign), MotionSystem.duration(&"micro") * 0.66)
-
-	# One continuous lane tween preserves velocity through every cleared socket.
-	# Route geometry is straight by game rule, so intermediate cell tweens add no
-	# path information and only create visible stop/start motion.
 	var inside_steps := maxi(1, route.size() - 2)
-	if route.size() > 2:
-		var last_inside: Vector2i = route[route.size() - 2]
-		var lane_target := _board_cell_local_position(last_inside, ghost.position)
-		var lane_time := maxf(0.075, MotionSystem.duration(&"travel") * (0.34 + minf(0.28, float(inside_steps) * 0.045)))
-		tween.tween_property(ghost, "position", lane_target, lane_time).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-		tween.parallel().tween_property(ghost, "scale", Vector2(1.12, 0.94) if horizontal else Vector2(0.94, 1.12), lane_time)
-
-	var lane_offset := sin(float(pos.x + pos.y)) * 18.0
+	var lane_offset := sin(float(pos.x + pos.y)) * 8.0
 	var final_target := _offscreen_target(start_pos, direction, lane_offset)
-	var exit_time := maxf(0.14, MotionSystem.duration(&"travel") * 0.64)
-	tween.tween_property(ghost, "position", final_target, exit_time).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
-	tween.parallel().tween_property(ghost, "scale", Vector2(0.86, 0.72) if horizontal else Vector2(0.72, 0.86), exit_time)
-	tween.parallel().tween_property(ghost, "rotation", deg_to_rad(9.0 * rotation_sign), exit_time)
+	var travel_time := clampf(MotionSystem.duration(&"travel") * (0.78 + minf(0.26, float(inside_steps) * 0.045)), 0.20, 0.52)
+	var tween := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	tween.tween_property(ghost, "position", final_target, travel_time)
+	tween.parallel().tween_property(ghost, "rotation", deg_to_rad(5.0 * rotation_sign), travel_time)
+
+	# A separate, very short shape tween gives the launch some physical stretch
+	# without touching position, so it cannot introduce another velocity reset.
+	var shape_tween := create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	shape_tween.tween_property(ghost, "scale", launch_scale, minf(0.09, travel_time * 0.28))
+	shape_tween.tween_property(ghost, "scale", settle_scale, maxf(0.10, travel_time * 0.72))
 	tween.finished.connect(_finish_escape_visual.bind(ghost))
 
 func _acquire_speed_line() -> Line2D:

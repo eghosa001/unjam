@@ -1,6 +1,24 @@
 extends "res://scripts/ui/ui_touch_enhancer.gd"
 
+func _apply_fast_action_mode(button: Button) -> void:
+	# Gameplay board pieces own gesture semantics. Purchase/reward/restore actions
+	# stay release-confirmed to avoid accidental paid/ad actions on touch-down.
+	if _is_block_cell_button(button) or _is_water_tube_widget(button) or _is_rescue_piece_button(button):
+		return
+	var label := button.text.strip_edges().to_upper()
+	var node_name := String(button.name)
+	var confirmation_action := (
+		node_name.begins_with("Buy_")
+		or "REWARDED" in node_name.to_upper()
+		or "RESTORE" in node_name.to_upper()
+		or "WATCH" in label
+		or "RESTORE PURCHASES" in label
+	)
+	if not confirmation_action:
+		button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+
 func _apply_button_size(button: Button) -> void:
+	_apply_fast_action_mode(button)
 	if button.has_meta("unjam_figma_exact_geometry"):
 		return
 	if _is_block_cell_button(button) or _is_water_tube_widget(button) or _is_rescue_piece_button(button):

@@ -1,11 +1,11 @@
 extends "res://scripts/ui/monetization_hub.gd"
 
-const SHOP_SCENE_TOP := Color("#1b63c5")
-const SHOP_SCENE_MID := Color("#173f98")
-const SHOP_SCENE_BOTTOM := Color("#0a1d58")
-const SHOP_SCENE_DARK_TOP := Color("#101932")
-const SHOP_SCENE_DARK_MID := Color("#0b1631")
-const SHOP_SCENE_DARK_BOTTOM := Color("#060d22")
+const SHOP_SCENE_TOP := Color("#e4dfd5")
+const SHOP_SCENE_MID := Color("#b3aca2")
+const SHOP_SCENE_BOTTOM := Color("#80786e")
+const SHOP_SCENE_DARK_TOP := Color("#363636")
+const SHOP_SCENE_DARK_MID := Color("#272727")
+const SHOP_SCENE_DARK_BOTTOM := Color("#1c1c1c")
 
 var _built_theme := ""
 
@@ -63,15 +63,14 @@ func _build_ui() -> void:
 	var bg_top := SHOP_SCENE_DARK_TOP if _shop_dark() else SHOP_SCENE_TOP
 	var bg_mid := SHOP_SCENE_DARK_MID if _shop_dark() else SHOP_SCENE_MID
 	var bg_bottom := SHOP_SCENE_DARK_BOTTOM if _shop_dark() else SHOP_SCENE_BOTTOM
-	var bg_border := Color("#334c78") if _shop_dark() else Color("#5ba6e8")
+	var bg_border := Color("#5b5347") if _shop_dark() else Color("#b89b61")
 	bg.add_theme_stylebox_override("panel",FigmaReferenceCanvas.rounded_gradient3(
 		bg_top,bg_mid,bg_bottom,34,bg_border,1,0.48
 	))
 	FigmaReferenceCanvas.set_rect(bg,0,0,390,844)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(bg)
-	FigmaReferenceCanvas.add_world_depth(canvas, Color("#b078ff"), _shop_dark(), 0.12 if _shop_dark() else 0.16, "ShopWorldDepth")
-	FigmaReferenceCanvas.add_scene_backdrop_layers(canvas, Color("#b078ff"), _shop_dark(), "Shop")
+	FigmaReferenceCanvas.add_scene_backdrop_layers(canvas, Color("#5b5347") if _shop_dark() else Color("#b7aa91"), _shop_dark(), "Shop")
 	var shop_key_light := canvas.get_node_or_null("ShopKeyLight")
 	if shop_key_light != null:
 		shop_key_light.set_meta("unjam_figma_scene_light", true)
@@ -81,6 +80,7 @@ func _build_ui() -> void:
 	back.name = "ShopBackButton"
 	back.tooltip_text = "Back"
 	FigmaReferenceCanvas.set_rect(back,17,19,52,52)
+	back.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	back.pressed.connect(_close_shop)
 	canvas.add_child(back)
 

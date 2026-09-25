@@ -28,6 +28,8 @@ const FIGMA_SCENE_DARK_BOTTOM := Color("#1c1c1c")
 
 var _collection_scroll_tracking := false
 var _collection_scroll_origin_y := 0.0
+var _settings_help_game := "rescue_rush"
+const SETTINGS_HELP_GAMES := ["rescue_rush", "water_sort", "block_puzzle"]
 
 
 func _figma_theme_text(color: Color) -> Color:
@@ -209,6 +211,7 @@ func _figma_button(canvas: Control, name_value: String, text_value: String, rect
 		resolved_text = FIGMA_DARK_INK
 	var button := FigmaReferenceCanvas.premium_button(text_value, font_size, resolved_text, resolved_fill, radius, resolved_fill.lightened(0.20), 1.2)
 	button.name = name_value
+	button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	FigmaReferenceCanvas.set_rect(button, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	if callback.is_valid():
 		button.pressed.connect(callback)
@@ -453,16 +456,25 @@ func build_settings() -> void:
 	var utility_fill := Color("#2c2c2c") if dark_mode else Color("#cbc4b8")
 	var utility_border := Color("#5b5347") if dark_mode else Color("#b89b61")
 	var utility_text := FIGMA_DARK_INK if dark_mode else FIGMA_NAVY
-	FigmaReferenceCanvas.add_shadow(canvas, Rect2(33,541,144,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
-	var how_to := FigmaReferenceCanvas.premium_button("HOW TO PLAY",15,utility_text,utility_fill,16,utility_border,1.2)
+	FigmaReferenceCanvas.add_shadow(canvas, Rect2(33,541,126,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
+	var how_to := FigmaReferenceCanvas.premium_button("HOW TO PLAY",13,utility_text,utility_fill,16,utility_border,1.2)
 	how_to.name = "SettingsHowToPlay"
-	FigmaReferenceCanvas.set_rect(how_to,33,541,144,46)
+	FigmaReferenceCanvas.set_rect(how_to,33,541,126,46)
+	how_to.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	how_to.pressed.connect(_show_current_tutorial)
 	canvas.add_child(how_to)
-	FigmaReferenceCanvas.add_shadow(canvas, Rect2(193,541,158,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
-	var privacy := FigmaReferenceCanvas.premium_button("PRIVACY",15,utility_text,utility_fill,16,utility_border,1.2)
+	FigmaReferenceCanvas.add_shadow(canvas, Rect2(167,541,90,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
+	var help_game := FigmaReferenceCanvas.premium_button(_settings_help_game_label(),12,utility_text,utility_fill,16,utility_border,1.2)
+	help_game.name = "SettingsHowToPlayGame"
+	FigmaReferenceCanvas.set_rect(help_game,167,541,90,46)
+	help_game.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+	help_game.pressed.connect(_cycle_settings_help_game.bind(help_game))
+	canvas.add_child(help_game)
+	FigmaReferenceCanvas.add_shadow(canvas, Rect2(265,541,86,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
+	var privacy := FigmaReferenceCanvas.premium_button("PRIVACY",12,utility_text,utility_fill,16,utility_border,1.2)
 	privacy.name = "SettingsPrivacy"
-	FigmaReferenceCanvas.set_rect(privacy,193,541,158,46)
+	FigmaReferenceCanvas.set_rect(privacy,265,541,86,46)
+	privacy.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	privacy.pressed.connect(PrivacyManager.show_privacy_options)
 	canvas.add_child(privacy)
 
@@ -471,6 +483,7 @@ func build_settings() -> void:
 	FigmaReferenceCanvas.add_shadow(canvas, Rect2(33,645,318,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
 	var purchases := FigmaReferenceCanvas.premium_button("SHOP & RESTORE",15,utility_text,utility_fill,16,utility_border,1.2)
 	purchases.name = "SettingsPurchases"
+	purchases.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	FigmaReferenceCanvas.set_rect(purchases,33,645,318,46)
 	purchases.tooltip_text = "Buy upgrades or restore previous Google Play purchases"
 	purchases.pressed.connect(_figma_open_shop)
@@ -509,10 +522,23 @@ func _toggle_reduced_motion() -> void:
 	FeedbackManager.tap()
 	build_settings()
 
+func _settings_help_game_label() -> String:
+	match _settings_help_game:
+		"water_sort": return "WATER ›"
+		"block_puzzle": return "BLOCK ›"
+		_: return "RESCUE ›"
+
+func _cycle_settings_help_game(button: Button) -> void:
+	var index := SETTINGS_HELP_GAMES.find(_settings_help_game)
+	_settings_help_game = SETTINGS_HELP_GAMES[(index + 1) % SETTINGS_HELP_GAMES.size()]
+	if button != null and is_instance_valid(button):
+		button.text = _settings_help_game_label()
+	FeedbackManager.tap()
+
 func _show_current_tutorial() -> void:
 	var shell := get_node_or_null("UXShell")
 	if shell != null and shell.has_method("show_tutorial"):
-		shell.call("show_tutorial", selected_game_id)
+		shell.call("show_tutorial", _settings_help_game)
 
 func build_daily_games() -> void:
 	current_surface = "daily"
