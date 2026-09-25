@@ -74,7 +74,7 @@ func load_level() -> void:
 	if title_label != null:
 		title_label.text = "WATER SORT"
 	if meta_label != null:
-		meta_label.text = "DAILY CHALLENGE" if daily_mode else "LEVEL %d • W%d" % [
+		meta_label.text = "DAILY CHALLENGE" if daily_mode else "LEVEL %d • WORLD %d" % [
 			level_number,
 			int(level_profile.get("world", 1))
 		]
