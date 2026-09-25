@@ -211,6 +211,7 @@ func _figma_button(canvas: Control, name_value: String, text_value: String, rect
 		resolved_text = FIGMA_DARK_INK
 	var button := FigmaReferenceCanvas.premium_button(text_value, font_size, resolved_text, resolved_fill, radius, resolved_fill.lightened(0.20), 1.2)
 	button.name = name_value
+	button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	FigmaReferenceCanvas.set_rect(button, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	if callback.is_valid():
 		button.pressed.connect(callback)
@@ -482,6 +483,7 @@ func build_settings() -> void:
 	FigmaReferenceCanvas.add_shadow(canvas, Rect2(33,645,318,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
 	var purchases := FigmaReferenceCanvas.premium_button("SHOP & RESTORE",15,utility_text,utility_fill,16,utility_border,1.2)
 	purchases.name = "SettingsPurchases"
+	purchases.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	FigmaReferenceCanvas.set_rect(purchases,33,645,318,46)
 	purchases.tooltip_text = "Buy upgrades or restore previous Google Play purchases"
 	purchases.pressed.connect(_figma_open_shop)
