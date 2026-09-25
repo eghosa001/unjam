@@ -14,10 +14,15 @@ func _ready() -> void:
 	_queue_enhancements()
 
 func _on_node_added(node: Node) -> void:
-	if host == null or not is_instance_valid(host):
+	if host == null or not is_instance_valid(host) or node == host:
 		return
-	if node == host or host.is_ancestor_of(node):
-		_queue_enhancements()
+	if not host.is_ancestor_of(node):
+		return
+	# node_added fires for each control entering the live subtree. Apply the only
+	# per-node rule directly instead of recursively rescanning the entire screen
+	# every time gameplay spawns a ghost, effect, label or button.
+	if node is Button:
+		_apply_button_size(node as Button)
 
 func _queue_enhancements() -> void:
 	if refresh_pending:
