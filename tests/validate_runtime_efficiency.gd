@@ -97,9 +97,9 @@ func _hot_paths_stay_lightweight() -> bool:
 	if "_refresh_liquid_3d()" in water_process or not "_refresh_meniscus_3d()" in water_process:
 		return _fail("Water arrival ripple regressed to full liquid-run rebuilds")
 	var water_configure := water.get_slice("func configure", 1).get_slice("func _ready", 0)
-	if "_request_3d_frame()" in water_configure:
-		return _fail("Water selection/configure path still redraws unchanged 3D bottles")
-	if not "Vector2i(160, 320)" in water:
+	if not "_request_3d_frame()" in water_configure:
+		return _fail("Water configure path no longer refreshes one-shot 3D bottles after Android release visibility changes")
+	if not "SubViewport.UPDATE_ONCE" in water or not "Vector2i(160, 320)" in water:
 		return _fail("Water one-shot 3D viewport budget regressed")
 	var touch_added := touch_enhancer.get_slice("func _on_node_added", 1).get_slice("func _queue_enhancements", 0)
 	if "_queue_enhancements()" in touch_added or not "_apply_button_size" in touch_added:
