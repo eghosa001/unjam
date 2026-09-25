@@ -320,12 +320,11 @@ static func style_display_title(label_node: Label, fill: Color, outline_color: C
 	label_node.add_theme_color_override("font_color", fill)
 	label_node.add_theme_color_override("font_outline_color", outline_color)
 	label_node.add_theme_constant_override("outline_size", outline_size)
-	# Keep title depth without creating a second dark glyph after compact scaling.
-	# Keep one restrained depth cue. A shadow outline creates a second glyph when
-	# the 390px reference canvas is scaled, which reads as fuzzy rather than 3D.
-	label_node.add_theme_color_override("font_shadow_color", Color(0.01,0.03,0.12,0.22))
+	# Outline alone gives title contrast. A second dark shadow is visibly sampled
+	# into bright glyphs on some Android GPUs after the reference canvas is scaled.
+	label_node.add_theme_color_override("font_shadow_color", Color.TRANSPARENT)
 	label_node.add_theme_constant_override("shadow_offset_x", 0)
-	label_node.add_theme_constant_override("shadow_offset_y", 1)
+	label_node.add_theme_constant_override("shadow_offset_y", 0)
 	label_node.add_theme_constant_override("shadow_outline_size", 0)
 
 static func horizontal_gradient(left: Color, right: Color, radius: float = 0.0, border_color: Color = Color.TRANSPARENT, border_width: float = 0.0) -> StyleBoxTexture:
