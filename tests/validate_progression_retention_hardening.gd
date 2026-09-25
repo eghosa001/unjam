@@ -16,6 +16,11 @@ func _run() -> void:
 		return
 	if not _check_attempt_telemetry():
 		return
+	var multi := root.get_node_or_null("MultiGameManager")
+	if multi == null or String(multi.call("progression_scope_label", "rescue_rush")) != "ZONE":
+		return _fail("Rescue 100-level navigation scope must be labelled ZONE")
+	if String(multi.call("progression_scope_label", "water_sort")) != "WORLD" or String(multi.call("progression_scope_label", "block_puzzle")) != "WORLD":
+		return _fail("Water and Block navigation scopes must remain WORLD")
 	print("PROGRESSION_RETENTION_HARDENING_OK")
 	quit(0)
 
