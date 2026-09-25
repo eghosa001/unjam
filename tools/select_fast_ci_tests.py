@@ -336,6 +336,18 @@ WATER_CAMPAIGN_GENERATOR_FUNCTIONS = {
     "_shuffle_int_array",
 }
 
+INTERACTION_POLISH_TEST = "tests/validate_interaction_response_polish.gd"
+INTERACTION_POLISH_PATHS = {
+    INTERACTION_POLISH_TEST,
+    "scripts/ui/monetization_hub_3d.gd",
+    "scripts/game/rescue_rush_polished.gd",
+    "scripts/systems/hint_manager.gd",
+    "scripts/ui/premium_main_casual.gd",
+    "scripts/ui/ui_touch_enhancer_casual.gd",
+    "scripts/ui/robust_main.gd",
+    "tools/select_fast_ci_tests.py",
+}
+
 WIN_LOSS_RULE_TEST = "tests/validate_win_loss_rules.gd"
 WIN_LOSS_RULE_PATHS = {
     WIN_LOSS_RULE_TEST,
@@ -459,6 +471,18 @@ def _combine_plans(*plans: dict[str, object]) -> dict[str, object]:
 def plan_for_changes(paths: list[str], base: str, head: str) -> dict[str, object]:
     effective_paths = list(paths)
     focused_plans: list[dict[str, object]] = []
+
+    # This interaction pass touches several surfaces but has one focused
+    # regression contract. Keep iteration fast while still rendering the three
+    # affected surfaces.
+    if INTERACTION_POLISH_TEST in effective_paths and set(effective_paths).issubset(INTERACTION_POLISH_PATHS):
+        return {
+            "groups": ["interaction_polish"],
+            "tests": ["validate_interaction_response_polish", "validate_gameplay_interactions"],
+            "visual": ["shop", "settings", "rescue"],
+            "needs_godot": True,
+            "release_contract": False,
+        }
 
     # Win/loss rule work has its own runtime + phone-fit contract. Do not fan
     # these text/state changes out into motion, palette, liquid, token-lifecycle
