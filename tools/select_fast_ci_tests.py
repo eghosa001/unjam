@@ -496,6 +496,23 @@ def plan_for_changes(paths: list[str], base: str, head: str) -> dict[str, object
     effective_paths = list(paths)
     focused_plans: list[dict[str, object]] = []
 
+    # Temporary PR verification for the authored Rescue campaign. Reverted
+    # before merge so normal selective-CI policy remains unchanged.
+    if "tests/validate_rescue_authored_catalog_10000.gd" in effective_paths:
+        return {
+            "groups": ["rescue_authored_10000"],
+            "tests": [
+                "validate_rescue_authored_catalog_10000",
+                "validate_rescue_progression_10000",
+                "validate_progression_transitions",
+                "validate_gameplay_interactions",
+                "validate_rescue_completion_single_path",
+            ],
+            "visual": ["rescue"],
+            "needs_godot": True,
+            "release_contract": False,
+        }
+
     # Dark-theme/device feedback touches the three gameplay shells plus the
     # shared result modal. Keep CI focused on those rendered surfaces.
     if DARK_GAMEPLAY_TEST in effective_paths and set(effective_paths).issubset(DARK_GAMEPLAY_PATHS):
