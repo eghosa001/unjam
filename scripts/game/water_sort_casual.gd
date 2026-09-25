@@ -29,6 +29,7 @@ func build_ui() -> void:
 	figma_canvas.name = "FigmaWater390x844"
 	add_child(figma_canvas)
 	_build_figma_water(figma_canvas)
+	call_deferred("apply_theme_mode", _shell_dark_mode())
 
 func _build_figma_water(canvas: Control) -> void:
 	var sky := PanelContainer.new()
@@ -284,7 +285,91 @@ func _apply_tube_layout() -> void:
 	board.custom_minimum_size = Vector2(content_w, content_h)
 	board.position = Vector2(194.0 - content_w * 0.5, 169.0 + (450.0 - content_h) * 0.5)
 
-func apply_theme_mode(_dark: bool) -> void:
-	# Production Figma gameplay is intentionally bright; Settings owns the
-	# explicit dark variant. Keep gameplay geometry/colors faithful here.
-	pass
+func _shell_dark_mode() -> bool:
+	var main := get_tree().current_scene
+	var shell := main.get_node_or_null("UXShell") if main != null else null
+	return shell != null and String(shell.get("theme_mode")) == "dark"
+
+func _style_water_button(button: Button, dark: bool, accent: Color = BLUE) -> void:
+	if button == null or not is_instance_valid(button):
+		return
+	var fill := Color("#172a36") if dark else Color(0.96, 0.99, 1.0, 0.98)
+	var text := Color("#eaf7ff") if dark else NAVY
+	var border := Color(accent, 0.72 if dark else 0.52)
+	button.add_theme_stylebox_override("normal", RefCanvas.rounded_gradient3(fill.lightened(0.08 if dark else 0.02), fill, fill.darkened(0.12 if dark else 0.05), 16, border, 1.4))
+	button.add_theme_stylebox_override("hover", RefCanvas.rounded_gradient3(fill.lightened(0.14), fill.lightened(0.04), fill.darkened(0.08), 16, border.lightened(0.10), 1.4))
+	button.add_theme_stylebox_override("pressed", RefCanvas.rounded_gradient3(fill, fill.darkened(0.08), fill.darkened(0.18), 16, border, 1.4))
+	for key in ["font_color", "font_hover_color", "font_pressed_color"]:
+		button.add_theme_color_override(key, text)
+
+func _style_water_action(button: Button, dark: bool) -> void:
+	if button == null or not is_instance_valid(button):
+		return
+	var fill := Color("#172a36") if dark else Color("#315d72")
+	var border := Color(0.31,0.78,0.92,0.62 if dark else 0.44)
+	button.add_theme_stylebox_override("normal", RefCanvas.rounded_gradient3(fill.lightened(0.08), fill, fill.darkened(0.12), 16, border, 1.1))
+	button.add_theme_stylebox_override("hover", RefCanvas.rounded_gradient3(fill.lightened(0.14), fill.lightened(0.04), fill.darkened(0.08), 16, border.lightened(0.10), 1.1))
+	button.add_theme_stylebox_override("pressed", RefCanvas.rounded_gradient3(fill, fill.darkened(0.08), fill.darkened(0.18), 16, border, 1.1))
+	for key in ["font_color", "font_hover_color", "font_pressed_color"]:
+		button.add_theme_color_override(key, OFF_WHITE)
+
+func apply_theme_mode(dark: bool) -> void:
+	var viewport_bg := find_child("WaterFigmaViewportBackground", true, false) as ColorRect
+	if viewport_bg != null:
+		viewport_bg.color = Color("#0d1820") if dark else Color(0.04, 0.39, 0.67)
+	var sky := find_child("WaterScenicSky", true, false) as PanelContainer
+	if sky != null:
+		sky.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(
+			Color("#17242d") if dark else SKY_TOP,
+			Color("#20323c") if dark else SKY_MID,
+			Color("#293d46") if dark else SKY_BOTTOM,
+			34, Color("#466372") if dark else Color("#b8d1e0"), 1, 0.58
+		))
+	var ground := find_child("WaterScenicGround", true, false) as PanelContainer
+	if ground != null:
+		ground.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(
+			Color("#18313a") if dark else Color("#5b98a5"),
+			Color("#122833") if dark else Color("#3c788a"),
+			Color("#0c1d27") if dark else Color("#28596d"),
+			0, Color.TRANSPARENT, 0, 0.28
+		))
+	var platform := find_child("WaterPerspectivePlatform", true, false) as Polygon2D
+	if platform != null:
+		platform.color = Color(0.16,0.29,0.34,0.52) if dark else Color(0.52,0.72,0.76,0.42)
+	var info := find_child("WaterInfo", true, false) as PanelContainer
+	if info != null:
+		info.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(
+			Color("#1c3542") if dark else Color("#315d72"),
+			Color("#172e3a") if dark else Color("#274f64"),
+			Color("#10232d") if dark else Color("#1f4053"),
+			14, Color(0.47,0.72,0.82,0.46), 1.1, 0.24
+		))
+	var objective := find_child("WaterObjective", true, false) as PanelContainer
+	if objective != null:
+		objective.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(
+			Color("#20313a") if dark else Color("#fffdf7"),
+			Color("#1a2932") if dark else Color("#faf8f1"),
+			Color("#14222a") if dark else Color("#efeee8"),
+			12, Color(0.48,0.72,0.82,0.48 if dark else 0.32), 1.0, 0.22
+		))
+	var objective_label := find_child("WaterObjectiveLabel", true, false) as Label
+	if objective_label != null:
+		objective_label.add_theme_color_override("font_color", Color("#dff7ff") if dark else NAVY)
+	if gameplay_stage != null:
+		gameplay_stage.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(
+			Color("#102d4a") if dark else Color("#173d67"),
+			Color("#092640") if dark else Color("#0b3158"),
+			Color("#041827") if dark else Color("#061f3c"),
+			20, Color(0.52,0.90,1.0,0.72), 1.5
+		))
+	if status_label != null:
+		status_label.add_theme_color_override("font_color", Color("#e8f5ff") if dark else NAVY)
+	if hint_label != null:
+		hint_label.add_theme_color_override("font_color", Color("#ffd47a") if dark else GUIDANCE_ORANGE)
+	_style_water_button(find_child("WaterBackAction", true, false) as Button, dark)
+	_style_water_button(find_child("WaterRetryAction", true, false) as Button, dark)
+	_style_water_action(find_child("WaterUndoAction", true, false) as Button, dark)
+	_style_water_action(find_child("WaterHintAction", true, false) as Button, dark)
+	var frame := find_child("WaterFrameBorder", true, false) as PanelContainer
+	if frame != null:
+		frame.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color.TRANSPARENT, 34, Color("#4f6e7d") if dark else Color("#b8d1e0"), 1))
