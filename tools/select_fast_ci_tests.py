@@ -343,6 +343,7 @@ CRISP_TEXT_PATHS = {
     "scripts/ui/unjam_3d_theme.gd",
     "scripts/ui/figma_reference_canvas.gd",
     "scripts/ui/premium_design_system.gd",
+    "tests/validate_requested_polish_contract.gd",
     "tools/select_fast_ci_tests.py",
 }
 
