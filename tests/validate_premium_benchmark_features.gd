@@ -41,8 +41,8 @@ func _run() -> void:
 		if not motion_source.contains(token):
 			return _fail("Premium response timing missing: %s" % token)
 	var audio_source := _read("res://scripts/systems/feedback_manager.gd")
-	if not audio_source.contains("func snap()") or not audio_source.contains("_vibrate(7)") or not audio_source.contains("MUSIC_DURATION := 32.0"):
-		return _fail("Premium snap/pour haptics or longer calm music phrase is missing")
+	if not audio_source.contains("func snap()") or not audio_source.contains("MUSIC_DURATION := 32.0") or not audio_source.contains("Landing remains audio-only"):
+		return _fail("Premium snap/pour audio or longer calm music phrase is missing")
 	var drag_source := _read("res://scripts/ui/block_drag_preview.gd")
 	if not drag_source.contains("became_valid") or not drag_source.contains("feedback.call(\"snap\")"):
 		return _fail("Block Puzzle magnetic snap confirmation is missing")
