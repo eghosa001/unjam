@@ -138,7 +138,6 @@ func _spawn_escape_visual(index: int, route: Array[Vector2i] = []) -> void:
 	var travel_time := clampf(MotionSystem.duration(&"travel") * (0.78 + minf(0.26, float(inside_steps) * 0.045)), 0.20, 0.52)
 	var tween := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
 	tween.tween_property(ghost, "position", final_target, travel_time)
-	tween.parallel().tween_property(ghost, "scale", settle_scale, travel_time)
 	tween.parallel().tween_property(ghost, "rotation", deg_to_rad(5.0 * rotation_sign), travel_time)
 
 	# A separate, very short shape tween gives the launch some physical stretch
