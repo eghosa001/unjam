@@ -50,12 +50,12 @@ func validate_difficulty(level_number: int, level: Dictionary, errors: Array[Str
 	var expected_milestone := ""
 	var local := posmod(level_number - 1, 100) + 1
 	if local == 100:
-		expected_milestone = "world_finale"
-		if difficulty != "boss": errors.append("Level %d finale is not boss difficulty" % level_number)
+		expected_milestone = "finale" if level_number == CAMPAIGN_LEVELS else ("chapter_finale" if level_number % 500 == 0 else "zone_boss")
+		if difficulty != "boss": errors.append("Level %d boss checkpoint is not boss difficulty" % level_number)
 	elif local == 75:
 		expected_milestone = "major_challenge"
 	elif local == 50:
-		expected_milestone = "mini_boss"
+		expected_milestone = "elite"
 	elif local == 25:
 		expected_milestone = "challenge"
 	if String(level.get("milestone", "")) != expected_milestone:
