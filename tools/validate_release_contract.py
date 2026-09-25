@@ -159,9 +159,20 @@ def main() -> int:
         errors.append('project launcher icon is not wired to the supplied glossy U PNG')
 
     for token in (
+        'boot_splash/show_image=true',
+        'boot_splash/image="res://assets/icon_user_512.png"',
+        'boot_splash/stretch_mode=0',
+    ):
+        if token not in project:
+            errors.append(f'project startup splash is not wired to the centered UNJAM icon: {token}')
+
+    for token in (
         'launcher_icons/main_192x192="res://assets/icon_user_512.png"',
         'launcher_icons/adaptive_foreground_432x432="res://assets/icon_user_adaptive_432.png"',
         'launcher_icons/adaptive_background_432x432="res://assets/icon_adaptive_background.svg"',
+        'splash_screen/icon="res://assets/icon_user_adaptive_432.png"',
+        'splash_screen/background_color=Color(0.255, 0.725, 1, 1)',
+        'splash_screen/disable_godot_boot_splash=false',
     ):
         if token not in preset:
             errors.append(f'Android launcher icon is not wired to current PNG assets: {token}')
