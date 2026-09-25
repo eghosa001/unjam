@@ -12,6 +12,9 @@ const GLASS_NECK_CENTER_Y := 1.74
 const GLASS_MOUTH_Y := 1.92
 const GLASS_MOUTH_RADIUS := 0.42
 const GLASS_BASE_Y := -1.54
+# Keep liquid just inside the visible inner wall. One shared radius for every
+# run and the meniscus makes the colour edge track the bottle uniformly.
+const LIQUID_BODY_RADIUS := GLASS_BODY_RADIUS * 0.78
 
 # Real 3D presentation layered under the existing authoritative Water Sort
 # control. The SubViewport is one-shot while idle; pour progress explicitly
@@ -37,14 +40,10 @@ var _rim_right_normalized := Vector2(0.5, 0.1)
 func configure(values: Array, selected: bool, index: int) -> void:
 	var liquid_changed := layers != values
 	super.configure(values, selected, index)
-	if viewport_3d != null:
-		if liquid_changed:
-			_refresh_liquid_3d()
-		# render_board() reapplies compact bottle geometry on every tap. Android can
-		# invalidate a one-shot SubViewport texture during that relayout even when
-		# the liquid itself did not change, so every configured bottle gets one fresh
-		# frame. UPDATE_ONCE keeps the idle cost bounded to a single render.
-		_request_3d_frame()
+	if viewport_3d != null and liquid_changed:
+		# Selection is 2D feedback; a stationary bottle does not need another 3D
+		# render unless its liquid state actually changed.
+		_refresh_liquid_3d()
 	if is_inside_tree():
 		_sync_motion_processing()
 
@@ -120,9 +119,9 @@ func _build_3d_view() -> void:
 	viewport_3d = SubViewport.new()
 	viewport_3d.own_world_3d = true
 	viewport_3d.name = "TubeViewport3D"
-	# Slightly above the on-screen tube resolution, but far below the old
-	# 220x420 buffer. Idle tubes still render only once.
-	viewport_3d.size = Vector2i(192, 384)
+	# Still above typical on-screen bottle resolution, while cutting per-bottle
+	# fill-rate by about 30% versus 192x384. Idle tubes render only once.
+	viewport_3d.size = Vector2i(160, 320)
 	viewport_3d.transparent_bg = true
 	viewport_3d.render_target_update_mode = SubViewport.UPDATE_ONCE
 	viewport_container.add_child(viewport_3d)
@@ -317,8 +316,8 @@ func _build_liquid_segments_3d() -> void:
 	liquid_segments_3d.clear()
 	for slot in range(CAPACITY):
 		var mesh := CylinderMesh.new()
-		mesh.top_radius = 0.46
-		mesh.bottom_radius = 0.46
+		mesh.top_radius = LIQUID_BODY_RADIUS
+		mesh.bottom_radius = LIQUID_BODY_RADIUS
 		mesh.height = 0.60
 		mesh.radial_segments = 20
 		# Interior liquid volumes do not own horizontal caps. Contiguous slots
@@ -335,8 +334,8 @@ func _build_liquid_segments_3d() -> void:
 
 func _build_liquid_meniscus_3d() -> void:
 	var mesh := SphereMesh.new()
-	mesh.radius = 0.46
-	mesh.height = 0.92
+	mesh.radius = LIQUID_BODY_RADIUS
+	mesh.height = LIQUID_BODY_RADIUS * 2.0
 	mesh.radial_segments = 24
 	mesh.rings = 8
 	liquid_meniscus_3d = MeshInstance3D.new()
@@ -413,9 +412,12 @@ func _refresh_meniscus_3d() -> void:
 			# wobble. It affects only the exposed meniscus/root and costs no particles.
 			var arrival_wave := sin(_arrival_phase) * _arrival_impulse
 			var arrival_flatten := _arrival_impulse * (0.030 + 0.010 * absf(arrival_wave))
-			liquid_meniscus_3d.position = Vector3(arrival_wave * 0.035, _liquid_top_surface_3d - 0.01 - arrival_flatten * 0.20, 0)
-			liquid_meniscus_3d.scale = Vector3(1.0 + arrival_flatten * 1.8, maxf(0.075, 0.11 - arrival_flatten), 1.0 + arrival_flatten * 1.3)
-			liquid_root_3d.rotation.z = deg_to_rad(arrival_wave * 1.8)
+			# Keep the bulk liquid axis locked to the bottle. Rotating the full
+			# liquid root made its side edge temporarily diverge from the glass.
+			# Only the exposed surface ripples, and its excursion stays inside the wall.
+			liquid_meniscus_3d.position = Vector3(arrival_wave * 0.012, _liquid_top_surface_3d - 0.01 - arrival_flatten * 0.20, 0)
+			liquid_meniscus_3d.scale = Vector3(1.0 + arrival_flatten * 0.55, maxf(0.075, 0.11 - arrival_flatten), 1.0 + arrival_flatten * 0.45)
+			liquid_root_3d.rotation.z = 0.0
 			if _liquid_top_color_3d < liquid_materials_3d.size():
 				liquid_meniscus_3d.material_override = liquid_materials_3d[_liquid_top_color_3d]
 		else:
