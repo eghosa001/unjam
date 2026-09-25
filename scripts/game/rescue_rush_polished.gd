@@ -315,7 +315,10 @@ func resolve_rescue() -> void:
 	chain_count += 1
 	best_chain = maxi(best_chain, chain_count)
 	FeedbackManager.rescue()
-	PremiumVisuals.burst(Vector2(540, 860), world_accent(), 28)
+	var celebration_center := get_viewport_rect().size * Vector2(0.5, 0.46)
+	if board_panel != null and is_instance_valid(board_panel):
+		celebration_center = board_panel.get_global_rect().get_center()
+	PremiumVisuals.burst(celebration_center, world_accent(), 28)
 	# Do not use a full-screen flash here. The local celebration keeps the finish
 	# readable without producing bright edge flashes during the transition.
 	render_board()

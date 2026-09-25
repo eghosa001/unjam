@@ -215,16 +215,17 @@ func _ensure_figma_cost_badge(button: Button) -> void:
 	badge.text = "◈%d" % HINT_COST
 	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	badge.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
-	badge.add_theme_font_size_override("font_size", 10)
+	var top_right := bool(button.get_meta("unjam_hint_badge_top_right", false))
+	badge.vertical_alignment = VERTICAL_ALIGNMENT_TOP if top_right else VERTICAL_ALIGNMENT_BOTTOM
+	badge.add_theme_font_size_override("font_size", 9 if top_right else 10)
 	badge.add_theme_color_override("font_color", Color(1.0, 0.92, 0.48))
 	badge.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.72))
 	badge.add_theme_constant_override("shadow_offset_x", 1)
 	badge.add_theme_constant_override("shadow_offset_y", 1)
 	badge.set_anchors_preset(Control.PRESET_FULL_RECT)
 	badge.offset_left = 2.0
-	badge.offset_top = 2.0
-	badge.offset_right = -4.0
+	badge.offset_top = 6.0 if top_right else 2.0
+	badge.offset_right = -8.0 if top_right else -4.0
 	badge.offset_bottom = -2.0
 	button.add_child(badge)
 
