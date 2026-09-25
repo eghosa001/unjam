@@ -15,12 +15,15 @@ var _tension_active := false
 func _ready() -> void:
 	super._ready()
 	_fit_3d_board_layout()
-	_style_premium_surface(false)
+	_style_premium_surface(_shell_dark_mode())
 
 func apply_theme_mode(dark: bool) -> void:
 	var environment := get_node_or_null("BlockPuzzle3DEnvironment") as Unjam3DGameplayStage
 	if environment != null:
 		environment.set_dark_mode(dark)
+	if find_child("FigmaBlock390x844", true, false) != null:
+		_apply_figma_block_theme(dark)
+		return
 	_style_premium_surface(dark)
 
 func _style_premium_surface(dark: bool) -> void:
