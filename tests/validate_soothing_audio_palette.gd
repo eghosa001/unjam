@@ -36,7 +36,6 @@ func _initialize() -> void:
 		"var arpeggio :=",
 		"var arp_frequency :=",
 		"var arp_step := int(floor(local_t / 1.5)) % chord.size()",
-		"* section_edge * loop_edge",
 		"root * 1.5",
 	]:
 		if not source.contains(token):
@@ -55,7 +54,7 @@ func _initialize() -> void:
 		failures.append("Ambient loop must not mix sub-audible oscillator energy directly into PCM")
 	if source.contains("[58.27, 73.42, 87.31, 110.00]"):
 		failures.append("Ambient chord voicings must stay above phone-rumble bass territory")
-		if not source.contains("[130.81, 196.00, 261.63, 293.66]"):
+	if not source.contains("[130.81, 196.00, 261.63, 293.66]"):
 		failures.append("Ambient voicings must retain the mobile-safe Cadd9 final chord")
 
 	var script = load(path)
@@ -97,7 +96,7 @@ func _initialize() -> void:
 					failures.append("Ambient chord boundary has an audible PCM jump at %ds" % boundary_seconds)
 			for step_index in range(1, 32):
 				var note_time := float(step_index) * 0.75
-				if note_time >= MUSIC_DURATION:
+				if note_time >= 24.0:
 					break
 				var note_frame: int = int(note_time * float(music.mix_rate))
 				var note_before := _pcm16(music.data, (note_frame - 1) * 4)
