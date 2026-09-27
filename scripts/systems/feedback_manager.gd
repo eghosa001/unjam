@@ -335,13 +335,13 @@ func _build_calm_ambient_loop() -> AudioStreamWAV:
 		[261.63, 329.63, 392.00, 493.88],
 	]
 	var phrases := [
-		[440.00, 523.25, 659.25, 523.25, 440.00, 392.00, 349.23, 0.0, 440.00, 523.25, 587.33, 659.25, 523.25, 440.00, 392.00, 0.0],
-		[440.00, 349.23, 293.66, 349.23, 440.00, 523.25, 440.00, 0.0, 392.00, 440.00, 523.25, 587.33, 523.25, 440.00, 349.23, 0.0],
-		[349.23, 440.00, 523.25, 587.33, 523.25, 440.00, 392.00, 0.0, 349.23, 392.00, 440.00, 523.25, 440.00, 392.00, 349.23, 0.0],
-		[392.00, 493.88, 587.33, 659.25, 587.33, 523.25, 493.88, 0.0, 440.00, 523.25, 587.33, 523.25, 493.88, 440.00, 392.00, 0.0],
+		[440.00, 523.25, 659.25, 0.0, 587.33, 523.25, 440.00, 0.0],
+		[440.00, 349.23, 293.66, 0.0, 392.00, 440.00, 523.25, 0.0],
+		[349.23, 440.00, 523.25, 0.0, 587.33, 523.25, 440.00, 0.0],
+		[392.00, 493.88, 587.33, 0.0, 523.25, 493.88, 440.00, 0.0],
 	]
 	var section_length := MUSIC_DURATION / 4.0
-	var note_step := 0.5
+	var note_step := 1.0
 
 	for i in range(frames):
 		if i > 0 and i % MUSIC_SYNTH_CHUNK_FRAMES == 0:
@@ -365,7 +365,7 @@ func _build_calm_ambient_loop() -> AudioStreamWAV:
 
 		# A warm, music-box-like lead follows a coherent phrase instead of isolated
 		# random-sounding pings. Rest steps create breathing room.
-		var note_index := mini(15, int(local_t / note_step))
+		var note_index := mini(7, int(local_t / note_step))
 		var note_frequency := float(phrases[section][note_index])
 		var note_phase := fmod(local_t, note_step)
 		var note_edge := _smooth_edge(note_phase, note_step, 0.055)
@@ -378,12 +378,12 @@ func _build_calm_ambient_loop() -> AudioStreamWAV:
 			lead += sin(TAU * note_frequency * 0.9985 * t + 0.08) * 0.007
 			lead *= note_env
 
-		# A very soft arpeggio provides motion underneath the melody without
+		# A slower, very soft arpeggio provides motion underneath the melody without
 		# turning the soundtrack into a busy rhythm track.
-		var arp_step := int(floor(local_t / 1.0)) % chord.size()
+		var arp_step := int(floor(local_t / 2.0)) % chord.size()
 		var arp_frequency := float(chord[arp_step]) * 2.0
-		var arp_phase := fmod(local_t, 1.0)
-		var arp_env := exp(-arp_phase * 3.6) * _smooth_edge(arp_phase, 1.0, 0.08)
+		var arp_phase := fmod(local_t, 2.0)
+		var arp_env := exp(-arp_phase * 2.2) * _smooth_edge(arp_phase, 2.0, 0.10)
 		var arpeggio := (
 			sin(TAU * arp_frequency * t) * 0.018
 			+ sin(TAU * arp_frequency * 2.0 * t + 0.34) * 0.004
