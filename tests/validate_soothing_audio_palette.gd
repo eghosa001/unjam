@@ -24,13 +24,15 @@ func _initialize() -> void:
 		"func _chime_stream",
 		"func _build_calm_ambient_loop",
 		"Fmaj7 -> Dm7 -> Bbmaj7 -> Cadd9",
-		"music_player.volume_db = -11.0",
-		"var body_tone := sin(TAU * float(chord[0]) * t) * 0.008 * edge",
+		"music_player.volume_db = -12.0",
+		"var body_tone := sin(TAU * float(chord[0]) * t) * 0.006 * section_edge",
 		"sfx.volume_db = -3.0",
 		"release_raw",
 		"var loop_edge := _smooth_edge(t, MUSIC_DURATION, 0.38)",
-		"var pulse_edge := _smooth_edge(pulse_phase, 2.0, 0.035)",
-		"* edge * loop_edge",
+		"var note_step := 0.5",
+		"var note_edge := _smooth_edge(note_phase, note_step, 0.040)",
+		"var phrases := [",
+		"* section_edge * loop_edge",
 		"root * 1.5",
 	]:
 		if not source.contains(token):
@@ -91,12 +93,12 @@ func _initialize() -> void:
 				var after := _pcm16(music.data, frame * 4)
 				if absi(after - before) > 1200:
 					failures.append("Ambient chord boundary has an audible PCM jump at %ds" % boundary_seconds)
-			for pulse_seconds in range(2, 32, 2):
-				var pulse_frame: int = int(pulse_seconds) * int(music.mix_rate)
-				var pulse_before := _pcm16(music.data, (pulse_frame - 1) * 4)
-				var pulse_after := _pcm16(music.data, pulse_frame * 4)
-				if absi(pulse_after - pulse_before) > 900:
-					failures.append("Ambient mallet pulse has an audible PCM jump at %ds" % pulse_seconds)
+			for note_half_seconds in range(1, 64):
+				var note_frame: int = int(float(note_half_seconds) * 0.5 * float(music.mix_rate))
+				var note_before := _pcm16(music.data, (note_frame - 1) * 4)
+				var note_after := _pcm16(music.data, note_frame * 4)
+				if absi(note_after - note_before) > 900:
+					failures.append("Ambient melody step has an audible PCM jump at %.1fs" % (float(note_half_seconds) * 0.5))
 			var reference_power := _goertzel_power(music.data, int(music.mix_rate), 261.63, 2.0)
 			var low_power := 0.0
 			for hz in [40.0, 60.0, 80.0, 100.0, 120.0, 150.0]:
