@@ -83,6 +83,7 @@ GROUP_TESTS = {
     ],
     "monetization": [
         "validate_monetization",
+        "validate_billing_production",
         "validate_shop_catalog_ui",
         "validate_restore_purchase_flow",
         "validate_coin_economy",
@@ -133,6 +134,7 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
         "assets/icon_adaptive_foreground.svg",
         "assets/boot_mark.svg",
         "assets/boot_mark.png",
+        "tools/prepare_android_brand_assets.gd",
     }:
         add(groups, "branding")
         return True
