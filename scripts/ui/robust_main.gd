@@ -20,30 +20,25 @@ const MULTI_LEVEL_PAGE_SIZE := 100
 const RESCUE_GAME_SCENE_PATH := "res://scenes/Game.tscn"
 const WATER_GAME_SCENE_PATH := "res://scenes/WaterSort.tscn"
 const BLOCK_GAME_SCENE_PATH := "res://scenes/BlockPuzzle.tscn"
-const GAME_SCENE_PATHS := [RESCUE_GAME_SCENE_PATH, WATER_GAME_SCENE_PATH, BLOCK_GAME_SCENE_PATH]
 
 func _ready() -> void:
 	MultiGameManager.ensure_state()
 	super._ready()
 	_queue_surface_changed()
 	# Android already owns the branded system splash. Do not put a second
-	# full-screen blocker over the first interactive frame: if a tween stalls or
-	# the device is under load it can look exactly like the app never launched.
-	# Warm the three game scenes only after Home has painted instead.
-	if DisplayServer.get_name() != "headless":
-		call_deferred("_warm_game_scene_resources")
+	# full-screen blocker over the first interactive frame. Game resources are
+	# primed only after the player enters a level-selection surface.
 
-func _warm_game_scene_resources() -> void:
-	for path in GAME_SCENE_PATHS:
-		if ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
-			ResourceLoader.load_threaded_request(path)
+func _prime_game_scene(path: String) -> void:
+	if ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
+		ResourceLoader.load_threaded_request(path)
 
 func _game_scene_resource(path: String) -> PackedScene:
 	var status := ResourceLoader.load_threaded_get_status(path)
 	if status == ResourceLoader.THREAD_LOAD_LOADED:
 		return ResourceLoader.load_threaded_get(path) as PackedScene
-	# A player can tap immediately after launch, before the background warmup is
-	# finished. Fall back to a normal load rather than delaying or dropping input.
+	if status == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+		return ResourceLoader.load_threaded_get(path) as PackedScene
 	return load(path) as PackedScene
 
 func _multi_page_count(game_id: String, world: int) -> int:
@@ -106,11 +101,13 @@ func build_level_select() -> void:
 	selected_game_id = "rescue_rush"
 	current_surface = "levels"
 	_remove_active_game()
+	_prime_game_scene(RESCUE_GAME_SCENE_PATH)
 	super.build_level_select()
 
 func build_multi_level_select() -> void:
 	current_surface = "levels"
 	_remove_active_game()
+	_prime_game_scene(WATER_GAME_SCENE_PATH if selected_game_id == "water_sort" else BLOCK_GAME_SCENE_PATH)
 	selected_multi_world = clampi(selected_multi_world, 1, MultiGameManager.world_count_for(selected_game_id))
 	selected_multi_page = clampi(selected_multi_page, 1, _multi_page_count(selected_game_id, selected_multi_world))
 	clear_content()
