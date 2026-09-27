@@ -9,15 +9,15 @@ extends Node
 # rewards, error sounds avoid abrasive buzzes, and rapid taps can overlap
 # naturally through a small player pool.
 
-const SAMPLE_RATE := 22050
-const MUSIC_RATE := 16000
-const STARTUP_MUSIC_RATE := 12000
+const SAMPLE_RATE := 32000
+const MUSIC_RATE := 32000
+const STARTUP_MUSIC_RATE := 32000
 const SFX_POOL_SIZE := 5
 const MUSIC_DURATION := 32.0
 const STARTUP_MUSIC_DURATION := 1.5
 # Keep the expensive full-loop synthesis below the early-frame budget. A tiny
 # primer plays immediately, so the full loop can be built without blocking UI.
-const MUSIC_SYNTH_CHUNK_FRAMES := 2048
+const MUSIC_SYNTH_CHUNK_FRAMES := 4096
 
 var player: AudioStreamPlayer
 var sfx_players: Array[AudioStreamPlayer] = []
@@ -297,11 +297,18 @@ func _build_startup_ambient() -> AudioStreamWAV:
 		var edge := _smooth_edge(local_t, step_length, 0.045)
 		var env := exp(-local_t * 4.2) * edge
 		var f := float(welcome[step])
-		var note := sin(TAU * f * t) * 0.055
-		note += sin(TAU * f * 2.0 * t + 0.22) * 0.014
+		var note := sin(TAU * f * t) * 0.050
+		note += sin(TAU * f * 2.0 * t + 0.22) * 0.012
+		note += sin(TAU * f * 3.0 * t + 0.48) * 0.004
 		var bed_edge := _smooth_edge(t, STARTUP_MUSIC_DURATION, 0.14)
-		var bed := (sin(TAU * 261.63 * t) * 0.018 + sin(TAU * 329.63 * t + 0.25) * 0.010) * bed_edge
-		_write_stereo(bytes, i, bed + note * env, bed * 0.98 + note * env * 0.96)
+		var bed := (
+			sin(TAU * 261.63 * t) * 0.016
+			+ sin(TAU * 329.63 * t + 0.25) * 0.009
+			+ sin(TAU * 392.00 * t + 0.55) * 0.005
+		) * bed_edge
+		var shimmer_l := sin(TAU * f * 1.003 * t + 0.18) * 0.0035 * env
+		var shimmer_r := sin(TAU * f * 0.997 * t + 0.52) * 0.0035 * env
+		_write_stereo(bytes, i, bed + note * env + shimmer_l, bed * 0.99 + note * env * 0.96 + shimmer_r)
 	var stream := AudioStreamWAV.new()
 	stream.format = AudioStreamWAV.FORMAT_16_BITS
 	stream.mix_rate = STARTUP_MUSIC_RATE
@@ -361,20 +368,38 @@ func _build_calm_ambient_loop() -> AudioStreamWAV:
 		var note_index := mini(15, int(local_t / note_step))
 		var note_frequency := float(phrases[section][note_index])
 		var note_phase := fmod(local_t, note_step)
-		var note_edge := _smooth_edge(note_phase, note_step, 0.040)
+		var note_edge := _smooth_edge(note_phase, note_step, 0.055)
 		var lead := 0.0
 		if note_frequency > 0.0:
-			var note_env := exp(-note_phase * 5.8) * note_edge
-			lead = sin(TAU * note_frequency * t) * 0.070
-			lead += sin(TAU * note_frequency * 2.0 * t + 0.20) * 0.015
-			lead += sin(TAU * note_frequency * 0.998 * t + 0.08) * 0.006
+			var note_env := exp(-note_phase * 4.6) * note_edge
+			lead = sin(TAU * note_frequency * t) * 0.060
+			lead += sin(TAU * note_frequency * 2.0 * t + 0.20) * 0.012
+			lead += sin(TAU * note_frequency * 3.0 * t + 0.43) * 0.004
+			lead += sin(TAU * note_frequency * 0.9985 * t + 0.08) * 0.007
 			lead *= note_env
 
-		var body_tone := sin(TAU * float(chord[0]) * t) * 0.006 * section_edge
-		var loop_edge := _smooth_edge(t, MUSIC_DURATION, 0.38)
-		var base_sample := (pad + lead * section_edge + body_tone) * 0.72 * loop_edge
-		var width_l := sin(TAU * float(chord[1]) * 1.003 * t + 0.3) * 0.004 * section_edge * loop_edge
-		var width_r := sin(TAU * float(chord[2]) * 0.997 * t + 1.0) * 0.004 * section_edge * loop_edge
+		# A very soft arpeggio provides motion underneath the melody without
+		# turning the soundtrack into a busy rhythm track.
+		var arp_step := int(floor(local_t / 1.0)) % chord.size()
+		var arp_frequency := float(chord[arp_step]) * 2.0
+		var arp_phase := fmod(local_t, 1.0)
+		var arp_env := exp(-arp_phase * 3.6) * _smooth_edge(arp_phase, 1.0, 0.08)
+		var arpeggio := (
+			sin(TAU * arp_frequency * t) * 0.018
+			+ sin(TAU * arp_frequency * 2.0 * t + 0.34) * 0.004
+		) * arp_env
+
+		var body_tone := sin(TAU * float(chord[0]) * t) * 0.005 * section_edge
+		var loop_edge := _smooth_edge(t, MUSIC_DURATION, 0.45)
+		var base_sample := (pad + lead * section_edge + arpeggio * section_edge + body_tone) * 0.72 * loop_edge
+		var width_l := (
+			sin(TAU * float(chord[1]) * 1.003 * t + 0.3) * 0.0035
+			+ sin(TAU * arp_frequency * 0.998 * t + 0.8) * 0.002
+		) * section_edge * loop_edge
+		var width_r := (
+			sin(TAU * float(chord[2]) * 0.997 * t + 1.0) * 0.0035
+			+ sin(TAU * arp_frequency * 1.002 * t + 1.1) * 0.002
+		) * section_edge * loop_edge
 		_write_stereo(bytes, i, base_sample + width_l, base_sample + width_r)
 
 	var stream := AudioStreamWAV.new()
