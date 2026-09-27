@@ -10,11 +10,11 @@ extends Node
 # naturally through a small player pool.
 
 const SAMPLE_RATE := 32000
-const MUSIC_RATE := 32000
-const STARTUP_MUSIC_RATE := 32000
-const SFX_POOL_SIZE := 5
-const MUSIC_DURATION := 32.0
-const STARTUP_MUSIC_DURATION := 1.5
+const MUSIC_RATE := 24000
+const STARTUP_MUSIC_RATE := 24000
+const SFX_POOL_SIZE := 8
+const MUSIC_DURATION := 24.0
+const STARTUP_MUSIC_DURATION := 1.2
 # Keep the expensive full-loop synthesis below the early-frame budget. A tiny
 # primer plays immediately, so the full loop can be built without blocking UI.
 const MUSIC_SYNTH_CHUNK_FRAMES := 4096
@@ -38,14 +38,14 @@ func _ready() -> void:
 	for i in range(SFX_POOL_SIZE):
 		var sfx := AudioStreamPlayer.new()
 		sfx.name = "CalmSfx%02d" % (i + 1)
-		sfx.volume_db = -3.0
+		sfx.volume_db = -2.5
 		add_child(sfx)
 		sfx_players.append(sfx)
 	player = sfx_players[0]
 
 	music_player = AudioStreamPlayer.new()
 	music_player.name = "CalmAmbientMusic"
-	music_player.volume_db = -12.0
+	music_player.volume_db = -13.0
 	add_child(music_player)
 	last_music_enabled = bool(SaveManager.data.get("music", true))
 	if last_music_enabled:
@@ -245,28 +245,26 @@ func _chime_stream(notes: Array, duration: float, volume: float, brightness: flo
 	for i in range(frames):
 		var t := float(i) / float(SAMPLE_RATE)
 		var progress := float(i) / float(maxi(1, frames - 1))
-		# 6 ms soft attack removes clicks. The squared/exponential tail gives the
-		# plucked wooden feel of kalimba/marimba instead of an electronic beep.
-		var attack := minf(1.0, t / 0.006)
-		var decay := exp(-progress * (4.8 + brightness * 2.4))
-		# Force the final 12 ms to zero. Cached one-shot WAVs otherwise stop at a
-		# non-zero sample and can click when rapid puzzle feedback overlaps.
-		var release_raw := clampf((duration - t) / 0.012, 0.0, 1.0)
+		# Soft felt-mallet attack with faster-decaying upper partials. The small
+		# inharmonic component gives a glass/wood character instead of a plain
+		# synthesizer beep, while every one-shot still returns to zero cleanly.
+		var attack := minf(1.0, t / 0.008)
+		var body_decay := exp(-progress * (4.0 + brightness * 1.8))
+		var high_decay := exp(-progress * (8.0 + brightness * 3.0))
+		var release_raw := clampf((duration - t) / 0.014, 0.0, 1.0)
 		var release := release_raw * release_raw * (3.0 - 2.0 * release_raw)
-		var envelope := attack * decay * release
 		var body := 0.0
 		for note_value in notes:
 			var f := float(note_value)
-			body += sin(TAU * f * t) * 0.72
-			body += sin(TAU * f * 2.0 * t + 0.24) * (0.16 * brightness)
-			body += sin(TAU * f * 3.01 * t + 0.61) * (0.055 * brightness)
-			# Slight detune provides an organic, rounded mallet shimmer.
-			body += sin(TAU * f * 0.997 * t + 0.10) * 0.08
+			body += sin(TAU * f * t) * 0.62 * body_decay
+			body += sin(TAU * f * 1.997 * t + 0.18) * (0.11 * brightness) * body_decay
+			body += sin(TAU * f * 2.73 * t + 0.47) * (0.075 * brightness) * high_decay
+			body += sin(TAU * f * 4.11 * t + 0.83) * (0.025 * brightness) * high_decay
+			body += sin(TAU * f * 1.006 * t + 0.08) * 0.075 * body_decay
 		body /= float(maxi(1, notes.size()))
+		var envelope := attack * release
 		var sample := body * envelope * volume
-		# Very small stereo offset keeps headphones spacious without making UI
-		# feedback feel like it jumps around the screen.
-		var side := sin(TAU * 0.7 * t) * sample * 0.045
+		var side := sin(TAU * 0.62 * t) * sample * 0.05
 		_write_stereo(bytes, i, sample - side, sample + side)
 
 	var stream := AudioStreamWAV.new()
@@ -282,57 +280,58 @@ func _chime_stream(notes: Array, duration: float, volume: float, brightness: flo
 # ---------------------------------------------------------------------------
 
 func _build_startup_ambient() -> AudioStreamWAV:
-	# A short three-note welcome motif starts immediately. It establishes the
-	# same warm musical identity as the main loop instead of opening on a static
-	# synth drone.
+	# Keep first-frame audio tiny and cheap. A soft F-major welcome gesture plays
+	# once while the richer loop is prepared over subsequent frames; it never
+	# repeats like a loading jingle.
 	var frames := maxi(1, int(STARTUP_MUSIC_RATE * STARTUP_MUSIC_DURATION))
 	var bytes := PackedByteArray()
 	bytes.resize(frames * 4)
-	var welcome := [440.00, 523.25, 659.25]
+	var welcome := [349.23, 440.00, 523.25]
 	var step_length := STARTUP_MUSIC_DURATION / float(welcome.size())
 	for i in range(frames):
 		var t := float(i) / float(STARTUP_MUSIC_RATE)
+		var progress := float(i) / float(maxi(1, frames - 1))
 		var step := mini(welcome.size() - 1, int(t / step_length))
 		var local_t := fmod(t, step_length)
-		var edge := _smooth_edge(local_t, step_length, 0.045)
-		var env := exp(-local_t * 4.2) * edge
+		var note_edge := _smooth_edge(local_t, step_length, 0.04)
+		var note_env := exp(-local_t * 5.2) * note_edge
 		var f := float(welcome[step])
-		var note := sin(TAU * f * t) * 0.050
-		note += sin(TAU * f * 2.0 * t + 0.22) * 0.012
-		note += sin(TAU * f * 3.0 * t + 0.48) * 0.004
-		var bed_edge := _smooth_edge(t, STARTUP_MUSIC_DURATION, 0.14)
+		var bell := (
+			sin(TAU * f * t) * 0.040
+			+ sin(TAU * f * 2.01 * t + 0.22) * 0.008
+			+ sin(TAU * f * 2.72 * t + 0.51) * 0.004
+		) * note_env
+		var global_edge := _smooth_edge(t, STARTUP_MUSIC_DURATION, 0.12)
 		var bed := (
-			sin(TAU * 261.63 * t) * 0.016
-			+ sin(TAU * 329.63 * t + 0.25) * 0.009
-			+ sin(TAU * 392.00 * t + 0.55) * 0.005
-		) * bed_edge
-		var shimmer_l := sin(TAU * f * 1.003 * t + 0.18) * 0.0035 * env
-		var shimmer_r := sin(TAU * f * 0.997 * t + 0.52) * 0.0035 * env
-		_write_stereo(bytes, i, bed + note * env + shimmer_l, bed * 0.99 + note * env * 0.96 + shimmer_r)
+			sin(TAU * 174.61 * t) * 0.012
+			+ sin(TAU * 220.00 * t + 0.32) * 0.008
+			+ sin(TAU * 261.63 * t + 0.58) * 0.006
+		) * global_edge
+		var air := sin(TAU * (698.46 + 12.0 * sin(TAU * 0.35 * t)) * t) * 0.0015 * global_edge
+		var fade := 1.0 - progress * progress
+		_write_stereo(bytes, i, (bed + bell + air) * fade, (bed * 0.98 + bell * 0.96 - air) * fade)
 	var stream := AudioStreamWAV.new()
 	stream.format = AudioStreamWAV.FORMAT_16_BITS
 	stream.mix_rate = STARTUP_MUSIC_RATE
 	stream.stereo = true
 	stream.data = bytes
-	stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
-	stream.loop_begin = 0
-	stream.loop_end = frames
 	return stream
 
 func _build_calm_ambient_loop() -> AudioStreamWAV:
-	# 32-second melodic puzzle loop: Fmaj7 -> Dm7 -> Bbmaj7 -> Cadd9.
-	# The harmony stays soft, while each eight-second section gets a deliberate
-	# 16-step melody with rests. That makes the music recognisably tuneful without
-	# becoming distracting during concentration-heavy puzzle play.
+	# Original 24-second casual-puzzle score at 80 BPM. The arrangement follows
+	# the genre's strongest pattern: a warm non-rhythmic pad, sparse felt/glass
+	# notes, generous rests, and restrained stereo ambience. It supports focus
+	# rather than competing with the puzzle.
 	var frames := int(MUSIC_RATE * MUSIC_DURATION)
 	var bytes := PackedByteArray()
 	bytes.resize(frames * 4)
 
+	# Fmaj7 -> Dm7 -> Bbmaj7 -> Cadd9, two bars per harmony at 80 BPM.
 	var chords := [
-		[261.63, 329.63, 392.00, 523.25],
-		[220.00, 261.63, 329.63, 392.00],
-		[233.08, 293.66, 349.23, 440.00],
-		[261.63, 329.63, 392.00, 493.88],
+		[174.61, 220.00, 261.63, 329.63],
+		[146.83, 174.61, 220.00, 261.63],
+		[116.54, 146.83, 174.61, 220.00],
+		[130.81, 196.00, 261.63, 293.66],
 	]
 	var phrases := [
 		[440.00, 523.25, 659.25, 0.0, 587.33, 523.25, 440.00, 0.0],
@@ -341,7 +340,12 @@ func _build_calm_ambient_loop() -> AudioStreamWAV:
 		[392.00, 493.88, 587.33, 0.0, 523.25, 493.88, 440.00, 0.0],
 	]
 	var section_length := MUSIC_DURATION / 4.0
-	var note_step := 1.0
+	var note_step := 0.75
+	var delay_frames := maxi(1, int(float(MUSIC_RATE) * 0.23))
+	var delay_l := PackedFloat32Array()
+	var delay_r := PackedFloat32Array()
+	delay_l.resize(delay_frames)
+	delay_r.resize(delay_frames)
 
 	for i in range(frames):
 		if i > 0 and i % MUSIC_SYNTH_CHUNK_FRAMES == 0:
@@ -350,57 +354,66 @@ func _build_calm_ambient_loop() -> AudioStreamWAV:
 		var t := float(i) / float(MUSIC_RATE)
 		var section := mini(3, int(t / section_length))
 		var local_t := fmod(t, section_length)
-		var section_edge := _smooth_edge(local_t, section_length, 1.0)
+		var section_edge := _smooth_edge(local_t, section_length, 0.72)
 		var chord: Array = chords[section]
 
-		# Keep the pad quiet enough that the melody reads clearly on phone speakers.
+		# Warm pad: fundamental/upper partials only, deliberately avoiding the
+		# sub-bass energy that small phone speakers turn into cabinet vibration.
 		var pad := 0.0
 		for voice in range(chord.size()):
 			var base := float(chord[voice])
-			var phase := float(voice) * 0.61
-			pad += sin(TAU * base * t + phase) * 0.042
-			pad += sin(TAU * base * 2.0 * t + phase + 0.3) * 0.010
-			pad += sin(TAU * base * 1.501 * t + phase * 0.7) * 0.008
-		pad *= section_edge * (0.88 + 0.12 * sin(TAU * t / 7.5 + 0.5))
+			var phase := float(voice) * 0.57
+			pad += sin(TAU * base * t + phase) * 0.026
+			pad += sin(TAU * base * 1.004 * t + phase + 0.12) * 0.010
+			pad += sin(TAU * base * 2.0 * t + phase + 0.31) * 0.0045
+		pad *= section_edge * (0.90 + 0.10 * sin(TAU * t / 8.0 + 0.4))
 
-		# A warm, music-box-like lead follows a coherent phrase instead of isolated
-		# random-sounding pings. Rest steps create breathing room.
+		# Felt/glass lead: a simple memorable phrase with one full beat of silence
+		# every four beats. Higher partials decay faster than the fundamental.
 		var note_index := mini(7, int(local_t / note_step))
 		var note_frequency := float(phrases[section][note_index])
 		var note_phase := fmod(local_t, note_step)
-		var note_edge := _smooth_edge(note_phase, note_step, 0.055)
+		var note_edge := _smooth_edge(note_phase, note_step, 0.045)
 		var lead := 0.0
 		if note_frequency > 0.0:
-			var note_env := exp(-note_phase * 4.6) * note_edge
-			lead = sin(TAU * note_frequency * t) * 0.060
-			lead += sin(TAU * note_frequency * 2.0 * t + 0.20) * 0.012
-			lead += sin(TAU * note_frequency * 3.0 * t + 0.43) * 0.004
-			lead += sin(TAU * note_frequency * 0.9985 * t + 0.08) * 0.007
-			lead *= note_env
+			var body_env := exp(-note_phase * 4.3) * note_edge
+			var high_env := exp(-note_phase * 8.5) * note_edge
+			lead = sin(TAU * note_frequency * t) * 0.052 * body_env
+			lead += sin(TAU * note_frequency * 1.997 * t + 0.18) * 0.009 * body_env
+			lead += sin(TAU * note_frequency * 2.72 * t + 0.49) * 0.005 * high_env
+			lead += sin(TAU * note_frequency * 4.08 * t + 0.87) * 0.0018 * high_env
 
-		# A slower, very soft arpeggio provides motion underneath the melody without
-		# turning the soundtrack into a busy rhythm track.
-		var arp_step := int(floor(local_t / 2.0)) % chord.size()
+		# Quiet chord-tone plucks add forward motion every two beats without drums.
+		var arp_step := int(floor(local_t / 1.5)) % chord.size()
 		var arp_frequency := float(chord[arp_step]) * 2.0
-		var arp_phase := fmod(local_t, 2.0)
-		var arp_env := exp(-arp_phase * 2.2) * _smooth_edge(arp_phase, 2.0, 0.10)
+		var arp_phase := fmod(local_t, 1.5)
+		var arp_env := exp(-arp_phase * 3.1) * _smooth_edge(arp_phase, 1.5, 0.055)
 		var arpeggio := (
-			sin(TAU * arp_frequency * t) * 0.018
-			+ sin(TAU * arp_frequency * 2.0 * t + 0.34) * 0.004
+			sin(TAU * arp_frequency * t) * 0.012
+			+ sin(TAU * arp_frequency * 2.01 * t + 0.27) * 0.0025
 		) * arp_env
 
-		var body_tone := sin(TAU * float(chord[0]) * t) * 0.005 * section_edge
-		var loop_edge := _smooth_edge(t, MUSIC_DURATION, 0.45)
-		var base_sample := (pad + lead * section_edge + arpeggio * section_edge + body_tone) * 0.72 * loop_edge
-		var width_l := (
-			sin(TAU * float(chord[1]) * 1.003 * t + 0.3) * 0.0035
-			+ sin(TAU * arp_frequency * 0.998 * t + 0.8) * 0.002
-		) * section_edge * loop_edge
-		var width_r := (
-			sin(TAU * float(chord[2]) * 0.997 * t + 1.0) * 0.0035
-			+ sin(TAU * arp_frequency * 1.002 * t + 1.1) * 0.002
-		) * section_edge * loop_edge
-		_write_stereo(bytes, i, base_sample + width_l, base_sample + width_r)
+		# A tiny high, slowly moving texture keeps the bed alive on headphones.
+		var air_frequency := 880.0 + 36.0 * sin(TAU * 0.07 * t)
+		var air := sin(TAU * air_frequency * t + 0.4) * 0.0012 * section_edge
+
+		var dry := pad + lead * section_edge + arpeggio * section_edge + air
+		var dry_l := dry + sin(TAU * float(chord[1]) * 1.003 * t + 0.3) * 0.0022 * section_edge
+		var dry_r := dry + sin(TAU * float(chord[2]) * 0.997 * t + 1.0) * 0.0022 * section_edge
+
+		# One short cross-fed delay acts like a compact room reverb. It gives the
+		# music the soft spatial tail heard in polished puzzle audio without a DSP
+		# effect node or runtime allocation.
+		var delay_index := i % delay_frames
+		var echo_l := float(delay_l[delay_index])
+		var echo_r := float(delay_r[delay_index])
+		delay_l[delay_index] = dry_l + echo_r * 0.16
+		delay_r[delay_index] = dry_r + echo_l * 0.16
+
+		var loop_edge := _smooth_edge(t, MUSIC_DURATION, 0.48)
+		var out_l := (dry_l + echo_l * 0.22) * 0.78 * loop_edge
+		var out_r := (dry_r + echo_r * 0.22) * 0.78 * loop_edge
+		_write_stereo(bytes, i, out_l, out_r)
 
 	var stream := AudioStreamWAV.new()
 	stream.format = AudioStreamWAV.FORMAT_16_BITS

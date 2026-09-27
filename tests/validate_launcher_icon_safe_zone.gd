@@ -31,13 +31,24 @@ func _initialize() -> void:
 			failures.append("Godot startup contract missing: %s" % token)
 
 	for token in [
-		'layer.name = "BrandedLaunch"',
-		'logo.texture = load("res://assets/icon.svg")',
-		'title.text = "UNJAM"',
-		'subtitle.text = "PUZZLE COLLECTION"',
+		"func _prime_game_scene(path: String) -> void:",
+		"ResourceLoader.load_threaded_request(path)",
+		"func _game_scene_resource(path: String) -> PackedScene:",
+		"_prime_game_scene(RESCUE_GAME_SCENE_PATH)",
+		'_prime_game_scene(WATER_GAME_SCENE_PATH if selected_game_id == "water_sort" else BLOCK_GAME_SCENE_PATH)',
 	]:
 		if not robust_main.contains(token):
-			failures.append("Branded launch overlay missing: %s" % token)
+			failures.append("Deferred game-scene priming contract missing: %s" % token)
+	for forbidden in [
+		"BrandedLaunch",
+		"CanvasLayer.new()",
+		"_warm_game_scene_resources",
+		'preload("res://scenes/Game.tscn")',
+		'preload("res://scenes/WaterSort.tscn")',
+		'preload("res://scenes/BlockPuzzle.tscn")',
+	]:
+		if robust_main.contains(forbidden):
+			failures.append("Startup must not retain blocking launch UI/eager game preload: %s" % forbidden)
 
 	for token in [
 		'const SOURCE := "res://store_assets/unjam_google_play_icon_512.png"',
@@ -62,7 +73,7 @@ func _initialize() -> void:
 			push_error(failure)
 		quit(1)
 		return
-	print("LAUNCHER_AND_BRANDED_STARTUP_OK")
+	print("LAUNCHER_AND_STARTUP_HANDOFF_OK")
 	quit(0)
 
 func _check_size(path: String, expected: Vector2i, label: String, failures: Array[String]) -> void:

@@ -17,73 +17,29 @@ var selected_game_id := "rescue_rush"
 var selected_multi_world := 1
 var selected_multi_page := 1
 const MULTI_LEVEL_PAGE_SIZE := 100
-const RESCUE_GAME_SCENE: PackedScene = preload("res://scenes/Game.tscn")
-const WATER_GAME_SCENE: PackedScene = preload("res://scenes/WaterSort.tscn")
-const BLOCK_GAME_SCENE: PackedScene = preload("res://scenes/BlockPuzzle.tscn")
+const RESCUE_GAME_SCENE_PATH := "res://scenes/Game.tscn"
+const WATER_GAME_SCENE_PATH := "res://scenes/WaterSort.tscn"
+const BLOCK_GAME_SCENE_PATH := "res://scenes/BlockPuzzle.tscn"
 
 func _ready() -> void:
 	MultiGameManager.ensure_state()
 	super._ready()
 	_queue_surface_changed()
-	if DisplayServer.get_name() != "headless":
-		call_deferred("_show_branded_launch_overlay")
+	# Android already owns the branded system splash. Do not put a second
+	# full-screen blocker over the first interactive frame. Game resources are
+	# primed only after the player enters a level-selection surface.
 
-func _show_branded_launch_overlay() -> void:
-	if has_node("BrandedLaunch"):
-		return
-	var layer := CanvasLayer.new()
-	layer.name = "BrandedLaunch"
-	layer.layer = 2000
-	add_child(layer)
+func _prime_game_scene(path: String) -> void:
+	if ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
+		ResourceLoader.load_threaded_request(path)
 
-	var root_panel := ColorRect.new()
-	root_panel.name = "BrandedLaunchBackground"
-	root_panel.color = Color("#121c3a")
-	root_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	root_panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	layer.add_child(root_panel)
-
-	var center := CenterContainer.new()
-	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	root_panel.add_child(center)
-
-	var stack := VBoxContainer.new()
-	stack.name = "BrandedLaunchContent"
-	stack.custom_minimum_size = Vector2(320, 390)
-	stack.alignment = BoxContainer.ALIGNMENT_CENTER
-	stack.add_theme_constant_override("separation", 12)
-	center.add_child(stack)
-
-	var logo := TextureRect.new()
-	logo.name = "BrandedLaunchLogo"
-	logo.texture = load("res://assets/icon.svg")
-	logo.custom_minimum_size = Vector2(210, 210)
-	logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	logo.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	stack.add_child(logo)
-
-	var title := Label.new()
-	title.name = "BrandedLaunchName"
-	title.text = "UNJAM"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 44)
-	title.add_theme_color_override("font_color", Color("#fff3c4"))
-	stack.add_child(title)
-
-	var subtitle := Label.new()
-	subtitle.name = "BrandedLaunchSubtitle"
-	subtitle.text = "PUZZLE COLLECTION"
-	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	subtitle.add_theme_font_size_override("font_size", 15)
-	subtitle.add_theme_color_override("font_color", Color("#b9c9e8"))
-	stack.add_child(subtitle)
-
-	layer.modulate.a = 1.0
-	var tween := create_tween()
-	tween.tween_interval(0.72)
-	tween.tween_property(layer, "modulate:a", 0.0, 0.24).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	tween.tween_callback(layer.queue_free)
+func _game_scene_resource(path: String) -> PackedScene:
+	var status := ResourceLoader.load_threaded_get_status(path)
+	if status == ResourceLoader.THREAD_LOAD_LOADED:
+		return ResourceLoader.load_threaded_get(path) as PackedScene
+	if status == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+		return ResourceLoader.load_threaded_get(path) as PackedScene
+	return load(path) as PackedScene
 
 func _multi_page_count(game_id: String, world: int) -> int:
 	var first := MultiGameManager.first_level_in_game_world(game_id, world)
@@ -145,11 +101,13 @@ func build_level_select() -> void:
 	selected_game_id = "rescue_rush"
 	current_surface = "levels"
 	_remove_active_game()
+	_prime_game_scene(RESCUE_GAME_SCENE_PATH)
 	super.build_level_select()
 
 func build_multi_level_select() -> void:
 	current_surface = "levels"
 	_remove_active_game()
+	_prime_game_scene(WATER_GAME_SCENE_PATH if selected_game_id == "water_sort" else BLOCK_GAME_SCENE_PATH)
 	selected_multi_world = clampi(selected_multi_world, 1, MultiGameManager.world_count_for(selected_game_id))
 	selected_multi_page = clampi(selected_multi_page, 1, _multi_page_count(selected_game_id, selected_multi_world))
 	clear_content()
@@ -302,7 +260,12 @@ func start_multi_level_mode(game_id: String, level_number: int, daily: bool = fa
 	_remove_active_game()
 	if content and is_instance_valid(content):
 		content.hide()
-	var packed: PackedScene = WATER_GAME_SCENE if game_id == "water_sort" else BLOCK_GAME_SCENE
+	var scene_path := WATER_GAME_SCENE_PATH if game_id == "water_sort" else BLOCK_GAME_SCENE_PATH
+	var packed := _game_scene_resource(scene_path)
+	if packed == null:
+		push_error("Failed to load game scene: %s" % scene_path)
+		build_home()
+		return
 	var game_scene := packed.instantiate() as Control
 	game_scene.name = "ActiveGame"
 	game_scene.level_number = level_number
@@ -330,7 +293,12 @@ func _spawn_rescue(level_number: int, daily: bool, custom_data: Dictionary) -> v
 	_remove_active_game()
 	if content and is_instance_valid(content):
 		content.hide()
-	var game_scene := RESCUE_GAME_SCENE.instantiate() as Control
+	var packed := _game_scene_resource(RESCUE_GAME_SCENE_PATH)
+	if packed == null:
+		push_error("Failed to load game scene: %s" % RESCUE_GAME_SCENE_PATH)
+		build_home()
+		return
+	var game_scene := packed.instantiate() as Control
 	game_scene.name = "ActiveGame"
 	game_scene.level_number = level_number
 	game_scene.daily_mode = daily
