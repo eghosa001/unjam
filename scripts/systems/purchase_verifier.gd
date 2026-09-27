@@ -2,6 +2,7 @@ extends Node
 
 signal verification_completed(product_id: String, token: String, result: Dictionary)
 signal commit_completed(product_id: String, token: String, committed: bool, reason: String)
+signal detailed_commit_completed(product_id: String, token: String, result: Dictionary)
 signal revocations_synced(result: Dictionary)
 
 const VERIFICATION_TIMEOUT_SECONDS := 20.0
@@ -62,15 +63,38 @@ func verify(product_id: String, token: String, claim_id: String, callback: Calla
 	)
 
 func commit(product_id: String, token: String, claim_id: String, callback: Callable) -> void:
-	if OS.get_name() != "Android" and bool(ProjectSettings.get_setting("monetization/test_mode", false)):
+	commit_detailed(product_id, token, claim_id, func(result: Dictionary) -> void:
+		var committed := bool(result.get("committed", false))
+		var final_reason := String(result.get("reason", "committed" if committed else "Purchase commit failed"))
 		if callback.is_valid():
-			callback.call(true, "desktop-test")
-		commit_completed.emit(product_id, token, true, "desktop-test")
+			callback.call(committed, final_reason)
+		commit_completed.emit(product_id, token, committed, final_reason)
+	)
+
+func commit_detailed(product_id: String, token: String, claim_id: String, callback: Callable) -> void:
+	if OS.get_name() != "Android" and bool(ProjectSettings.get_setting("monetization/test_mode", false)):
+		var desktop_result := {
+			"committed": true,
+			"claim_committed": true,
+			"product_id": product_id,
+			"reason": "desktop-test",
+			"finalization": "desktop-test"
+		}
+		if callback.is_valid():
+			callback.call(desktop_result)
+		detailed_commit_completed.emit(product_id, token, desktop_result)
 		return
 	if token.is_empty() or claim_id.length() < 8 or claim_id.length() > 128:
+		var invalid_result := {
+			"committed": false,
+			"claim_committed": false,
+			"product_id": product_id,
+			"reason": "Purchase claim is invalid",
+			"finalization": ""
+		}
 		if callback.is_valid():
-			callback.call(false, "Purchase claim is invalid")
-		commit_completed.emit(product_id, token, false, "Purchase claim is invalid")
+			callback.call(invalid_result)
+		detailed_commit_completed.emit(product_id, token, invalid_result)
 		return
 	var payload := {
 		"action": "commit",
@@ -81,13 +105,22 @@ func commit(product_id: String, token: String, claim_id: String, callback: Calla
 		"install_id": install_id()
 	}
 	_request_json(payload, func(ok: bool, parsed: Dictionary, reason: String) -> void:
-		var committed := ok and bool(parsed.get("committed", false)) and String(parsed.get("product_id", "")) == product_id
+		var same_product := String(parsed.get("product_id", "")) == product_id
+		var committed := ok and same_product and bool(parsed.get("committed", false))
+		var claim_committed := same_product and (committed or bool(parsed.get("claim_committed", false)))
 		var final_reason := String(parsed.get("reason", "committed" if committed else reason))
 		if final_reason.is_empty():
 			final_reason = "Purchase commit failed"
+		var result := {
+			"committed": committed,
+			"claim_committed": claim_committed,
+			"product_id": product_id,
+			"reason": final_reason,
+			"finalization": String(parsed.get("finalization", ""))
+		}
 		if callback.is_valid():
-			callback.call(committed, final_reason)
-		commit_completed.emit(product_id, token, committed, final_reason)
+			callback.call(result)
+		detailed_commit_completed.emit(product_id, token, result)
 	)
 
 func sync_revocations(callback: Callable = Callable()) -> void:
