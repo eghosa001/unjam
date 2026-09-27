@@ -4,6 +4,7 @@ const ADMOB_PROVIDER_PATH := "res://addons/unjam_admob_provider.gd"
 const BILLING_CLIENT_PATH := "res://addons/GodotGooglePlayBilling/BillingClient.gd"
 const BILLING_OK := 0
 const BILLING_USER_CANCELED := 1
+const BILLING_ITEM_NOT_OWNED := 8
 const PRODUCT_TYPE_INAPP := 0
 const PURCHASE_STATE_PURCHASED := 1
 const PURCHASE_STATE_PENDING := 2
@@ -17,6 +18,8 @@ var _billing_reconnect_attempt := 0
 var _billing_reconnect_scheduled := false
 var _purchase_requests: Dictionary = {}
 var _launch_product_id := ""
+var _finalization_queue: Array[Dictionary] = []
+var _finalization_active := false
 
 func _ready() -> void:
 	call_deferred("_initialize")
@@ -261,4 +264,69 @@ func query_owned_purchases(callback: Callable) -> bool:
 	billing_client.query_purchases_response.connect(handler, CONNECT_ONE_SHOT)
 	billing_client.query_purchases(PRODUCT_TYPE_INAPP)
 	return true
+
+# Server-side finalization remains the primary path. StoreManager invokes this
+# fallback only after the purchase ledger has already committed the verified
+# claim, so a client-side consume/acknowledge can never bypass deduplication.
+func finalize_purchase(purchase_token: String, non_consumable: bool, callback: Callable) -> bool:
+	if purchase_token.is_empty() or not billing_ready():
+		return false
+	var signal_name := StringName("acknowledge_purchase_response" if non_consumable else "consume_purchase_response")
+	var method_name := StringName("acknowledge_purchase" if non_consumable else "consume_purchase")
+	if not billing_client.has_signal(signal_name) or not billing_client.has_method(method_name):
+		return false
+	_finalization_queue.append({
+		"token": purchase_token,
+		"non_consumable": non_consumable,
+		"callback": callback
+	})
+	_pump_finalization_queue()
+	return true
+
+func _pump_finalization_queue() -> void:
+	if _finalization_active or _finalization_queue.is_empty():
+		return
+	if not billing_ready():
+		_fail_queued_finalization("Google Play Billing is not connected")
+		return
+	var request: Dictionary = _finalization_queue.front()
+	var non_consumable := bool(request.get("non_consumable", false))
+	var purchase_token := String(request.get("token", ""))
+	var callback: Callable = request.get("callback", Callable())
+	var signal_name := StringName("acknowledge_purchase_response" if non_consumable else "consume_purchase_response")
+	var method_name := StringName("acknowledge_purchase" if non_consumable else "consume_purchase")
+	if not billing_client.has_signal(signal_name) or not billing_client.has_method(method_name):
+		_fail_queued_finalization("Google Play Billing finalization is unavailable")
+		return
+	_finalization_active = true
+	var handler := func(response: Dictionary) -> void:
+		var code := int(response.get("response_code", -1))
+		# ITEM_NOT_OWNED is idempotent success here: this fallback is only reached
+		# after the backend has committed the verified claim, so absence from Play
+		# ownership means the transaction was already finalized elsewhere.
+		var finalized := code == BILLING_OK or code == BILLING_ITEM_NOT_OWNED
+		var reason := "" if finalized else String(response.get("debug_message", "Google Play finalization failed"))
+		_finalization_active = false
+		if not _finalization_queue.is_empty():
+			_finalization_queue.pop_front()
+		if callback.is_valid():
+			callback.call(finalized, reason)
+		call_deferred("_pump_finalization_queue")
+	var connect_error := billing_client.connect(signal_name, handler, CONNECT_ONE_SHOT)
+	if connect_error != OK:
+		_finalization_active = false
+		_fail_queued_finalization("Could not observe Google Play finalization")
+		return
+	billing_client.call(method_name, purchase_token)
+
+func _fail_queued_finalization(reason: String) -> void:
+	if _finalization_queue.is_empty():
+		_finalization_active = false
+		return
+	var request: Dictionary = _finalization_queue.pop_front()
+	_finalization_active = false
+	var callback: Callable = request.get("callback", Callable())
+	if callback.is_valid():
+		callback.call(false, reason)
+	call_deferred("_pump_finalization_queue")
 
