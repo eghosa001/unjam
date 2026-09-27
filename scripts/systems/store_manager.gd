@@ -231,27 +231,16 @@ func _on_verified(product_id: String, token: String, claim_id: String, result: D
 	# A new/same server claim is committed only after the local reward/entitlement
 	# has been persisted. Play consume/acknowledge happens after this commit.
 	if grant:
-		PurchaseVerifier.commit(product_id, token, claim_id, func(committed: bool, commit_reason: String): _on_claim_committed(product_id, token, granted_coins, committed, commit_reason))
+		PurchaseVerifier.commit_detailed(product_id, token, claim_id, func(commit_result: Dictionary): _handle_commit_result(product_id, token, granted_coins, commit_result, false))
 		return
 
 	# Server-side duplicates never regrant currency. A committed claim can safely
 	# be finalized again; an issued claim owned by another install is left alone.
 	if claim_state == "committed":
-		# The ledger may have been committed by an older build before server-side
-		# acknowledgement/consumption was introduced. Re-run the idempotent backend
-		# commit so Google Play finalization is guaranteed before reporting success.
-		PurchaseVerifier.commit(product_id, token, claim_id, func(committed: bool, commit_reason: String):
-			if committed:
-				_clear_purchase_busy(product_id)
-				purchase_succeeded.emit(product_id)
-				AnalyticsManager.track("purchase_restored_without_regrant", {"product": product_id})
-				_settle_restore(product_id, token, true)
-			else:
-				_clear_purchase_busy(product_id)
-				purchase_pending.emit(product_id, "Purchase finalization will retry")
-				AnalyticsManager.track("purchase_commit_pending", {"product": product_id, "reason": commit_reason})
-				_settle_restore(product_id, token, false)
-		)
+		# Re-run finalization for committed claims. If the server cannot reach Play,
+		# the Android bridge may safely finish it because the dedupe ledger is already
+		# committed and no additional reward will be granted.
+		PurchaseVerifier.commit_detailed(product_id, token, claim_id, func(commit_result: Dictionary): _handle_commit_result(product_id, token, 0, commit_result, true))
 		return
 
 	_clear_purchase_busy(product_id)
@@ -262,20 +251,47 @@ func _on_verified(product_id: String, token: String, claim_id: String, result: D
 		purchase_pending.emit(product_id, "This purchase reward is already claimed or awaiting finalization")
 		_settle_restore(product_id, token, false)
 
-func _on_claim_committed(product_id: String, token: String, granted_coins: int, committed: bool, reason: String) -> void:
-	if committed:
-		_clear_purchase_busy(product_id)
-		purchase_succeeded.emit(product_id)
-		AnalyticsManager.track("purchase_succeeded", {"product": product_id, "coins": granted_coins})
-		_settle_restore(product_id, token, true)
+func _handle_commit_result(product_id: String, token: String, granted_coins: int, result: Dictionary, restored_without_regrant: bool) -> void:
+	if bool(result.get("committed", false)):
+		_finish_finalized_purchase(product_id, token, granted_coins, restored_without_regrant, false)
 		return
 
-	# The reward is already safely persisted locally. Do not roll it back and do
-	# not consume/acknowledge the Play purchase until the server commit succeeds.
+	var reason := String(result.get("reason", "Purchase finalization will retry"))
+	# Never consume/acknowledge on the client until the backend explicitly says
+	# the verified claim is committed. This keeps the server ledger authoritative
+	# while preventing a transient server-side Play finalization failure from
+	# leaving consumable coin packs permanently ITEM_ALREADY_OWNED.
+	if bool(result.get("claim_committed", false)) and provider_ready() and provider.has_method("finalize_purchase"):
+		var non_consumable := bool(PRODUCTS[product_id].get("non_consumable", false))
+		var started = provider.call(
+			"finalize_purchase",
+			token,
+			non_consumable,
+			func(finalized: bool, final_reason: String) -> void:
+				if finalized:
+					_finish_finalized_purchase(product_id, token, granted_coins, restored_without_regrant, true)
+				else:
+					_mark_finalization_pending(product_id, token, restored_without_regrant, final_reason if not final_reason.is_empty() else reason)
+		)
+		if started != false:
+			return
+
+	_mark_finalization_pending(product_id, token, restored_without_regrant, reason)
+
+func _finish_finalized_purchase(product_id: String, token: String, granted_coins: int, restored_without_regrant: bool, client_fallback: bool) -> void:
+	_clear_purchase_busy(product_id)
+	purchase_succeeded.emit(product_id)
+	if restored_without_regrant:
+		AnalyticsManager.track("purchase_restored_without_regrant", {"product": product_id, "client_fallback": client_fallback})
+	else:
+		AnalyticsManager.track("purchase_succeeded", {"product": product_id, "coins": granted_coins, "client_fallback": client_fallback})
+	_settle_restore(product_id, token, true)
+
+func _mark_finalization_pending(product_id: String, token: String, restored_without_regrant: bool, reason: String) -> void:
 	_clear_purchase_busy(product_id)
 	purchase_pending.emit(product_id, "Reward saved; purchase finalization will retry")
 	AnalyticsManager.track("purchase_commit_pending", {"product": product_id, "reason": reason})
-	_settle_restore(product_id, token, true)
+	_settle_restore(product_id, token, not restored_without_regrant)
 	call_deferred("reconcile_purchases")
 
 func restore_purchases() -> bool:
