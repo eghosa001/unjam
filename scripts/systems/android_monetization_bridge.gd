@@ -165,6 +165,22 @@ func purchase(product_id: String, success: Callable, failed: Callable, pending: 
 		return false
 	return true
 
+func _product_ids_from_purchase(purchase: Dictionary) -> Array[String]:
+	var result: Array[String] = []
+	var raw = purchase.get("product_ids", PackedStringArray())
+	if raw is PackedStringArray:
+		for value in raw:
+			result.append(String(value))
+	elif raw is Array:
+		for value in raw:
+			result.append(String(value))
+	else:
+		var legacy = purchase.get("products", [])
+		if legacy is PackedStringArray or legacy is Array:
+			for value in legacy:
+				result.append(String(value))
+	return result
+
 func _on_purchase_updated(response: Dictionary) -> void:
 	var code := int(response.get("response_code", -1))
 	if code != BILLING_OK:
@@ -182,10 +198,9 @@ func _on_purchase_updated(response: Dictionary) -> void:
 		if not purchase_value is Dictionary:
 			continue
 		var purchase_data: Dictionary = purchase_value
-		var products_value = purchase_data.get("product_ids", [])
-		if not products_value is Array:
+		var products: Array[String] = _product_ids_from_purchase(purchase_data)
+		if products.is_empty():
 			continue
-		var products: Array = products_value
 		var state := int(purchase_data.get("purchase_state", 0))
 		for product_value in products:
 			var product_id := String(product_value)
@@ -260,8 +275,8 @@ func _recover_owned_purchase_request(product_id: String) -> void:
 			if not purchase_value is Dictionary:
 				continue
 			var purchase: Dictionary = purchase_value
-			var products_value = purchase.get("product_ids", [])
-			if not products_value is Array or product_id not in products_value:
+			var products: Array[String] = _product_ids_from_purchase(purchase)
+			if product_id not in products:
 				continue
 			var state := int(purchase.get("purchase_state", 0))
 			if state == PURCHASE_STATE_PURCHASED:
