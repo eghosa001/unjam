@@ -78,6 +78,14 @@ jobs:
         with:
           version: 4.7.2-stable
           export-templates: true
+
+      - name: Prepare Android launcher and splash rasters
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path . --script res://tools/prepare_android_brand_assets.gd
+          test -s assets/icon_user_512.png
+          test -s assets/icon_user_adaptive_432.png
       - name: Install Android API 36
         shell: bash
         run: |
@@ -223,6 +231,12 @@ jobs:
           grep -F '"9.1.0"' build/android/release-apk-manifest.txt
           grep -F "org.godotengine.plugin.v2.GodotGooglePlayBilling" build/android/release-apk-manifest.txt
           grep -F "com.android.billingclient.api.ProxyBillingActivity" build/android/release-apk-manifest.txt
+          FOREGROUND_BYTES="$(unzip -p "$APK" res/mipmap-xxxhdpi-v4/icon_foreground.webp | wc -c)"
+          SPLASH_BYTES="$(unzip -p "$APK" res/drawable/splash_icon.webp | wc -c)"
+          echo "Release APK adaptive foreground bytes: $FOREGROUND_BYTES"
+          echo "Release APK splash icon bytes: $SPLASH_BYTES"
+          test "$FOREGROUND_BYTES" -gt 1000
+          test "$SPLASH_BYTES" -gt 1000
           rm -f "$APK"
       - name: Export release AAB
         shell: bash
@@ -283,6 +297,12 @@ jobs:
             echo "Built AAB certificate mismatch. Expected $EXPECTED_UPLOAD_SHA1 but found $BUNDLE_SHA1" >&2
             exit 1
           fi
+          AAB_FOREGROUND_BYTES="$(unzip -p "$AAB" base/res/mipmap-xxxhdpi-v4/icon_foreground.webp | wc -c)"
+          AAB_SPLASH_BYTES="$(unzip -p "$AAB" base/res/drawable/splash_icon.webp | wc -c)"
+          echo "Release AAB adaptive foreground bytes: $AAB_FOREGROUND_BYTES"
+          echo "Release AAB splash icon bytes: $AAB_SPLASH_BYTES"
+          test "$AAB_FOREGROUND_BYTES" -gt 1000
+          test "$AAB_SPLASH_BYTES" -gt 1000
           sha256sum "$AAB" | tee build/android/unjam-release.aab.sha256
           echo "Verified package identity source: $EXPECTED_PACKAGE"
           echo "Verified upload certificate SHA-1: $BUNDLE_SHA1"
