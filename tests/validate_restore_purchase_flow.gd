@@ -44,7 +44,7 @@ func run() -> void:
 	store.call("_on_restore_result", [{
 		"purchase_state": store.PURCHASE_STATE_PURCHASED,
 		"purchase_token": "qa-restore-unverified-token",
-		"product_ids": [store.PRODUCT_REMOVE_ADS]
+		"product_ids": PackedStringArray([store.PRODUCT_REMOVE_ADS])
 	}])
 
 	expect_true(restore_events.is_empty(), "Restore completed before asynchronous purchase verification settled")
