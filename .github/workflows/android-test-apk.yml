@@ -33,6 +33,14 @@ jobs:
           version: 4.7.2-stable
           export-templates: true
 
+      - name: Prepare Android launcher and splash rasters
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path . --script res://tools/prepare_android_brand_assets.gd
+          test -s assets/icon_user_512.png
+          test -s assets/icon_user_adaptive_432.png
+
       - name: Install Android API 36
         shell: bash
         run: |
@@ -96,6 +104,12 @@ jobs:
           grep -F "package: name='com.eghosa.unjamgam' versionCode='3' versionName='1.0.3'" build/android/unjam-latest-debug-badging.txt
           grep -F "targetSdkVersion:'36'" build/android/unjam-latest-debug-badging.txt
           grep -F "native-code: 'arm64-v8a'" build/android/unjam-latest-debug-badging.txt
+          FOREGROUND_BYTES="$(unzip -p "$APK" res/mipmap-xxxhdpi-v4/icon_foreground.webp | wc -c)"
+          SPLASH_BYTES="$(unzip -p "$APK" res/drawable/splash_icon.webp | wc -c)"
+          echo "Packaged adaptive foreground bytes: $FOREGROUND_BYTES"
+          echo "Packaged splash icon bytes: $SPLASH_BYTES"
+          test "$FOREGROUND_BYTES" -gt 1000
+          test "$SPLASH_BYTES" -gt 1000
           sha256sum "$APK" | tee build/android/unjam-latest-debug.apk.sha256
 
       - name: Upload latest test APK
@@ -109,4 +123,4 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-# manual-apk-build-marker 2026-09-27 full-fix-restore-branding-audio-build
+# manual-apk-build-marker 2026-09-27 packed-id-and-raster-icon-fix
