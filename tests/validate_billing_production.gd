@@ -1,5 +1,7 @@
 extends SceneTree
 
+# Full billing bridge regression gate.
+
 var failures: Array[String] = []
 
 func expect_true(condition: bool, message: String) -> void:
