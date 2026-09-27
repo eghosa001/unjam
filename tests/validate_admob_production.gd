@@ -33,6 +33,8 @@ func run() -> void:
 		expect_true(String(config_script.call("interstitial_unit_id", true)) == TEST_INTERSTITIAL, "debug interstitial ID must use Google's test unit")
 		expect_true(String(config_script.call("rewarded_unit_id", false)) == EXPECTED_REWARDED, "release rewarded ID must use production unit")
 		expect_true(String(config_script.call("interstitial_unit_id", false)) == EXPECTED_INTERSTITIAL, "release interstitial ID must use production unit")
+		var config_source := FileAccess.get_file_as_string("res://scripts/systems/admob_config.gd")
+		expect_true('monetization/admob_test_mode' in config_source, "dedicated AdMob test-mode switch is missing")
 
 	expect_true(FileAccess.file_exists("res://tools/install_monetization_plugins.sh"), "monetization installer missing")
 	if FileAccess.file_exists("res://tools/install_monetization_plugins.sh"):
