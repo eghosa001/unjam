@@ -11,7 +11,7 @@ Production rewarded unit:
 Production interstitial unit:
 `ca-app-pub-7517898921176341/9108514429`
 
-Debug builds must use Google's official Android test ad-unit IDs. Release builds use the production IDs above through `scripts/systems/admob_config.gd`.
+Debug builds use Google's official Android test ad-unit IDs. While closed-testing monetization is being verified, `monetization/admob_test_mode=true` also forces Google's test rewarded/interstitial units in release-signed test AABs without changing the configured production IDs. Set `monetization/admob_test_mode=false` before a public production rollout.
 
 Rewarded ads are opt-in and are used for the hint fallback. A hint is granted only from the earned-reward callback. Closing or failing an ad does not grant the reward.
 
