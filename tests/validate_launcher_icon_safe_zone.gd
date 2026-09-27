@@ -7,13 +7,15 @@ func _initialize() -> void:
 	var export_cfg := _read("res://export_presets.cfg")
 	var project_cfg := _read("res://project.godot")
 	var robust_main := _read("res://scripts/ui/robust_main.gd")
-	var adaptive_svg := _read("res://assets/icon_adaptive_foreground.svg")
+	var prep := _read("res://tools/prepare_android_brand_assets.gd")
+	var debug_workflow := _read("res://.github/workflows/android-test-apk.yml")
+	var release_workflow := _read("res://.github/workflows/android-release.yml")
 
 	for token in [
 		"launcher_icons/main_192x192=\"res://assets/icon_user_512.png\"",
-		"launcher_icons/adaptive_foreground_432x432=\"res://assets/icon_adaptive_foreground.svg\"",
+		"launcher_icons/adaptive_foreground_432x432=\"res://assets/icon_user_adaptive_432.png\"",
 		"launcher_icons/adaptive_background_432x432=\"res://assets/icon_adaptive_background.svg\"",
-		"splash_screen/icon=\"res://assets/icon_adaptive_foreground.svg\"",
+		"splash_screen/icon=\"res://assets/icon_user_adaptive_432.png\"",
 		"splash_screen/background_color=%s" % SPLASH_BG,
 		"splash_screen/disable_godot_boot_splash=true",
 	]:
@@ -37,8 +39,23 @@ func _initialize() -> void:
 		if not robust_main.contains(token):
 			failures.append("Branded launch overlay missing: %s" % token)
 
-	expect_svg_safe_zone(adaptive_svg, failures)
-	_check_size("res://assets/icon_user_512.png", Vector2i(512, 512), "Legacy launcher icon", failures)
+	for token in [
+		'const SOURCE := "res://store_assets/unjam_google_play_icon_512.png"',
+		"const LEGACY_CONTENT := 384",
+		"const ADAPTIVE_CONTENT := 288",
+		'const ADAPTIVE_OUT := "res://assets/icon_user_adaptive_432.png"',
+		"Image.INTERPOLATE_LANCZOS",
+	]:
+		if not prep.contains(token):
+			failures.append("Android raster preparation contract missing: %s" % token)
+
+	for workflow in [debug_workflow, release_workflow]:
+		if not workflow.contains("prepare_android_brand_assets.gd"):
+			failures.append("Android build workflow does not generate padded raster branding")
+		if not workflow.contains('test "$FOREGROUND_BYTES" -gt 1000') and not workflow.contains('test "$AAB_FOREGROUND_BYTES" -gt 1000'):
+			failures.append("Android build workflow does not reject a blank adaptive foreground")
+
+	_check_size("res://store_assets/unjam_google_play_icon_512.png", Vector2i(512, 512), "Canonical launcher artwork", failures)
 
 	if not failures.is_empty():
 		for failure in failures:
@@ -48,18 +65,11 @@ func _initialize() -> void:
 	print("LAUNCHER_AND_BRANDED_STARTUP_OK")
 	quit(0)
 
-func expect_svg_safe_zone(source: String, failures: Array[String]) -> void:
-	if not source.contains('viewBox="0 0 432 432"'):
-		failures.append("Adaptive foreground must stay 432x432")
-	if not source.contains('x="72" y="72" width="288" height="288"'):
-		failures.append("Adaptive foreground does not preserve the reduced Samsung-safe footprint")
-
 func _check_size(path: String, expected: Vector2i, label: String, failures: Array[String]) -> void:
-	var texture := load(path) as Texture2D
-	if texture == null:
+	var image := Image.load_from_file(path)
+	if image == null or image.is_empty():
 		failures.append("%s failed to load" % label)
 		return
-	var image := texture.get_image()
 	if Vector2i(image.get_width(), image.get_height()) != expected:
 		failures.append("%s must be %dx%d" % [label, expected.x, expected.y])
 
