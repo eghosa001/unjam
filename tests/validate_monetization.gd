@@ -108,7 +108,20 @@ func run() -> void:
 	expect_true(store_manager.is_product_owned(store_manager.PRODUCT_STARTER_PACK), "Starter Pack is not reported as owned")
 	expect_true(store_manager.is_product_owned(store_manager.PRODUCT_REMOVE_ADS), "Remove Ads is not reported as owned after Starter Pack")
 	expect_true(not store_manager.is_product_owned(store_manager.PRODUCT_COINS_SMALL), "Consumable coin pack must never be reported as permanently owned")
+	expect_true(store_manager.is_non_consumable(store_manager.PRODUCT_REMOVE_ADS), "Remove Ads must remain explicitly non-consumable")
+	expect_true(store_manager.is_non_consumable(store_manager.PRODUCT_STARTER_PACK), "Starter Pack must remain explicitly non-consumable")
+	expect_true(store_manager.is_consumable(store_manager.PRODUCT_COINS_LARGE), "4,000 coin pack must remain explicitly consumable")
 	expect_true(not store_manager.purchase(store_manager.PRODUCT_REMOVE_ADS), "Store allowed a redundant Remove Ads purchase after ad-free entitlement")
+
+	# A missing/partial client Play snapshot must never erase permanent value.
+	# Refunds and chargebacks are handled by the verified server revocation path.
+	save_manager.data.remove_ads = true
+	save_manager.data.purchased_products = [store_manager.PRODUCT_REMOVE_ADS]
+	save_manager.save()
+	store_manager.call("_on_owned_purchase_snapshot", {"ok": true, "purchases": []})
+	await process_frame
+	expect_true(bool(save_manager.data.get("remove_ads", false)), "Empty Play snapshot revoked permanent Remove Ads entitlement")
+	expect_true(store_manager.PRODUCT_REMOVE_ADS in (save_manager.data.get("purchased_products", []) as Array), "Empty Play snapshot removed permanent purchase record")
 
 	# Restore the normal starting balance/state for the remaining economy tests.
 	save_manager.data.coins = original_coins
