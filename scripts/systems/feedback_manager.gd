@@ -45,7 +45,7 @@ func _ready() -> void:
 
 	music_player = AudioStreamPlayer.new()
 	music_player.name = "CalmAmbientMusic"
-	music_player.volume_db = -11.0
+	music_player.volume_db = -12.0
 	add_child(music_player)
 	last_music_enabled = bool(SaveManager.data.get("music", true))
 	if last_music_enabled:
@@ -282,18 +282,26 @@ func _chime_stream(notes: Array, duration: float, volume: float, brightness: flo
 # ---------------------------------------------------------------------------
 
 func _build_startup_ambient() -> AudioStreamWAV:
-	# A tiny mobile-safe bed starts on the first app frame. It is deliberately
-	# cheap to synthesize; the richer 32-second loop replaces it when ready.
+	# A short three-note welcome motif starts immediately. It establishes the
+	# same warm musical identity as the main loop instead of opening on a static
+	# synth drone.
 	var frames := maxi(1, int(STARTUP_MUSIC_RATE * STARTUP_MUSIC_DURATION))
 	var bytes := PackedByteArray()
 	bytes.resize(frames * 4)
+	var welcome := [440.00, 523.25, 659.25]
+	var step_length := STARTUP_MUSIC_DURATION / float(welcome.size())
 	for i in range(frames):
 		var t := float(i) / float(STARTUP_MUSIC_RATE)
-		var edge := _smooth_edge(t, STARTUP_MUSIC_DURATION, 0.12)
-		var breathe := 0.92 + 0.08 * sin(TAU * t / STARTUP_MUSIC_DURATION)
-		var left := (sin(TAU * 261.63 * t) * 0.044 + sin(TAU * 329.63 * t + 0.25) * 0.022) * edge * breathe
-		var right := (sin(TAU * 261.63 * t + 0.03) * 0.043 + sin(TAU * 392.00 * t + 0.55) * 0.018) * edge * breathe
-		_write_stereo(bytes, i, left, right)
+		var step := mini(welcome.size() - 1, int(t / step_length))
+		var local_t := fmod(t, step_length)
+		var edge := _smooth_edge(local_t, step_length, 0.045)
+		var env := exp(-local_t * 4.2) * edge
+		var f := float(welcome[step])
+		var note := sin(TAU * f * t) * 0.055
+		note += sin(TAU * f * 2.0 * t + 0.22) * 0.014
+		var bed_edge := _smooth_edge(t, STARTUP_MUSIC_DURATION, 0.14)
+		var bed := (sin(TAU * 261.63 * t) * 0.018 + sin(TAU * 329.63 * t + 0.25) * 0.010) * bed_edge
+		_write_stereo(bytes, i, bed + note * env, bed * 0.98 + note * env * 0.96)
 	var stream := AudioStreamWAV.new()
 	stream.format = AudioStreamWAV.FORMAT_16_BITS
 	stream.mix_rate = STARTUP_MUSIC_RATE
@@ -305,84 +313,68 @@ func _build_startup_ambient() -> AudioStreamWAV:
 	return stream
 
 func _build_calm_ambient_loop() -> AudioStreamWAV:
-	# 32-second original ambient loop: slow F-major/D-minor-family pads, sparse
-	# kalimba-like notes, no drums, no sharp lead, and deliberately longer phrase
-	# spacing so a multi-level session does not expose an obvious short loop.
+	# 32-second melodic puzzle loop: Fmaj7 -> Dm7 -> Bbmaj7 -> Cadd9.
+	# The harmony stays soft, while each eight-second section gets a deliberate
+	# 16-step melody with rests. That makes the music recognisably tuneful without
+	# becoming distracting during concentration-heavy puzzle play.
 	var frames := int(MUSIC_RATE * MUSIC_DURATION)
 	var bytes := PackedByteArray()
 	bytes.resize(frames * 4)
 
-	# Fmaj7 -> Dm7 -> Bbmaj7 -> Cadd9, each held for eight seconds.
-	# Keep the pad above phone-rumble territory: the former 58-110 Hz roots,
-	# combined with a half-frequency oscillator, produced 29-55 Hz energy that
-	# could physically buzz small phone speakers/cases. These voicings retain the
-	# same harmony while moving the body into a cleaner mobile-safe register.
 	var chords := [
 		[261.63, 329.63, 392.00, 523.25],
 		[220.00, 261.63, 329.63, 392.00],
 		[233.08, 293.66, 349.23, 440.00],
 		[261.63, 329.63, 392.00, 493.88],
 	]
-	var melody := [349.23, 440.00, 523.25, 440.00, 293.66, 349.23, 440.00, 523.25, 349.23, 392.00, 523.25, 587.33, 440.00, 392.00, 349.23, 293.66]
+	var phrases := [
+		[440.00, 523.25, 659.25, 523.25, 440.00, 392.00, 349.23, 0.0, 440.00, 523.25, 587.33, 659.25, 523.25, 440.00, 392.00, 0.0],
+		[440.00, 349.23, 293.66, 349.23, 440.00, 523.25, 440.00, 0.0, 392.00, 440.00, 523.25, 587.33, 523.25, 440.00, 349.23, 0.0],
+		[349.23, 440.00, 523.25, 587.33, 523.25, 440.00, 392.00, 0.0, 349.23, 392.00, 440.00, 523.25, 440.00, 392.00, 349.23, 0.0],
+		[392.00, 493.88, 587.33, 659.25, 587.33, 523.25, 493.88, 0.0, 440.00, 523.25, 587.33, 523.25, 493.88, 440.00, 392.00, 0.0],
+	]
 	var section_length := MUSIC_DURATION / 4.0
+	var note_step := 0.5
 
 	for i in range(frames):
 		if i > 0 and i % MUSIC_SYNTH_CHUNK_FRAMES == 0:
-			# Unit/headless callers may invoke the pure waveform builder without
-			# attaching this node to a tree. Never call get_tree() until attached;
-			# the real autoload yields here to protect frame time.
 			if is_inside_tree():
 				await get_tree().process_frame
 		var t := float(i) / float(MUSIC_RATE)
 		var section := mini(3, int(t / section_length))
 		var local_t := fmod(t, section_length)
-		var edge := _smooth_edge(local_t, section_length, 1.15)
+		var section_edge := _smooth_edge(local_t, section_length, 1.0)
 		var chord: Array = chords[section]
 
+		# Keep the pad quiet enough that the melody reads clearly on phone speakers.
 		var pad := 0.0
 		for voice in range(chord.size()):
 			var base := float(chord[voice])
 			var phase := float(voice) * 0.61
-			pad += sin(TAU * base * t + phase) * 0.095
-			pad += sin(TAU * base * 2.0 * t + phase + 0.3) * 0.022
-			# Keep the ambient body in the midrange. A former ~0.5x partial put
-			# substantial energy back into the 58-87 Hz range on phone speakers.
-			pad += sin(TAU * base * 1.501 * t + phase * 0.7) * 0.018
-		pad *= edge
+			pad += sin(TAU * base * t + phase) * 0.042
+			pad += sin(TAU * base * 2.0 * t + phase + 0.3) * 0.010
+			pad += sin(TAU * base * 1.501 * t + phase * 0.7) * 0.008
+		pad *= section_edge * (0.88 + 0.12 * sin(TAU * t / 7.5 + 0.5))
 
-		# Slow "breathing" keeps the pad alive while staying below conscious
-		# rhythmic attention.
-		var breath := 0.86 + 0.14 * sin(TAU * t / 7.5 + 0.5)
-		pad *= breath
+		# A warm, music-box-like lead follows a coherent phrase instead of isolated
+		# random-sounding pings. Rest steps create breathing room.
+		var note_index := mini(15, int(local_t / note_step))
+		var note_frequency := float(phrases[section][note_index])
+		var note_phase := fmod(local_t, note_step)
+		var note_edge := _smooth_edge(note_phase, note_step, 0.040)
+		var lead := 0.0
+		if note_frequency > 0.0:
+			var note_env := exp(-note_phase * 5.8) * note_edge
+			lead = sin(TAU * note_frequency * t) * 0.070
+			lead += sin(TAU * note_frequency * 2.0 * t + 0.20) * 0.015
+			lead += sin(TAU * note_frequency * 0.998 * t + 0.08) * 0.006
+			lead *= note_env
 
-		# Sparse mallet note every two seconds. It decays quickly and leaves
-		# generous silence, avoiding the constant arpeggio of the previous loop.
-		var pulse_index := int(t / 2.0) % melody.size()
-		var pulse_phase := fmod(t, 2.0)
-		# Each two-second pulse must enter and leave at zero amplitude. Without a
-		# short edge fade, fmod() resets the exponential envelope from near-zero
-		# straight back to 1.0 and can produce a periodic rhythmic click.
-		var pulse_edge := _smooth_edge(pulse_phase, 2.0, 0.035)
-		var mallet_env := exp(-pulse_phase * 4.6) * pulse_edge
-		var mf := float(melody[pulse_index])
-		var mallet := sin(TAU * mf * t) * 0.040
-		mallet += sin(TAU * mf * 2.0 * t + 0.2) * 0.009
-		mallet *= mallet_env
-
-		# Every chord-dependent oscillator follows the section edge. Previously the
-		# low and stereo-width voices jumped instantly to new frequencies every
-		# eight seconds while only the pad faded, creating a periodic click.
-		# No sub-bass oscillator: phone speakers cannot reproduce it cleanly and
-		# often turn it into cabinet/case vibration. A quiet fundamental body keeps
-		# warmth without energy below the lowest musical note in the voicing.
-		var body_tone := sin(TAU * float(chord[0]) * t) * 0.008 * edge
-
-		# The complete 32-second waveform also approaches zero at the loop seam so
-		# LOOP_FORWARD never jumps from a non-zero final sample back to frame zero.
+		var body_tone := sin(TAU * float(chord[0]) * t) * 0.006 * section_edge
 		var loop_edge := _smooth_edge(t, MUSIC_DURATION, 0.38)
-		var base_sample := (pad + mallet * edge + body_tone) * 0.64 * loop_edge
-		var width_l := sin(TAU * float(chord[1]) * 1.003 * t + 0.3) * 0.006 * edge * loop_edge
-		var width_r := sin(TAU * float(chord[2]) * 0.997 * t + 1.0) * 0.006 * edge * loop_edge
+		var base_sample := (pad + lead * section_edge + body_tone) * 0.72 * loop_edge
+		var width_l := sin(TAU * float(chord[1]) * 1.003 * t + 0.3) * 0.004 * section_edge * loop_edge
+		var width_r := sin(TAU * float(chord[2]) * 0.997 * t + 1.0) * 0.004 * section_edge * loop_edge
 		_write_stereo(bytes, i, base_sample + width_l, base_sample + width_r)
 
 	var stream := AudioStreamWAV.new()
