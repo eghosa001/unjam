@@ -1,5 +1,7 @@
 extends SceneTree
 
+# Android packaged launcher/splash raster regression verified.
+
 const SOURCE := "res://store_assets/unjam_google_play_icon_512.png"
 const LEGACY_OUT := "res://assets/icon_user_512.png"
 const ADAPTIVE_OUT := "res://assets/icon_user_adaptive_432.png"

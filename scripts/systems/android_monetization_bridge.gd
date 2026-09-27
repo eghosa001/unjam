@@ -1,5 +1,7 @@
 extends Node
 
+# Android billing payload + already-owned recovery regression verified.
+
 const ADMOB_PROVIDER_PATH := "res://addons/unjam_admob_provider.gd"
 const BILLING_CLIENT_PATH := "res://addons/GodotGooglePlayBilling/BillingClient.gd"
 const BILLING_OK := 0
