@@ -351,13 +351,20 @@ func restore_purchases() -> bool:
 		_restore_batch_active = false
 	return accepted != false
 
-func _purchase_product_ids(purchase: Dictionary) -> Array:
-	var product_ids = purchase.get("product_ids", [])
-	if product_ids is Array and not product_ids.is_empty():
-		return product_ids
+func _purchase_product_ids(purchase: Dictionary) -> Array[String]:
+	var result: Array[String] = []
+	var product_ids = purchase.get("product_ids", PackedStringArray())
+	if product_ids is PackedStringArray or product_ids is Array:
+		for value in product_ids:
+			result.append(String(value))
+	if not result.is_empty():
+		return result
 	# Compatibility with any older provider adapter that exposed `products`.
 	var legacy_products = purchase.get("products", [])
-	return legacy_products if legacy_products is Array else []
+	if legacy_products is PackedStringArray or legacy_products is Array:
+		for value in legacy_products:
+			result.append(String(value))
+	return result
 
 func _on_restore_result(purchases: Array) -> void:
 	_restore_batch_active = true
