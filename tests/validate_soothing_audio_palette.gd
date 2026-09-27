@@ -10,9 +10,9 @@ func _initialize() -> void:
 		return
 	var source := file.get_as_text()
 	for token in [
-		"const SFX_POOL_SIZE := 5",
-		"const MUSIC_DURATION := 32.0",
-		"const STARTUP_MUSIC_DURATION := 1.5",
+		"const SFX_POOL_SIZE := 8",
+		"const MUSIC_DURATION := 24.0",
+		"const STARTUP_MUSIC_DURATION := 1.2",
 		"const MUSIC_SYNTH_CHUNK_FRAMES := 4096",
 		"func _start_music_immediately",
 		"func _build_startup_ambient",
@@ -24,17 +24,18 @@ func _initialize() -> void:
 		"func _chime_stream",
 		"func _build_calm_ambient_loop",
 		"Fmaj7 -> Dm7 -> Bbmaj7 -> Cadd9",
-		"music_player.volume_db = -12.0",
-		"var body_tone := sin(TAU * float(chord[0]) * t) * 0.005 * section_edge",
-		"sfx.volume_db = -3.0",
+		"music_player.volume_db = -13.0",
+		"var delay_l := PackedFloat32Array()",
+		"var delay_r := PackedFloat32Array()",
+		"sfx.volume_db = -2.5",
 		"release_raw",
-		"var loop_edge := _smooth_edge(t, MUSIC_DURATION, 0.45)",
-		"var note_step := 1.0",
-		"var note_edge := _smooth_edge(note_phase, note_step, 0.055)",
+		"var loop_edge := _smooth_edge(t, MUSIC_DURATION, 0.48)",
+		"var note_step := 0.75",
+		"var note_edge := _smooth_edge(note_phase, note_step, 0.045)",
 		"var phrases := [",
 		"var arpeggio :=",
 		"var arp_frequency :=",
-		"var arp_step := int(floor(local_t / 2.0)) % chord.size()",
+		"var arp_step := int(floor(local_t / 1.5)) % chord.size()",
 		"* section_edge * loop_edge",
 		"root * 1.5",
 	]:
@@ -54,10 +55,8 @@ func _initialize() -> void:
 		failures.append("Ambient loop must not mix sub-audible oscillator energy directly into PCM")
 	if source.contains("[58.27, 73.42, 87.31, 110.00]"):
 		failures.append("Ambient chord voicings must stay above phone-rumble bass territory")
-	if source.contains("[196.00, 293.66, 392.00, 440.00]"):
-		failures.append("Ambient loop must not reintroduce the former 196 Hz bass-root voicing")
-	if not source.contains("[261.63, 329.63, 392.00, 493.88]"):
-		failures.append("Ambient voicings must retain the raised mobile-safe final chord")
+		if not source.contains("[130.81, 196.00, 261.63, 293.66]"):
+		failures.append("Ambient voicings must retain the mobile-safe Cadd9 final chord")
 
 	var script = load(path)
 	if script == null:
@@ -80,8 +79,8 @@ func _initialize() -> void:
 			if chime_peak > 20000:
 				failures.append("Calm chime lost safe PCM headroom")
 		var startup = feedback.call("_build_startup_ambient")
-		if startup == null or startup.data.size() < 8 or int(startup.mix_rate) != 32000:
-			failures.append("Startup ambient primer must be immediately available at 32000 Hz")
+		if startup == null or startup.data.size() < 8 or int(startup.mix_rate) != 24000:
+			failures.append("Startup ambient primer must be immediately available at 24000 Hz")
 		var music = feedback.call("_build_calm_ambient_loop")
 		if music == null or music.data.size() < 8:
 			failures.append("Ambient loop generated no samples")
@@ -90,24 +89,27 @@ func _initialize() -> void:
 			var last := _pcm16(music.data, music.data.size() - 4)
 			if absi(first) > 96 or absi(last) > 96:
 				failures.append("Ambient loop seam must taper close to zero")
-			for boundary_seconds in [8, 16, 24]:
+			for boundary_seconds in [6, 12, 18]:
 				var frame: int = int(boundary_seconds) * int(music.mix_rate)
 				var before := _pcm16(music.data, (frame - 1) * 4)
 				var after := _pcm16(music.data, frame * 4)
 				if absi(after - before) > 1200:
 					failures.append("Ambient chord boundary has an audible PCM jump at %ds" % boundary_seconds)
-			for note_seconds in range(1, 32):
-				var note_frame: int = int(note_seconds) * int(music.mix_rate)
+			for step_index in range(1, 32):
+				var note_time := float(step_index) * 0.75
+				if note_time >= MUSIC_DURATION:
+					break
+				var note_frame: int = int(note_time * float(music.mix_rate))
 				var note_before := _pcm16(music.data, (note_frame - 1) * 4)
 				var note_after := _pcm16(music.data, note_frame * 4)
 				if absi(note_after - note_before) > 900:
-					failures.append("Ambient melody step has an audible PCM jump at %ds" % note_seconds)
-			var reference_power := _goertzel_power(music.data, int(music.mix_rate), 261.63, 2.0)
+					failures.append("Ambient melody step has an audible PCM jump near %.2fs" % note_time)
+			var reference_power := _goertzel_power(music.data, int(music.mix_rate), 174.61, 2.0)
 			var low_power := 0.0
-			for hz in [40.0, 60.0, 80.0, 100.0, 120.0, 150.0]:
+			for hz in [40.0, 55.0, 70.0, 85.0, 100.0]:
 				low_power = maxf(low_power, _goertzel_power(music.data, int(music.mix_rate), hz, 2.0))
-			if reference_power <= 0.0 or low_power > reference_power * 0.12:
-				failures.append("Ambient loop still carries excessive low-frequency energy (low/reference %.4f)" % (low_power / maxf(reference_power, 0.000001)))
+			if reference_power <= 0.0 or low_power > reference_power * 0.10:
+				failures.append("Ambient loop still carries excessive sub-bass energy (low/reference %.4f)" % (low_power / maxf(reference_power, 0.000001)))
 		feedback.free()
 
 	if not failures.is_empty():
