@@ -31,16 +31,18 @@ func _initialize() -> void:
 			failures.append("Godot startup contract missing: %s" % token)
 
 	for token in [
-		'call_deferred("_warm_game_scene_resources")',
-		"func _warm_game_scene_resources() -> void:",
+		"func _prime_game_scene(path: String) -> void:",
 		"ResourceLoader.load_threaded_request(path)",
 		"func _game_scene_resource(path: String) -> PackedScene:",
+		"_prime_game_scene(RESCUE_GAME_SCENE_PATH)",
+		'_prime_game_scene(WATER_GAME_SCENE_PATH if selected_game_id == "water_sort" else BLOCK_GAME_SCENE_PATH)',
 	]:
 		if not robust_main.contains(token):
-			failures.append("Non-blocking startup handoff missing: %s" % token)
+			failures.append("Deferred game-scene priming contract missing: %s" % token)
 	for forbidden in [
 		"BrandedLaunch",
 		"CanvasLayer.new()",
+		"_warm_game_scene_resources",
 		'preload("res://scenes/Game.tscn")',
 		'preload("res://scenes/WaterSort.tscn")',
 		'preload("res://scenes/BlockPuzzle.tscn")',
