@@ -35,14 +35,16 @@ def main() -> int:
     live_checker_path = root / 'tools' / 'check_live_monetization.py'
     icon_path = root / 'assets' / 'icon_user_512.png'
     adaptive_bg_path = root / 'assets' / 'icon_adaptive_background.svg'
-    adaptive_fg_path = root / 'assets' / 'icon_user_adaptive_432.png'
-    boot_mark_path = root / 'assets' / 'boot_mark.png'
+    adaptive_fg_path = root / 'assets' / 'icon_adaptive_foreground.svg'
+    robust_main_path = root / 'scripts' / 'ui' / 'robust_main.gd'
 
     workflow = workflow_path.read_text(encoding='utf-8')
     preset = preset_path.read_text(encoding='utf-8')
     project = project_path.read_text(encoding='utf-8')
     live_checker = live_checker_path.read_text(encoding='utf-8')
     adaptive_bg = adaptive_bg_path.read_text(encoding='utf-8')
+    adaptive_fg = adaptive_fg_path.read_text(encoding='utf-8')
+    robust_main = robust_main_path.read_text(encoding='utf-8')
 
     errors: list[str] = []
 
@@ -152,33 +154,32 @@ def main() -> int:
     if not icon_path.exists():
         errors.append('512x512 supplied glossy U launcher PNG is missing')
     if not adaptive_fg_path.exists():
-        errors.append('432x432 adaptive glossy U foreground PNG is missing')
+        errors.append('432x432 adaptive UNJAM foreground SVG is missing')
     if 'viewBox="0 0 432 432"' not in adaptive_bg:
         errors.append('adaptive icon background must remain a 432x432 Android layer')
-    if not boot_mark_path.exists():
-        errors.append('transparent UNJAM boot mark PNG is missing')
-    elif boot_mark_path.stat().st_size < 512:
-        errors.append('transparent UNJAM boot mark PNG is unexpectedly small')
+    if 'x="72" y="72" width="288" height="288"' not in adaptive_fg:
+        errors.append('adaptive icon foreground must retain the reduced Samsung-safe footprint')
+    for token in ('BrandedLaunch', 'res://assets/icon.svg', 'title.text = "UNJAM"', 'subtitle.text = "PUZZLE COLLECTION"'):
+        if token not in robust_main:
+            errors.append(f'branded in-app launch handoff missing token: {token}')
 
     if 'config/icon="res://assets/icon_user_512.png"' not in project:
         errors.append('project launcher icon is not wired to the supplied glossy U PNG')
 
     for token in (
-        'boot_splash/show_image=true',
-        'boot_splash/image="res://assets/boot_mark.png"',
-        'boot_splash/bg_color=Color(0.701961, 0.67451, 0.635294, 1)',
-        'boot_splash/stretch_mode=0',
+        'boot_splash/show_image=false',
+        'boot_splash/bg_color=Color(0.070588, 0.109804, 0.227451, 1)',
     ):
         if token not in project:
-            errors.append(f'project startup splash is not wired to the blended UNJAM boot mark: {token}')
+            errors.append(f'project startup handoff does not suppress the generic Godot boot mark: {token}')
 
     for token in (
         'launcher_icons/main_192x192="res://assets/icon_user_512.png"',
-        'launcher_icons/adaptive_foreground_432x432="res://assets/icon_user_adaptive_432.png"',
+        'launcher_icons/adaptive_foreground_432x432="res://assets/icon_adaptive_foreground.svg"',
         'launcher_icons/adaptive_background_432x432="res://assets/icon_adaptive_background.svg"',
-        'splash_screen/icon="res://assets/boot_mark.png"',
-        'splash_screen/background_color=Color(0.701961, 0.67451, 0.635294, 1)',
-        'splash_screen/disable_godot_boot_splash=false',
+        'splash_screen/icon="res://assets/icon_adaptive_foreground.svg"',
+        'splash_screen/background_color=Color(0.070588, 0.109804, 0.227451, 1)',
+        'splash_screen/disable_godot_boot_splash=true',
     ):
         if token not in preset:
             errors.append(f'Android launcher/splash assets are not wired to the current production contract: {token}')
