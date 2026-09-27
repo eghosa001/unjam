@@ -29,11 +29,12 @@ func _initialize() -> void:
 		"sfx.volume_db = -3.0",
 		"release_raw",
 		"var loop_edge := _smooth_edge(t, MUSIC_DURATION, 0.45)",
-		"var note_step := 0.5",
+		"var note_step := 1.0",
 		"var note_edge := _smooth_edge(note_phase, note_step, 0.055)",
 		"var phrases := [",
 		"var arpeggio :=",
 		"var arp_frequency :=",
+		"var arp_step := int(floor(local_t / 2.0)) % chord.size()",
 		"* section_edge * loop_edge",
 		"root * 1.5",
 	]:
@@ -95,12 +96,12 @@ func _initialize() -> void:
 				var after := _pcm16(music.data, frame * 4)
 				if absi(after - before) > 1200:
 					failures.append("Ambient chord boundary has an audible PCM jump at %ds" % boundary_seconds)
-			for note_half_seconds in range(1, 64):
-				var note_frame: int = int(float(note_half_seconds) * 0.5 * float(music.mix_rate))
+			for note_seconds in range(1, 32):
+				var note_frame: int = int(note_seconds) * int(music.mix_rate)
 				var note_before := _pcm16(music.data, (note_frame - 1) * 4)
 				var note_after := _pcm16(music.data, note_frame * 4)
 				if absi(note_after - note_before) > 900:
-					failures.append("Ambient melody step has an audible PCM jump at %.1fs" % (float(note_half_seconds) * 0.5))
+					failures.append("Ambient melody step has an audible PCM jump at %ds" % note_seconds)
 			var reference_power := _goertzel_power(music.data, int(music.mix_rate), 261.63, 2.0)
 			var low_power := 0.0
 			for hz in [40.0, 60.0, 80.0, 100.0, 120.0, 150.0]:
