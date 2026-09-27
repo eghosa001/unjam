@@ -60,6 +60,29 @@ func run() -> void:
 		expect_true(int(restore_events[0]) == 0, "Failed verification was incorrectly counted as a restored entitlement")
 	expect_true(not bool(save.data.get("remove_ads", false)), "Failed restore verification granted Remove Ads")
 
+	# A permanent purchase that was already committed on another install must
+	# restore on this install without requiring the old install's claim id.
+	restore_events.clear()
+	save.data.remove_ads = false
+	save.data.purchased_products = []
+	save.save()
+	var committed_token := "qa-committed-remove-ads-token"
+	var restore_key := String(store.call("_restore_key", store.PRODUCT_REMOVE_ADS, committed_token))
+	store.set("_restore_batch_active", true)
+	store.set("_restore_pending", {restore_key: true})
+	store.set("_restore_success_count", 0)
+	store.call("_on_verified", store.PRODUCT_REMOVE_ADS, committed_token, "qa-new-install-claim", {
+		"valid": true,
+		"grant": false,
+		"entitlement": true,
+		"claim_state": "committed",
+		"reason": "already claimed"
+	})
+	await process_frame
+	expect_true(bool(save.data.get("remove_ads", false)), "Committed Remove Ads entitlement did not restore on a new install")
+	expect_true(store.PRODUCT_REMOVE_ADS in (save.data.get("purchased_products", []) as Array), "Committed Remove Ads record was not restored locally")
+	expect_true(restore_events.size() == 1 and int(restore_events[0]) == 1, "Committed permanent purchase was not counted as restored")
+
 	# Older builds could persist the raw Play purchase token. A duplicate verified
 	# transaction must migrate that bearer-like credential to its SHA-256 fingerprint
 	# without granting the product again.
