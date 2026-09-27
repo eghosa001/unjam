@@ -74,6 +74,11 @@ func run() -> void:
 		expect_true('func _ready() -> void:\n\tif OS.get_name() != "Android"' in provider_source, "Android AdMob initialization must wait for consent flow")
 		expect_true('if OS.get_name() == "Android" and not _may_request_ads()' in provider_source, "provider must gate Android ad requests on consent")
 
+	var privacy_source := FileAccess.get_file_as_string("res://scripts/systems/privacy_manager.gd")
+	expect_true("signal privacy_options_completed" in privacy_source, "Privacy options do not report completion to the UI")
+	expect_true('provider.call("show_privacy_options"' in privacy_source, "Privacy control is not wired to Google UMP")
+	expect_true("func open_privacy_policy" in privacy_source and 'url.begins_with("https://")' in privacy_source, "Privacy policy fallback is missing or unsafe")
+
 	var ad_manager := root.get_node_or_null("AdManager")
 	expect_true(ad_manager != null, "AdManager autoload missing")
 	if ad_manager != null:
