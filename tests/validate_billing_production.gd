@@ -20,6 +20,7 @@ func run() -> void:
 	expect_true("query_product_details" in source, "Play product catalog query is missing")
 	expect_true("formatted_price" in source, "Localized Play Store price parsing is missing")
 	expect_true("product_ids" in source, "Billing v3.3 purchase payload key is not handled")
+	expect_true("PackedStringArray" in source and "_product_ids_from_purchase" in source, "Billing bridge does not normalize Google Play PackedStringArray product_ids")
 	expect_true("purchase_state" in source and "PURCHASE_STATE_PURCHASED" in source, "Purchase completion state is not validated")
 	expect_true("query_purchases" in source, "Restore-purchases path is missing")
 	expect_true("query_owned_purchases" in source, "Authoritative owned-purchase snapshot path is missing")
@@ -50,6 +51,7 @@ func run() -> void:
 	if ResourceLoader.exists(store_path):
 		var store_source := FileAccess.get_file_as_string(store_path)
 		expect_true('purchase.get("product_ids"' in store_source, "Restore must read Google Play purchase product_ids")
+		expect_true("PackedStringArray" in store_source and "_purchase_product_ids" in store_source, "Store restore/reconciliation does not normalize PackedStringArray product_ids")
 		expect_true("signal purchase_pending" in store_source, "StoreManager does not expose pending purchase state")
 		expect_true("_provider_purchase_pending" in store_source, "StoreManager does not release its purchase lock on pending state")
 		expect_true("PURCHASE_TIMEOUT_SECONDS" in store_source and "_watch_purchase_timeout" in store_source, "Store purchase launch has no timeout recovery")
