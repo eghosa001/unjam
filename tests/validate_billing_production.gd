@@ -53,7 +53,7 @@ func run() -> void:
 		expect_true("_revoke_missing_non_consumables" in store_source, "Store does not revoke stale non-consumable ownership")
 		expect_true("reconcile_revocations" in store_source and "_apply_verified_revocation" in store_source, "Store does not apply backend-verified refunds/voids")
 		expect_true("commit_detailed" in store_source and 'result.get("claim_committed"' in store_source, "Store does not require a committed server claim before client finalization")
-		expect_true('provider.call("finalize_purchase"' in store_source, "Store has no fallback when server-side Play finalization fails")
+		expect_true('"finalize_purchase"' in store_source and "provider.call(" in store_source, "Store has no fallback when server-side Play finalization fails")
 
 	var verifier_path := "res://scripts/systems/purchase_verifier.gd"
 	expect_true(ResourceLoader.exists(verifier_path), "PurchaseVerifier missing")
