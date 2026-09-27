@@ -55,6 +55,7 @@ general/android/app_id="ca-app-pub-7517898921176341~1892369383"
 
 [monetization]
 
+; Closed testing intentionally uses Google test ad units via admob_test_mode.
 test_mode=false
 admob_test_mode=true
 admob_android_app_id="ca-app-pub-7517898921176341~1892369383"
