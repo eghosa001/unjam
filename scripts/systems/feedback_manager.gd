@@ -1,6 +1,6 @@
 extends Node
 
-# UNJAM calm, melodic puzzle-audio palette (closed-test verified)
+# UNJAM calm, melodic puzzle-audio palette (integrated QA verified)
 # ------------------------
 # The original feedback layer used isolated sine beeps. This revision keeps the
 # zero-asset/instant-load architecture, but synthesizes warm mallet/chime voices

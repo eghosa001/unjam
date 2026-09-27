@@ -1,5 +1,7 @@
 extends Node
 
+# Integrated QA: purchase, restore and entitlement lifecycle.
+
 signal catalog_changed
 signal purchase_started(product_id: String)
 signal purchase_pending(product_id: String, reason: String)
