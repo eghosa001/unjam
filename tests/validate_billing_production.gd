@@ -21,7 +21,9 @@ func run() -> void:
 	expect_true("purchase_state" in source and "PURCHASE_STATE_PURCHASED" in source, "Purchase completion state is not validated")
 	expect_true("query_purchases" in source, "Restore-purchases path is missing")
 	expect_true("query_owned_purchases" in source, "Authoritative owned-purchase snapshot path is missing")
-	expect_true("consume_purchase" not in source and "acknowledge_purchase" not in source, "Client billing bridge must not finalize verified purchases")
+	expect_true("func finalize_purchase" in source, "Billing bridge has no verified client finalization fallback")
+	expect_true("consume_purchase" in source and "acknowledge_purchase" in source, "Billing bridge cannot consume coins or acknowledge permanent products")
+	expect_true("BILLING_ITEM_NOT_OWNED := 8" in source, "Idempotent finalization does not handle ITEM_NOT_OWNED")
 
 	# Google Play can return a pending purchase and later emit PURCHASED. The
 	# purchase-update signal must therefore stay connected for the BillingClient
@@ -50,7 +52,8 @@ func run() -> void:
 		expect_true("_on_reconcile_result" in store_source, "Store does not reconcile Play-owned purchases after reconnect/startup")
 		expect_true("_revoke_missing_non_consumables" in store_source, "Store does not revoke stale non-consumable ownership")
 		expect_true("reconcile_revocations" in store_source and "_apply_verified_revocation" in store_source, "Store does not apply backend-verified refunds/voids")
-		expect_true('provider.call("finalize_purchase"' not in store_source, "Play finalization must not be performed by the client StoreManager")
+		expect_true("commit_detailed" in store_source and 'result.get("claim_committed"' in store_source, "Store does not require a committed server claim before client finalization")
+		expect_true('provider.call("finalize_purchase"' in store_source, "Store has no fallback when server-side Play finalization fails")
 
 	var verifier_path := "res://scripts/systems/purchase_verifier.gd"
 	expect_true(ResourceLoader.exists(verifier_path), "PurchaseVerifier missing")
@@ -62,6 +65,7 @@ func run() -> void:
 		expect_true('parsed.get("product_id", "")' in verifier_source, "Purchase verification does not require an explicit matching product id")
 		expect_true('"apikey: %s"' in verifier_source, "Supabase publishable key header is not sent")
 		expect_true('"action": "verify"' in verifier_source and '"action": "commit"' in verifier_source, "Supabase purchase action routing is incomplete")
+		expect_true("func commit_detailed" in verifier_source and 'parsed.get("claim_committed"' in verifier_source, "Verifier discards committed-claim state needed for safe fallback")
 		expect_true('"action": "sync_revocations"' in verifier_source, "Purchase verifier does not synchronize refunded/voided purchases")
 		expect_true('"install_id"' in verifier_source and "func install_id()" in verifier_source, "Purchase verifier does not bind claims to an installation")
 
