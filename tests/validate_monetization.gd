@@ -62,6 +62,18 @@ func run() -> void:
 	expect_true(int(store_manager.PRODUCTS[store_manager.PRODUCT_COINS_MEDIUM].get("coins", -1)) == 1500 and not bool(store_manager.PRODUCTS[store_manager.PRODUCT_COINS_MEDIUM].get("non_consumable", true)), "1,500 coin pack semantics changed")
 	expect_true(int(store_manager.PRODUCTS[store_manager.PRODUCT_COINS_LARGE].get("coins", -1)) == 4000 and not bool(store_manager.PRODUCTS[store_manager.PRODUCT_COINS_LARGE].get("non_consumable", true)), "4,000 coin pack semantics changed")
 
+	# Google Play Billing 3.x exposes purchase.product_ids as PackedStringArray.
+	# This exact runtime shape previously caused owned consumables to be ignored,
+	# leaving the 4,000-coin SKU permanently ITEM_ALREADY_OWNED.
+	var packed_play_ids := PackedStringArray([store_manager.PRODUCT_COINS_LARGE])
+	var normalized_store_ids: Array = store_manager.call("_purchase_product_ids", {"product_ids": packed_play_ids})
+	expect_true(normalized_store_ids == [store_manager.PRODUCT_COINS_LARGE], "StoreManager rejected Google Play PackedStringArray product_ids")
+	var bridge_script = load("res://scripts/systems/android_monetization_bridge.gd")
+	var bridge = bridge_script.new()
+	var normalized_bridge_ids: Array = bridge.call("_product_ids_from_purchase", {"product_ids": packed_play_ids})
+	expect_true(normalized_bridge_ids == [store_manager.PRODUCT_COINS_LARGE], "Android billing bridge rejected Google Play PackedStringArray product_ids")
+	bridge.free()
+
 	# Exercise all five SKU grants through the same verified-purchase path used in
 	# production. Desktop test mode makes verification deterministic while keeping
 	# StoreManager's persistence and duplicate-protection logic real.
