@@ -36,7 +36,7 @@ def main() -> int:
     icon_path = root / 'assets' / 'icon_user_512.png'
     adaptive_bg_path = root / 'assets' / 'icon_adaptive_background.svg'
     adaptive_fg_path = root / 'assets' / 'icon_user_adaptive_432.png'
-    boot_mark_path = root / 'assets' / 'boot_mark.svg'
+    boot_mark_path = root / 'assets' / 'boot_mark.png'
 
     workflow = workflow_path.read_text(encoding='utf-8')
     preset = preset_path.read_text(encoding='utf-8')
@@ -156,19 +156,17 @@ def main() -> int:
     if 'viewBox="0 0 432 432"' not in adaptive_bg:
         errors.append('adaptive icon background must remain a 432x432 Android layer')
     if not boot_mark_path.exists():
-        errors.append('transparent UNJAM boot mark is missing')
-    else:
-        boot_mark = boot_mark_path.read_text(encoding='utf-8')
-        if '<rect' in boot_mark:
-            errors.append('boot mark must stay transparent and must not bake in a square background')
+        errors.append('transparent UNJAM boot mark PNG is missing')
+    elif boot_mark_path.stat().st_size < 512:
+        errors.append('transparent UNJAM boot mark PNG is unexpectedly small')
 
     if 'config/icon="res://assets/icon_user_512.png"' not in project:
         errors.append('project launcher icon is not wired to the supplied glossy U PNG')
 
     for token in (
         'boot_splash/show_image=true',
-        'boot_splash/image="res://assets/boot_mark.svg"',
-        'boot_splash/bg_color=Color("#b3aca2")',
+        'boot_splash/image="res://assets/boot_mark.png"',
+        'boot_splash/bg_color=Color(0.701961, 0.67451, 0.635294, 1)',
         'boot_splash/stretch_mode=0',
     ):
         if token not in project:
@@ -178,8 +176,8 @@ def main() -> int:
         'launcher_icons/main_192x192="res://assets/icon_user_512.png"',
         'launcher_icons/adaptive_foreground_432x432="res://assets/icon_user_adaptive_432.png"',
         'launcher_icons/adaptive_background_432x432="res://assets/icon_adaptive_background.svg"',
-        'splash_screen/icon="res://assets/boot_mark.svg"',
-        'splash_screen/background_color=Color("#b3aca2")',
+        'splash_screen/icon="res://assets/boot_mark.png"',
+        'splash_screen/background_color=Color(0.701961, 0.67451, 0.635294, 1)',
         'splash_screen/disable_godot_boot_splash=false',
     ):
         if token not in preset:

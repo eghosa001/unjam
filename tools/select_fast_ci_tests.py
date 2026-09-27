@@ -132,6 +132,7 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
         "assets/icon_adaptive_background.svg",
         "assets/icon_adaptive_foreground.svg",
         "assets/boot_mark.svg",
+        "assets/boot_mark.png",
     }:
         add(groups, "branding")
         return True
@@ -275,6 +276,7 @@ def plan_for_paths(paths: list[str]) -> dict[str, object]:
                 "assets/icon_adaptive_background.svg",
                 "assets/icon_adaptive_foreground.svg",
                 "assets/boot_mark.svg",
+                "assets/boot_mark.png",
             }
             or low.startswith("addons/")
             or any(token in low for token in ("monetization", "admob", "billing", "purchase_verification"))
