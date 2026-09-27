@@ -25,6 +25,65 @@ func _ready() -> void:
 	MultiGameManager.ensure_state()
 	super._ready()
 	_queue_surface_changed()
+	if DisplayServer.get_name() != "headless":
+		call_deferred("_show_branded_launch_overlay")
+
+func _show_branded_launch_overlay() -> void:
+	if has_node("BrandedLaunch"):
+		return
+	var layer := CanvasLayer.new()
+	layer.name = "BrandedLaunch"
+	layer.layer = 2000
+	add_child(layer)
+
+	var root_panel := ColorRect.new()
+	root_panel.name = "BrandedLaunchBackground"
+	root_panel.color = Color("#121c3a")
+	root_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	root_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	layer.add_child(root_panel)
+
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	root_panel.add_child(center)
+
+	var stack := VBoxContainer.new()
+	stack.name = "BrandedLaunchContent"
+	stack.custom_minimum_size = Vector2(320, 390)
+	stack.alignment = BoxContainer.ALIGNMENT_CENTER
+	stack.add_theme_constant_override("separation", 12)
+	center.add_child(stack)
+
+	var logo := TextureRect.new()
+	logo.name = "BrandedLaunchLogo"
+	logo.texture = load("res://assets/icon.svg")
+	logo.custom_minimum_size = Vector2(210, 210)
+	logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	logo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stack.add_child(logo)
+
+	var title := Label.new()
+	title.name = "BrandedLaunchName"
+	title.text = "UNJAM"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 44)
+	title.add_theme_color_override("font_color", Color("#fff3c4"))
+	stack.add_child(title)
+
+	var subtitle := Label.new()
+	subtitle.name = "BrandedLaunchSubtitle"
+	subtitle.text = "PUZZLE COLLECTION"
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.add_theme_font_size_override("font_size", 15)
+	subtitle.add_theme_color_override("font_color", Color("#b9c9e8"))
+	stack.add_child(subtitle)
+
+	layer.modulate.a = 1.0
+	var tween := create_tween()
+	tween.tween_interval(0.72)
+	tween.tween_property(layer, "modulate:a", 0.0, 0.24).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tween.tween_callback(layer.queue_free)
 
 func _multi_page_count(game_id: String, world: int) -> int:
 	var first := MultiGameManager.first_level_in_game_world(game_id, world)
