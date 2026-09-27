@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="432" height="432" viewBox="0 0 432 432">
+  <defs>
+    <linearGradient id="u" x1="106" y1="92" x2="326" y2="342" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF9EA"/>
+      <stop offset=".55" stop-color="#F8D76A"/>
+      <stop offset="1" stop-color="#C49B55"/>
+    </linearGradient>
+    <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="7"/>
+    </filter>
+  </defs>
+  <path d="M122 104v126c0 67 36 104 94 104s94-37 94-104V104"
+        fill="none" stroke="#252A30" stroke-opacity=".20" stroke-width="64"
+        stroke-linecap="round" stroke-linejoin="round" filter="url(#soft)"/>
+  <path d="M122 104v126c0 67 36 104 94 104s94-37 94-104V104"
+        fill="none" stroke="url(#u)" stroke-width="54"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M146 104v122c0 49 24 76 70 76s70-27 70-76V104"
+        fill="none" stroke="#FFFDF6" stroke-opacity=".30" stroke-width="6"
+        stroke-linecap="round"/>
+</svg>
