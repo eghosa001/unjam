@@ -13,7 +13,7 @@ func _initialize() -> void:
 		"const SFX_POOL_SIZE := 5",
 		"const MUSIC_DURATION := 32.0",
 		"const STARTUP_MUSIC_DURATION := 1.5",
-		"const MUSIC_SYNTH_CHUNK_FRAMES := 2048",
+		"const MUSIC_SYNTH_CHUNK_FRAMES := 4096",
 		"func _start_music_immediately",
 		"func _build_startup_ambient",
 		"func _play_chime",
@@ -25,13 +25,15 @@ func _initialize() -> void:
 		"func _build_calm_ambient_loop",
 		"Fmaj7 -> Dm7 -> Bbmaj7 -> Cadd9",
 		"music_player.volume_db = -12.0",
-		"var body_tone := sin(TAU * float(chord[0]) * t) * 0.006 * section_edge",
+		"var body_tone := sin(TAU * float(chord[0]) * t) * 0.005 * section_edge",
 		"sfx.volume_db = -3.0",
 		"release_raw",
-		"var loop_edge := _smooth_edge(t, MUSIC_DURATION, 0.38)",
+		"var loop_edge := _smooth_edge(t, MUSIC_DURATION, 0.45)",
 		"var note_step := 0.5",
-		"var note_edge := _smooth_edge(note_phase, note_step, 0.040)",
+		"var note_edge := _smooth_edge(note_phase, note_step, 0.055)",
 		"var phrases := [",
+		"var arpeggio :=",
+		"var arp_frequency :=",
 		"* section_edge * loop_edge",
 		"root * 1.5",
 	]:
@@ -62,8 +64,8 @@ func _initialize() -> void:
 	else:
 		var feedback = script.new()
 		var chime = feedback.call("_chime_stream", [392.0, 523.25], 0.12, 0.085, 0.4)
-		if chime == null or not chime.stereo or int(chime.mix_rate) != 22050:
-			failures.append("Calm chime stream must be stereo at 22050 Hz")
+		if chime == null or not chime.stereo or int(chime.mix_rate) != 32000:
+			failures.append("Calm chime stream must be stereo at 32000 Hz")
 		elif chime.data.size() <= 0:
 			failures.append("Calm chime stream generated no samples")
 		else:
@@ -77,8 +79,8 @@ func _initialize() -> void:
 			if chime_peak > 20000:
 				failures.append("Calm chime lost safe PCM headroom")
 		var startup = feedback.call("_build_startup_ambient")
-		if startup == null or startup.data.size() < 8 or int(startup.mix_rate) != 12000:
-			failures.append("Startup ambient primer must be immediately available at 12000 Hz")
+		if startup == null or startup.data.size() < 8 or int(startup.mix_rate) != 32000:
+			failures.append("Startup ambient primer must be immediately available at 32000 Hz")
 		var music = feedback.call("_build_calm_ambient_loop")
 		if music == null or music.data.size() < 8:
 			failures.append("Ambient loop generated no samples")
