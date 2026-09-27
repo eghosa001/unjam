@@ -108,11 +108,16 @@ func price_text(product_id: String) -> String:
 func is_purchase_pending(product_id: String) -> bool:
 	return bool(pending_products.get(product_id, false))
 
+func is_non_consumable(product_id: String) -> bool:
+	return product_id in [PRODUCT_REMOVE_ADS, PRODUCT_STARTER_PACK]
+
+func is_consumable(product_id: String) -> bool:
+	return product_id in [PRODUCT_COINS_SMALL, PRODUCT_COINS_MEDIUM, PRODUCT_COINS_LARGE]
+
 func is_product_owned(product_id: String) -> bool:
 	if not PRODUCTS.has(product_id):
 		return false
-	var info: Dictionary = PRODUCTS[product_id]
-	if not bool(info.get("non_consumable", false)):
+	if not is_non_consumable(product_id):
 		return false
 	var purchased_value = SaveManager.data.get("purchased_products", [])
 	var purchased: Array = purchased_value if purchased_value is Array else []
@@ -187,7 +192,7 @@ func _on_verified(product_id: String, token: String, claim_id: String, result: D
 
 	var info: Dictionary = PRODUCTS[product_id]
 	var coins := int(info.get("coins", 0))
-	var non_consumable := bool(info.get("non_consumable", false))
+	var non_consumable := is_non_consumable(product_id)
 	var grant := bool(result.get("grant", false))
 	var entitlement := non_consumable and bool(result.get("entitlement", false))
 	var claim_state := String(result.get("claim_state", ""))
@@ -234,17 +239,54 @@ func _on_verified(product_id: String, token: String, claim_id: String, result: D
 		PurchaseVerifier.commit_detailed(product_id, token, claim_id, func(commit_result: Dictionary): _handle_commit_result(product_id, token, granted_coins, commit_result, false))
 		return
 
-	# Server-side duplicates never regrant currency. A committed claim can safely
-	# be finalized again; an issued claim owned by another install is left alone.
+	# Server-side duplicates never regrant currency.
 	if claim_state == "committed":
-		# Re-run finalization for committed claims. If the server cannot reach Play,
-		# the Android bridge may safely finish it because the dedupe ledger is already
-		# committed and no additional reward will be granted.
-		PurchaseVerifier.commit_detailed(product_id, token, claim_id, func(commit_result: Dictionary): _handle_commit_result(product_id, token, 0, commit_result, true))
-		return
+		if non_consumable and entitlement:
+			# A committed permanent entitlement is already safe to restore on a new
+			# install. Do not re-acknowledge it or depend on the old install claim id.
+			_clear_purchase_busy(product_id)
+			purchase_succeeded.emit(product_id)
+			AnalyticsManager.track("purchase_restored_without_regrant", {"product": product_id, "permanent": true})
+			_settle_restore(product_id, token, true)
+			return
+		if is_consumable(product_id) and provider_ready() and provider.has_method("finalize_purchase"):
+			# A committed consumable that Play still reports as owned was granted in
+			# an earlier session but never consumed. Consume it now without regranting.
+			var started = provider.call(
+				"finalize_purchase",
+				token,
+				false,
+				func(finalized: bool, final_reason: String) -> void:
+					if finalized:
+						_finish_finalized_purchase(product_id, token, 0, true, true)
+					else:
+						_mark_finalization_pending(product_id, token, true, final_reason)
+			)
+			if started != false:
+				return
+
+	# A verified permanent purchase can also be restored when an older install
+	# left its ledger claim in "issued". Restore the entitlement, then acknowledge
+	# it client-side; never regrant Starter Pack coins.
+	if non_consumable and entitlement and provider_ready() and provider.has_method("finalize_purchase"):
+		var ack_started = provider.call(
+			"finalize_purchase",
+			token,
+			true,
+			func(finalized: bool, final_reason: String) -> void:
+				if finalized:
+					_finish_finalized_purchase(product_id, token, 0, true, true)
+				else:
+					_mark_finalization_pending(product_id, token, true, final_reason)
+		)
+		if ack_started != false:
+			return
 
 	_clear_purchase_busy(product_id)
 	if non_consumable and entitlement:
+		# The entitlement itself has been verified and persisted even if Play
+		# acknowledgement could not run right now. Report restore success and let
+		# normal reconciliation retry finalization later.
 		purchase_succeeded.emit(product_id)
 		_settle_restore(product_id, token, true)
 	else:
@@ -329,7 +371,7 @@ func _on_restore_result(purchases: Array) -> void:
 		var token := String(purchase.get("purchase_token", ""))
 		for product_value in _purchase_product_ids(purchase):
 			var product_id := String(product_value)
-			if not PRODUCTS.has(product_id) or not bool(PRODUCTS[product_id].get("non_consumable", false)):
+			if not PRODUCTS.has(product_id) or not is_non_consumable(product_id):
 				continue
 			var key := _restore_key(product_id, token)
 			if _restore_pending.has(key):
@@ -395,10 +437,13 @@ func _on_owned_purchase_snapshot(result: Dictionary) -> void:
 			continue
 		for product_value in _purchase_product_ids(purchase):
 			var product_id := String(product_value)
-			if PRODUCTS.has(product_id) and bool(PRODUCTS[product_id].get("non_consumable", false)) and product_id not in owned_non_consumables:
+			if PRODUCTS.has(product_id) and is_non_consumable(product_id) and product_id not in owned_non_consumables:
 				owned_non_consumables.append(product_id)
 	_on_reconcile_result(purchases)
-	_revoke_missing_non_consumables(owned_non_consumables)
+	# Do not revoke a permanent purchase because one client ownership snapshot is
+	# incomplete. Refunds/chargebacks are revoked only through the verified server
+	# voided-purchase sync. This prevents Remove Ads from reappearing as buyable
+	# after a transient Play Billing/query issue or a sideloaded QA build.
 
 func _on_reconcile_result(purchases: Array) -> void:
 	for purchase_value in purchases:
