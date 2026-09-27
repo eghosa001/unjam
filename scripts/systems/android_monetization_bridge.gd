@@ -4,6 +4,7 @@ const ADMOB_PROVIDER_PATH := "res://addons/unjam_admob_provider.gd"
 const BILLING_CLIENT_PATH := "res://addons/GodotGooglePlayBilling/BillingClient.gd"
 const BILLING_OK := 0
 const BILLING_USER_CANCELED := 1
+const BILLING_ITEM_ALREADY_OWNED := 7
 const BILLING_ITEM_NOT_OWNED := 8
 const PRODUCT_TYPE_INAPP := 0
 const PURCHASE_STATE_PURCHASED := 1
@@ -153,7 +154,13 @@ func purchase(product_id: String, success: Callable, failed: Callable, pending: 
 	}
 	_launch_product_id = product_id
 	var result: Dictionary = billing_client.purchase(product_id)
-	if int(result.get("response_code", BILLING_OK)) != BILLING_OK:
+	var response_code := int(result.get("response_code", BILLING_OK))
+	if response_code == BILLING_ITEM_ALREADY_OWNED:
+		# Do not strand a consumable as "already owned". Recover the Play-owned
+		# token and send it through the normal verify/grant/finalize pipeline.
+		_recover_owned_purchase_request(product_id)
+		return true
+	if response_code != BILLING_OK:
 		_fail_purchase_request(product_id, String(result.get("debug_message", "Could not start purchase")))
 		return false
 	return true
@@ -163,6 +170,9 @@ func _on_purchase_updated(response: Dictionary) -> void:
 	if code != BILLING_OK:
 		var failed_product := _launch_product_id
 		if not failed_product.is_empty():
+			if code == BILLING_ITEM_ALREADY_OWNED:
+				_recover_owned_purchase_request(failed_product)
+				return
 			var reason := "Purchase cancelled" if code == BILLING_USER_CANCELED else String(response.get("debug_message", "Purchase failed"))
 			_fail_purchase_request(failed_product, reason)
 		return
@@ -235,6 +245,34 @@ func _fail_purchase_request(product_id: String, reason: String) -> void:
 	if failed.is_valid():
 		failed.call(product_id, reason)
 
+func _recover_owned_purchase_request(product_id: String) -> void:
+	if not _purchase_requests.has(product_id):
+		return
+	query_owned_purchases(func(result: Dictionary) -> void:
+		if not bool(result.get("ok", false)):
+			_fail_purchase_request(product_id, String(result.get("reason", "Could not recover the existing Google Play purchase")))
+			return
+		var purchases_value = result.get("purchases", [])
+		if not purchases_value is Array:
+			_fail_purchase_request(product_id, "Google Play did not return the existing purchase")
+			return
+		for purchase_value in purchases_value:
+			if not purchase_value is Dictionary:
+				continue
+			var purchase: Dictionary = purchase_value
+			var products_value = purchase.get("product_ids", [])
+			if not products_value is Array or product_id not in products_value:
+				continue
+			var state := int(purchase.get("purchase_state", 0))
+			if state == PURCHASE_STATE_PURCHASED:
+				_complete_purchase_request(product_id, String(purchase.get("purchase_token", "")))
+				return
+			if state == PURCHASE_STATE_PENDING:
+				_notify_purchase_pending(product_id)
+				return
+		_fail_purchase_request(product_id, "Google Play reports this item as owned, but no active purchase could be recovered")
+	)
+
 func restore_purchases(callback: Callable) -> bool:
 	if not billing_ready():
 		return false
@@ -304,7 +342,7 @@ func _pump_finalization_queue() -> void:
 		# ITEM_NOT_OWNED is idempotent success here: this fallback is only reached
 		# after the backend has committed the verified claim, so absence from Play
 		# ownership means the transaction was already finalized elsewhere.
-		var finalized := code == BILLING_OK or code == BILLING_ITEM_NOT_OWNED
+		var finalized := code == BILLING_OK or (not non_consumable and code == BILLING_ITEM_NOT_OWNED)
 		var reason := "" if finalized else String(response.get("debug_message", "Google Play finalization failed"))
 		_finalization_active = false
 		if not _finalization_queue.is_empty():
