@@ -2,6 +2,7 @@ extends Node
 
 signal consent_state_changed(status: String)
 signal privacy_options_requested
+signal privacy_options_completed(status: String)
 
 const VALID := ["unknown", "required", "obtained", "not_required"]
 var provider: Node
@@ -37,8 +38,16 @@ func may_request_ads() -> bool:
 func show_privacy_options() -> void:
 	privacy_options_requested.emit()
 	if provider != null and is_instance_valid(provider) and provider.has_method("show_privacy_options"):
-		provider.call("show_privacy_options", Callable(self, "_set_status"))
+		provider.call("show_privacy_options", Callable(self, "_on_privacy_options_result"))
 		return
-	var url := String(ProjectSettings.get_setting("monetization/privacy_policy_url", ""))
-	if not url.is_empty():
+	open_privacy_policy()
+	privacy_options_completed.emit(String(SaveManager.data.get("privacy_consent_status", "unknown")))
+
+func open_privacy_policy() -> void:
+	var url := String(ProjectSettings.get_setting("monetization/privacy_policy_url", "")).strip_edges()
+	if url.begins_with("https://"):
 		OS.shell_open(url)
+
+func _on_privacy_options_result(status: String) -> void:
+	_set_status(status)
+	privacy_options_completed.emit(String(SaveManager.data.get("privacy_consent_status", "required")))
