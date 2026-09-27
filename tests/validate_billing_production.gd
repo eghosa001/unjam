@@ -23,7 +23,9 @@ func run() -> void:
 	expect_true("query_owned_purchases" in source, "Authoritative owned-purchase snapshot path is missing")
 	expect_true("func finalize_purchase" in source, "Billing bridge has no verified client finalization fallback")
 	expect_true("consume_purchase" in source and "acknowledge_purchase" in source, "Billing bridge cannot consume coins or acknowledge permanent products")
+	expect_true("BILLING_ITEM_ALREADY_OWNED := 7" in source and "_recover_owned_purchase_request" in source, "Already-owned purchases are not recovered for verification/finalization")
 	expect_true("BILLING_ITEM_NOT_OWNED := 8" in source, "Idempotent finalization does not handle ITEM_NOT_OWNED")
+	expect_true("(not non_consumable and code == BILLING_ITEM_NOT_OWNED)" in source, "ITEM_NOT_OWNED must only be idempotent success for consumables")
 
 	# Google Play can return a pending purchase and later emit PURCHASED. The
 	# purchase-update signal must therefore stay connected for the BillingClient
@@ -50,9 +52,11 @@ func run() -> void:
 		expect_true("_provider_purchase_pending" in store_source, "StoreManager does not release its purchase lock on pending state")
 		expect_true("PURCHASE_TIMEOUT_SECONDS" in store_source and "_watch_purchase_timeout" in store_source, "Store purchase launch has no timeout recovery")
 		expect_true("_on_reconcile_result" in store_source, "Store does not reconcile Play-owned purchases after reconnect/startup")
-		expect_true("_revoke_missing_non_consumables" in store_source, "Store does not revoke stale non-consumable ownership")
+		expect_true("_revoke_missing_non_consumables(owned_non_consumables)" not in store_source, "A transient client ownership snapshot must not revoke permanent purchases")
+		expect_true("is_non_consumable(product_id)" in store_source and "is_consumable(product_id)" in store_source, "Store lacks explicit permanent/consumable classification helpers")
 		expect_true("reconcile_revocations" in store_source and "_apply_verified_revocation" in store_source, "Store does not apply backend-verified refunds/voids")
-		expect_true("commit_detailed" in store_source and 'result.get("claim_committed"' in store_source, "Store does not require a committed server claim before client finalization")
+		expect_true("commit_detailed" in store_source and 'result.get("claim_committed"' in store_source, "Store does not require a committed server claim before new-purchase fallback finalization")
+		expect_true('claim_state == "committed"' in store_source and '"finalize_purchase"' in store_source, "Committed stuck consumables are not finalized during reconciliation")
 		expect_true('"finalize_purchase"' in store_source and "provider.call(" in store_source, "Store has no fallback when server-side Play finalization fails")
 
 	var verifier_path := "res://scripts/systems/purchase_verifier.gd"
