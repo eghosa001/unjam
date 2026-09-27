@@ -35,7 +35,8 @@ def main() -> int:
     live_checker_path = root / 'tools' / 'check_live_monetization.py'
     icon_path = root / 'assets' / 'icon_user_512.png'
     adaptive_bg_path = root / 'assets' / 'icon_adaptive_background.svg'
-    adaptive_fg_path = root / 'assets' / 'icon_adaptive_foreground.svg'
+    adaptive_fg_path = root / 'assets' / 'icon_user_adaptive_432.png'
+    brand_prep_path = root / 'tools' / 'prepare_android_brand_assets.gd'
     robust_main_path = root / 'scripts' / 'ui' / 'robust_main.gd'
 
     workflow = workflow_path.read_text(encoding='utf-8')
@@ -43,7 +44,7 @@ def main() -> int:
     project = project_path.read_text(encoding='utf-8')
     live_checker = live_checker_path.read_text(encoding='utf-8')
     adaptive_bg = adaptive_bg_path.read_text(encoding='utf-8')
-    adaptive_fg = adaptive_fg_path.read_text(encoding='utf-8')
+    brand_prep = brand_prep_path.read_text(encoding='utf-8')
     robust_main = robust_main_path.read_text(encoding='utf-8')
 
     errors: list[str] = []
@@ -70,6 +71,9 @@ def main() -> int:
         '16 KB native page compatibility',
         'Refuse unsigned release artifact',
         'grep -F "jar verified." build/android/jarsigner-verify.log',
+        'prepare_android_brand_assets.gd',
+        'AAB_FOREGROUND_BYTES',
+        'test "$AAB_FOREGROUND_BYTES" -gt 1000',
     ):
         if token not in workflow:
             errors.append(f'missing release workflow contract token: {token}')
@@ -154,11 +158,19 @@ def main() -> int:
     if not icon_path.exists():
         errors.append('512x512 supplied glossy U launcher PNG is missing')
     if not adaptive_fg_path.exists():
-        errors.append('432x432 adaptive UNJAM foreground SVG is missing')
+        errors.append('432x432 adaptive UNJAM foreground PNG source is missing')
+    if not brand_prep_path.exists():
+        errors.append('Android brand raster preparation script is missing')
     if 'viewBox="0 0 432 432"' not in adaptive_bg:
         errors.append('adaptive icon background must remain a 432x432 Android layer')
-    if 'x="72" y="72" width="288" height="288"' not in adaptive_fg:
-        errors.append('adaptive icon foreground must retain the reduced Samsung-safe footprint')
+    for token in (
+        'LEGACY_CONTENT := 384',
+        'ADAPTIVE_CONTENT := 288',
+        'Image.INTERPOLATE_LANCZOS',
+        'icon_user_adaptive_432.png',
+    ):
+        if token not in brand_prep:
+            errors.append(f'Android brand raster preparation missing token: {token}')
     for token in ('BrandedLaunch', 'res://assets/icon.svg', 'title.text = "UNJAM"', 'subtitle.text = "PUZZLE COLLECTION"'):
         if token not in robust_main:
             errors.append(f'branded in-app launch handoff missing token: {token}')
@@ -175,9 +187,9 @@ def main() -> int:
 
     for token in (
         'launcher_icons/main_192x192="res://assets/icon_user_512.png"',
-        'launcher_icons/adaptive_foreground_432x432="res://assets/icon_adaptive_foreground.svg"',
+        'launcher_icons/adaptive_foreground_432x432="res://assets/icon_user_adaptive_432.png"',
         'launcher_icons/adaptive_background_432x432="res://assets/icon_adaptive_background.svg"',
-        'splash_screen/icon="res://assets/icon_adaptive_foreground.svg"',
+        'splash_screen/icon="res://assets/icon_user_adaptive_432.png"',
         'splash_screen/background_color=Color(0.070588, 0.109804, 0.227451, 1)',
         'splash_screen/disable_godot_boot_splash=true',
     ):
