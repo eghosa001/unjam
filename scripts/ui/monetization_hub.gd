@@ -13,6 +13,8 @@ func _ready() -> void:
 	StoreManager.purchase_succeeded.connect(_on_purchase_succeeded)
 	StoreManager.purchase_failed.connect(_on_purchase_failed)
 	StoreManager.restore_completed.connect(_on_restore_completed)
+	PrivacyManager.privacy_options_requested.connect(_on_privacy_options_requested)
+	PrivacyManager.privacy_options_completed.connect(_on_privacy_options_completed)
 	AdManager.rewarded_completed.connect(_on_rewarded_completed)
 	AdManager.rewarded_failed.connect(_on_rewarded_failed)
 	if not EconomyManager.balance_changed.is_connected(_on_balance_changed):
@@ -214,6 +216,18 @@ func _on_restore_completed(count: int) -> void:
 	elif count > 1:
 		message = "%d purchases restored." % count
 	_refresh()
+	call_deferred("_rebuild_shop", message)
+
+func _on_privacy_options_requested() -> void:
+	if status_label != null:
+		status_label.text = "Opening Google privacy options…"
+
+func _on_privacy_options_completed(status: String) -> void:
+	var message := "Privacy choices updated."
+	if status == "not_required":
+		message = "No additional ad-consent choices are required in your region."
+	elif status == "required":
+		message = "Privacy consent is still required before ads can load."
 	call_deferred("_rebuild_shop", message)
 
 func _on_rewarded_completed(placement: String) -> void:
