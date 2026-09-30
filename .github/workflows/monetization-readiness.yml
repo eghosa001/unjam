@@ -42,6 +42,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: monetization-readiness-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   readiness:
     runs-on: ubuntu-latest
