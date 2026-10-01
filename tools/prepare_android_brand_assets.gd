@@ -14,8 +14,8 @@ const LEGACY_SIZE := Vector2i(512, 512)
 const ADAPTIVE_SIZE := Vector2i(432, 432)
 
 func _initialize() -> void:
-	var full_logo := Image.load_from_file(FULL_SOURCE)
-	var transparent_logo := Image.load_from_file(TRANSPARENT_SOURCE)
+	var full_logo: Image = Image.load_from_file(FULL_SOURCE)
+	var transparent_logo: Image = Image.load_from_file(TRANSPARENT_SOURCE)
 	if full_logo == null or full_logo.is_empty():
 		push_error("Could not load the approved full UNJAM logo")
 		quit(1)
@@ -46,17 +46,17 @@ func _initialize() -> void:
 	quit(0)
 
 func _write_resized(source: Image, output_path: String, target_size: Vector2i) -> bool:
-	var image := source.duplicate()
+	var image: Image = source.duplicate()
 	image.convert(Image.FORMAT_RGBA8)
 	image.resize(target_size.x, target_size.y, Image.INTERPOLATE_LANCZOS)
-	var error := image.save_png(ProjectSettings.globalize_path(output_path))
+	var error: int = image.save_png(ProjectSettings.globalize_path(output_path))
 	if error != OK:
 		push_error("Could not save Android brand asset %s: %s" % [output_path, error])
 		return false
 	return true
 
 func _corners_are_transparent(image: Image) -> bool:
-	var last := image.get_size() - Vector2i.ONE
+	var last: Vector2i = image.get_size() - Vector2i.ONE
 	for point in [Vector2i.ZERO, Vector2i(last.x, 0), Vector2i(0, last.y), last]:
 		if image.get_pixelv(point).a > 0.08:
 			return false
