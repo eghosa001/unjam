@@ -57,7 +57,7 @@ func _initialize() -> void:
 			failures.append("Startup must not retain blocking launch UI/eager game preload: %s" % forbidden)
 
 	for token in [
-		'const SOURCE := "res://store_assets/unjam_google_play_icon_512.jpg"',
+		'const SOURCE := "res://store_assets/unjam_google_play_icon_512.png"',
 		'const ADAPTIVE_OUT := "res://assets/icon_user_adaptive_432.png"',
 		"const CONTENT_SIZE := 392",
 		"const EDGE_FADE_PX := 24.0",
