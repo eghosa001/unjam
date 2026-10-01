@@ -46,6 +46,9 @@ def main() -> int:
     feedback_path = root / 'scripts' / 'systems' / 'feedback_manager.gd'
     selected_music_path = root / 'assets' / 'audio' / 'unjam_happy_lullaby.ogg'
     selected_music_license_path = root / 'assets' / 'audio' / 'UNJAM_HAPPY_LULLABY_LICENSE.txt'
+    cloud_save_path = root / 'scripts' / 'systems' / 'cloud_save_manager.gd'
+    cloud_edge_path = root / 'supabase' / 'functions' / 'unjam-cloud-save' / 'index.ts'
+    cloud_migration_path = root / 'supabase' / 'migrations' / '20261001_create_player_cloud_saves.sql'
 
     workflow = workflow_path.read_text(encoding='utf-8')
     preset = preset_path.read_text(encoding='utf-8')
@@ -58,6 +61,9 @@ def main() -> int:
     boot_script = boot_script_path.read_text(encoding='utf-8')
     feedback = feedback_path.read_text(encoding='utf-8')
     selected_music_license = selected_music_license_path.read_text(encoding='utf-8') if selected_music_license_path.exists() else ''
+    cloud_save = cloud_save_path.read_text(encoding='utf-8') if cloud_save_path.exists() else ''
+    cloud_edge = cloud_edge_path.read_text(encoding='utf-8') if cloud_edge_path.exists() else ''
+    cloud_migration = cloud_migration_path.read_text(encoding='utf-8') if cloud_migration_path.exists() else ''
 
     errors: list[str] = []
 
@@ -119,6 +125,7 @@ def main() -> int:
         'permissions/internet=true',
         'permissions/access_network_state=true',
         'com.google.android.gms.permission.AD_ID',
+        'user_data_backup/allow=true',
     ):
         if token not in preset:
             errors.append(f'export preset does not preserve fresh-app/monetization contract: {token}')
@@ -131,6 +138,7 @@ def main() -> int:
         'ca-app-pub-7517898921176341~1892369383',
         'privacy_policy_url="https://unjam-site-prod-production.up.railway.app/privacy.html"',
         'developer_website_url="https://unjam-site-prod-production.up.railway.app"',
+        'CloudSaveManager="*res://scripts/systems/cloud_save_manager.gd"',
     ):
         if token not in project:
             errors.append(f'project.godot missing monetization contract token: {token}')
@@ -259,6 +267,34 @@ def main() -> int:
     ):
         if token not in preset:
             errors.append(f'Android launcher/splash assets are not wired to the restored-launcher contract: {token}')
+
+    for token in (
+        'FUNCTION_NAME := "unjam-cloud-save"',
+        'CLOUD_ID_BYTES := 32',
+        'generate_random_bytes(CLOUD_ID_BYTES).hex_encode()',
+        'SaveManager.save_committed.connect(_on_save_committed)',
+        '"action": "pull"',
+        '"action": "push"',
+        '"base_revision"',
+    ):
+        if token not in cloud_save:
+            errors.append(f'cloud save client missing token: {token}')
+    for token in (
+        'ALLOWED_KEYS',
+        'SUPABASE_SERVICE_ROLE_KEY',
+        'sha256Hex(cloudId)',
+        'MAX_PAYLOAD_BYTES',
+        'conflict: true',
+    ):
+        if token not in cloud_edge:
+            errors.append(f'cloud save edge function missing token: {token}')
+    for token in (
+        'player_cloud_saves',
+        'enable row level security',
+        'revoke all on table public.player_cloud_saves from anon, authenticated',
+    ):
+        if token not in cloud_migration:
+            errors.append(f'cloud save migration missing token: {token}')
 
     if errors:
         print('Release contract validation failed:')
