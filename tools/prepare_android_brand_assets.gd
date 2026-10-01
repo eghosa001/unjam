@@ -10,10 +10,12 @@ const SPLASH_SOURCE := "res://store_assets/unjam_approved_logo_transparent.png"
 const LEGACY_OUT := "res://assets/icon_user_512.png"
 const ADAPTIVE_OUT := "res://assets/icon_launcher_adaptive_432.png"
 const SPLASH_OUT := "res://assets/icon_user_adaptive_432.png"
+const SYSTEM_SPLASH_OUT := "res://assets/splash_emblem_safe_432.png"
 const LEGACY_CANVAS := 512
 const LEGACY_CONTENT := 512
 const ADAPTIVE_CANVAS := 432
 const ADAPTIVE_CONTENT := 392
+const SYSTEM_SPLASH_CONTENT := 280
 const SPLASH_SIZE := 432
 
 func _initialize() -> void:
@@ -32,6 +34,9 @@ func _initialize() -> void:
 	if not _write_padded(source, ADAPTIVE_OUT, ADAPTIVE_CANVAS, ADAPTIVE_CONTENT):
 		quit(1)
 		return
+	if not _write_padded(source, SYSTEM_SPLASH_OUT, ADAPTIVE_CANVAS, SYSTEM_SPLASH_CONTENT):
+		quit(1)
+		return
 	var splash_source: Image = Image.load_from_file(SPLASH_SOURCE)
 	if splash_source == null or splash_source.is_empty():
 		push_error("Could not load approved UNJAM splash artwork")
@@ -45,7 +50,7 @@ func _initialize() -> void:
 	if not _write_resized(splash_source, SPLASH_OUT, SPLASH_SIZE):
 		quit(1)
 		return
-	print("ANDROID_BRAND_ASSETS_READY former-launcher-restored approved-splash-regenerated")
+	print("ANDROID_BRAND_ASSETS_READY samsung-launcher safe-system-splash full-inapp-logo")
 	quit(0)
 
 func _write_padded(source: Image, output_path: String, canvas_size: int, content_size: int) -> bool:
