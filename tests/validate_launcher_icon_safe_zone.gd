@@ -1,6 +1,8 @@
 extends SceneTree
 
 const SPLASH_BG := "Color(0.031373, 0.078431, 0.14902, 1)"
+const LEGACY_SHA256 := "13b5d01d29c24b43157755f4badc79bd0651d78af78838a3f65320ce80d37cb1"
+const ADAPTIVE_SHA256 := "ee652f8eb8afd1cd55f94654c620cb3154b1408bc6523a61e64277493903b3d6"
 
 func _initialize() -> void:
 	var failures: Array[String] = []
@@ -13,7 +15,7 @@ func _initialize() -> void:
 	var release_workflow := _read("res://.github/workflows/android-release.yml")
 
 	for token in [
-		"launcher_icons/main_192x192=\"res://assets/icon_user_512.jpg\"",
+		"launcher_icons/main_192x192=\"res://assets/icon_user_512.png\"",
 		"launcher_icons/adaptive_foreground_432x432=\"res://assets/icon_user_adaptive_432.png\"",
 		"launcher_icons/adaptive_background_432x432=\"res://assets/icon_adaptive_background.svg\"",
 		"splash_screen/icon=\"res://assets/icon_user_adaptive_432.png\"",
@@ -24,7 +26,7 @@ func _initialize() -> void:
 			failures.append("Android launcher/startup contract missing: %s" % token)
 
 	for token in [
-		"config/icon=\"res://assets/icon_user_512.jpg\"",
+		"config/icon=\"res://assets/icon_user_512.png\"",
 		"boot_splash/show_image=false",
 		"boot_splash/image=\"res://assets/icon_user_adaptive_432.png\"",
 		"boot_splash/bg_color=%s" % SPLASH_BG,
@@ -73,7 +75,8 @@ func _initialize() -> void:
 		if not workflow.contains('test "$FOREGROUND_BYTES" -gt 1000') and not workflow.contains('test "$AAB_FOREGROUND_BYTES" -gt 1000'):
 			failures.append("Android build workflow does not reject a blank adaptive foreground")
 
-	_check_size("res://store_assets/unjam_google_play_icon_512.jpg", Vector2i(512, 512), "Canonical launcher artwork", failures)
+	_check_size("res://store_assets/unjam_google_play_icon_512.png", Vector2i(512, 512), "Canonical launcher artwork", failures)
+	_check_size("res://assets/icon_user_512.png", Vector2i(512, 512), "Packaged launcher artwork", failures)
 	if not _read("res://assets/icon_adaptive_background.svg").contains("#0F62C8") or not _read("res://assets/icon_adaptive_background.svg").contains("#210C69"):
 		failures.append("Adaptive background no longer matches the approved UNJAM blue gradient")
 
@@ -101,6 +104,13 @@ func _check_transparent_corners(path: String, failures: Array[String]) -> void:
 		if image.get_pixelv(point).a > 0.02:
 			failures.append("Adaptive foreground must not carry a visible square background")
 			return
+
+func _sha256(path: String) -> String:
+	var bytes := FileAccess.get_file_as_bytes(path)
+	var ctx := HashingContext.new()
+	ctx.start(HashingContext.HASH_SHA256)
+	ctx.update(bytes)
+	return ctx.finish().hex_encode()
 
 func _read(path: String) -> String:
 	var file := FileAccess.open(path, FileAccess.READ)
