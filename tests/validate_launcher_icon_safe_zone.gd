@@ -16,7 +16,7 @@ func _initialize() -> void:
 		"launcher_icons/main_192x192=\"res://assets/icon_user_512.png\"",
 		"launcher_icons/adaptive_foreground_432x432=\"res://assets/icon_launcher_adaptive_432.png\"",
 		"launcher_icons/adaptive_background_432x432=\"res://assets/icon_adaptive_background.svg\"",
-		"splash_screen/icon=\"res://assets/icon_user_adaptive_432.png\"",
+		"splash_screen/icon=\"res://assets/icon_launcher_adaptive_432.png\"",
 		"splash_screen/background_color=%s" % SPLASH_BG,
 		"splash_screen/disable_godot_boot_splash=true",
 	]:
@@ -26,7 +26,7 @@ func _initialize() -> void:
 	for token in [
 		"config/icon=\"res://assets/icon_user_512.png\"",
 		"boot_splash/show_image=false",
-		"boot_splash/image=\"res://assets/icon_user_adaptive_432.png\"",
+		"boot_splash/image=\"res://assets/icon_launcher_adaptive_432.png\"",
 		"boot_splash/bg_color=%s" % SPLASH_BG,
 		"environment/defaults/default_clear_color=%s" % SPLASH_BG,
 	]:
