@@ -190,7 +190,7 @@ def main() -> int:
         'SPLASH_SOURCE := "res://store_assets/unjam_approved_logo_transparent.png"',
         'SYSTEM_SPLASH_OUT := "res://assets/splash_emblem_safe_432.png"',
         'LEGACY_CONTENT := 512',
-        'ADAPTIVE_CONTENT := 392',
+        'ADAPTIVE_CONTENT := 344',
         'SYSTEM_SPLASH_CONTENT := 280',
         'SPLASH_SIZE := 432',
         'Image.INTERPOLATE_LANCZOS',
@@ -201,6 +201,8 @@ def main() -> int:
         'HOLD_SECONDS := 1.55',
         'FADE_SECONDS := 0.25',
         'MAIN_SCENE := "res://scenes/Main.tscn"',
+        'ResourceLoader.load_threaded_request(MAIN_SCENE)',
+        'func _open_main() -> void:',
         'get_tree().change_scene_to_file(MAIN_SCENE)',
     ):
         if token not in boot_script:
@@ -223,6 +225,9 @@ def main() -> int:
         'MUSIC_VOLUME_DB := -7.0',
         'MUSIC_FADE_IN_SECONDS := 0.90',
         'selected_track.loop = true',
+        'if music_player.stream != music_stream:',
+        'call_deferred("_prewarm_common_sfx")',
+        'func _prewarm_common_sfx() -> void:',
     ):
         if token not in feedback:
             errors.append(f'selected music playback contract missing token: {token}')
