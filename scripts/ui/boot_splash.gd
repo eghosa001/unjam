@@ -6,6 +6,7 @@ const MAIN_SCENE := "res://scenes/Main.tscn"
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ResourceLoader.load_threaded_request(MAIN_SCENE)
 	var timer := get_tree().create_timer(HOLD_SECONDS, true, false, true)
 	await timer.timeout
 	if not is_inside_tree():
@@ -16,4 +17,13 @@ func _ready() -> void:
 	fade.tween_property(self, "modulate:a", 0.0, FADE_SECONDS)
 	await fade.finished
 	if is_inside_tree():
-		get_tree().change_scene_to_file(MAIN_SCENE)
+		_open_main()
+
+func _open_main() -> void:
+	var status := ResourceLoader.load_threaded_get_status(MAIN_SCENE)
+	if status == ResourceLoader.THREAD_LOAD_LOADED:
+		var packed := ResourceLoader.load_threaded_get(MAIN_SCENE) as PackedScene
+		if packed != null:
+			get_tree().change_scene_to_packed(packed)
+			return
+	get_tree().change_scene_to_file(MAIN_SCENE)
