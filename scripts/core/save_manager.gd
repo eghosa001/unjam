@@ -1,6 +1,7 @@
 extends Node
 
 signal premium_reward(reward: Dictionary)
+signal save_committed
 
 const SAVE_PATH := "user://unjam_save.json"
 const RESET_PRESERVED_KEYS := [
@@ -24,6 +25,8 @@ const RESET_PRESERVED_KEYS := [
 	"processed_purchase_tokens",
 	"purchase_claim_ids",
 	"purchase_install_id",
+	"cloud_save_id",
+	"cloud_save_revision",
 	"processed_purchase_revocations",
 	"purchase_coin_debt",
 	"lifetime_purchased_coins",
@@ -71,6 +74,8 @@ const DEFAULT_DATA := {
 	"processed_purchase_tokens": [],
 	"purchase_claim_ids": {},
 	"purchase_install_id": "",
+	"cloud_save_id": "",
+	"cloud_save_revision": 0,
 	"processed_purchase_revocations": [],
 	"purchase_coin_debt": 0,
 	"privacy_consent_status": "unknown",
@@ -119,6 +124,8 @@ func save() -> void:
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if file != null:
 		file.store_string(JSON.stringify(data))
+		file.flush()
+		save_committed.emit()
 
 func complete_level(level_number: int, stars: int, rescue_id: String, coin_reward: int = 25) -> Dictionary:
 	var rewards := {"perfect": false, "perfect_streak": 0, "milestone": false, "world_badge": false, "world": 0, "bonus_coins": 0, "prestige": 0, "achievements": []}
