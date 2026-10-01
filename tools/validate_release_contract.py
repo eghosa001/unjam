@@ -177,19 +177,21 @@ def main() -> int:
         'ADAPTIVE_OUT := "res://assets/icon_launcher_adaptive_432.png"',
         'SPLASH_SOURCE := "res://store_assets/unjam_approved_logo_transparent.png"',
         'SPLASH_OUT := "res://assets/icon_user_adaptive_432.png"',
-        'LEGACY_CONTENT := 384',
-        'ADAPTIVE_CONTENT := 288',
+        'LEGACY_CONTENT := 512',
+        'ADAPTIVE_CONTENT := 392',
         'SPLASH_SIZE := 432',
         'Image.INTERPOLATE_LANCZOS',
     ):
         if token not in brand_prep:
             errors.append(f'Former Android launcher preparation missing token: {token}')
     for token in (
-        'STARTUP_BRAND_HOLD_SECONDS := 1.60',
-        'STARTUP_BRAND_FADE_SECONDS := 0.35',
+        'STARTUP_BRAND_HOLD_SECONDS := 1.35',
+        'STARTUP_BRAND_FADE_SECONDS := 0.30',
         'STARTUP_BRAND_BG := Color("#10276a")',
         'STARTUP_BRAND_TEXTURE: Texture2D = preload("res://store_assets/unjam_approved_logo_transparent.png")',
         'func _show_startup_brand_hold() -> void:',
+        'overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE',
+        'logo.custom_minimum_size = Vector2(420, 420)',
     ):
         if token not in robust_main:
             errors.append(f'startup brand hold missing token: {token}')
@@ -202,7 +204,7 @@ def main() -> int:
 
     for token in (
         'boot_splash/show_image=false',
-        'boot_splash/image="res://assets/icon_user_adaptive_432.png"',
+        'boot_splash/image="res://assets/icon_launcher_adaptive_432.png"',
         'boot_splash/bg_color=Color(0.062745, 0.152941, 0.415686, 1)',
         'environment/defaults/default_clear_color=Color(0.062745, 0.152941, 0.415686, 1)',
     ):
@@ -213,7 +215,7 @@ def main() -> int:
         'launcher_icons/main_192x192="res://assets/icon_user_512.png"',
         'launcher_icons/adaptive_foreground_432x432="res://assets/icon_launcher_adaptive_432.png"',
         'launcher_icons/adaptive_background_432x432="res://assets/icon_adaptive_background.svg"',
-        'splash_screen/icon="res://assets/icon_user_adaptive_432.png"',
+        'splash_screen/icon="res://assets/icon_launcher_adaptive_432.png"',
         'splash_screen/background_color=Color(0.062745, 0.152941, 0.415686, 1)',
         'splash_screen/disable_godot_boot_splash=true',
     ):
