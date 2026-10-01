@@ -175,8 +175,11 @@ def main() -> int:
     for token in (
         'SOURCE := "res://store_assets/unjam_google_play_icon_512.png"',
         'ADAPTIVE_OUT := "res://assets/icon_launcher_adaptive_432.png"',
+        'SPLASH_SOURCE := "res://store_assets/unjam_approved_logo_transparent.png"',
+        'SPLASH_OUT := "res://assets/icon_user_adaptive_432.png"',
         'LEGACY_CONTENT := 384',
         'ADAPTIVE_CONTENT := 288',
+        'SPLASH_SIZE := 432',
         'Image.INTERPOLATE_LANCZOS',
     ):
         if token not in brand_prep:

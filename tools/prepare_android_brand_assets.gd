@@ -6,12 +6,15 @@ extends SceneTree
 # rewritten here.
 
 const SOURCE := "res://store_assets/unjam_google_play_icon_512.png"
+const SPLASH_SOURCE := "res://store_assets/unjam_approved_logo_transparent.png"
 const LEGACY_OUT := "res://assets/icon_user_512.png"
 const ADAPTIVE_OUT := "res://assets/icon_launcher_adaptive_432.png"
+const SPLASH_OUT := "res://assets/icon_user_adaptive_432.png"
 const LEGACY_CANVAS := 512
 const LEGACY_CONTENT := 384
 const ADAPTIVE_CANVAS := 432
 const ADAPTIVE_CONTENT := 288
+const SPLASH_SIZE := 432
 
 func _initialize() -> void:
 	var source := Image.load_from_file(SOURCE)
@@ -29,7 +32,20 @@ func _initialize() -> void:
 	if not _write_padded(source, ADAPTIVE_OUT, ADAPTIVE_CANVAS, ADAPTIVE_CONTENT):
 		quit(1)
 		return
-	print("ANDROID_LAUNCHER_ASSETS_READY former-launcher-restored splash-preserved")
+	var splash_source := Image.load_from_file(SPLASH_SOURCE)
+	if splash_source == null or splash_source.is_empty():
+		push_error("Could not load approved UNJAM splash artwork")
+		quit(1)
+		return
+	splash_source.convert(Image.FORMAT_RGBA8)
+	if not _corners_are_transparent(splash_source):
+		push_error("Approved UNJAM splash artwork must keep transparent corners")
+		quit(1)
+		return
+	if not _write_resized(splash_source, SPLASH_OUT, SPLASH_SIZE):
+		quit(1)
+		return
+	print("ANDROID_BRAND_ASSETS_READY former-launcher-restored approved-splash-regenerated")
 	quit(0)
 
 func _write_padded(source: Image, output_path: String, canvas_size: int, content_size: int) -> bool:
@@ -44,4 +60,22 @@ func _write_padded(source: Image, output_path: String, canvas_size: int, content
 	if error != OK:
 		push_error("Could not save Android launcher asset %s: %s" % [output_path, error])
 		return false
+	return true
+
+
+func _write_resized(source: Image, output_path: String, target_size: int) -> bool:
+	var image := source.duplicate()
+	image.convert(Image.FORMAT_RGBA8)
+	image.resize(target_size, target_size, Image.INTERPOLATE_LANCZOS)
+	var error := image.save_png(ProjectSettings.globalize_path(output_path))
+	if error != OK:
+		push_error("Could not save Android splash asset %s: %s" % [output_path, error])
+		return false
+	return true
+
+func _corners_are_transparent(image: Image) -> bool:
+	var last := image.get_size() - Vector2i.ONE
+	for point in [Vector2i.ZERO, Vector2i(last.x, 0), Vector2i(0, last.y), last]:
+		if image.get_pixelv(point).a > 0.08:
+			return false
 	return true

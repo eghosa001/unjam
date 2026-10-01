@@ -73,8 +73,11 @@ func _initialize() -> void:
 		'const SOURCE := "res://store_assets/unjam_google_play_icon_512.png"',
 		'const LEGACY_OUT := "res://assets/icon_user_512.png"',
 		'const ADAPTIVE_OUT := "res://assets/icon_launcher_adaptive_432.png"',
+		'const SPLASH_SOURCE := "res://store_assets/unjam_approved_logo_transparent.png"',
+		'const SPLASH_OUT := "res://assets/icon_user_adaptive_432.png"',
 		"const LEGACY_CONTENT := 384",
 		"const ADAPTIVE_CONTENT := 288",
+		"const SPLASH_SIZE := 432",
 		"Image.INTERPOLATE_LANCZOS",
 	]:
 		if not prep.contains(token):
@@ -88,7 +91,8 @@ func _initialize() -> void:
 
 	_check_size("res://store_assets/unjam_google_play_icon_512.png", Vector2i(512, 512), "Original launcher artwork", failures)
 	_check_size("res://assets/icon_launcher_adaptive_432.png", Vector2i(432, 432), "Former adaptive launcher foreground", failures)
-	_check_size("res://assets/icon_user_adaptive_432.png", Vector2i(432, 432), "Approved splash foreground", failures)
+	_check_size("res://store_assets/unjam_approved_logo_transparent.png", Vector2i(320, 320), "Approved splash source", failures)
+	_check_loadable("res://assets/icon_user_adaptive_432.png", "Splash fallback artwork", failures)
 
 	var adaptive_bg := _read("res://assets/icon_adaptive_background.svg")
 	if not adaptive_bg.contains("#173BFF") or not adaptive_bg.contains("#0B66DB") or not adaptive_bg.contains("#24106F"):
@@ -109,6 +113,11 @@ func _check_size(path: String, expected: Vector2i, label: String, failures: Arra
 		return
 	if image.get_size() != expected:
 		failures.append("%s must be %dx%d" % [label, expected.x, expected.y])
+
+func _check_loadable(path: String, label: String, failures: Array[String]) -> void:
+	var image := Image.load_from_file(path)
+	if image == null or image.is_empty():
+		failures.append("%s failed to load" % label)
 
 func _read(path: String) -> String:
 	var file := FileAccess.open(path, FileAccess.READ)
