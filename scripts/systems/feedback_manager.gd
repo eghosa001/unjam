@@ -14,12 +14,12 @@ const MUSIC_RATE := 24000
 const STARTUP_MUSIC_RATE := 24000
 const SFX_POOL_SIZE := 8
 const MUSIC_DURATION := 24.0
-const STARTUP_MUSIC_DURATION := 1.2
+const STARTUP_MUSIC_DURATION := 3.6
 const SFX_VOLUME_DB := 1.0
 const SFX_GAIN_MULTIPLIER := 1.18
 const MUSIC_VOLUME_DB := -8.0
 const MUSIC_HANDOFF_SILENCE_DB := -48.0
-const MUSIC_HANDOFF_FADE_SECONDS := 0.10
+const MUSIC_HANDOFF_FADE_SECONDS := 0.75
 # Keep the expensive full-loop synthesis below the early-frame budget. A tiny
 # primer plays immediately, so the full loop can be built without blocking UI.
 const MUSIC_SYNTH_CHUNK_FRAMES := 4096
@@ -27,6 +27,7 @@ const MUSIC_SYNTH_CHUNK_FRAMES := 4096
 var player: AudioStreamPlayer
 var sfx_players: Array[AudioStreamPlayer] = []
 var music_player: AudioStreamPlayer
+var music_intro_player: AudioStreamPlayer
 var music_stream: AudioStreamWAV
 var _startup_music_stream: AudioStreamWAV
 var last_music_enabled := false
@@ -48,9 +49,14 @@ func _ready() -> void:
 		sfx_players.append(sfx)
 	player = sfx_players[0]
 
+	music_intro_player = AudioStreamPlayer.new()
+	music_intro_player.name = "CalmAmbientIntro"
+	music_intro_player.volume_db = MUSIC_HANDOFF_SILENCE_DB
+	add_child(music_intro_player)
+
 	music_player = AudioStreamPlayer.new()
 	music_player.name = "CalmAmbientMusic"
-	music_player.volume_db = MUSIC_VOLUME_DB
+	music_player.volume_db = MUSIC_HANDOFF_SILENCE_DB
 	add_child(music_player)
 	last_music_enabled = bool(SaveManager.data.get("music", true))
 	if last_music_enabled:
@@ -68,6 +74,12 @@ func shutdown_audio() -> void:
 			sfx.free()
 	sfx_players.clear()
 	player = null
+
+	if music_intro_player != null and is_instance_valid(music_intro_player):
+		music_intro_player.stop()
+		music_intro_player.stream = null
+		music_intro_player.free()
+	music_intro_player = null
 
 	if music_player != null and is_instance_valid(music_player):
 		music_player.stop()
@@ -90,13 +102,26 @@ func _start_music_immediately() -> void:
 		return
 	if music_stream != null:
 		music_player.stream = music_stream
-	elif _startup_music_stream == null:
-		_startup_music_stream = _build_startup_ambient()
-		music_player.stream = _startup_music_stream
-	elif music_player.stream == null:
-		music_player.stream = _startup_music_stream
-	if music_player.stream != null and not music_player.playing:
-		music_player.play()
+		music_player.volume_db = MUSIC_HANDOFF_SILENCE_DB
+		if not music_player.playing:
+			music_player.play()
+		var main_fade := create_tween()
+		main_fade.set_trans(Tween.TRANS_SINE)
+		main_fade.set_ease(Tween.EASE_OUT)
+		main_fade.tween_property(music_player, "volume_db", MUSIC_VOLUME_DB, 0.55)
+		return
+
+	if music_intro_player != null:
+		if _startup_music_stream == null:
+			_startup_music_stream = _build_startup_ambient()
+		music_intro_player.stream = _startup_music_stream
+		music_intro_player.volume_db = MUSIC_HANDOFF_SILENCE_DB
+		if not music_intro_player.playing:
+			music_intro_player.play()
+			var intro_fade := create_tween()
+			intro_fade.set_trans(Tween.TRANS_SINE)
+			intro_fade.set_ease(Tween.EASE_OUT)
+			intro_fade.tween_property(music_intro_player, "volume_db", MUSIC_VOLUME_DB, 0.60)
 	if music_stream == null:
 		call_deferred("_ensure_music_stream")
 
@@ -116,38 +141,52 @@ func _handoff_to_music_stream() -> void:
 		return
 	last_music_enabled = bool(SaveManager.data.get("music", true))
 	if not last_music_enabled:
+		if music_intro_player != null:
+			music_intro_player.stop()
 		music_player.stop()
 		music_player.stream = music_stream
 		music_player.volume_db = MUSIC_VOLUME_DB
 		return
-	if music_player.playing:
-		var fade_out := create_tween()
-		fade_out.tween_property(music_player, "volume_db", MUSIC_HANDOFF_SILENCE_DB, MUSIC_HANDOFF_FADE_SECONDS)
-		await fade_out.finished
-		if music_player == null or not is_instance_valid(music_player):
-			return
-	if not bool(SaveManager.data.get("music", true)):
-		music_player.stop()
-		music_player.stream = music_stream
-		music_player.volume_db = MUSIC_VOLUME_DB
-		return
+
 	music_player.stop()
 	music_player.stream = music_stream
 	music_player.volume_db = MUSIC_HANDOFF_SILENCE_DB
 	music_player.play()
-	var fade_in := create_tween()
-	fade_in.tween_property(music_player, "volume_db", MUSIC_VOLUME_DB, MUSIC_HANDOFF_FADE_SECONDS)
+
+	var crossfade := create_tween()
+	crossfade.set_parallel(true)
+	crossfade.set_trans(Tween.TRANS_SINE)
+	crossfade.set_ease(Tween.EASE_IN_OUT)
+	crossfade.tween_property(music_player, "volume_db", MUSIC_VOLUME_DB, MUSIC_HANDOFF_FADE_SECONDS)
+	if music_intro_player != null and music_intro_player.playing:
+		crossfade.tween_property(music_intro_player, "volume_db", MUSIC_HANDOFF_SILENCE_DB, MUSIC_HANDOFF_FADE_SECONDS)
+	await crossfade.finished
+
+	if music_intro_player != null and is_instance_valid(music_intro_player):
+		music_intro_player.stop()
+		music_intro_player.volume_db = MUSIC_HANDOFF_SILENCE_DB
+	if not bool(SaveManager.data.get("music", true)):
+		music_player.stop()
 
 func _sync_music() -> void:
 	last_music_enabled = bool(SaveManager.data.get("music", true))
 	if music_player == null:
 		return
 	if last_music_enabled:
-		if music_player.stream == null:
-			music_player.stream = music_stream if music_stream != null else _startup_music_stream
-		if music_player.stream != null and not music_player.playing:
-			music_player.play()
+		if music_stream != null:
+			if music_intro_player != null:
+				music_intro_player.stop()
+				music_intro_player.volume_db = MUSIC_HANDOFF_SILENCE_DB
+			music_player.stream = music_stream
+			music_player.volume_db = MUSIC_VOLUME_DB
+			if not music_player.playing:
+				music_player.play()
+		else:
+			_start_music_immediately()
 	else:
+		if music_intro_player != null:
+			music_intro_player.stop()
+			music_intro_player.volume_db = MUSIC_HANDOFF_SILENCE_DB
 		music_player.stop()
 
 # ---------------------------------------------------------------------------
@@ -313,36 +352,27 @@ func _chime_stream(notes: Array, duration: float, volume: float, brightness: flo
 # ---------------------------------------------------------------------------
 
 func _build_startup_ambient() -> AudioStreamWAV:
-	# Keep first-frame audio tiny and cheap. A soft F-major welcome gesture plays
-	# once while the richer loop is prepared over subsequent frames; it never
-	# repeats like a loading jingle.
+	# A sustained Fmaj9 pad shares the same tonal center as the main loop. There
+	# is no separate "loading melody" to clash with the first bar, and the long
+	# gentle attack masks device/audio-driver startup transients.
 	var frames := maxi(1, int(STARTUP_MUSIC_RATE * STARTUP_MUSIC_DURATION))
 	var bytes := PackedByteArray()
 	bytes.resize(frames * 4)
-	var welcome := [349.23, 440.00, 523.25]
-	var step_length := STARTUP_MUSIC_DURATION / float(welcome.size())
+	var chord := [174.61, 220.00, 261.63, 329.63, 392.00]
 	for i in range(frames):
 		var t := float(i) / float(STARTUP_MUSIC_RATE)
-		var progress := float(i) / float(maxi(1, frames - 1))
-		var step := mini(welcome.size() - 1, int(t / step_length))
-		var local_t := fmod(t, step_length)
-		var note_edge := _smooth_edge(local_t, step_length, 0.04)
-		var note_env := exp(-local_t * 5.2) * note_edge
-		var f := float(welcome[step])
-		var bell := (
-			sin(TAU * f * t) * 0.040
-			+ sin(TAU * f * 2.01 * t + 0.22) * 0.008
-			+ sin(TAU * f * 2.72 * t + 0.51) * 0.004
-		) * note_env
-		var global_edge := _smooth_edge(t, STARTUP_MUSIC_DURATION, 0.12)
-		var bed := (
-			sin(TAU * 174.61 * t) * 0.012
-			+ sin(TAU * 220.00 * t + 0.32) * 0.008
-			+ sin(TAU * 261.63 * t + 0.58) * 0.006
-		) * global_edge
-		var air := sin(TAU * (698.46 + 12.0 * sin(TAU * 0.35 * t)) * t) * 0.0015 * global_edge
-		var fade := 1.0 - progress * progress
-		_write_stereo(bytes, i, (bed + bell + air) * fade, (bed * 0.98 + bell * 0.96 - air) * fade)
+		var attack := clampf(t / 0.72, 0.0, 1.0)
+		attack = attack * attack * (3.0 - 2.0 * attack)
+		var pad := 0.0
+		for voice in range(chord.size()):
+			var base := float(chord[voice])
+			var phase := float(voice) * 0.43
+			pad += sin(TAU * base * t + phase) * 0.018
+			pad += sin(TAU * base * 2.0 * t + phase + 0.23) * 0.0035
+		var breathe := 0.94 + 0.06 * sin(TAU * 0.16 * t)
+		var air := sin(TAU * 784.0 * t + 0.2) * 0.0008
+		var out := (pad * breathe + air) * attack
+		_write_stereo(bytes, i, out * 0.985, out)
 	var stream := AudioStreamWAV.new()
 	stream.format = AudioStreamWAV.FORMAT_16_BITS
 	stream.mix_rate = STARTUP_MUSIC_RATE
@@ -359,18 +389,21 @@ func _build_calm_ambient_loop() -> AudioStreamWAV:
 	var bytes := PackedByteArray()
 	bytes.resize(frames * 4)
 
-	# Fmaj7 -> Dm7 -> Bbmaj7 -> Cadd9, two bars per harmony at 80 BPM.
+	# Smooth diatonic voice-leading in F major:
+	# Fmaj9 -> Dm9 -> Bbmaj9 -> C6/9. Every melody note belongs to the active
+	# harmony or its diatonic extension, avoiding the sour interval collisions
+	# that made the previous tune feel less settled.
 	var chords := [
-		[174.61, 220.00, 261.63, 329.63],
-		[146.83, 174.61, 220.00, 261.63],
-		[116.54, 146.83, 174.61, 220.00],
-		[130.81, 196.00, 261.63, 293.66],
+		[174.61, 220.00, 261.63, 329.63, 392.00],
+		[146.83, 174.61, 220.00, 261.63, 329.63],
+		[116.54, 146.83, 174.61, 220.00, 261.63],
+		[130.81, 164.81, 196.00, 220.00, 293.66],
 	]
 	var phrases := [
-		[440.00, 523.25, 659.25, 0.0, 587.33, 523.25, 440.00, 0.0],
-		[440.00, 349.23, 293.66, 0.0, 392.00, 440.00, 523.25, 0.0],
-		[349.23, 440.00, 523.25, 0.0, 587.33, 523.25, 440.00, 0.0],
-		[392.00, 493.88, 587.33, 0.0, 523.25, 493.88, 440.00, 0.0],
+		[440.00, 523.25, 392.00, 659.25, 523.25, 440.00, 392.00, 0.0],
+		[349.23, 440.00, 329.63, 293.66, 349.23, 440.00, 523.25, 0.0],
+		[293.66, 349.23, 523.25, 440.00, 349.23, 293.66, 261.63, 0.0],
+		[329.63, 392.00, 587.33, 440.00, 392.00, 329.63, 293.66, 0.0],
 	]
 	var section_length := MUSIC_DURATION / 4.0
 	var note_step := 0.75
@@ -387,19 +420,18 @@ func _build_calm_ambient_loop() -> AudioStreamWAV:
 		var t := float(i) / float(MUSIC_RATE)
 		var section := mini(3, int(t / section_length))
 		var local_t := fmod(t, section_length)
-		var section_edge := _smooth_edge(local_t, section_length, 0.72)
 		var chord: Array = chords[section]
-
-		# Warm pad: fundamental/upper partials only, deliberately avoiding the
-		# sub-bass energy that small phone speakers turn into cabinet vibration.
-		var pad := 0.0
-		for voice in range(chord.size()):
-			var base := float(chord[voice])
-			var phase := float(voice) * 0.57
-			pad += sin(TAU * base * t + phase) * 0.026
-			pad += sin(TAU * base * 1.004 * t + phase + 0.12) * 0.010
-			pad += sin(TAU * base * 2.0 * t + phase + 0.31) * 0.0045
-		pad *= section_edge * (0.90 + 0.10 * sin(TAU * t / 8.0 + 0.4))
+		var transition := 0.72
+		var pad := _ambient_pad_sample(chord, t)
+		if local_t < transition:
+			var previous_chord: Array = chords[posmod(section - 1, chords.size())]
+			var mix_in := _smoothstep01(local_t / transition)
+			pad = lerpf(_ambient_pad_sample(previous_chord, t), pad, mix_in)
+		elif local_t > section_length - transition:
+			var next_chord: Array = chords[(section + 1) % chords.size()]
+			var mix_out := _smoothstep01((local_t - (section_length - transition)) / transition)
+			pad = lerpf(pad, _ambient_pad_sample(next_chord, t), mix_out)
+		pad *= 0.94 + 0.06 * sin(TAU * t / 8.0 + 0.4)
 
 		# Felt/glass lead: a simple memorable phrase with one full beat of silence
 		# every four beats. Higher partials decay faster than the fundamental.
@@ -411,10 +443,10 @@ func _build_calm_ambient_loop() -> AudioStreamWAV:
 		if note_frequency > 0.0:
 			var body_env := exp(-note_phase * 4.3) * note_edge
 			var high_env := exp(-note_phase * 8.5) * note_edge
-			lead = sin(TAU * note_frequency * t) * 0.052 * body_env
-			lead += sin(TAU * note_frequency * 1.997 * t + 0.18) * 0.009 * body_env
-			lead += sin(TAU * note_frequency * 2.72 * t + 0.49) * 0.005 * high_env
-			lead += sin(TAU * note_frequency * 4.08 * t + 0.87) * 0.0018 * high_env
+			var melody_entry := _smoothstep01((t - 1.15) / 0.70)
+			lead = sin(TAU * note_frequency * t) * 0.046 * body_env * melody_entry
+			lead += sin(TAU * note_frequency * 1.997 * t + 0.18) * 0.0075 * body_env * melody_entry
+			lead += sin(TAU * note_frequency * 2.72 * t + 0.49) * 0.0035 * high_env * melody_entry
 
 		# Quiet chord-tone plucks add forward motion every two beats without drums.
 		var arp_step := int(floor(local_t / 1.5)) % chord.size()
@@ -422,17 +454,17 @@ func _build_calm_ambient_loop() -> AudioStreamWAV:
 		var arp_phase := fmod(local_t, 1.5)
 		var arp_env := exp(-arp_phase * 3.1) * _smooth_edge(arp_phase, 1.5, 0.055)
 		var arpeggio := (
-			sin(TAU * arp_frequency * t) * 0.012
-			+ sin(TAU * arp_frequency * 2.01 * t + 0.27) * 0.0025
+			sin(TAU * arp_frequency * t) * 0.009
+			+ sin(TAU * arp_frequency * 2.01 * t + 0.27) * 0.0018
 		) * arp_env
 
 		# A tiny high, slowly moving texture keeps the bed alive on headphones.
 		var air_frequency := 880.0 + 36.0 * sin(TAU * 0.07 * t)
-		var air := sin(TAU * air_frequency * t + 0.4) * 0.0012 * section_edge
+		var air := sin(TAU * air_frequency * t + 0.4) * 0.0008
 
-		var dry := pad + lead * section_edge + arpeggio * section_edge + air
-		var dry_l := dry + sin(TAU * float(chord[1]) * 1.003 * t + 0.3) * 0.0022 * section_edge
-		var dry_r := dry + sin(TAU * float(chord[2]) * 0.997 * t + 1.0) * 0.0022 * section_edge
+		var dry := pad + lead + arpeggio + air
+		var dry_l := dry + sin(TAU * float(chord[1]) * 1.003 * t + 0.3) * 0.0016
+		var dry_r := dry + sin(TAU * float(chord[2]) * 0.997 * t + 1.0) * 0.0016
 
 		# One short cross-fed delay acts like a compact room reverb. It gives the
 		# music the soft spatial tail heard in polished puzzle audio without a DSP
@@ -443,7 +475,7 @@ func _build_calm_ambient_loop() -> AudioStreamWAV:
 		delay_l[delay_index] = dry_l + echo_r * 0.16
 		delay_r[delay_index] = dry_r + echo_l * 0.16
 
-		var loop_edge := _smooth_edge(t, MUSIC_DURATION, 0.48)
+		var loop_edge := _smooth_edge(t, MUSIC_DURATION, 0.16)
 		var out_l := (dry_l + echo_l * 0.22) * 0.78 * loop_edge
 		var out_r := (dry_r + echo_r * 0.22) * 0.78 * loop_edge
 		_write_stereo(bytes, i, out_l, out_r)
@@ -457,6 +489,20 @@ func _build_calm_ambient_loop() -> AudioStreamWAV:
 	stream.loop_begin = 0
 	stream.loop_end = frames
 	return stream
+
+func _ambient_pad_sample(chord: Array, t: float) -> float:
+	var pad := 0.0
+	for voice in range(chord.size()):
+		var base := float(chord[voice])
+		var phase := float(voice) * 0.47
+		pad += sin(TAU * base * t + phase) * 0.020
+		pad += sin(TAU * base * 1.004 * t + phase + 0.12) * 0.0070
+		pad += sin(TAU * base * 2.0 * t + phase + 0.31) * 0.0030
+	return pad
+
+func _smoothstep01(value: float) -> float:
+	var x := clampf(value, 0.0, 1.0)
+	return x * x * (3.0 - 2.0 * x)
 
 func _smooth_edge(local_t: float, section_length: float, fade_time: float) -> float:
 	var fade_in := clampf(local_t / fade_time, 0.0, 1.0)

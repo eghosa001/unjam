@@ -1,6 +1,6 @@
 extends SceneTree
 
-const SPLASH_BG := "Color(0.031373, 0.078431, 0.14902, 1)"
+const SPLASH_BG := "Color(0.062745, 0.152941, 0.415686, 1)"
 
 func _initialize() -> void:
 	var failures: Array[String] = []
@@ -45,6 +45,18 @@ func _initialize() -> void:
 	]:
 		if not robust_main.contains(token):
 			failures.append("Deferred game-scene priming contract missing: %s" % token)
+
+	for token in [
+		"const STARTUP_BRAND_HOLD_SECONDS := 1.20",
+		"const STARTUP_BRAND_FADE_SECONDS := 0.30",
+		'const STARTUP_BRAND_BG := Color("#10276a")',
+		'const STARTUP_BRAND_TEXTURE := "res://assets/icon_user_adaptive_432.png"',
+		"func _show_startup_brand_hold() -> void:",
+		"func _fade_startup_brand_hold(overlay: Control) -> void:",
+		'overlay.name = "StartupBrandHold"',
+	]:
+		if not robust_main.contains(token):
+			failures.append("Non-blocking startup brand hold missing: %s" % token)
 
 	for forbidden in [
 		"BrandedLaunch",

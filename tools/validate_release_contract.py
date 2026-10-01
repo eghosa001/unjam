@@ -180,9 +180,18 @@ def main() -> int:
     ):
         if token not in brand_prep:
             errors.append(f'Former Android launcher preparation missing token: {token}')
-    for retired in ('BrandedLaunch', 'title.text = "UNJAM"', 'subtitle.text = "PUZZLE COLLECTION"'):
+    for token in (
+        'STARTUP_BRAND_HOLD_SECONDS := 1.20',
+        'STARTUP_BRAND_FADE_SECONDS := 0.30',
+        'STARTUP_BRAND_BG := Color("#10276a")',
+        'STARTUP_BRAND_TEXTURE := "res://assets/icon_user_adaptive_432.png"',
+        'func _show_startup_brand_hold() -> void:',
+    ):
+        if token not in robust_main:
+            errors.append(f'startup brand hold missing token: {token}')
+    for retired in ('BrandedLaunch', 'CanvasLayer.new()', 'title.text = "UNJAM"', 'subtitle.text = "PUZZLE COLLECTION"'):
         if retired in robust_main:
-            errors.append(f'retired duplicate in-app launch overlay must not return: {retired}')
+            errors.append(f'retired blocking/duplicate launch overlay must not return: {retired}')
 
     if 'config/icon="res://assets/icon_user_512.png"' not in project:
         errors.append('project launcher icon is not wired to the approved full UNJAM logo')
@@ -190,8 +199,8 @@ def main() -> int:
     for token in (
         'boot_splash/show_image=false',
         'boot_splash/image="res://assets/icon_user_adaptive_432.png"',
-        'boot_splash/bg_color=Color(0.031373, 0.078431, 0.14902, 1)',
-        'environment/defaults/default_clear_color=Color(0.031373, 0.078431, 0.14902, 1)',
+        'boot_splash/bg_color=Color(0.062745, 0.152941, 0.415686, 1)',
+        'environment/defaults/default_clear_color=Color(0.062745, 0.152941, 0.415686, 1)',
     ):
         if token not in project:
             errors.append(f'project startup handoff does not preserve the seamless approved-logo contract: {token}')
@@ -201,7 +210,7 @@ def main() -> int:
         'launcher_icons/adaptive_foreground_432x432="res://assets/icon_launcher_adaptive_432.png"',
         'launcher_icons/adaptive_background_432x432="res://assets/icon_adaptive_background.svg"',
         'splash_screen/icon="res://assets/icon_user_adaptive_432.png"',
-        'splash_screen/background_color=Color(0.031373, 0.078431, 0.14902, 1)',
+        'splash_screen/background_color=Color(0.062745, 0.152941, 0.415686, 1)',
         'splash_screen/disable_godot_boot_splash=true',
     ):
         if token not in preset:
