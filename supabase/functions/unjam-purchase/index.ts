@@ -392,6 +392,48 @@ async function rateAllowed(
   return installAllowed && ipAllowed;
 }
 
+async function clearCancelledConsumable(
+  productId: string,
+  purchaseToken: string,
+  purchase: any,
+): Promise<{ ok: boolean; detail: string }> {
+  const product = PRODUCTS[productId];
+  if (!product || product.nonConsumable) {
+    return { ok: false, detail: "not_consumable" };
+  }
+  if (!Array.isArray(purchase?.productIds) || !purchase.productIds.includes(productId)) {
+    return { ok: false, detail: "product_mismatch" };
+  }
+
+  const productLines = Array.isArray(purchase?.lineItems)
+    ? purchase.lineItems.filter((line: any) => String(line?.productId ?? "") === productId)
+    : [];
+  const alreadyConsumed = productLines.length > 0 &&
+    productLines.every(
+      (line: any) =>
+        String(line?.productOfferDetails?.consumptionState ?? "") ===
+          "CONSUMPTION_STATE_CONSUMED",
+    );
+  if (alreadyConsumed) {
+    return { ok: true, detail: "already_consumed" };
+  }
+
+  const accessToken = await googleToken();
+  const url =
+    `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${encodeURIComponent(PACKAGE_NAME)}/purchases/products/${encodeURIComponent(productId)}/tokens/${encodeURIComponent(purchaseToken)}:consume`;
+  const consume = await fetch(url, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${accessToken}`,
+      accept: "application/json",
+    },
+  });
+  if (consume.ok) {
+    return { ok: true, detail: "cancelled_consumable_cleared" };
+  }
+  return { ok: false, detail: `cancelled_consume_http_${consume.status}` };
+}
+
 async function finalizePurchase(
   productId: string,
   purchaseToken: string,
@@ -681,6 +723,45 @@ Deno.serve(async (req) => {
     }
 
     if (purchase.state !== "PURCHASED") {
+      const product = PRODUCTS[input.product_id];
+      if (
+        purchase.state === "CANCELLED" &&
+        product &&
+        !product.nonConsumable &&
+        purchase.productIds.includes(input.product_id)
+      ) {
+        const recovery = await clearCancelledConsumable(
+          input.product_id,
+          input.purchase_token,
+          purchase,
+        );
+        console.log("cancelled consumable recovery", {
+          product_id: input.product_id,
+          ok: recovery.ok,
+          detail: recovery.detail,
+        });
+        if (recovery.ok) {
+          return response({
+            ok: true,
+            valid: false,
+            grant: false,
+            entitlement: false,
+            claim_state: "cancelled_consumable_cleared",
+            product_id: input.product_id,
+            claim_id: input.claim_id,
+            reason: "Cancelled consumable cleared from Google Play; no coins granted",
+          });
+        }
+        return response(
+          bad(
+            `Cancelled consumable could not be cleared: ${recovery.detail}`,
+            input.product_id,
+            input.claim_id,
+          ),
+          409,
+        );
+      }
+
       const stateReason = purchase.state === "PENDING"
         ? "Google Play purchase is still PENDING"
         : purchase.state === "CANCELLED"
