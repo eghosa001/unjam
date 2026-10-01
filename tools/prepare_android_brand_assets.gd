@@ -32,7 +32,7 @@ func _initialize() -> void:
 	if not _write_padded(source, ADAPTIVE_OUT, ADAPTIVE_CANVAS, ADAPTIVE_CONTENT):
 		quit(1)
 		return
-	var splash_source := Image.load_from_file(SPLASH_SOURCE)
+	var splash_source: Image = Image.load_from_file(SPLASH_SOURCE)
 	if splash_source == null or splash_source.is_empty():
 		push_error("Could not load approved UNJAM splash artwork")
 		quit(1)
@@ -64,17 +64,17 @@ func _write_padded(source: Image, output_path: String, canvas_size: int, content
 
 
 func _write_resized(source: Image, output_path: String, target_size: int) -> bool:
-	var image := source.duplicate()
+	var image: Image = source.duplicate()
 	image.convert(Image.FORMAT_RGBA8)
 	image.resize(target_size, target_size, Image.INTERPOLATE_LANCZOS)
-	var error := image.save_png(ProjectSettings.globalize_path(output_path))
+	var error: Error = image.save_png(ProjectSettings.globalize_path(output_path))
 	if error != OK:
 		push_error("Could not save Android splash asset %s: %s" % [output_path, error])
 		return false
 	return true
 
 func _corners_are_transparent(image: Image) -> bool:
-	var last := image.get_size() - Vector2i.ONE
+	var last: Vector2i = image.get_size() - Vector2i.ONE
 	for point in [Vector2i.ZERO, Vector2i(last.x, 0), Vector2i(0, last.y), last]:
 		if image.get_pixelv(point).a > 0.08:
 			return false
