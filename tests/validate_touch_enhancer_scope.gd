@@ -1,18 +1,32 @@
 extends SceneTree
 
 func _initialize() -> void:
-	var file := FileAccess.open("res://scripts/ui/ui_touch_enhancer.gd", FileAccess.READ)
-	if file == null:
-		push_error("Touch enhancer source is missing")
-		quit(1)
-		return
-	var source := file.get_as_text()
-	var start := source.find("func _enlarge_buttons")
+	var source := _read("res://scripts/ui/ui_touch_enhancer.gd")
+	for token in [
+		"func _inside_authored_figma(node: Node) -> bool:",
+		'cursor is FigmaReferenceCanvas or cursor.has_meta("unjam_figma_reference_root")',
+		"if _inside_authored_figma(node):",
+	]:
+		if not source.contains(token):
+			push_error("Touch enhancer Figma protection missing: %s" % token)
+			quit(1)
+			return
+
+	var start := source.find("func _on_node_added")
 	var finish := source.find("\nfunc ", start + 1)
 	var block := source.substr(start, finish - start)
-	if not block.contains("node != host") or not block.contains("get_node_or_null(\"UiTouchEnhancer\")"):
-		push_error("Parent touch enhancer still descends into surfaces with their own enhancer")
+	if block.find("if _inside_authored_figma(node):") < 0:
+		push_error("Live node-added path does not guard authored Figma buttons")
 		quit(1)
 		return
-	print("Touch enhancer ownership stops at nested enhanced surfaces.")
+	if block.find("if _inside_authored_figma(node):") > block.find("_apply_button_size(node as Button)"):
+		push_error("Figma guard must run before live button resizing")
+		quit(1)
+		return
+
+	print("TOUCH_ENHANCER_FIGMA_HITBOX_GUARD_OK")
 	quit(0)
+
+func _read(path: String) -> String:
+	var file := FileAccess.open(path, FileAccess.READ)
+	return "" if file == null else file.get_as_text()
