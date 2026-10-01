@@ -1,12 +1,13 @@
 extends SceneTree
 
-# Keep the approved UNJAM artwork exact in Android packages. The square source
-# contains the full wordmark; the adaptive source is already cut out so Android
-# can place it over a matching background without a visible square edge.
+# Validate the exact approved UNJAM launcher sources before Android packaging.
+# The legacy layer keeps the full blue artwork + UNJAM wordmark. The adaptive
+# foreground keeps the same logo cut out over transparency so Android can place
+# it on the matching blue-purple background without a visible square boundary.
 
-const SOURCE := "res://store_assets/unjam_google_play_icon_512.png"
+const SOURCE := "res://store_assets/unjam_google_play_icon_512.jpg"
 const FOREGROUND_SOURCE := "res://store_assets/unjam_adaptive_foreground_432.png"
-const LEGACY_OUT := "res://assets/icon_user_512.png"
+const LEGACY_OUT := "res://assets/icon_user_512.jpg"
 const ADAPTIVE_OUT := "res://assets/icon_user_adaptive_432.png"
 
 func _initialize() -> void:
@@ -32,20 +33,9 @@ func _initialize() -> void:
 		push_error("UNJAM adaptive foreground must keep transparent corners")
 		quit(1)
 		return
-	if not _write_exact(legacy, LEGACY_OUT):
+	if not FileAccess.file_exists(LEGACY_OUT) or not FileAccess.file_exists(ADAPTIVE_OUT):
+		push_error("Packaged UNJAM launcher assets are missing")
 		quit(1)
 		return
-	if not _write_exact(foreground, ADAPTIVE_OUT):
-		quit(1)
-		return
-	print("ANDROID_BRAND_ASSETS_READY approved-logo exact legacy=512 adaptive=432 transparent")
+	print("ANDROID_BRAND_ASSETS_READY full-wordmark legacy=512 adaptive=432 transparent")
 	quit(0)
-
-func _write_exact(source: Image, output_path: String) -> bool:
-	var image := source.duplicate()
-	image.convert(Image.FORMAT_RGBA8)
-	var error: int = image.save_png(ProjectSettings.globalize_path(output_path))
-	if error != OK:
-		push_error("Could not save Android brand asset %s: %s" % [output_path, error])
-		return false
-	return true

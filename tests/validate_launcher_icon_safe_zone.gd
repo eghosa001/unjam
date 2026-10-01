@@ -13,7 +13,7 @@ func _initialize() -> void:
 	var release_workflow := _read("res://.github/workflows/android-release.yml")
 
 	for token in [
-		"launcher_icons/main_192x192=\"res://assets/icon_user_512.png\"",
+		"launcher_icons/main_192x192=\"res://assets/icon_user_512.jpg\"",
 		"launcher_icons/adaptive_foreground_432x432=\"res://assets/icon_user_adaptive_432.png\"",
 		"launcher_icons/adaptive_background_432x432=\"res://assets/icon_adaptive_background.svg\"",
 		"splash_screen/icon=\"res://assets/icon_user_adaptive_432.png\"",
@@ -24,7 +24,7 @@ func _initialize() -> void:
 			failures.append("Android launcher/startup contract missing: %s" % token)
 
 	for token in [
-		"config/icon=\"res://assets/icon_user_512.png\"",
+		"config/icon=\"res://assets/icon_user_512.jpg\"",
 		"boot_splash/show_image=false",
 		"boot_splash/image=\"res://assets/icon_user_adaptive_432.png\"",
 		"boot_splash/bg_color=%s" % SPLASH_BG,
@@ -57,10 +57,9 @@ func _initialize() -> void:
 			failures.append("Startup must not retain blocking launch UI/eager game preload: %s" % forbidden)
 
 	for token in [
-		'const SOURCE := "res://store_assets/unjam_google_play_icon_512.png"',
+		'const SOURCE := "res://store_assets/unjam_google_play_icon_512.jpg"',
 		'const FOREGROUND_SOURCE := "res://store_assets/unjam_adaptive_foreground_432.png"',
 		'const ADAPTIVE_OUT := "res://assets/icon_user_adaptive_432.png"',
-		"func _write_exact(source: Image, output_path: String) -> bool:",
 		"transparent corners",
 	]:
 		if not prep.contains(token):
@@ -72,7 +71,7 @@ func _initialize() -> void:
 		if not workflow.contains('test "$FOREGROUND_BYTES" -gt 1000') and not workflow.contains('test "$AAB_FOREGROUND_BYTES" -gt 1000'):
 			failures.append("Android build workflow does not reject a blank adaptive foreground")
 
-	_check_size("res://store_assets/unjam_google_play_icon_512.png", Vector2i(512, 512), "Canonical launcher artwork", failures)
+	_check_size("res://store_assets/unjam_google_play_icon_512.jpg", Vector2i(512, 512), "Canonical launcher artwork", failures)
 	_check_size("res://store_assets/unjam_adaptive_foreground_432.png", Vector2i(432, 432), "Canonical adaptive foreground", failures)
 	_check_transparent_corners("res://store_assets/unjam_adaptive_foreground_432.png", failures)
 	if not _read("res://assets/icon_adaptive_background.svg").contains("#0F62C8") or not _read("res://assets/icon_adaptive_background.svg").contains("#210C69"):

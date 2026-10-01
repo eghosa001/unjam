@@ -33,8 +33,8 @@ def main() -> int:
     preset_path = root / 'export_presets.cfg'
     project_path = root / 'project.godot'
     live_checker_path = root / 'tools' / 'check_live_monetization.py'
-    icon_path = root / 'assets' / 'icon_user_512.png'
-    canonical_icon_path = root / 'store_assets' / 'unjam_google_play_icon_512.png'
+    icon_path = root / 'assets' / 'icon_user_512.jpg'
+    canonical_icon_path = root / 'store_assets' / 'unjam_google_play_icon_512.jpg'
     adaptive_bg_path = root / 'assets' / 'icon_adaptive_background.svg'
     adaptive_fg_path = root / 'assets' / 'icon_user_adaptive_432.png'
     canonical_adaptive_fg_path = root / 'store_assets' / 'unjam_adaptive_foreground_432.png'
@@ -174,7 +174,7 @@ def main() -> int:
             errors.append(f'adaptive icon background is missing approved blend color: {token}')
     for token in (
         'FOREGROUND_SOURCE := "res://store_assets/unjam_adaptive_foreground_432.png"',
-        'func _write_exact(source: Image, output_path: String) -> bool:',
+        'UNJAM adaptive foreground must keep transparent corners',
         'transparent corners',
         'icon_user_adaptive_432.png',
     ):
@@ -184,7 +184,7 @@ def main() -> int:
         if retired in robust_main:
             errors.append(f'retired duplicate in-app launch overlay must not return: {retired}')
 
-    if 'config/icon="res://assets/icon_user_512.png"' not in project:
+    if 'config/icon="res://assets/icon_user_512.jpg"' not in project:
         errors.append('project launcher icon is not wired to the approved full UNJAM logo')
 
     for token in (
@@ -197,7 +197,7 @@ def main() -> int:
             errors.append(f'project startup handoff does not preserve the seamless approved-logo contract: {token}')
 
     for token in (
-        'launcher_icons/main_192x192="res://assets/icon_user_512.png"',
+        'launcher_icons/main_192x192="res://assets/icon_user_512.jpg"',
         'launcher_icons/adaptive_foreground_432x432="res://assets/icon_user_adaptive_432.png"',
         'launcher_icons/adaptive_background_432x432="res://assets/icon_adaptive_background.svg"',
         'splash_screen/icon="res://assets/icon_user_adaptive_432.png"',
