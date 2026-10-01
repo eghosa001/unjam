@@ -662,6 +662,17 @@ Deno.serve(async (req) => {
         );
       }
       purchase = lookup.purchase;
+      console.log("purchase snapshot", {
+        product_id: input.product_id,
+        source: lookup.detail,
+        state: purchase.state,
+        product_ids: purchase.productIds,
+        acknowledgement_state: purchase.acknowledgementState,
+        consumption_states: Array.isArray(purchase.lineItems)
+          ? purchase.lineItems.map((line: any) =>
+              String(line?.productOfferDetails?.consumptionState ?? ""))
+          : [],
+      });
     } catch {
       return response(
         bad("Google Play verification failed", input.product_id, input.claim_id),
@@ -670,13 +681,14 @@ Deno.serve(async (req) => {
     }
 
     if (purchase.state !== "PURCHASED") {
+      const stateReason = purchase.state === "PENDING"
+        ? "Google Play purchase is still PENDING"
+        : purchase.state === "CANCELLED"
+        ? "Google Play purchase is CANCELLED"
+        : `Google Play purchase state is ${purchase.state || "UNSPECIFIED"}`;
       return response(
-        bad(
-          "Google Play purchase is not in PURCHASED state",
-          input.product_id,
-          input.claim_id,
-        ),
-        400,
+        bad(stateReason, input.product_id, input.claim_id),
+        409,
       );
     }
     if (!purchase.productIds.includes(input.product_id)) {
