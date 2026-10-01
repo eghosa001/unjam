@@ -15,6 +15,9 @@ const STARTUP_MUSIC_RATE := 24000
 const SFX_POOL_SIZE := 8
 const MUSIC_DURATION := 24.0
 const STARTUP_MUSIC_DURATION := 1.2
+const MUSIC_VOLUME_DB := -13.0
+const MUSIC_HANDOFF_SILENCE_DB := -48.0
+const MUSIC_HANDOFF_FADE_SECONDS := 0.10
 # Keep the expensive full-loop synthesis below the early-frame budget. A tiny
 # primer plays immediately, so the full loop can be built without blocking UI.
 const MUSIC_SYNTH_CHUNK_FRAMES := 4096
@@ -45,7 +48,7 @@ func _ready() -> void:
 
 	music_player = AudioStreamPlayer.new()
 	music_player.name = "CalmAmbientMusic"
-	music_player.volume_db = -13.0
+	music_player.volume_db = MUSIC_VOLUME_DB
 	add_child(music_player)
 	last_music_enabled = bool(SaveManager.data.get("music", true))
 	if last_music_enabled:
@@ -104,8 +107,34 @@ func _ensure_music_stream() -> void:
 	if not is_inside_tree() or music_player == null or not is_instance_valid(music_player):
 		return
 	music_stream = built
+	await _handoff_to_music_stream()
+
+func _handoff_to_music_stream() -> void:
+	if music_player == null or music_stream == null:
+		return
+	last_music_enabled = bool(SaveManager.data.get("music", true))
+	if not last_music_enabled:
+		music_player.stop()
+		music_player.stream = music_stream
+		music_player.volume_db = MUSIC_VOLUME_DB
+		return
+	if music_player.playing:
+		var fade_out := create_tween()
+		fade_out.tween_property(music_player, "volume_db", MUSIC_HANDOFF_SILENCE_DB, MUSIC_HANDOFF_FADE_SECONDS)
+		await fade_out.finished
+		if music_player == null or not is_instance_valid(music_player):
+			return
+	if not bool(SaveManager.data.get("music", true)):
+		music_player.stop()
+		music_player.stream = music_stream
+		music_player.volume_db = MUSIC_VOLUME_DB
+		return
+	music_player.stop()
 	music_player.stream = music_stream
-	_sync_music()
+	music_player.volume_db = MUSIC_HANDOFF_SILENCE_DB
+	music_player.play()
+	var fade_in := create_tween()
+	fade_in.tween_property(music_player, "volume_db", MUSIC_VOLUME_DB, MUSIC_HANDOFF_FADE_SECONDS)
 
 func _sync_music() -> void:
 	last_music_enabled = bool(SaveManager.data.get("music", true))

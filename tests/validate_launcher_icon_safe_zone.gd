@@ -1,12 +1,13 @@
 extends SceneTree
 
-const SPLASH_BG := "Color(0.070588, 0.109804, 0.227451, 1)"
+const SPLASH_BG := "Color(0.031373, 0.078431, 0.14902, 1)"
 
 func _initialize() -> void:
 	var failures: Array[String] = []
 	var export_cfg := _read("res://export_presets.cfg")
 	var project_cfg := _read("res://project.godot")
 	var robust_main := _read("res://scripts/ui/robust_main.gd")
+	var main_ui := _read("res://scripts/ui/main.gd")
 	var prep := _read("res://tools/prepare_android_brand_assets.gd")
 	var debug_workflow := _read("res://.github/workflows/android-test-apk.yml")
 	var release_workflow := _read("res://.github/workflows/android-release.yml")
@@ -25,10 +26,15 @@ func _initialize() -> void:
 	for token in [
 		"config/icon=\"res://assets/icon_user_512.png\"",
 		"boot_splash/show_image=false",
+		"boot_splash/image=\"res://assets/icon_user_adaptive_432.png\"",
 		"boot_splash/bg_color=%s" % SPLASH_BG,
+		"environment/defaults/default_clear_color=%s" % SPLASH_BG,
 	]:
 		if not project_cfg.contains(token):
 			failures.append("Godot startup contract missing: %s" % token)
+
+	if not main_ui.contains('const WORLD_BASE := ["081426"'):
+		failures.append("Startup background must match the first Home world background")
 
 	for token in [
 		"func _prime_game_scene(path: String) -> void:",
