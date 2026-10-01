@@ -20,10 +20,10 @@ const MULTI_LEVEL_PAGE_SIZE := 100
 const RESCUE_GAME_SCENE_PATH := "res://scenes/Game.tscn"
 const WATER_GAME_SCENE_PATH := "res://scenes/WaterSort.tscn"
 const BLOCK_GAME_SCENE_PATH := "res://scenes/BlockPuzzle.tscn"
-const STARTUP_BRAND_HOLD_SECONDS := 1.20
-const STARTUP_BRAND_FADE_SECONDS := 0.30
+const STARTUP_BRAND_HOLD_SECONDS := 1.60
+const STARTUP_BRAND_FADE_SECONDS := 0.35
 const STARTUP_BRAND_BG := Color("#10276a")
-const STARTUP_BRAND_TEXTURE := "res://assets/icon_user_adaptive_432.png"
+const STARTUP_BRAND_TEXTURE: Texture2D = preload("res://store_assets/unjam_approved_logo_transparent.png")
 
 var _startup_brand_overlay: Control
 
@@ -54,20 +54,14 @@ func _show_startup_brand_hold() -> void:
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	overlay.add_child(background)
 
-	var center := CenterContainer.new()
-	center.name = "StartupBrandCenter"
-	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	overlay.add_child(center)
-
 	var logo := TextureRect.new()
 	logo.name = "StartupBrandLogo"
-	logo.texture = load(STARTUP_BRAND_TEXTURE) as Texture2D
-	logo.custom_minimum_size = Vector2(520, 520)
+	logo.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	logo.texture = STARTUP_BRAND_TEXTURE
 	logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	logo.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	center.add_child(logo)
+	overlay.add_child(logo)
 
 	var hold_timer := get_tree().create_timer(STARTUP_BRAND_HOLD_SECONDS, true, false, true)
 	hold_timer.timeout.connect(_fade_startup_brand_hold.bind(overlay))

@@ -1,14 +1,11 @@
 extends Node
 
-# UNJAM calm, melodic puzzle-audio palette (integrated QA verified)
-# ------------------------
-# The original feedback layer used isolated sine beeps. This revision keeps the
-# zero-asset/instant-load architecture, but synthesizes warm mallet/chime voices
-# with soft attacks, short harmonic tails and a spacious F-major ambient bed.
-# It is intentionally restrained: frequent puzzle actions are quieter than
-# rewards, error sounds avoid abrasive buzzes, and rapid taps can overlap
-# naturally through a small player pool.
+# UNJAM audio palette.
+# Background music is a human-composed CC0 puzzle track. UNJAM keeps synthesized
+# one-shot feedback for tactile interactions, but no longer synthesizes the
+# background score during startup.
 
+const HUMAN_MUSIC := preload("res://assets/audio/unjam_puzzle_theme.ogg")
 const SAMPLE_RATE := 32000
 const MUSIC_RATE := 24000
 const STARTUP_MUSIC_RATE := 24000
@@ -17,9 +14,11 @@ const MUSIC_DURATION := 24.0
 const STARTUP_MUSIC_DURATION := 3.6
 const SFX_VOLUME_DB := 1.0
 const SFX_GAIN_MULTIPLIER := 1.18
-const MUSIC_VOLUME_DB := -8.0
+const MUSIC_VOLUME_DB := -7.0
 const MUSIC_HANDOFF_SILENCE_DB := -48.0
 const MUSIC_HANDOFF_FADE_SECONDS := 0.75
+const MUSIC_FADE_IN_SECONDS := 0.90
+const MUSIC_PITCH_SCALE := 0.995
 # Keep the expensive full-loop synthesis below the early-frame budget. A tiny
 # primer plays immediately, so the full loop can be built without blocking UI.
 const MUSIC_SYNTH_CHUNK_FRAMES := 4096
@@ -28,7 +27,7 @@ var player: AudioStreamPlayer
 var sfx_players: Array[AudioStreamPlayer] = []
 var music_player: AudioStreamPlayer
 var music_intro_player: AudioStreamPlayer
-var music_stream: AudioStreamWAV
+var music_stream: AudioStream
 var _startup_music_stream: AudioStreamWAV
 var last_music_enabled := false
 var _sfx_cursor := 0
@@ -49,15 +48,18 @@ func _ready() -> void:
 		sfx_players.append(sfx)
 	player = sfx_players[0]
 
-	music_intro_player = AudioStreamPlayer.new()
-	music_intro_player.name = "CalmAmbientIntro"
-	music_intro_player.volume_db = MUSIC_HANDOFF_SILENCE_DB
-	add_child(music_intro_player)
-
 	music_player = AudioStreamPlayer.new()
-	music_player.name = "CalmAmbientMusic"
+	music_player.name = "HumanPuzzleMusic"
 	music_player.volume_db = MUSIC_HANDOFF_SILENCE_DB
+	music_player.pitch_scale = MUSIC_PITCH_SCALE
 	add_child(music_player)
+
+	music_stream = HUMAN_MUSIC.duplicate()
+	var ogg := music_stream as AudioStreamOggVorbis
+	if ogg != null:
+		ogg.loop = true
+	music_player.stream = music_stream
+
 	last_music_enabled = bool(SaveManager.data.get("music", true))
 	if last_music_enabled:
 		_start_music_immediately()
@@ -75,12 +77,6 @@ func shutdown_audio() -> void:
 	sfx_players.clear()
 	player = null
 
-	if music_intro_player != null and is_instance_valid(music_intro_player):
-		music_intro_player.stop()
-		music_intro_player.stream = null
-		music_intro_player.free()
-	music_intro_player = null
-
 	if music_player != null and is_instance_valid(music_player):
 		music_player.stop()
 		music_player.stream = null
@@ -92,102 +88,32 @@ func shutdown_audio() -> void:
 
 func apply_settings() -> void:
 	last_music_enabled = bool(SaveManager.data.get("music", true))
-	if last_music_enabled and music_stream == null:
-		_start_music_immediately()
-		return
 	_sync_music()
 
 func _start_music_immediately() -> void:
-	if music_player == null:
-		return
-	if music_stream != null:
-		music_player.stream = music_stream
-		music_player.volume_db = MUSIC_HANDOFF_SILENCE_DB
-		if not music_player.playing:
-			music_player.play()
-		var main_fade := create_tween()
-		main_fade.set_trans(Tween.TRANS_SINE)
-		main_fade.set_ease(Tween.EASE_OUT)
-		main_fade.tween_property(music_player, "volume_db", MUSIC_VOLUME_DB, 0.55)
-		return
-
-	if music_intro_player != null:
-		if _startup_music_stream == null:
-			_startup_music_stream = _build_startup_ambient()
-		music_intro_player.stream = _startup_music_stream
-		music_intro_player.volume_db = MUSIC_HANDOFF_SILENCE_DB
-		if not music_intro_player.playing:
-			music_intro_player.play()
-			var intro_fade := create_tween()
-			intro_fade.set_trans(Tween.TRANS_SINE)
-			intro_fade.set_ease(Tween.EASE_OUT)
-			intro_fade.tween_property(music_intro_player, "volume_db", MUSIC_VOLUME_DB, 0.60)
-	if music_stream == null:
-		call_deferred("_ensure_music_stream")
-
-func _ensure_music_stream() -> void:
-	if _music_building or music_stream != null or music_player == null:
-		return
-	_music_building = true
-	var built: AudioStreamWAV = await _build_calm_ambient_loop()
-	_music_building = false
-	if not is_inside_tree() or music_player == null or not is_instance_valid(music_player):
-		return
-	music_stream = built
-	await _handoff_to_music_stream()
-
-func _handoff_to_music_stream() -> void:
 	if music_player == null or music_stream == null:
 		return
-	last_music_enabled = bool(SaveManager.data.get("music", true))
-	if not last_music_enabled:
-		if music_intro_player != null:
-			music_intro_player.stop()
-		music_player.stop()
-		music_player.stream = music_stream
+	music_player.stream = music_stream
+	music_player.pitch_scale = MUSIC_PITCH_SCALE
+	if music_player.playing:
 		music_player.volume_db = MUSIC_VOLUME_DB
 		return
-
-	music_player.stop()
-	music_player.stream = music_stream
 	music_player.volume_db = MUSIC_HANDOFF_SILENCE_DB
 	music_player.play()
-
-	var crossfade := create_tween()
-	crossfade.set_parallel(true)
-	crossfade.set_trans(Tween.TRANS_SINE)
-	crossfade.set_ease(Tween.EASE_IN_OUT)
-	crossfade.tween_property(music_player, "volume_db", MUSIC_VOLUME_DB, MUSIC_HANDOFF_FADE_SECONDS)
-	if music_intro_player != null and music_intro_player.playing:
-		crossfade.tween_property(music_intro_player, "volume_db", MUSIC_HANDOFF_SILENCE_DB, MUSIC_HANDOFF_FADE_SECONDS)
-	await crossfade.finished
-
-	if music_intro_player != null and is_instance_valid(music_intro_player):
-		music_intro_player.stop()
-		music_intro_player.volume_db = MUSIC_HANDOFF_SILENCE_DB
-	if not bool(SaveManager.data.get("music", true)):
-		music_player.stop()
+	var fade := create_tween()
+	fade.set_trans(Tween.TRANS_SINE)
+	fade.set_ease(Tween.EASE_OUT)
+	fade.tween_property(music_player, "volume_db", MUSIC_VOLUME_DB, MUSIC_FADE_IN_SECONDS)
 
 func _sync_music() -> void:
 	last_music_enabled = bool(SaveManager.data.get("music", true))
 	if music_player == null:
 		return
 	if last_music_enabled:
-		if music_stream != null:
-			if music_intro_player != null:
-				music_intro_player.stop()
-				music_intro_player.volume_db = MUSIC_HANDOFF_SILENCE_DB
-			music_player.stream = music_stream
-			music_player.volume_db = MUSIC_VOLUME_DB
-			if not music_player.playing:
-				music_player.play()
-		else:
-			_start_music_immediately()
+		_start_music_immediately()
 	else:
-		if music_intro_player != null:
-			music_intro_player.stop()
-			music_intro_player.volume_db = MUSIC_HANDOFF_SILENCE_DB
 		music_player.stop()
+		music_player.volume_db = MUSIC_HANDOFF_SILENCE_DB
 
 # ---------------------------------------------------------------------------
 # Semantic feedback API

@@ -47,12 +47,14 @@ func _initialize() -> void:
 			failures.append("Deferred game-scene priming contract missing: %s" % token)
 
 	for token in [
-		"const STARTUP_BRAND_HOLD_SECONDS := 1.20",
-		"const STARTUP_BRAND_FADE_SECONDS := 0.30",
+		"const STARTUP_BRAND_HOLD_SECONDS := 1.60",
+		"const STARTUP_BRAND_FADE_SECONDS := 0.35",
 		'const STARTUP_BRAND_BG := Color("#10276a")',
-		'const STARTUP_BRAND_TEXTURE := "res://assets/icon_user_adaptive_432.png"',
+		'const STARTUP_BRAND_TEXTURE: Texture2D = preload("res://store_assets/unjam_approved_logo_transparent.png")',
 		"func _show_startup_brand_hold() -> void:",
 		"func _fade_startup_brand_hold(overlay: Control) -> void:",
+		"logo.texture = STARTUP_BRAND_TEXTURE",
+		"logo.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)",
 		'overlay.name = "StartupBrandHold"',
 	]:
 		if not robust_main.contains(token):

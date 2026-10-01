@@ -4,5 +4,6 @@ Author: MintoDog
 Source: https://opengameart.org/content/cozy-puzzle-in-game-2
 License: CC0 / public-domain dedication
 Original file: cozy_puzzle_in-game_2_bpm90_0.ogg
-UNJAM modification: subtle high/low filtering, -1.2 dB upper-mid EQ, and -0.72 dB gain.
-Attribution is not required by CC0, but source information is retained for provenance.
+Packaged audio: original CC0 OGG to preserve the authored seamless loop.
+UNJAM playback customization: 0.995 pitch/tempo scale, app-specific volume balance, and a 0.90-second startup fade.
+Attribution is not required by CC0; source information is retained for provenance.
