@@ -37,7 +37,10 @@ def main() -> int:
     canonical_icon_path = root / 'store_assets' / 'unjam_google_play_icon_512.png'
     adaptive_bg_path = root / 'assets' / 'icon_adaptive_background.svg'
     adaptive_fg_path = root / 'assets' / 'icon_launcher_adaptive_432.png'
-    splash_fg_path = root / 'assets' / 'icon_user_adaptive_432.png'
+    splash_fg_path = root / 'assets' / 'splash_emblem_safe_432.png'
+    startup_logo_path = root / 'assets' / 'unjam_startup_logo.png'
+    boot_scene_path = root / 'scenes' / 'Boot.tscn'
+    boot_script_path = root / 'scripts' / 'ui' / 'boot_splash.gd'
     brand_prep_path = root / 'tools' / 'prepare_android_brand_assets.gd'
     robust_main_path = root / 'scripts' / 'ui' / 'robust_main.gd'
     feedback_path = root / 'scripts' / 'systems' / 'feedback_manager.gd'
@@ -51,6 +54,8 @@ def main() -> int:
     adaptive_bg = adaptive_bg_path.read_text(encoding='utf-8')
     brand_prep = brand_prep_path.read_text(encoding='utf-8')
     robust_main = robust_main_path.read_text(encoding='utf-8')
+    boot_scene = boot_scene_path.read_text(encoding='utf-8')
+    boot_script = boot_script_path.read_text(encoding='utf-8')
     feedback = feedback_path.read_text(encoding='utf-8')
     selected_music_license = selected_music_license_path.read_text(encoding='utf-8') if selected_music_license_path.exists() else ''
 
@@ -173,7 +178,9 @@ def main() -> int:
     if 'viewBox="0 0 432 432"' not in adaptive_bg:
         errors.append('adaptive icon background must remain a 432x432 Android layer')
     if not splash_fg_path.exists():
-        errors.append('approved 432x432 splash foreground is missing')
+        errors.append('safe 432x432 Android system-splash emblem is missing')
+    if not startup_logo_path.exists():
+        errors.append('exported full startup logo is missing')
     for token in ('#173BFF', '#0B66DB', '#24106F'):
         if token not in adaptive_bg:
             errors.append(f'adaptive launcher background is missing former blend color: {token}')
@@ -181,28 +188,33 @@ def main() -> int:
         'SOURCE := "res://store_assets/unjam_google_play_icon_512.png"',
         'ADAPTIVE_OUT := "res://assets/icon_launcher_adaptive_432.png"',
         'SPLASH_SOURCE := "res://store_assets/unjam_approved_logo_transparent.png"',
-        'SPLASH_OUT := "res://assets/icon_user_adaptive_432.png"',
+        'SYSTEM_SPLASH_OUT := "res://assets/splash_emblem_safe_432.png"',
         'LEGACY_CONTENT := 512',
         'ADAPTIVE_CONTENT := 392',
+        'SYSTEM_SPLASH_CONTENT := 280',
         'SPLASH_SIZE := 432',
         'Image.INTERPOLATE_LANCZOS',
     ):
         if token not in brand_prep:
             errors.append(f'Former Android launcher preparation missing token: {token}')
     for token in (
-        'STARTUP_BRAND_HOLD_SECONDS := 1.35',
-        'STARTUP_BRAND_FADE_SECONDS := 0.30',
-        'STARTUP_BRAND_BG := Color("#10276a")',
-        'STARTUP_BRAND_TEXTURE: Texture2D = preload("res://store_assets/unjam_approved_logo_transparent.png")',
-        'func _show_startup_brand_hold() -> void:',
-        'overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE',
-        'logo.custom_minimum_size = Vector2(420, 420)',
+        'HOLD_SECONDS := 1.55',
+        'FADE_SECONDS := 0.25',
+        'MAIN_SCENE := "res://scenes/Main.tscn"',
+        'get_tree().change_scene_to_file(MAIN_SCENE)',
     ):
-        if token not in robust_main:
-            errors.append(f'startup brand hold missing token: {token}')
-    for retired in ('BrandedLaunch', 'CanvasLayer.new()', 'title.text = "UNJAM"', 'subtitle.text = "PUZZLE COLLECTION"'):
+        if token not in boot_script:
+            errors.append(f'standalone Boot behavior missing token: {token}')
+    for token in (
+        'path="res://assets/unjam_startup_logo.png"',
+        'custom_minimum_size = Vector2(560, 560)',
+    ):
+        if token not in boot_scene:
+            errors.append(f'standalone Boot scene missing token: {token}')
+
+    for retired in ('BrandedLaunch', 'StartupBrandHold', '_show_startup_brand_hold', '_fade_startup_brand_hold', 'STARTUP_BRAND_TEXTURE'):
         if retired in robust_main:
-            errors.append(f'retired blocking/duplicate launch overlay must not return: {retired}')
+            errors.append(f'interactive Main must not own startup overlay: {retired}')
 
     if not selected_music_path.exists() or selected_music_path.stat().st_size < 100_000:
         errors.append('selected Happy Lullaby music asset is missing or unexpectedly small')
@@ -218,12 +230,14 @@ def main() -> int:
         if token not in selected_music_license:
             errors.append(f'selected music provenance missing token: {token}')
 
+    if 'run/main_scene="res://scenes/Boot.tscn"' not in project:
+        errors.append('project must boot through the standalone splash scene')
     if 'config/icon="res://assets/icon_user_512.png"' not in project:
         errors.append('project launcher icon is not wired to the approved full UNJAM logo')
 
     for token in (
         'boot_splash/show_image=false',
-        'boot_splash/image="res://assets/icon_launcher_adaptive_432.png"',
+        'boot_splash/image="res://assets/splash_emblem_safe_432.png"',
         'boot_splash/bg_color=Color(0.062745, 0.152941, 0.415686, 1)',
         'environment/defaults/default_clear_color=Color(0.062745, 0.152941, 0.415686, 1)',
     ):
@@ -234,7 +248,7 @@ def main() -> int:
         'launcher_icons/main_192x192="res://assets/icon_user_512.png"',
         'launcher_icons/adaptive_foreground_432x432="res://assets/icon_launcher_adaptive_432.png"',
         'launcher_icons/adaptive_background_432x432="res://assets/icon_adaptive_background.svg"',
-        'splash_screen/icon="res://assets/icon_launcher_adaptive_432.png"',
+        'splash_screen/icon="res://assets/splash_emblem_safe_432.png"',
         'splash_screen/background_color=Color(0.062745, 0.152941, 0.415686, 1)',
         'splash_screen/disable_godot_boot_splash=true',
     ):
