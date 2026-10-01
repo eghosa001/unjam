@@ -98,6 +98,9 @@ func _sanitize() -> void:
 	data.purchase_coin_debt = max(0, int(data.get("purchase_coin_debt", 0)))
 	var install_id := String(data.get("purchase_install_id", "")).strip_edges()
 	data.purchase_install_id = install_id if install_id.length() <= 128 else ""
+	var cloud_id := String(data.get("cloud_save_id", "")).strip_edges().to_lower()
+	data.cloud_save_id = cloud_id if cloud_id.length() == 64 and _looks_like_sha256(cloud_id) else ""
+	data.cloud_save_revision = max(0, int(data.get("cloud_save_revision", 0)))
 	data.garden_last_gift_date = String(data.get("garden_last_gift_date", ""))
 	data.garden_gifts_claimed = max(0, int(data.get("garden_gifts_claimed", 0)))
 	var consent := String(data.get("privacy_consent_status", "unknown"))
@@ -255,12 +258,14 @@ func save() -> void:
 	var rename_error := DirAccess.rename_absolute(absolute_temp, absolute_main)
 	if rename_error == OK:
 		_last_saved_payload = payload
+		save_committed.emit()
 		return
 	var fallback := FileAccess.open(ROBUST_SAVE_PATH, FileAccess.WRITE)
 	if fallback != null:
 		fallback.store_string(payload)
 		fallback.flush()
 		_last_saved_payload = payload
+		save_committed.emit()
 
 func complete_level(level_number: int, stars: int, rescue_id: String, coin_reward: int = 25) -> Dictionary:
 	level_number = clampi(level_number, 1, 10000)
