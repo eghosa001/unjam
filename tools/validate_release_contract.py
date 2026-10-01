@@ -205,11 +205,11 @@ def main() -> int:
     if not music_path.exists() or music_path.stat().st_size < 1_000_000:
         errors.append('human-composed CC0 puzzle music asset is missing or unexpectedly small')
     for token in (
-        'HUMAN_MUSIC := preload("res://assets/audio/unjam_puzzle_theme.ogg")',
+        'HUMAN_MUSIC_PATH := "res://assets/audio/unjam_puzzle_theme.ogg"',
         'MUSIC_VOLUME_DB := -7.0',
         'MUSIC_FADE_IN_SECONDS := 0.90',
         'MUSIC_PITCH_SCALE := 0.995',
-        'music_stream = HUMAN_MUSIC.duplicate()',
+        'music_stream = load(HUMAN_MUSIC_PATH) as AudioStream',
         'ogg.loop = true',
         'music_player.pitch_scale = MUSIC_PITCH_SCALE',
     ):

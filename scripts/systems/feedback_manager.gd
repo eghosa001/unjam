@@ -5,7 +5,7 @@ extends Node
 # one-shot feedback for tactile interactions, but no longer synthesizes the
 # background score during startup.
 
-const HUMAN_MUSIC := preload("res://assets/audio/unjam_puzzle_theme.ogg")
+const HUMAN_MUSIC_PATH := "res://assets/audio/unjam_puzzle_theme.ogg"
 const SAMPLE_RATE := 32000
 const MUSIC_RATE := 24000
 const STARTUP_MUSIC_RATE := 24000
@@ -54,7 +54,7 @@ func _ready() -> void:
 	music_player.pitch_scale = MUSIC_PITCH_SCALE
 	add_child(music_player)
 
-	music_stream = HUMAN_MUSIC.duplicate()
+	music_stream = load(HUMAN_MUSIC_PATH) as AudioStream
 	var ogg := music_stream as AudioStreamOggVorbis
 	if ogg != null:
 		ogg.loop = true

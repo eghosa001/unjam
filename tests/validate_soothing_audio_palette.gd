@@ -8,14 +8,14 @@ func _initialize() -> void:
 	var failures: Array[String] = []
 	var source := _read(FEEDBACK_PATH)
 	for token in [
-		'const HUMAN_MUSIC := preload("res://assets/audio/unjam_puzzle_theme.ogg")',
+		'const HUMAN_MUSIC_PATH := "res://assets/audio/unjam_puzzle_theme.ogg"',
 		"const SFX_POOL_SIZE := 8",
 		"const SFX_VOLUME_DB := 1.0",
 		"const SFX_GAIN_MULTIPLIER := 1.18",
 		"const MUSIC_VOLUME_DB := -7.0",
 		"const MUSIC_FADE_IN_SECONDS := 0.90",
 		"const MUSIC_PITCH_SCALE := 0.995",
-		"music_stream = HUMAN_MUSIC.duplicate()",
+		"music_stream = load(HUMAN_MUSIC_PATH) as AudioStream",
 		"var ogg := music_stream as AudioStreamOggVorbis",
 		"ogg.loop = true",
 		"music_player.pitch_scale = MUSIC_PITCH_SCALE",
