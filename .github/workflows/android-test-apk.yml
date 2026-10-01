@@ -153,4 +153,4 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-# manual-apk-build-marker 2026-10-01 exact-approved-logo-louder-audio
+# manual-apk-build-marker 2026-10-01 exact-approved-logo-louder-audio-r2
