@@ -33,11 +33,10 @@ def main() -> int:
     preset_path = root / 'export_presets.cfg'
     project_path = root / 'project.godot'
     live_checker_path = root / 'tools' / 'check_live_monetization.py'
-    icon_path = root / 'assets' / 'icon_user_512.jpg'
-    canonical_icon_path = root / 'store_assets' / 'unjam_google_play_icon_512.jpg'
+    icon_path = root / 'assets' / 'icon_user_512.png'
+    canonical_icon_path = root / 'store_assets' / 'unjam_google_play_icon_512.png'
     adaptive_bg_path = root / 'assets' / 'icon_adaptive_background.svg'
     adaptive_fg_path = root / 'assets' / 'icon_user_adaptive_432.png'
-    canonical_adaptive_fg_path = root / 'store_assets' / 'unjam_adaptive_foreground_432.png'
     brand_prep_path = root / 'tools' / 'prepare_android_brand_assets.gd'
     robust_main_path = root / 'scripts' / 'ui' / 'robust_main.gd'
 
@@ -161,10 +160,8 @@ def main() -> int:
         errors.append('approved 512x512 full UNJAM launcher artwork is missing')
     elif icon_path.read_bytes() != canonical_icon_path.read_bytes():
         errors.append('packaged launcher source must exactly match the approved full UNJAM artwork')
-    if not adaptive_fg_path.exists() or not canonical_adaptive_fg_path.exists():
-        errors.append('approved 432x432 transparent UNJAM adaptive foreground is missing')
-    elif adaptive_fg_path.read_bytes() != canonical_adaptive_fg_path.read_bytes():
-        errors.append('packaged adaptive foreground must exactly match the approved transparent artwork')
+    if not adaptive_fg_path.exists():
+        errors.append('generated 432x432 UNJAM adaptive foreground placeholder is missing')
     if not brand_prep_path.exists():
         errors.append('Android brand raster preparation script is missing')
     if 'viewBox="0 0 432 432"' not in adaptive_bg:
@@ -173,9 +170,10 @@ def main() -> int:
         if token not in adaptive_bg:
             errors.append(f'adaptive icon background is missing approved blend color: {token}')
     for token in (
-        'FOREGROUND_SOURCE := "res://store_assets/unjam_adaptive_foreground_432.png"',
+        'SOURCE := "res://store_assets/unjam_google_play_icon_512.png"',
+        'func _cut_out_connected_background(source: Image) -> Image:',
         'UNJAM adaptive foreground must keep transparent corners',
-        'transparent corners',
+        'no-demarcation',
         'icon_user_adaptive_432.png',
     ):
         if token not in brand_prep:
@@ -184,7 +182,7 @@ def main() -> int:
         if retired in robust_main:
             errors.append(f'retired duplicate in-app launch overlay must not return: {retired}')
 
-    if 'config/icon="res://assets/icon_user_512.jpg"' not in project:
+    if 'config/icon="res://assets/icon_user_512.png"' not in project:
         errors.append('project launcher icon is not wired to the approved full UNJAM logo')
 
     for token in (
@@ -197,7 +195,7 @@ def main() -> int:
             errors.append(f'project startup handoff does not preserve the seamless approved-logo contract: {token}')
 
     for token in (
-        'launcher_icons/main_192x192="res://assets/icon_user_512.jpg"',
+        'launcher_icons/main_192x192="res://assets/icon_user_512.png"',
         'launcher_icons/adaptive_foreground_432x432="res://assets/icon_user_adaptive_432.png"',
         'launcher_icons/adaptive_background_432x432="res://assets/icon_adaptive_background.svg"',
         'splash_screen/icon="res://assets/icon_user_adaptive_432.png"',
