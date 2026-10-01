@@ -4,8 +4,8 @@ root = Path(__file__).resolve().parents[1]
 checks = {
     'scripts/core/save_manager.gd': ['purchase_claim_ids'],
     'scripts/core/robust_save_manager.gd': ['_sanitize_purchase_claim_ids', 'purchase_claim_ids'],
-    'scripts/systems/purchase_verifier.gd': ['claim_id', '"grant"', '"entitlement"', 'func commit(', 'supabase_publishable_key', 'sync_revocations', 'purchase_install_id'],
-    'scripts/systems/store_manager.gd': ['_claim_id_for_token', 'purchase_claim_ids', 'claim_state', '_on_claim_committed', '_apply_verified_revocation', '_revoke_missing_non_consumables'],
+    'scripts/systems/purchase_verifier.gd': ['claim_id', '"grant"', '"entitlement"', 'func commit(', 'func commit_detailed(', 'supabase_publishable_key', 'sync_revocations', 'purchase_install_id'],
+    'scripts/systems/store_manager.gd': ['_claim_id_for_token', 'purchase_claim_ids', 'claim_state', '_handle_commit_result', '_apply_play_owned_non_consumables', '_apply_verified_revocation', '_revoke_missing_non_consumables'],
     'supabase/migrations/20260922_create_purchase_ledger.sql': [
         'play_purchase_claims', 'issue_play_purchase_claim', 'commit_play_purchase_claim',
         "state in ('issued', 'committed')",
@@ -18,7 +18,7 @@ checks = {
     'supabase/functions/unjam-purchase/index.ts': [
         'GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL', 'GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY',
         'issue_play_purchase_claim', 'commit_play_purchase_claim', 'SUPABASE_PUBLISHABLE_KEYS',
-        'purchases/voidedpurchases', 'consume_play_request_slot', 'finalizePurchase',
+        'purchases/voidedpurchases', 'consume_play_request_slot', 'finalizePurchase', 'clearCancelledConsumable',
     ],
     'supabase/config.toml': ['[functions.unjam-purchase]', 'verify_jwt = false'],
 }
