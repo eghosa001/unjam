@@ -47,14 +47,14 @@ func _initialize() -> void:
 			failures.append("Deferred game-scene priming contract missing: %s" % token)
 
 	for token in [
-		"const STARTUP_BRAND_HOLD_SECONDS := 1.60",
-		"const STARTUP_BRAND_FADE_SECONDS := 0.35",
+		"const STARTUP_BRAND_HOLD_SECONDS := 1.35",
+		"const STARTUP_BRAND_FADE_SECONDS := 0.30",
 		'const STARTUP_BRAND_BG := Color("#10276a")',
 		'const STARTUP_BRAND_TEXTURE: Texture2D = preload("res://store_assets/unjam_approved_logo_transparent.png")',
 		"func _show_startup_brand_hold() -> void:",
 		"func _fade_startup_brand_hold(overlay: Control) -> void:",
 		"logo.texture = STARTUP_BRAND_TEXTURE",
-		"logo.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)",
+		"overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE",
 		'overlay.name = "StartupBrandHold"',
 	]:
 		if not robust_main.contains(token):
@@ -77,8 +77,8 @@ func _initialize() -> void:
 		'const ADAPTIVE_OUT := "res://assets/icon_launcher_adaptive_432.png"',
 		'const SPLASH_SOURCE := "res://store_assets/unjam_approved_logo_transparent.png"',
 		'const SPLASH_OUT := "res://assets/icon_user_adaptive_432.png"',
-		"const LEGACY_CONTENT := 384",
-		"const ADAPTIVE_CONTENT := 288",
+		"const LEGACY_CONTENT := 512",
+		"const ADAPTIVE_CONTENT := 392",
 		"const SPLASH_SIZE := 432",
 		"Image.INTERPOLATE_LANCZOS",
 	]:

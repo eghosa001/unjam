@@ -9,6 +9,7 @@ on:
       - "project.godot"
       - "export_presets.cfg"
       - "scripts/systems/feedback_manager.gd"
+      - "scripts/ui/robust_main.gd"
       - "scripts/systems/android_monetization_bridge.gd"
       - "scripts/systems/store_manager.gd"
       - "addons/unjam_admob_provider.gd"
