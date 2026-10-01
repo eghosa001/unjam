@@ -52,8 +52,8 @@ func _initialize() -> void:
 func _cut_out_connected_background(source: Image) -> Image:
 	var image := source.duplicate()
 	image.convert(Image.FORMAT_RGBA8)
-	var width := image.get_width()
-	var height := image.get_height()
+	var width: int = image.get_width()
+	var height: int = image.get_height()
 	var visited := PackedByteArray()
 	visited.resize(width * height)
 	var queue: Array[Vector2i] = []
@@ -68,11 +68,11 @@ func _cut_out_connected_background(source: Image) -> Image:
 	while cursor < queue.size():
 		var point := queue[cursor]
 		cursor += 1
-		var index := point.y * width + point.x
+		var index: int = point.y * width + point.x
 		if visited[index] != 0:
 			continue
 		visited[index] = 1
-		var color := image.get_pixelv(point)
+		var color: Color = image.get_pixelv(point)
 		if not _looks_like_outer_blue(color):
 			continue
 		color.a = 0.0
