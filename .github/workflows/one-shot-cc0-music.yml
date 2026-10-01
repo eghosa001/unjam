@@ -7,7 +7,7 @@ on:
       - ".github/workflows/one-shot-cc0-music.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   fetch:
@@ -41,8 +41,16 @@ jobs:
           UNJAM modification: subtle high/low filtering, -1.2 dB upper-mid EQ, and -0.72 dB gain.
           Attribution is not required by CC0, but source information is retained for provenance.
           EOF
-      - uses: actions/upload-artifact@v4
-        with:
-          name: unjam-cc0-puzzle-theme
-          path: build/cc0-music/
-          retention-days: 2
+      - name: Commit selected CC0 theme to import branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p assets/audio
+          cp build/cc0-music/original.ogg assets/audio/unjam_puzzle_theme.ogg
+          cp build/cc0-music/LICENSE.txt assets/audio/UNJAM_PUZZLE_THEME_LICENSE.txt
+          git config user.name "UNJAM Asset Import"
+          git config user.email "actions@users.noreply.github.com"
+          git checkout -B import/cc0-puzzle-theme
+          git add assets/audio/unjam_puzzle_theme.ogg assets/audio/UNJAM_PUZZLE_THEME_LICENSE.txt
+          git commit -m "Add CC0 human-composed puzzle theme"
+          git push --force origin HEAD:refs/heads/import/cc0-puzzle-theme
