@@ -45,6 +45,7 @@ func _initialize() -> void:
 	]:
 		if not robust_main.contains(token):
 			failures.append("Deferred game-scene priming contract missing: %s" % token)
+
 	for forbidden in [
 		"BrandedLaunch",
 		"CanvasLayer.new()",
@@ -57,25 +58,31 @@ func _initialize() -> void:
 			failures.append("Startup must not retain blocking launch UI/eager game preload: %s" % forbidden)
 
 	for token in [
-		'const SOURCE := "res://store_assets/unjam_google_play_icon_512.png"',
+		'const FULL_SOURCE := "res://store_assets/unjam_approved_logo_source.png"',
+		'const TRANSPARENT_SOURCE := "res://store_assets/unjam_approved_logo_transparent.png"',
 		'const LEGACY_OUT := "res://assets/icon_user_512.png"',
 		'const ADAPTIVE_OUT := "res://assets/icon_user_adaptive_432.png"',
-		"const SAFE_FILL := 0.88",
-		"func _cut_out_connected_background(source: Image) -> Image:",
-		"foreground.save_png(ADAPTIVE_OUT)",
-		"transparent corners",
+		"Image.INTERPOLATE_LANCZOS",
+		"Approved transparent UNJAM logo must keep transparent corners",
 	]:
 		if not prep.contains(token):
-			failures.append("Android raster preparation contract missing: %s" % token)
+			failures.append("Approved Android branding pipeline missing: %s" % token)
 
 	for workflow in [debug_workflow, release_workflow]:
 		if not workflow.contains("prepare_android_brand_assets.gd"):
-			failures.append("Android build workflow does not generate padded raster branding")
+			failures.append("Android build workflow does not prepare approved branding")
 		if not workflow.contains('test "$FOREGROUND_BYTES" -gt 1000') and not workflow.contains('test "$AAB_FOREGROUND_BYTES" -gt 1000'):
 			failures.append("Android build workflow does not reject a blank adaptive foreground")
 
-	_check_size("res://store_assets/unjam_google_play_icon_512.png", Vector2i(512, 512), "Canonical launcher artwork", failures)
-	if not _read("res://assets/icon_adaptive_background.svg").contains("#0F62C8") or not _read("res://assets/icon_adaptive_background.svg").contains("#210C69"):
+	_check_size("res://store_assets/unjam_approved_logo_source.png", Vector2i(320, 320), "Approved full-logo source", failures)
+	_check_size("res://store_assets/unjam_approved_logo_transparent.png", Vector2i(320, 320), "Approved transparent-logo source", failures)
+	_check_size("res://assets/icon_user_512.png", Vector2i(512, 512), "Generated launcher icon", failures)
+	_check_size("res://assets/icon_user_adaptive_432.png", Vector2i(432, 432), "Generated adaptive/splash logo", failures)
+	_check_transparent_corners("res://store_assets/unjam_approved_logo_transparent.png", failures)
+	_check_transparent_corners("res://assets/icon_user_adaptive_432.png", failures)
+
+	var adaptive_bg := _read("res://assets/icon_adaptive_background.svg")
+	if not adaptive_bg.contains("#0F62C8") or not adaptive_bg.contains("#210C69"):
 		failures.append("Adaptive background no longer matches the approved UNJAM blue gradient")
 
 	if not failures.is_empty():
@@ -91,16 +98,18 @@ func _check_size(path: String, expected: Vector2i, label: String, failures: Arra
 	if image == null or image.is_empty():
 		failures.append("%s failed to load" % label)
 		return
-	if Vector2i(image.get_width(), image.get_height()) != expected:
+	if image.get_size() != expected:
 		failures.append("%s must be %dx%d" % [label, expected.x, expected.y])
 
 func _check_transparent_corners(path: String, failures: Array[String]) -> void:
 	var image := Image.load_from_file(path)
 	if image == null or image.is_empty():
 		return
-	for point in [Vector2i(0, 0), Vector2i(image.get_width() - 1, 0), Vector2i(0, image.get_height() - 1), Vector2i(image.get_width() - 1, image.get_height() - 1)]:
-		if image.get_pixelv(point).a > 0.02:
-			failures.append("Adaptive foreground must not carry a visible square background")
+	image.convert(Image.FORMAT_RGBA8)
+	var last := image.get_size() - Vector2i.ONE
+	for point in [Vector2i.ZERO, Vector2i(last.x, 0), Vector2i(0, last.y), last]:
+		if image.get_pixelv(point).a > 0.08:
+			failures.append("%s must keep transparent corners so no square demarcation appears" % path)
 			return
 
 func _read(path: String) -> String:
