@@ -11,9 +11,9 @@ const LEGACY_OUT := "res://assets/icon_user_512.png"
 const ADAPTIVE_OUT := "res://assets/icon_launcher_adaptive_432.png"
 const SPLASH_OUT := "res://assets/icon_user_adaptive_432.png"
 const LEGACY_CANVAS := 512
-const LEGACY_CONTENT := 384
+const LEGACY_CONTENT := 512
 const ADAPTIVE_CANVAS := 432
-const ADAPTIVE_CONTENT := 288
+const ADAPTIVE_CONTENT := 392
 const SPLASH_SIZE := 432
 
 func _initialize() -> void:
