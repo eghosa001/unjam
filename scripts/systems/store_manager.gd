@@ -448,11 +448,38 @@ func _on_owned_purchase_snapshot(result: Dictionary) -> void:
 			var product_id := String(product_value)
 			if PRODUCTS.has(product_id) and is_non_consumable(product_id) and product_id not in owned_non_consumables:
 				owned_non_consumables.append(product_id)
+	_apply_play_owned_non_consumables(owned_non_consumables)
 	_on_reconcile_result(purchases)
 	# Do not revoke a permanent purchase because one client ownership snapshot is
 	# incomplete. Refunds/chargebacks are revoked only through the verified server
 	# voided-purchase sync. This prevents Remove Ads from reappearing as buyable
 	# after a transient Play Billing/query issue or a sideloaded QA build.
+
+func _apply_play_owned_non_consumables(owned: Array[String]) -> void:
+	if owned.is_empty():
+		return
+	var purchased_value = SaveManager.data.get("purchased_products", [])
+	var purchased: Array = purchased_value if purchased_value is Array else []
+	var changed := false
+
+	if PRODUCT_REMOVE_ADS in owned or PRODUCT_STARTER_PACK in owned:
+		if not bool(SaveManager.data.get("remove_ads", false)):
+			AdManager.set_remove_ads_purchased(true)
+			changed = true
+
+	for product_id in owned:
+		if product_id not in purchased:
+			purchased.append(product_id)
+			changed = true
+		if product_id == PRODUCT_STARTER_PACK and not bool(SaveManager.data.get("starter_pack_purchased", false)):
+			SaveManager.data.starter_pack_purchased = true
+			changed = true
+
+	if not changed:
+		return
+	SaveManager.data.purchased_products = purchased
+	SaveManager.save()
+	catalog_changed.emit()
 
 func _on_reconcile_result(purchases: Array) -> void:
 	for purchase_value in purchases:
