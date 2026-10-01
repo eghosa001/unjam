@@ -150,4 +150,4 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-# manual-apk-build-marker 2026-10-01 approved-logo-typed-rebuild
+# manual-apk-build-marker 2026-10-01 approved-logo-final-source
