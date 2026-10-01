@@ -125,6 +125,19 @@ func run() -> void:
 	expect_true(store_manager.is_consumable(store_manager.PRODUCT_COINS_LARGE), "4,000 coin pack must remain explicitly consumable")
 	expect_true(not store_manager.purchase(store_manager.PRODUCT_REMOVE_ADS), "Store allowed a redundant Remove Ads purchase after ad-free entitlement")
 
+	# Google Play's owned-purchase snapshot is authoritative enough to surface
+	# permanent ownership immediately while backend verification/acknowledgement
+	# completes. This prevents Remove Ads from appearing purchasable again.
+	save_manager.data.remove_ads = false
+	save_manager.data.starter_pack_purchased = false
+	save_manager.data.purchased_products = []
+	ad_manager.ads_enabled = true
+	save_manager.save()
+	store_manager.call("_apply_play_owned_non_consumables", [store_manager.PRODUCT_REMOVE_ADS])
+	expect_true(bool(save_manager.data.get("remove_ads", false)), "Play-owned Remove Ads was not reflected locally")
+	expect_true(store_manager.PRODUCT_REMOVE_ADS in (save_manager.data.get("purchased_products", []) as Array), "Play-owned Remove Ads was not marked owned")
+	expect_true(not ad_manager.ads_enabled, "Play-owned Remove Ads did not disable ads immediately")
+
 	# A missing/partial client Play snapshot must never erase permanent value.
 	# Refunds and chargebacks are handled by the verified server revocation path.
 	save_manager.data.remove_ads = true
