@@ -103,7 +103,7 @@ func _check_transparent_corners(path: String, failures: Array[String]) -> void:
 		Vector2i(image.get_width() - 1, image.get_height() - 1),
 	]:
 		if image.get_pixelv(point).a > 0.05:
-			failures.append("%s has a visible square edge" % label)
+			failures.append("%s has a visible square edge" % path)
 			return
 
 func _read(path: String) -> String:
