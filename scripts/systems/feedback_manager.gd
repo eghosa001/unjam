@@ -15,7 +15,9 @@ const STARTUP_MUSIC_RATE := 24000
 const SFX_POOL_SIZE := 8
 const MUSIC_DURATION := 24.0
 const STARTUP_MUSIC_DURATION := 1.2
-const MUSIC_VOLUME_DB := -13.0
+const SFX_VOLUME_DB := 0.0
+const SFX_GAIN_MULTIPLIER := 1.18
+const MUSIC_VOLUME_DB := -9.0
 const MUSIC_HANDOFF_SILENCE_DB := -48.0
 const MUSIC_HANDOFF_FADE_SECONDS := 0.10
 # Keep the expensive full-loop synthesis below the early-frame budget. A tiny
@@ -41,7 +43,7 @@ func _ready() -> void:
 	for i in range(SFX_POOL_SIZE):
 		var sfx := AudioStreamPlayer.new()
 		sfx.name = "CalmSfx%02d" % (i + 1)
-		sfx.volume_db = -2.5
+		sfx.volume_db = SFX_VOLUME_DB
 		add_child(sfx)
 		sfx_players.append(sfx)
 	player = sfx_players[0]
@@ -164,15 +166,15 @@ func drop() -> void:
 func snap() -> void:
 	# Magnetic placement confirmation: lighter than a drop/clear, but tactile
 	# enough that players feel the valid cell lock without looking away.
-	_play_chime([493.88, 659.25], 0.090, 0.046, 0.28)
+	_play_chime([493.88, 659.25], 0.090, 0.055, 0.28)
 	# Placement audio is tactile enough on its own; avoid coupling routine taps
 	# to phone vibration.
 
 func pour_start() -> void:
-	_play_chime([349.23, 440.0], 0.135, 0.068, 0.26)
+	_play_chime([349.23, 440.0], 0.135, 0.080, 0.26)
 
 func pour_land() -> void:
-	_play_chime([440.0, 523.25, 659.25], 0.180, 0.080, 0.40)
+	_play_chime([440.0, 523.25, 659.25], 0.180, 0.092, 0.40)
 	# Landing remains audio-only to prevent repeated pour actions from rumbling.
 
 func invalid() -> void:
@@ -208,7 +210,7 @@ func tap() -> void:
 	apply_settings()
 	# A tiny wooden tick: audible enough for confirmation, quiet enough for
 	# repeated menu use.
-	_play_chime([392.0], 0.080, 0.052, 0.20)
+	_play_chime([392.0], 0.080, 0.060, 0.20)
 
 func blocked() -> void:
 	# Low, rounded two-note fall. Avoid sub-200 Hz buzzy sine errors.
@@ -247,7 +249,7 @@ func _play_chime(notes: Array, duration: float, volume: float, brightness: float
 		# overlap is far less noticeable than the click caused by truncating an
 		# active channel at a non-zero sample.
 		return
-	var stream := _chime_stream(notes, duration, volume, brightness)
+	# A modest global lift matches the clearer feedback-to-music balance common\n\t# in polished casual puzzle games while the per-sound envelopes retain headroom.\n\tvar stream := _chime_stream(notes, duration, volume * SFX_GAIN_MULTIPLIER, brightness)
 	target.stream = stream
 	target.play()
 

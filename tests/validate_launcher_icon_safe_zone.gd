@@ -58,10 +58,10 @@ func _initialize() -> void:
 
 	for token in [
 		'const SOURCE := "res://store_assets/unjam_google_play_icon_512.png"',
-		"const LEGACY_CONTENT := 384",
-		"const ADAPTIVE_CONTENT := 288",
+		'const FOREGROUND_SOURCE := "res://store_assets/unjam_adaptive_foreground_432.png"',
 		'const ADAPTIVE_OUT := "res://assets/icon_user_adaptive_432.png"',
-		"Image.INTERPOLATE_LANCZOS",
+		"func _write_exact(source: Image, output_path: String) -> bool:",
+		"transparent corners",
 	]:
 		if not prep.contains(token):
 			failures.append("Android raster preparation contract missing: %s" % token)
@@ -73,6 +73,10 @@ func _initialize() -> void:
 			failures.append("Android build workflow does not reject a blank adaptive foreground")
 
 	_check_size("res://store_assets/unjam_google_play_icon_512.png", Vector2i(512, 512), "Canonical launcher artwork", failures)
+	_check_size("res://store_assets/unjam_adaptive_foreground_432.png", Vector2i(432, 432), "Canonical adaptive foreground", failures)
+	_check_transparent_corners("res://store_assets/unjam_adaptive_foreground_432.png", failures)
+	if not _read("res://assets/icon_adaptive_background.svg").contains("#0F62C8") or not _read("res://assets/icon_adaptive_background.svg").contains("#210C69"):
+		failures.append("Adaptive background no longer matches the approved UNJAM blue gradient")
 
 	if not failures.is_empty():
 		for failure in failures:
@@ -89,6 +93,15 @@ func _check_size(path: String, expected: Vector2i, label: String, failures: Arra
 		return
 	if Vector2i(image.get_width(), image.get_height()) != expected:
 		failures.append("%s must be %dx%d" % [label, expected.x, expected.y])
+
+func _check_transparent_corners(path: String, failures: Array[String]) -> void:
+	var image := Image.load_from_file(path)
+	if image == null or image.is_empty():
+		return
+	for point in [Vector2i(0, 0), Vector2i(image.get_width() - 1, 0), Vector2i(0, image.get_height() - 1), Vector2i(image.get_width() - 1, image.get_height() - 1)]:
+		if image.get_pixelv(point).a > 0.02:
+			failures.append("Adaptive foreground must not carry a visible square background")
+			return
 
 func _read(path: String) -> String:
 	var file := FileAccess.open(path, FileAccess.READ)
