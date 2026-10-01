@@ -138,6 +138,19 @@ async function playResponse(packageName: string, purchaseToken: string): Promise
   });
 }
 
+async function legacyProductResponse(
+  packageName: string,
+  productId: string,
+  purchaseToken: string,
+): Promise<Response> {
+  const accessToken = await googleToken();
+  const url =
+    `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${encodeURIComponent(packageName)}/purchases/products/${encodeURIComponent(productId)}/tokens/${encodeURIComponent(purchaseToken)}`;
+  return fetch(url, {
+    headers: { authorization: `Bearer ${accessToken}`, accept: "application/json" },
+  });
+}
+
 async function oneTimeProductResponse(productId: string): Promise<Response> {
   const accessToken = await googleToken();
   const url =
@@ -229,6 +242,60 @@ function normalize(data: any) {
     completion: String(data?.purchaseCompletionTime ?? ""),
     acknowledgementState: String(data?.acknowledgementState ?? ""),
     lineItems,
+  };
+}
+
+function normalizeLegacy(productId: string, data: any) {
+  const purchaseState = Number(data?.purchaseState ?? -1);
+  const consumptionState = Number(data?.consumptionState ?? 0);
+  const acknowledgementState = Number(data?.acknowledgementState ?? 0);
+  const state = purchaseState === 0
+    ? "PURCHASED"
+    : purchaseState === 2
+    ? "PENDING"
+    : purchaseState === 1
+    ? "CANCELLED"
+    : "UNSPECIFIED";
+  return {
+    state,
+    productIds: [productId],
+    orderId: String(data?.orderId ?? ""),
+    completion: String(data?.purchaseTimeMillis ?? ""),
+    acknowledgementState: acknowledgementState === 1
+      ? "ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED"
+      : "ACKNOWLEDGEMENT_STATE_PENDING",
+    lineItems: [{
+      productId,
+      productOfferDetails: {
+        consumptionState: consumptionState === 1
+          ? "CONSUMPTION_STATE_CONSUMED"
+          : "CONSUMPTION_STATE_YET_TO_BE_CONSUMED",
+      },
+    }],
+  };
+}
+
+async function lookupPurchase(
+  productId: string,
+  purchaseToken: string,
+): Promise<{ ok: boolean; purchase: any; detail: string }> {
+  const v2 = await playResponse(PACKAGE_NAME, purchaseToken);
+  if (v2.ok) {
+    return { ok: true, purchase: normalize(await v2.json()), detail: "productsv2" };
+  }
+
+  // Some license-test / older one-time purchase tokens are rejected by
+  // purchases.productsv2 even though the product-specific endpoint accepts
+  // them. Fall back to the still-supported purchases.products.get endpoint.
+  const legacy = await legacyProductResponse(PACKAGE_NAME, productId, purchaseToken);
+  if (legacy.ok) {
+    return { ok: true, purchase: normalizeLegacy(productId, await legacy.json()), detail: "products_v1_fallback" };
+  }
+
+  return {
+    ok: false,
+    purchase: null,
+    detail: `productsv2_http_${v2.status};products_http_${legacy.status}`,
   };
 }
 
@@ -332,11 +399,11 @@ async function finalizePurchase(
   const product = PRODUCTS[productId];
   if (!product) return { ok: false, detail: "unknown_product" };
 
-  const latest = await playResponse(PACKAGE_NAME, purchaseToken);
-  if (!latest.ok) {
-    return { ok: false, detail: `play_verify_http_${latest.status}` };
+  const lookup = await lookupPurchase(productId, purchaseToken);
+  if (!lookup.ok) {
+    return { ok: false, detail: lookup.detail };
   }
-  const purchase = normalize(await latest.json());
+  const purchase = lookup.purchase;
   if (purchase.state !== "PURCHASED" || !purchase.productIds.includes(productId)) {
     return { ok: false, detail: "purchase_not_active" };
   }
@@ -583,14 +650,18 @@ Deno.serve(async (req) => {
   if (input.action === "verify") {
     let purchase;
     try {
-      const play = await playResponse(PACKAGE_NAME, input.purchase_token);
-      if (!play.ok) {
+      const lookup = await lookupPurchase(input.product_id, input.purchase_token);
+      if (!lookup.ok) {
+        console.warn("purchase verification failed", {
+          product_id: input.product_id,
+          detail: lookup.detail,
+        });
         return response(
-          bad("Google Play verification failed", input.product_id, input.claim_id),
+          bad(`Google Play verification failed: ${lookup.detail}`, input.product_id, input.claim_id),
           400,
         );
       }
-      purchase = normalize(await play.json());
+      purchase = lookup.purchase;
     } catch {
       return response(
         bad("Google Play verification failed", input.product_id, input.claim_id),
