@@ -15,9 +15,9 @@ const STARTUP_MUSIC_RATE := 24000
 const SFX_POOL_SIZE := 8
 const MUSIC_DURATION := 24.0
 const STARTUP_MUSIC_DURATION := 1.2
-const SFX_VOLUME_DB := 0.0
+const SFX_VOLUME_DB := 1.0
 const SFX_GAIN_MULTIPLIER := 1.18
-const MUSIC_VOLUME_DB := -9.0
+const MUSIC_VOLUME_DB := -8.0
 const MUSIC_HANDOFF_SILENCE_DB := -48.0
 const MUSIC_HANDOFF_FADE_SECONDS := 0.10
 # Keep the expensive full-loop synthesis below the early-frame budget. A tiny
