@@ -423,11 +423,10 @@ func _build_calm_ambient_loop() -> AudioStreamWAV:
 		var chord: Array = chords[section]
 		var transition := 0.72
 		var pad := _ambient_pad_sample(chord, t)
-		if local_t < transition:
-			var previous_chord: Array = chords[posmod(section - 1, chords.size())]
-			var mix_in := _smoothstep01(local_t / transition)
-			pad = lerpf(_ambient_pad_sample(previous_chord, t), pad, mix_in)
-		elif local_t > section_length - transition:
+		# Crossfade only at the end of a section. At the next section's first
+		# sample we are already on the destination chord, so there is no snap
+		# back to the previous harmony.
+		if local_t > section_length - transition:
 			var next_chord: Array = chords[(section + 1) % chords.size()]
 			var mix_out := _smoothstep01((local_t - (section_length - transition)) / transition)
 			pad = lerpf(pad, _ambient_pad_sample(next_chord, t), mix_out)

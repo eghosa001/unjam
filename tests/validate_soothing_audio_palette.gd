@@ -64,8 +64,8 @@ func _initialize() -> void:
 		failures.append("Ambient loop must not mix sub-audible oscillator energy directly into PCM")
 	if source.contains("[58.27, 73.42, 87.31, 110.00]"):
 		failures.append("Ambient chord voicings must stay above phone-rumble bass territory")
-	if not source.contains("[130.81, 196.00, 261.63, 293.66]"):
-		failures.append("Ambient voicings must retain the mobile-safe Cadd9 final chord")
+	if not source.contains("[130.81, 164.81, 196.00, 220.00, 293.66]"):
+		failures.append("Ambient voicings must retain the mobile-safe C6/9 final chord")
 
 	var script = load(path)
 	if script == null:
