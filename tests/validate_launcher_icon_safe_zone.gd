@@ -13,7 +13,7 @@ func _initialize() -> void:
 	var release_workflow := _read("res://.github/workflows/android-release.yml")
 
 	for token in [
-		"launcher_icons/main_192x192=\"res://assets/icon_user_512.jpg\"",
+		"launcher_icons/main_192x192=\"res://assets/icon_user_512.png\"",
 		"launcher_icons/adaptive_foreground_432x432=\"res://assets/icon_user_adaptive_432.png\"",
 		"launcher_icons/adaptive_background_432x432=\"res://assets/icon_adaptive_background.svg\"",
 		"splash_screen/icon=\"res://assets/icon_user_adaptive_432.png\"",
@@ -24,7 +24,7 @@ func _initialize() -> void:
 			failures.append("Android launcher/startup contract missing: %s" % token)
 
 	for token in [
-		"config/icon=\"res://assets/icon_user_512.jpg\"",
+		"config/icon=\"res://assets/icon_user_512.png\"",
 		"boot_splash/show_image=false",
 		"boot_splash/image=\"res://assets/icon_user_adaptive_432.png\"",
 		"boot_splash/bg_color=%s" % SPLASH_BG,
