@@ -36,7 +36,8 @@ def main() -> int:
     icon_path = root / 'assets' / 'icon_user_512.png'
     canonical_icon_path = root / 'store_assets' / 'unjam_google_play_icon_512.png'
     adaptive_bg_path = root / 'assets' / 'icon_adaptive_background.svg'
-    adaptive_fg_path = root / 'assets' / 'icon_launcher_adaptive_432.png'\n    splash_fg_path = root / 'assets' / 'icon_user_adaptive_432.png'
+    adaptive_fg_path = root / 'assets' / 'icon_launcher_adaptive_432.png'
+    splash_fg_path = root / 'assets' / 'icon_user_adaptive_432.png'
     brand_prep_path = root / 'tools' / 'prepare_android_brand_assets.gd'
     robust_main_path = root / 'scripts' / 'ui' / 'robust_main.gd'
 

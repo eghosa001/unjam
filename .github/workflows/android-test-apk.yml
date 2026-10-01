@@ -47,7 +47,8 @@ jobs:
           set -euo pipefail
           godot --headless --path . --script res://tools/prepare_android_brand_assets.gd
           test -s assets/icon_user_512.png
-          test -s assets/icon_launcher_adaptive_432.png\n          test -s assets/icon_user_adaptive_432.png
+          test -s assets/icon_launcher_adaptive_432.png
+          test -s assets/icon_user_adaptive_432.png
 
       - name: Install Android API 36
         shell: bash
