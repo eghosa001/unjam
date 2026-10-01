@@ -48,6 +48,7 @@ func _ready() -> void:
 	last_music_enabled = bool(SaveManager.data.get("music", true))
 	if last_music_enabled:
 		_start_music_immediately()
+	call_deferred("_prewarm_common_sfx")
 
 func _exit_tree() -> void:
 	shutdown_audio()
@@ -77,9 +78,9 @@ func apply_settings() -> void:
 func _start_music_immediately() -> void:
 	if music_player == null or music_stream == null:
 		return
-	music_player.stream = music_stream
+	if music_player.stream != music_stream:
+		music_player.stream = music_stream
 	if music_player.playing:
-		music_player.volume_db = MUSIC_VOLUME_DB
 		return
 	music_player.volume_db = MUSIC_START_DB
 	music_player.play()
@@ -155,7 +156,8 @@ func complete(kind: String = "level") -> void:
 
 # Backward-compatible API used throughout the existing scenes.
 func tap() -> void:
-	apply_settings()
+	# Ordinary taps are SFX-only. Music state is synchronized only when an
+	# actual setting changes, so UI feedback can never restart the BGM stream.
 	# A tiny wooden tick: audible enough for confirmation, quiet enough for
 	# repeated menu use.
 	_play_chime([392.0], 0.080, 0.060, 0.20)
@@ -187,6 +189,25 @@ func _vibrate(ms: int) -> void:
 # ---------------------------------------------------------------------------
 # Warm mallet/chime synthesis
 # ---------------------------------------------------------------------------
+
+func _prewarm_common_sfx() -> void:
+	if sfx_players.is_empty() or DisplayServer.get_name() == "headless":
+		return
+	# Build common one-shots during startup, one per frame, so the first real
+	# interaction never pays the waveform-generation cost.
+	var common := [
+		[[392.0], 0.080, 0.060, 0.20],
+		[[392.0, 523.25], 0.105, 0.085, 0.42],
+		[[440.0, 659.25], 0.130, 0.095, 0.52],
+		[[392.0, 329.63], 0.145, 0.095, 0.30],
+		[[493.88, 659.25], 0.090, 0.055, 0.28],
+		[[349.23, 440.0], 0.135, 0.080, 0.26],
+		[[440.0, 523.25, 659.25], 0.180, 0.092, 0.40],
+	]
+	for spec in common:
+		_chime_stream(spec[0], float(spec[1]), float(spec[2]) * SFX_GAIN_MULTIPLIER, float(spec[3]))
+		if is_inside_tree():
+			await get_tree().process_frame
 
 func _play_chime(notes: Array, duration: float, volume: float, brightness: float) -> void:
 	if sfx_players.is_empty() or not bool(SaveManager.data.get("sound", true)):
