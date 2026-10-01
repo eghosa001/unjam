@@ -60,14 +60,14 @@ func _initialize() -> void:
 
 	for token in [
 		'const SOURCE := "res://store_assets/unjam_google_play_icon_512.png"',
+		'const FOREGROUND_SOURCE := "res://store_assets/unjam_adaptive_foreground_432.png"',
+		'const LEGACY_OUT := "res://assets/icon_user_512.png"',
 		'const ADAPTIVE_OUT := "res://assets/icon_user_adaptive_432.png"',
-		"const CONTENT_SIZE := 392",
-		"const EDGE_FADE_PX := 24.0",
-		"adaptive.save_png(ADAPTIVE_OUT)"
-		"transparent corners",
+		"exact-binaries",
+		"transparent-adaptive",
 	]:
 		if not prep.contains(token):
-			failures.append("Android raster preparation contract missing: %s" % token)
+			failures.append("Approved Android branding contract missing: %s" % token)
 
 	for workflow in [debug_workflow, release_workflow]:
 		if not workflow.contains("prepare_android_brand_assets.gd"):
@@ -77,6 +77,14 @@ func _initialize() -> void:
 
 	_check_size("res://store_assets/unjam_google_play_icon_512.png", Vector2i(512, 512), "Canonical launcher artwork", failures)
 	_check_size("res://assets/icon_user_512.png", Vector2i(512, 512), "Packaged launcher artwork", failures)
+	_check_size("res://store_assets/unjam_adaptive_foreground_432.png", Vector2i(432, 432), "Canonical adaptive foreground", failures)
+	_check_size("res://assets/icon_user_adaptive_432.png", Vector2i(432, 432), "Packaged adaptive foreground", failures)
+	_check_transparent_corners("res://store_assets/unjam_adaptive_foreground_432.png", failures)
+	_check_transparent_corners("res://assets/icon_user_adaptive_432.png", failures)
+	if _sha256("res://assets/icon_user_512.png") != LEGACY_SHA256:
+		failures.append("Launcher icon is not the approved full UNJAM logo")
+	if _sha256("res://assets/icon_user_adaptive_432.png") != ADAPTIVE_SHA256:
+		failures.append("Adaptive/splash foreground is not the approved transparent UNJAM logo")
 	if not _read("res://assets/icon_adaptive_background.svg").contains("#0F62C8") or not _read("res://assets/icon_adaptive_background.svg").contains("#210C69"):
 		failures.append("Adaptive background no longer matches the approved UNJAM blue gradient")
 
