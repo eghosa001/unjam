@@ -455,5 +455,7 @@ func _toggle_setting(key: String) -> void:
 	SaveManager.save()
 	if key == "fast_animation":
 		MotionSystem.refresh_preferences()
+	if key == "sound" or key == "music" or key == "vibration":
+		FeedbackManager.apply_settings()
 	FeedbackManager.tap()
 	build_settings()
