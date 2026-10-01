@@ -152,4 +152,4 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-# manual-apk-build-marker 2026-10-01 samsung-icon-splash-navigation-fix
+# manual-apk-build-marker 2026-10-01 happy-lullaby-selected

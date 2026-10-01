@@ -40,6 +40,9 @@ def main() -> int:
     splash_fg_path = root / 'assets' / 'icon_user_adaptive_432.png'
     brand_prep_path = root / 'tools' / 'prepare_android_brand_assets.gd'
     robust_main_path = root / 'scripts' / 'ui' / 'robust_main.gd'
+    feedback_path = root / 'scripts' / 'systems' / 'feedback_manager.gd'
+    selected_music_path = root / 'assets' / 'audio' / 'unjam_happy_lullaby.ogg'
+    selected_music_license_path = root / 'assets' / 'audio' / 'UNJAM_HAPPY_LULLABY_LICENSE.txt'
 
     workflow = workflow_path.read_text(encoding='utf-8')
     preset = preset_path.read_text(encoding='utf-8')
@@ -48,6 +51,8 @@ def main() -> int:
     adaptive_bg = adaptive_bg_path.read_text(encoding='utf-8')
     brand_prep = brand_prep_path.read_text(encoding='utf-8')
     robust_main = robust_main_path.read_text(encoding='utf-8')
+    feedback = feedback_path.read_text(encoding='utf-8')
+    selected_music_license = selected_music_license_path.read_text(encoding='utf-8') if selected_music_license_path.exists() else ''
 
     errors: list[str] = []
 
@@ -198,6 +203,20 @@ def main() -> int:
     for retired in ('BrandedLaunch', 'CanvasLayer.new()', 'title.text = "UNJAM"', 'subtitle.text = "PUZZLE COLLECTION"'):
         if retired in robust_main:
             errors.append(f'retired blocking/duplicate launch overlay must not return: {retired}')
+
+    if not selected_music_path.exists() or selected_music_path.stat().st_size < 100_000:
+        errors.append('selected Happy Lullaby music asset is missing or unexpectedly small')
+    for token in (
+        'HAPPY_LULLABY_PATH := "res://assets/audio/unjam_happy_lullaby.ogg"',
+        'MUSIC_VOLUME_DB := -7.0',
+        'MUSIC_FADE_IN_SECONDS := 0.90',
+        'selected_track.loop = true',
+    ):
+        if token not in feedback:
+            errors.append(f'selected music playback contract missing token: {token}')
+    for token in ('Happy Lullaby (song17)', 'cynicmusic', 'The Cynic Project', 'CC0', 'opengameart.org/content/happy-lullaby-song17'):
+        if token not in selected_music_license:
+            errors.append(f'selected music provenance missing token: {token}')
 
     if 'config/icon="res://assets/icon_user_512.png"' not in project:
         errors.append('project launcher icon is not wired to the approved full UNJAM logo')
