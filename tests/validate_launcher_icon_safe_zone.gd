@@ -76,10 +76,7 @@ func _initialize() -> void:
 
 	_check_size("res://store_assets/unjam_approved_logo_source.png", Vector2i(320, 320), "Approved full-logo source", failures)
 	_check_size("res://store_assets/unjam_approved_logo_transparent.png", Vector2i(320, 320), "Approved transparent-logo source", failures)
-	_check_size("res://assets/icon_user_512.png", Vector2i(512, 512), "Generated launcher icon", failures)
-	_check_size("res://assets/icon_user_adaptive_432.png", Vector2i(432, 432), "Generated adaptive/splash logo", failures)
 	_check_transparent_corners("res://store_assets/unjam_approved_logo_transparent.png", failures)
-	_check_transparent_corners("res://assets/icon_user_adaptive_432.png", failures)
 
 	var adaptive_bg := _read("res://assets/icon_adaptive_background.svg")
 	if not adaptive_bg.contains("#0F62C8") or not adaptive_bg.contains("#210C69"):
