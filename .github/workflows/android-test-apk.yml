@@ -88,11 +88,11 @@ jobs:
           grep -Fx 'test_mode=false' project.godot
           grep -Fx 'admob_test_mode=true' project.godot
           sed -i 's/gradle_build\/export_format=1/gradle_build\/export_format=0/' export_presets.cfg
-          sed -i 's/version\/code=[0-9]\+/version\/code=5/' export_presets.cfg
-          sed -i 's/version\/name="[^"]*"/version\/name="1.0.5"/' export_presets.cfg
+          sed -i 's/version\/code=[0-9]\+/version\/code=6/' export_presets.cfg
+          sed -i 's/version\/name="[^"]*"/version\/name="1.0.6"/' export_presets.cfg
           grep -Fx 'gradle_build/export_format=0' export_presets.cfg
-          grep -Fx 'version/code=5' export_presets.cfg
-          grep -Fx 'version/name="1.0.5"' export_presets.cfg
+          grep -Fx 'version/code=6' export_presets.cfg
+          grep -Fx 'version/name="1.0.6"' export_presets.cfg
 
       - name: Import project
         shell: bash
@@ -105,7 +105,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for t in validate_launcher_icon_safe_zone validate_touch_enhancer_scope validate_bottom_nav_touch_zones validate_soothing_audio_palette validate_feedback_manager_event_driven_music validate_runtime_efficiency validate_gameplay_interactions validate_admob_production validate_billing_production; do
+          for t in validate_launcher_icon_safe_zone validate_touch_enhancer_scope validate_bottom_nav_touch_zones validate_soothing_audio_palette validate_feedback_manager_event_driven_music validate_runtime_efficiency validate_gameplay_interactions validate_monetization validate_restore_purchase_flow validate_admob_production validate_billing_production; do
             timeout 60s godot --headless --path . --script "res://tests/$t.gd"
           done
 
@@ -128,7 +128,7 @@ jobs:
           "$AAPT" dump badging "$APK" | tee build/android/unjam-latest-debug-badging.txt
           "$AAPT" dump permissions "$APK" | tee build/android/unjam-latest-debug-permissions.txt
           "$AAPT" dump xmltree "$APK" AndroidManifest.xml | tee build/android/unjam-latest-debug-manifest.txt
-          grep -F "package: name='com.eghosa.unjamgam' versionCode='5' versionName='1.0.5'" build/android/unjam-latest-debug-badging.txt
+          grep -F "package: name='com.eghosa.unjamgam' versionCode='6' versionName='1.0.6'" build/android/unjam-latest-debug-badging.txt
           grep -F "targetSdkVersion:'36'" build/android/unjam-latest-debug-badging.txt
           grep -F "native-code: 'arm64-v8a'" build/android/unjam-latest-debug-badging.txt
           grep -F "com.google.android.gms.permission.AD_ID" build/android/unjam-latest-debug-permissions.txt
@@ -157,4 +157,4 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-# manual-apk-build-marker 2026-10-01 icon-audio-performance-v5
+# manual-apk-build-marker 2026-10-01 billing-recovery-v6
