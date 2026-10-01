@@ -22,7 +22,17 @@ func _on_node_added(node: Node) -> void:
 	# per-node rule directly instead of recursively rescanning the entire screen
 	# every time gameplay spawns a ghost, effect, label or button.
 	if node is Button:
+		if _inside_authored_figma(node):
+			return
 		_apply_button_size(node as Button)
+
+func _inside_authored_figma(node: Node) -> bool:
+	var cursor := node.get_parent()
+	while cursor != null and cursor != host:
+		if cursor is FigmaReferenceCanvas or cursor.has_meta("unjam_figma_reference_root"):
+			return true
+		cursor = cursor.get_parent()
+	return false
 
 func _queue_enhancements() -> void:
 	if refresh_pending:
