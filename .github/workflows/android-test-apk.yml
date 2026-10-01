@@ -10,6 +10,9 @@ on:
       - "export_presets.cfg"
       - "scripts/systems/feedback_manager.gd"
       - "scripts/ui/robust_main.gd"
+      - "scripts/ui/boot_splash.gd"
+      - "scripts/ui/ui_touch_enhancer.gd"
+      - "scenes/Boot.tscn"
       - "scripts/systems/android_monetization_bridge.gd"
       - "scripts/systems/store_manager.gd"
       - "addons/unjam_admob_provider.gd"
@@ -50,6 +53,8 @@ jobs:
           test -s assets/icon_user_512.png
           test -s assets/icon_launcher_adaptive_432.png
           test -s assets/icon_user_adaptive_432.png
+          test -s assets/splash_emblem_safe_432.png
+          test -s assets/unjam_startup_logo.png
 
       - name: Install Android API 36
         shell: bash
@@ -100,7 +105,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for t in validate_launcher_icon_safe_zone validate_soothing_audio_palette validate_admob_production validate_billing_production; do
+          for t in validate_launcher_icon_safe_zone validate_touch_enhancer_scope validate_bottom_nav_touch_zones validate_soothing_audio_palette validate_admob_production validate_billing_production; do
             timeout 60s godot --headless --path . --script "res://tests/$t.gd"
           done
 
@@ -152,4 +157,4 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-# manual-apk-build-marker 2026-10-01 happy-lullaby-selected
+# manual-apk-build-marker 2026-10-01 standalone-boot-touch-fix
