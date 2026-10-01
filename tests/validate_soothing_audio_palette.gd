@@ -27,9 +27,18 @@ func _initialize() -> void:
 		"func _chime_stream",
 		"sfx.volume_db = SFX_VOLUME_DB",
 		"volume * SFX_GAIN_MULTIPLIER",
+		'if music_player.stream != music_stream:',
+		'call_deferred("_prewarm_common_sfx")',
+		"func _prewarm_common_sfx() -> void:",
 	]:
 		if not source.contains(token):
 			failures.append("Missing selected-audio contract token: %s" % token)
+
+	var tap_start := source.find("func tap() -> void:")
+	var tap_end := source.find("\nfunc ", tap_start + 1)
+	var tap_block := source.substr(tap_start, tap_end - tap_start)
+	if tap_block.contains("apply_settings()") or tap_block.contains("_sync_music()"):
+		failures.append("Ordinary tap feedback must not resync or restart background music")
 
 	for forbidden in [
 		'call_deferred("_ensure_music_stream")',
