@@ -133,7 +133,8 @@ func run() -> void:
 	save_manager.data.purchased_products = []
 	ad_manager.ads_enabled = true
 	save_manager.save()
-	store_manager.call("_apply_play_owned_non_consumables", [store_manager.PRODUCT_REMOVE_ADS])
+	var play_owned_products: Array[String] = [store_manager.PRODUCT_REMOVE_ADS]
+	store_manager.call("_apply_play_owned_non_consumables", play_owned_products)
 	expect_true(bool(save_manager.data.get("remove_ads", false)), "Play-owned Remove Ads was not reflected locally")
 	expect_true(store_manager.PRODUCT_REMOVE_ADS in (save_manager.data.get("purchased_products", []) as Array), "Play-owned Remove Ads was not marked owned")
 	expect_true(not ad_manager.ads_enabled, "Play-owned Remove Ads did not disable ads immediately")
