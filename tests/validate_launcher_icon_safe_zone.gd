@@ -58,10 +58,11 @@ func _initialize() -> void:
 
 	for token in [
 		'const SOURCE := "res://store_assets/unjam_google_play_icon_512.png"',
+		'const LEGACY_OUT := "res://assets/icon_user_512.png"',
 		'const ADAPTIVE_OUT := "res://assets/icon_user_adaptive_432.png"',
-		"const CONTENT_SIZE := 392",
-		"const EDGE_FADE_PX := 24.0",
-		"adaptive.save_png(ADAPTIVE_OUT)"
+		"const SAFE_FILL := 0.88",
+		"func _cut_out_connected_background(source: Image) -> Image:",
+		"foreground.save_png(ADAPTIVE_OUT)",
 		"transparent corners",
 	]:
 		if not prep.contains(token):
@@ -73,7 +74,7 @@ func _initialize() -> void:
 		if not workflow.contains('test "$FOREGROUND_BYTES" -gt 1000') and not workflow.contains('test "$AAB_FOREGROUND_BYTES" -gt 1000'):
 			failures.append("Android build workflow does not reject a blank adaptive foreground")
 
-	_check_size("res://store_assets/unjam_google_play_icon_512.jpg", Vector2i(512, 512), "Canonical launcher artwork", failures)
+	_check_size("res://store_assets/unjam_google_play_icon_512.png", Vector2i(512, 512), "Canonical launcher artwork", failures)
 	if not _read("res://assets/icon_adaptive_background.svg").contains("#0F62C8") or not _read("res://assets/icon_adaptive_background.svg").contains("#210C69"):
 		failures.append("Adaptive background no longer matches the approved UNJAM blue gradient")
 
