@@ -36,6 +36,8 @@ func _initialize() -> void:
 		'const HOLD_SECONDS := 1.55',
 		'const FADE_SECONDS := 0.25',
 		'const MAIN_SCENE := "res://scenes/Main.tscn"',
+		'ResourceLoader.load_threaded_request(MAIN_SCENE)',
+		'func _open_main() -> void:',
 		'get_tree().change_scene_to_file(MAIN_SCENE)',
 	]:
 		if not boot_script.contains(token):
@@ -63,7 +65,7 @@ func _initialize() -> void:
 		'const ADAPTIVE_OUT := "res://assets/icon_launcher_adaptive_432.png"',
 		'const SYSTEM_SPLASH_OUT := "res://assets/splash_emblem_safe_432.png"',
 		"const LEGACY_CONTENT := 512",
-		"const ADAPTIVE_CONTENT := 392",
+		"const ADAPTIVE_CONTENT := 344",
 		"const SYSTEM_SPLASH_CONTENT := 280",
 		"Image.INTERPOLATE_LANCZOS",
 	]:
