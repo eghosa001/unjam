@@ -1,0 +1,10 @@
+UNJAM background music
+Title: Happy Lullaby (song17)
+Author: cynicmusic / The Cynic Project
+Source: https://opengameart.org/content/happy-lullaby-song17
+Source file: song17.mp3
+License listed by source: CC0
+Copyright/attribution notice on source page:
+The Cynic Project / cynicmusic.com / pixelsphere.org
+UNJAM retains this notice even though CC0 does not require attribution.
+UNJAM customization: runtime fade-in and app-specific volume balance.
