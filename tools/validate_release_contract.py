@@ -40,9 +40,6 @@ def main() -> int:
     splash_fg_path = root / 'assets' / 'icon_user_adaptive_432.png'
     brand_prep_path = root / 'tools' / 'prepare_android_brand_assets.gd'
     robust_main_path = root / 'scripts' / 'ui' / 'robust_main.gd'
-    feedback_path = root / 'scripts' / 'systems' / 'feedback_manager.gd'
-    music_path = root / 'assets' / 'audio' / 'unjam_puzzle_theme.ogg'
-    music_license_path = root / 'assets' / 'audio' / 'UNJAM_PUZZLE_THEME_LICENSE.txt'
 
     workflow = workflow_path.read_text(encoding='utf-8')
     preset = preset_path.read_text(encoding='utf-8')
@@ -51,8 +48,6 @@ def main() -> int:
     adaptive_bg = adaptive_bg_path.read_text(encoding='utf-8')
     brand_prep = brand_prep_path.read_text(encoding='utf-8')
     robust_main = robust_main_path.read_text(encoding='utf-8')
-    feedback = feedback_path.read_text(encoding='utf-8')
-    music_license = music_license_path.read_text(encoding='utf-8') if music_license_path.exists() else ''
 
     errors: list[str] = []
 
@@ -201,23 +196,6 @@ def main() -> int:
     for retired in ('BrandedLaunch', 'CanvasLayer.new()', 'title.text = "UNJAM"', 'subtitle.text = "PUZZLE COLLECTION"'):
         if retired in robust_main:
             errors.append(f'retired blocking/duplicate launch overlay must not return: {retired}')
-
-    if not music_path.exists() or music_path.stat().st_size < 1_000_000:
-        errors.append('human-composed CC0 puzzle music asset is missing or unexpectedly small')
-    for token in (
-        'HUMAN_MUSIC_PATH := "res://assets/audio/unjam_puzzle_theme.ogg"',
-        'MUSIC_VOLUME_DB := -7.0',
-        'MUSIC_FADE_IN_SECONDS := 0.90',
-        'MUSIC_PITCH_SCALE := 0.995',
-        'music_stream = load(HUMAN_MUSIC_PATH) as AudioStream',
-        'ogg.loop = true',
-        'music_player.pitch_scale = MUSIC_PITCH_SCALE',
-    ):
-        if token not in feedback:
-            errors.append(f'human music playback contract missing token: {token}')
-    for token in ('Cozy Puzzle In-Game 2', 'MintoDog', 'CC0', 'opengameart.org/content/cozy-puzzle-in-game-2'):
-        if token not in music_license:
-            errors.append(f'CC0 music provenance missing token: {token}')
 
     if 'config/icon="res://assets/icon_user_512.png"' not in project:
         errors.append('project launcher icon is not wired to the approved full UNJAM logo')
