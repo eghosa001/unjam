@@ -104,7 +104,7 @@ func _initial_reconcile() -> void:
 		var local_revision := max(0, int(SaveManager.data.get("cloud_save_revision", 0)))
 		if ok and bool(body.get("exists", false)):
 			var remote_revision := max(0, int(body.get("revision", 0)))
-			var remote_value = body.get("save", {})
+			var remote_value: Variant = body.get("save", {})
 			if remote_value is Dictionary and remote_revision > local_revision:
 				_apply_remote(remote_value, remote_revision)
 			elif remote_value is Dictionary and remote_value != _snapshot():
@@ -126,7 +126,7 @@ func _apply_remote(remote: Dictionary, revision: int) -> void:
 	_suppress_save_event = true
 	for key in CLOUD_KEYS:
 		if remote.has(key):
-			var value = remote[key]
+			var value: Variant = remote[key]
 			SaveManager.data[key] = value.duplicate(true) if value is Array or value is Dictionary else value
 	SaveManager.data.cloud_save_revision = max(0, revision)
 	if SaveManager.has_method("_sanitize"):
@@ -137,7 +137,7 @@ func _apply_remote(remote: Dictionary, revision: int) -> void:
 func _snapshot() -> Dictionary:
 	var snapshot: Dictionary = {}
 	for key in CLOUD_KEYS:
-		var value = SaveManager.data.get(key)
+		var value: Variant = SaveManager.data.get(key)
 		snapshot[key] = value.duplicate(true) if value is Array or value is Dictionary else value
 	return snapshot
 
@@ -194,7 +194,7 @@ func _request_json(payload: Dictionary, callback: Callable) -> void:
 	add_child(request)
 	request.request_completed.connect(func(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
 		var parsed: Dictionary = {}
-		var decoded = JSON.parse_string(body.get_string_from_utf8())
+		var decoded: Variant = JSON.parse_string(body.get_string_from_utf8())
 		if decoded is Dictionary:
 			parsed = decoded
 		var success := result == HTTPRequest.RESULT_SUCCESS and response_code >= 200 and response_code < 300
