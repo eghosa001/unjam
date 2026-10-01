@@ -101,9 +101,9 @@ func _initial_reconcile() -> void:
 		"action": "pull",
 		"cloud_save_id": cloud_id,
 	}, func(ok: bool, status: int, body: Dictionary) -> void:
-		var local_revision := max(0, int(SaveManager.data.get("cloud_save_revision", 0)))
+		var local_revision := maxi(0, int(SaveManager.data.get("cloud_save_revision", 0)))
 		if ok and bool(body.get("exists", false)):
-			var remote_revision := max(0, int(body.get("revision", 0)))
+			var remote_revision := maxi(0, int(body.get("revision", 0)))
 			var remote_value: Variant = body.get("save", {})
 			if remote_value is Dictionary and remote_revision > local_revision:
 				_apply_remote(remote_value, remote_revision)
@@ -152,21 +152,21 @@ func _push_now() -> void:
 	var payload := {
 		"action": "push",
 		"cloud_save_id": String(SaveManager.data.get("cloud_save_id", "")),
-		"base_revision": max(0, int(SaveManager.data.get("cloud_save_revision", 0))),
+		"base_revision": maxi(0, int(SaveManager.data.get("cloud_save_revision", 0))),
 		"save": _snapshot(),
 	}
 	_request_json(payload, func(ok: bool, status: int, body: Dictionary) -> void:
 		_request_in_flight = false
 		if ok:
-			var new_revision := max(0, int(body.get("revision", SaveManager.data.get("cloud_save_revision", 0))))
+			var new_revision := maxi(0, int(body.get("revision", SaveManager.data.get("cloud_save_revision", 0))))
 			if new_revision != int(SaveManager.data.get("cloud_save_revision", 0)):
 				_suppress_save_event = true
 				SaveManager.data.cloud_save_revision = new_revision
 				SaveManager.save()
 				_suppress_save_event = false
 		elif status == 409:
-			var remote_value = body.get("save", {})
-			var remote_revision := max(0, int(body.get("revision", 0)))
+			var remote_value: Variant = body.get("save", {})
+			var remote_revision := maxi(0, int(body.get("revision", 0)))
 			if remote_value is Dictionary and remote_revision > int(SaveManager.data.get("cloud_save_revision", 0)):
 				_apply_remote(remote_value, remote_revision)
 		else:
