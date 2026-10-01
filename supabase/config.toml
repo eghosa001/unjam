@@ -2,3 +2,6 @@ project_id = ""
 
 [functions.unjam-purchase]
 verify_jwt = false
+
+[functions.unjam-cloud-save]
+verify_jwt = false
