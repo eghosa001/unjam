@@ -1,16 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="432" height="432" viewBox="0 0 432 432">
 <defs>
-  <!-- Matched to the approved UNJAM icon art so Android masks never reveal a
-       contrasting square behind the transparent foreground. -->
-  <linearGradient id="bg" x1="216" y1="0" x2="216" y2="432" gradientUnits="userSpaceOnUse">
-    <stop stop-color="#0F62C8"/>
-    <stop offset=".48" stop-color="#1554C8"/>
-    <stop offset="1" stop-color="#210C69"/>
+  <linearGradient id="bg" x1="50" y1="20" x2="382" y2="420" gradientUnits="userSpaceOnUse">
+    <stop stop-color="#173BFF"/><stop offset=".48" stop-color="#0B66DB"/><stop offset="1" stop-color="#24106F"/>
   </linearGradient>
-  <radialGradient id="glow" cx="50%" cy="28%" r="72%">
-    <stop offset="0" stop-color="#26A7FF" stop-opacity=".42"/>
-    <stop offset=".72" stop-color="#1749C2" stop-opacity=".08"/>
-    <stop offset="1" stop-color="#210C69" stop-opacity="0"/>
+  <radialGradient id="glow" cx="50%" cy="30%" r="72%">
+    <stop offset="0" stop-color="#71E5FF" stop-opacity=".52"/><stop offset="1" stop-color="#0B0C45" stop-opacity="0"/>
   </radialGradient>
 </defs>
 <rect width="432" height="432" fill="url(#bg)"/>

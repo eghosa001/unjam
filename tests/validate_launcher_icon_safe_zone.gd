@@ -14,7 +14,7 @@ func _initialize() -> void:
 
 	for token in [
 		"launcher_icons/main_192x192=\"res://assets/icon_user_512.png\"",
-		"launcher_icons/adaptive_foreground_432x432=\"res://assets/icon_user_adaptive_432.png\"",
+		"launcher_icons/adaptive_foreground_432x432=\"res://assets/icon_launcher_adaptive_432.png\"",
 		"launcher_icons/adaptive_background_432x432=\"res://assets/icon_adaptive_background.svg\"",
 		"splash_screen/icon=\"res://assets/icon_user_adaptive_432.png\"",
 		"splash_screen/background_color=%s" % SPLASH_BG,
@@ -58,15 +58,15 @@ func _initialize() -> void:
 			failures.append("Startup must not retain blocking launch UI/eager game preload: %s" % forbidden)
 
 	for token in [
-		'const FULL_SOURCE := "res://store_assets/unjam_approved_logo_source.png"',
-		'const TRANSPARENT_SOURCE := "res://store_assets/unjam_approved_logo_transparent.png"',
+		'const SOURCE := "res://store_assets/unjam_google_play_icon_512.png"',
 		'const LEGACY_OUT := "res://assets/icon_user_512.png"',
-		'const ADAPTIVE_OUT := "res://assets/icon_user_adaptive_432.png"',
+		'const ADAPTIVE_OUT := "res://assets/icon_launcher_adaptive_432.png"',
+		"const LEGACY_CONTENT := 384",
+		"const ADAPTIVE_CONTENT := 288",
 		"Image.INTERPOLATE_LANCZOS",
-		"Approved transparent UNJAM logo must keep transparent corners",
 	]:
 		if not prep.contains(token):
-			failures.append("Approved Android branding pipeline missing: %s" % token)
+			failures.append("Former Android launcher pipeline missing: %s" % token)
 
 	for workflow in [debug_workflow, release_workflow]:
 		if not workflow.contains("prepare_android_brand_assets.gd"):
@@ -74,13 +74,13 @@ func _initialize() -> void:
 		if not workflow.contains('test "$FOREGROUND_BYTES" -gt 1000') and not workflow.contains('test "$AAB_FOREGROUND_BYTES" -gt 1000'):
 			failures.append("Android build workflow does not reject a blank adaptive foreground")
 
-	_check_size("res://store_assets/unjam_approved_logo_source.png", Vector2i(320, 320), "Approved full-logo source", failures)
-	_check_size("res://store_assets/unjam_approved_logo_transparent.png", Vector2i(320, 320), "Approved transparent-logo source", failures)
-	_check_transparent_corners("res://store_assets/unjam_approved_logo_transparent.png", failures)
+	_check_size("res://store_assets/unjam_google_play_icon_512.png", Vector2i(512, 512), "Original launcher artwork", failures)
+	_check_size("res://assets/icon_launcher_adaptive_432.png", Vector2i(432, 432), "Former adaptive launcher foreground", failures)
+	_check_size("res://assets/icon_user_adaptive_432.png", Vector2i(432, 432), "Approved splash foreground", failures)
 
 	var adaptive_bg := _read("res://assets/icon_adaptive_background.svg")
-	if not adaptive_bg.contains("#0F62C8") or not adaptive_bg.contains("#210C69"):
-		failures.append("Adaptive background no longer matches the approved UNJAM blue gradient")
+	if not adaptive_bg.contains("#173BFF") or not adaptive_bg.contains("#0B66DB") or not adaptive_bg.contains("#24106F"):
+		failures.append("Adaptive launcher background no longer matches the former UNJAM gradient")
 
 	if not failures.is_empty():
 		for failure in failures:
@@ -97,17 +97,6 @@ func _check_size(path: String, expected: Vector2i, label: String, failures: Arra
 		return
 	if image.get_size() != expected:
 		failures.append("%s must be %dx%d" % [label, expected.x, expected.y])
-
-func _check_transparent_corners(path: String, failures: Array[String]) -> void:
-	var image := Image.load_from_file(path)
-	if image == null or image.is_empty():
-		return
-	image.convert(Image.FORMAT_RGBA8)
-	var last := image.get_size() - Vector2i.ONE
-	for point in [Vector2i.ZERO, Vector2i(last.x, 0), Vector2i(0, last.y), last]:
-		if image.get_pixelv(point).a > 0.08:
-			failures.append("%s must keep transparent corners so no square demarcation appears" % path)
-			return
 
 func _read(path: String) -> String:
 	var file := FileAccess.open(path, FileAccess.READ)

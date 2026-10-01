@@ -36,7 +36,7 @@ def main() -> int:
     icon_path = root / 'assets' / 'icon_user_512.png'
     canonical_icon_path = root / 'store_assets' / 'unjam_google_play_icon_512.png'
     adaptive_bg_path = root / 'assets' / 'icon_adaptive_background.svg'
-    adaptive_fg_path = root / 'assets' / 'icon_user_adaptive_432.png'
+    adaptive_fg_path = root / 'assets' / 'icon_launcher_adaptive_432.png'\n    splash_fg_path = root / 'assets' / 'icon_user_adaptive_432.png'
     brand_prep_path = root / 'tools' / 'prepare_android_brand_assets.gd'
     robust_main_path = root / 'scripts' / 'ui' / 'robust_main.gd'
 
@@ -161,23 +161,25 @@ def main() -> int:
     elif icon_path.read_bytes() != canonical_icon_path.read_bytes():
         errors.append('packaged launcher source must exactly match the approved full UNJAM artwork')
     if not adaptive_fg_path.exists():
-        errors.append('generated 432x432 UNJAM adaptive foreground placeholder is missing')
+        errors.append('former 432x432 UNJAM adaptive launcher foreground is missing')
     if not brand_prep_path.exists():
         errors.append('Android brand raster preparation script is missing')
     if 'viewBox="0 0 432 432"' not in adaptive_bg:
         errors.append('adaptive icon background must remain a 432x432 Android layer')
-    for token in ('#0F62C8', '#1554C8', '#210C69'):
+    if not splash_fg_path.exists():
+        errors.append('approved 432x432 splash foreground is missing')
+    for token in ('#173BFF', '#0B66DB', '#24106F'):
         if token not in adaptive_bg:
-            errors.append(f'adaptive icon background is missing approved blend color: {token}')
+            errors.append(f'adaptive launcher background is missing former blend color: {token}')
     for token in (
         'SOURCE := "res://store_assets/unjam_google_play_icon_512.png"',
-        'func _cut_out_connected_background(source: Image) -> Image:',
-        'UNJAM adaptive foreground must keep transparent corners',
-        'no-demarcation',
-        'icon_user_adaptive_432.png',
+        'ADAPTIVE_OUT := "res://assets/icon_launcher_adaptive_432.png"',
+        'LEGACY_CONTENT := 384',
+        'ADAPTIVE_CONTENT := 288',
+        'Image.INTERPOLATE_LANCZOS',
     ):
         if token not in brand_prep:
-            errors.append(f'Android approved-logo preparation missing token: {token}')
+            errors.append(f'Former Android launcher preparation missing token: {token}')
     for retired in ('BrandedLaunch', 'title.text = "UNJAM"', 'subtitle.text = "PUZZLE COLLECTION"'):
         if retired in robust_main:
             errors.append(f'retired duplicate in-app launch overlay must not return: {retired}')
@@ -196,14 +198,14 @@ def main() -> int:
 
     for token in (
         'launcher_icons/main_192x192="res://assets/icon_user_512.png"',
-        'launcher_icons/adaptive_foreground_432x432="res://assets/icon_user_adaptive_432.png"',
+        'launcher_icons/adaptive_foreground_432x432="res://assets/icon_launcher_adaptive_432.png"',
         'launcher_icons/adaptive_background_432x432="res://assets/icon_adaptive_background.svg"',
         'splash_screen/icon="res://assets/icon_user_adaptive_432.png"',
         'splash_screen/background_color=Color(0.031373, 0.078431, 0.14902, 1)',
         'splash_screen/disable_godot_boot_splash=true',
     ):
         if token not in preset:
-            errors.append(f'Android launcher/splash assets are not wired to the approved seamless-logo contract: {token}')
+            errors.append(f'Android launcher/splash assets are not wired to the restored-launcher contract: {token}')
 
     if errors:
         print('Release contract validation failed:')
