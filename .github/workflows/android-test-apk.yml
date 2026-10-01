@@ -45,11 +45,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          echo "56838a2af61cf0f1456216f01f146c89ec617e370593d5c2a0ab8c609df73ddd  store_assets/unjam_google_play_icon_512.png" | sha256sum -c -
+          echo "56838a2af61cf0f1456216f01f146c89ec617e370593d5c2a0ab8c609df73ddd  assets/icon_user_512.png" | sha256sum -c -
+          echo "389866210e7a7c19cc8523076ee366269ace6a7506d1343f4d32439a16d6e8ed  store_assets/unjam_adaptive_foreground_432.png" | sha256sum -c -
           godot --headless --path . --script res://tools/prepare_android_brand_assets.gd
           test -s assets/icon_user_512.png
           test -s assets/icon_user_adaptive_432.png
-          echo "13b5d01d29c24b43157755f4badc79bd0651d78af78838a3f65320ce80d37cb1  assets/icon_user_512.png" | sha256sum -c -
-          echo "ee652f8eb8afd1cd55f94654c620cb3154b1408bc6523a61e64277493903b3d6  assets/icon_user_adaptive_432.png" | sha256sum -c -
 
       - name: Install Android API 36
         shell: bash

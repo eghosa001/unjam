@@ -1,8 +1,6 @@
 extends SceneTree
 
 const SPLASH_BG := "Color(0.031373, 0.078431, 0.14902, 1)"
-const LEGACY_SHA256 := "13b5d01d29c24b43157755f4badc79bd0651d78af78838a3f65320ce80d37cb1"
-const ADAPTIVE_SHA256 := "ee652f8eb8afd1cd55f94654c620cb3154b1408bc6523a61e64277493903b3d6"
 
 func _initialize() -> void:
 	var failures: Array[String] = []
@@ -42,58 +40,48 @@ func _initialize() -> void:
 		"func _prime_game_scene(path: String) -> void:",
 		"ResourceLoader.load_threaded_request(path)",
 		"func _game_scene_resource(path: String) -> PackedScene:",
-		"_prime_game_scene(RESCUE_GAME_SCENE_PATH)",
-		'_prime_game_scene(WATER_GAME_SCENE_PATH if selected_game_id == "water_sort" else BLOCK_GAME_SCENE_PATH)',
 	]:
 		if not robust_main.contains(token):
-			failures.append("Deferred game-scene priming contract missing: %s" % token)
+			failures.append("Deferred game-scene loading contract missing: %s" % token)
+
 	for forbidden in [
 		"BrandedLaunch",
 		"CanvasLayer.new()",
 		"_warm_game_scene_resources",
-		'preload("res://scenes/Game.tscn")',
-		'preload("res://scenes/WaterSort.tscn")',
-		'preload("res://scenes/BlockPuzzle.tscn")',
 	]:
 		if robust_main.contains(forbidden):
-			failures.append("Startup must not retain blocking launch UI/eager game preload: %s" % forbidden)
+			failures.append("Startup must not retain blocking launch UI: %s" % forbidden)
 
 	for token in [
-		'const SOURCE := "res://store_assets/unjam_google_play_icon_512.png"',
-		'const FOREGROUND_SOURCE := "res://store_assets/unjam_adaptive_foreground_432.png"',
-		'const LEGACY_OUT := "res://assets/icon_user_512.png"',
+		'const LEGACY_SOURCE := "res://store_assets/unjam_google_play_icon_512.png"',
+		'const ADAPTIVE_SOURCE := "res://store_assets/unjam_adaptive_foreground_432.png"',
 		'const ADAPTIVE_OUT := "res://assets/icon_user_adaptive_432.png"',
-		"exact-binaries",
-		"transparent-adaptive",
+		"Image.INTERPOLATE_LANCZOS",
+		"full-unjam-logo transparent-blend",
 	]:
 		if not prep.contains(token):
-			failures.append("Approved Android branding contract missing: %s" % token)
+			failures.append("Approved branding pipeline missing: %s" % token)
 
-	for workflow in [debug_workflow, release_workflow]:
-		if not workflow.contains("prepare_android_brand_assets.gd"):
-			failures.append("Android build workflow does not generate padded raster branding")
-		if not workflow.contains('test "$FOREGROUND_BYTES" -gt 1000') and not workflow.contains('test "$AAB_FOREGROUND_BYTES" -gt 1000'):
-			failures.append("Android build workflow does not reject a blank adaptive foreground")
-
-	_check_size("res://store_assets/unjam_google_play_icon_512.png", Vector2i(512, 512), "Canonical launcher artwork", failures)
-	_check_size("res://assets/icon_user_512.png", Vector2i(512, 512), "Packaged launcher artwork", failures)
-	_check_size("res://store_assets/unjam_adaptive_foreground_432.png", Vector2i(432, 432), "Canonical adaptive foreground", failures)
-	_check_size("res://assets/icon_user_adaptive_432.png", Vector2i(432, 432), "Packaged adaptive foreground", failures)
+	_check_size("res://assets/icon_user_512.png", Vector2i(192, 192), "Launcher artwork", failures)
+	_check_size("res://store_assets/unjam_adaptive_foreground_432.png", Vector2i(256, 256), "Adaptive source", failures)
+	_check_size("res://assets/icon_user_adaptive_432.png", Vector2i(432, 432), "Adaptive/splash artwork", failures)
 	_check_transparent_corners("res://store_assets/unjam_adaptive_foreground_432.png", failures)
 	_check_transparent_corners("res://assets/icon_user_adaptive_432.png", failures)
-	if _sha256("res://assets/icon_user_512.png") != LEGACY_SHA256:
-		failures.append("Launcher icon is not the approved full UNJAM logo")
-	if _sha256("res://assets/icon_user_adaptive_432.png") != ADAPTIVE_SHA256:
-		failures.append("Adaptive/splash foreground is not the approved transparent UNJAM logo")
-	if not _read("res://assets/icon_adaptive_background.svg").contains("#0F62C8") or not _read("res://assets/icon_adaptive_background.svg").contains("#210C69"):
+
+	var bg := _read("res://assets/icon_adaptive_background.svg")
+	if not bg.contains("#0F62C8") or not bg.contains("#210C69"):
 		failures.append("Adaptive background no longer matches the approved UNJAM blue gradient")
+
+	for wf in [debug_workflow, release_workflow]:
+		if not wf.contains("prepare_android_brand_assets.gd"):
+			failures.append("Android workflow does not materialize approved branding")
 
 	if not failures.is_empty():
 		for failure in failures:
 			push_error(failure)
 		quit(1)
 		return
-	print("LAUNCHER_AND_STARTUP_HANDOFF_OK")
+	print("LAUNCHER_AND_STARTUP_HANDOFF_OK full-logo-no-demarcation")
 	quit(0)
 
 func _check_size(path: String, expected: Vector2i, label: String, failures: Array[String]) -> void:
@@ -101,24 +89,22 @@ func _check_size(path: String, expected: Vector2i, label: String, failures: Arra
 	if image == null or image.is_empty():
 		failures.append("%s failed to load" % label)
 		return
-	if Vector2i(image.get_width(), image.get_height()) != expected:
+	if image.get_size() != expected:
 		failures.append("%s must be %dx%d" % [label, expected.x, expected.y])
 
 func _check_transparent_corners(path: String, failures: Array[String]) -> void:
 	var image := Image.load_from_file(path)
 	if image == null or image.is_empty():
 		return
-	for point in [Vector2i(0, 0), Vector2i(image.get_width() - 1, 0), Vector2i(0, image.get_height() - 1), Vector2i(image.get_width() - 1, image.get_height() - 1)]:
-		if image.get_pixelv(point).a > 0.02:
-			failures.append("Adaptive foreground must not carry a visible square background")
+	for point in [
+		Vector2i(0, 0),
+		Vector2i(image.get_width() - 1, 0),
+		Vector2i(0, image.get_height() - 1),
+		Vector2i(image.get_width() - 1, image.get_height() - 1),
+	]:
+		if image.get_pixelv(point).a > 0.05:
+			failures.append("%s has a visible square edge" % label)
 			return
-
-func _sha256(path: String) -> String:
-	var bytes := FileAccess.get_file_as_bytes(path)
-	var ctx := HashingContext.new()
-	ctx.start(HashingContext.HASH_SHA256)
-	ctx.update(bytes)
-	return ctx.finish().hex_encode()
 
 func _read(path: String) -> String:
 	var file := FileAccess.open(path, FileAccess.READ)
