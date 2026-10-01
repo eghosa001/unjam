@@ -44,7 +44,7 @@ func _initialize() -> void:
 func _write_exact(source: Image, output_path: String) -> bool:
 	var image := source.duplicate()
 	image.convert(Image.FORMAT_RGBA8)
-	var error := image.save_png(ProjectSettings.globalize_path(output_path))
+	var error: int = image.save_png(ProjectSettings.globalize_path(output_path))
 	if error != OK:
 		push_error("Could not save Android brand asset %s: %s" % [output_path, error])
 		return false

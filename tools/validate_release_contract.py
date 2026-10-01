@@ -34,8 +34,10 @@ def main() -> int:
     project_path = root / 'project.godot'
     live_checker_path = root / 'tools' / 'check_live_monetization.py'
     icon_path = root / 'assets' / 'icon_user_512.png'
+    canonical_icon_path = root / 'store_assets' / 'unjam_google_play_icon_512.png'
     adaptive_bg_path = root / 'assets' / 'icon_adaptive_background.svg'
     adaptive_fg_path = root / 'assets' / 'icon_user_adaptive_432.png'
+    canonical_adaptive_fg_path = root / 'store_assets' / 'unjam_adaptive_foreground_432.png'
     brand_prep_path = root / 'tools' / 'prepare_android_brand_assets.gd'
     robust_main_path = root / 'scripts' / 'ui' / 'robust_main.gd'
 
@@ -155,46 +157,55 @@ def main() -> int:
             if token not in lifecycle_text:
                 errors.append(f'hardened monetization lifecycle migration missing token: {token}')
 
-    if not icon_path.exists():
-        errors.append('512x512 supplied glossy U launcher PNG is missing')
-    if not adaptive_fg_path.exists():
-        errors.append('432x432 adaptive UNJAM foreground PNG source is missing')
+    if not icon_path.exists() or not canonical_icon_path.exists():
+        errors.append('approved 512x512 full UNJAM launcher artwork is missing')
+    elif icon_path.read_bytes() != canonical_icon_path.read_bytes():
+        errors.append('packaged launcher source must exactly match the approved full UNJAM artwork')
+    if not adaptive_fg_path.exists() or not canonical_adaptive_fg_path.exists():
+        errors.append('approved 432x432 transparent UNJAM adaptive foreground is missing')
+    elif adaptive_fg_path.read_bytes() != canonical_adaptive_fg_path.read_bytes():
+        errors.append('packaged adaptive foreground must exactly match the approved transparent artwork')
     if not brand_prep_path.exists():
         errors.append('Android brand raster preparation script is missing')
     if 'viewBox="0 0 432 432"' not in adaptive_bg:
         errors.append('adaptive icon background must remain a 432x432 Android layer')
+    for token in ('#0F62C8', '#1554C8', '#210C69'):
+        if token not in adaptive_bg:
+            errors.append(f'adaptive icon background is missing approved blend color: {token}')
     for token in (
-        'LEGACY_CONTENT := 384',
-        'ADAPTIVE_CONTENT := 288',
-        'Image.INTERPOLATE_LANCZOS',
+        'FOREGROUND_SOURCE := "res://store_assets/unjam_adaptive_foreground_432.png"',
+        'func _write_exact(source: Image, output_path: String) -> bool:',
+        'transparent corners',
         'icon_user_adaptive_432.png',
     ):
         if token not in brand_prep:
-            errors.append(f'Android brand raster preparation missing token: {token}')
-    for token in ('BrandedLaunch', 'res://assets/icon.svg', 'title.text = "UNJAM"', 'subtitle.text = "PUZZLE COLLECTION"'):
-        if token not in robust_main:
-            errors.append(f'branded in-app launch handoff missing token: {token}')
+            errors.append(f'Android approved-logo preparation missing token: {token}')
+    for retired in ('BrandedLaunch', 'title.text = "UNJAM"', 'subtitle.text = "PUZZLE COLLECTION"'):
+        if retired in robust_main:
+            errors.append(f'retired duplicate in-app launch overlay must not return: {retired}')
 
     if 'config/icon="res://assets/icon_user_512.png"' not in project:
-        errors.append('project launcher icon is not wired to the supplied glossy U PNG')
+        errors.append('project launcher icon is not wired to the approved full UNJAM logo')
 
     for token in (
         'boot_splash/show_image=false',
-        'boot_splash/bg_color=Color(0.070588, 0.109804, 0.227451, 1)',
+        'boot_splash/image="res://assets/icon_user_adaptive_432.png"',
+        'boot_splash/bg_color=Color(0.031373, 0.078431, 0.14902, 1)',
+        'environment/defaults/default_clear_color=Color(0.031373, 0.078431, 0.14902, 1)',
     ):
         if token not in project:
-            errors.append(f'project startup handoff does not suppress the generic Godot boot mark: {token}')
+            errors.append(f'project startup handoff does not preserve the seamless approved-logo contract: {token}')
 
     for token in (
         'launcher_icons/main_192x192="res://assets/icon_user_512.png"',
         'launcher_icons/adaptive_foreground_432x432="res://assets/icon_user_adaptive_432.png"',
         'launcher_icons/adaptive_background_432x432="res://assets/icon_adaptive_background.svg"',
         'splash_screen/icon="res://assets/icon_user_adaptive_432.png"',
-        'splash_screen/background_color=Color(0.070588, 0.109804, 0.227451, 1)',
+        'splash_screen/background_color=Color(0.031373, 0.078431, 0.14902, 1)',
         'splash_screen/disable_godot_boot_splash=true',
     ):
         if token not in preset:
-            errors.append(f'Android launcher/splash assets are not wired to the current production contract: {token}')
+            errors.append(f'Android launcher/splash assets are not wired to the approved seamless-logo contract: {token}')
 
     if errors:
         print('Release contract validation failed:')

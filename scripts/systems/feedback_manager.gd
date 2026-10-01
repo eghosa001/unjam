@@ -249,7 +249,9 @@ func _play_chime(notes: Array, duration: float, volume: float, brightness: float
 		# overlap is far less noticeable than the click caused by truncating an
 		# active channel at a non-zero sample.
 		return
-	# A modest global lift matches the clearer feedback-to-music balance common\n\t# in polished casual puzzle games while the per-sound envelopes retain headroom.\n\tvar stream := _chime_stream(notes, duration, volume * SFX_GAIN_MULTIPLIER, brightness)
+	# A modest global lift matches the clearer feedback-to-music balance common
+	# in polished casual puzzle games while the per-sound envelopes retain headroom.
+	var stream := _chime_stream(notes, duration, volume * SFX_GAIN_MULTIPLIER, brightness)
 	target.stream = stream
 	target.play()
 
