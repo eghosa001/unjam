@@ -1,0 +1,53 @@
+name: Temporary CC0 music previews
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/preview-cc0-music.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  previews:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ffmpeg
+      - name: Download and create 20-second previews
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/music-previews/source build/music-previews/clips
+          curl -L --fail --retry 4 "https://opengameart.org/sites/default/files/magic_puzzle_in-game_1_bpm110_0.ogg" -o build/music-previews/source/01_magic.ogg
+          curl -L --fail --retry 4 "https://opengameart.org/sites/default/files/cozy_puzzle_in-game_1_bpm118_0.ogg" -o build/music-previews/source/02_cozy1.ogg
+          curl -L --fail --retry 4 "https://opengameart.org/sites/default/files/cozy_puzzle_in-game_3_bpm108_0.ogg" -o build/music-previews/source/03_cozy3.ogg
+          curl -L --fail --retry 4 "https://opengameart.org/sites/default/files/song17.mp3" -o build/music-previews/source/04_lullaby.mp3
+          curl -L --fail --retry 4 "https://opengameart.org/sites/default/files/Out%20in%20Space_0.ogg" -o build/music-previews/source/05_space.ogg
+          curl -L --fail --retry 4 "https://opengameart.org/sites/default/files/Relaxing_0.mp3" -o build/music-previews/source/06_calm.mp3
+
+          ffmpeg -hide_banner -loglevel error -y -ss 8 -t 20 -i build/music-previews/source/01_magic.ogg -c:a libmp3lame -b:a 160k build/music-previews/clips/01_magic_puzzle.mp3
+          ffmpeg -hide_banner -loglevel error -y -ss 8 -t 20 -i build/music-previews/source/02_cozy1.ogg -c:a libmp3lame -b:a 160k build/music-previews/clips/02_cozy_puzzle_1.mp3
+          ffmpeg -hide_banner -loglevel error -y -ss 8 -t 20 -i build/music-previews/source/03_cozy3.ogg -c:a libmp3lame -b:a 160k build/music-previews/clips/03_cozy_puzzle_3.mp3
+          ffmpeg -hide_banner -loglevel error -y -ss 3 -t 20 -i build/music-previews/source/04_lullaby.mp3 -c:a libmp3lame -b:a 160k build/music-previews/clips/04_happy_lullaby.mp3
+          ffmpeg -hide_banner -loglevel error -y -ss 8 -t 20 -i build/music-previews/source/05_space.ogg -c:a libmp3lame -b:a 160k build/music-previews/clips/05_out_in_space.mp3
+          ffmpeg -hide_banner -loglevel error -y -ss 3 -t 20 -i build/music-previews/source/06_calm.mp3 -c:a libmp3lame -b:a 160k build/music-previews/clips/06_calm_loop.mp3
+
+          cat > build/music-previews/clips/SOURCES.txt <<'EOF'
+          01 Magic Puzzle In-Game 1 — MintoDog — CC0 — https://opengameart.org/content/magic-puzzle-in-game-1
+          02 Cozy Puzzle In-Game 1 — MintoDog — CC0 — https://opengameart.org/content/cozy-puzzle-in-game-1
+          03 Cozy Puzzle In-Game 3 — MintoDog — CC0 — https://opengameart.org/content/cozy-puzzle-in-game-3
+          04 Happy Lullaby — cynicmusic — CC0 — https://opengameart.org/content/happy-lullaby-song17
+          05 Out in Space — Agecaf — CC0/public domain — https://opengameart.org/content/out-in-space-0
+          06 Calm Loop — wipics — CC0/public domain — https://opengameart.org/content/calm-loop
+          EOF
+      - uses: actions/upload-artifact@v4
+        with:
+          name: unjam-cc0-music-previews
+          path: build/music-previews/clips/
+          retention-days: 2
