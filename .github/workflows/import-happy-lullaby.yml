@@ -1,0 +1,51 @@
+name: One-shot Happy Lullaby import
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/import-happy-lullaby.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ffmpeg
+      - name: Download and prepare Happy Lullaby
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p assets/audio
+          curl -L --fail --retry 4 --retry-delay 2 "https://opengameart.org/sites/default/files/song17.mp3" -o /tmp/song17.mp3
+          ffmpeg -hide_banner -loglevel error -y -i /tmp/song17.mp3 -c:a libvorbis -q:a 7 assets/audio/unjam_happy_lullaby.ogg
+          cat > assets/audio/UNJAM_HAPPY_LULLABY_LICENSE.txt <<'EOF'
+          UNJAM background music
+          Title: Happy Lullaby (song17)
+          Author: cynicmusic / The Cynic Project
+          Source: https://opengameart.org/content/happy-lullaby-song17
+          Source file: song17.mp3
+          License listed by source: CC0
+          Copyright/attribution notice on source page:
+          The Cynic Project / cynicmusic.com / pixelsphere.org
+          UNJAM retains this notice even though CC0 does not require attribution.
+          UNJAM customization: runtime fade-in and app-specific volume balance.
+          EOF
+          ffprobe -v error -show_entries format=duration,size -of default=nw=1 assets/audio/unjam_happy_lullaby.ogg
+      - name: Push import branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "UNJAM Asset Import"
+          git config user.email "actions@users.noreply.github.com"
+          git checkout -B import/happy-lullaby
+          git add assets/audio/unjam_happy_lullaby.ogg assets/audio/UNJAM_HAPPY_LULLABY_LICENSE.txt
+          git commit -m "Add selected Happy Lullaby CC0 track"
+          git push --force origin HEAD:refs/heads/import/happy-lullaby
