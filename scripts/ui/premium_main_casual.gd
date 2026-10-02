@@ -179,6 +179,21 @@ func _fit_single_line_control_text(control: Control, max_width: float, start_siz
 	while size > min_size and font.get_string_size(text_value, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x > max_width:
 		size -= 1
 	control.add_theme_font_size_override("font_size", size)
+func _fit_wrapped_text(label: Label, max_width: float, start_size: int, min_size: int = 10) -> void:
+	var font := label.get_theme_font("font")
+	if font == null:
+		return
+	var words := label.text.split(" ", false)
+	var size := start_size
+	while size > min_size:
+		var widest := 0.0
+		for word in words:
+			widest = maxf(widest, font.get_string_size(String(word), HORIZONTAL_ALIGNMENT_LEFT, -1, size).x)
+		if widest <= max_width:
+			break
+		size -= 1
+	label.add_theme_font_size_override("font_size", size)
+
 
 func _figma_button(canvas: Control, name_value: String, text_value: String, rect: Rect2, fill: Color, callback: Callable, text_color: Color = FIGMA_OFF_WHITE, radius: float = 14.0, font_size: int = 12) -> Button:
 	var resolved_fill := fill
@@ -1313,11 +1328,16 @@ func show_playmate_sidekick(game_id: String = "") -> void:
 
 	_figma_card(canvas, "SidekickTipCard", Rect2(17, 257, 354, 234), Color("#d8d4cc"), Color(accent, 0.42), 20)
 	_figma_text(canvas, "TIP", Rect2(35, 278, 80, 20), 14, FIGMA_GOLD)
-	var tip := _figma_text(canvas, _sidekick_tip(), Rect2(35, 312, 318, 130), 16, _figma_theme_text(FIGMA_INK))
+	var tip := _figma_text(canvas, _sidekick_tip(), Rect2(35, 312, 300, 130), 15, _figma_theme_text(FIGMA_INK))
 	tip.name = "SidekickTip"
 	tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	tip.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	tip.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	tip.clip_text = true
+	tip.custom_minimum_size = Vector2.ZERO
+	tip.position = Vector2(35, 312)
+	tip.size = Vector2(300, 130)
+	_fit_wrapped_text(tip, 296.0, 15, 12)
 	var identity := _figma_text(canvas, "BETA • OFFLINE COACH", Rect2(35, 449, 318, 24), 12, _figma_theme_text(FIGMA_MUTED), true)
 	identity.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	identity.clip_text = true
@@ -1350,10 +1370,12 @@ func _sidekick_next_tip() -> void:
 	show_playmate_sidekick(_sidekick_game)
 
 func _sidekick_change_game() -> void:
-	# "Change Game" is navigation: always return to the shared Games selector.
-	# The selector decides whether the chosen game resumes an unfinished run.
-	_open_games_surface()
+	var index := MultiGameManager.GAME_IDS.find(_sidekick_game)
+	_sidekick_game = MultiGameManager.GAME_IDS[(index + 1) % MultiGameManager.GAME_IDS.size()]
+	_sidekick_tip_index = 0
+	FeedbackManager.tap()
+	show_playmate_sidekick(_sidekick_game)
 
 func _sidekick_play_game() -> void:
 	FeedbackManager.tap()
-	resume_game(_sidekick_game)
+	open_game_campaign(_sidekick_game)
