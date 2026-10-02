@@ -151,7 +151,7 @@ func _check_selector(viewport_size: Vector2i, failures: Array[String]) -> void:
 				failures.append("Selector %s card/hit target missing at %s" % [game_id,str(viewport_size)])
 				continue
 			if not _rect_eq(Rect2(card.position,card.size),specs[game_id]):
-				failures.append("Selector %s card drifted from Figma reference" % game_id)
+				failures.append("Selector %s card drifted from Figma reference: actual=%s expected=%s" % [game_id, str(Rect2(card.position,card.size)), str(specs[game_id])])
 			if not _inside(card.get_global_rect(),screen):
 				failures.append("Selector %s card spills outside %s" % [game_id,str(viewport_size)])
 	main.queue_free()
