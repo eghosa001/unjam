@@ -103,6 +103,8 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 
 	var game_title := _add_text(canvas, title, Rect2(34, rect.position.y + 16, 184, 27), 21, DARK_INK if _selector_dark() else INK, true)
 	game_title.name = "SelectorGameTitle_%s" % game_id
+	game_title.add_theme_constant_override("outline_size", 2)
+	game_title.add_theme_color_override("font_outline_color", Color("#11151a") if _selector_dark() else Color(1,1,1,0.74))
 	var subtitle_clip := Control.new()
 	subtitle_clip.name = "SelectorGameSubtitleClip_%s" % game_id
 	subtitle_clip.clip_contents = true
@@ -141,6 +143,14 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 	canvas.add_child(play)
 
 func _add_card_preview(canvas: Control, game_id: String, card_y: float) -> void:
+	# Keep a quiet frame as a containment boundary; no depth, gloss or viewport.
+	var frame := PanelContainer.new()
+	frame.name = "SelectorGamePreviewFrame_%s" % game_id
+	var frame_fill := Color("#242528") if _selector_dark() else Color("#e3e0da")
+	frame.add_theme_stylebox_override("panel", RefCanvas.solid_box(frame_fill, 14, Color(1,1,1,0.12), 1))
+	RefCanvas.set_rect(frame, 243, card_y + 23, 104, 112)
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(frame)
 	var mark := FLAT_GAME_LOGO_SCRIPT.new()
 	mark.name = "SelectorFlatGameLogo_%s" % game_id
 	mark.configure(game_id)
