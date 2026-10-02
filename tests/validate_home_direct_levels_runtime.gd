@@ -76,6 +76,22 @@ func _run() -> void:
 			return _fail("Home World Journey did not visibly change between games")
 		previous_world_value = world_value.text
 
+	# Test the exact Home control reported by the user, not only the bottom nav.
+	var choose := home.find_child("HomeChooseGameButton",true,false) as Button
+	if choose == null:
+		return _fail("Home Choose Game button is missing")
+	if choose.action_mode != BaseButton.ACTION_MODE_BUTTON_RELEASE:
+		return _fail("Home Choose Game must open on touch release to prevent selector touch-through")
+	choose.pressed.emit()
+	await _frames(3)
+	if String(main.get("current_surface")) != "live":
+		return _fail("Home Choose Game did not open the game selector")
+	if main.get("active_game") != null:
+		return _fail("Home Choose Game started a game instead of stopping on the selector")
+
+	main.call("build_home")
+	await _frames(3)
+	home = main.get_node_or_null("PremiumHome")
 	var games := home.find_child("HomeGamesNavButton",true,false) as Button
 	if games == null:
 		return _fail("Home Games navigation is missing")
@@ -83,6 +99,8 @@ func _run() -> void:
 	await _frames(3)
 	if String(main.get("current_surface")) != "live":
 		return _fail("Games navigation did not open the game selector")
+	if main.get("active_game") != null:
+		return _fail("Games navigation started a game instead of stopping on the selector")
 
 	print("HOME_QUICK_SWITCH_PROGRESS_OK")
 	main.queue_free()
