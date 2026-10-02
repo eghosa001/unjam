@@ -391,6 +391,12 @@ func _continue_selected_game() -> void:
 	else:
 		main.call("start_multi_level", selected_game, level, false)
 
+func _open_game_selector() -> void:
+	var main := get_parent()
+	if main != null and main.has_method("_open_games_surface"):
+		FeedbackManager.tap()
+		main.call("_open_games_surface")
+
 func _open_daily_games() -> void:
 	var main := get_parent()
 	if main != null and main.has_method("build_daily_games"):
