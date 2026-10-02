@@ -30,6 +30,7 @@ func _initialize() -> void:
 	if failures.is_empty():
 		print("VERSION8_SIDEKICK_LOCALIZATION_OK")
 		quit(0)
+		return
 	for failure in failures:
 		push_error(failure)
 	quit(1)
