@@ -68,6 +68,23 @@ static func panel_3d(fill: Color, radius: int = 28, edge: Color = Color.WHITE, e
 	style.shadow_offset = Vector2(0, maxf(2.0, depth * 0.48))
 	return style
 
+static func flat_box(fill: Color, radius: int = 22, edge: Color = Color.TRANSPARENT, edge_width: int = 0) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = fill
+	style.corner_radius_top_left = radius
+	style.corner_radius_top_right = radius
+	style.corner_radius_bottom_left = radius
+	style.corner_radius_bottom_right = radius
+	style.border_width_left = edge_width
+	style.border_width_right = edge_width
+	style.border_width_top = edge_width
+	style.border_width_bottom = edge_width
+	style.border_color = edge
+	style.shadow_color = Color.TRANSPARENT
+	style.shadow_size = 0
+	style.shadow_offset = Vector2.ZERO
+	return style
+
 static func gloss_button(button: Button, accent: Color, primary: bool = true, radius: int = 28, dark_mode: bool = false) -> void:
 	# Kept under the legacy name so gameplay/navigation callers do not change.
 	# The visual result is deliberately flat and compact.
@@ -79,10 +96,10 @@ static func gloss_button(button: Button, accent: Color, primary: bool = true, ra
 	button.add_theme_font_size_override("font_size", maxi(24, button.get_theme_font_size("font_size")))
 	var base := accent if primary else (Color("242424") if dark_mode else Color("f1f3f4"))
 	var edge := Color(accent.r, accent.g, accent.b, 0.72 if primary else 0.28)
-	button.add_theme_stylebox_override("normal", badge_box(base, radius, edge, 1))
-	button.add_theme_stylebox_override("hover", badge_box(base.lightened(0.035), radius, edge, 1))
-	button.add_theme_stylebox_override("pressed", badge_box(base.darkened(0.055), radius, edge, 1))
-	button.add_theme_stylebox_override("focus", badge_box(base, radius, Color(accent.r, accent.g, accent.b, 0.88), 1))
+	button.add_theme_stylebox_override("normal", flat_box(base, radius, edge, 1))
+	button.add_theme_stylebox_override("hover", flat_box(base.lightened(0.035), radius, edge, 1))
+	button.add_theme_stylebox_override("pressed", flat_box(base.darkened(0.055), radius, edge, 1))
+	button.add_theme_stylebox_override("focus", flat_box(base, radius, Color(accent.r, accent.g, accent.b, 0.88), 1))
 	var secondary_text := Color("eef7ff") if dark_mode else NAVY
 	button.add_theme_color_override("font_color", Color.WHITE if primary else secondary_text)
 	button.add_theme_color_override("font_hover_color", Color.WHITE if primary else secondary_text)
