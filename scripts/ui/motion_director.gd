@@ -61,6 +61,10 @@ func _animate_key_elements(target: Control) -> void:
 		var control := raw as Control
 		if control == null or not control.visible or control == target:
 			continue
+		# Authored reference geometry must remain exact; minimalist surfaces should
+		# fade without physically shifting their cards.
+		if control.has_meta("unjam_figma_exact_geometry"):
+			continue
 		if control.size.x < 180.0 or control.size.y < 44.0 or control.size.y > 260.0:
 			continue
 		var name_value := String(control.name)
