@@ -11,6 +11,7 @@ func _initialize() -> void:
 
 	var home_selector_block := _function_block(home, "func _open_game_selector() -> void:")
 	_check('_open_games_surface' in home_selector_block, "Choose Game does not always open the Games selector", failures)
+	_check('choose.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE' in home, "Home Choose Game still fires on touch-down and can pass through into a selector card", failures)
 
 	var play_block := _function_block(live, "func _play(game_id: String) -> void:")
 	_check('resume_game' in play_block, "Selecting a game no longer resumes its unfinished campaign run", failures)
