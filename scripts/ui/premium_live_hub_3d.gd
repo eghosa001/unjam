@@ -94,22 +94,29 @@ func _build_reference_selector(canvas: Control) -> void:
 	_add_bottom_nav(canvas)
 
 func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color, highlight: Color, title: String, subtitle: String) -> void:
-	var card_shadow := RefCanvas.add_shadow(canvas, rect, 18, Color(0.02,0.10,0.18,0.08), 2, Vector2(0,1))
+	var card_shadow := RefCanvas.add_shadow(canvas, rect, 18, Color(0.02,0.10,0.18,0.045), 1, Vector2(0,1))
 	card_shadow.name = "SelectorCardShadow_%s" % game_id
 	card_shadow.set_meta("unjam_figma_exact_geometry", true)
 	var card := PanelContainer.new()
 	card.name = "GameCard3D_%s" % game_id
 	card.set_meta("unjam_figma_exact_geometry", true)
-	var neutral := Color("#292a2d") if _selector_dark() else Color("#efede8")
-	card.add_theme_stylebox_override("panel", RefCanvas.solid_box(neutral, 18, Color(accent.r, accent.g, accent.b, 0.32), 1))
+	var neutral := Color("#27282b") if _selector_dark() else Color("#f5f2ec")
+	card.add_theme_stylebox_override("panel", RefCanvas.solid_box(neutral, 18, Color(accent.r, accent.g, accent.b, 0.24), 1))
 	RefCanvas.set_rect(card, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(card)
 
+	var accent_rail := PanelContainer.new()
+	accent_rail.name = "SelectorAccentRail_%s" % game_id
+	accent_rail.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	accent_rail.add_theme_stylebox_override("panel", RefCanvas.solid_box(accent, 2.5))
+	RefCanvas.set_rect(accent_rail, rect.position.x + 4.0, rect.position.y + 18.0, 4.0, rect.size.y - 36.0)
+	canvas.add_child(accent_rail)
+
 	var game_title := _add_text(canvas, title, Rect2(34, rect.position.y + 16, 184, 27), 22, DARK_INK if _selector_dark() else INK, true)
 	game_title.name = "SelectorGameTitle_%s" % game_id
-	game_title.add_theme_constant_override("outline_size", 2)
-	game_title.add_theme_color_override("font_outline_color", Color("#11151a") if _selector_dark() else Color(1,1,1,0.74))
+	game_title.add_theme_constant_override("outline_size", 1)
+	game_title.add_theme_color_override("font_outline_color", Color("#151619") if _selector_dark() else Color(1,1,1,0.84))
 	RefCanvas.fit_single_line_text(game_title, 180.0, 22, 13)
 	var subtitle_clip := Control.new()
 	subtitle_clip.name = "SelectorGameSubtitleClip_%s" % game_id
@@ -153,8 +160,10 @@ func _add_card_preview(canvas: Control, game_id: String, card_y: float) -> void:
 	# Keep a quiet frame as a containment boundary; no depth, gloss or viewport.
 	var frame := PanelContainer.new()
 	frame.name = "SelectorGamePreviewFrame_%s" % game_id
-	var frame_fill := Color("#242528") if _selector_dark() else Color("#e3e0da")
-	frame.add_theme_stylebox_override("panel", RefCanvas.solid_box(frame_fill, 14, Color(1,1,1,0.12), 1))
+	var accent := Unjam3DTheme.game_accent(game_id)
+	var frame_fill := Color("#222326") if _selector_dark() else Color("#ebe7df")
+	frame_fill = frame_fill.lerp(accent.darkened(0.42) if _selector_dark() else accent.lightened(0.78), 0.08)
+	frame.add_theme_stylebox_override("panel", RefCanvas.solid_box(frame_fill, 14, Color(accent.r,accent.g,accent.b,0.20), 1))
 	RefCanvas.set_rect(frame, 243, card_y + 23, 104, 112)
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(frame)
@@ -167,18 +176,17 @@ func _add_card_preview(canvas: Control, game_id: String, card_y: float) -> void:
 func _add_bottom_nav(canvas: Control) -> void:
 	var shell := PanelContainer.new()
 	shell.name = "SelectorBottomNav"
-	RefCanvas.add_shadow(canvas, Rect2(13, 757, 362, 70), 18, Color(0.02,0.10,0.18,0.16), 5, Vector2(0,4))
-	var nav_fill := Color("#232323") if _selector_dark() else Color("#bcb5a9")
-	var nav_border := Color("#5b5347") if _selector_dark() else Color("#d2b06a")
-	shell.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(nav_fill.lightened(0.12), nav_fill, nav_fill.darkened(0.10), 18, nav_border, 1, 0.40))
+	var nav_fill := Color("#252629") if _selector_dark() else Color("#f0ede6")
+	var nav_border := Color("#3a3d42") if _selector_dark() else Color("#cbc6bc")
+	shell.add_theme_stylebox_override("panel", RefCanvas.solid_box(nav_fill, 18, nav_border, 1))
 	RefCanvas.set_rect(shell, 13, 757, 362, 70)
 	shell.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(shell)
 
 	var top_gloss := PanelContainer.new()
 	top_gloss.name = "SelectorNavTopGloss"
-	top_gloss.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(1.0,0.94,0.78,0.18 if _selector_dark() else 0.30), 1))
-	RefCanvas.set_rect(top_gloss, 28, 760, 332, 2)
+	top_gloss.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(1,1,1,0.08 if _selector_dark() else 0.34), 1))
+	RefCanvas.set_rect(top_gloss, 30, 760, 328, 1)
 	top_gloss.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(top_gloss)
 
@@ -192,33 +200,29 @@ func _add_bottom_nav(canvas: Control) -> void:
 	for item in items:
 		var selected: bool = bool(item[5])
 		var accent: Color = item[6]
-		var idle_text := DARK_MUTED if _selector_dark() else Color(0.31, 0.43, 0.54)
-		var label_color := Color.WHITE if selected and _selector_dark() else (INK if selected else idle_text)
-		var glyph_color := accent.lightened(0.18) if selected else idle_text.lightened(0.06)
+		var idle_text := Color("#98a2ad") if _selector_dark() else Color("#66707a")
+		var label_color := DARK_INK if selected and _selector_dark() else (INK if selected else idle_text)
+		var glyph_color := accent if selected else idle_text
 		if selected:
 			var plate := PanelContainer.new()
 			plate.name = "SelectorNavActivePlate_%s" % String(item[0])
-			var plate_fill := accent.darkened(0.50) if _selector_dark() else accent.lightened(0.34)
-			var plate_border := accent.lightened(0.16) if _selector_dark() else accent.darkened(0.08)
-			plate.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(plate_fill.lightened(0.14), plate_fill, plate_fill.darkened(0.12), 15, plate_border, 1.0, 0.38))
-			RefCanvas.set_rect(plate, float(item[3]) + 6.0, 762, 60, 57)
+			plate.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(accent.r,accent.g,accent.b,0.12 if _selector_dark() else 0.15), 14, Color(accent.r,accent.g,accent.b,0.40), 1))
+			RefCanvas.set_rect(plate, float(item[3]) + 7.0, 763, 58, 55)
 			plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			canvas.add_child(plate)
 			var shine := PanelContainer.new()
 			shine.name = "SelectorNavActiveShine_%s" % String(item[0])
-			shine.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(1,1,1,0.32 if _selector_dark() else 0.55),1))
-			RefCanvas.set_rect(shine, float(item[3]) + 16.0, 765, 40, 2)
+			shine.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(accent.r,accent.g,accent.b,0.82),1))
+			RefCanvas.set_rect(shine, float(item[3]) + 24.0, 765, 24, 2)
 			shine.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			canvas.add_child(shine)
-		var glyph := _add_text(canvas, String(item[1]), Rect2(float(item[2]) - 1.0, 763, 58, 24), 21, glyph_color, true)
+		var glyph := _add_text(canvas, String(item[1]), Rect2(float(item[2]) - 1.0, 763, 58, 24), 20, glyph_color, true)
 		glyph.name = "SelectorNavGlyph_%s" % String(item[0])
 		glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		# Keep bottom navigation concise; LocalizationManager translates COLLECT
-		# to the device language without forcing a long English noun into 72 px.
 		var display_name := String(item[0])
 		var label_width := 70.0 if String(item[0]) in ["COLLECT", "SETTINGS"] else 58.0
 		var label_x := float(item[3]) + (72.0 - label_width) * 0.5
-		var label := _add_text(canvas, display_name, Rect2(label_x, 789, label_width, 24), 14, label_color, selected)
+		var label := _add_text(canvas, display_name, Rect2(label_x, 789, label_width, 24), 13, label_color, selected)
 		label.name = "SelectorNavLabel_%s" % String(item[0])
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -226,7 +230,7 @@ func _add_bottom_nav(canvas: Control) -> void:
 		label.custom_minimum_size = Vector2.ZERO
 		label.position = Vector2(label_x, 789)
 		label.size = Vector2(label_width, 24)
-		RefCanvas.fit_single_line_text(label, label_width - 2.0, 14, 10)
+		RefCanvas.fit_single_line_text(label, label_width - 2.0, 13, 11)
 		var hit := Button.new()
 		hit.name = "SelectorNavHit_%s" % String(item[0])
 		hit.flat = true
