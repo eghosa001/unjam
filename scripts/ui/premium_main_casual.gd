@@ -179,6 +179,45 @@ func _fit_single_line_control_text(control: Control, max_width: float, start_siz
 	while size > min_size and font.get_string_size(text_value, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x > max_width:
 		size -= 1
 	control.add_theme_font_size_override("font_size", size)
+func _fit_wrapped_text(label: Label, max_width: float, start_size: int, min_size: int = 10) -> void:
+	if label == null or max_width <= 0.0:
+		return
+	var font := label.get_theme_font("font")
+	if font == null:
+		return
+	var raw_text := label.text.strip_edges()
+	var words := raw_text.split(" ", false)
+	var size := start_size
+	# First guarantee that even the longest token can fit inside the card.
+	while size > min_size:
+		var token_too_wide := false
+		for word in words:
+			if font.get_string_size(String(word), HORIZONTAL_ALIGNMENT_LEFT, -1, size).x > max_width:
+				token_too_wide = true
+				break
+		if not token_too_wide:
+			break
+		size -= 1
+	label.add_theme_font_size_override("font_size", size)
+
+	# Build explicit measured lines. This removes any dependence on Label minimum
+	# size/autowrap quirks and keeps every Sidekick tip inside the visible card.
+	if words.is_empty():
+		return
+	var wrapped: Array[String] = []
+	var current := ""
+	for word in words:
+		var word_text := String(word)
+		var candidate := word_text if current.is_empty() else "%s %s" % [current, word_text]
+		if current.is_empty() or font.get_string_size(candidate, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x <= max_width:
+			current = candidate
+		else:
+			wrapped.append(current)
+			current = word_text
+	if not current.is_empty():
+		wrapped.append(current)
+	label.text = "\n".join(wrapped)
+
 
 func _figma_button(canvas: Control, name_value: String, text_value: String, rect: Rect2, fill: Color, callback: Callable, text_color: Color = FIGMA_OFF_WHITE, radius: float = 14.0, font_size: int = 12) -> Button:
 	var resolved_fill := fill
@@ -1313,11 +1352,16 @@ func show_playmate_sidekick(game_id: String = "") -> void:
 
 	_figma_card(canvas, "SidekickTipCard", Rect2(17, 257, 354, 234), Color("#d8d4cc"), Color(accent, 0.42), 20)
 	_figma_text(canvas, "TIP", Rect2(35, 278, 80, 20), 14, FIGMA_GOLD)
-	var tip := _figma_text(canvas, _sidekick_tip(), Rect2(35, 312, 318, 130), 16, _figma_theme_text(FIGMA_INK))
+	var tip := _figma_text(canvas, _sidekick_tip(), Rect2(35, 312, 300, 130), 15, _figma_theme_text(FIGMA_INK))
 	tip.name = "SidekickTip"
 	tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	tip.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	tip.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	tip.clip_text = true
+	tip.custom_minimum_size = Vector2.ZERO
+	tip.position = Vector2(35, 312)
+	tip.size = Vector2(300, 130)
+	_fit_wrapped_text(tip, 296.0, 15, 12)
 	var identity := _figma_text(canvas, "BETA • OFFLINE COACH", Rect2(35, 449, 318, 24), 12, _figma_theme_text(FIGMA_MUTED), true)
 	identity.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	identity.clip_text = true
