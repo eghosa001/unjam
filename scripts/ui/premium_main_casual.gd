@@ -1350,12 +1350,10 @@ func _sidekick_next_tip() -> void:
 	show_playmate_sidekick(_sidekick_game)
 
 func _sidekick_change_game() -> void:
-	var index := MultiGameManager.GAME_IDS.find(_sidekick_game)
-	_sidekick_game = MultiGameManager.GAME_IDS[(index + 1) % MultiGameManager.GAME_IDS.size()]
-	_sidekick_tip_index = 0
-	FeedbackManager.tap()
-	show_playmate_sidekick(_sidekick_game)
+	# "Change Game" is navigation: always return to the shared Games selector.
+	# The selector decides whether the chosen game resumes an unfinished run.
+	_open_games_surface()
 
 func _sidekick_play_game() -> void:
 	FeedbackManager.tap()
-	open_game_campaign(_sidekick_game)
+	resume_game(_sidekick_game)
