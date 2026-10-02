@@ -2,7 +2,7 @@ name: UNJAM v8 Verified AAB
 
 on:
   push:
-    branches: [version-8-sidekick-localization, v8-minimal-ui]
+    branches: [main, version-8-sidekick-localization, v8-minimal-ui]
     paths:
       - ".github/workflows/android-v8-signed-aab.yml"
       - "project.godot"
@@ -117,6 +117,8 @@ jobs:
           for t in \
             validate_version8_sidekick_localization \
             validate_minimal_ui_v8 \
+            validate_navigation_state_and_text_fit_v8 \
+            validate_flat_polish_v8 \
             validate_cloud_save_protection \
             validate_launcher_icon_safe_zone \
             validate_touch_enhancer_scope \
@@ -219,13 +221,80 @@ jobs:
           print(f'16KB_NATIVE_OK: verified {len(libs)} native libraries')
           PY
 
-      - name: Upload Version 8 unsigned AAB
+      - name: Sign Version 8 AAB with verified upload key
+        env:
+          KEYSTORE_B64: ${{ secrets.UNJAM_ANDROID_KEYSTORE_BASE64 }}
+          KEY_ALIAS: ${{ secrets.UNJAM_ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.UNJAM_ANDROID_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$KEYSTORE_B64"
+          test -n "$KEY_ALIAS"
+          test -n "$KEY_PASSWORD"
+
+          KEYSTORE="$RUNNER_TEMP/unjam-v8-upload.keystore"
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$KEYSTORE"
+          chmod 600 "$KEYSTORE"
+
+          EXPECTED_SHA1='95:CD:20:58:DB:4E:44:0E:B6:1C:82:8C:D8:16:E3:31:99:4E:68:03'
+          EXPECTED_SHA256='36:38:A7:4D:05:CD:74:C2:46:06:44:60:BF:30:01:0E:6D:C9:35:A8:69:98:65:55:98:CB:75:5C:44:8B:58:7C'
+
+          KEY_INFO="$(keytool -list -v -keystore "$KEYSTORE" -storepass "$KEY_PASSWORD" -alias "$KEY_ALIAS")"
+          ACTUAL_SHA1="$(printf '%s\n' "$KEY_INFO" | sed -n 's/^[[:space:]]*SHA1: //p' | head -n1 | tr '[:lower:]' '[:upper:]' | tr -d '\r')"
+          ACTUAL_SHA256="$(printf '%s\n' "$KEY_INFO" | sed -n 's/^[[:space:]]*SHA256: //p' | head -n1 | tr '[:lower:]' '[:upper:]' | tr -d '\r')"
+          test "$ACTUAL_SHA1" = "$EXPECTED_SHA1"
+          test "$ACTUAL_SHA256" = "$EXPECTED_SHA256"
+
+          cp build/android/UNJAM-v8-unsigned.aab build/android/UNJAM-v8-PLAY-SIGNED.aab
+          jarsigner \
+            -keystore "$KEYSTORE" \
+            -storepass "$KEY_PASSWORD" \
+            -keypass "$KEY_PASSWORD" \
+            -sigalg SHA256withRSA \
+            -digestalg SHA-256 \
+            build/android/UNJAM-v8-PLAY-SIGNED.aab "$KEY_ALIAS"
+
+          jarsigner -verify -verbose -certs build/android/UNJAM-v8-PLAY-SIGNED.aab | tee build/android/UNJAM-v8-jarsigner-verify.txt
+          grep -F 'jar verified.' build/android/UNJAM-v8-jarsigner-verify.txt
+          unzip -t build/android/UNJAM-v8-PLAY-SIGNED.aab | tee build/android/UNJAM-v8-zip-test.txt
+
+          BUNDLE_CERT="$(keytool -printcert -jarfile build/android/UNJAM-v8-PLAY-SIGNED.aab)"
+          BUNDLE_SHA1="$(printf '%s\n' "$BUNDLE_CERT" | sed -n 's/^[[:space:]]*SHA1: //p' | head -n1 | tr '[:lower:]' '[:upper:]' | tr -d '\r')"
+          BUNDLE_SHA256="$(printf '%s\n' "$BUNDLE_CERT" | sed -n 's/^[[:space:]]*SHA256: //p' | head -n1 | tr '[:lower:]' '[:upper:]' | tr -d '\r')"
+          test "$BUNDLE_SHA1" = "$EXPECTED_SHA1"
+          test "$BUNDLE_SHA256" = "$EXPECTED_SHA256"
+
+          sha256sum build/android/UNJAM-v8-PLAY-SIGNED.aab | tee build/android/UNJAM-v8-PLAY-SIGNED.aab.sha256
+          {
+            echo 'UNJAM Version 8 Play Release Verification'
+            echo 'Package: com.eghosa.unjamgam'
+            echo 'Version code: 8'
+            echo 'Version name: 1.0.8'
+            echo 'Target SDK: 36'
+            echo 'ABI: arm64-v8a'
+            echo "Upload SHA-1: $BUNDLE_SHA1"
+            echo "Upload SHA-256: $BUNDLE_SHA256"
+            echo 'Billing: enabled'
+            echo 'Ad ID permission: enabled'
+            echo 'AdMob integration: enabled (test-ad mode retained for testing)'
+            echo 'Cloud save: enabled'
+            echo 'Automatic locale detection: enabled'
+            echo 'Playmate Sidekick Beta: enabled'
+            echo 'User data backup: enabled'
+            echo '16 KB native page compatibility: verified'
+          } > build/android/UNJAM-v8-verification.txt
+
+      - name: Upload Version 8 signed AAB
         uses: actions/upload-artifact@v4
         with:
-          name: UNJAM-v8-unsigned-aab
+          name: UNJAM-v8-PLAY-SIGNED
           path: |
-            build/android/UNJAM-v8-unsigned.aab
-            build/android/UNJAM-v8-unsigned.aab.sha256
+            build/android/UNJAM-v8-PLAY-SIGNED.aab
+            build/android/UNJAM-v8-PLAY-SIGNED.aab.sha256
+            build/android/UNJAM-v8-verification.txt
+            build/android/UNJAM-v8-jarsigner-verify.txt
+            build/android/UNJAM-v8-zip-test.txt
             build/android/v8-badging.txt
             build/android/v8-permissions.txt
             build/android/v8-manifest.txt
