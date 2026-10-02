@@ -149,7 +149,7 @@ func _figma_surface(active: String, bottom_tint: Color = FIGMA_BG_BOTTOM, top_ti
 	bg.name = "FigmaSurfaceBackground"
 	var fill := Color("#202124") if _dark() else Color("#e6e3dc")
 	var edge := Color("#3d4045") if _dark() else Color("#c8c3ba")
-	bg.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(fill, 34, edge, 1))
+	bg.add_theme_stylebox_override("panel", FigmaReferenceCanvas.flat_gloss(fill, 34, edge, 1, 0.11))
 	FigmaReferenceCanvas.set_rect(bg, 0, 0, 390, 844)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(bg)
@@ -201,7 +201,7 @@ func _figma_card(canvas: Control, name_value: String, rect: Rect2, tint: Color =
 	card.name = name_value
 	var resolved_tint := Color("#27282b") if _dark() else Color("#f5f2ec")
 	var resolved_accent := Color(accent.r, accent.g, accent.b, 0.22 if _dark() else 0.18)
-	card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(resolved_tint, radius, resolved_accent, 1))
+	card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.flat_gloss(resolved_tint, radius, resolved_accent, 1, 0.10))
 	FigmaReferenceCanvas.set_rect(card, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(card)
@@ -216,7 +216,7 @@ func _figma_solid_card(canvas: Control, name_value: String, rect: Rect2, tint: C
 		resolved_tint = Color("#f5f2ec")
 	elif _dark() and tint.get_luminance() > 0.72:
 		resolved_tint = Color("#27282b")
-	card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(resolved_tint, radius, resolved_border, 1))
+	card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.flat_gloss(resolved_tint, radius, resolved_border, 1, 0.10))
 	FigmaReferenceCanvas.set_rect(card, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(card)
@@ -625,7 +625,7 @@ func _figma_daily_card(canvas: Control, game_id: String, y: float, collection_bo
 	var accent_rail := PanelContainer.new()
 	accent_rail.name = "DailyAccent/%s" % game_id
 	accent_rail.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	accent_rail.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(accent, 3))
+	accent_rail.add_theme_stylebox_override("panel", FigmaReferenceCanvas.flat_gloss(accent, 3, Color.TRANSPARENT, 0, 0.18))
 	FigmaReferenceCanvas.set_rect(accent_rail, 20, y + 14, 5, 78)
 	canvas.add_child(accent_rail)
 	var daily_title := _figma_text(canvas, MultiGameManager.display_name(game_id).to_upper(), Rect2(33,y+16,178,25), 19, FIGMA_DARK_INK if _dark() else FIGMA_INK)
