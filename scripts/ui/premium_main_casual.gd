@@ -32,6 +32,26 @@ var _settings_help_game := "rescue_rush"
 var _settings_theme_toggle_pending := false
 const SETTINGS_HELP_GAMES := ["rescue_rush", "water_sort", "block_puzzle"]
 
+var _sidekick_game := "rescue_rush"
+var _sidekick_tip_index := 0
+const SIDEKICK_TIPS := {
+	"rescue_rush": [
+		"Tap blockers first when one arrow frees several paths.",
+		"Trace the exit lane before moving the first arrow.",
+		"Save hints for boards where two routes look equally safe."
+	],
+	"water_sort": [
+		"Finish one colour before opening too many new tubes.",
+		"Keep one empty tube available as a working space.",
+		"Look for the longest same-colour stack before you pour."
+	],
+	"block_puzzle": [
+		"Protect the centre so every new piece has room.",
+		"Clear lines early instead of waiting for a perfect combo.",
+		"Before placing a piece, check all three tray pieces."
+	]
+}
+
 
 func _figma_theme_text(color: Color) -> Color:
 	if not _dark():
@@ -1308,3 +1328,80 @@ func _highest_level_for_game(game_id: String) -> int:
 	if game_id == "rescue_rush":
 		return int(SaveManager.data.get("highest_level", 1))
 	return MultiGameManager.highest_level(game_id)
+
+
+func show_playmate_sidekick(game_id: String = "") -> void:
+	current_surface = "sidekick"
+	_remove_active_game()
+	if game_id in MultiGameManager.GAME_IDS:
+		_sidekick_game = game_id
+	elif selected_game_id in MultiGameManager.GAME_IDS:
+		_sidekick_game = selected_game_id
+	_sidekick_tip_index = clampi(_sidekick_tip_index, 0, 2)
+	var accent := Unjam3DTheme.game_accent(_sidekick_game)
+	var canvas := _figma_surface("games", Color("#d9e8f4"))
+	_figma_header(
+		canvas,
+		"PLAYMATE SIDEKICK",
+		"BETA • OFFLINE COACH",
+		LocalizationManager.locale_badge(),
+		accent,
+		Callable(self, "build_home")
+	)
+
+	_figma_card(canvas, "SidekickPlaymateCard", Rect2(17, 102, 354, 138), Color("#d8d4cc"), Color(accent, 0.56), 20)
+	_figma_text(canvas, "YOUR PLAYMATE", Rect2(35, 118, 160, 20), 14, FIGMA_GOLD)
+	var friend_name := _sidekick_playmate_name()
+	var friend := _figma_text(canvas, friend_name, Rect2(35, 145, 200, 34), 25, _figma_theme_text(FIGMA_INK))
+	friend.name = "SidekickPlaymateName"
+	var game_label := _figma_text(canvas, MultiGameManager.display_name(_sidekick_game).to_upper(), Rect2(35, 188, 220, 24), 15, _figma_theme_text(FIGMA_MUTED))
+	game_label.name = "SidekickGameName"
+	var level := MultiGameManager.highest_level(_sidekick_game)
+	var level_badge := _figma_text(canvas, "LEVEL %d" % level, Rect2(263, 151, 86, 30), 13, _figma_theme_text(FIGMA_INK), true)
+	level_badge.name = "SidekickLevel"
+
+	_figma_card(canvas, "SidekickTipCard", Rect2(17, 257, 354, 234), Color("#d8d4cc"), Color(accent, 0.42), 20)
+	_figma_text(canvas, "TIP", Rect2(35, 278, 80, 20), 14, FIGMA_GOLD)
+	var tip := _figma_text(canvas, _sidekick_tip(), Rect2(35, 312, 318, 130), 18, _figma_theme_text(FIGMA_INK))
+	tip.name = "SidekickTip"
+	tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	tip.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	var identity := _figma_text(canvas, "BETA • OFFLINE COACH", Rect2(35, 449, 318, 24), 12, _figma_theme_text(FIGMA_MUTED), true)
+	identity.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+	var next_tip := _figma_button(canvas, "SidekickNextTip", "NEXT TIP", Rect2(17, 515, 170, 52), Color("#cbc4b8"), Callable(self, "_sidekick_next_tip"), FIGMA_NAVY, 16, 13)
+	next_tip.tooltip_text = LocalizationManager.localize("NEXT TIP")
+	var change_game := _figma_button(canvas, "SidekickChangeGame", "CHANGE GAME", Rect2(201, 515, 170, 52), Color("#cbc4b8"), Callable(self, "_sidekick_change_game"), FIGMA_NAVY, 16, 13)
+	change_game.tooltip_text = LocalizationManager.localize("CHANGE GAME")
+	var play := _figma_button(canvas, "SidekickPlayGame", "PLAY THIS GAME", Rect2(17, 588, 354, 58), accent.darkened(0.16), Callable(self, "_sidekick_play_game"), FIGMA_OFF_WHITE, 17, 15)
+	play.tooltip_text = LocalizationManager.localize("PLAY THIS GAME")
+	var locale_note := _figma_text(canvas, "Auto • %s" % LocalizationManager.locale_badge(), Rect2(17, 674, 354, 24), 12, _figma_theme_text(FIGMA_MUTED), true)
+	locale_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_figma_bottom_nav(canvas, "home")
+
+func _sidekick_playmate_name() -> String:
+	var rescued = SaveManager.data.get("rescued", [])
+	if rescued is Array and not (rescued as Array).is_empty():
+		return String((rescued as Array)[0]).capitalize()
+	return "UNJAM BUDDY"
+
+func _sidekick_tip() -> String:
+	var tips: Array = SIDEKICK_TIPS.get(_sidekick_game, SIDEKICK_TIPS["rescue_rush"])
+	return LocalizationManager.localize(String(tips[_sidekick_tip_index % tips.size()]))
+
+func _sidekick_next_tip() -> void:
+	var tips: Array = SIDEKICK_TIPS.get(_sidekick_game, SIDEKICK_TIPS["rescue_rush"])
+	_sidekick_tip_index = (_sidekick_tip_index + 1) % tips.size()
+	FeedbackManager.tap()
+	show_playmate_sidekick(_sidekick_game)
+
+func _sidekick_change_game() -> void:
+	var index := MultiGameManager.GAME_IDS.find(_sidekick_game)
+	_sidekick_game = MultiGameManager.GAME_IDS[(index + 1) % MultiGameManager.GAME_IDS.size()]
+	_sidekick_tip_index = 0
+	FeedbackManager.tap()
+	show_playmate_sidekick(_sidekick_game)
+
+func _sidekick_play_game() -> void:
+	FeedbackManager.tap()
+	open_game_campaign(_sidekick_game)

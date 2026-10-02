@@ -33,6 +33,7 @@ textures/vram_compression/import_etc2_astc=true
 environment/defaults/default_clear_color=Color(0.062745, 0.152941, 0.415686, 1)
 
 [autoload]
+LocalizationManager="*res://scripts/systems/localization_manager.gd"
 SaveManager="*res://scripts/core/economy_save_manager.gd"
 CloudSaveManager="*res://scripts/systems/cloud_save_manager.gd"
 EconomyManager="*res://scripts/systems/economy_manager.gd"
