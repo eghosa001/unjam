@@ -279,8 +279,8 @@ func _add_world_progress(canvas: Control) -> void:
 func _add_bottom_nav_reference(canvas: Control) -> void:
 	var shell := PanelContainer.new()
 	shell.name = "HomeBottomNav3D"
-	var nav_fill := Color("#242528") if _home_dark() else Color("#ddd9d1")
-	var nav_border := Color("#3d4045") if _home_dark() else Color("#c6c1b8")
+	var nav_fill := Color("#252629") if _home_dark() else Color("#f0ede6")
+	var nav_border := Color("#3a3d42") if _home_dark() else Color("#cbc6bc")
 	shell.add_theme_stylebox_override("panel", RefCanvas.solid_box(nav_fill, 18, nav_border, 1))
 	RefCanvas.set_rect(shell, 13, 757, 362, 70)
 	shell.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -296,13 +296,14 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 	for item in items:
 		var selected: bool = bool(item[6])
 		var accent: Color = item[7]
-		var nav_color := Color.WHITE if selected and _home_dark() else (DARK_MUTED if _home_dark() else (INK if selected else Color(0.36,0.39,0.43)))
-		var icon_color := accent if selected else nav_color
+		var idle_color := Color("#98a2ad") if _home_dark() else Color("#66707a")
+		var nav_color := DARK_INK if selected and _home_dark() else (INK if selected else idle_color)
+		var icon_color := accent if selected else idle_color
 		if selected:
 			var plate := PanelContainer.new()
 			plate.name = "HomeNavActivePlate"
 			plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			plate.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(accent.r, accent.g, accent.b, 0.12), 12, Color(accent.r, accent.g, accent.b, 0.52), 1))
+			plate.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(accent.r, accent.g, accent.b, 0.12 if _home_dark() else 0.15), 12, Color(accent.r, accent.g, accent.b, 0.40), 1))
 			RefCanvas.set_rect(plate, float(item[3]) + 8.0, 764, 56, 52)
 			canvas.add_child(plate)
 		var glyph := _add_text(canvas, item[1], Rect2(float(item[2]) - 1.0, 765, 58, 22), 20, icon_color, true)
@@ -313,6 +314,7 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 		var label_x := float(item[3]) + (72.0 - label_width) * 0.5
 		var label := _add_text(canvas, display_name, Rect2(label_x, 790, label_width, 20), 13, nav_color, selected)
 		label.name = "HomeNavLabel_%s" % String(item[0])
+		RefCanvas.fit_single_line_text(label, label_width - 2.0, 13, 11)
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		label.clip_text = true
