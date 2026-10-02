@@ -132,6 +132,13 @@ func _figma_surface(active: String, bottom_tint: Color = FIGMA_BG_BOTTOM, top_ti
 	clear_content()
 	content.visible = true
 	content.mouse_filter = Control.MOUSE_FILTER_STOP
+	# Structural fallback only: keeps letterbox/background pixels theme-correct.
+	var viewport_bg := ColorRect.new()
+	viewport_bg.name = "FigmaSurfaceViewportBackground"
+	viewport_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	viewport_bg.color = Color("#1f1f1f") if _dark() else Color("#e6e3dc")
+	viewport_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content.add_child(viewport_bg)
 	var canvas := FigmaReferenceCanvas.new()
 	canvas.name = "FigmaSurface390x844"
 	content.add_child(canvas)
