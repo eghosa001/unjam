@@ -1,4 +1,4 @@
-name: UNJAM v8 Signed AAB
+name: UNJAM v8 Verified AAB
 
 on:
   push:
@@ -10,16 +10,13 @@ permissions:
   contents: read
 
 concurrency:
-  group: unjam-v8-signed-aab
+  group: unjam-v8-aab
   cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 100
-    env:
-      EXPECTED_PACKAGE: com.eghosa.unjamgam
-      EXPECTED_UPLOAD_SHA1: ${{ secrets.UNJAM_ANDROID_UPLOAD_SHA1 }}
     steps:
       - uses: actions/checkout@v4
 
@@ -37,58 +34,12 @@ jobs:
           grep -F 'LocalizationManager="*res://scripts/systems/localization_manager.gd"' project.godot
           grep -F 'com.google.android.gms.permission.AD_ID' export_presets.cfg
           grep -Fx 'package/unique_name="com.eghosa.unjamgam"' export_presets.cfg
+          grep -Fx 'package/signed=true' export_presets.cfg
           grep -Fx 'gradle_build/target_sdk="36"' export_presets.cfg
           grep -Fx 'architectures/arm64-v8a=true' export_presets.cfg
           grep -F 'HomePlaymateSidekickBeta' scripts/ui/premium_home_direct_levels.gd
           grep -F 'func show_playmate_sidekick' scripts/ui/premium_main_casual.gd
           grep -F 'OS.get_locale_language()' scripts/systems/localization_manager.gd
-
-      - name: Require and verify production upload key
-        env:
-          KEYSTORE_B64: ${{ secrets.UNJAM_ANDROID_KEYSTORE_BASE64 }}
-          KEY_ALIAS: ${{ secrets.UNJAM_ANDROID_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.UNJAM_ANDROID_KEY_PASSWORD }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -n "$KEYSTORE_B64"
-          test -n "$KEY_ALIAS"
-          test -n "$KEY_PASSWORD"
-          test -n "$EXPECTED_UPLOAD_SHA1"
-          [[ "$EXPECTED_UPLOAD_SHA1" =~ ^([0-9A-Fa-f]{2}:){19}[0-9A-Fa-f]{2}$ ]]
-          KEYSTORE="$RUNNER_TEMP/unjam-release.keystore"
-          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$KEYSTORE"
-          chmod 600 "$KEYSTORE"
-          keytool -list -keystore "$KEYSTORE" -storepass "$KEY_PASSWORD" -alias "$KEY_ALIAS" >/dev/null
-          ACTUAL_UPLOAD_SHA1="$(keytool -list -v -keystore "$KEYSTORE" -storepass "$KEY_PASSWORD" -alias "$KEY_ALIAS" | sed -n 's/^[[:space:]]*SHA1: //p' | head -n 1 | tr '[:lower:]' '[:upper:]' | tr -d '\r')"
-          EXPECTED="$(printf '%s' "$EXPECTED_UPLOAD_SHA1" | tr '[:lower:]' '[:upper:]')"
-          if [[ "$ACTUAL_UPLOAD_SHA1" != "$EXPECTED" ]]; then
-            echo "Upload certificate mismatch. Expected $EXPECTED but found $ACTUAL_UPLOAD_SHA1" >&2
-            exit 1
-          fi
-          echo "GODOT_ANDROID_KEYSTORE_RELEASE_PATH=$KEYSTORE" >> "$GITHUB_ENV"
-          echo "GODOT_ANDROID_KEYSTORE_RELEASE_USER=$KEY_ALIAS" >> "$GITHUB_ENV"
-          echo "GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
-
-      - name: Configure Version 8 signed export
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          import re
-          from pathlib import Path
-          p=Path("export_presets.cfg")
-          s=p.read_text()
-          s=re.sub(r'version/code=\d+', 'version/code=8', s)
-          s=re.sub(r'version/name="[^"]*"', 'version/name="1.0.8"', s)
-          if 'package/signed=false' in s:
-              s=s.replace('package/signed=false','package/signed=true')
-          p.write_text(s)
-          PY
-          grep -Fx 'version/code=8' export_presets.cfg
-          grep -Fx 'version/name="1.0.8"' export_presets.cfg
-          grep -Fx 'package/signed=true' export_presets.cfg
-          grep -Fx 'gradle_build/export_format=1' export_presets.cfg
 
       - name: Setup JDK 17
         uses: actions/setup-java@v5
@@ -141,16 +92,50 @@ jobs:
           godot --headless --path . --editor --quit 2>&1 | tee build-import.log
           if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" build-import.log; then exit 1; fi
 
-      - name: Run focused Version 8 and Version 7 gates
+      - name: Run focused Version 8 and retained Version 7 gates
         shell: bash
         run: |
           set -euo pipefail
-          for t in             validate_version8_sidekick_localization             validate_cloud_save_protection             validate_launcher_icon_safe_zone             validate_touch_enhancer_scope             validate_bottom_nav_touch_zones             validate_soothing_audio_palette             validate_feedback_manager_event_driven_music             validate_runtime_efficiency             validate_gameplay_interactions             validate_monetization             validate_restore_purchase_flow             validate_admob_production             validate_billing_production             validate_theme_integrity             validate_navigation_surface_coverage; do
+          for t in \
+            validate_version8_sidekick_localization \
+            validate_cloud_save_protection \
+            validate_launcher_icon_safe_zone \
+            validate_touch_enhancer_scope \
+            validate_bottom_nav_touch_zones \
+            validate_soothing_audio_palette \
+            validate_feedback_manager_event_driven_music \
+            validate_runtime_efficiency \
+            validate_gameplay_interactions \
+            validate_monetization \
+            validate_restore_purchase_flow \
+            validate_admob_production \
+            validate_billing_production \
+            validate_theme_integrity \
+            validate_navigation_surface_coverage; do
             echo "===== $t ====="
             timeout 180s godot --headless --path . --script "res://tests/$t.gd"
           done
 
-      - name: Export signed Version 8 verification APK
+      - name: Configure Version 8 unsigned export
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          p=Path("export_presets.cfg")
+          s=p.read_text()
+          s=re.sub(r'version/code=\d+', 'version/code=8', s)
+          s=re.sub(r'version/name="[^"]*"', 'version/name="1.0.8"', s)
+          s=s.replace('package/signed=true','package/signed=false')
+          p.write_text(s)
+          PY
+          grep -Fx 'version/code=8' export_presets.cfg
+          grep -Fx 'version/name="1.0.8"' export_presets.cfg
+          grep -Fx 'package/signed=false' export_presets.cfg
+          grep -Fx 'gradle_build/export_format=1' export_presets.cfg
+
+      - name: Export Version 8 verification APK
         shell: bash
         run: |
           set -euo pipefail
@@ -180,25 +165,21 @@ jobs:
           grep -E "android:allowBackup.*0xffffffff" build/android/v8-manifest.txt
           rm -f "$APK"
 
-      - name: Export signed Version 8 AAB
+      - name: Export Version 8 AAB
         shell: bash
         run: |
           set -euo pipefail
-          godot --headless --verbose --path . --export-release Android build/android/UNJAM-v8-signed.aab 2>&1 | tee build/android/v8-aab-export.log
+          godot --headless --verbose --path . --export-release Android build/android/UNJAM-v8-unsigned.aab 2>&1 | tee build/android/v8-aab-export.log
           if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" build/android/v8-aab-export.log; then exit 1; fi
-          test -s build/android/UNJAM-v8-signed.aab
-          unzip -t build/android/UNJAM-v8-signed.aab >/dev/null
+          test -s build/android/UNJAM-v8-unsigned.aab
+          unzip -t build/android/UNJAM-v8-unsigned.aab >/dev/null
+          sha256sum build/android/UNJAM-v8-unsigned.aab | tee build/android/UNJAM-v8-unsigned.aab.sha256
 
-      - name: Verify signed AAB certificate and 16 KB compatibility
+      - name: Verify 16 KB native page compatibility
         shell: bash
         run: |
           set -euo pipefail
-          AAB=build/android/UNJAM-v8-signed.aab
-          jarsigner -verify -verbose -certs "$AAB" | tee build/android/v8-jarsigner-verify.log
-          grep -F "jar verified." build/android/v8-jarsigner-verify.log
-          BUNDLE_SHA1="$(keytool -printcert -jarfile "$AAB" | sed -n 's/^[[:space:]]*SHA1: //p' | head -n 1 | tr '[:lower:]' '[:upper:]' | tr -d '\r')"
-          EXPECTED="$(printf '%s' "$EXPECTED_UPLOAD_SHA1" | tr '[:lower:]' '[:upper:]')"
-          test "$BUNDLE_SHA1" = "$EXPECTED"
+          AAB=build/android/UNJAM-v8-unsigned.aab
           NATIVE_DIR="$RUNNER_TEMP/unjam-v8-native-libs"
           mkdir -p "$NATIVE_DIR"
           unzip -q "$AAB" 'base/lib/*/*.so' -d "$NATIVE_DIR" || true
@@ -218,16 +199,14 @@ jobs:
           if bad: raise SystemExit('16 KB compatibility failed: '+', '.join(bad))
           print(f'16KB_NATIVE_OK: verified {len(libs)} native libraries')
           PY
-          sha256sum "$AAB" | tee build/android/UNJAM-v8-signed.aab.sha256
 
-      - name: Upload signed Version 8 AAB
+      - name: Upload Version 8 unsigned AAB
         uses: actions/upload-artifact@v4
         with:
-          name: UNJAM-v8-signed-aab
+          name: UNJAM-v8-unsigned-aab
           path: |
-            build/android/UNJAM-v8-signed.aab
-            build/android/UNJAM-v8-signed.aab.sha256
-            build/android/v8-jarsigner-verify.log
+            build/android/UNJAM-v8-unsigned.aab
+            build/android/UNJAM-v8-unsigned.aab.sha256
             build/android/v8-badging.txt
             build/android/v8-permissions.txt
             build/android/v8-manifest.txt
