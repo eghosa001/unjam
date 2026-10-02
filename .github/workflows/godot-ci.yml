@@ -76,6 +76,14 @@ jobs:
           godot --headless --path . --editor --quit 2>&1 | tee import.log
           if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" import.log; then exit 1; fi
 
+      - name: Boot smoke test
+        if: steps.plan.outputs.needs_godot == 'true'
+        shell: bash
+        run: |
+          set -o pipefail
+          godot --headless --path . --quit-after 5 2>&1 | tee boot.log
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" boot.log; then exit 1; fi
+
       # Selective hardening gates are planned by tools/select_fast_ci_tests.py:
       # validate_production_hardening_regressions and
       # validate_water_constructive_solvability. They run only for relevant
@@ -94,14 +102,6 @@ jobs:
             fi
             bash tools/run_godot_test.sh "$t" "$timeout_seconds"
           done
-
-      - name: Boot smoke test
-        if: steps.plan.outputs.needs_godot == 'true'
-        shell: bash
-        run: |
-          set -o pipefail
-          godot --headless --path . --quit-after 5 2>&1 | tee boot.log
-          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" boot.log; then exit 1; fi
 
       - name: Capture only affected rendered screens
         if: steps.plan.outputs.visual_scope != ''

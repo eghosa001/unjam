@@ -61,22 +61,14 @@ func _build() -> void:
 
 func _build_reference_selector(canvas: Control) -> void:
 	var background := PanelContainer.new()
-	var bg_top := DARK_SCENE_TOP if _selector_dark() else SCENE_TOP
-	var bg_mid := DARK_SCENE_MID if _selector_dark() else SCENE_MID
-	var bg_bottom := DARK_SCENE_BOTTOM if _selector_dark() else SCENE_BOTTOM
-	var bg_border := Color("#5b5347") if _selector_dark() else Color("#d2b06a")
-	background.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(bg_top, bg_mid, bg_bottom, 34, bg_border, 1, 0.48))
+	var bg_fill := Color("#202124") if _selector_dark() else Color("#e6e3dc")
+	var bg_border := Color("#3d4045") if _selector_dark() else Color("#c8c3ba")
+	background.add_theme_stylebox_override("panel", RefCanvas.solid_box(bg_fill, 34, bg_border, 1))
 	RefCanvas.set_rect(background, 0, 0, 390, 844)
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(background)
-	RefCanvas.add_world_depth(canvas, Color("#59636f") if _selector_dark() else Color("#9aa4ae"), _selector_dark(), 0.0, "SelectorWorldDepth")
-	RefCanvas.add_scene_backdrop_layers(canvas, Color("#5b5347") if _selector_dark() else Color("#b7aa91"), _selector_dark(), "Selector")
-	var selector_key_light := canvas.get_node_or_null("SelectorKeyLight")
-	if selector_key_light != null:
-		selector_key_light.set_meta("unjam_figma_scene_light", true)
 
-	RefCanvas.add_shadow(canvas, Rect2(17, 19, 52, 52), 18, Color(0.02,0.15,0.30,0.24), 4, Vector2(0,3))
-	var back := RefCanvas.premium_button("‹", 27, OFF_WHITE, Color("#101a31") if _selector_dark() else Color("#152b52"), 18)
+	var back := RefCanvas.premium_button("‹", 27, OFF_WHITE, Color("#292a2d") if _selector_dark() else Color("#d6d1c7"), 16, bg_border, 1)
 	back.name = "SelectorBackButton"
 	back.tooltip_text = "Back home"
 	RefCanvas.set_rect(back, 17, 19, 52, 52)
@@ -84,15 +76,13 @@ func _build_reference_selector(canvas: Control) -> void:
 	back.pressed.connect(_go_home)
 	canvas.add_child(back)
 
-	var selector_title := _add_text(canvas, "CHOOSE A GAME", Rect2(78, 26, 196, 34), 22, OFF_WHITE, true)
+	var selector_title := _add_text(canvas, "CHOOSE A GAME", Rect2(78, 26, 196, 34), 22, DARK_INK if _selector_dark() else INK, true)
 	selector_title.name = "SelectorTitle3D"
 	selector_title.clip_text = true
-	RefCanvas.style_display_title(selector_title, Color("#ffca45"), Color("#071d55"), 2)
-	RefCanvas.add_shadow(canvas, Rect2(285, 21, 84, 46), 23, Color(0.02,0.15,0.30,0.16), 3, Vector2(0,2))
-	var settings := RefCanvas.premium_button("⚙", 18, NAVY if not _selector_dark() else OFF_WHITE, Color("#cbc4b8") if not _selector_dark() else Color("#2c2c2c"), 23, Color("#b3aca2"), 1.1)
+	var settings := RefCanvas.premium_button("⚙", 18, DARK_INK if _selector_dark() else NAVY, Color("#292a2d") if _selector_dark() else Color("#d6d1c7"), 16, bg_border, 1)
 	settings.name = "SelectorSettingsButton"
 	settings.tooltip_text = "Settings"
-	RefCanvas.set_rect(settings, 285, 21, 84, 46)
+	RefCanvas.set_rect(settings, 317, 21, 52, 46)
 	settings.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	settings.pressed.connect(func(): get_parent().call("build_settings"))
 	canvas.add_child(settings)
@@ -103,49 +93,38 @@ func _build_reference_selector(canvas: Control) -> void:
 	_add_bottom_nav(canvas)
 
 func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color, highlight: Color, title: String, subtitle: String) -> void:
-	var card_shadow := RefCanvas.add_shadow(canvas, rect, 20, Color(0.03,0.10,0.20,0.22), 8, Vector2(0,6))
+	var card_shadow := RefCanvas.add_shadow(canvas, rect, 18, Color(0.02,0.10,0.18,0.08), 2, Vector2(0,1))
 	card_shadow.name = "SelectorCardShadow_%s" % game_id
+	card_shadow.set_meta("unjam_figma_exact_geometry", true)
 	var card := PanelContainer.new()
 	card.name = "GameCard3D_%s" % game_id
-	var neutral_top := Color("#2c2c2c") if _selector_dark() else Color("#dedad2")
-	var neutral_mid := Color("#252525") if _selector_dark() else Color("#d8d4cc")
-	var neutral_bottom := Color("#1f1f1f") if _selector_dark() else Color("#cec8be")
-	card.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(neutral_top, neutral_mid, neutral_bottom, 20, Color(accent,0.58), 1.2, 0.26))
+	card.set_meta("unjam_figma_exact_geometry", true)
+	var neutral := Color("#292a2d") if _selector_dark() else Color("#efede8")
+	card.add_theme_stylebox_override("panel", RefCanvas.solid_box(neutral, 18, Color(accent.r, accent.g, accent.b, 0.32), 1))
 	RefCanvas.set_rect(card, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(card)
 
-	var game_title := _add_text(canvas, title, Rect2(34, rect.position.y + 11.6, 184, 27), 22, DARK_INK if _selector_dark() else INK, true)
+	var game_title := _add_text(canvas, title, Rect2(34, rect.position.y + 16, 184, 27), 22, DARK_INK if _selector_dark() else INK, true)
 	game_title.name = "SelectorGameTitle_%s" % game_id
-	game_title.add_theme_color_override("font_color", DARK_INK if _selector_dark() else INK)
 	game_title.add_theme_constant_override("outline_size", 2)
-	game_title.add_theme_color_override("font_outline_color", Color("#11151a") if _selector_dark() else Color(1, 1, 1, 0.72))
-	# Keep body copy in a hard clipping region. Label intrinsic minimum size can
-	# exceed its authored width for longer localized strings, so the wrapper is
-	# the authoritative boundary before the 3D emblem.
+	game_title.add_theme_color_override("font_outline_color", Color("#11151a") if _selector_dark() else Color(1,1,1,0.74))
 	var subtitle_clip := Control.new()
 	subtitle_clip.name = "SelectorGameSubtitleClip_%s" % game_id
 	subtitle_clip.clip_contents = true
 	subtitle_clip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	RefCanvas.set_rect(subtitle_clip, 34, rect.position.y + 39.6, 184, 38)
+	RefCanvas.set_rect(subtitle_clip, 34, rect.position.y + 47, 184, 34)
 	canvas.add_child(subtitle_clip)
 	var game_subtitle := _make_label(subtitle, 14, DARK_MUTED if _selector_dark() else MUTED, false)
 	game_subtitle.name = "SelectorGameSubtitle_%s" % game_id
 	game_subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	game_subtitle.clip_text = true
-	game_subtitle.custom_minimum_size = Vector2.ZERO
 	game_subtitle.position = Vector2.ZERO
-	game_subtitle.size = Vector2(184, 38)
+	game_subtitle.size = Vector2(184, 34)
 	subtitle_clip.add_child(game_subtitle)
+
 	var level := maxi(1, MultiGameManager.highest_level(game_id))
-	RefCanvas.add_shadow(canvas, Rect2(33, rect.position.y + 100.7, 112, 36), 13, Color(0.02,0.10,0.20,0.16), 3, Vector2(0,2))
-	var level_pill := PanelContainer.new()
-	var pill_mid := Color("#2c2c2c") if _selector_dark() else Color("#cec8be")
-	level_pill.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(pill_mid.lightened(0.04), pill_mid, pill_mid.darkened(0.04), 13, Color(accent,0.42), 1, 0.24))
-	RefCanvas.set_rect(level_pill, 33, rect.position.y + 100.7, 112, 36)
-	level_pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	canvas.add_child(level_pill)
-	var level_label := _add_text(canvas, "LEVEL %d" % level, Rect2(45, rect.position.y + 109, 88, 19), 14, DARK_INK if _selector_dark() else INK, true)
+	var level_label := _add_text(canvas, "LEVEL %d" % level, Rect2(34, rect.position.y + 108, 104, 24), 13, DARK_MUTED if _selector_dark() else MUTED, true)
 	level_label.name = "SelectorLevelLabel_%s" % game_id
 	_add_card_preview(canvas, game_id, rect.position.y)
 
@@ -154,32 +133,32 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 	tap.flat = true
 	tap.focus_mode = Control.FOCUS_NONE
 	tap.modulate.a = 0.001
-	RefCanvas.set_rect(tap, rect.position.x - 2, rect.position.y - 5, rect.size.x + 4, rect.size.y + 10)
+	RefCanvas.set_rect(tap, rect.position.x - 2, rect.position.y - 3, rect.size.x + 4, rect.size.y + 6)
 	tap.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	tap.pressed.connect(_play.bind(game_id))
 	canvas.add_child(tap)
 
-	var play := RefCanvas.premium_button("PLAY", 14, OFF_WHITE, accent.darkened(0.22), 14, accent.lightened(0.18), 1.1)
+	var play := RefCanvas.premium_button("PLAY", 14, OFF_WHITE, accent.darkened(0.18), 13, Color(accent.r, accent.g, accent.b, 0.54), 1)
 	play.name = "SelectorPlay_%s" % game_id
 	play.tooltip_text = "Play %s" % title.capitalize()
-	RefCanvas.set_rect(play, 153, rect.position.y + 96, 74, 44)
+	RefCanvas.set_rect(play, 151, rect.position.y + 100, 76, 42)
 	play.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	play.pressed.connect(_play.bind(game_id))
 	canvas.add_child(play)
 
 func _add_card_preview(canvas: Control, game_id: String, card_y: float) -> void:
-	var origin_y := card_y + 22.5
-	var stage := PanelContainer.new()
-	stage.name = "SelectorGamePreviewFrame_%s" % game_id
-	var stage_mid := Color("#252525") if _selector_dark() else Color("#d6d1c7")
-	stage.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(stage_mid.lightened(0.05), stage_mid, stage_mid.darkened(0.05), 16, Color(1,1,1,0.16), 1, 0.24))
-	RefCanvas.set_rect(stage, 243, origin_y, 104, 112)
-	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	canvas.add_child(stage)
+	# Keep a quiet frame as a containment boundary; no depth, gloss or viewport.
+	var frame := PanelContainer.new()
+	frame.name = "SelectorGamePreviewFrame_%s" % game_id
+	var frame_fill := Color("#242528") if _selector_dark() else Color("#e3e0da")
+	frame.add_theme_stylebox_override("panel", RefCanvas.solid_box(frame_fill, 14, Color(1,1,1,0.12), 1))
+	RefCanvas.set_rect(frame, 243, card_y + 23, 104, 112)
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(frame)
 	var mark := FLAT_GAME_LOGO_SCRIPT.new()
 	mark.name = "SelectorFlatGameLogo_%s" % game_id
 	mark.configure(game_id)
-	RefCanvas.set_rect(mark, 252, origin_y + 9, 86, 94)
+	RefCanvas.set_rect(mark, 258, card_y + 31, 74, 92)
 	canvas.add_child(mark)
 
 func _add_bottom_nav(canvas: Control) -> void:

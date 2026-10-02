@@ -132,88 +132,27 @@ func _figma_surface(active: String, bottom_tint: Color = FIGMA_BG_BOTTOM, top_ti
 	clear_content()
 	content.visible = true
 	content.mouse_filter = Control.MOUSE_FILTER_STOP
-	# Every menu starts from a premium neutral palette, then receives only a faint
-	# hint of the requested surface tint. This avoids flat white/black pages while
-	# keeping game-specific greens/blues/purples visually dominant.
-	var opaque_bottom := Color(bottom_tint.r, bottom_tint.g, bottom_tint.b, 1.0)
-	var opaque_top := Color(top_tint.r, top_tint.g, top_tint.b, 1.0)
-	var resolved_bottom := FIGMA_SCENE_DARK_BOTTOM.lerp(opaque_bottom.darkened(0.46), 0.05) if _dark() else FIGMA_SCENE_BOTTOM.lerp(opaque_bottom, 0.04)
-	var resolved_top := FIGMA_SCENE_DARK_TOP.lerp(opaque_top.darkened(0.42), 0.04) if _dark() else FIGMA_SCENE_TOP.lerp(opaque_top, 0.04)
-	var resolved_mid := FIGMA_SCENE_DARK_MID if _dark() else FIGMA_SCENE_MID
+	# Structural fallback only: keeps letterbox/background pixels theme-correct.
 	var viewport_bg := ColorRect.new()
 	viewport_bg.name = "FigmaSurfaceViewportBackground"
 	viewport_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	# Keep letterbox/fallback pixels inside the established light/dark readability range; the authored canvas below carries the deep 3D scene.
-	viewport_bg.color = FIGMA_DARK_BOTTOM if _dark() else FIGMA_BG_BOTTOM
+	viewport_bg.color = Color("#1f1f1f") if _dark() else Color("#e6e3dc")
 	viewport_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	content.add_child(viewport_bg)
 	var canvas := FigmaReferenceCanvas.new()
 	canvas.name = "FigmaSurface390x844"
 	content.add_child(canvas)
+
+	# Minimal surfaces use one quiet neutral plane. Game accents are reserved for
+	# actions, progress and selection rather than decorative scenery.
 	var bg := PanelContainer.new()
 	bg.name = "FigmaSurfaceBackground"
-	var mid_tint := resolved_mid
-	bg.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(resolved_top, mid_tint, resolved_bottom, 34, Color("#d2b06a") if not _dark() else Color("#80613b"), 1, 0.48))
+	var fill := Color("#202124") if _dark() else Color("#e6e3dc")
+	var edge := Color("#3d4045") if _dark() else Color("#c8c3ba")
+	bg.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(fill, 34, edge, 1))
 	FigmaReferenceCanvas.set_rect(bg, 0, 0, 390, 844)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(bg)
-	var scene_accent := FIGMA_GOLD
-	match active:
-		"games": scene_accent = _accent()
-		"daily": scene_accent = FIGMA_GOLD
-		"collection": scene_accent = FIGMA_GREEN
-		"settings": scene_accent = FIGMA_CYAN
-		_: scene_accent = _accent()
-	FigmaReferenceCanvas.add_world_depth(canvas, Color("#59636f") if _dark() else Color("#9aa4ae"), _dark(), 0.0, "SurfaceWorldDepth")
-	FigmaReferenceCanvas.add_scene_backdrop_layers(canvas, Color("#80613b") if _dark() else Color("#c49b55"), _dark(), "Surface")
-	var surface_key_light := canvas.get_node_or_null("SurfaceKeyLight")
-	var surface_accent_glow := canvas.get_node_or_null("SurfaceAccentGlow")
-	if surface_key_light != null:
-		surface_key_light.set_meta("unjam_figma_scene_light", true)
-	if surface_accent_glow != null:
-		surface_accent_glow.set_meta("unjam_figma_scene_light", true)
-
-	var halo_top := PanelContainer.new()
-	halo_top.name = "SurfaceBackdropHaloTop"
-	halo_top.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	halo_top.modulate.a = 0.20 if not _dark() else 0.16
-	halo_top.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color("#f0d89e") if not _dark() else Color("#6b4f2d"), 110))
-	FigmaReferenceCanvas.set_rect(halo_top, 268, -68, 205, 205)
-	canvas.add_child(halo_top)
-	canvas.move_child(halo_top, 1)
-
-	var halo_bottom := PanelContainer.new()
-	halo_bottom.name = "SurfaceBackdropHaloBottom"
-	halo_bottom.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	halo_bottom.modulate.a = 0.16 if not _dark() else 0.13
-	halo_bottom.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color("#b88a45") if not _dark() else Color("#3d2b1c"), 100))
-	FigmaReferenceCanvas.set_rect(halo_bottom, -76, 632, 188, 188)
-	canvas.add_child(halo_bottom)
-	canvas.move_child(halo_bottom, 1)
-
-	var ribbon := Polygon2D.new()
-	ribbon.name = "SurfaceBackdropRibbon"
-	ribbon.polygon = PackedVector2Array([Vector2(-32,330),Vector2(420,235),Vector2(420,296),Vector2(-32,390)])
-	ribbon.color = Color("#8a642e", 0.065 if not _dark() else 0.080)
-	canvas.add_child(ribbon)
-	canvas.move_child(ribbon, 1)
-
-	# Large-scale specular sweep: premium casual games use a readable light roll
-	# across whole screens in addition to glossy cards. Keep it static and subtle
-	# so it adds lacquer/depth without costing frames on low-end phones.
-	var gloss_sweep := Polygon2D.new()
-	gloss_sweep.name = "SurfaceGlossSweep"
-	gloss_sweep.polygon = PackedVector2Array([Vector2(-45,118),Vector2(435,22),Vector2(435,118),Vector2(-45,226)])
-	gloss_sweep.color = Color(1,1,1,0.050 if _dark() else 0.085)
-	canvas.add_child(gloss_sweep)
-	canvas.move_child(gloss_sweep, 2)
-
-	var lower_depth := Polygon2D.new()
-	lower_depth.name = "SurfaceLowerDepth"
-	lower_depth.polygon = PackedVector2Array([Vector2(-30,692),Vector2(430,604),Vector2(430,844),Vector2(-30,844)])
-	lower_depth.color = Color(0.01,0.06,0.10,0.055 if _dark() else 0.035)
-	canvas.add_child(lower_depth)
-	canvas.move_child(lower_depth, 2)
 	return canvas
 
 func _figma_text(canvas: Control, text_value: String, rect: Rect2, font_size: int, color: Color = FIGMA_INK, center := false) -> Label:
@@ -224,13 +163,12 @@ func _figma_text(canvas: Control, text_value: String, rect: Rect2, font_size: in
 	return label
 
 func _figma_button(canvas: Control, name_value: String, text_value: String, rect: Rect2, fill: Color, callback: Callable, text_color: Color = FIGMA_OFF_WHITE, radius: float = 14.0, font_size: int = 12) -> Button:
-	FigmaReferenceCanvas.add_shadow(canvas, rect, radius, Color(0.02,0.10,0.18,0.20 if _dark() else 0.16), 4, Vector2(0,3))
 	var resolved_fill := fill
 	var resolved_text := text_color
 	if _dark() and fill.get_luminance() > 0.82:
-		resolved_fill = _figma_theme_card(fill, Color("#152337"))
+		resolved_fill = Color("#2a2b2e")
 		resolved_text = FIGMA_DARK_INK
-	var button := FigmaReferenceCanvas.premium_button(text_value, font_size, resolved_text, resolved_fill, radius, resolved_fill.lightened(0.20), 1.2)
+	var button := FigmaReferenceCanvas.premium_button(text_value, font_size, resolved_text, resolved_fill, radius, Color(resolved_fill.r, resolved_fill.g, resolved_fill.b, 0.38), 1)
 	button.name = name_value
 	button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	FigmaReferenceCanvas.set_rect(button, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
@@ -240,33 +178,26 @@ func _figma_button(canvas: Control, name_value: String, text_value: String, rect
 	return button
 
 func _figma_card(canvas: Control, name_value: String, rect: Rect2, tint: Color = Color(1.0, 0.995, 0.97), accent: Color = Color(0.70, 0.88, 0.96, 0.45), radius: float = 16.0) -> PanelContainer:
-	FigmaReferenceCanvas.add_shadow(canvas, rect, radius, Color(0.01,0.04,0.08,0.30 if _dark() else 0.22), 7 if not _dark() else 5, Vector2(0,5 if not _dark() else 4))
 	var card := PanelContainer.new()
 	card.name = name_value
-	var resolved_tint := Color("#282b30") if _dark() else Color("#d6d1c7")
-	var resolved_accent := Color(accent.r, accent.g, accent.b, 0.78) if _dark() else Color(accent.r, accent.g, accent.b, maxf(accent.a, 0.62))
-	card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(resolved_tint.lightened(0.025 if _dark() else 0.07), resolved_tint, resolved_tint.darkened(0.07 if _dark() else 0.13), radius, resolved_accent, 1.4 if not _dark() else 1.2, 0.44 if not _dark() else 0.48))
+	var resolved_tint := Color("#292a2d") if _dark() else Color("#efede8")
+	var resolved_accent := Color(accent.r, accent.g, accent.b, 0.34 if _dark() else 0.28)
+	card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(resolved_tint, radius, resolved_accent, 1))
 	FigmaReferenceCanvas.set_rect(card, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(card)
 	return card
 
 func _figma_solid_card(canvas: Control, name_value: String, rect: Rect2, tint: Color, border: Color, radius: float = 16.0, with_shadow: bool = true) -> PanelContainer:
-	if with_shadow:
-		FigmaReferenceCanvas.add_shadow(canvas, rect, radius, Color(0.01,0.04,0.08,0.28 if _dark() else 0.20), 6 if not _dark() else 4, Vector2(0,5 if not _dark() else 3))
 	var card := PanelContainer.new()
 	card.name = name_value
 	var resolved_tint := tint
-	var resolved_border := border
+	var resolved_border := Color(border.r, border.g, border.b, minf(border.a, 0.48))
 	if not _dark() and tint.get_luminance() > 0.72:
-		resolved_tint = Color("#d6d1c7")
+		resolved_tint = Color("#efede8")
 	elif _dark() and tint.get_luminance() > 0.72:
-		resolved_tint = _figma_theme_card(border, Color("#132033"))
-		resolved_border = Color(border.r, border.g, border.b, 0.78)
-	var gloss_top := resolved_tint.lightened(0.16 if _dark() else 0.18)
-	var gloss_mid := resolved_tint.lightened(0.025)
-	var gloss_bottom := resolved_tint.darkened(0.13 if _dark() else 0.14)
-	card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(gloss_top, gloss_mid, gloss_bottom, radius, resolved_border, 1, 0.40))
+		resolved_tint = Color("#292a2d")
+	card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(resolved_tint, radius, resolved_border, 1))
 	FigmaReferenceCanvas.set_rect(card, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(card)

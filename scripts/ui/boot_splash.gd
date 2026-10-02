@@ -6,7 +6,6 @@ const MAIN_SCENE := "res://scenes/Main.tscn"
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	ResourceLoader.load_threaded_request(MAIN_SCENE)
 	var timer := get_tree().create_timer(HOLD_SECONDS, true, false, true)
 	await timer.timeout
 	if not is_inside_tree():
@@ -20,10 +19,6 @@ func _ready() -> void:
 		_open_main()
 
 func _open_main() -> void:
-	var status := ResourceLoader.load_threaded_get_status(MAIN_SCENE)
-	if status == ResourceLoader.THREAD_LOAD_LOADED:
-		var packed := ResourceLoader.load_threaded_get(MAIN_SCENE) as PackedScene
-		if packed != null:
-			get_tree().change_scene_to_packed(packed)
-			return
+	# A single deterministic scene transition is more reliable than parsing the
+	# same scene early on a background loader while startup classes initialize.
 	get_tree().change_scene_to_file(MAIN_SCENE)
