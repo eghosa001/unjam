@@ -2,7 +2,7 @@ name: UNJAM v8 Verified AAB
 
 on:
   push:
-    branches: [version-8-sidekick-localization]
+    branches: [version-8-sidekick-localization, v8-minimal-ui]
     paths:
       - ".github/workflows/android-v8-signed-aab.yml"
       - "project.godot"
@@ -11,7 +11,10 @@ on:
       - "scripts/ui/main.gd"
       - "scripts/ui/premium_home_direct_levels.gd"
       - "scripts/ui/premium_main_casual.gd"
+      - "scripts/ui/premium_live_hub_3d.gd"
+      - "scripts/ui/unjam_3d_theme.gd"
       - "tests/validate_version8_sidekick_localization.gd"
+      - "tests/validate_minimal_ui_v8.gd"
 
 permissions:
   contents: read
@@ -105,6 +108,7 @@ jobs:
           set -euo pipefail
           for t in \
             validate_version8_sidekick_localization \
+            validate_minimal_ui_v8 \
             validate_cloud_save_protection \
             validate_launcher_icon_safe_zone \
             validate_touch_enhancer_scope \
