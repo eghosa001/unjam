@@ -9,6 +9,7 @@ on:
       - "scripts/systems/localization_manager.gd"
       - "scripts/ui/figma_reference_canvas.gd"
       - "scripts/ui/boot_splash.gd"
+      - "tools/validate_release_contract.py"
       - "scripts/ui/main.gd"
       - "scripts/ui/premium_home_direct_levels.gd"
       - "scripts/ui/premium_main_casual.gd"
