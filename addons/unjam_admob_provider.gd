@@ -11,6 +11,7 @@ const INTERSTITIAL_LOADER_PATH := ADMOB_ROOT + "/api/InterstitialAdLoader.gd"
 const INTERSTITIAL_CALLBACK_PATH := ADMOB_ROOT + "/api/listeners/InterstitialAdLoadCallback.gd"
 const FULLSCREEN_CALLBACK_PATH := ADMOB_ROOT + "/api/listeners/FullScreenContentCallback.gd"
 const REWARD_LISTENER_PATH := ADMOB_ROOT + "/api/listeners/OnUserEarnedRewardListener.gd"
+const INITIALIZATION_LISTENER_PATH := ADMOB_ROOT + "/api/listeners/OnInitializationCompleteListener.gd"
 const CONSENT_INFO_PATH := ADMOB_ROOT + "/ump/api/ConsentInformation.gd"
 const CONSENT_REQUEST_PATH := ADMOB_ROOT + "/ump/core/ConsentRequestParameters.gd"
 const UMP_PATH := ADMOB_ROOT + "/ump/api/UserMessagingPlatform.gd"
@@ -27,6 +28,8 @@ var _interstitial_closed := Callable()
 var _interstitial_failure := Callable()
 var _reward_earned := false
 var _initialized := false
+var _initializing := false
+var _initialization_waiters: Array[Callable] = []
 var _consent_information: Object
 
 func _ready() -> void:
@@ -50,6 +53,7 @@ func plugin_available() -> bool:
 		and ResourceLoader.exists(INTERSTITIAL_CALLBACK_PATH)
 		and ResourceLoader.exists(FULLSCREEN_CALLBACK_PATH)
 		and ResourceLoader.exists(REWARD_LISTENER_PATH)
+		and ResourceLoader.exists(INITIALIZATION_LISTENER_PATH)
 		and ResourceLoader.exists(CONSENT_INFO_PATH)
 		and ResourceLoader.exists(CONSENT_REQUEST_PATH)
 		and ResourceLoader.exists(UMP_PATH)
@@ -65,24 +69,52 @@ func _new(path: String) -> Object:
 	var script := _script(path)
 	return script.new() if script != null else null
 
-func _initialize_mobile_ads() -> void:
-	if _initialized or not plugin_available():
-		return
+func _initialize_mobile_ads(on_ready: Callable = Callable()) -> bool:
+	if on_ready.is_valid():
+		_initialization_waiters.append(on_ready)
+	if _initialized:
+		_flush_initialization_waiters()
+		return true
+	if _initializing:
+		return true
+	if not plugin_available():
+		_initialization_waiters.clear()
+		return false
+
 	var mobile_ads := _new(MOBILE_ADS_PATH)
-	if mobile_ads != null and mobile_ads.has_method("initialize"):
-		mobile_ads.call("initialize")
-	_initialized = true
+	var listener := _new(INITIALIZATION_LISTENER_PATH)
+	if mobile_ads == null or not mobile_ads.has_method("initialize") or listener == null:
+		_initialization_waiters.clear()
+		return false
+
+	_initializing = true
+	listener.set("on_initialization_complete", func(_status: Object) -> void:
+		_initialized = true
+		_initializing = false
+		_flush_initialization_waiters()
+	)
+	mobile_ads.call("initialize", listener)
+	return true
+
+func _flush_initialization_waiters() -> void:
+	var waiters := _initialization_waiters.duplicate()
+	_initialization_waiters.clear()
+	for waiter_value in waiters:
+		var waiter: Callable = waiter_value
+		if waiter.is_valid():
+			waiter.call_deferred()
 
 func _preload_ads_if_allowed() -> void:
 	if not plugin_available():
 		return
 	if OS.get_name() == "Android" and not _may_request_ads():
 		return
-	_initialize_mobile_ads()
-	if _rewarded_ad == null:
-		_load_rewarded(false)
-	if _interstitial_ad == null:
-		_load_interstitial(false)
+	_initialize_mobile_ads(func() -> void:
+		if _rewarded_ad == null:
+			_load_rewarded(false)
+		if _interstitial_ad == null:
+			_load_interstitial(false)
+	)
 
 func show_rewarded(_placement: String, completed: Callable, failed: Callable) -> bool:
 	if not is_ready():
@@ -96,6 +128,17 @@ func show_rewarded(_placement: String, completed: Callable, failed: Callable) ->
 	_rewarded_completion = completed
 	_rewarded_failure = failed
 	_reward_earned = false
+	if not _initialized:
+		var init_started := _initialize_mobile_ads(func() -> void:
+			if _rewarded_ad == null:
+				_load_rewarded(true)
+			else:
+				_show_loaded_rewarded()
+		)
+		if not init_started:
+			_fail_rewarded("AdMob initialization could not start")
+			return false
+		return true
 	if _rewarded_ad == null:
 		return _load_rewarded(true)
 	return _show_loaded_rewarded()
@@ -187,6 +230,17 @@ func show_interstitial(closed: Callable, failed: Callable) -> bool:
 		return false
 	_interstitial_closed = closed
 	_interstitial_failure = failed
+	if not _initialized:
+		var init_started := _initialize_mobile_ads(func() -> void:
+			if _interstitial_ad == null:
+				_load_interstitial(true)
+			else:
+				_show_loaded_interstitial()
+		)
+		if not init_started:
+			_fail_interstitial("AdMob initialization could not start")
+			return false
+		return true
 	if _interstitial_ad == null:
 		return _load_interstitial(true)
 	return _show_loaded_interstitial()
