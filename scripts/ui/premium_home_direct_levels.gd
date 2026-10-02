@@ -97,7 +97,7 @@ func _add_frame_background(canvas: Control) -> void:
 	bg.name = "FigmaHomeBackground"
 	var fill := Color("#202124") if _home_dark() else Color("#e6e3dc")
 	var edge := Color("#3d4045") if _home_dark() else Color("#c8c3ba")
-	bg.add_theme_stylebox_override("panel", RefCanvas.solid_box(fill, 34, edge, 1))
+	bg.add_theme_stylebox_override("panel", RefCanvas.flat_gloss(fill, 34, edge, 1, 0.11))
 	RefCanvas.set_rect(bg, 0, 0, 390, 844)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(bg)
@@ -108,7 +108,7 @@ func _add_hero(canvas: Control) -> void:
 	var accent := Unjam3DTheme.game_accent(selected_game)
 	var fill := Color("#27282b") if _home_dark() else Color("#f7f4ee")
 	var edge := Color(accent.r, accent.g, accent.b, 0.30 if _home_dark() else 0.24)
-	hero.add_theme_stylebox_override("panel", RefCanvas.solid_box(fill, 20, edge, 1))
+	hero.add_theme_stylebox_override("panel", RefCanvas.flat_gloss(fill, 20, edge, 1, 0.14))
 	RefCanvas.set_rect(hero, 21, 121, 346, 224)
 	hero.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(hero)
@@ -147,7 +147,7 @@ func _add_hero_preview(canvas: Control, game_id: String) -> void:
 	var accent := Unjam3DTheme.game_accent(game_id)
 	var stage_fill := Color("#222326") if _home_dark() else Color("#ebe7df")
 	stage_fill = stage_fill.lerp(accent.darkened(0.36) if _home_dark() else accent.lightened(0.76), 0.10)
-	stage.add_theme_stylebox_override("panel", RefCanvas.solid_box(stage_fill, 16, Color(accent.r, accent.g, accent.b, 0.24), 1))
+	stage.add_theme_stylebox_override("panel", RefCanvas.flat_gloss(stage_fill, 16, Color(accent.r, accent.g, accent.b, 0.24), 1, 0.13))
 	RefCanvas.set_rect(stage, 229, 144, 115, 136)
 	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	preview_root.add_child(stage)
@@ -249,7 +249,7 @@ func _add_world_progress(canvas: Control) -> void:
 	var panel := PanelContainer.new()
 	panel.name = "HomeWorldProgress"
 	var fill := Color("#292a2d") if _home_dark() else Color("#efede8")
-	panel.add_theme_stylebox_override("panel", RefCanvas.solid_box(fill, 18, Color(accent.r, accent.g, accent.b, 0.24), 1))
+	panel.add_theme_stylebox_override("panel", RefCanvas.flat_gloss(fill, 18, Color(accent.r, accent.g, accent.b, 0.24), 1, 0.10))
 	RefCanvas.set_rect(panel, showcase_rect.position.x, showcase_rect.position.y, showcase_rect.size.x, showcase_rect.size.y)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(panel)
@@ -281,7 +281,7 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 	shell.name = "HomeBottomNav3D"
 	var nav_fill := Color("#252629") if _home_dark() else Color("#f0ede6")
 	var nav_border := Color("#3a3d42") if _home_dark() else Color("#cbc6bc")
-	shell.add_theme_stylebox_override("panel", RefCanvas.solid_box(nav_fill, 18, nav_border, 1))
+	shell.add_theme_stylebox_override("panel", RefCanvas.flat_gloss(nav_fill, 18, nav_border, 1, 0.12))
 	RefCanvas.set_rect(shell, 13, 757, 362, 70)
 	shell.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(shell)
@@ -303,7 +303,7 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 			var plate := PanelContainer.new()
 			plate.name = "HomeNavActivePlate"
 			plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			plate.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(accent.r, accent.g, accent.b, 0.12 if _home_dark() else 0.15), 12, Color(accent.r, accent.g, accent.b, 0.40), 1))
+			plate.add_theme_stylebox_override("panel", RefCanvas.flat_gloss(Color(accent.r, accent.g, accent.b, 0.12 if _home_dark() else 0.15), 12, Color(accent.r, accent.g, accent.b, 0.40), 1, 0.16))
 			RefCanvas.set_rect(plate, float(item[3]) + 8.0, 764, 56, 52)
 			canvas.add_child(plate)
 		var glyph := _add_text(canvas, item[1], Rect2(float(item[2]) - 1.0, 765, 58, 22), 20, icon_color, true)
@@ -404,7 +404,7 @@ func _switch_card_style(game_id: String, accent: Color) -> StyleBox:
 	var border_width := 1.0
 	var neutral_edge := Color("#3a3d42") if _home_dark() else Color("#cbc6bc")
 	var border_color := Color(accent.r, accent.g, accent.b, 0.62) if selected else neutral_edge
-	return RefCanvas.solid_box(card_fill, 16, border_color, border_width)
+	return RefCanvas.flat_gloss(card_fill, 16, border_color, border_width, 0.10 if selected else 0.065)
 
 func _refresh_home_selection() -> void:
 	if figma_canvas == null or not is_instance_valid(figma_canvas):
