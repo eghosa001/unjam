@@ -127,9 +127,9 @@ func _go_home() -> void:
 	get_parent().call("build_home")
 
 func _play(game_id: String) -> void:
+	# Choosing a game is navigation, not an implicit Continue action. Always open
+	# that game's campaign/level browser; Home remains the explicit place to
+	# continue an unfinished run.
 	var main := get_parent()
-	var checkpoint = main.call("_checkpoint_for", game_id) if main.has_method("_checkpoint_for") else {}
-	if checkpoint is Dictionary and not checkpoint.is_empty():
-		main.call("resume_game", game_id)
-	else:
+	if main != null and main.has_method("open_game_campaign"):
 		main.call("open_game_campaign", game_id)

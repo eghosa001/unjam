@@ -207,6 +207,7 @@ func _add_quick_switch(canvas: Control) -> void:
 		var switch_name := _add_text(canvas, String(entry[1]), Rect2(x + 5, 504, 100, 19), 12, entry[2], true)
 		switch_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		switch_name.clip_text = true
+		RefCanvas.fit_single_line_text(switch_name, 96.0, 12, 10)
 		var level := _home_current_level(id)
 		var stars := MultiGameManager.total_stars(id)
 		var switch_meta := _add_text(canvas, "L%d • ★%s" % [level, _compact_number(stars)], Rect2(x + 6, 528, 96, 18), 12, MUTED, false)
@@ -337,6 +338,7 @@ func _add_pill(canvas: Control, rect: Rect2, fill: Color, text_value: String, fo
 		label.name = label_name
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	RefCanvas.set_rect(label, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
+	RefCanvas.fit_single_line_text(label, maxf(18.0, rect.size.x - 10.0), font_size, 10)
 	canvas.add_child(label)
 	return panel
 
@@ -345,6 +347,7 @@ func _add_action(canvas: Control, rect: Rect2, fill: Color, text_value: String, 
 	var button := RefCanvas.premium_button(text_value, font_size, resolved_text, fill, radius, Color(fill.r, fill.g, fill.b, 0.34), 1)
 	button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	RefCanvas.set_rect(button, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
+	RefCanvas.fit_single_line_text(button, maxf(24.0, rect.size.x - 16.0), font_size, 10)
 	if callback.is_valid():
 		button.pressed.connect(callback)
 	canvas.add_child(button)

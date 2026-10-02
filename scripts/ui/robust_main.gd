@@ -20,6 +20,7 @@ const MULTI_LEVEL_PAGE_SIZE := 100
 const RESCUE_GAME_SCENE_PATH := "res://scenes/Game.tscn"
 const WATER_GAME_SCENE_PATH := "res://scenes/WaterSort.tscn"
 const BLOCK_GAME_SCENE_PATH := "res://scenes/BlockPuzzle.tscn"
+const DAILY_CAMPAIGN_BACKUPS_KEY := "daily_campaign_checkpoint_backups"
 func _ready() -> void:
 	MultiGameManager.ensure_state()
 	super._ready()
@@ -86,6 +87,9 @@ func _daily_done(game_id: String) -> bool:
 	return MultiGameManager.is_daily_completed(game_id)
 
 func open_game_campaign(game_id: String) -> void:
+	# Recover any campaign checkpoint that was temporarily parked for a Daily
+	# attempt. Choose Game still opens the campaign browser; it never resumes.
+	_restore_campaign_checkpoint_after_daily(game_id)
 	selected_game_id = game_id
 	var highest := MultiGameManager.highest_level(game_id)
 	selected_multi_world = MultiGameManager.highest_unlocked_game_world(game_id)
@@ -240,13 +244,13 @@ func start_game_daily(game_id: String) -> void:
 		return
 	selected_game_id = game_id
 	# Daily challenges are one-shot daily surfaces, not resumable campaign runs.
-	# Always launch today's selected challenge from its authored initial state.
+	# Rescue Daily never reads/writes the campaign checkpoint, so preserve it.
+	# Water/Block share a checkpoint slot with campaign; park that checkpoint
+	# before Daily starts and restore it when the Daily attempt ends.
 	if game_id == "rescue_rush":
-		SaveManager.data["active_run"] = {}
-		SaveManager.save()
 		_spawn_rescue(1, true, DailyChallenge.build_today())
 	else:
-		MultiGameManager.clear_checkpoint(game_id)
+		_stash_campaign_checkpoint_for_daily(game_id)
 		start_multi_level(game_id, MultiGameManager.daily_level(game_id), true)
 
 func start_multi_level(game_id: String, level_number: int, daily: bool = false) -> void:
@@ -324,11 +328,49 @@ func _remove_active_game() -> void:
 			remove_child(stale)
 		stale.queue_free()
 
-func _return_from_daily() -> void:
+func _return_from_daily(game_id: String = "") -> void:
+	if not game_id.is_empty():
+		_restore_campaign_checkpoint_after_daily(game_id)
 	if has_method("build_daily_games"):
 		call("build_daily_games")
 	else:
 		build_home()
+
+func _daily_checkpoint_backups() -> Dictionary:
+	var raw = SaveManager.data.get(DAILY_CAMPAIGN_BACKUPS_KEY, {})
+	return raw.duplicate(true) if raw is Dictionary else {}
+
+func _stash_campaign_checkpoint_for_daily(game_id: String) -> void:
+	if game_id == "rescue_rush":
+		return
+	var backups := _daily_checkpoint_backups()
+	var checkpoint := MultiGameManager.checkpoint(game_id)
+	# Never promote a stale Daily checkpoint into the campaign backup slot.
+	if not checkpoint.is_empty() and not bool(checkpoint.get("daily", false)):
+		backups[game_id] = checkpoint.duplicate(true)
+	else:
+		backups.erase(game_id)
+	SaveManager.data[DAILY_CAMPAIGN_BACKUPS_KEY] = backups
+	MultiGameManager.clear_checkpoint(game_id)
+	SaveManager.save()
+
+func _restore_campaign_checkpoint_after_daily(game_id: String) -> void:
+	if game_id == "rescue_rush":
+		return
+	var backups := _daily_checkpoint_backups()
+	if not backups.has(game_id):
+		# Remove only a stale Daily checkpoint; keep a normal campaign checkpoint.
+		var current := MultiGameManager.checkpoint(game_id)
+		if bool(current.get("daily", false)):
+			MultiGameManager.clear_checkpoint(game_id)
+		return
+	var backup = backups.get(game_id, {})
+	MultiGameManager.clear_checkpoint(game_id)
+	if backup is Dictionary and not (backup as Dictionary).is_empty():
+		MultiGameManager.save_checkpoint(game_id, (backup as Dictionary).duplicate(true))
+	backups.erase(game_id)
+	SaveManager.data[DAILY_CAMPAIGN_BACKUPS_KEY] = backups
+	SaveManager.save()
 
 func _game_context(game: Control, fallback_game_id: String, fallback_daily: bool = false) -> Dictionary:
 	var game_id := fallback_game_id
@@ -364,7 +406,7 @@ func _active_game_context() -> Dictionary:
 func _return_from_game(game_id: String, was_daily: bool, level_number: int = -1) -> void:
 	_remove_active_game()
 	if was_daily:
-		_return_from_daily()
+		_return_from_daily(game_id)
 		return
 	if game_id == "rescue_rush":
 		selected_game_id = "rescue_rush"
@@ -395,7 +437,7 @@ func force_back_from_game() -> void:
 func _on_rescue_finished(completed_level: int, was_daily: bool = false) -> void:
 	active_game = null
 	if was_daily:
-		_return_from_daily()
+		_return_from_daily("rescue_rush")
 	elif completed_level < 0:
 		build_home()
 	elif LevelManager.has_level(completed_level + 1):
@@ -416,7 +458,7 @@ func _on_rescue_quit(source_game: Control, was_daily: bool = false) -> void:
 func _on_multi_finished(completed_level: int, game_id: String, was_daily: bool = false) -> void:
 	active_game = null
 	if was_daily:
-		_return_from_daily()
+		_return_from_daily(game_id)
 	elif completed_level < 0:
 		build_home()
 	elif completed_level < MultiGameManager.CAMPAIGN_LEVELS:
