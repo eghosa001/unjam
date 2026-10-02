@@ -169,7 +169,7 @@ func _add_quick_actions(canvas: Control) -> void:
 	daily.name = "HomeDailyGamesButton"
 
 	# Sidekick stays discoverable without taking a third content column.
-	var sidekick := _add_action(canvas, Rect2(261, 15, 108, 44), Color("#dedbd4") if not _home_dark() else Color("#292a2d"), "SIDEKICK β", 11, NAVY if not _home_dark() else DARK_INK, Callable(self, "_open_sidekick"), 14)
+	var sidekick := _add_action(canvas, Rect2(261, 15, 108, 44), Color("#dedbd4") if not _home_dark() else Color("#292a2d"), "SIDEKICK • β", 11, NAVY if not _home_dark() else DARK_INK, Callable(self, "_open_sidekick"), 14)
 	sidekick.name = "HomePlaymateSidekickBeta"
 	sidekick.tooltip_text = LocalizationManager.localize("PLAYMATE SIDEKICK") + " • " + LocalizationManager.localize("BETA")
 
