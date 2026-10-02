@@ -12,6 +12,7 @@ var extra_scale := 1.0
 # navigation hitching on device. Cache immutable StyleBoxTexture instances by
 # their authored visual parameters so later screen builds reuse GPU-ready data.
 static var _rounded_gradient_cache: Dictionary = {}
+static var _flat_gloss_cache: Dictionary = {}
 static var _rounded_gradient3_cache: Dictionary = {}
 static var _horizontal_gradient_cache: Dictionary = {}
 
@@ -78,6 +79,53 @@ static func solid_box(color: Color, radius: float = 0.0, border_color: Color = C
 	# enlarge PanelContainer/Button minimum sizes beyond the audited rectangle.
 	for side in [SIDE_LEFT, SIDE_TOP, SIDE_RIGHT, SIDE_BOTTOM]:
 		style.set_content_margin(side, 0.0)
+	return style
+
+static func flat_gloss(base: Color, radius: float = 16.0, border_color: Color = Color.TRANSPARENT, border_width: float = 0.0, gloss_strength: float = 0.12) -> StyleBoxTexture:
+	# Lightweight premium gloss for the flat UI. This is a small cached texture:
+	# no 3D viewport, no bevel extrusion and no per-frame shader work.
+	var cache_key := _style_cache_key("flat_gloss", [base], radius, border_color, border_width, gloss_strength)
+	if _flat_gloss_cache.has(cache_key):
+		return _flat_gloss_cache[cache_key] as StyleBoxTexture
+	var image_size := 64
+	var image := Image.create(image_size, image_size, false, Image.FORMAT_RGBA8)
+	var r := clampf(radius / 24.0 * 15.0, 0.0, 28.0)
+	var bw := maxf(0.0, border_width)
+	for y in range(image_size):
+		var fy := float(y) / float(image_size - 1)
+		# Gentle top-to-bottom material rolloff keeps the layout visually flat.
+		var pixel_fill := base.lightened(0.045).lerp(base.darkened(0.035), fy)
+		# Broad soft reflection across the upper quarter: lacquer/glass feel,
+		# without the old side bevels, hotspots or faux extrusion.
+		if fy >= 0.06 and fy <= 0.34:
+			var band := 1.0 - absf(fy - 0.18) / 0.16
+			pixel_fill = pixel_fill.lerp(Color(1,1,1,pixel_fill.a), maxf(0.0, band) * gloss_strength)
+		if fy < 0.035:
+			pixel_fill = pixel_fill.lerp(Color(1,1,1,pixel_fill.a), gloss_strength * 0.65)
+		for x in range(image_size):
+			var px := float(x) + 0.5
+			var py := float(y) + 0.5
+			var dx := maxf(maxf(r - px, 0.0), px - (float(image_size) - r))
+			var dy := maxf(maxf(r - py, 0.0), py - (float(image_size) - r))
+			if dx * dx + dy * dy > r * r:
+				image.set_pixel(x, y, Color.TRANSPARENT)
+				continue
+			if bw > 0.0:
+				var inner_r := maxf(0.0, r - bw)
+				var idx := maxf(maxf(inner_r - px, 0.0), px - (float(image_size) - inner_r))
+				var idy := maxf(maxf(inner_r - py, 0.0), py - (float(image_size) - inner_r))
+				var in_inner := idx * idx + idy * idy <= inner_r * inner_r and px >= bw and py >= bw and px <= image_size - bw and py <= image_size - bw
+				if not in_inner:
+					image.set_pixel(x, y, border_color)
+					continue
+			image.set_pixel(x, y, pixel_fill)
+	var style := StyleBoxTexture.new()
+	style.texture = ImageTexture.create_from_image(image)
+	var margin := maxi(6, int(ceil(r + bw + 1.0)))
+	for side in [SIDE_LEFT, SIDE_TOP, SIDE_RIGHT, SIDE_BOTTOM]:
+		style.set_texture_margin(side, margin)
+		style.set_content_margin(side, 0.0)
+	_flat_gloss_cache[cache_key] = style
 	return style
 
 static func rounded_gradient(top: Color, bottom: Color, radius: float = 16.0, border_color: Color = Color.TRANSPARENT, border_width: float = 0.0) -> StyleBoxTexture:
@@ -442,13 +490,13 @@ static func premium_button(text_value: String, font_size: int, text_color: Color
 	result.add_theme_constant_override("shadow_outline_size", 0)
 	result.add_theme_constant_override("outline_size", 0)
 
-	# Flat, quiet controls: one fill, one thin edge, small state changes.
+	# Flat geometry with a lightweight lacquer sheen. Still no 3D/depth stack.
 	var resolved_border := border if border.a > 0.0 else Color(fill.r, fill.g, fill.b, 0.0)
 	var resolved_width := minf(maxf(border_width, 0.0), 1.0)
-	var normal := solid_box(fill, radius, resolved_border, resolved_width)
-	var hover := solid_box(fill.lightened(0.035), radius, resolved_border, resolved_width)
-	var pressed := solid_box(fill.darkened(0.055), radius, resolved_border, resolved_width)
-	var disabled := solid_box(Color(fill.r, fill.g, fill.b, 0.58), radius, resolved_border, resolved_width)
+	var normal := flat_gloss(fill, radius, resolved_border, resolved_width, 0.13)
+	var hover := flat_gloss(fill.lightened(0.025), radius, resolved_border, resolved_width, 0.16)
+	var pressed := flat_gloss(fill.darkened(0.045), radius, resolved_border, resolved_width, 0.08)
+	var disabled := flat_gloss(Color(fill.r, fill.g, fill.b, 0.58), radius, resolved_border, resolved_width, 0.06)
 	result.add_theme_stylebox_override("normal", normal)
 	result.add_theme_stylebox_override("hover", hover)
 	result.add_theme_stylebox_override("pressed", pressed)
