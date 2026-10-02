@@ -115,7 +115,7 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 
 	var game_title := _add_text(canvas, title, Rect2(34, rect.position.y + 16, 184, 27), 22, DARK_INK if _selector_dark() else INK, true)
 	game_title.name = "SelectorGameTitle_%s" % game_id
-	game_title.add_theme_constant_override("outline_size", 1)
+	game_title.add_theme_constant_override("outline_size", 2)
 	game_title.add_theme_color_override("font_outline_color", Color("#151619") if _selector_dark() else Color(1,1,1,0.84))
 	RefCanvas.fit_single_line_text(game_title, 180.0, 22, 13)
 	var subtitle_clip := Control.new()
