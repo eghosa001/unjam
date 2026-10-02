@@ -221,6 +221,19 @@ jobs:
           print(f'16KB_NATIVE_OK: verified {len(libs)} native libraries')
           PY
 
+      - name: Upload verified unsigned Version 8 AAB for local signing fallback
+        uses: actions/upload-artifact@v4
+        with:
+          name: UNJAM-v8-verified-unsigned
+          path: |
+            build/android/UNJAM-v8-unsigned.aab
+            build/android/UNJAM-v8-unsigned.aab.sha256
+            build/android/v8-badging.txt
+            build/android/v8-permissions.txt
+            build/android/v8-manifest.txt
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Sign Version 8 AAB with verified upload key
         env:
           KEYSTORE_B64: ${{ secrets.UNJAM_ANDROID_KEYSTORE_BASE64 }}
