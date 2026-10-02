@@ -161,6 +161,10 @@ func _add_quick_actions(canvas: Control) -> void:
 	# Home keeps one primary action in the hero. These are quiet secondary actions.
 	var choose := _add_action(canvas, Rect2(21, 365, 166, 52), Color("#d4d1ca") if not _home_dark() else Color("#2a2b2e"), "CHOOSE GAME", 12, NAVY if not _home_dark() else DARK_INK, Callable(self, "_open_game_selector"), 14)
 	choose.name = "HomeChooseGameButton"
+	# Open the selector only after the finger is released. The button overlaps the
+	# Water Sort card coordinates on the next surface, so press-mode can let the
+	# same Android touch carry through and immediately launch that game.
+	choose.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 	var main := get_parent()
 	var daily_done_count := 0
 	if main != null and main.has_method("_daily_done"):
