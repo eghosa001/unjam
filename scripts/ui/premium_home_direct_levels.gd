@@ -252,12 +252,12 @@ func _add_world_progress(canvas: Control) -> void:
 	var mark := FLAT_GAME_LOGO_SCRIPT.new()
 	mark.name = "HomeWorldFlatGameLogo"
 	mark.configure(selected_game)
-	RefCanvas.set_rect(mark, 47, 603, 108, 108)
+	RefCanvas.set_rect(mark, 47, 603, 118, 108)
 	root.add_child(mark)
 
-	var world_title := _add_text(root, "%s %d" % [MultiGameManager.progression_scope_label(selected_game), world], Rect2(185, 605, 162, 26), 18, OFF_WHITE if _home_dark() else NAVY, true)
+	var world_title := _add_text(root, "%s %d" % [MultiGameManager.progression_scope_label(selected_game), world], Rect2(195, 598, 152, 26), 18, OFF_WHITE if _home_dark() else NAVY, true)
 	world_title.name = "HomeWorldProgressTitle"
-	var world_value := _add_text(root, "LEVEL %d • %d/%d" % [level, completed_in_world, total], Rect2(185, 640, 162, 19), 13, MUTED, false)
+	var world_value := _add_text(root, "LEVEL %d • %d/%d" % [level, completed_in_world, total], Rect2(195, 632, 152, 19), 13, MUTED, false)
 	world_value.name = "HomeWorldProgressValue"
 
 	var progress := ProgressBar.new()
@@ -268,7 +268,7 @@ func _add_world_progress(canvas: Control) -> void:
 	progress.value = completed_in_world
 	progress.add_theme_stylebox_override("background", RefCanvas.solid_box(Color("#3b3d41") if _home_dark() else Color("#cbc6bd"), 5))
 	progress.add_theme_stylebox_override("fill", RefCanvas.solid_box(accent, 5))
-	RefCanvas.set_rect(progress, 185, 687, 162, 8)
+	RefCanvas.set_rect(progress, 195, 694, 150, 8)
 	root.add_child(progress)
 
 func _add_bottom_nav_reference(canvas: Control) -> void:
@@ -306,7 +306,7 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 		var display_name := String(item[0])
 		var label_width := 66.0 if String(item[0]) in ["COLLECT", "SETTINGS"] else 58.0
 		var label_x := float(item[3]) + (72.0 - label_width) * 0.5
-		var label := _add_text(canvas, display_name, Rect2(label_x, 790, label_width, 20), 12, nav_color, selected)
+		var label := _add_text(canvas, display_name, Rect2(label_x, 790, label_width, 20), 13, nav_color, selected)
 		label.name = "HomeNavLabel_%s" % String(item[0])
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
