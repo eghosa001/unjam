@@ -394,10 +394,18 @@ static func accessible_text_color(preferred: Color, fill: Color, minimum_ratio: 
 	var light_candidate := Color("#fffef8")
 	return dark_candidate if contrast_ratio(dark_candidate, fill) >= contrast_ratio(light_candidate, fill) else light_candidate
 
+static func localized_text(text_value: String) -> String:
+	var loop := Engine.get_main_loop()
+	if loop is SceneTree:
+		var manager := (loop as SceneTree).root.get_node_or_null("LocalizationManager")
+		if manager != null and manager.has_method("localize"):
+			return String(manager.call("localize", text_value))
+	return text_value
+
 static func premium_button(text_value: String, font_size: int, text_color: Color, fill: Color, radius: float, border: Color = Color.TRANSPARENT, border_width: float = 0.0) -> Button:
 	var result := Button.new()
 	result.set_meta("unjam_figma_exact_geometry", true)
-	result.text = text_value
+	result.text = localized_text(text_value)
 	result.focus_mode = Control.FOCUS_NONE
 	result.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	result.add_theme_font_override("font", Unjam3DTheme.strong_font())
@@ -448,7 +456,7 @@ static func premium_button(text_value: String, font_size: int, text_color: Color
 
 static func label(text_value: String, font_size: int, color: Color, bold := false) -> Label:
 	var result := Label.new()
-	result.text = text_value
+	result.text = localized_text(text_value)
 	result.add_theme_font_override("font", Unjam3DTheme.strong_font() if bold else Unjam3DTheme.readable_font())
 	result.add_theme_font_size_override("font_size", font_size)
 	result.add_theme_color_override("font_color", color)
@@ -467,7 +475,7 @@ static func label(text_value: String, font_size: int, color: Color, bold := fals
 
 static func button(text_value: String, font_size: int, text_color: Color, fill: Color, radius: float, border: Color = Color.TRANSPARENT, border_width: float = 0.0) -> Button:
 	var result := Button.new()
-	result.text = text_value
+	result.text = localized_text(text_value)
 	result.focus_mode = Control.FOCUS_NONE
 	result.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	result.add_theme_font_override("font", Unjam3DTheme.strong_font())
