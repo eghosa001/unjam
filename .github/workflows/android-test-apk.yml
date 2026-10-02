@@ -88,8 +88,8 @@ jobs:
           grep -Fx 'test_mode=false' project.godot
           grep -Fx 'admob_test_mode=true' project.godot
           sed -i 's/gradle_build\/export_format=1/gradle_build\/export_format=0/' export_presets.cfg
-          sed -i 's/version\/code=[0-9]\+/version\/code=6/' export_presets.cfg
-          sed -i 's/version\/name="[^"]*"/version\/name="1.0.6"/' export_presets.cfg
+          sed -i 's/version\/code=[0-9]\+/version\/code=8/' export_presets.cfg
+          sed -i 's/version\/name="[^"]*"/version\/name="1.0.8"/' export_presets.cfg
           grep -Fx 'gradle_build/export_format=0' export_presets.cfg
           grep -Fx 'version/code=8' export_presets.cfg
           grep -Fx 'version/name="1.0.8"' export_presets.cfg
