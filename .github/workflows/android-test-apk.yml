@@ -10,6 +10,7 @@ on:
       - "export_presets.cfg"
       - "scripts/systems/feedback_manager.gd"
       - "scripts/ui/robust_main.gd"
+      - "scripts/ui/premium_home_direct_levels.gd"
       - "scripts/ui/boot_splash.gd"
       - "scripts/ui/ui_touch_enhancer.gd"
       - "scenes/Boot.tscn"
