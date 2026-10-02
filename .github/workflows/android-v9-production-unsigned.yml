@@ -1,0 +1,217 @@
+name: UNJAM v9 Production Unsigned
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/android-v9-production-unsigned.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: unjam-v9-production-unsigned
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure production v9
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+
+          project = Path("project.godot")
+          text = project.read_text()
+          text, n = re.subn(r'^admob_test_mode=(true|false)$', 'admob_test_mode=false', text, flags=re.MULTILINE)
+          if n != 1:
+              raise SystemExit("Could not set exactly one admob_test_mode flag")
+          project.write_text(text)
+
+          preset = Path("export_presets.cfg")
+          out = preset.read_text()
+          out = re.sub(r'version/code=\d+', 'version/code=9', out)
+          out = re.sub(r'version/name="[^"]*"', 'version/name="1.0.9"', out)
+          out = out.replace('package/signed=true', 'package/signed=false')
+          preset.write_text(out)
+          PY
+          grep -Fx 'test_mode=false' project.godot
+          grep -Fx 'admob_test_mode=false' project.godot
+          grep -Fx 'admob_android_app_id="ca-app-pub-7517898921176341~1892369383"' project.godot
+          grep -Fx 'admob_rewarded_unit_id="ca-app-pub-7517898921176341/2926249456"' project.godot
+          grep -Fx 'admob_interstitial_unit_id="ca-app-pub-7517898921176341/9108514429"' project.godot
+          grep -Fx 'version/code=9' export_presets.cfg
+          grep -Fx 'version/name="1.0.9"' export_presets.cfg
+          grep -Fx 'package/unique_name="com.eghosa.unjamgam"' export_presets.cfg
+          grep -Fx 'package/signed=false' export_presets.cfg
+          grep -Fx 'gradle_build/target_sdk="36"' export_presets.cfg
+          grep -Fx 'architectures/arm64-v8a=true' export_presets.cfg
+
+      - name: Validate release and backend contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/validate_release_contract.py
+          python3 tools/validate_purchase_claim_protocol.py
+          python3 tools/check_live_monetization.py
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Godot 4.7.2
+        uses: solarlabyrinth/action-setup-godot@v3
+        with:
+          version: 4.7.2-stable
+          export-templates: true
+
+      - name: Prepare Android branding
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path . --script res://tools/prepare_android_brand_assets.gd
+          test -s assets/icon_user_512.png
+          test -s assets/icon_launcher_adaptive_432.png
+          test -s assets/splash_emblem_safe_432.png
+          test -s assets/unjam_startup_logo.png
+
+      - name: Install Android API 36
+        shell: bash
+        run: |
+          set -euo pipefail
+          ANDROID_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          test -n "$ANDROID_ROOT"
+          SDKMANAGER="$(find "$ANDROID_ROOT/cmdline-tools" -name sdkmanager -type f | sort | tail -1)"
+          test -x "$SDKMANAGER"
+          set +o pipefail
+          yes | "$SDKMANAGER" --sdk_root="$ANDROID_ROOT" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+          STATUS=${PIPESTATUS[1]}
+          set -o pipefail
+          test "$STATUS" -eq 0
+          echo "ANDROID_HOME=$ANDROID_ROOT" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_ROOT" >> "$GITHUB_ENV"
+
+      - name: Install monetization plugins
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x tools/install_monetization_plugins.sh
+          tools/install_monetization_plugins.sh
+          test -f addons/admob/android/bin/ads/poing_godot_admob_ads.gd
+
+      - name: Import and run production gates
+        shell: bash
+        run: |
+          set -o pipefail
+          godot --headless --path . --editor --quit 2>&1 | tee build-import.log
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" build-import.log; then exit 1; fi
+          set -euo pipefail
+          for t in \
+            validate_monetization \
+            validate_admob_production \
+            validate_billing_production \
+            validate_restore_purchase_flow \
+            validate_gameplay_interactions \
+            validate_navigation_state_and_text_fit_v8 \
+            validate_flat_polish_v8 \
+            validate_launcher_icon_safe_zone \
+            validate_touch_enhancer_scope \
+            validate_bottom_nav_touch_zones; do
+            echo "===== $t ====="
+            timeout 180s godot --headless --path . --script "res://tests/$t.gd"
+          done
+
+      - name: Export production verification APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/android
+          cp export_presets.cfg "$RUNNER_TEMP/export-presets-v9-aab.cfg"
+          sed -i 's/gradle_build\/export_format=1/gradle_build\/export_format=0/' export_presets.cfg
+          godot --headless --verbose --path . --install-android-build-template --export-release Android build/android/unjam-v9-production-check.apk 2>&1 | tee build/android/v9-production-apk-export.log
+          test -s build/android/unjam-v9-production-check.apk
+          cp "$RUNNER_TEMP/export-presets-v9-aab.cfg" export_presets.cfg
+
+      - name: Verify production APK identity and monetization manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=build/android/unjam-v9-production-check.apk
+          AAPT="$(find "$ANDROID_SDK_ROOT/build-tools" -type f -name aapt | sort | tail -1)"
+          "$AAPT" dump badging "$APK" | tee build/android/v9-badging.txt
+          "$AAPT" dump permissions "$APK" | tee build/android/v9-permissions.txt
+          "$AAPT" dump xmltree "$APK" AndroidManifest.xml | tee build/android/v9-manifest.txt
+          grep -F "package: name='com.eghosa.unjamgam' versionCode='9' versionName='1.0.9'" build/android/v9-badging.txt
+          grep -F "targetSdkVersion:'36'" build/android/v9-badging.txt
+          grep -F "native-code: 'arm64-v8a'" build/android/v9-badging.txt
+          grep -F "android.permission.INTERNET" build/android/v9-permissions.txt
+          grep -F "android.permission.ACCESS_NETWORK_STATE" build/android/v9-permissions.txt
+          grep -F "com.google.android.gms.permission.AD_ID" build/android/v9-permissions.txt
+          grep -F "com.android.vending.BILLING" build/android/v9-permissions.txt
+          grep -F "com.google.android.gms.ads.APPLICATION_ID" build/android/v9-manifest.txt
+          grep -F "ca-app-pub-7517898921176341~1892369383" build/android/v9-manifest.txt
+          grep -F "org.godotengine.plugin.v2.GodotGooglePlayBilling" build/android/v9-manifest.txt
+          grep -F "com.android.billingclient.api.ProxyBillingActivity" build/android/v9-manifest.txt
+          rm -f "$APK"
+
+      - name: Export production unsigned AAB
+        shell: bash
+        run: |
+          set -o pipefail
+          godot --headless --verbose --path . --export-release Android build/android/UNJAM-v9-production-unsigned.aab 2>&1 | tee build/android/v9-production-aab-export.log
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access|AdMob: Android library not found" build/android/v9-production-aab-export.log; then exit 1; fi
+          test -s build/android/UNJAM-v9-production-unsigned.aab
+          unzip -t build/android/UNJAM-v9-production-unsigned.aab >/dev/null
+          sha256sum build/android/UNJAM-v9-production-unsigned.aab > build/android/UNJAM-v9-production-unsigned.aab.sha256
+
+      - name: Verify 16 KB native page compatibility
+        shell: bash
+        run: |
+          set -euo pipefail
+          AAB=build/android/UNJAM-v9-production-unsigned.aab
+          NATIVE_DIR="$RUNNER_TEMP/unjam-v9-native-libs"
+          mkdir -p "$NATIVE_DIR"
+          unzip -q "$AAB" 'base/lib/*/*.so' -d "$NATIVE_DIR" || true
+          python3 - <<'PY'
+          import pathlib, re, subprocess, os
+          libs=sorted((pathlib.Path(os.environ['RUNNER_TEMP'])/'unjam-v9-native-libs').rglob('*.so'))
+          if not libs:
+              raise SystemExit('No native libraries found')
+          bad=[]
+          for lib in libs:
+              out=subprocess.check_output(['readelf','-lW',str(lib)],text=True,errors='replace')
+              aligns=[]
+              for line in out.splitlines():
+                  if re.match(r'^\s*LOAD\s',line):
+                      try:
+                          aligns.append(int(line.split()[-1],16))
+                      except ValueError:
+                          pass
+              if not aligns or min(aligns)<0x4000:
+                  bad.append(str(lib))
+          if bad:
+              raise SystemExit('16 KB compatibility failed: '+', '.join(bad))
+          print(f'16KB_NATIVE_OK: verified {len(libs)} native libraries')
+          PY
+
+      - name: Upload production unsigned AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: UNJAM-v9-production-unsigned
+          path: |
+            build/android/UNJAM-v9-production-unsigned.aab
+            build/android/UNJAM-v9-production-unsigned.aab.sha256
+            build/android/v9-badging.txt
+            build/android/v9-permissions.txt
+            build/android/v9-manifest.txt
+          if-no-files-found: error
+          retention-days: 14
