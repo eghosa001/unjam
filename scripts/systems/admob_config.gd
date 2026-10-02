@@ -17,9 +17,10 @@ static func rewarded_unit_id(use_test: bool) -> String:
 static func interstitial_unit_id(use_test: bool) -> String:
 	return TEST_INTERSTITIAL_UNIT_ID_ANDROID if use_test else String(ProjectSettings.get_setting("monetization/admob_interstitial_unit_id", PRODUCTION_INTERSTITIAL_UNIT_ID))
 
-# Closed-testing can force Google's official test inventory without changing production IDs.
+# Test inventory is an explicit project setting. This keeps production release
+# verification deterministic even when CI itself runs with a debug Godot binary.
 static func runtime_uses_test_ads() -> bool:
-	return bool(ProjectSettings.get_setting("monetization/admob_test_mode", false)) or bool(ProjectSettings.get_setting("monetization/test_mode", false)) or OS.is_debug_build()
+	return bool(ProjectSettings.get_setting("monetization/admob_test_mode", false)) or bool(ProjectSettings.get_setting("monetization/test_mode", false))
 
 static func runtime_rewarded_unit_id() -> String:
 	return rewarded_unit_id(runtime_uses_test_ads())
