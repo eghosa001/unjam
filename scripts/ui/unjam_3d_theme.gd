@@ -69,25 +69,26 @@ static func panel_3d(fill: Color, radius: int = 28, edge: Color = Color.WHITE, e
 	return style
 
 static func gloss_button(button: Button, accent: Color, primary: bool = true, radius: int = 28, dark_mode: bool = false) -> void:
+	# Kept under the legacy name so gameplay/navigation callers do not change.
+	# The visual result is deliberately flat and compact.
 	button.flat = false
 	button.focus_mode = Control.FOCUS_NONE
 	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	button.custom_minimum_size.y = maxf(button.custom_minimum_size.y, 88.0)
+	button.custom_minimum_size.y = maxf(button.custom_minimum_size.y, 72.0)
 	button.add_theme_font_override("font", strong_font())
-	button.add_theme_font_size_override("font_size", maxi(28, button.get_theme_font_size("font_size")))
-	var base := accent if primary else (Color("162743") if dark_mode else Color("edf9ff"))
-	var edge := accent.lightened(0.28) if primary else (accent.lightened(0.10) if dark_mode else Color("9de2ff"))
-	var pressed := base.darkened(0.14)
-	button.add_theme_stylebox_override("normal", panel_3d(base.lightened(0.015), radius, edge.lightened(0.08), 3, 15 if primary else 9))
-	button.add_theme_stylebox_override("hover", panel_3d(base.lightened(0.10), radius, Color.WHITE, 4, 17 if primary else 11))
-	button.add_theme_stylebox_override("pressed", panel_3d(pressed, radius, edge, 3, 5))
-	button.add_theme_stylebox_override("focus", panel_3d(Color.TRANSPARENT, radius, Color.WHITE, 3, 0))
+	button.add_theme_font_size_override("font_size", maxi(24, button.get_theme_font_size("font_size")))
+	var base := accent if primary else (Color("242424") if dark_mode else Color("f1f3f4"))
+	var edge := Color(accent.r, accent.g, accent.b, 0.72 if primary else 0.28)
+	button.add_theme_stylebox_override("normal", badge_box(base, radius, edge, 1))
+	button.add_theme_stylebox_override("hover", badge_box(base.lightened(0.035), radius, edge, 1))
+	button.add_theme_stylebox_override("pressed", badge_box(base.darkened(0.055), radius, edge, 1))
+	button.add_theme_stylebox_override("focus", badge_box(base, radius, Color(accent.r, accent.g, accent.b, 0.88), 1))
 	var secondary_text := Color("eef7ff") if dark_mode else NAVY
 	button.add_theme_color_override("font_color", Color.WHITE if primary else secondary_text)
 	button.add_theme_color_override("font_hover_color", Color.WHITE if primary else secondary_text)
 	button.add_theme_color_override("font_pressed_color", Color.WHITE if primary else secondary_text)
-	button.add_theme_color_override("font_outline_color", Color(0.02, 0.12, 0.24, 0.72))
-	button.add_theme_constant_override("outline_size", 2)
+	button.add_theme_color_override("font_outline_color", Color.TRANSPARENT)
+	button.add_theme_constant_override("outline_size", 0)
 
 static func label_3d(label: Label, color: Color = Color.WHITE, outline: Color = Color("07518e"), outline_size: int = 4) -> void:
 	label.add_theme_font_override("font", strong_font())
