@@ -33,6 +33,11 @@ func _set_status(status: String) -> void:
 	consent_state_changed.emit(status)
 
 func may_request_ads() -> bool:
+	# Closed-test builds use Google's official demo ad units. Let those test ads
+	# load even when UMP cannot resolve a consent message yet. Production builds
+	# keep the strict consent gate because admob_test_mode is disabled there.
+	if bool(ProjectSettings.get_setting("monetization/admob_test_mode", false)):
+		return true
 	return String(SaveManager.data.get("privacy_consent_status", "unknown")) in ["obtained", "not_required"]
 
 func show_privacy_options() -> void:
