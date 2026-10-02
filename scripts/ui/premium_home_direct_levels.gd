@@ -194,7 +194,7 @@ func _add_hero_preview(canvas: Control, game_id: String) -> void:
 	preview_root.add_child(mark)
 
 func _add_quick_actions(canvas: Control) -> void:
-	var choose := _add_action(canvas, Rect2(21, 365, 166, 52), Color("#cbc4b8") if not _home_dark() else Color("#2c2c2c"), "CHOOSE GAME", 14, NAVY if not _home_dark() else DARK_INK, Callable(self, "_open_game_selector"), 16)
+	var choose := _add_action(canvas, Rect2(21, 365, 108, 52), Color("#cbc4b8") if not _home_dark() else Color("#2c2c2c"), "CHOOSE GAME", 12, NAVY if not _home_dark() else DARK_INK, Callable(self, "_open_game_selector"), 16)
 	choose.name = "HomeChooseGameButton"
 	var main := get_parent()
 	var daily_done_count := 0
@@ -203,8 +203,16 @@ func _add_quick_actions(canvas: Control) -> void:
 			if bool(main.call("_daily_done", game_id)):
 				daily_done_count += 1
 	var daily_label := "DAILY • DONE" if daily_done_count >= MultiGameManager.GAME_IDS.size() else "DAILY • %d/3" % daily_done_count
-	var daily := _add_action(canvas, Rect2(197, 365, 170, 52), Color("#ead7a3") if not _home_dark() else Color("#2c2c2c"), daily_label, 13, NAVY if not _home_dark() else DARK_INK, Callable(self, "_open_daily_games"), 16)
+	var daily := _add_action(canvas, Rect2(139, 365, 108, 52), Color("#ead7a3") if not _home_dark() else Color("#2c2c2c"), daily_label, 12, NAVY if not _home_dark() else DARK_INK, Callable(self, "_open_daily_games"), 16)
 	daily.name = "HomeDailyGamesButton"
+	var sidekick := _add_action(canvas, Rect2(257, 365, 110, 52), Color("#c9dfef") if not _home_dark() else Color("#2c2c2c"), "SIDEKICK • β", 12, NAVY if not _home_dark() else DARK_INK, Callable(self, "_open_sidekick"), 16)
+	sidekick.name = "HomePlaymateSidekickBeta"
+	sidekick.tooltip_text = LocalizationManager.localize("PLAYMATE SIDEKICK") + " • " + LocalizationManager.localize("BETA")
+
+func _open_sidekick() -> void:
+	var main := get_parent()
+	if main != null and main.has_method("show_playmate_sidekick"):
+		main.call("show_playmate_sidekick", selected_game)
 
 func _add_quick_switch(canvas: Control) -> void:
 	_add_text(canvas, "GAMES", Rect2(21, 437, 160, 18), 14, OFF_WHITE if _home_dark() else INK, true)
