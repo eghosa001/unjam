@@ -33,10 +33,15 @@ func run() -> void:
 		expect_true(String(config_script.call("interstitial_unit_id", true)) == TEST_INTERSTITIAL, "debug interstitial ID must use Google's test unit")
 		expect_true(String(config_script.call("rewarded_unit_id", false)) == EXPECTED_REWARDED, "release rewarded ID must use production unit")
 		expect_true(String(config_script.call("interstitial_unit_id", false)) == EXPECTED_INTERSTITIAL, "release interstitial ID must use production unit")
-		expect_true(bool(ProjectSettings.get_setting("monetization/admob_test_mode", false)), "closed-testing AdMob test mode is not enabled")
-		expect_true(bool(config_script.call("runtime_uses_test_ads")), "runtime does not select test ads while closed-testing mode is enabled")
-		expect_true(String(config_script.call("runtime_rewarded_unit_id")) == TEST_REWARDED, "runtime rewarded ad is not Google's test unit")
-		expect_true(String(config_script.call("runtime_interstitial_unit_id")) == TEST_INTERSTITIAL, "runtime interstitial ad is not Google's test unit")
+		var admob_test_mode := bool(ProjectSettings.get_setting("monetization/admob_test_mode", false))
+		if admob_test_mode:
+			expect_true(bool(config_script.call("runtime_uses_test_ads")), "runtime does not select test ads while AdMob test mode is enabled")
+			expect_true(String(config_script.call("runtime_rewarded_unit_id")) == TEST_REWARDED, "runtime rewarded ad is not Google's test unit in test mode")
+			expect_true(String(config_script.call("runtime_interstitial_unit_id")) == TEST_INTERSTITIAL, "runtime interstitial ad is not Google's test unit in test mode")
+		else:
+			expect_true(not bool(config_script.call("runtime_uses_test_ads")), "production release must not select Google test ad units")
+			expect_true(String(config_script.call("runtime_rewarded_unit_id")) == EXPECTED_REWARDED, "production runtime rewarded ad is not the configured production unit")
+			expect_true(String(config_script.call("runtime_interstitial_unit_id")) == EXPECTED_INTERSTITIAL, "production runtime interstitial ad is not the configured production unit")
 		var config_source := FileAccess.get_file_as_string("res://scripts/systems/admob_config.gd")
 		expect_true('monetization/admob_test_mode' in config_source, "dedicated AdMob test-mode switch is missing")
 
