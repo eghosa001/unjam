@@ -43,11 +43,17 @@ curl -fL "https://github.com/poingstudios/godot-admob-plugin/releases/download/v
 rm -rf "$CACHE_DIR/admob-android"
 mkdir -p "$CACHE_DIR/admob-android"
 unzip -oq "$CACHE_DIR/admob-android.zip" -d "$CACHE_DIR/admob-android"
+ADS_PLUGIN_FILE=$(find "$CACHE_DIR/admob-android" -type f -path "*/bin/ads/poing_godot_admob_ads.gd" -print -quit)
+test -n "$ADS_PLUGIN_FILE"
+ANDROID_BIN_ROOT="${ADS_PLUGIN_FILE%/ads/poing_godot_admob_ads.gd}"
+
+rm -rf addons/admob/android/bin
 mkdir -p addons/admob/android/bin
-find "$CACHE_DIR/admob-android" -maxdepth 4 -type f -exec cp -f {} addons/admob/android/bin/ \;
+cp -R "$ANDROID_BIN_ROOT/." addons/admob/android/bin/
 
 test -f addons/admob/plugin.cfg
 test -f addons/GodotGooglePlayBilling/BillingClient.gd
+test -f addons/admob/android/bin/ads/poing_godot_admob_ads.gd
 test "$(find addons/admob/android/bin -type f | wc -l)" -gt 0
 
 echo "Installed Google Play Billing ${BILLING_VERSION}, Poing AdMob ${ADMOB_VERSION}, and Android template ${GODOT_ADMOB_TEMPLATE_VERSION}."
