@@ -36,7 +36,7 @@ func style_box(color: Color, radius := 28, border := Color.TRANSPARENT, width :=
 
 func make_button(text_value: String, size := Vector2(420, 92), accent := false) -> Button:
 	var b := Button.new()
-	b.text = text_value
+	b.text = LocalizationManager.localize(text_value)
 	b.custom_minimum_size = size
 	b.add_theme_font_size_override("font_size", 28)
 	var color := Color("243b63") if not accent else Color("21c7a8")
