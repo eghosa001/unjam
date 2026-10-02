@@ -127,9 +127,9 @@ func _go_home() -> void:
 	get_parent().call("build_home")
 
 func _play(game_id: String) -> void:
-	# Choosing a game is navigation, not an implicit Continue action. Always open
-	# that game's campaign/level browser; Home remains the explicit place to
-	# continue an unfinished run.
+	# The Games screen is the chooser. Once the player deliberately taps a game,
+	# resume its unfinished campaign run when one exists; otherwise open that
+	# game's normal campaign/level flow.
 	var main := get_parent()
-	if main != null and main.has_method("open_game_campaign"):
-		main.call("open_game_campaign", game_id)
+	if main != null and main.has_method("resume_game"):
+		main.call("resume_game", game_id)
