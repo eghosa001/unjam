@@ -209,7 +209,6 @@ def main() -> int:
         'HOLD_SECONDS := 1.55',
         'FADE_SECONDS := 0.25',
         'MAIN_SCENE := "res://scenes/Main.tscn"',
-        'ResourceLoader.load_threaded_request(MAIN_SCENE)',
         'func _open_main() -> void:',
         'get_tree().change_scene_to_file(MAIN_SCENE)',
     ):
