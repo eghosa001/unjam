@@ -63,7 +63,7 @@ func _build_reference_selector(canvas: Control) -> void:
 	var background := PanelContainer.new()
 	var bg_fill := Color("#202124") if _selector_dark() else Color("#e6e3dc")
 	var bg_border := Color("#3d4045") if _selector_dark() else Color("#c8c3ba")
-	background.add_theme_stylebox_override("panel", RefCanvas.solid_box(bg_fill, 34, bg_border, 1))
+	background.add_theme_stylebox_override("panel", RefCanvas.flat_gloss(bg_fill, 34, bg_border, 1, 0.11))
 	RefCanvas.set_rect(background, 0, 0, 390, 844)
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(background)
@@ -101,7 +101,7 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 	card.name = "GameCard3D_%s" % game_id
 	card.set_meta("unjam_figma_exact_geometry", true)
 	var neutral := Color("#27282b") if _selector_dark() else Color("#f5f2ec")
-	card.add_theme_stylebox_override("panel", RefCanvas.solid_box(neutral, 18, Color(accent.r, accent.g, accent.b, 0.24), 1))
+	card.add_theme_stylebox_override("panel", RefCanvas.flat_gloss(neutral, 18, Color(accent.r, accent.g, accent.b, 0.24), 1, 0.11))
 	RefCanvas.set_rect(card, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(card)
@@ -109,7 +109,7 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 	var accent_rail := PanelContainer.new()
 	accent_rail.name = "SelectorAccentRail_%s" % game_id
 	accent_rail.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	accent_rail.add_theme_stylebox_override("panel", RefCanvas.solid_box(accent, 2.5))
+	accent_rail.add_theme_stylebox_override("panel", RefCanvas.flat_gloss(accent, 2.5, Color.TRANSPARENT, 0, 0.18))
 	RefCanvas.set_rect(accent_rail, rect.position.x + 4.0, rect.position.y + 18.0, 4.0, rect.size.y - 36.0)
 	canvas.add_child(accent_rail)
 
@@ -163,7 +163,7 @@ func _add_card_preview(canvas: Control, game_id: String, card_y: float) -> void:
 	var accent := Unjam3DTheme.game_accent(game_id)
 	var frame_fill := Color("#222326") if _selector_dark() else Color("#ebe7df")
 	frame_fill = frame_fill.lerp(accent.darkened(0.42) if _selector_dark() else accent.lightened(0.78), 0.08)
-	frame.add_theme_stylebox_override("panel", RefCanvas.solid_box(frame_fill, 14, Color(accent.r,accent.g,accent.b,0.20), 1))
+	frame.add_theme_stylebox_override("panel", RefCanvas.flat_gloss(frame_fill, 14, Color(accent.r,accent.g,accent.b,0.20), 1, 0.11))
 	RefCanvas.set_rect(frame, 243, card_y + 23, 104, 112)
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(frame)
@@ -178,7 +178,7 @@ func _add_bottom_nav(canvas: Control) -> void:
 	shell.name = "SelectorBottomNav"
 	var nav_fill := Color("#252629") if _selector_dark() else Color("#f0ede6")
 	var nav_border := Color("#3a3d42") if _selector_dark() else Color("#cbc6bc")
-	shell.add_theme_stylebox_override("panel", RefCanvas.solid_box(nav_fill, 18, nav_border, 1))
+	shell.add_theme_stylebox_override("panel", RefCanvas.flat_gloss(nav_fill, 18, nav_border, 1, 0.12))
 	RefCanvas.set_rect(shell, 13, 757, 362, 70)
 	shell.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(shell)
@@ -206,7 +206,7 @@ func _add_bottom_nav(canvas: Control) -> void:
 		if selected:
 			var plate := PanelContainer.new()
 			plate.name = "SelectorNavActivePlate_%s" % String(item[0])
-			plate.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(accent.r,accent.g,accent.b,0.12 if _selector_dark() else 0.15), 14, Color(accent.r,accent.g,accent.b,0.40), 1))
+			plate.add_theme_stylebox_override("panel", RefCanvas.flat_gloss(Color(accent.r,accent.g,accent.b,0.12 if _selector_dark() else 0.15), 14, Color(accent.r,accent.g,accent.b,0.40), 1, 0.16))
 			RefCanvas.set_rect(plate, float(item[3]) + 7.0, 763, 58, 55)
 			plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			canvas.add_child(plate)
