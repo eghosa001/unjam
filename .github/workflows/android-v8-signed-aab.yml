@@ -8,6 +8,7 @@ on:
       - "project.godot"
       - "scripts/systems/localization_manager.gd"
       - "scripts/ui/figma_reference_canvas.gd"
+      - "scripts/ui/boot_splash.gd"
       - "scripts/ui/main.gd"
       - "scripts/ui/premium_home_direct_levels.gd"
       - "scripts/ui/premium_main_casual.gd"
