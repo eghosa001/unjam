@@ -93,6 +93,8 @@ func _build_reference_selector(canvas: Control) -> void:
 	_add_bottom_nav(canvas)
 
 func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color, highlight: Color, title: String, subtitle: String) -> void:
+	var card_shadow := RefCanvas.add_shadow(canvas, rect, 18, Color(0.02,0.10,0.18,0.08), 2, Vector2(0,1))
+	card_shadow.name = "SelectorCardShadow_%s" % game_id
 	var card := PanelContainer.new()
 	card.name = "GameCard3D_%s" % game_id
 	var neutral := Color("#292a2d") if _selector_dark() else Color("#efede8")
@@ -101,7 +103,7 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(card)
 
-	var game_title := _add_text(canvas, title, Rect2(34, rect.position.y + 16, 184, 27), 21, DARK_INK if _selector_dark() else INK, true)
+	var game_title := _add_text(canvas, title, Rect2(34, rect.position.y + 16, 184, 27), 22, DARK_INK if _selector_dark() else INK, true)
 	game_title.name = "SelectorGameTitle_%s" % game_id
 	game_title.add_theme_constant_override("outline_size", 2)
 	game_title.add_theme_color_override("font_outline_color", Color("#11151a") if _selector_dark() else Color(1,1,1,0.74))
@@ -111,7 +113,7 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 	subtitle_clip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	RefCanvas.set_rect(subtitle_clip, 34, rect.position.y + 47, 184, 34)
 	canvas.add_child(subtitle_clip)
-	var game_subtitle := _make_label(subtitle, 13, DARK_MUTED if _selector_dark() else MUTED, false)
+	var game_subtitle := _make_label(subtitle, 14, DARK_MUTED if _selector_dark() else MUTED, false)
 	game_subtitle.name = "SelectorGameSubtitle_%s" % game_id
 	game_subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	game_subtitle.clip_text = true
@@ -134,7 +136,7 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 	tap.pressed.connect(_play.bind(game_id))
 	canvas.add_child(tap)
 
-	var play := RefCanvas.premium_button("PLAY", 13, OFF_WHITE, accent.darkened(0.18), 13, Color(accent.r, accent.g, accent.b, 0.54), 1)
+	var play := RefCanvas.premium_button("PLAY", 14, OFF_WHITE, accent.darkened(0.18), 13, Color(accent.r, accent.g, accent.b, 0.54), 1)
 	play.name = "SelectorPlay_%s" % game_id
 	play.tooltip_text = "Play %s" % title.capitalize()
 	RefCanvas.set_rect(play, 151, rect.position.y + 100, 76, 42)
