@@ -405,6 +405,25 @@ static func localized_text(text_value: String) -> String:
 			return String(manager.call("localize", text_value))
 	return text_value
 
+static func fit_single_line_text(control: Control, max_width: float, start_size: int, min_size: int = 10) -> void:
+	if control == null or max_width <= 0.0:
+		return
+	var font := control.get_theme_font("font")
+	if font == null:
+		return
+	var value := ""
+	if control is Label:
+		value = (control as Label).text
+	elif control is Button:
+		value = (control as Button).text
+	else:
+		return
+	var size := start_size
+	while size > min_size and font.get_string_size(value, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x > max_width:
+		size -= 1
+	control.add_theme_font_size_override("font_size", size)
+
+
 static func premium_button(text_value: String, font_size: int, text_color: Color, fill: Color, radius: float, border: Color = Color.TRANSPARENT, border_width: float = 0.0) -> Button:
 	var result := Button.new()
 	result.set_meta("unjam_figma_exact_geometry", true)
