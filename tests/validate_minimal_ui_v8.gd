@@ -12,7 +12,7 @@ func _initialize() -> void:
 	_check('Rect2(257, 365, 110, 52)' not in home, "Sidekick must not occupy a third Home action column", failures)
 	_check("HomeWorldDepth" not in home and "HomeBackdropHaloTop" not in home, "Home decorative depth still enabled", failures)
 	_check("SurfaceWorldDepth" not in surfaces and "SurfaceBackdropHaloTop" not in surfaces, "secondary surface decoration still enabled", failures)
-	_check("SelectorWorldDepth" not in selector and "SelectorGamePreviewFrame" not in selector, "game selector is not minimal", failures)
+	_check("SelectorWorldDepth" not in selector and "SelectorBackdrop" not in selector, "game selector decorative depth is still enabled", failures)
 	_check("minf(shadow_color.a, 0.065)" in canvas, "shared shadows are not reduced", failures)
 	_check("static func flat_box" in theme and "motion.call(\"press\", result, 0.92)" in canvas, "shared controls are not using minimalist treatment", failures)
 	_check("func show_playmate_sidekick" in surfaces and "LocalizationManager" in home, "Version 8 features were removed", failures)
