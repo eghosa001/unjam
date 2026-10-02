@@ -95,8 +95,10 @@ func _build_reference_selector(canvas: Control) -> void:
 func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color, highlight: Color, title: String, subtitle: String) -> void:
 	var card_shadow := RefCanvas.add_shadow(canvas, rect, 18, Color(0.02,0.10,0.18,0.08), 2, Vector2(0,1))
 	card_shadow.name = "SelectorCardShadow_%s" % game_id
+	card_shadow.set_meta("unjam_figma_exact_geometry", true)
 	var card := PanelContainer.new()
 	card.name = "GameCard3D_%s" % game_id
+	card.set_meta("unjam_figma_exact_geometry", true)
 	var neutral := Color("#292a2d") if _selector_dark() else Color("#efede8")
 	card.add_theme_stylebox_override("panel", RefCanvas.solid_box(neutral, 18, Color(accent.r, accent.g, accent.b, 0.32), 1))
 	RefCanvas.set_rect(card, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
