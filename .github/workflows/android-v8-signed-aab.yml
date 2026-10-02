@@ -18,6 +18,7 @@ on:
       - "scripts/ui/unjam_3d_theme.gd"
       - "tests/validate_version8_sidekick_localization.gd"
       - "tests/validate_minimal_ui_v8.gd"
+      - "tests/validate_launcher_icon_safe_zone.gd"
       - "tests/validate_compact_gameplay_stack.gd"
       - "tests/validate_theme_integrity.gd"
       - "tests/validate_requested_polish_contract.gd"
