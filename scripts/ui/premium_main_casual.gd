@@ -162,6 +162,24 @@ func _figma_text(canvas: Control, text_value: String, rect: Rect2, font_size: in
 	canvas.add_child(label)
 	return label
 
+func _fit_single_line_control_text(control: Control, max_width: float, start_size: int, min_size: int = 10) -> void:
+	if control == null or max_width <= 0.0:
+		return
+	var font := control.get_theme_font("font")
+	if font == null:
+		return
+	var text_value := ""
+	if control is Label:
+		text_value = (control as Label).text
+	elif control is Button:
+		text_value = (control as Button).text
+	else:
+		return
+	var size := start_size
+	while size > min_size and font.get_string_size(text_value, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x > max_width:
+		size -= 1
+	control.add_theme_font_size_override("font_size", size)
+
 func _figma_button(canvas: Control, name_value: String, text_value: String, rect: Rect2, fill: Color, callback: Callable, text_color: Color = FIGMA_OFF_WHITE, radius: float = 14.0, font_size: int = 12) -> Button:
 	var resolved_fill := fill
 	var resolved_text := text_color
@@ -172,6 +190,7 @@ func _figma_button(canvas: Control, name_value: String, text_value: String, rect
 	button.name = name_value
 	button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	FigmaReferenceCanvas.set_rect(button, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
+	_fit_single_line_control_text(button, maxf(24.0, rect.size.x - 18.0), font_size, 10)
 	if callback.is_valid():
 		button.pressed.connect(callback)
 	canvas.add_child(button)
@@ -215,6 +234,7 @@ func _figma_header(canvas: Control, title_text: String, subtitle_text: String, p
 	var header_title := _figma_text(canvas, title_text, Rect2(83,21,186,28), 23, heading_color)
 	header_title.name = "FigmaHeaderTitle"
 	header_title.clip_text = true
+	_fit_single_line_control_text(header_title, 182.0, 23, 14)
 	FigmaReferenceCanvas.style_display_title(header_title, pill_fill.lightened(0.28), Color("#071d55"), 2)
 	if not subtitle_text.strip_edges().is_empty():
 		var subtitle := _figma_text(canvas, subtitle_text, Rect2(83,49,186,34), 14, muted_color)
@@ -1285,20 +1305,29 @@ func show_playmate_sidekick(game_id: String = "") -> void:
 	var friend_name := _sidekick_playmate_name()
 	var friend := _figma_text(canvas, friend_name, Rect2(35, 145, 200, 34), 25, _figma_theme_text(FIGMA_INK))
 	friend.name = "SidekickPlaymateName"
+	friend.clip_text = true
+	_fit_single_line_control_text(friend, 196.0, 25, 14)
 	var game_label := _figma_text(canvas, MultiGameManager.display_name(_sidekick_game).to_upper(), Rect2(35, 188, 220, 24), 15, _figma_theme_text(FIGMA_MUTED))
 	game_label.name = "SidekickGameName"
+	game_label.clip_text = true
+	_fit_single_line_control_text(game_label, 216.0, 15, 11)
 	var level := MultiGameManager.highest_level(_sidekick_game)
 	var level_badge := _figma_text(canvas, "LEVEL %d" % level, Rect2(263, 151, 86, 30), 13, _figma_theme_text(FIGMA_INK), true)
 	level_badge.name = "SidekickLevel"
+	level_badge.clip_text = true
+	_fit_single_line_control_text(level_badge, 82.0, 13, 10)
 
 	_figma_card(canvas, "SidekickTipCard", Rect2(17, 257, 354, 234), Color("#d8d4cc"), Color(accent, 0.42), 20)
 	_figma_text(canvas, "TIP", Rect2(35, 278, 80, 20), 14, FIGMA_GOLD)
-	var tip := _figma_text(canvas, _sidekick_tip(), Rect2(35, 312, 318, 130), 18, _figma_theme_text(FIGMA_INK))
+	var tip := _figma_text(canvas, _sidekick_tip(), Rect2(35, 312, 318, 130), 16, _figma_theme_text(FIGMA_INK))
 	tip.name = "SidekickTip"
 	tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	tip.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	tip.clip_text = true
 	var identity := _figma_text(canvas, "BETA • OFFLINE COACH", Rect2(35, 449, 318, 24), 12, _figma_theme_text(FIGMA_MUTED), true)
 	identity.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	identity.clip_text = true
+	_fit_single_line_control_text(identity, 314.0, 12, 10)
 
 	var next_tip := _figma_button(canvas, "SidekickNextTip", "NEXT TIP", Rect2(17, 515, 170, 52), Color("#cbc4b8"), Callable(self, "_sidekick_next_tip"), FIGMA_NAVY, 16, 13)
 	next_tip.tooltip_text = LocalizationManager.localize("NEXT TIP")
