@@ -577,6 +577,8 @@ func _figma_daily_progress(canvas: Control) -> void:
 		label.name = "DailyProgressLabel_%s" % game_id
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		label.clip_text = true
+		_fit_single_line_control_text(label, 86.0, 13, 11)
 
 func _figma_daily_tip(canvas: Control, collection_bonus: int) -> void:
 	# Use the lower Daily space for useful progress context without inventing an
@@ -600,9 +602,11 @@ func _figma_daily_tip(canvas: Control, collection_bonus: int) -> void:
 			detail_text = "Collection adds +%d coins to each Daily Game." % collection_bonus
 		else:
 			detail_text = "Garden upgrades boost each Daily Game reward."
-	var detail := _figma_text(canvas, detail_text, Rect2(63, 635, 288, 30), 13, FIGMA_MUTED)
+	var detail := _figma_text(canvas, detail_text, Rect2(63, 631, 282, 38), 12, FIGMA_MUTED)
 	detail.name = "DailyTipDetail"
 	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	detail.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	detail.clip_text = false
 
 func _figma_today_label() -> String:
 	var d := Time.get_date_dict_from_system()
