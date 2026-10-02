@@ -79,6 +79,7 @@ func _build_reference_selector(canvas: Control) -> void:
 	var selector_title := _add_text(canvas, "CHOOSE A GAME", Rect2(78, 26, 196, 34), 22, DARK_INK if _selector_dark() else INK, true)
 	selector_title.name = "SelectorTitle3D"
 	selector_title.clip_text = true
+	RefCanvas.fit_single_line_text(selector_title, 192.0, 22, 14)
 	var settings := RefCanvas.premium_button("⚙", 18, DARK_INK if _selector_dark() else NAVY, Color("#292a2d") if _selector_dark() else Color("#d6d1c7"), 16, bg_border, 1)
 	settings.name = "SelectorSettingsButton"
 	settings.tooltip_text = "Settings"
@@ -109,6 +110,7 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 	game_title.name = "SelectorGameTitle_%s" % game_id
 	game_title.add_theme_constant_override("outline_size", 2)
 	game_title.add_theme_color_override("font_outline_color", Color("#11151a") if _selector_dark() else Color(1,1,1,0.74))
+	RefCanvas.fit_single_line_text(game_title, 180.0, 22, 13)
 	var subtitle_clip := Control.new()
 	subtitle_clip.name = "SelectorGameSubtitleClip_%s" % game_id
 	subtitle_clip.clip_contents = true
@@ -142,6 +144,7 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 	play.name = "SelectorPlay_%s" % game_id
 	play.tooltip_text = "Play %s" % title.capitalize()
 	RefCanvas.set_rect(play, 151, rect.position.y + 100, 76, 42)
+	RefCanvas.fit_single_line_text(play, 64.0, 14, 10)
 	play.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	play.pressed.connect(_play.bind(game_id))
 	canvas.add_child(play)
@@ -221,6 +224,7 @@ func _add_bottom_nav(canvas: Control) -> void:
 		label.custom_minimum_size = Vector2.ZERO
 		label.position = Vector2(label_x, 789)
 		label.size = Vector2(label_width, 24)
+		RefCanvas.fit_single_line_text(label, label_width - 2.0, 14, 10)
 		var hit := Button.new()
 		hit.name = "SelectorNavHit_%s" % String(item[0])
 		hit.flat = true
