@@ -91,8 +91,8 @@ jobs:
           sed -i 's/version\/code=[0-9]\+/version\/code=6/' export_presets.cfg
           sed -i 's/version\/name="[^"]*"/version\/name="1.0.6"/' export_presets.cfg
           grep -Fx 'gradle_build/export_format=0' export_presets.cfg
-          grep -Fx 'version/code=6' export_presets.cfg
-          grep -Fx 'version/name="1.0.6"' export_presets.cfg
+          grep -Fx 'version/code=8' export_presets.cfg
+          grep -Fx 'version/name="1.0.8"' export_presets.cfg
 
       - name: Import project
         shell: bash
@@ -128,7 +128,7 @@ jobs:
           "$AAPT" dump badging "$APK" | tee build/android/unjam-latest-debug-badging.txt
           "$AAPT" dump permissions "$APK" | tee build/android/unjam-latest-debug-permissions.txt
           "$AAPT" dump xmltree "$APK" AndroidManifest.xml | tee build/android/unjam-latest-debug-manifest.txt
-          grep -F "package: name='com.eghosa.unjamgam' versionCode='6' versionName='1.0.6'" build/android/unjam-latest-debug-badging.txt
+          grep -F "package: name='com.eghosa.unjamgam' versionCode='8' versionName='1.0.8'" build/android/unjam-latest-debug-badging.txt
           grep -F "targetSdkVersion:'36'" build/android/unjam-latest-debug-badging.txt
           grep -F "native-code: 'arm64-v8a'" build/android/unjam-latest-debug-badging.txt
           grep -F "com.google.android.gms.permission.AD_ID" build/android/unjam-latest-debug-permissions.txt
@@ -157,4 +157,4 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-# manual-apk-build-marker 2026-10-01 billing-recovery-v6-final
+# manual-apk-build-marker 2026-10-02 glossy-flat-v8-final
