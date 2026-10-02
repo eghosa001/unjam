@@ -5,6 +5,13 @@ on:
     branches: [version-8-sidekick-localization]
     paths:
       - ".github/workflows/android-v8-signed-aab.yml"
+      - "project.godot"
+      - "scripts/systems/localization_manager.gd"
+      - "scripts/ui/figma_reference_canvas.gd"
+      - "scripts/ui/main.gd"
+      - "scripts/ui/premium_home_direct_levels.gd"
+      - "scripts/ui/premium_main_casual.gd"
+      - "tests/validate_version8_sidekick_localization.gd"
 
 permissions:
   contents: read
