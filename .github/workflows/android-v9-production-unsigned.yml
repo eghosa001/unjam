@@ -24,6 +24,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          python3 tools/validate_release_contract.py
           python3 - <<'PY'
           import re
           from pathlib import Path
@@ -58,7 +59,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 tools/validate_release_contract.py
           python3 tools/validate_purchase_claim_protocol.py
           python3 tools/check_live_monetization.py
 
