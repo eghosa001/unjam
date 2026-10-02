@@ -428,7 +428,6 @@ func build_settings() -> void:
 		help_card = _figma_solid_card(canvas,"HelpPrivacy",Rect2(17,499,354,94),card_fill,card_border,18)
 	else:
 		help_card = _figma_solid_card(canvas,"HelpPrivacy",Rect2(17,499,354,94),Color("#f5f2ec"),Color("#cbc6bc"),18)
-		help_card.modulate.a = 0.70
 	_figma_text(canvas,"SUPPORT",Rect2(33,515,170,18),15,heading_color)
 	var utility_fill := Color("#2d2e31") if dark_mode else Color("#ebe7df")
 	var utility_border := Color("#44474c") if dark_mode else Color("#cbc6bc")
@@ -474,7 +473,6 @@ func _figma_settings_card(canvas: Control, name_value: String, rect: Rect2, fill
 		card = _figma_solid_card(canvas,name_value,rect,fill,border,18)
 	else:
 		card = _figma_card(canvas,name_value,rect,fill,border,18)
-		card.modulate.a = 0.70
 	return card
 
 func _figma_setting_row(canvas: Control, key: String, label_text: String, toggle_y: float, label_y: float, default_value: bool = true, reduced_motion: bool = false, dark_mode: bool = false) -> void:
