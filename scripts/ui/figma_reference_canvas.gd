@@ -374,10 +374,13 @@ static func shadow_box(radius: float, shadow_color: Color = Color(0.02, 0.10, 0.
 	return style
 
 static func add_shadow(parent: Control, rect: Rect2, radius: float, shadow_color: Color = Color(0.02, 0.10, 0.20, 0.20), shadow_size: int = 6, shadow_offset: Vector2 = Vector2(0, 4)) -> PanelContainer:
+	# Minimal UI keeps only a faint elevation cue. No large floating-card shadows.
 	var shadow := PanelContainer.new()
 	shadow.name = "FigmaShadow"
 	shadow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	shadow.add_theme_stylebox_override("panel", shadow_box(radius, shadow_color, shadow_size, shadow_offset))
+	var quiet_color := Color(shadow_color.r, shadow_color.g, shadow_color.b, minf(shadow_color.a, 0.065))
+	var quiet_offset := Vector2(0, minf(absf(shadow_offset.y), 1.5))
+	shadow.add_theme_stylebox_override("panel", shadow_box(radius, quiet_color, mini(shadow_size, 2), quiet_offset))
 	set_rect(shadow, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	parent.add_child(shadow)
 	return shadow
@@ -411,11 +414,8 @@ static func premium_button(text_value: String, font_size: int, text_color: Color
 	result.add_theme_font_override("font", Unjam3DTheme.strong_font())
 	result.add_theme_font_size_override("font_size", font_size)
 	var resolved_text := accessible_text_color(text_color, fill)
-	result.add_theme_color_override("font_color", resolved_text)
-	result.add_theme_color_override("font_hover_color", resolved_text)
-	result.add_theme_color_override("font_pressed_color", resolved_text)
-	# Figma controls can sit under older screen themes. Clear inherited text
-	# effects so compact phone rendering stays crisp instead of looking doubled.
+	for state in ["font_color", "font_hover_color", "font_pressed_color"]:
+		result.add_theme_color_override(state, resolved_text)
 	result.add_theme_color_override("font_shadow_color", Color.TRANSPARENT)
 	result.add_theme_color_override("font_outline_color", Color.TRANSPARENT)
 	result.add_theme_constant_override("shadow_offset_x", 0)
@@ -423,34 +423,25 @@ static func premium_button(text_value: String, font_size: int, text_color: Color
 	result.add_theme_constant_override("shadow_outline_size", 0)
 	result.add_theme_constant_override("outline_size", 0)
 
-	# StyleBoxTexture's nine-slice margins contribute to Button minimum size.
-	# Drawing the gradient in a geometry-neutral child preserves the exact Figma
-	# rectangle (including compact authored controls) without giving up the 3D finish.
-	var top := fill.lightened(0.18)
-	var bottom := fill.darkened(0.18)
-	var gradient := rounded_gradient3(top, fill, bottom, radius, border, border_width)
-	var backdrop := FigmaButtonBackdrop.new()
-	backdrop.name = "FigmaButtonGradient"
-	backdrop.configure(gradient)
-	result.add_child(backdrop)
-
-	var clear := solid_box(Color.TRANSPARENT, 0)
-	var hover_overlay := solid_box(Color(1,1,1,0.055), radius)
-	var pressed_overlay := solid_box(Color(0,0,0,0.075), radius)
-	var disabled_overlay := solid_box(Color(0.10,0.13,0.16,0.16), radius)
-	result.add_theme_stylebox_override("normal", clear)
-	result.add_theme_stylebox_override("hover", hover_overlay)
-	result.add_theme_stylebox_override("pressed", pressed_overlay)
-	result.add_theme_stylebox_override("focus", clear)
-	result.add_theme_stylebox_override("disabled", disabled_overlay)
-	var disabled_text := Color(resolved_text.r, resolved_text.g, resolved_text.b, 0.72)
-	result.add_theme_color_override("font_disabled_color", disabled_text)
+	# Flat, quiet controls: one fill, one thin edge, small state changes.
+	var resolved_border := border if border.a > 0.0 else Color(fill.r, fill.g, fill.b, 0.0)
+	var resolved_width := minf(maxf(border_width, 0.0), 1.0)
+	var normal := solid_box(fill, radius, resolved_border, resolved_width)
+	var hover := solid_box(fill.lightened(0.035), radius, resolved_border, resolved_width)
+	var pressed := solid_box(fill.darkened(0.055), radius, resolved_border, resolved_width)
+	var disabled := solid_box(Color(fill.r, fill.g, fill.b, 0.58), radius, resolved_border, resolved_width)
+	result.add_theme_stylebox_override("normal", normal)
+	result.add_theme_stylebox_override("hover", hover)
+	result.add_theme_stylebox_override("pressed", pressed)
+	result.add_theme_stylebox_override("focus", normal)
+	result.add_theme_stylebox_override("disabled", disabled)
+	result.add_theme_color_override("font_disabled_color", Color(resolved_text.r, resolved_text.g, resolved_text.b, 0.62))
 	result.button_down.connect(func() -> void:
 		if result.disabled:
 			return
 		var motion := result.get_node_or_null("/root/MotionSystem")
 		if motion != null and motion.has_method("press"):
-			motion.call("press", result, 0.78)
+			motion.call("press", result, 0.92)
 	)
 	return result
 
