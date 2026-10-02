@@ -411,12 +411,12 @@ func build_settings() -> void:
 	_figma_setting_row(canvas,"vibration","HAPTICS",226,238,true,false,dark_mode)
 
 	_figma_settings_card(canvas,"SettingsCard/Comfort",Rect2(17,275,354,120),card_fill,card_border,dark_mode)
-	_figma_text(canvas,"COMFORT",Rect2(33,291,130,18),15,FIGMA_GOLD if not dark_mode else heading_color)
+	_figma_text(canvas,"COMFORT",Rect2(33,291,130,18),15,heading_color)
 	_figma_setting_row(canvas,"reduce_motion","REDUCED MOTION",314,326,false,true,dark_mode)
 	_figma_setting_row(canvas,"fast_animation","FAST ANIMATION",358,370,false,false,dark_mode)
 
 	_figma_settings_card(canvas,"SettingsCard/Appearance",Rect2(17,409,354,76),card_fill,card_border,dark_mode)
-	_figma_text(canvas,"APPEARANCE",Rect2(33,425,150,18),15,FIGMA_GOLD if not dark_mode else heading_color)
+	_figma_text(canvas,"APPEARANCE",Rect2(33,425,150,18),15,heading_color)
 	_figma_text(canvas,"THEME",Rect2(33,448,210,28),14,muted_color)
 	var theme_fill := FIGMA_GOLD
 	var theme_text := FIGMA_NAVY
@@ -429,7 +429,7 @@ func build_settings() -> void:
 	else:
 		help_card = _figma_solid_card(canvas,"HelpPrivacy",Rect2(17,499,354,94),Color("#f5f2ec"),Color("#cbc6bc"),18)
 		help_card.modulate.a = 0.70
-	_figma_text(canvas,"SUPPORT",Rect2(33,515,170,18),15,FIGMA_GOLD if not dark_mode else heading_color)
+	_figma_text(canvas,"SUPPORT",Rect2(33,515,170,18),15,heading_color)
 	var utility_fill := Color("#2d2e31") if dark_mode else Color("#ebe7df")
 	var utility_border := Color("#44474c") if dark_mode else Color("#cbc6bc")
 	var utility_text := FIGMA_DARK_INK if dark_mode else FIGMA_NAVY
@@ -456,7 +456,7 @@ func build_settings() -> void:
 	canvas.add_child(privacy)
 
 	_figma_settings_card(canvas,"SettingsCard/Purchases",Rect2(17,607,354,98),card_fill,card_border,dark_mode)
-	_figma_text(canvas,"PURCHASES",Rect2(33,621,170,18),15,FIGMA_GOLD if not dark_mode else heading_color)
+	_figma_text(canvas,"PURCHASES",Rect2(33,621,170,18),15,heading_color)
 	FigmaReferenceCanvas.add_shadow(canvas, Rect2(33,645,318,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
 	var purchases := FigmaReferenceCanvas.premium_button("SHOP & RESTORE",15,utility_text,utility_fill,16,utility_border,1.2)
 	purchases.name = "SettingsPurchases"
@@ -588,8 +588,8 @@ func _figma_daily_tip(canvas: Control, collection_bonus: int) -> void:
 		if _daily_done(game_id):
 			done_count += 1
 	var remaining := maxi(0, 3 - done_count)
-	var tip_fill := Color("#33281c") if _dark() else Color("#fffaf0")
-	var tip_border := Color(FIGMA_GOLD, 0.34 if _dark() else 0.24)
+	var tip_fill := Color("#27282b") if _dark() else Color("#f5f2ec")
+	var tip_border := Color(FIGMA_GOLD, 0.22 if _dark() else 0.18)
 	_figma_card(canvas, "DailyTip", Rect2(17, 598, 354, 80), tip_fill, tip_border, 16)
 	var star_icon := _figma_text(canvas, "✦", Rect2(33, 614, 24, 24), 18, FIGMA_GOLD, true)
 	star_icon.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -616,25 +616,25 @@ func _daily_ui_state(game_id: String, accent: Color) -> Dictionary:
 	# Each Daily card is independent. Completing, abandoning or failing one game
 	# must never disable either of the other two.
 	if _daily_done(game_id):
-		return {"text":"COMPLETED", "fill":Color("#cbb98f"), "disabled":true, "done":true}
-	return {"text":"PLAY", "fill":FIGMA_GOLD, "disabled":false, "done":false}
+		return {"text":"COMPLETED", "fill":Color("#4a4c50") if _dark() else Color("#d8d4cc"), "disabled":true, "done":true}
+	return {"text":"PLAY", "fill":accent, "disabled":false, "done":false}
 
 func _figma_daily_card(canvas: Control, game_id: String, y: float, collection_bonus: int) -> void:
 	var accent := Unjam3DTheme.game_accent(game_id)
-	var card_fill := Color("#33281c") if _dark() else Color("#fffaf0")
-	var card_border := Color(accent, 0.62 if _dark() else 0.42)
+	var card_fill := Color("#27282b") if _dark() else Color("#f5f2ec")
+	var card_border := Color(accent, 0.32 if _dark() else 0.28)
 	_figma_solid_card(canvas, "DailyCard/%s" % game_id, Rect2(17,y,354,106), card_fill, card_border, 18)
 	var accent_rail := PanelContainer.new()
 	accent_rail.name = "DailyAccent/%s" % game_id
 	accent_rail.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	accent_rail.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(accent.lightened(0.30), accent, accent.darkened(0.24), 3, accent.lightened(0.38), 1, 0.36))
+	accent_rail.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(accent, 3))
 	FigmaReferenceCanvas.set_rect(accent_rail, 20, y + 14, 5, 78)
 	canvas.add_child(accent_rail)
 	var daily_title := _figma_text(canvas, MultiGameManager.display_name(game_id).to_upper(), Rect2(33,y+16,178,25), 19, FIGMA_DARK_INK if _dark() else FIGMA_INK)
 	daily_title.name = "DailyTitle_%s" % game_id
 	var title_fill := accent.lightened(0.22) if _dark() else accent.darkened(0.30)
-	var title_outline := accent.darkened(0.68) if _dark() else Color(1.0, 1.0, 1.0, 0.92)
-	FigmaReferenceCanvas.style_display_title(daily_title, title_fill, title_outline, 2)
+	var title_outline := Color("#151619") if _dark() else Color("#ffffff")
+	FigmaReferenceCanvas.style_display_title(daily_title, title_fill, title_outline, 1)
 	var detail := "CLEAR THE ROUTE" if game_id == "rescue_rush" else ("SORT THE COLOURS" if game_id == "water_sort" else "CLEAR THE BOARD")
 	_figma_text(canvas, detail, Rect2(33,y+47,182,18), 13, FIGMA_MUTED)
 	var reward := "+%d COINS" % (100 + collection_bonus) if game_id == "rescue_rush" else "+%d–%d COINS" % [125 + collection_bonus,175 + collection_bonus]
@@ -649,7 +649,7 @@ func _figma_daily_card(canvas: Control, game_id: String, y: float, collection_bo
 		Rect2(236,y+42,116,48),
 		fill,
 		Callable(),
-		FIGMA_NAVY,
+		FIGMA_OFF_WHITE,
 		15,
 		15
 	)
@@ -765,8 +765,8 @@ func _figma_collection_tip(canvas: Control) -> void:
 	# wallet balance already exposed in the header.
 	var daily_bonus := EconomyManager.collection_daily_bonus()
 	var gift_amount := EconomyManager.garden_gift_amount()
-	var tip_fill := Color("#33281c") if _dark() else Color("#fffaf0")
-	var tip_border := Color(FIGMA_GREEN, 0.34 if _dark() else 0.24)
+	var tip_fill := Color("#27282b") if _dark() else Color("#f5f2ec")
+	var tip_border := Color(FIGMA_GREEN, 0.22 if _dark() else 0.18)
 	_figma_card(canvas, "CollectionTip", Rect2(17, 606, 354, 82), tip_fill, tip_border, 16)
 	var icon := _figma_text(canvas, "◆", Rect2(33, 622, 24, 24), 17, FIGMA_GREEN, true)
 	icon.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
