@@ -118,7 +118,7 @@ func _add_hero(canvas: Control) -> void:
 	var game_title := _add_text(canvas, _short_game_name(selected_game), Rect2(41, 151, 180, 34), game_title_size, NAVY, true)
 	game_title.name = "HomeHeroGameTitle"
 	game_title.add_theme_color_override("font_color", _home_text_color(NAVY))
-	var game_meta := _add_text(canvas, "LEVEL %d • %s %d" % [level, MultiGameManager.progression_scope_label(selected_game), world], Rect2(41, 190, 170, 17), 14, MUTED, false)
+	var game_meta := _add_text(canvas, "LEVEL %d • WORLD %d" % [level, world], Rect2(41, 190, 170, 17), 14, MUTED, false)
 	game_meta.name = "HomeHeroGameMeta"
 
 	var continue_button := _add_action(
