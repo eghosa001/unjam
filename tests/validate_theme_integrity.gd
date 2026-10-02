@@ -81,32 +81,21 @@ func _run() -> void:
 		return _fail("Light theme is outside the premium warm-neutral luminance range")
 	if absf(light_bg.color.r - light_bg.color.g) > 0.10 or absf(light_bg.color.g - light_bg.color.b) > 0.10:
 		return _fail("Light theme drifted away from the approved warm-neutral family")
-	if main.find_child("HomeLightGlassHorizon", true, false) == null:
-		return _fail("Home light mode lost its layered glass horizon")
-	var home_key := main.find_child("HomeKeyLight", true, false) as PanelContainer
-	if home_key == null:
-		return _fail("Home light-mode key light is missing")
-	var backdrop_source := _read("res://scripts/ui/figma_reference_canvas.gd")
-	if not backdrop_source.contains("0.24 if not dark else 0.09"):
-		return _fail("Home light-mode key light became too flat")
-
+	# Minimal Version 8 intentionally removes glass horizons/key lights.
+	# Keep the theme contract focused on luminance and foreground contrast.
 	main.set("current_surface", "live")
 	if main.has_signal("surface_changed"):
 		main.emit_signal("surface_changed", "live")
 	await _frames(5)
-	if main.find_child("SelectorLightGlassHorizon", true, false) == null:
-		return _fail("Choose Game light mode lost its layered glass horizon")
 	var selector_title := main.find_child("SelectorTitle3D", true, false) as Label
-	if selector_title == null or selector_title.get_theme_color("font_color").get_luminance() < 0.70:
-		return _fail("Choose Game light-mode title lost readable contrast on the gold shell")
+	if selector_title == null or selector_title.get_theme_color("font_color").get_luminance() > 0.42:
+		return _fail("Choose Game light-mode title lost readable dark-on-neutral contrast")
 	var selector_game_title := main.find_child("SelectorGameTitle_rescue_rush", true, false) as Label
 	if selector_game_title == null or selector_game_title.get_theme_color("font_color").get_luminance() > 0.42:
 		return _fail("Choose Game light-card title lost readable dark-on-neutral contrast")
 
 	main.call("build_settings")
 	await _frames(5)
-	if main.find_child("SurfaceLightGlassHorizon", true, false) == null:
-		return _fail("Secondary light surfaces lost their layered glass horizon")
 	var settings_bg := main.find_child("FigmaSurfaceBackground", true, false) as PanelContainer
 	if settings_bg == null:
 		return _fail("Light Settings surface background is missing")
