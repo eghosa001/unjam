@@ -10,8 +10,13 @@ func _initialize() -> void:
 	var selector := FileAccess.get_file_as_string("res://scripts/ui/premium_live_hub_3d.gd")
 
 	var play_block := _function_block(live, "func _play(game_id: String) -> void:")
-	_check('open_game_campaign' in play_block, "Choose Game no longer opens campaign browser", failures)
-	_check('resume_game' not in play_block and '_checkpoint_for' not in play_block, "Choose Game still implicitly resumes checkpoints", failures)
+	_check('resume_game' in play_block, "Selecting a game no longer resumes its unfinished campaign run", failures)
+	_check('open_game_campaign' not in play_block, "Games selector bypasses resume behavior", failures)
+
+	var sidekick_change_block := _function_block(sidekick, "func _sidekick_change_game() -> void:")
+	_check('_open_games_surface()' in sidekick_change_block, "Sidekick Change Game does not open the Games selector", failures)
+	var sidekick_play_block := _function_block(sidekick, "func _sidekick_play_game() -> void:")
+	_check('resume_game(_sidekick_game)' in sidekick_play_block, "Sidekick Play This Game does not resume unfinished progress", failures)
 
 	_check('DAILY_CAMPAIGN_BACKUPS_KEY := "daily_campaign_checkpoint_backups"' in main, "Daily checkpoint isolation key missing", failures)
 	_check('_stash_campaign_checkpoint_for_daily(game_id)' in main, "Daily does not park campaign checkpoint", failures)
