@@ -17,6 +17,7 @@ on:
       - "scripts/ui/ui_touch_enhancer.gd"
       - "scenes/Boot.tscn"
       - "scripts/systems/android_monetization_bridge.gd"
+      - "scripts/systems/privacy_manager.gd"
       - "scripts/systems/store_manager.gd"
       - "addons/unjam_admob_provider.gd"
       - "tools/install_monetization_plugins.sh"
