@@ -199,8 +199,8 @@ func _figma_button(canvas: Control, name_value: String, text_value: String, rect
 func _figma_card(canvas: Control, name_value: String, rect: Rect2, tint: Color = Color(1.0, 0.995, 0.97), accent: Color = Color(0.70, 0.88, 0.96, 0.45), radius: float = 16.0) -> PanelContainer:
 	var card := PanelContainer.new()
 	card.name = name_value
-	var resolved_tint := Color("#292a2d") if _dark() else Color("#efede8")
-	var resolved_accent := Color(accent.r, accent.g, accent.b, 0.34 if _dark() else 0.28)
+	var resolved_tint := Color("#27282b") if _dark() else Color("#f5f2ec")
+	var resolved_accent := Color(accent.r, accent.g, accent.b, 0.22 if _dark() else 0.18)
 	card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(resolved_tint, radius, resolved_accent, 1))
 	FigmaReferenceCanvas.set_rect(card, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -211,11 +211,11 @@ func _figma_solid_card(canvas: Control, name_value: String, rect: Rect2, tint: C
 	var card := PanelContainer.new()
 	card.name = name_value
 	var resolved_tint := tint
-	var resolved_border := Color(border.r, border.g, border.b, minf(border.a, 0.48))
+	var resolved_border := Color(border.r, border.g, border.b, minf(border.a, 0.34))
 	if not _dark() and tint.get_luminance() > 0.72:
-		resolved_tint = Color("#efede8")
+		resolved_tint = Color("#f5f2ec")
 	elif _dark() and tint.get_luminance() > 0.72:
-		resolved_tint = Color("#292a2d")
+		resolved_tint = Color("#27282b")
 	card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(resolved_tint, radius, resolved_border, 1))
 	FigmaReferenceCanvas.set_rect(card, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -235,7 +235,7 @@ func _figma_header(canvas: Control, title_text: String, subtitle_text: String, p
 	header_title.name = "FigmaHeaderTitle"
 	header_title.clip_text = true
 	_fit_single_line_control_text(header_title, 182.0, 23, 14)
-	FigmaReferenceCanvas.style_display_title(header_title, pill_fill.lightened(0.28), Color("#071d55"), 2)
+	FigmaReferenceCanvas.style_display_title(header_title, pill_fill.lightened(0.20), Color("#071d55"), 1)
 	if not subtitle_text.strip_edges().is_empty():
 		var subtitle := _figma_text(canvas, subtitle_text, Rect2(83,49,186,34), 14, muted_color)
 		subtitle.name = "FigmaHeaderSubtitle"
@@ -281,21 +281,17 @@ func _figma_open_shop() -> void:
 
 func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false) -> void:
 	var use_dark := dark_mode or _dark()
-	var bar_fill := Color("#232323") if use_dark else Color("#bcb5a9")
-	var bar_border := Color("#5b5347") if use_dark else Color("#d2b06a")
-	if use_dark:
-		_figma_solid_card(canvas, "StdNav/Bar", Rect2(13,757,362,70), bar_fill, bar_border, 18)
-	else:
-		_figma_card(canvas, "StdNav/Bar", Rect2(13,757,362,70), bar_fill, bar_border, 18)
-	# Premium casual navigation reads as a row of collectible-like tabs rather
-	# than utility-app text links: every destination gets an icon and the active
-	# destination lifts onto a glossy plate with its own accent.
+	var bar_fill := Color("#252629") if use_dark else Color("#f0ede6")
+	var bar_border := Color("#3a3d42") if use_dark else Color("#cbc6bc")
+	_figma_solid_card(canvas, "StdNav/Bar", Rect2(13,757,362,70), bar_fill, bar_border, 18, false)
+	# Keep the legacy node name for regression compatibility, but use it as a
+	# quiet divider instead of a glossy highlight.
 	_figma_solid_card(
 		canvas,
 		"StdNavTopGloss",
-		Rect2(28,760,332,2),
-		Color(1.0,0.94,0.78,0.18 if use_dark else 0.30),
-		Color(1.0,0.94,0.78,0.08 if use_dark else 0.14),
+		Rect2(30,760,328,1),
+		Color(1,1,1,0.08 if use_dark else 0.34),
+		Color.TRANSPARENT,
 		1,
 		false
 	)
@@ -303,13 +299,6 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 	var hit_x := {"home":14.0, "games":86.0, "daily":158.0, "collection":230.0, "settings":302.0}
 	var names := {"home":"HOME", "games":"GAMES", "daily":"DAILY", "collection":"COLLECT", "settings":"SETTINGS"}
 	var glyphs := {"home":"⌂", "games":"▦", "daily":"✦", "collection":"◆", "settings":"⚙"}
-	var accents := {
-		"home":FIGMA_GOLD,
-		"games":FIGMA_GOLD,
-		"daily":FIGMA_GOLD,
-		"collection":FIGMA_GOLD,
-		"settings":FIGMA_GOLD,
-	}
 	var callbacks := {
 		"home": Callable(self,"build_home"),
 		"games": Callable(self,"_open_games_surface"),
@@ -319,36 +308,38 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 	}
 	for key in ["home","games","daily","collection","settings"]:
 		var selected: bool = String(key) == active
-		var accent: Color = accents[key]
-		var selected_text := Color.WHITE if use_dark else FIGMA_INK
-		var idle_text := Color(0.62,0.72,0.80) if use_dark else FIGMA_MUTED
-		var icon_color := accent.lightened(0.18) if selected else idle_text.lightened(0.06)
+		var accent := FIGMA_GOLD
+		var selected_text := FIGMA_DARK_INK if use_dark else FIGMA_INK
+		var idle_text := Color("#98a2ad") if use_dark else Color("#66707a")
+		var icon_color := accent if selected else idle_text
 		if selected:
-			var plate_fill := accent.darkened(0.50) if use_dark else accent.lightened(0.34)
-			var plate_border := accent.lightened(0.16) if use_dark else accent.darkened(0.08)
+			var plate_fill := Color(accent.r, accent.g, accent.b, 0.12 if use_dark else 0.15)
+			var plate_border := Color(accent.r, accent.g, accent.b, 0.38 if use_dark else 0.44)
 			_figma_solid_card(
 				canvas,
 				"StdNavActivePlate_%s" % String(key),
-				Rect2(float(hit_x[key])+6.0,762,60,57),
+				Rect2(float(hit_x[key])+7.0,763,58,55),
 				plate_fill,
 				plate_border,
-				15
+				14,
+				false
 			)
+			# Keep this node as a tiny accent marker instead of a lacquer shine.
 			_figma_solid_card(
 				canvas,
 				"StdNavActiveShine_%s" % String(key),
-				Rect2(float(hit_x[key])+16.0,765,40,2),
-				Color(1,1,1,0.32 if use_dark else 0.55),
-				Color(1,1,1,0.12),
+				Rect2(float(hit_x[key])+24.0,765,24,2),
+				Color(accent.r,accent.g,accent.b,0.82),
+				Color.TRANSPARENT,
 				1,
 				false
 			)
-		var glyph := _figma_text(canvas, String(glyphs[key]), Rect2(float(xs[key])-1.0,763,58,24), 21, icon_color, true)
+		var glyph := _figma_text(canvas, String(glyphs[key]), Rect2(float(xs[key])-1.0,763,58,24), 20, icon_color, true)
 		glyph.name = "StdNavGlyph_%s" % String(key)
 		glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		var label_width := 66.0 if String(key) in ["collection", "settings"] else 58.0
 		var label_x := float(hit_x[key]) + (72.0 - label_width) * 0.5
-		var nav_label := _figma_text(canvas, String(names[key]), Rect2(label_x,789,label_width,24), 14, selected_text if selected else idle_text, selected)
+		var nav_label := _figma_text(canvas, String(names[key]), Rect2(label_x,789,label_width,24), 13, selected_text if selected else idle_text, selected)
 		nav_label.name = "StdNavLabel_%s" % String(key)
 		nav_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		nav_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -356,6 +347,7 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 		nav_label.custom_minimum_size = Vector2.ZERO
 		nav_label.position = Vector2(label_x, 789)
 		nav_label.size = Vector2(label_width, 24)
+		_fit_single_line_control_text(nav_label, label_width - 2.0, 13, 11)
 		var hit := Button.new()
 		hit.name = "StdNavHit_%s" % String(key).to_upper()
 		hit.flat = true
@@ -407,13 +399,13 @@ func build_settings() -> void:
 		if settings_title != null:
 			settings_title.add_theme_color_override("font_color",FIGMA_INK)
 
-	var card_fill := Color("#252525") if dark_mode else Color("#d8d4cc")
-	var card_border := Color("#5b5347") if dark_mode else Color("#b89b61")
-	var heading_color := Color(0.91,0.97,1.0) if dark_mode else FIGMA_INK
-	var muted_color := Color(0.76,0.84,0.90) if dark_mode else FIGMA_INK
+	var card_fill := Color("#27282b") if dark_mode else Color("#f5f2ec")
+	var card_border := Color("#3a3d42") if dark_mode else Color("#cbc6bc")
+	var heading_color := FIGMA_GOLD.lightened(0.08) if dark_mode else Color("#7c5c16")
+	var muted_color := Color("#b8c2cc") if dark_mode else FIGMA_MUTED
 
 	_figma_settings_card(canvas,"SettingsCard/Sound",Rect2(17,91,354,170),card_fill,card_border,dark_mode)
-	_figma_text(canvas,"SOUND",Rect2(33,107,160,18),15,FIGMA_GOLD if not dark_mode else heading_color)
+	_figma_text(canvas,"SOUND",Rect2(33,107,160,18),15,heading_color)
 	_figma_setting_row(canvas,"sound","SOUND EFFECTS",130,142,true,false,dark_mode)
 	_figma_setting_row(canvas,"music","MUSIC",178,190,true,false,dark_mode)
 	_figma_setting_row(canvas,"vibration","HAPTICS",226,238,true,false,dark_mode)
@@ -435,11 +427,11 @@ func build_settings() -> void:
 	if dark_mode:
 		help_card = _figma_solid_card(canvas,"HelpPrivacy",Rect2(17,499,354,94),card_fill,card_border,18)
 	else:
-		help_card = _figma_solid_card(canvas,"HelpPrivacy",Rect2(17,499,354,94),Color("#d8d4cc"),Color("#b89b61"),18)
+		help_card = _figma_solid_card(canvas,"HelpPrivacy",Rect2(17,499,354,94),Color("#f5f2ec"),Color("#cbc6bc"),18)
 		help_card.modulate.a = 0.70
 	_figma_text(canvas,"SUPPORT",Rect2(33,515,170,18),15,FIGMA_GOLD if not dark_mode else heading_color)
-	var utility_fill := Color("#2c2c2c") if dark_mode else Color("#cbc4b8")
-	var utility_border := Color("#5b5347") if dark_mode else Color("#b89b61")
+	var utility_fill := Color("#2d2e31") if dark_mode else Color("#ebe7df")
+	var utility_border := Color("#44474c") if dark_mode else Color("#cbc6bc")
 	var utility_text := FIGMA_DARK_INK if dark_mode else FIGMA_NAVY
 	FigmaReferenceCanvas.add_shadow(canvas, Rect2(33,541,126,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
 	var how_to := FigmaReferenceCanvas.premium_button("HOW TO PLAY",15,utility_text,utility_fill,16,utility_border,1.2)
