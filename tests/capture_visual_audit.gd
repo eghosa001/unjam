@@ -359,6 +359,15 @@ func _run_fast_visual_audit(main: Node, shell: Node) -> void:
 	if _fast_visual_enabled("home"):
 		main.call("build_home")
 		await _capture("01-home-dark")
+		# Tablet evidence: portrait 4:3-ish and wide landscape/freeform window.
+		root.size = Vector2i(1536, 2048)
+		await _settle(6)
+		main.call("build_home")
+		await _capture("01d-home-1536x2048-tablet-dark")
+		root.size = Vector2i(2560, 1600)
+		await _settle(6)
+		main.call("build_home")
+		await _capture("01e-home-2560x1600-tablet-landscape-dark")
 
 	root.size = Vector2i(540, 960)
 	await _settle(4)
