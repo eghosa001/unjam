@@ -553,13 +553,27 @@ func _run_fast_visual_audit(main: Node, shell: Node) -> void:
 	print("Selective fast visual audit captures written to %s" % OUT_DIR)
 
 func _shutdown_visual_audit() -> void:
+	# Tear down the transient scene before quitting. Calling quit() from inside
+	# this awaited coroutine can race queued frees and report intermittent
+	# ObjectDB/resource leaks even though the rendered surface is already done.
+	var scene := current_scene
+	current_scene = null
+	if scene != null and is_instance_valid(scene):
+		scene.queue_free()
+
 	# The visual runner synthesizes music through FeedbackManager. Release the
 	# generated stream/player before SceneTree quits so leak diagnostics remain
 	# meaningful instead of reporting the intentionally persistent autoload.
 	var feedback := root.get_node_or_null("FeedbackManager")
 	if feedback != null and feedback.has_method("shutdown_audio"):
 		feedback.call("shutdown_audio")
-	await _settle(3)
+
+	await _settle(12)
+	# Defer the actual exit one more frame so _shutdown_visual_audit() and its
+	# caller return first, releasing local PackedScene/image/resource references.
+	call_deferred("_finish_visual_audit_quit")
+
+func _finish_visual_audit_quit() -> void:
 	quit(0)
 
 func _set_theme(shell: Node, mode: String) -> void:
