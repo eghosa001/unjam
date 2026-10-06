@@ -2,15 +2,32 @@ extends SceneTree
 
 const MAX_CAMPAIGN_LEVEL := 10000
 const VIEWPORTS := [
+	# Compact and tall phones.
 	Vector2i(540,960),
 	Vector2i(720,1280),
 	Vector2i(720,1600),
 	Vector2i(1080,1920),
 	Vector2i(1080,2160),
 	Vector2i(1080,2340),
-	Vector2i(1080,2400)
+	Vector2i(1080,2400),
+	# Portrait tablets and unfolded large screens.
+	Vector2i(1200,1920),
+	Vector2i(1536,2048),
+	Vector2i(1600,2560),
+	Vector2i(1812,2176),
+	# Large-screen landscape / desktop-window shapes.
+	Vector2i(2048,1536),
+	Vector2i(2560,1600),
+	Vector2i(2176,1812),
+	# Near-square split-screen / freeform-window stress.
+	Vector2i(1200,1200)
 ]
-const STRESS_VIEWPORTS := [Vector2i(540,960),Vector2i(720,1280)]
+const STRESS_VIEWPORTS := [
+	Vector2i(540,960),
+	Vector2i(720,1280),
+	Vector2i(1536,2048),
+	Vector2i(2560,1600)
+]
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -24,7 +41,7 @@ func _run() -> void:
 	for viewport_size in STRESS_VIEWPORTS:
 		if not await _validate_late_game_viewport(viewport_size):
 			return
-	print("Viewport-fit validation passed: audited 390x844 Figma canvases scale uniformly across 7 portrait sizes and level 10,000 stress cases.")
+	print("Viewport-fit validation passed: audited 390x844 Figma canvases across phones, tablets, foldables, landscape and square windows with level 10,000 stress cases.")
 	quit(0)
 
 func _source_contracts() -> bool:
