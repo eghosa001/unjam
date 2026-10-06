@@ -212,10 +212,12 @@ func _add_quick_switch(canvas: Control) -> void:
 		mark.configure(id)
 		RefCanvas.set_rect(mark, x + 38, 471, 32, 32)
 		canvas.add_child(mark)
-		var switch_name := _add_text(canvas, String(entry[1]), Rect2(x + 5, 504, 100, 19), 12, entry[2], true)
+		var switch_font := 11 if id == "block_puzzle" else 12
+		var switch_name := _add_text(canvas, String(entry[1]), Rect2(x + 2, 504, 104, 19), switch_font, entry[2], true)
+		switch_name.name = "HomeQuickSwitchName_%s" % id
 		switch_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		switch_name.clip_text = true
-		RefCanvas.fit_single_line_text(switch_name, 96.0, 12, 10)
+		RefCanvas.fit_single_line_text(switch_name, 100.0, switch_font, 9)
 		var level := _home_current_level(id)
 		var stars := MultiGameManager.total_stars(id)
 		var switch_meta := _add_text(canvas, "L%d • ★%s" % [level, _compact_number(stars)], Rect2(x + 6, 528, 96, 18), 12, MUTED, false)
