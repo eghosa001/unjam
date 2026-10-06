@@ -1,28 +1,9 @@
-name: UNJAM v8 Verified AAB
+name: UNJAM v8 Legacy AAB (manual)
 
 on:
-  push:
-    branches: [main, version-8-sidekick-localization, v8-minimal-ui]
-    paths:
-      - ".github/workflows/android-v8-signed-aab.yml"
-      - "project.godot"
-      - "scripts/systems/localization_manager.gd"
-      - "scripts/ui/figma_reference_canvas.gd"
-      - "scripts/ui/boot_splash.gd"
-      - "tools/validate_release_contract.py"
-      - "scripts/ui/main.gd"
-      - "scripts/ui/premium_home_direct_levels.gd"
-      - "scripts/ui/premium_main_casual.gd"
-      - "scripts/ui/motion_director.gd"
-      - "scripts/ui/premium_live_hub_3d.gd"
-      - "scripts/ui/unjam_3d_theme.gd"
-      - "tests/validate_version8_sidekick_localization.gd"
-      - "tests/validate_minimal_ui_v8.gd"
-      - "tests/validate_launcher_icon_safe_zone.gd"
-      - "tests/validate_compact_gameplay_stack.gd"
-      - "tests/validate_theme_integrity.gd"
-      - "tests/validate_requested_polish_contract.gd"
-      - "tests/validate_reported_polish_regressions.gd"
+  # Version 8 is retained only for reproducibility. Current main is on the v9
+  # release line, so this obsolete signed bundle must never run automatically.
+  workflow_dispatch:
 
 permissions:
   contents: read
