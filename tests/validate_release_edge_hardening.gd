@@ -8,6 +8,7 @@ func _initialize() -> void:
 func _run() -> void:
 	_check_single_navigation_feedback()
 	_check_network_response_decoding()
+	_check_compact_quick_switch_label()
 	await _check_day_rollover_refresh()
 	if failures.is_empty():
 		print("RELEASE_EDGE_HARDENING_OK")
@@ -38,6 +39,11 @@ func _check_quiet_decoder(node: Node, label: String) -> void:
 	var valid: Dictionary = node.call("_decode_response_json", "{\"ok\":true,\"reason\":\"verified\"}".to_utf8_buffer())
 	_check(empty.is_empty() and malformed.is_empty(), "%s decoder must fail quietly on empty/malformed bodies" % label)
 	_check(bool(valid.get("ok", false)) and String(valid.get("reason", "")) == "verified", "%s decoder rejected valid JSON" % label)
+
+func _check_compact_quick_switch_label() -> void:
+	var home := FileAccess.get_file_as_string("res://scripts/ui/premium_home_direct_levels.gd")
+	_check('switch_font := 11 if id == "block_puzzle" else 12' in home, "Block Puzzle Quick Switch label is not compact-phone tuned")
+	_check('Rect2(x + 2, 504, 104, 19)' in home and '"HomeQuickSwitchName_%s"' in home, "Quick Switch label containment contract is missing")
 
 func _check_day_rollover_refresh() -> void:
 	var packed := load("res://scenes/Main.tscn") as PackedScene
