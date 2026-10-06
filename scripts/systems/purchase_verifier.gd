@@ -155,15 +155,12 @@ func _request_json(payload: Dictionary, callback: Callable) -> void:
 		return
 	var request := _new_request()
 	request.request_completed.connect(func(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray):
-		var parsed: Dictionary = {}
+		var parsed := _decode_response_json(body)
 		var reason := "Request failed"
 		if result == HTTPRequest.RESULT_TIMEOUT:
 			reason = "Purchase service timed out"
-		else:
-			var decoded = JSON.parse_string(body.get_string_from_utf8())
-			if decoded is Dictionary:
-				parsed = decoded
-				reason = String(parsed.get("reason", parsed.get("error", reason)))
+		elif not parsed.is_empty():
+			reason = String(parsed.get("reason", parsed.get("error", reason)))
 		var ok := result == HTTPRequest.RESULT_SUCCESS and response_code >= 200 and response_code < 300 and parsed is Dictionary
 		if callback.is_valid():
 			callback.call(ok, parsed, reason)
@@ -174,6 +171,19 @@ func _request_json(payload: Dictionary, callback: Callable) -> void:
 		request.queue_free()
 		if callback.is_valid():
 			callback.call(false, {}, "Could not start purchase service request")
+
+func _decode_response_json(body: PackedByteArray) -> Dictionary:
+	if body.is_empty():
+		return {}
+	var text := body.get_string_from_utf8().strip_edges()
+	if text.is_empty():
+		return {}
+	var parser := JSON.new()
+	if parser.parse(text) != OK:
+		return {}
+	var decoded: Variant = parser.data
+	return decoded if decoded is Dictionary else {}
+
 
 func _new_request() -> HTTPRequest:
 	var request := HTTPRequest.new()

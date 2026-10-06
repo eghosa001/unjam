@@ -2,6 +2,23 @@
 
 ## Current production pass
 
+## Release hardening — 2026-10-06
+
+PR #189 hardens the near-release build without changing game balance or the established glossy-flat direction.
+
+- Home Choose Game now emits one navigation feedback cue instead of stacking two tap sounds.
+- Purchase verification and cloud-save HTTP failure paths now tolerate empty/malformed response bodies quietly while still failing closed.
+- Home and Daily refresh their date-sensitive state after a phone resumes on a new calendar day, preventing yesterday's Daily completion state from lingering.
+- The compact 540×960 Home Quick Switch gives BLOCK PUZZLE a dedicated text fit so the label no longer clips.
+- Focused regression coverage was added in `validate_release_edge_hardening.gd`.
+
+Validation on code commit `907a2c65`:
+- Godot import and boot smoke passed with no script/parse/invalid-access failures.
+- 17 selected contracts passed, including Home hierarchy/return, seven-viewport plus Level 10,000 fit stress, bottom-nav touch zones, monetization/billing/restore/economy, representative progression transitions across all three games, theme/transition/UI regressions, and the new release-edge contract.
+- Monetization Readiness passed against the live verifier/app-ads/privacy configuration.
+- Fresh dark and 540×960 light Home renders were inspected; the compact Block Puzzle label is contained after the fix.
+- The Linux visual runner reports only its expected missing-audio-device fallback to the dummy driver.
+
 Branch: `main`  
 Latest consolidated merge reviewed: `56d29e2c819b334841e47c4b42c453e84f17a499` (PR #120)
 
