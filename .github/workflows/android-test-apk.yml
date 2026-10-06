@@ -142,6 +142,12 @@ jobs:
           grep -F "com.google.android.gms.ads.APPLICATION_ID" build/android/unjam-latest-debug-manifest.txt
           grep -F "ca-app-pub-7517898921176341~1892369383" build/android/unjam-latest-debug-manifest.txt
           grep -F "org.godotengine.plugin.v2.GodotGooglePlayBilling" build/android/unjam-latest-debug-manifest.txt
+          # Large-screen eligibility: keep tablet/foldable support explicit in
+          # the packaged manifest, not just in project source settings.
+          grep -F "android:largeScreens" build/android/unjam-latest-debug-manifest.txt
+          grep -F "android:xlargeScreens" build/android/unjam-latest-debug-manifest.txt
+          grep -F "android:resizeableActivity" build/android/unjam-latest-debug-manifest.txt
+          grep -F "android:appCategory" build/android/unjam-latest-debug-manifest.txt
           FOREGROUND_BYTES="$(unzip -p "$APK" res/mipmap-xxxhdpi-v4/icon_foreground.webp | wc -c)"
           SPLASH_BYTES="$(unzip -p "$APK" res/drawable/splash_icon.webp | wc -c)"
           echo "Packaged adaptive foreground bytes: $FOREGROUND_BYTES"
