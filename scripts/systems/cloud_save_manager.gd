@@ -193,10 +193,7 @@ func _request_json(payload: Dictionary, callback: Callable) -> void:
 	request.max_redirects = 0
 	add_child(request)
 	request.request_completed.connect(func(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
-		var parsed: Dictionary = {}
-		var decoded: Variant = JSON.parse_string(body.get_string_from_utf8())
-		if decoded is Dictionary:
-			parsed = decoded
+		var parsed := _decode_response_json(body)
 		var success := result == HTTPRequest.RESULT_SUCCESS and response_code >= 200 and response_code < 300
 		if callback.is_valid():
 			callback.call(success, response_code, parsed)
@@ -207,6 +204,19 @@ func _request_json(payload: Dictionary, callback: Callable) -> void:
 		request.queue_free()
 		if callback.is_valid():
 			callback.call(false, 0, {})
+
+func _decode_response_json(body: PackedByteArray) -> Dictionary:
+	if body.is_empty():
+		return {}
+	var text := body.get_string_from_utf8().strip_edges()
+	if text.is_empty():
+		return {}
+	var parser := JSON.new()
+	if parser.parse(text) != OK:
+		return {}
+	var decoded: Variant = parser.data
+	return decoded if decoded is Dictionary else {}
+
 
 func _function_endpoint() -> String:
 	var base := String(ProjectSettings.get_setting("monetization/supabase_url", "")).strip_edges().trim_suffix("/")
