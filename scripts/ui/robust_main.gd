@@ -16,6 +16,7 @@ var active_game: Control
 var selected_game_id := "rescue_rush"
 var selected_multi_world := 1
 var selected_multi_page := 1
+var _last_calendar_day := ""
 const MULTI_LEVEL_PAGE_SIZE := 100
 const RESCUE_GAME_SCENE_PATH := "res://scenes/Game.tscn"
 const WATER_GAME_SCENE_PATH := "res://scenes/WaterSort.tscn"
@@ -23,10 +24,34 @@ const BLOCK_GAME_SCENE_PATH := "res://scenes/BlockPuzzle.tscn"
 const DAILY_CAMPAIGN_BACKUPS_KEY := "daily_campaign_checkpoint_backups"
 func _ready() -> void:
 	MultiGameManager.ensure_state()
+	_last_calendar_day = DailyChallenge.date_key()
 	super._ready()
 	_queue_surface_changed()
 	# Startup branding is owned by Boot.tscn. No full-screen startup control
 	# is ever placed over the interactive Home scene.
+
+func _notification(what: int) -> void:
+	if what in [NOTIFICATION_APPLICATION_RESUMED, NOTIFICATION_APPLICATION_FOCUS_IN]:
+		_refresh_day_sensitive_surface(DailyChallenge.date_key())
+
+
+func _refresh_day_sensitive_surface(today_key: String) -> void:
+	if today_key.is_empty():
+		return
+	if _last_calendar_day.is_empty():
+		_last_calendar_day = today_key
+		return
+	if today_key == _last_calendar_day:
+		return
+	_last_calendar_day = today_key
+	# A phone can remain open across midnight. Refresh only date-sensitive
+	# launcher surfaces so yesterday's Daily completion/reward state is never
+	# shown after the app returns to the foreground.
+	if current_surface == "home":
+		call_deferred("build_home")
+	elif current_surface == "daily" and has_method("build_daily_games"):
+		call_deferred("build_daily_games")
+
 
 func _prime_game_scene(path: String) -> void:
 	if ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
