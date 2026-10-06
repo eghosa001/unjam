@@ -398,7 +398,8 @@ func _continue_selected_game() -> void:
 func _open_game_selector() -> void:
 	var main := get_parent()
 	if main != null and main.has_method("_open_games_surface"):
-		FeedbackManager.tap()
+		# _open_games_surface owns navigation feedback so every caller produces
+		# exactly one tap instead of stacking duplicate sounds on the same action.
 		main.call("_open_games_surface")
 
 func _open_daily_games() -> void:
