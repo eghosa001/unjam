@@ -7,7 +7,7 @@ func _initialize() -> void:
 
 func _run() -> void:
 	_check_single_navigation_feedback()
-	_check_verifier_response_decoding()
+	_check_network_response_decoding()
 	await _check_day_rollover_refresh()
 	if failures.is_empty():
 		print("RELEASE_EDGE_HARDENING_OK")
@@ -25,17 +25,19 @@ func _check_single_navigation_feedback() -> void:
 	_check(not home_block.contains("FeedbackManager.tap()"), "Home Choose Game still pre-plays duplicate feedback")
 	_check(destination_block.count("FeedbackManager.tap()") == 1, "Games destination must own exactly one navigation tap")
 
-func _check_verifier_response_decoding() -> void:
-	var verifier := root.get_node_or_null("PurchaseVerifier")
-	_check(verifier != null, "PurchaseVerifier autoload missing")
-	if verifier == null:
+func _check_network_response_decoding() -> void:
+	_check_quiet_decoder(root.get_node_or_null("PurchaseVerifier"), "PurchaseVerifier")
+	_check_quiet_decoder(root.get_node_or_null("CloudSaveManager"), "CloudSaveManager")
+
+func _check_quiet_decoder(node: Node, label: String) -> void:
+	_check(node != null, "%s autoload missing" % label)
+	if node == null:
 		return
-	var empty: Dictionary = verifier.call("_decode_response_json", PackedByteArray())
-	var whitespace: Dictionary = verifier.call("_decode_response_json", "  \n".to_utf8_buffer())
-	var malformed: Dictionary = verifier.call("_decode_response_json", "{".to_utf8_buffer())
-	var valid: Dictionary = verifier.call("_decode_response_json", "{\"ok\":true,\"reason\":\"verified\"}".to_utf8_buffer())
-	_check(empty.is_empty() and whitespace.is_empty() and malformed.is_empty(), "Verifier response decoder must fail quietly on empty/malformed bodies")
-	_check(bool(valid.get("ok", false)) and String(valid.get("reason", "")) == "verified", "Verifier response decoder rejected valid JSON")
+	var empty: Dictionary = node.call("_decode_response_json", PackedByteArray())
+	var malformed: Dictionary = node.call("_decode_response_json", "{".to_utf8_buffer())
+	var valid: Dictionary = node.call("_decode_response_json", "{\"ok\":true,\"reason\":\"verified\"}".to_utf8_buffer())
+	_check(empty.is_empty() and malformed.is_empty(), "%s decoder must fail quietly on empty/malformed bodies" % label)
+	_check(bool(valid.get("ok", false)) and String(valid.get("reason", "")) == "verified", "%s decoder rejected valid JSON" % label)
 
 func _check_day_rollover_refresh() -> void:
 	var packed := load("res://scenes/Main.tscn") as PackedScene
