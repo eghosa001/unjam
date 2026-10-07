@@ -1553,7 +1553,14 @@ func build_collection_upgrades() -> void:
 			state.pressed.connect(_buy_collection_upgrade.bind(id,base_cost))
 
 	var return_hint := _figma_text(canvas,"Swipe up to return to your Collection summary",Rect2(37,710,314,18),13,Color("#6e8596"),true)
+	return_hint.name = "CollectionUpgradeReturnHint"
 	return_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	return_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	return_hint.clip_text = true
+	return_hint.custom_minimum_size = Vector2.ZERO
+	_fit_single_line_control_text(return_hint,310.0,13,10)
+	return_hint.position = Vector2(37,710)
+	return_hint.size = Vector2(314,18)
 	_figma_bottom_nav(canvas,"collection")
 
 func _collection_summary_scroll_input(event: InputEvent, owner: Control) -> void:
