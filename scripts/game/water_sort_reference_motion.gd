@@ -355,6 +355,16 @@ func _abort_pour_visuals(ghost: Node, receiver: Node, source_index: int, target_
 		receiver.queue_free()
 	_release_pour_visual_lock(source_index, target_index)
 
+func _pour_tilt_degrees(ghost_size: Vector2) -> float:
+	if MotionSystem.reduced():
+		return 30.0
+	# Long onboarding bottles need a shallower tilt so their body follows the
+	# mouth instead of sweeping across the receiver. Compact later-stage bottles
+	# retain the full premium 52° motion.
+	var aspect := ghost_size.y / maxf(1.0, ghost_size.x)
+	var tallness := clampf((aspect - 2.35) / 0.85, 0.0, 1.0)
+	return lerpf(52.0, 40.0, tallness)
+
 func _play_premium_concurrent_pour(source_values: Array, target_values: Array, from_rect: Rect2, to_rect: Rect2, color_index: int, amount: int, source_index: int, target_index: int) -> void:
 	var liquid: Color = MotionTube.PALETTE[color_index]
 	var ghost := MotionTube.new()
@@ -396,8 +406,10 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 
 	var receiver_local := _receiver_rim_local(receiver)
 	var target_lip := _control_point(receiver, receiver_local)
-	# Keep a premium pour angle without visually detaching the neck from the bottle body.
-	var tilt_degrees := 30.0 if MotionSystem.reduced() else 52.0
+	# Match the tilt to the live rendered vessel. This keeps the first compact
+	# tutorial pours attached to the neck while later short bottles keep the
+	# stronger premium rotation.
+	var tilt_degrees := _pour_tilt_degrees(ghost.size)
 	var final_rotation := deg_to_rad(tilt_degrees * direction)
 	var source_local_at_pour := _source_rim_local(ghost, direction)
 	# Keep the pouring lip visibly above and to the source side of the receiving
