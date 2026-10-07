@@ -674,6 +674,11 @@ func _shutdown_visual_audit() -> void:
 	if feedback != null and feedback.has_method("shutdown_audio"):
 		feedback.call("shutdown_audio")
 
+	# The production UI intentionally keeps generated lacquer/nine-slice styles
+	# cached for fast navigation. The short-lived audit process must drop that
+	# cache before exit so the leak gate measures scene lifecycle, not cache policy.
+	FigmaReferenceCanvas.release_cached_styles()
+
 	# Large UI surfaces can queue nested Control/Resource frees for several
 	# frames. Wait until the transient scene is truly gone, then allow a short
 	# resource-flush window before quitting. This keeps leak detection strict
