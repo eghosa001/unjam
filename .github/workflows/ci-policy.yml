@@ -26,3 +26,116 @@ jobs:
       - uses: actions/checkout@v4
       - name: Enforce selective fast CI
         run: python3 tools/validate_fast_ci_policy.py
+
+
+  android-package-verification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Godot 4.7.2
+        uses: solarlabyrinth/action-setup-godot@v3
+        with:
+          version: 4.7.2-stable
+          export-templates: true
+
+      - name: Prepare Android launcher and splash rasters
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path . --script res://tools/prepare_android_brand_assets.gd
+          test -s assets/icon_user_512.png
+          test -s assets/icon_launcher_adaptive_432.png
+          test -s assets/splash_emblem_safe_432.png
+
+      - name: Install Android API 36
+        shell: bash
+        run: |
+          set -euxo pipefail
+          ANDROID_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          test -n "$ANDROID_ROOT"
+          SDKMANAGER=$(find "$ANDROID_ROOT/cmdline-tools" -name sdkmanager -type f | sort | tail -1)
+          test -x "$SDKMANAGER"
+          set +o pipefail
+          yes | "$SDKMANAGER" --sdk_root="$ANDROID_ROOT" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+          SDK_STATUS=${PIPESTATUS[1]}
+          set -o pipefail
+          test "$SDK_STATUS" -eq 0
+          echo "ANDROID_HOME=$ANDROID_ROOT" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_ROOT" >> "$GITHUB_ENV"
+
+      - name: Install monetization plugins
+        shell: bash
+        run: |
+          set -euxo pipefail
+          chmod +x tools/install_monetization_plugins.sh
+          tools/install_monetization_plugins.sh
+
+      - name: Prepare debug APK preset
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fx 'package/unique_name="com.eghosa.unjamgam"' export_presets.cfg
+          grep -Fx 'architectures/arm64-v8a=true' export_presets.cfg
+          sed -i 's/gradle_build\/export_format=1/gradle_build\/export_format=0/' export_presets.cfg
+          sed -i 's/version\/code=[0-9]\+/version\/code=9/' export_presets.cfg
+          sed -i 's/version\/name="[^"]*"/version\/name="1.0.9-test"/' export_presets.cfg
+
+      - name: Import and focused Android gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path . --editor --quit
+          for t in validate_viewport_fit validate_runtime_efficiency validate_gameplay_interactions validate_monetization validate_restore_purchase_flow validate_admob_production validate_billing_production; do
+            timeout 180s godot --headless --path . --script "res://tests/$t.gd"
+          done
+
+      - name: Export Android test APK
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p build/android
+          godot --headless --verbose --path . --install-android-build-template --export-debug Android build/android/unjam-production-readiness-debug.apk 2>&1 | tee android-production-readiness-export.log
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access|AdMob: Android library not found" android-production-readiness-export.log; then exit 1; fi
+          test -s build/android/unjam-production-readiness-debug.apk
+
+      - name: Verify packaged Android contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=build/android/unjam-production-readiness-debug.apk
+          AAPT=$(find "$ANDROID_SDK_ROOT/build-tools" -type f -name aapt | sort | tail -1)
+          test -x "$AAPT"
+          "$AAPT" dump badging "$APK" | tee build/android/badging.txt
+          "$AAPT" dump permissions "$APK" | tee build/android/permissions.txt
+          "$AAPT" dump xmltree "$APK" AndroidManifest.xml | tee build/android/manifest.txt
+          grep -F "package: name='com.eghosa.unjamgam' versionCode='9' versionName='1.0.9-test'" build/android/badging.txt
+          grep -F "targetSdkVersion:'36'" build/android/badging.txt
+          grep -F "native-code: 'arm64-v8a'" build/android/badging.txt
+          grep -F "com.google.android.gms.permission.AD_ID" build/android/permissions.txt
+          grep -F "com.android.vending.BILLING" build/android/permissions.txt
+          grep -F "ca-app-pub-7517898921176341~1892369383" build/android/manifest.txt
+          grep -F "android:largeScreens" build/android/manifest.txt
+          grep -F "android:xlargeScreens" build/android/manifest.txt
+          grep -F "android:resizeableActivity" build/android/manifest.txt
+          sha256sum "$APK" | tee build/android/unjam-production-readiness-debug.apk.sha256
+
+      - name: Upload verified Android package
+        uses: actions/upload-artifact@v4
+        with:
+          name: unjam-production-readiness-debug-apk
+          path: |
+            build/android/unjam-production-readiness-debug.apk
+            build/android/unjam-production-readiness-debug.apk.sha256
+            build/android/badging.txt
+            build/android/permissions.txt
+            build/android/manifest.txt
+          if-no-files-found: error
+          retention-days: 3
