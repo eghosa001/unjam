@@ -13,7 +13,7 @@ func _run() -> void:
 	if not _validate_single_block_drag_owner(): return
 	if not _validate_gameplay_controls_keep_layout_size(): return
 	if not _validate_screen_geometry_static(): return
-	print("Motion quality validated: shared preferences, tracked Rescue completion, bottle-rim pours, responsive continuous Block drag and static screen-root geometry.")
+	print("Motion quality validated: shared preferences, tracked Rescue completion, visible-rim 2D pours, responsive continuous Block drag and static screen-root geometry.")
 	quit(0)
 
 func _validate_shared_motion_system() -> bool:
@@ -138,12 +138,18 @@ func _validate_water_premium_contract() -> bool:
 	var tube_source := tube_file.get_as_text()
 	if not tube_source.contains("procedural_materials.gd") or not tube_source.contains("vertical_shade"):
 		return _fail("Water Sort liquid/glass rendering does not use procedural depth material helpers")
-	var tube_3d := FileAccess.open("res://scripts/ui/water_tube_3d_motion.gd", FileAccess.READ)
-	if tube_3d == null:
-		return _fail("Water Sort 3D tube renderer is missing")
-	var tube_3d_source := tube_3d.get_as_text()
-	if not tube_3d_source.contains("SubViewport.UPDATE_ONCE") or not tube_3d_source.contains("liquid_materials_3d"):
-		return _fail("Water Sort 3D tubes are not using one-shot rendering and cached liquid materials")
+	var compat_file := FileAccess.open("res://scripts/ui/water_tube_3d_motion.gd", FileAccess.READ)
+	if compat_file == null:
+		return _fail("Water Sort compatibility bottle renderer is missing")
+	var compat_source := compat_file.get_as_text()
+	for required in ["queue_redraw()", "func set_pour_progress", "func _draw()"]:
+		if not compat_source.contains(required):
+			return _fail("Water Sort 2D bottle motion contract missing: " + required)
+	for forbidden in ["SubViewport", "Camera3D", "MeshInstance3D", "StandardMaterial3D"]:
+		if compat_source.contains(forbidden):
+			return _fail("Water Sort premium bottle renderer regressed to costly 3D allocation: " + forbidden)
+	if not tube_source.contains("AUTHORED_GLASS_OVERLAY") or not tube_source.contains("vertical_shade"):
+		return _fail("Water Sort 2D bottle lost authored glass/material depth")
 	return true
 
 func _validate_gameplay_controls_keep_layout_size() -> bool:
