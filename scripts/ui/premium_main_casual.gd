@@ -548,13 +548,13 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 		glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		var label_width := 66.0 if String(key) in ["collection", "settings"] else 58.0
 		var label_x := float(hit_x[key]) + (72.0 - label_width) * 0.5
-		var nav_label := _figma_text(canvas, String(names[key]), Rect2(label_x,799,label_width,18), 13, selected_text if selected else idle_text, selected)
+		var nav_label := _figma_text(canvas, String(names[key]), Rect2(label_x,803,label_width,18), 13, selected_text if selected else idle_text, selected)
 		nav_label.name = "StdNavLabel_%s" % String(key)
 		nav_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		nav_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		nav_label.clip_text = true
 		nav_label.custom_minimum_size = Vector2.ZERO
-		nav_label.position = Vector2(label_x, 799)
+		nav_label.position = Vector2(label_x, 803)
 		nav_label.size = Vector2(label_width, 18)
 		_fit_single_line_control_text(nav_label, label_width - 2.0, 13, 10)
 		var hit := Button.new()
