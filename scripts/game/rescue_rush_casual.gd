@@ -1,6 +1,7 @@
 extends "res://scripts/game/rescue_rush_motion_final.gd"
 
 const RefCanvas = preload("res://scripts/ui/figma_reference_canvas.gd")
+const GAMEPLAY_ART = preload("res://scripts/ui/unjam_gameplay_art.gd")
 
 
 const NAVY := Color(0.03,0.23,0.47)
@@ -128,7 +129,7 @@ func _build_figma_rescue(canvas: Control) -> void:
 	var status_panel := PanelContainer.new()
 	status_panel.name = "CompactStatusStrip"
 	RefCanvas.add_shadow(canvas, Rect2(17,81,354,48), 15, Color(0.02,0.10,0.18,0.22), 5, Vector2(0,4))
-	status_panel.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#365448"),Color("#29483d"),Color("#20392f"),15,Color(0.49,0.72,0.56,0.36),1.1,0.24))
+	status_panel.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color(0.18,0.37,0.30,0.52),Color(0.12,0.30,0.25,0.48),Color(0.08,0.22,0.20,0.46),15,Color(0.55,0.92,0.66,0.12),1.0,0.12))
 	RefCanvas.set_rect(status_panel,17,81,354,48)
 	status_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(status_panel)
@@ -147,11 +148,11 @@ func _build_figma_rescue(canvas: Control) -> void:
 	var objective := PanelContainer.new()
 	objective.name = "RescueObjectiveCard"
 	RefCanvas.add_shadow(canvas, Rect2(17,137,354,34), 12, Color(0.02,0.10,0.18,0.14), 3, Vector2(0,3))
-	objective.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#fffdf7"),Color("#faf7ef"),Color("#f1ede2"),12,Color(0.55,0.76,0.61,0.32),1.0,0.22))
+	objective.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#173d31"),Color("#123429"),Color("#0c2b24"),12,Color(0.55,0.96,0.67,0.16),1.0,0.12))
 	RefCanvas.set_rect(objective,17,137,354,34)
 	objective.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(objective)
-	var objective_label := RefCanvas.label(_compact_objective_instruction(),16,Color("#088c3d"),true)
+	var objective_label := RefCanvas.label(_compact_objective_instruction(),15,Color("#b9ffd0"),true)
 	objective_label.name = "RescueObjectiveLabel"
 	objective_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	RefCanvas.set_rect(objective_label,29,137,330,34)
@@ -164,10 +165,17 @@ func _build_figma_rescue(canvas: Control) -> void:
 	canvas.add_child(depth)
 	board_panel = PanelContainer.new()
 	board_panel.name = "RescueBoardPanel"
-	board_panel.add_theme_stylebox_override("panel",RefCanvas.rounded_gradient3(Color(0.13,0.34,0.28,0.56),Color(0.10,0.28,0.25,0.52),Color(0.06,0.21,0.22,0.58),26,Color(0.62,0.96,0.72,0.18),1,0.18))
+	board_panel.add_theme_stylebox_override("panel",RefCanvas.rounded_gradient3(Color("#1b5840"),Color("#124632"),Color("#0b3528"),26,Color(0.62,0.96,0.72,0.10),1,0.10))
 	RefCanvas.set_rect(board_panel,21,180,348,348)
 	canvas.add_child(board_panel)
+	var board_art := GAMEPLAY_ART.new()
+	board_art.name = "RescueBoardWorldArt"
+	board_art.configure("rescue_board", GREEN, _shell_dark_mode(), level_number)
+	board_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	board_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	board_panel.add_child(board_art)
 	var margin := MarginContainer.new()
+	margin.z_index = 2
 	for side in ["left","right","top","bottom"]:
 		margin.add_theme_constant_override("margin_%s" % side,10)
 	board_panel.add_child(margin)
@@ -214,9 +222,9 @@ func _build_figma_rescue(canvas: Control) -> void:
 	canvas.add_child(frame_border)
 
 func _action(text_value: String, _fill: Color) -> Button:
-	var fill := Color("#365448")
-	var border := Color(0.45,0.78,0.56,0.46)
-	var result := RefCanvas.premium_button(text_value,15,OFF_WHITE,fill,16,border,1.1)
+	var fill := Color("#183d31")
+	var border := Color(0.45,0.90,0.58,0.18)
+	var result := RefCanvas.premium_button(text_value,14,OFF_WHITE,fill,16,border,1.0)
 	result.custom_minimum_size = Vector2(106,60)
 	result.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	return result
@@ -253,20 +261,20 @@ func _make_empty_cell(_cell_size: int, pos: Vector2i, route: Dictionary) -> Cont
 	if on_route:
 		# The playable route is a luminous lane; everything else intentionally recedes.
 		var open_lane := int(route.get("blockers",1)) == 0
-		well_style.bg_color = Color("#45e781", 0.18 if open_lane else 0.10)
-		well_style.border_color = Color("#8ff5b5", 0.68 if is_edge_exit else 0.20)
+		well_style.bg_color = Color("#45e781", 0.12 if open_lane else 0.055)
+		well_style.border_color = Color("#8ff5b5", 0.72 if is_edge_exit else 0.10)
 		var bw := 2 if is_edge_exit else 1
 		well_style.border_width_left = bw
 		well_style.border_width_right = bw
 		well_style.border_width_top = bw
 		well_style.border_width_bottom = bw
 	else:
-		well_style.bg_color = Color(0.86,1.0,0.90,0.025)
-		well_style.border_color = Color(0.86,1.0,0.90,0.045)
-		well_style.border_width_left = 1
-		well_style.border_width_right = 1
-		well_style.border_width_top = 1
-		well_style.border_width_bottom = 1
+		well_style.bg_color = Color(0.86,1.0,0.90,0.008)
+		well_style.border_color = Color.TRANSPARENT
+		well_style.border_width_left = 0
+		well_style.border_width_right = 0
+		well_style.border_width_top = 0
+		well_style.border_width_bottom = 0
 
 	slot.add_theme_stylebox_override("panel", well_style)
 	for child in slot.get_children():
