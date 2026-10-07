@@ -19,10 +19,10 @@ func _run() -> void:
 	save.data["meta_progression"] = {}
 	meta.ensure_state()
 
-	var login := meta.daily_login_info()
+	var login: Dictionary = meta.daily_login_info()
 	if bool(login.get("claimed", true)):
 		failures.append("Fresh meta state must expose today's login reward")
-	var before_login := economy.balance()
+	var before_login: int = int(economy.balance())
 	if meta.claim_daily_login() <= 0 or economy.balance() <= before_login:
 		failures.append("Daily login reward did not grant coins")
 
@@ -30,7 +30,7 @@ func _run() -> void:
 	meta.record_campaign_complete("water_sort", 3, true)
 	meta.record_daily_complete("block_puzzle", 3)
 
-	var daily_rows := meta.daily_goals()
+	var daily_rows: Array = meta.daily_goals()
 	var ready_ids: Array[String] = []
 	for raw in daily_rows:
 		var row: Dictionary = raw
@@ -40,7 +40,7 @@ func _run() -> void:
 		if expected not in ready_ids:
 			failures.append("Daily goal did not become claimable: %s" % expected)
 
-	var before_goal := economy.balance()
+	var before_goal: int = int(economy.balance())
 	if not meta.claim_goal("daily", "play2") or economy.balance() <= before_goal:
 		failures.append("Claimable Daily goal did not grant reward")
 	if meta.claim_goal("daily", "play2"):
@@ -48,7 +48,7 @@ func _run() -> void:
 
 	for _i in range(8):
 		meta.record_campaign_complete("rescue_rush", 3, true)
-	var season := meta.season_info()
+	var season: Dictionary = meta.season_info()
 	if int(season.get("points", 0)) < 100 or int(season.get("ready", 0)) <= 0:
 		failures.append("Season Journey did not progress from successful play")
 	if not meta.claim_next_ready_season_tier():
