@@ -10,6 +10,8 @@ const ART := {
 	"daily": preload("res://assets/art/meta/daily.svg"),
 }
 
+const PHONE_SAFE_ART_SOURCE := Rect2(0.0, 610.0, 390.0, 142.0)
+
 var kind := "compete"
 var dark_mode := false
 
@@ -44,4 +46,17 @@ func _draw_asset(id: String) -> void:
 	var texture := ART.get(id) as Texture2D
 	if texture == null:
 		return
-	draw_texture_rect(texture, Rect2(Vector2.ZERO, size), false, Color(1,1,1,0.94 if dark_mode else 1.0))
+	# Phone meta screens already contain dense authored cards. Keep illustration
+	# in the dedicated lower decorative band so large hero shapes never sit under
+	# player names, progress cards, rankings, missions or upgrade controls.
+	var y_scale := size.y / 844.0
+	var destination := Rect2(
+		Vector2(0.0, PHONE_SAFE_ART_SOURCE.position.y * y_scale),
+		Vector2(size.x, PHONE_SAFE_ART_SOURCE.size.y * y_scale)
+	)
+	draw_texture_rect_region(
+		texture,
+		destination,
+		PHONE_SAFE_ART_SOURCE,
+		Color(1,1,1,0.76 if dark_mode else 0.72)
+	)
