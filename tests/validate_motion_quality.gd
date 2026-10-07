@@ -63,21 +63,52 @@ func _validate_rescue_completion_tracking() -> bool:
 
 func _validate_water_lip_geometry() -> bool:
 	var tube_file := FileAccess.open("res://scripts/ui/water_tube_3d_motion.gd", FileAccess.READ)
+	var reference_file := FileAccess.open("res://scripts/ui/water_tube_reference_motion.gd", FileAccess.READ)
 	var layout_file := FileAccess.open("res://scripts/game/water_sort_ultra_motion.gd", FileAccess.READ)
 	var motion_file := FileAccess.open("res://scripts/game/water_sort_reference_motion.gd", FileAccess.READ)
-	if tube_file == null or layout_file == null or motion_file == null:
-		return _fail("Water Sort 3D rim geometry sources are missing")
+	if tube_file == null or reference_file == null or layout_file == null or motion_file == null:
+		return _fail("Water Sort rim geometry sources are missing")
 	var tube_source := tube_file.get_as_text()
+	var reference_source := reference_file.get_as_text()
 	var layout_source := layout_file.get_as_text()
 	var motion_source := motion_file.get_as_text()
-	for needle in ["camera_3d.unproject_position", "func visual_pour_rim_local", "func visual_receive_rim_local", "_project_rim_point"]:
-		if not tube_source.contains(needle):
-			return _fail("Water Sort does not project its actual 3D bottle rim: " + needle)
+
+	# Water now intentionally ships as lightweight CanvasItem glass. The compatibility
+	# class name remains for saved scenes, but production must never regress to nested
+	# 3D viewports/cameras just to find a bottle mouth.
+	if not tube_source.contains('extends "res://scripts/ui/water_tube_reference_motion.gd"'):
+		return _fail("Water Sort compatibility tube no longer delegates to the 2D glass renderer")
+	for forbidden in ["SubViewport", "Camera3D", "camera_3d.unproject_position"]:
+		if tube_source.contains(forbidden):
+			return _fail("Water Sort rim geometry reintroduced expensive 3D projection: " + forbidden)
+	for needle in ["func visual_pour_rim_local", "func visual_receive_rim_local"]:
+		if not reference_source.contains(needle):
+			return _fail("Water Sort rendered bottle mouth geometry is missing: " + needle)
+
+	var tube_script := load("res://scripts/ui/water_tube_3d_motion.gd") as Script
+	if tube_script == null:
+		return _fail("Water Sort production tube script failed to load")
+	var tube := tube_script.new() as Control
+	tube.size = Vector2(154.0,316.0)
+	tube.custom_minimum_size = tube.size
+	tube.call("configure",[0,1,2,3],false,-1)
+	var left := Vector2(tube.call("visual_pour_rim_local",-1.0))
+	var center := Vector2(tube.call("visual_receive_rim_local"))
+	var right := Vector2(tube.call("visual_pour_rim_local",1.0))
+	if not (left.x < center.x and center.x < right.x):
+		tube.free()
+		return _fail("Water Sort 2D bottle mouth does not expose left/centre/right rim anchors")
+	for point in [left,center,right]:
+		if point.x < 0.0 or point.x > tube.size.x or point.y < 0.0 or point.y > tube.size.y:
+			tube.free()
+			return _fail("Water Sort rendered mouth anchor escapes its bottle control")
+	tube.free()
+
 	if layout_source.contains("func _visual_mouth_local"):
-		return _fail("Water Sort adaptive layout still overrides the real 3D rim with legacy 2D mouth geometry")
+		return _fail("Water Sort adaptive layout overrides the renderer-owned mouth geometry")
 	for needle in ["_source_rim_local", "_receiver_rim_local", "_position_for_tilted_rim"]:
 		if not motion_source.contains(needle):
-			return _fail("Water Sort stream does not preserve projected rim geometry: " + needle)
+			return _fail("Water Sort stream does not preserve rendered rim geometry: " + needle)
 	return true
 
 func _validate_water_stream_layering() -> bool:
