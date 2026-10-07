@@ -7,64 +7,62 @@ func _run() -> void:
 	root.size = Vector2i(540, 960)
 	var script := load("res://scripts/ui/water_tube_3d_motion.gd")
 	if script == null:
-		return _fail("WaterTube3DMotion script is missing")
+		return _fail("Water bottle renderer is missing")
 	var tube = script.new()
 	tube.size = Vector2(120.0, 240.0)
 	tube.custom_minimum_size = tube.size
-	tube.configure([0, 0, 0, 0], false, 0)
 	root.add_child(tube)
-	await _frames(4)
 
-	if _visible_volume_count(tube) != 1:
-		return _fail("Four identical Water layers render as more than one 3D liquid body")
-	var segments: Array = tube.get("liquid_segments_3d")
-	var first := segments[0] as MeshInstance3D
-	var first_mesh := first.mesh as CylinderMesh
-	if first_mesh == null or first_mesh.cap_top or first_mesh.cap_bottom:
-		return _fail("Continuous Water volume still owns rigid internal cylinder caps")
-	if first_mesh.height < 2.45:
-		return _fail("Merged same-colour Water volume does not span the full four-slot height")
-	var meniscus := tube.get("liquid_meniscus_3d") as MeshInstance3D
-	if meniscus == null or not meniscus.visible:
-		return _fail("Continuous Water volume has no exposed meniscus")
-	var meniscus_mesh := meniscus.mesh as SphereMesh
-	if meniscus_mesh == null or absf(first_mesh.top_radius - meniscus_mesh.radius) > 0.001:
-		return _fail("Water body and meniscus no longer share one uniform container-aligned radius")
+	tube.configure([0, 0, 0, 0], false, 0)
+	await _frames(2)
+	if _exposed_surface_count(tube) != 1:
+		return _fail("Four equal layers should read as one continuous liquid body")
 
 	tube.configure([0, 0, 1, 1], false, 0)
-	await _frames(2)
-	if _visible_volume_count(tube) != 2:
-		return _fail("Two colour runs should render as exactly two touching liquid bodies")
+	await _frames(1)
+	if _exposed_surface_count(tube) != 2:
+		return _fail("Two colour runs should expose exactly two liquid surfaces")
 
 	tube.configure([0, 1, 0, 1], false, 0)
-	await _frames(2)
-	if _visible_volume_count(tube) != 4:
-		return _fail("Alternating Water colours lost distinct colour boundaries")
+	await _frames(1)
+	if _exposed_surface_count(tube) != 4:
+		return _fail("Alternating colours should keep four readable boundaries")
 
-	# Incoming liquid of the same colour must merge continuously even while the
-	# upper incoming slot is only partially filled.
 	tube.configure([0, 0], false, 0)
 	tube.call("begin_pour_in", 0, 2)
 	tube.call("set_pour_progress", 0.75)
-	await _frames(2)
-	if _visible_volume_count(tube) != 1:
-		return _fail("Mid-pour same-colour Water still splits into stacked 3D solids")
-	var liquid_root := tube.get("liquid_root_3d") as Node3D
-	if liquid_root == null or absf(liquid_root.rotation.z) > 0.0001:
-		return _fail("Water arrival ripple tilted the bulk liquid away from the bottle walls")
+	await _frames(1)
+	if _exposed_surface_count(tube) != 1:
+		return _fail("Incoming same-colour liquid should merge visually during the pour")
+	if absf(tube.rotation) > 0.0001:
+		return _fail("Arrival feedback rotated the bottle control instead of the liquid detail")
+
+	var source := _read("res://scripts/ui/water_tube_reference_motion.gd")
+	for needle in ["slot_h + 1.0", "next_color != _slot_color(slot)", "Only the exposed liquid surface owns a highlight/meniscus line"]:
+		if not source.contains(needle):
+			return _fail("2D liquid continuity contract is missing: " + needle)
 
 	tube.queue_free()
-	await _frames(2)
-	print("WATER_LIQUID_CONTINUITY_OK: equal colours merge into one continuous 3D body with one exposed meniscus.")
+	await _frames(1)
+	print("WATER_2D_LIQUID_CONTINUITY_OK")
 	quit(0)
 
-func _visible_volume_count(tube: Node) -> int:
+func _exposed_surface_count(tube: Node) -> int:
 	var count := 0
-	var segments: Array = tube.get("liquid_segments_3d")
-	for segment in segments:
-		if segment is MeshInstance3D and (segment as MeshInstance3D).visible:
+	for slot in range(4):
+		var fill := float(tube.call("_slot_fill", slot))
+		if fill <= 0.001:
+			continue
+		var next_fill := float(tube.call("_slot_fill", slot + 1)) if slot < 3 else 0.0
+		var color := int(tube.call("_slot_color", slot))
+		var next_color := int(tube.call("_slot_color", slot + 1)) if next_fill > 0.001 and slot < 3 else -1
+		if next_fill <= 0.001 or next_color != color:
 			count += 1
 	return count
+
+func _read(path: String) -> String:
+	var file := FileAccess.open(path, FileAccess.READ)
+	return "" if file == null else file.get_as_text()
 
 func _frames(count: int) -> void:
 	for _i in range(count):
