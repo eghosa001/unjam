@@ -417,6 +417,10 @@ func _play_success(index: int) -> void:
 	if node != null and node.has_method("play_success"): node.call("play_success")
 
 func undo_move() -> void:
+	if daily_mode:
+		if hint_label != null:
+			hint_label.text = "Undo is disabled in ranked Daily competition."
+		return
 	if history.is_empty() or completed or animating:
 		status_label.text = "Nothing to undo"
 		return
