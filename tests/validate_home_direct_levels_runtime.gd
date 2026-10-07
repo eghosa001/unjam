@@ -57,7 +57,7 @@ func _run() -> void:
 			return _fail("Home hero did not update for %s" % game_id)
 		if hero_meta == null or hero_meta.text != "LEVEL %d • WORLD %d" % [expected.level, expected.world]:
 			return _fail("Home hero level/world stayed stale for %s" % game_id)
-		if top_level == null or top_level.text != "LV %d" % expected.level:
+		if top_level == null or top_level.text != "LV %d  ›" % expected.level:
 			return _fail("Home top level badge stayed stale for %s" % game_id)
 		var expected_stars := int(_multi.call("total_stars", game_id))
 		if top_stars == null or top_stars.text.strip_edges() != str(expected_stars):
@@ -88,6 +88,39 @@ func _run() -> void:
 		return _fail("Home Choose Game did not open the game selector")
 	if main.get("active_game") != null:
 		return _fail("Home Choose Game started a game instead of stopping on the selector")
+
+	main.call("build_home")
+	await _frames(3)
+	home = main.get_node_or_null("PremiumHome")
+	var profile := home.find_child("HomeProfileButton",true,false) as Button
+	var goals := home.find_child("HomeGoalsButton",true,false) as Button
+	var journey := home.find_child("HomeSeasonJourneyButton",true,false) as Button
+	var friends := home.find_child("HomeFriendsButton",true,false) as Button
+	var daily_nav_label := home.find_child("HomeNavLabel_DAILY",true,false) as Label
+	if profile == null or goals == null or journey == null or friends == null:
+		return _fail("Home meta destinations are not all directly accessible")
+	if daily_nav_label == null or daily_nav_label.text != "COMPETE":
+		return _fail("Home still exposes Daily instead of Compete")
+	profile.pressed.emit()
+	await _frames(2)
+	if String(main.get("current_surface")) != "profile":
+		return _fail("Home level badge did not open Profile")
+	main.call("build_home")
+	await _frames(2)
+	home = main.get_node_or_null("PremiumHome")
+	goals = home.find_child("HomeGoalsButton",true,false) as Button
+	goals.pressed.emit()
+	await _frames(2)
+	if String(main.get("current_surface")) != "goals":
+		return _fail("Home Goals button did not open Goals")
+	main.call("build_home")
+	await _frames(2)
+	home = main.get_node_or_null("PremiumHome")
+	friends = home.find_child("HomeFriendsButton",true,false) as Button
+	friends.pressed.emit()
+	await _frames(2)
+	if String(main.get("current_surface")) != "friends":
+		return _fail("Home Friends button did not open Friends")
 
 	main.call("build_home")
 	await _frames(3)
