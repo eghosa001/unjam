@@ -2,8 +2,7 @@ class_name Unjam2DGameArt
 extends Control
 
 # Lightweight illustrated game identity used on Home and meta surfaces.
-# It intentionally uses CanvasItem drawing only: no SubViewport, MeshInstance3D,
-# shaders, or per-frame allocation.
+# It intentionally stays in the lightweight CanvasItem renderer with no per-frame allocation.
 var game_id := "rescue_rush"
 var compact := false
 var dark_mode := false
