@@ -616,6 +616,11 @@ func _run_fast_visual_audit(main: Node, shell: Node) -> void:
 				rescue_game.call("try_move", legal_index)
 				if await _wait_for_named_motion(rescue_game, "RescueEscapeGhost", 90):
 					await _capture("09c-game-rescue-motion-540x960")
+					# The capture intentionally occurs mid-animation. Let the escape
+					# transaction finish before replacing the scene so its tween/ghost
+					# cannot survive into the next audit fixture or leak at shutdown.
+					await _wait_until_rescue_unlocked(rescue_game)
+					await _settle(4)
 				else:
 					push_error("Fast visual audit never exposed RescueEscapeGhost")
 			main.call("start_level", 10000)
