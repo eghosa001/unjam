@@ -223,39 +223,36 @@ static func rounded_gradient3(top: Color, middle: Color, bottom: Color, radius: 
 				if not in_inner:
 					image.set_pixel(x, y, border_color)
 					continue
-			# Premium casual-game gloss: a broad curved specular rolloff across the
-			# upper third, a crisp inner rim, and a restrained lower shade. It is
-			# baked once into the cached nine-slice, so there is no per-frame shader.
+			# Glossy-flat casual-game lacquer: one controlled top rolloff, one
+			# narrow highlight band and a soft key-light. No asymmetric sidewall
+			# shading is allowed here; cards should look coated, not extruded.
 			var pixel_fill := fill
 			var fx := float(x) / float(image_size - 1)
 			var center_boost := 1.0 - minf(1.0, absf(fx - 0.5) * 1.7)
-			if fy < 0.42:
-				var sheen := (1.0 - fy / 0.42) * (0.17 + center_boost * 0.14)
+			if fy < 0.36:
+				var sheen := (1.0 - fy / 0.36) * (0.080 + center_boost * 0.055)
 				pixel_fill = pixel_fill.lerp(Color(1, 1, 1, pixel_fill.a), sheen)
-			# A second, narrow specular band makes large cards read like lacquered
-			# casual-game surfaces rather than simple vertical gradients.
-			if fy >= 0.10 and fy <= 0.22:
-				var band := 1.0 - absf(fy - 0.16) / 0.06
-				pixel_fill = pixel_fill.lerp(Color(1, 1, 1, pixel_fill.a), maxf(0.0, band) * (0.07 + center_boost * 0.05))
-			if py <= bw + 3.0:
-				pixel_fill = pixel_fill.lerp(Color(1, 1, 1, pixel_fill.a), 0.30)
-			if fy > 0.82:
-				var lower_rolloff := ((fy - 0.82) / 0.18) * 0.14
+			if fy >= 0.11 and fy <= 0.20:
+				var band := 1.0 - absf(fy - 0.155) / 0.045
+				pixel_fill = pixel_fill.lerp(Color(1, 1, 1, pixel_fill.a), maxf(0.0, band) * (0.040 + center_boost * 0.025))
+			if py <= bw + 2.0:
+				pixel_fill = pixel_fill.lerp(Color(1, 1, 1, pixel_fill.a), 0.17)
+			if fy > 0.86:
+				var lower_rolloff := ((fy - 0.86) / 0.14) * 0.070
 				pixel_fill = pixel_fill.lerp(Color(0, 0, 0, pixel_fill.a), lower_rolloff)
-			# Premium 3D bevel side: a brighter top/left rim and darker right/bottom
-			# side profile makes the nine-slice read as a physical raised object.
-			if fx < 0.10:
-				pixel_fill = pixel_fill.lerp(Color(1, 1, 1, pixel_fill.a), (0.10 - fx) * 0.66)
-			if fx > 0.88:
-				pixel_fill = pixel_fill.lerp(Color(0, 0, 0, pixel_fill.a), (fx - 0.88) * 0.82)
-			if fy > 0.88:
-				pixel_fill = pixel_fill.lerp(Color(0, 0, 0, pixel_fill.a), ((fy - 0.88) / 0.12) * 0.18)
-			# Localized key-light hotspot gives the material an actual lacquered
-			# highlight instead of reading as a generic vertical gradient.
-			var hotspot_distance := Vector2((fx - 0.34) / 0.46, (fy - 0.12) / 0.24).length()
+			# Glossy-flat edge discipline: both side edges receive the same barely
+			# visible falloff. This preserves silhouette definition without faking
+			# a raised right wall or a directional 3D bevel.
+			var edge_distance := minf(fx, 1.0 - fx)
+			if edge_distance < 0.055:
+				var edge_falloff := (0.055 - edge_distance) / 0.055
+				pixel_fill = pixel_fill.lerp(Color(0, 0, 0, pixel_fill.a), edge_falloff * 0.018)
+			# Localized key-light hotspot keeps the surface lively while remaining
+			# subordinate to the authored game artwork.
+			var hotspot_distance := Vector2((fx - 0.34) / 0.50, (fy - 0.12) / 0.28).length()
 			var hotspot := clampf(1.0 - hotspot_distance, 0.0, 1.0)
 			if hotspot > 0.0:
-				pixel_fill = pixel_fill.lerp(Color(1, 1, 1, pixel_fill.a), hotspot * 0.105)
+				pixel_fill = pixel_fill.lerp(Color(1, 1, 1, pixel_fill.a), hotspot * 0.052)
 			image.set_pixel(x, y, pixel_fill)
 	var style := StyleBoxTexture.new()
 	style.texture = ImageTexture.create_from_image(image)
