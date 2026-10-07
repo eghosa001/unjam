@@ -46,7 +46,7 @@ func _initialize() -> void:
 	for token in [
 		"_materials.vertical_shade(liquid, 0.76)",
 		"_materials.vertical_shade(liquid, 0.20)",
-		"_materials.glass_highlight(Color.WHITE, specular_alpha)",
+		"_materials.glass_highlight(Color.WHITE, specular_alpha + 0.08)",
 		"next_color != _slot_color(slot)",
 	]:
 		if not liquid_source.contains(token):
