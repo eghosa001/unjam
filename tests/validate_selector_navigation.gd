@@ -52,11 +52,13 @@ func _run() -> void:
 		# rects so the Figma reference-canvas device scale cancels out.
 		if subtitle_clip.get_global_rect().end.x > preview_frame.get_global_rect().position.x + 1.0:
 			return _fail("Selector subtitle clipping region overlaps preview frame for %s" % game_id)
-		var preview := _find(main, "SelectorFlatGameLogo_%s" % game_id) as Control
-		if preview == null or not bool(preview.get_meta("unjam_flat_game_logo", false)):
-			return _fail("Selector flat gameplay logo is missing for %s" % game_id)
-		if preview.get_script() == null or not String(preview.get_script().resource_path).ends_with("unjam_flat_game_logo.gd"):
-			return _fail("Selector is not using the shared flat game identity renderer for %s" % game_id)
+		var preview := _find(main, "SelectorAuthoredGameArt_%s" % game_id) as Control
+		if preview == null:
+			return _fail("Selector authored gameplay art is missing for %s" % game_id)
+		if preview.get_script() == null or not String(preview.get_script().resource_path).ends_with("unjam_2d_game_art.gd"):
+			return _fail("Selector is not using the shared authored 2D game-art renderer for %s" % game_id)
+		if not bool(preview.get("compact")) or preview.is_processing():
+			return _fail("Selector compact authored art must remain static for %s" % game_id)
 		if preview.find_child("GamePreviewViewport3D", true, false) != null:
 			return _fail("Selector game identity must not allocate a 3D preview viewport for %s" % game_id)
 
