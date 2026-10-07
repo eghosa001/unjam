@@ -8,7 +8,8 @@ func _run() -> void:
 	if not _validate_backdrop_budget(): return
 	if not _validate_reduced_motion_source(): return
 	if not _validate_readable_typography(): return
-	print("Visual quality contract validated: procedural depth, adaptive particle budgets, reduced-motion behavior, and crisp readable typography.")
+	if not _validate_authored_art_assets(): return
+	print("Visual quality contract validated: authored 2D art, adaptive effects, reduced-motion behavior, and crisp readable typography.")
 	quit(0)
 
 func _validate_material_helpers() -> bool:
@@ -95,6 +96,64 @@ func _validate_readable_typography() -> bool:
 		return _fail("Secondary surfaces can still render unreadably small labels")
 	root.free()
 	manager.free()
+	return true
+
+func _validate_authored_art_assets() -> bool:
+	var required := [
+		"res://assets/art/brand/unjam_wordmark.svg",
+		"res://assets/art/home/rescue_rush_hero.svg",
+		"res://assets/art/home/water_sort_hero.svg",
+		"res://assets/art/home/block_puzzle_hero.svg",
+		"res://assets/art/gameplay/rescue_board_bg.svg",
+		"res://assets/art/gameplay/water_stage_bg.svg",
+		"res://assets/art/gameplay/block_board_bg.svg",
+		"res://assets/art/gameplay/rescue/chick.svg",
+		"res://assets/art/gameplay/rescue/puppy.svg",
+		"res://assets/art/gameplay/rescue/kitten.svg",
+		"res://assets/art/gameplay/rescue/robot.svg",
+		"res://assets/art/gameplay/rescue/slime.svg",
+		"res://assets/art/gameplay/rescue/panda.svg",
+		"res://assets/art/gameplay/rescue/fox.svg",
+		"res://assets/art/gameplay/rescue/alien.svg",
+		"res://assets/art/gameplay/rescue_tile_overlay.svg",
+		"res://assets/art/gameplay/water_glass_overlay.svg",
+		"res://assets/art/gameplay/block_tile_overlay.svg",
+		"res://assets/art/gameplay/special_crate.svg",
+		"res://assets/art/gameplay/special_ice.svg",
+		"res://assets/art/gameplay/special_lock.svg",
+		"res://assets/art/gameplay/special_steel.svg",
+		"res://assets/art/gameplay/special_target.svg",
+		"res://assets/art/meta/compete.svg",
+		"res://assets/art/meta/friends.svg",
+		"res://assets/art/meta/goals.svg",
+		"res://assets/art/meta/profile.svg",
+		"res://assets/art/meta/collection.svg",
+		"res://assets/art/meta/daily.svg",
+		"res://assets/art/fx/spark.svg",
+	]
+	for path in required:
+		if not FileAccess.file_exists(path):
+			return _fail("Authored art asset is missing: " + path)
+		var texture := load(path) as Texture2D
+		if texture == null or texture.get_width() < 64 or texture.get_height() < 64:
+			return _fail("Authored art asset did not import as a usable texture: " + path)
+	var home_source := FileAccess.get_file_as_string("res://scripts/ui/unjam_2d_game_art.gd")
+	var mascot_source := FileAccess.get_file_as_string("res://scripts/ui/rescue_token.gd")
+	var world_source := FileAccess.get_file_as_string("res://scripts/ui/unjam_gameplay_art.gd")
+	var meta_source := FileAccess.get_file_as_string("res://scripts/ui/unjam_meta_art.gd")
+	var fx_source := FileAccess.get_file_as_string("res://scripts/ui/premium_gameplay_feedback.gd")
+	for token in ["rescue_rush_hero.svg", "water_sort_hero.svg", "block_puzzle_hero.svg"]:
+		if not home_source.contains(token):
+			return _fail("Home art renderer is not bound to authored asset: " + token)
+	if not mascot_source.contains("RESCUE_TEXTURES") or not mascot_source.contains("rescue/alien.svg"):
+		return _fail("Rescue mascot family is not fully asset-driven")
+	for token in ["rescue_board_bg.svg", "water_stage_bg.svg", "block_board_bg.svg"]:
+		if not world_source.contains(token):
+			return _fail("Gameplay world is not asset-driven: " + token)
+	if not meta_source.contains("assets/art/meta/collection.svg"):
+		return _fail("Meta surfaces are not bound to authored illustration assets")
+	if not fx_source.contains("SPARK_TEXTURE") or not fx_source.contains("_spawn_spark_burst"):
+		return _fail("Premium event feedback is missing authored sparkle motion")
 	return true
 
 func _fail(message: String) -> bool:
