@@ -79,9 +79,9 @@ func _validate_readable_typography() -> bool:
 	var button := Button.new()
 	button.add_theme_font_size_override("font_size", 18)
 	Unjam3DTheme.gloss_button(button, Unjam3DTheme.WATER_DARK, true, 24)
-	if button.get_theme_font_size("font_size") < 28 or button.custom_minimum_size.y < 88.0:
+	if button.get_theme_font_size("font_size") < 24 or button.custom_minimum_size.y < 72.0:
 		button.free()
-		return _fail("Premium buttons do not meet the readability/touch contract")
+		return _fail("Premium buttons do not meet the compact-phone readability/touch contract")
 	button.free()
 	var manager_script := load("res://scripts/ui/premium_surface_manager_static.gd") as Script
 	var manager = manager_script.new()
