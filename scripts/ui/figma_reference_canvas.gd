@@ -509,6 +509,11 @@ static func premium_button(text_value: String, font_size: int, text_color: Color
 	var result := Button.new()
 	result.set_meta("unjam_figma_exact_geometry", true)
 	result.text = localized_text(text_value)
+	# Exact Figma buttons must never widen because of their text minimum.
+	# Long labels are fitted by the caller and clipped as a final safety net.
+	result.clip_text = true
+	result.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	result.custom_minimum_size = Vector2.ZERO
 	result.focus_mode = Control.FOCUS_NONE
 	result.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	result.add_theme_font_override("font", Unjam3DTheme.strong_font())
