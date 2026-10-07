@@ -317,7 +317,14 @@ func _figma_surface_accent(active: String) -> Color:
 func _figma_text(canvas: Control, text_value: String, rect: Rect2, font_size: int, color: Color = FIGMA_INK, center := false) -> Label:
 	var label := FigmaReferenceCanvas.label(text_value, font_size, _figma_theme_text(color), true)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER if center else HORIZONTAL_ALIGNMENT_LEFT
+	label.clip_text = true
+	label.set_meta("unjam_authored_rect", rect)
 	FigmaReferenceCanvas.set_rect(label, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
+	# Figma rectangles are authoritative. Label font minimums must never silently
+	# enlarge a text control into a neighboring card/button or beyond the screen.
+	label.custom_minimum_size = Vector2.ZERO
+	label.position = rect.position
+	label.size = rect.size
 	canvas.add_child(label)
 	return label
 
@@ -327,6 +334,12 @@ func _fit_single_line_control_text(control: Control, max_width: float, start_siz
 	var font := control.get_theme_font("font")
 	if font == null:
 		return
+	var authored_position := control.position
+	var authored_size := control.size
+	if control.has_meta("unjam_authored_rect"):
+		var authored_rect: Rect2 = control.get_meta("unjam_authored_rect")
+		authored_position = authored_rect.position
+		authored_size = authored_rect.size
 	var text_value := ""
 	if control is Label:
 		text_value = (control as Label).text
@@ -338,6 +351,17 @@ func _fit_single_line_control_text(control: Control, max_width: float, start_siz
 	while size > min_size and font.get_string_size(text_value, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x > max_width:
 		size -= 1
 	control.add_theme_font_size_override("font_size", size)
+	control.custom_minimum_size = Vector2.ZERO
+	control.position = authored_position
+	control.size = authored_size
+	if control is Label:
+		var fitted_label := control as Label
+		fitted_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+		fitted_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		fitted_label.clip_text = true
+		fitted_label.custom_minimum_size = Vector2.ZERO
+		fitted_label.position = authored_position
+		fitted_label.size = authored_size
 func _fit_wrapped_text(label: Label, max_width: float, start_size: int, min_size: int = 10) -> void:
 	if label == null or max_width <= 0.0:
 		return
@@ -346,6 +370,10 @@ func _fit_wrapped_text(label: Label, max_width: float, start_size: int, min_size
 		return
 	var authored_position := label.position
 	var authored_size := label.size
+	if label.has_meta("unjam_authored_rect"):
+		var authored_rect: Rect2 = label.get_meta("unjam_authored_rect")
+		authored_position = authored_rect.position
+		authored_size = authored_rect.size
 	var raw_text := label.text.strip_edges()
 	var words := raw_text.split(" ", false)
 	var size := start_size
@@ -394,6 +422,7 @@ func _figma_button(canvas: Control, name_value: String, text_value: String, rect
 	var button := FigmaReferenceCanvas.premium_button(text_value, font_size, resolved_text, resolved_fill, radius, Color(resolved_fill.r, resolved_fill.g, resolved_fill.b, 0.38), 1)
 	button.name = name_value
 	button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+	button.set_meta("unjam_authored_rect", rect)
 	FigmaReferenceCanvas.set_rect(button, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	_fit_single_line_control_text(button, maxf(24.0, rect.size.x - 18.0), font_size, 10)
 	if callback.is_valid():
@@ -437,20 +466,25 @@ func _figma_header(canvas: Control, title_text: String, subtitle_text: String, p
 	var back_button := _figma_button(canvas, "FigmaBack", "←", Rect2(17,19,52,52), back_fill, back_callback, back_color, 18, 27)
 	back_button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	back_button.tooltip_text = "Back"
-	var header_title := _figma_text(canvas, title_text, Rect2(83,21,186,28), 23, heading_color)
+	var header_title := _figma_text(canvas, title_text, Rect2(83,21,186,27), 23, heading_color)
 	header_title.name = "FigmaHeaderTitle"
 	header_title.clip_text = true
-	_fit_single_line_control_text(header_title, 182.0, 23, 14)
+	# Apply the display font before fitting so its actual metrics cannot expand
+	# back into the subtitle band after compact-screen layout.
 	FigmaReferenceCanvas.style_display_title(header_title, pill_fill.lightened(0.20), Color("#071d55"), 1)
+	_fit_single_line_control_text(header_title, 182.0, 23, 14)
 	if not subtitle_text.strip_edges().is_empty():
-		var subtitle := _figma_text(canvas, subtitle_text, Rect2(83,49,186,22), 14, muted_color)
+		var subtitle := _figma_text(canvas, subtitle_text, Rect2(83,55,186,18), 13, muted_color)
 		subtitle.name = "FigmaHeaderSubtitle"
 		subtitle.autowrap_mode = TextServer.AUTOWRAP_OFF
 		subtitle.clip_text = true
 		subtitle.custom_minimum_size = Vector2.ZERO
-		_fit_single_line_control_text(subtitle, 182.0, 14, 10)
-		FigmaReferenceCanvas.set_rect(subtitle, 83, 49, 186, 22)
-		_fit_wrapped_text(subtitle, 182.0, 14, 11)
+		_fit_single_line_control_text(subtitle, 182.0, 13, 8)
+		# Font fitting can leave an older Label minimum cached. Reassert the
+		# authored one-line lane so the subtitle never grows into the header pill.
+		subtitle.custom_minimum_size = Vector2.ZERO
+		subtitle.position = Vector2(83,55)
+		subtitle.size = Vector2(186,18)
 	if pill_text.strip_edges().is_empty():
 		return
 	if pill_callback.is_valid():
@@ -527,7 +561,7 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 			_figma_solid_card(
 				canvas,
 				"StdNavActivePlate_%s" % String(key),
-				Rect2(float(hit_x[key])+7.0,763,58,55),
+				Rect2(float(hit_x[key])+7.0,761,58,58),
 				plate_fill,
 				plate_border,
 				14,
@@ -537,26 +571,26 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 			_figma_solid_card(
 				canvas,
 				"StdNavActiveShine_%s" % String(key),
-				Rect2(float(hit_x[key])+24.0,765,24,2),
+				Rect2(float(hit_x[key])+24.0,763,24,2),
 				Color(accent.r,accent.g,accent.b,0.82),
 				Color.TRANSPARENT,
 				1,
 				false
 			)
-		var glyph := _figma_text(canvas, String(glyphs[key]), Rect2(float(xs[key])-1.0,763,58,24), 20, icon_color, true)
+		var glyph := _figma_text(canvas, String(glyphs[key]), Rect2(float(xs[key])-1.0,761,58,24), 18, icon_color, true)
 		glyph.name = "StdNavGlyph_%s" % String(key)
 		glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		var label_width := 66.0 if String(key) in ["collection", "settings"] else 58.0
 		var label_x := float(hit_x[key]) + (72.0 - label_width) * 0.5
-		var nav_label := _figma_text(canvas, String(names[key]), Rect2(label_x,789,label_width,24), 13, selected_text if selected else idle_text, selected)
+		var nav_label := _figma_text(canvas, String(names[key]), Rect2(label_x,803,label_width,18), 13, selected_text if selected else idle_text, selected)
 		nav_label.name = "StdNavLabel_%s" % String(key)
 		nav_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		nav_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		nav_label.clip_text = true
 		nav_label.custom_minimum_size = Vector2.ZERO
-		nav_label.position = Vector2(label_x, 789)
-		nav_label.size = Vector2(label_width, 24)
-		_fit_single_line_control_text(nav_label, label_width - 2.0, 13, 11)
+		nav_label.position = Vector2(label_x, 803)
+		nav_label.size = Vector2(label_width, 18)
+		_fit_single_line_control_text(nav_label, label_width - 2.0, 13, 10)
 		var hit := Button.new()
 		hit.name = "StdNavHit_%s" % String(key).to_upper()
 		hit.flat = true
@@ -601,7 +635,7 @@ func build_goals() -> void:
 	_figma_text(canvas, "DAILY CHECK-IN • DAY %d/7" % int(login.get("day",1)), Rect2(31,103,208,22), 15, FIGMA_INK)
 	_figma_text(canvas, "+%d COINS" % int(login.get("reward",0)), Rect2(31,129,150,20), 13, FIGMA_GOLD)
 	var login_claimed := bool(login.get("claimed",false))
-	var login_button := _figma_button(canvas,"GoalsLoginClaim","CLAIMED" if login_claimed else "CLAIM",Rect2(260,105,92,42),Color("#7d8a94") if login_claimed else FIGMA_ORANGE,Callable(),Color.WHITE,13,12)
+	var login_button := _figma_button(canvas,"GoalsLoginClaim","CLAIMED" if login_claimed else "CLAIM",Rect2(260,104,92,44),Color("#7d8a94") if login_claimed else FIGMA_ORANGE,Callable(),Color.WHITE,13,12)
 	login_button.disabled = login_claimed
 	if not login_claimed:
 		login_button.pressed.connect(_claim_daily_login)
@@ -622,7 +656,9 @@ func build_goals() -> void:
 	_figma_text(canvas, "%d PTS • %d/%d TIERS" % [int(season.get("points",0)),int(season.get("completed",0)),int(season.get("tiers",0))], Rect2(31,587,210,20), 13, FIGMA_MUTED)
 	var next_target := int(season.get("next_target",0))
 	var journey_detail := "ALL TIERS COMPLETE" if next_target <= 0 else "NEXT REWARD AT %d PTS" % next_target
-	_figma_text(canvas, journey_detail, Rect2(31,613,220,20), 12, FIGMA_MUTED)
+	var journey_label := _figma_text(canvas, journey_detail, Rect2(31,613,202,18), 11, FIGMA_MUTED)
+	journey_label.name = "GoalsSeasonNextReward"
+	_fit_single_line_control_text(journey_label,198.0,11,9)
 	var season_ready := int(season.get("ready",0))
 	var season_button := _figma_button(canvas,"GoalsSeasonClaim","CLAIM %d" % season_ready if season_ready > 0 else "IN PROGRESS",Rect2(246,575,106,46),FIGMA_GREEN if season_ready > 0 else Color("#7d8a94"),Callable(),Color.WHITE,13,11)
 	season_button.disabled = season_ready <= 0
@@ -637,15 +673,19 @@ func _figma_goal_row(canvas: Control, row: Dictionary, period: String, y: float)
 	var fill := Color("#f5f2ec") if not _dark() else Color("#27282b")
 	var border := Color(FIGMA_GREEN,0.34) if claimable else Color(FIGMA_GOLD,0.20)
 	_figma_card(canvas,"Goal/%s/%s" % [period,String(row.get("id",""))],Rect2(17,y,354,44),fill,border,13)
-	_figma_text(canvas,String(row.get("title","GOAL")),Rect2(30,y+7,168,17),12,FIGMA_INK)
+	var goal_title := _figma_text(canvas,String(row.get("title","GOAL")),Rect2(30,y+5,168,15),11,FIGMA_INK)
+	goal_title.name = "GoalTitle/%s/%s" % [period,String(row.get("id",""))]
+	_fit_single_line_control_text(goal_title,164.0,11,9)
 	var crowns := int(row.get("crowns",0))
 	var reward_text := "+%d" % int(row.get("coins",0))
 	if crowns > 0:
 		reward_text += " • ♛%d" % crowns
-	_figma_text(canvas,"%d/%d • %s" % [int(row.get("progress",0)),int(row.get("target",1)),reward_text],Rect2(30,y+24,190,15),10,FIGMA_MUTED)
+	var goal_progress := _figma_text(canvas,"%d/%d • %s" % [int(row.get("progress",0)),int(row.get("target",1)),reward_text],Rect2(30,y+25,190,13),9,FIGMA_MUTED)
+	goal_progress.name = "GoalProgress/%s/%s" % [period,String(row.get("id",""))]
+	_fit_single_line_control_text(goal_progress,186.0,9,8)
 	var action_text := "DONE" if claimed else ("CLAIM" if claimable else "GO")
 	var action_fill := Color("#7d8a94") if claimed else (FIGMA_GREEN if claimable else Color("#7a57e0"))
-	var action := _figma_button(canvas,"GoalAction/%s/%s" % [period,String(row.get("id",""))],action_text,Rect2(274,y+6,78,32),action_fill,Callable(),Color.WHITE,11,10)
+	var action := _figma_button(canvas,"GoalAction/%s/%s" % [period,String(row.get("id",""))],action_text,Rect2(274,y,78,44),action_fill,Callable(),Color.WHITE,11,10)
 	action.disabled = claimed
 	if claimable:
 		action.pressed.connect(_claim_goal.bind(period,String(row.get("id",""))))
@@ -684,12 +724,12 @@ func build_profile() -> void:
 	name_edit.add_theme_color_override("font_color",_figma_theme_text(FIGMA_INK))
 	name_edit.add_theme_color_override("font_placeholder_color",Color("#8f99a5") if _dark() else Color("#68717b"))
 	name_edit.add_theme_stylebox_override("normal",FigmaReferenceCanvas.flat_gloss(Color("#f5f2ec") if not _dark() else Color("#27282b"),12,Color(FIGMA_CYAN,0.34),1,0.08,10.0))
-	FigmaReferenceCanvas.set_rect(name_edit,31,105,218,42)
+	FigmaReferenceCanvas.set_rect(name_edit,31,104,218,44)
 	canvas.add_child(name_edit)
 	var save_name := _figma_button(canvas,"ProfileSaveName","SAVE",Rect2(263,104,88,44),FIGMA_CYAN,Callable(),Color.WHITE,13,11)
 	save_name.pressed.connect(_save_profile_name.bind(name_edit))
 
-	_figma_card(canvas,"ProfileStats",Rect2(17,176,354,92),profile_card_fill,Color(FIGMA_CYAN,0.24),17)
+	_figma_card(canvas,"ProfileStats",Rect2(17,176,354,110),profile_card_fill,Color(FIGMA_CYAN,0.24),17)
 	var stats := [
 		[_compact_stat(MetaProgressionManager.total_levels_completed()),"LEVELS",30.0],
 		[_compact_stat(MetaProgressionManager.total_stars()),"STARS",116.0],
@@ -697,19 +737,21 @@ func build_profile() -> void:
 		[str(int(SaveManager.data.get("crown_tokens",0))),"CROWNS",288.0]
 	]
 	for stat in stats:
-		_figma_text(canvas,String(stat[0]),Rect2(float(stat[2]),194,64,23),17,FIGMA_INK)
-		_figma_text(canvas,String(stat[1]),Rect2(float(stat[2])-4,222,72,18),11,FIGMA_MUTED)
+		var stat_value := _figma_text(canvas,String(stat[0]),Rect2(float(stat[2]),193,64,21),16,FIGMA_INK)
+		_fit_single_line_control_text(stat_value,60.0,16,12)
+		var stat_label := _figma_text(canvas,String(stat[1]),Rect2(float(stat[2])-4,218,72,14),10,FIGMA_MUTED)
+		_fit_single_line_control_text(stat_label,68.0,10,8)
 	var profile_rank := CompetitionManager.game_all_time_rank(_profile_game)
 	var rank_text := "UNRANKED" if profile_rank <= 0 else "RANK #%d" % profile_rank
 	_figma_text(canvas,"%s • %d/%d ACHIEVEMENTS" % [rank_text,MetaProgressionManager.total_achievements(),MetaProgressionManager.total_achievement_slots()],Rect2(31,244,220,18),11,FIGMA_GOLD)
-	var friends_button := _figma_button(canvas,"ProfileFriendsButton","FRIENDS",Rect2(272,224,79,44),Color("#7a57e0"),Callable(self,"build_friends"),Color.WHITE,10,9)
+	var friends_button := _figma_button(canvas,"ProfileFriendsButton","FRIENDS",Rect2(272,240,79,44),Color("#7a57e0"),Callable(self,"build_friends"),Color.WHITE,10,9)
 	friends_button.tooltip_text = "Friend codes and campaign progress rankings"
 
-	_figma_text(canvas,"ACHIEVEMENTS",Rect2(19,285,170,20),15,FIGMA_GOLD)
+	_figma_text(canvas,"ACHIEVEMENTS",Rect2(19,294,170,20),15,FIGMA_GOLD)
 	_figma_profile_game_tabs(canvas)
 	var defs := MultiGameManager.achievement_definitions(_profile_game)
 	for i in range(defs.size()):
-		_figma_achievement_row(canvas,defs[i] as Dictionary,345.0+float(i)*60.0)
+		_figma_achievement_row(canvas,defs[i] as Dictionary,370.0+float(i)*60.0)
 	_figma_bottom_nav(canvas,"home")
 
 func _figma_profile_game_tabs(canvas: Control) -> void:
@@ -718,7 +760,7 @@ func _figma_profile_game_tabs(canvas: Control) -> void:
 	for i in range(ids.size()):
 		var selected: bool = _profile_game == ids[i]
 		var fill := Unjam3DTheme.game_accent(ids[i]) if selected else Color("#7d8a94")
-		var button := _figma_button(canvas,"ProfileGame/%s" % ids[i],labels[i],Rect2(19.0+float(i)*118.0,310,108,30),fill,Callable(),Color.WHITE,11,10)
+		var button := _figma_button(canvas,"ProfileGame/%s" % ids[i],labels[i],Rect2(19.0+float(i)*118.0,318,108,44),fill,Callable(),Color.WHITE,11,10)
 		if not selected:
 			button.pressed.connect(_set_profile_game.bind(ids[i]))
 		else:
@@ -731,8 +773,12 @@ func _figma_achievement_row(canvas: Control, achievement: Dictionary, y: float) 
 	var done := progress >= need
 	var accent := FIGMA_GREEN if done else Unjam3DTheme.game_accent(_profile_game)
 	_figma_card(canvas,"ProfileAchievement/%s/%s" % [_profile_game,id],Rect2(17,y,354,52),Color("#27282b") if _dark() else Color("#fffef8"),Color(accent,0.28),14)
-	_figma_text(canvas,String(achievement.get("title","Achievement")),Rect2(31,y+8,210,18),13,FIGMA_INK)
-	_figma_text(canvas,"%d / %d" % [mini(progress,need),need],Rect2(31,y+29,150,16),11,FIGMA_MUTED)
+	var achievement_title := _figma_text(canvas,String(achievement.get("title","Achievement")),Rect2(31,y+6,210,15),12,FIGMA_INK)
+	achievement_title.name = "ProfileAchievementTitle/%s" % id
+	_fit_single_line_control_text(achievement_title,206.0,12,9)
+	var achievement_progress := _figma_text(canvas,"%d / %d" % [mini(progress,need),need],Rect2(31,y+29,150,13),10,FIGMA_MUTED)
+	achievement_progress.name = "ProfileAchievementProgress/%s" % id
+	_fit_single_line_control_text(achievement_progress,146.0,10,8)
 	var status := _figma_text(canvas,"✓" if done else "•",Rect2(315,y+13,28,28),18,accent,true)
 	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
@@ -791,7 +837,7 @@ func build_friends(refresh_remote: bool = true) -> void:
 	code_input.add_theme_color_override("caret_color",_figma_theme_text(FIGMA_INK))
 	code_input.add_theme_stylebox_override("normal",FigmaReferenceCanvas.flat_gloss(Color("#24262a") if _dark() else Color("#fffaf2"),11,Color("#7a57e0"),1,0.16,10.0))
 	code_input.custom_minimum_size = Vector2.ZERO
-	FigmaReferenceCanvas.set_rect(code_input,31,216,211,36)
+	FigmaReferenceCanvas.set_rect(code_input,31,212,211,44)
 	canvas.add_child(code_input)
 	var add_button := _figma_button(canvas,"FriendsAddButton","ADD",Rect2(258,212,93,44),Color("#7a57e0"),Callable(),Color.WHITE,12,11)
 	add_button.pressed.connect(_add_friend_from_input.bind(code_input))
@@ -821,10 +867,14 @@ func build_friends(refresh_remote: bool = true) -> void:
 
 	var status_text := _friends_status
 	if status_text.is_empty():
-		status_text = "Only your UNJAM name and level rank are visible."
-	var privacy_note := _figma_text(canvas,status_text,Rect2(31,663,328,42),12,FIGMA_MUTED,true)
+		status_text = "Only your name and level rank are public."
+	var privacy_note := _figma_text(canvas,status_text,Rect2(31,663,328,36),11,FIGMA_MUTED,true)
+	privacy_note.name = "FriendsPrivacyNote"
 	privacy_note.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_fit_wrapped_text(privacy_note,316.0,12,11)
+	_fit_wrapped_text(privacy_note,316.0,11,9)
+	privacy_note.custom_minimum_size = Vector2.ZERO
+	privacy_note.position = Vector2(31,663)
+	privacy_note.size = Vector2(328,36)
 	_figma_bottom_nav(canvas,"home")
 
 func _figma_friend_period_tabs(canvas: Control) -> void:
@@ -860,7 +910,7 @@ func _figma_friend_rank_row(canvas: Control, row: Dictionary, index: int, y: flo
 	progress.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	if not is_you:
 		var code := String(row.get("friend_code",""))
-		var remove := _figma_button(canvas,"FriendRemove/%d" % index,"×",Rect2(306,y,42,44),Color("#7d8a94"),Callable(),Color.WHITE,12,15)
+		var remove := _figma_button(canvas,"FriendRemove/%d" % index,"×",Rect2(304,y,44,44),Color("#7d8a94"),Callable(),Color.WHITE,12,15)
 		remove.tooltip_text = "Remove friend"
 		if not code.is_empty():
 			remove.pressed.connect(_remove_friend.bind(code))
@@ -1110,9 +1160,9 @@ func _figma_daily_progress(canvas: Control) -> void:
 		_figma_solid_card(canvas, "DailyProgress/%s" % game_id, Rect2(float(spec[2]),550,96,32), fill, border, 12, false)
 		var label := _figma_text(
 			canvas,
-			"%s %s" % [String(spec[1]), "✓" if done else "READY"],
-			Rect2(float(spec[2])+3,554,90,22),
-			13,
+			"%s %s" % [String(spec[1]), "✓" if done else "GO"],
+			Rect2(float(spec[2])+4,555,88,20),
+			12,
 			accent.lightened(0.25) if _dark() else accent.darkened(0.24),
 			true
 		)
@@ -1120,7 +1170,12 @@ func _figma_daily_progress(canvas: Control) -> void:
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		label.clip_text = true
-		_fit_single_line_control_text(label, 86.0, 13, 11)
+		# Keep READY/complete status inside its 90px authored lane. Font minimum
+		# metrics must not push neighboring game labels into each other.
+		label.custom_minimum_size = Vector2.ZERO
+		_fit_single_line_control_text(label, 84.0, 12, 10)
+		label.position = Vector2(float(spec[2])+3,554)
+		label.size = Vector2(90,22)
 
 func _figma_daily_tip(canvas: Control, collection_bonus: int) -> void:
 	var login := MetaProgressionManager.daily_login_info()
@@ -1159,8 +1214,10 @@ func build_compete_leaderboard(refresh_remote: bool = true) -> void:
 	_figma_compete_game_tabs(canvas, 91.0, false)
 
 	_figma_card(canvas,"CompetitionPlayerProgress",Rect2(17,145,354,60),Color("#282a2e") if _dark() else Color("#fffaf2"),Color(accent,0.38),16)
-	_figma_text(canvas,MultiGameManager.display_name(_ranking_game).to_upper(),Rect2(31,155,160,18),13,accent)
-	_figma_text(canvas,"%d LEVELS • ★%d" % [CompetitionManager.game_all_time_levels(_ranking_game),CompetitionManager.game_all_time_stars(_ranking_game)],Rect2(31,177,190,18),12,FIGMA_INK)
+	var ranking_game_title := _figma_text(canvas,MultiGameManager.display_name(_ranking_game).to_upper(),Rect2(31,154,160,15),12,accent)
+	_fit_single_line_control_text(ranking_game_title,156.0,12,10)
+	var ranking_progress := _figma_text(canvas,"%d LEVELS • ★%d" % [CompetitionManager.game_all_time_levels(_ranking_game),CompetitionManager.game_all_time_stars(_ranking_game)],Rect2(31,178,190,14),10,FIGMA_INK)
+	_fit_single_line_control_text(ranking_progress,186.0,10,9)
 	var week := _figma_text(canvas,"WEEK +%d" % CompetitionManager.game_weekly_levels(_ranking_game),Rect2(242,164,105,22),12,FIGMA_MUTED,true)
 	week.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 
@@ -1348,8 +1405,15 @@ func build_collection() -> void:
 		[total_badges,"BADGES",287.0]
 	]
 	for metric in metrics:
-		_figma_text(canvas,_compact_stat(int(metric[0])),Rect2(float(metric[2]),136,62,26),18,FIGMA_INK)
-		_figma_text(canvas,String(metric[1]),Rect2(float(metric[2])-3,159,70,22),14,FIGMA_MUTED)
+		var metric_key := String(metric[1])
+		# Keep value and caption in distinct compact bands. Font ascent/descent
+		# can otherwise make their intrinsic rectangles overlap on narrow phones.
+		var metric_value := _figma_text(canvas,_compact_stat(int(metric[0])),Rect2(float(metric[2]),135,62,22),17,FIGMA_INK)
+		metric_value.name = "CollectionMetricValue_%s" % metric_key
+		_fit_single_line_control_text(metric_value, 60.0, 17, 12)
+		var metric_label := _figma_text(canvas,metric_key,Rect2(float(metric[2])-3,162,70,18),12,FIGMA_MUTED)
+		metric_label.name = "CollectionMetricLabel_%s" % metric_key
+		_fit_single_line_control_text(metric_label, 68.0, 12, 10)
 
 	_figma_text(canvas,"GAMES",Rect2(17,202,190,21),16,FIGMA_INK)
 	_figma_collection_progress(canvas,"rescue_rush",17)
@@ -1363,7 +1427,13 @@ func build_collection() -> void:
 		var unlocked := MultiGameManager.unlocked_achievements(game_id).size()
 		var total := MultiGameManager.achievement_definitions(game_id).size()
 		achievement_parts.append("%s %d/%d" % [_figma_short_game(game_id),unlocked,total])
-	_figma_text(canvas," • ".join(achievement_parts),Rect2(33,382,310,24),14,FIGMA_MUTED)
+	var achievement_summary := _figma_text(canvas," • ".join(achievement_parts),Rect2(33,394,310,18),13,FIGMA_MUTED)
+	achievement_summary.name = "CollectionAchievementSummary"
+	achievement_summary.clip_text = true
+	achievement_summary.custom_minimum_size = Vector2.ZERO
+	_fit_single_line_control_text(achievement_summary,306.0,13,10)
+	achievement_summary.position = Vector2(33,394)
+	achievement_summary.size = Vector2(310,18)
 	var achievements_view := _figma_button(canvas,"CollectionAchievementsView","VIEW",Rect2(286,347,65,44),Color("#7a57e0"),Callable(self,"build_profile"),Color.WHITE,11,10)
 	achievements_view.tooltip_text = "Open detailed Profile & Achievements"
 
@@ -1423,8 +1493,16 @@ func _figma_collection_tip(canvas: Control) -> void:
 	title.name = "CollectionTipTitle"
 	var current_value := _figma_text(canvas, "+%d DAILY  •  +%d GIFT" % [daily_bonus, gift_amount], Rect2(63, 639, 288, 20), 13, FIGMA_GOLD)
 	current_value.name = "CollectionTipValue"
-	var detail := _figma_text(canvas, "Each structure has 5 levels and its own permanent effect.", Rect2(63, 659, 288, 20), 12, FIGMA_MUTED)
+	var detail := _figma_text(canvas, "5 levels each • permanent effect per upgrade", Rect2(63, 664, 288, 20), 11, FIGMA_MUTED)
 	detail.name = "CollectionTipDetail"
+	detail.clip_text = true
+	# Label minimum metrics are computed before font fitting. Reset the minimum
+	# and restore the authored card box afterwards so compact viewports cannot
+	# expand this line beyond the Collection card.
+	detail.custom_minimum_size = Vector2.ZERO
+	_fit_single_line_control_text(detail, 284.0, 11, 9)
+	detail.position = Vector2(63,664)
+	detail.size = Vector2(288,20)
 
 func _figma_collection_progress(canvas: Control, game_id: String, x: float) -> void:
 	var accent := Unjam3DTheme.game_accent(game_id)
@@ -1447,7 +1525,7 @@ func build_collection_upgrades() -> void:
 	_figma_header(
 		canvas,
 		"COLLECTION",
-		"Progress • friends • rewards",
+		"Progress & rewards",
 		"◈ +",
 		FIGMA_GREEN,
 		Callable(self,"build_home"),
@@ -1474,7 +1552,10 @@ func build_collection_upgrades() -> void:
 		Color("#1f8a52"),
 		true
 	)
+	boost_text.name = "CollectionUpgradeBoostSummary"
 	boost_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	boost_text.custom_minimum_size = Vector2.ZERO
+	_fit_single_line_control_text(boost_text, 318.0, 13, 9)
 
 	var upgrades := [
 		["tree","CANOPY TREE","SHADE",100],
@@ -1497,8 +1578,14 @@ func build_collection_upgrades() -> void:
 		var card_border := Color(0.32,0.78,0.49,0.46) if level > 0 else Color(0.72,0.58,0.90,0.46)
 		var title_color := Color("#1f854f") if level > 0 else Color("#4d3373")
 		_figma_solid_card(canvas, "CollectionScroll/Upgrade/%d" % i, Rect2(23,y,342,70), card_fill, card_border, 16, false)
-		_figma_text(canvas,"%s  •  L%d/%d" % [display_name,level,EconomyManager.COLLECTION_MAX_LEVEL],Rect2(37,y+8,190,20),14,title_color)
-		_figma_text(canvas,EconomyManager.collection_effect_text(id,level),Rect2(37,y+34,190,24),11,Color("#6b8091"))
+		var upgrade_title := _figma_text(canvas,"%s  •  L%d/%d" % [display_name,level,EconomyManager.COLLECTION_MAX_LEVEL],Rect2(37,y+8,154,20),14,title_color)
+		upgrade_title.name = "CollectionUpgradeTitle/%s" % id
+		upgrade_title.custom_minimum_size = Vector2.ZERO
+		_fit_single_line_control_text(upgrade_title, 150.0, 14, 9)
+		var effect_text := _figma_text(canvas,EconomyManager.collection_effect_text(id,level),Rect2(37,y+34,154,24),11,Color("#6b8091"))
+		effect_text.name = "CollectionUpgradeEffect/%s" % id
+		effect_text.custom_minimum_size = Vector2.ZERO
+		_fit_single_line_control_text(effect_text, 150.0, 11, 8)
 		var preview := GardenUpgradePreviewScene.new() as GardenUpgradePreview
 		preview.name = "CollectionUpgradePreview/%s" % id
 		preview.configure(id,level > 0)
@@ -1517,8 +1604,15 @@ func build_collection_upgrades() -> void:
 		else:
 			state.pressed.connect(_buy_collection_upgrade.bind(id,base_cost))
 
-	var return_hint := _figma_text(canvas,"Swipe up to return to your Collection summary",Rect2(37,710,314,18),13,Color("#6e8596"),true)
+	var return_hint := _figma_text(canvas,"SWIPE DOWN • COLLECTION SUMMARY",Rect2(37,710,314,18),12,Color("#6e8596"),true)
+	return_hint.name = "CollectionUpgradeReturnHint"
 	return_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	return_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	return_hint.clip_text = true
+	return_hint.custom_minimum_size = Vector2.ZERO
+	_fit_single_line_control_text(return_hint,310.0,12,10)
+	return_hint.position = Vector2(37,710)
+	return_hint.size = Vector2(314,18)
 	_figma_bottom_nav(canvas,"collection")
 
 func _collection_summary_scroll_input(event: InputEvent, owner: Control) -> void:
@@ -1710,7 +1804,10 @@ func _build_figma_level_browser(game_id: String) -> void:
 			text_color = FIGMA_OFF_WHITE
 		elif milestone:
 			border = Color(FIGMA_GOLD,0.85)
-		var card := _figma_button(canvas,"Level/%d" % level_number,str(level_number),Rect2(x,y,82,70),fill,Callable(),text_color,16,16)
+		# The tile button owns background + hit target only. Number and status use
+		# separate authored bands so LOCK/stars never paint over the level number.
+		var card := _figma_button(canvas,"Level/%d" % level_number,"",Rect2(x,y,82,70),fill,Callable(),text_color,16,16)
+		card.tooltip_text = "Level %d" % level_number
 		card.disabled = not unlocked
 		_style_figma_level_card(card,accent,border,unlocked,is_current)
 		if unlocked:
@@ -1719,9 +1816,17 @@ func _build_figma_level_browser(game_id: String) -> void:
 				card.pressed.connect(start_level.bind(level_number))
 			else:
 				card.pressed.connect(start_multi_level.bind(game_id,level_number,false))
+		var number_color := FIGMA_OFF_WHITE if is_current else text_color
+		var number_label := _figma_text(canvas,str(level_number),Rect2(x+8,y+7,66,23),16,number_color,true)
+		number_label.name = "LevelNumber_%d" % level_number
+		number_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_fit_single_line_control_text(number_label,62.0,16,12)
 		var star_text := "LOCK" if not unlocked else ("★".repeat(stars) if stars > 0 else "···")
 		var star_color := (Color("#9e9485") if _dark() else Color("#958b7c")) if not unlocked else (FIGMA_DARK_MUTED if _dark() else FIGMA_MUTED)
-		_figma_text(canvas,star_text,Rect2(x+8,y+39,66,19),13,star_color,true)
+		var status_label := _figma_text(canvas,star_text,Rect2(x+8,y+43,66,18),11,star_color,true)
+		status_label.name = "LevelStatus_%d" % level_number
+		status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_fit_single_line_control_text(status_label,62.0,11,9)
 		index += 1
 
 func _figma_level_tabs(canvas: Control, active_game_id: String) -> void:

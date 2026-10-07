@@ -12,7 +12,9 @@ func _run() -> void:
 		return
 	if not _hot_paths_stay_lightweight():
 		return
-	print("RUNTIME_EFFICIENCY_OK: stable controls, bounded hot-path allocation, and deferred persistence.")
+	if not await _navigation_lifecycle_is_bounded():
+		return
+	print("RUNTIME_EFFICIENCY_OK: stable controls, bounded hot-path allocation, deferred persistence, and leak-resistant repeated navigation.")
 	quit(0)
 
 func _water_controls_are_reused() -> bool:
@@ -133,6 +135,70 @@ func _hot_paths_stay_lightweight() -> bool:
 	if "save()" in hint_fn or "save()" in undo_fn:
 		return _fail("Hint or undo regressed to synchronous saving")
 	return true
+
+func _navigation_lifecycle_is_bounded() -> bool:
+	root.size = Vector2i(540,960)
+	var packed := load("res://scenes/Main.tscn") as PackedScene
+	if packed == null:
+		return _fail("Main scene missing for repeated-navigation efficiency audit")
+	var main := packed.instantiate() as Control
+	root.add_child(main)
+	main.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	await _frames(8)
+
+	# Warm every common material/surface once; only growth after the warm cycle is
+	# considered a leak/regression because immutable style caches intentionally
+	# populate on first use.
+	var surfaces := ["build_home","build_settings","build_collection","build_daily_games","build_goals","build_profile"]
+	for method in surfaces:
+		main.call(method)
+		await _frames(2)
+	main.call("_open_games_surface")
+	await _frames(10)
+	var warm_nodes := int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT))
+	var warm_tree_nodes := _tree_node_count(root)
+	var warm_orphans := int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT))
+	print("NAV_LIFECYCLE_BASELINE perf=%d tree=%d orphan=%d" % [warm_nodes,warm_tree_nodes,warm_orphans])
+
+	for cycle in range(5):
+		for method in surfaces:
+			main.call(method)
+			await _frames(4)
+			print("NAV_LIFECYCLE_SAMPLE cycle=%d surface=%s perf=%d tree=%d orphan=%d" % [cycle,String(method),int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT)),_tree_node_count(root),int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT))])
+		main.call("_open_games_surface")
+		await _frames(6)
+		print("NAV_LIFECYCLE_SAMPLE cycle=%d surface=games perf=%d tree=%d orphan=%d" % [cycle,int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT)),_tree_node_count(root),int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT))])
+	await _frames(10)
+
+	var final_nodes := int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT))
+	var final_tree_nodes := _tree_node_count(root)
+	var final_orphans := int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT))
+	if final_tree_nodes > warm_tree_nodes + 12:
+		main.queue_free()
+		await _frames(3)
+		return _fail("Repeated navigation leaks scene-tree nodes: warm=%d final=%d" % [warm_tree_nodes,final_tree_nodes])
+	if final_nodes > warm_nodes + 24:
+		main.queue_free()
+		await _frames(3)
+		return _fail("Repeated navigation leaks live nodes: warm=%d final=%d" % [warm_nodes,final_nodes])
+	if final_orphans > warm_orphans + 6:
+		main.queue_free()
+		await _frames(3)
+		return _fail("Repeated navigation leaks orphan nodes: warm=%d final=%d" % [warm_orphans,final_orphans])
+
+	main.queue_free()
+	await _frames(4)
+	return true
+
+func _tree_node_count(node: Node) -> int:
+	var total := 1
+	for child in node.get_children():
+		total += _tree_node_count(child)
+	return total
+
+func _frames(count: int) -> void:
+	for _i in range(count):
+		await process_frame
 
 func _dead_helpers_are_gone() -> bool:
 	var paths := [

@@ -237,13 +237,16 @@ func _add_hero(canvas: Control) -> void:
 	var level := _home_current_level(selected_game)
 	var world := MultiGameManager.world_for_game_level(selected_game, level)
 	var game_title_size := 22 if selected_game == "block_puzzle" else 25
-	var game_title := _add_text(canvas, _short_game_name(selected_game), Rect2(37, 146, 158, 58), game_title_size, NAVY, true)
+	# The selected game name is intentionally allowed to wrap, so reserve the
+	# actual two-line font height instead of letting Label minimum-size expansion
+	# push into the metadata below on compact displays.
+	var game_title := _add_text(canvas, _short_game_name(selected_game), Rect2(37, 140, 158, 72), game_title_size, NAVY, true)
 	game_title.name = "HomeHeroGameTitle"
 	game_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	game_title.add_theme_color_override("font_color", Color("#f7fbff") if _home_dark() else accent.darkened(0.28))
-	var game_meta := _add_text(canvas, "LEVEL %d • WORLD %d" % [level, world], Rect2(37, 207, 154, 20), 13, MUTED, false)
+	var game_meta := _add_text(canvas, "LEVEL %d • WORLD %d" % [level, world], Rect2(37, 218, 154, 20), 13, MUTED, false)
 	game_meta.name = "HomeHeroGameMeta"
-	var cue := _add_text(canvas, _hero_cue(selected_game), Rect2(37, 236, 154, 32), 11, MUTED, true)
+	var cue := _add_text(canvas, _hero_cue(selected_game), Rect2(37, 243, 154, 32), 11, MUTED, true)
 	cue.name = "HomeHeroCue"
 	cue.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
@@ -343,12 +346,12 @@ func _add_quick_switch(canvas: Control) -> void:
 		# Keep quick-switch cards flat. A faint cue only on the selected game gives
 		# hierarchy without bringing back the heavier 3D card stack.
 		if selected_card:
-			RefCanvas.add_shadow(canvas, Rect2(x, 465, 108, 94), 18, Color(0.02, 0.10, 0.18, 0.08), 2, Vector2(0, 1))
+			RefCanvas.add_shadow(canvas, Rect2(x, 465, 108, 98), 18, Color(0.02, 0.10, 0.18, 0.08), 2, Vector2(0, 1))
 		var card := PanelContainer.new()
 		card.name = "HomeSwitchCard_%s" % id
 		var accent: Color = entry[2] as Color
 		card.add_theme_stylebox_override("panel", _switch_card_style(id, accent))
-		RefCanvas.set_rect(card, x, 465, 108, 94)
+		RefCanvas.set_rect(card, x, 465, 108, 98)
 		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		canvas.add_child(card)
 		var mark := GAME_ART_SCRIPT.new()
@@ -357,14 +360,15 @@ func _add_quick_switch(canvas: Control) -> void:
 		RefCanvas.set_rect(mark, x + 7, 468, 94, 48)
 		canvas.add_child(mark)
 		var switch_font := 10 if id == "block_puzzle" else 11
-		var switch_name := _add_text(canvas, String(entry[1]), Rect2(x + 2, 516, 104, 17), switch_font, entry[2], true)
+		var switch_name := _add_text(canvas, String(entry[1]), Rect2(x + 2, 516, 104, 22), switch_font, entry[2], true)
 		switch_name.name = "HomeQuickSwitchName_%s" % id
 		switch_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		switch_name.clip_text = true
 		RefCanvas.fit_single_line_text(switch_name, 100.0, switch_font, 9)
 		var level := _home_current_level(id)
 		var stars := MultiGameManager.total_stars(id)
-		var switch_meta := _add_text(canvas, "L%d • ★%s" % [level, _compact_number(stars)], Rect2(x + 6, 537, 96, 16), 11, MUTED, false)
+		var switch_meta := _add_text(canvas, "L%d • ★%s" % [level, _compact_number(stars)], Rect2(x + 6, 544, 96, 18), 11, MUTED, false)
+		switch_meta.name = "HomeQuickSwitchMeta_%s" % id
 		switch_meta.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		var tap := Button.new()
 		tap.name = "HomeDirect_%s" % id
@@ -373,7 +377,7 @@ func _add_quick_switch(canvas: Control) -> void:
 		tap.focus_mode = Control.FOCUS_NONE
 		tap.modulate.a = 0.001
 		tap.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
-		RefCanvas.set_rect(tap, x - 4, 459, 116, 106)
+		RefCanvas.set_rect(tap, x - 4, 459, 116, 110)
 		tap.pressed.connect(_select_home_game.bind(id))
 		canvas.add_child(tap)
 
@@ -474,20 +478,20 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 			plate.name = "HomeNavActivePlate"
 			plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			plate.add_theme_stylebox_override("panel", RefCanvas.flat_gloss(Color(accent.r, accent.g, accent.b, 0.12 if _home_dark() else 0.15), 12, Color(accent.r, accent.g, accent.b, 0.40), 1, 0.16))
-			RefCanvas.set_rect(plate, float(item[3]) + 8.0, 764, 56, 52)
+			RefCanvas.set_rect(plate, float(item[3]) + 8.0, 761, 56, 58)
 			canvas.add_child(plate)
-		var glyph := _add_text(canvas, item[1], Rect2(float(item[2]) - 1.0, 765, 58, 22), 20, icon_color, true)
+		var glyph := _add_text(canvas, item[1], Rect2(float(item[2]) - 1.0, 761, 58, 24), 18, icon_color, true)
 		glyph.name = "HomeNavGlyph_%s" % String(item[0])
 		glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		var display_name := String(item[0])
 		var label_width := 66.0 if String(item[0]) in ["COLLECT", "SETTINGS"] else 58.0
 		var label_x := float(item[3]) + (72.0 - label_width) * 0.5
-		var label := _add_text(canvas, display_name, Rect2(label_x, 790, label_width, 20), 13, nav_color, selected)
+		var label := _add_text(canvas, display_name, Rect2(label_x, 799, label_width, 18), 13, nav_color, selected)
 		label.name = "HomeNavLabel_%s" % String(item[0])
 		label.custom_minimum_size = Vector2.ZERO
 		RefCanvas.fit_single_line_text(label, label_width - 2.0, 13, 10)
-		label.position = Vector2(label_x, 790)
-		label.size = Vector2(label_width, 20)
+		label.position = Vector2(label_x, 799)
+		label.size = Vector2(label_width, 18)
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		label.clip_text = true

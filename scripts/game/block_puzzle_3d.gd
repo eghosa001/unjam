@@ -154,15 +154,21 @@ func _build_figma_block(canvas: Control) -> void:
 
 	_add_block_identity_emblem(canvas)
 
-	title_label = FigmaReferenceCanvas.label("", 21, Color(1,0.995,0.97), true)
+	title_label = FigmaReferenceCanvas.label("", 20, Color(1,0.995,0.97), true)
+	title_label.name = "BlockGameplayTitle"
 	FigmaReferenceCanvas.style_display_title(title_label, Color("#d5a0ff"), Color("#42106f"), 2)
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	FigmaReferenceCanvas.set_rect(title_label, 115, 15, 184, 30)
+	FigmaReferenceCanvas.set_rect(title_label, 115, 15, 184, 25)
+	FigmaReferenceCanvas.fit_single_line_text(title_label,180.0,20,15)
+	FigmaReferenceCanvas.set_rect(title_label, 115, 15, 184, 25)
 	canvas.add_child(title_label)
-	var level_meta := FigmaReferenceCanvas.label("", 14, Color(0.92,0.98,1.0), true)
+	var level_meta := FigmaReferenceCanvas.label("", 12, Color(0.92,0.98,1.0), true)
 	level_meta.name = "BlockLevelMeta"
 	level_meta.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	FigmaReferenceCanvas.set_rect(level_meta, 115, 43, 184, 20)
+	level_meta.clip_text = true
+	FigmaReferenceCanvas.set_rect(level_meta, 115, 47, 184, 16)
+	FigmaReferenceCanvas.fit_single_line_text(level_meta,180.0,12,10)
+	FigmaReferenceCanvas.set_rect(level_meta, 115, 47, 184, 16)
 	canvas.add_child(level_meta)
 	var score_card := PanelContainer.new()
 	score_card.name = "BlockScoreCard"

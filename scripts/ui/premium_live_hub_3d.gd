@@ -221,7 +221,7 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 	var play := RefCanvas.premium_button("PLAY", 14, OFF_WHITE, accent.darkened(0.18), 13, Color(accent.r, accent.g, accent.b, 0.54), 1)
 	play.name = "SelectorPlay_%s" % game_id
 	play.tooltip_text = "Play %s" % title.capitalize()
-	RefCanvas.set_rect(play, 151, rect.position.y + 100, 76, 42)
+	RefCanvas.set_rect(play, 151, rect.position.y + 99, 76, 44)
 	RefCanvas.fit_single_line_text(play, 64.0, 14, 10)
 	play.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	play.pressed.connect(_play.bind(game_id))
@@ -279,29 +279,29 @@ func _add_bottom_nav(canvas: Control) -> void:
 			var plate := PanelContainer.new()
 			plate.name = "SelectorNavActivePlate_%s" % String(item[0])
 			plate.add_theme_stylebox_override("panel", RefCanvas.flat_gloss(Color(accent.r,accent.g,accent.b,0.12 if _selector_dark() else 0.15), 14, Color(accent.r,accent.g,accent.b,0.40), 1, 0.16))
-			RefCanvas.set_rect(plate, float(item[3]) + 7.0, 763, 58, 55)
+			RefCanvas.set_rect(plate, float(item[3]) + 7.0, 761, 58, 58)
 			plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			canvas.add_child(plate)
 			var shine := PanelContainer.new()
 			shine.name = "SelectorNavActiveShine_%s" % String(item[0])
 			shine.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(accent.r,accent.g,accent.b,0.82),1))
-			RefCanvas.set_rect(shine, float(item[3]) + 24.0, 765, 24, 2)
+			RefCanvas.set_rect(shine, float(item[3]) + 24.0, 763, 24, 2)
 			shine.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			canvas.add_child(shine)
-		var glyph := _add_text(canvas, String(item[1]), Rect2(float(item[2]) - 1.0, 763, 58, 24), 20, glyph_color, true)
+		var glyph := _add_text(canvas, String(item[1]), Rect2(float(item[2]) - 1.0, 761, 58, 24), 18, glyph_color, true)
 		glyph.name = "SelectorNavGlyph_%s" % String(item[0])
 		glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		var display_name := String(item[0])
 		var label_width := 70.0 if String(item[0]) in ["COLLECT", "SETTINGS"] else 58.0
 		var label_x := float(item[3]) + (72.0 - label_width) * 0.5
-		var label := _add_text(canvas, display_name, Rect2(label_x, 789, label_width, 24), 13, label_color, selected)
+		var label := _add_text(canvas, display_name, Rect2(label_x, 799, label_width, 18), 13, label_color, selected)
 		label.name = "SelectorNavLabel_%s" % String(item[0])
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		label.clip_text = true
 		label.custom_minimum_size = Vector2.ZERO
-		label.position = Vector2(label_x, 789)
-		label.size = Vector2(label_width, 24)
+		label.position = Vector2(label_x, 799)
+		label.size = Vector2(label_width, 18)
 		RefCanvas.fit_single_line_text(label, label_width - 2.0, 13, 11)
 		var hit := Button.new()
 		hit.name = "SelectorNavHit_%s" % String(item[0])

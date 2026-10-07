@@ -479,6 +479,8 @@ static func fit_single_line_text(control: Control, max_width: float, start_size:
 	var font := control.get_theme_font("font")
 	if font == null:
 		return
+	var authored_position := control.position
+	var authored_size := control.size
 	var value := ""
 	if control is Label:
 		value = (control as Label).text
@@ -490,12 +492,28 @@ static func fit_single_line_text(control: Control, max_width: float, start_size:
 	while size > min_size and font.get_string_size(value, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x > max_width:
 		size -= 1
 	control.add_theme_font_size_override("font_size", size)
+	control.custom_minimum_size = Vector2.ZERO
+	control.position = authored_position
+	control.size = authored_size
+	if control is Label:
+		var fitted_label := control as Label
+		fitted_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+		fitted_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		fitted_label.clip_text = true
+		fitted_label.custom_minimum_size = Vector2.ZERO
+		fitted_label.position = authored_position
+		fitted_label.size = authored_size
 
 
 static func premium_button(text_value: String, font_size: int, text_color: Color, fill: Color, radius: float, border: Color = Color.TRANSPARENT, border_width: float = 0.0) -> Button:
 	var result := Button.new()
 	result.set_meta("unjam_figma_exact_geometry", true)
 	result.text = localized_text(text_value)
+	# Exact Figma buttons must never widen because of their text minimum.
+	# Long labels are fitted by the caller and clipped as a final safety net.
+	result.clip_text = true
+	result.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	result.custom_minimum_size = Vector2.ZERO
 	result.focus_mode = Control.FOCUS_NONE
 	result.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	result.add_theme_font_override("font", Unjam3DTheme.strong_font())
