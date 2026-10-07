@@ -73,6 +73,10 @@ func can_claim_weekly_reward() -> bool:
 	return bool(reward.get("eligible", false)) and not bool(reward.get("claimed", false))
 
 func refresh_snapshot() -> void:
+	# Deterministic screenshot/visual-audit runs should never leave live HTTP
+	# requests behind at process shutdown.
+	if OS.get_environment("UNJAM_FAST_VISUAL_AUDIT") == "1":
+		return
 	if _snapshot_in_flight:
 		return
 	var cloud_id := String(SaveManager.data.get("cloud_save_id", ""))
