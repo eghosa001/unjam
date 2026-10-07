@@ -346,12 +346,12 @@ func _add_quick_switch(canvas: Control) -> void:
 		# Keep quick-switch cards flat. A faint cue only on the selected game gives
 		# hierarchy without bringing back the heavier 3D card stack.
 		if selected_card:
-			RefCanvas.add_shadow(canvas, Rect2(x, 465, 108, 94), 18, Color(0.02, 0.10, 0.18, 0.08), 2, Vector2(0, 1))
+			RefCanvas.add_shadow(canvas, Rect2(x, 465, 108, 98), 18, Color(0.02, 0.10, 0.18, 0.08), 2, Vector2(0, 1))
 		var card := PanelContainer.new()
 		card.name = "HomeSwitchCard_%s" % id
 		var accent: Color = entry[2] as Color
 		card.add_theme_stylebox_override("panel", _switch_card_style(id, accent))
-		RefCanvas.set_rect(card, x, 465, 108, 94)
+		RefCanvas.set_rect(card, x, 465, 108, 98)
 		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		canvas.add_child(card)
 		var mark := GAME_ART_SCRIPT.new()
@@ -367,7 +367,7 @@ func _add_quick_switch(canvas: Control) -> void:
 		RefCanvas.fit_single_line_text(switch_name, 100.0, switch_font, 9)
 		var level := _home_current_level(id)
 		var stars := MultiGameManager.total_stars(id)
-		var switch_meta := _add_text(canvas, "L%d • ★%s" % [level, _compact_number(stars)], Rect2(x + 6, 540, 96, 18), 11, MUTED, false)
+		var switch_meta := _add_text(canvas, "L%d • ★%s" % [level, _compact_number(stars)], Rect2(x + 6, 544, 96, 18), 11, MUTED, false)
 		switch_meta.name = "HomeQuickSwitchMeta_%s" % id
 		switch_meta.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		var tap := Button.new()
@@ -377,7 +377,7 @@ func _add_quick_switch(canvas: Control) -> void:
 		tap.focus_mode = Control.FOCUS_NONE
 		tap.modulate.a = 0.001
 		tap.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
-		RefCanvas.set_rect(tap, x - 4, 459, 116, 106)
+		RefCanvas.set_rect(tap, x - 4, 459, 116, 110)
 		tap.pressed.connect(_select_home_game.bind(id))
 		canvas.add_child(tap)
 
