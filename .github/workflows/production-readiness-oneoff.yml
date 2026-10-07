@@ -1,0 +1,152 @@
+name: Production Readiness One-Off
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-readiness-oneoff-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Godot 4.7.2
+        uses: solarlabyrinth/action-setup-godot@v3
+        with:
+          version: 4.7.2-stable
+          export-templates: false
+
+      - name: Install monetization plugins
+        shell: bash
+        run: |
+          set -euxo pipefail
+          chmod +x tools/install_monetization_plugins.sh
+          tools/install_monetization_plugins.sh
+
+      - name: Validate release and purchase contracts
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 tools/validate_release_contract.py
+          python3 tools/validate_purchase_claim_protocol.py
+
+      - name: Configure production-like runtime
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("project.godot")
+          text = p.read_text()
+          text = text.replace("admob_test_mode=true", "admob_test_mode=false")
+          p.write_text(text)
+          PY
+
+      - name: Import and boot
+        shell: bash
+        run: |
+          set -o pipefail
+          godot --headless --path . --editor --quit 2>&1 | tee production-import.log
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" production-import.log; then exit 1; fi
+          godot --headless --path . --quit-after 5 2>&1 | tee production-boot.log
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" production-boot.log; then exit 1; fi
+
+      - name: Run production UX performance and robustness gates
+        shell: bash
+        run: |
+          set -euxo pipefail
+          tests=(
+            validate_motion_quality
+            validate_decorative_3d_frame_budget
+            validate_runtime_efficiency
+            validate_monetization
+            validate_admob_production
+            validate_billing_production
+            validate_shop_navigation_runtime
+            validate_restore_purchase_flow
+            validate_premium_ux
+            validate_visual_quality_contract
+            validate_production_completion
+            validate_uiux_regressions
+            validate_navigation_surface_coverage
+            validate_theme_integrity
+            validate_viewport_fit
+            validate_robustness
+            validate_production_hardening_regressions
+            validate_soothing_audio_palette
+            validate_launcher_icon_safe_zone
+            validate_touch_enhancer_scope
+            validate_bottom_nav_touch_zones
+          )
+          for t in "${tests[@]}"; do
+            echo "===== START $t ====="
+            timeout 180s godot --headless --path . --script "res://tests/$t.gd"
+            echo "===== PASS $t ====="
+          done
+
+      - name: Run production gameplay and progression gates
+        shell: bash
+        run: |
+          set -euxo pipefail
+          tests=(
+            validate_campaign
+            validate_campaign_diversity
+            validate_level_launch
+            validate_gameplay_interactions
+            validate_progression_transitions
+            validate_rescue_premium_visual_hierarchy
+            validate_rescue_completion_single_path
+            validate_water_sort_type_safety
+            validate_water_tube_3d_layering
+            validate_water_premium_visual_hierarchy
+            validate_water_idle_status_after_pour
+            validate_water_tubes_sleep_idle
+            validate_water_assist_runtime
+            validate_water_progression
+            validate_water_pour_arc
+            validate_water_constructive_solvability
+            validate_block_progression_10000
+            validate_block_constructive_solvability
+            validate_block_objective_runtime
+            validate_block_level_pack_codec
+            validate_block_exact_solver
+            validate_block_visual_integrity
+            validate_block_modes_boosters
+            validate_block_bot_calibration
+          )
+          for t in "${tests[@]}"; do
+            echo "===== START $t ====="
+            timeout 240s godot --headless --path . --script "res://tests/$t.gd"
+            echo "===== PASS $t ====="
+          done
+
+      - name: Run full curated/authored campaign integrity gates
+        shell: bash
+        run: |
+          set -euxo pipefail
+          for t in validate_water_curated_catalog_10000 validate_rescue_authored_catalog_10000; do
+            echo "===== START $t ====="
+            timeout 300s godot --headless --path . --script "res://tests/$t.gd"
+            echo "===== PASS $t ====="
+          done
+
+      - name: Upload audit logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-readiness-oneoff-logs
+          path: |
+            production-import.log
+            production-boot.log
+          if-no-files-found: warn
+          retention-days: 3
