@@ -185,13 +185,14 @@ func _draw() -> void:
 	# Empty cells intentionally recede. The board should read as a play field,
 	# not sixty-four individually outlined buttons.
 	if not occupied and not preview:
-		var idle_fill := Color(0.43, 0.27, 0.66, 0.145 + hover_amount * 0.070)
-		var idle_edge := Color(0.86, 0.72, 1.0, 0.125 + hover_amount * 0.13)
-		_draw_box(inset, idle_fill, 6, idle_edge, 1)
-		# A restrained inset keeps the empty board tactile without restoring
-		# sixty-four loud borders. It reads as a shallow premium well at phone size.
-		var idle_inner := inset.grow(-3.0)
-		_draw_box(idle_inner, Color(0.18, 0.09, 0.31, 0.145 + hover_amount * 0.040), 4, Color(1, 1, 1, 0.055 + hover_amount * 0.045), 1)
+		# Empty cells are shallow wells, not outlined buttons. A single soft edge
+		# keeps the 8x8 grid readable while letting placed blocks remain the hero.
+		var idle_fill := Color(0.30, 0.15, 0.50, 0.24 + hover_amount * 0.06)
+		var idle_edge := Color(0.84, 0.69, 1.0, 0.13 + hover_amount * 0.11)
+		_draw_box(inset, idle_fill, 7, idle_edge, 1)
+		var well := inset.grow(-3.0)
+		_draw_box(well, Color(0.10, 0.05, 0.19, 0.16), 5, Color.TRANSPARENT, 0)
+		draw_circle(well.position + Vector2(well.size.x * 0.30, well.size.y * 0.27), maxf(1.0, well.size.x * 0.035), Color(1, 1, 1, 0.10))
 
 	if occupied or preview:
 		var fill := Color(accent, 0.54) if preview else accent
