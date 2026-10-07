@@ -229,12 +229,15 @@ func _spawn_chain_popup(center: Vector2, combo: int) -> void:
 	label.text = "ESCAPE!" if combo <= 1 else "CHAIN ×%d" % combo
 	# Keep motion feedback above the moving piece/mascot so the character silhouette
 	# remains readable at the exact moment the player gets the reward cue.
-	label.position = center - Vector2(145, 104)
-	label.size = Vector2(290, 76)
+	# Keep reward copy visibly above the moving mascot/arrow. The previous
+	# 290x76 banner started only 104px above the piece centre and could cover the
+	# authored character on compact phones during the escape frame.
+	label.position = center - Vector2(120, 150)
+	label.size = Vector2(240, 58)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.z_index = 610
-	label.add_theme_font_size_override("font_size", 34 if combo <= 1 else 40)
+	label.add_theme_font_size_override("font_size", 28 if combo <= 1 else 34)
 	label.add_theme_color_override("font_color", Color("ffd166") if combo > 1 else world_accent().lightened(0.35))
 	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.65))
 	label.add_theme_constant_override("shadow_offset_x", 2)
