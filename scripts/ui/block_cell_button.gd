@@ -185,13 +185,13 @@ func _draw() -> void:
 	# Empty cells intentionally recede. The board should read as a play field,
 	# not sixty-four individually outlined buttons.
 	if not occupied and not preview:
-		var idle_fill := Color(0.39, 0.24, 0.60, 0.105 + hover_amount * 0.065)
-		var idle_edge := Color(0.82, 0.66, 1.0, 0.075 + hover_amount * 0.12)
+		var idle_fill := Color(0.43, 0.27, 0.66, 0.145 + hover_amount * 0.070)
+		var idle_edge := Color(0.86, 0.72, 1.0, 0.125 + hover_amount * 0.13)
 		_draw_box(inset, idle_fill, 6, idle_edge, 1)
 		# A restrained inset keeps the empty board tactile without restoring
 		# sixty-four loud borders. It reads as a shallow premium well at phone size.
 		var idle_inner := inset.grow(-3.0)
-		_draw_box(idle_inner, Color(0.16, 0.08, 0.28, 0.10 + hover_amount * 0.035), 4, Color(1, 1, 1, 0.025 + hover_amount * 0.04), 1)
+		_draw_box(idle_inner, Color(0.18, 0.09, 0.31, 0.145 + hover_amount * 0.040), 4, Color(1, 1, 1, 0.055 + hover_amount * 0.045), 1)
 
 	if occupied or preview:
 		var fill := Color(accent, 0.54) if preview else accent
