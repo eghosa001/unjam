@@ -527,7 +527,7 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 			_figma_solid_card(
 				canvas,
 				"StdNavActivePlate_%s" % String(key),
-				Rect2(float(hit_x[key])+7.0,763,58,55),
+				Rect2(float(hit_x[key])+7.0,761,58,58),
 				plate_fill,
 				plate_border,
 				14,
@@ -537,26 +537,26 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 			_figma_solid_card(
 				canvas,
 				"StdNavActiveShine_%s" % String(key),
-				Rect2(float(hit_x[key])+24.0,765,24,2),
+				Rect2(float(hit_x[key])+24.0,763,24,2),
 				Color(accent.r,accent.g,accent.b,0.82),
 				Color.TRANSPARENT,
 				1,
 				false
 			)
-		var glyph := _figma_text(canvas, String(glyphs[key]), Rect2(float(xs[key])-1.0,763,58,24), 20, icon_color, true)
+		var glyph := _figma_text(canvas, String(glyphs[key]), Rect2(float(xs[key])-1.0,761,58,24), 18, icon_color, true)
 		glyph.name = "StdNavGlyph_%s" % String(key)
 		glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		var label_width := 66.0 if String(key) in ["collection", "settings"] else 58.0
 		var label_x := float(hit_x[key]) + (72.0 - label_width) * 0.5
-		var nav_label := _figma_text(canvas, String(names[key]), Rect2(label_x,789,label_width,24), 13, selected_text if selected else idle_text, selected)
+		var nav_label := _figma_text(canvas, String(names[key]), Rect2(label_x,799,label_width,18), 12, selected_text if selected else idle_text, selected)
 		nav_label.name = "StdNavLabel_%s" % String(key)
 		nav_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		nav_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		nav_label.clip_text = true
 		nav_label.custom_minimum_size = Vector2.ZERO
-		nav_label.position = Vector2(label_x, 789)
-		nav_label.size = Vector2(label_width, 24)
-		_fit_single_line_control_text(nav_label, label_width - 2.0, 13, 11)
+		nav_label.position = Vector2(label_x, 799)
+		nav_label.size = Vector2(label_width, 18)
+		_fit_single_line_control_text(nav_label, label_width - 2.0, 12, 10)
 		var hit := Button.new()
 		hit.name = "StdNavHit_%s" % String(key).to_upper()
 		hit.flat = true
