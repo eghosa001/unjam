@@ -27,7 +27,7 @@ func complete_daily(id: String, reward := 100) -> bool:
 func complete_level(id: String, n: int, stars: int, coin_reward := 25, context: Dictionary = {}) -> Dictionary:
 	var safe_reward := maxi(0, int(coin_reward))
 	var economy := _economy()
-	if economy != null and economy.has_method("collection_campaign_reward"):
+	if id != "rescue_rush" and economy != null and economy.has_method("collection_campaign_reward"):
 		safe_reward = int(economy.call("collection_campaign_reward", safe_reward))
 	var rewards := super.complete_level(id, n, stars, safe_reward, context)
 	# Rescue Rush delegates to SaveManager.complete_level() and is already synced.
