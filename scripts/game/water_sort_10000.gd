@@ -599,10 +599,14 @@ func complete_level() -> void:
 	animating = true
 	MultiGameManager.clear_checkpoint(GAME_ID)
 	var stars := 3 if moves <= par_moves else (2 if moves <= two_star_moves else 1)
+	var completion_rewards: Dictionary = {}
+	var base_reward := 100 + stars * 25 if daily_mode else 0
 	if daily_mode:
-		MultiGameManager.complete_daily(GAME_ID, 100 + stars * 25)
+		MultiGameManager.complete_daily(GAME_ID, base_reward)
+		CompetitionManager.submit_daily_result(GAME_ID, {"stars": stars, "moves": moves, "par": par_moves})
 	else:
-		MultiGameManager.complete_level(GAME_ID, level_number, stars, 25 + color_count * 2)
+		completion_rewards = MultiGameManager.complete_level(GAME_ID, level_number, stars, 25 + color_count * 2)
+		base_reward = int(completion_rewards.get("base_coins", 0))
 	stuck = false
 	status_label.text = "WIN • ALL COLOURS SORTED"
 	PremiumVisuals.burst(Vector2(540, 880), Color("5da9ff"), 28)
@@ -621,14 +625,29 @@ func complete_level() -> void:
 	result.configure(
 		"WATER SORT COMPLETE",
 		"Win condition met: every non-empty tube is full and contains one colour.",
-		"%d MOVES   •   3★ ≤ %d   •   2★ ≤ %d\n%d COLOURS SORTED" % [
-			moves, par_moves, two_star_moves, color_count
+		"%d MOVES   •   3★ ≤ %d   •   2★ ≤ %d\n%d COLOURS SORTED   •   +%d COINS" % [
+			moves, par_moves, two_star_moves, color_count,
+			base_reward + (EconomyManager.collection_daily_bonus() if daily_mode else int(completion_rewards.get("bonus_coins", 0)))
 		],
 		stars,
 		Color("5da9ff"),
 		"BACK HOME" if daily_mode else "NEXT PUZZLE"
 	)
+	var claim_id := "daily:water_sort:%s" % DailyChallenge.date_key() if daily_mode else "campaign:water_sort:%d" % level_number
+	if base_reward > 0 and not EconomyManager.reward_double_claimed(claim_id):
+		result.configure_secondary("DOUBLE BASE REWARD", true)
 	add_child(result)
+	result.secondary_requested.connect(func() -> void:
+		result.set_secondary_state("WATCHING AD…", false)
+		var on_failed := func(reason: String) -> void:
+			if is_instance_valid(result):
+				result.set_secondary_state("DOUBLE BASE REWARD", true, reason)
+		var on_reward := func() -> void:
+			var granted := EconomyManager.claim_reward_double(claim_id, base_reward)
+			if is_instance_valid(result):
+				result.set_secondary_state("BASE REWARD DOUBLED" if granted else "ALREADY CLAIMED", false)
+		AdManager.show_rewarded("double_reward_water", on_reward, on_failed)
+	)
 	result.continue_requested.connect(func() -> void:
 		finished.emit(-1 if daily_mode else level_number)
 		queue_free()
