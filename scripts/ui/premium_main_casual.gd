@@ -656,7 +656,9 @@ func build_goals() -> void:
 	_figma_text(canvas, "%d PTS • %d/%d TIERS" % [int(season.get("points",0)),int(season.get("completed",0)),int(season.get("tiers",0))], Rect2(31,587,210,20), 13, FIGMA_MUTED)
 	var next_target := int(season.get("next_target",0))
 	var journey_detail := "ALL TIERS COMPLETE" if next_target <= 0 else "NEXT REWARD AT %d PTS" % next_target
-	_figma_text(canvas, journey_detail, Rect2(31,613,220,20), 12, FIGMA_MUTED)
+	var journey_label := _figma_text(canvas, journey_detail, Rect2(31,613,202,18), 11, FIGMA_MUTED)
+	journey_label.name = "GoalsSeasonNextReward"
+	_fit_single_line_control_text(journey_label,198.0,11,9)
 	var season_ready := int(season.get("ready",0))
 	var season_button := _figma_button(canvas,"GoalsSeasonClaim","CLAIM %d" % season_ready if season_ready > 0 else "IN PROGRESS",Rect2(246,575,106,46),FIGMA_GREEN if season_ready > 0 else Color("#7d8a94"),Callable(),Color.WHITE,13,11)
 	season_button.disabled = season_ready <= 0
@@ -671,12 +673,16 @@ func _figma_goal_row(canvas: Control, row: Dictionary, period: String, y: float)
 	var fill := Color("#f5f2ec") if not _dark() else Color("#27282b")
 	var border := Color(FIGMA_GREEN,0.34) if claimable else Color(FIGMA_GOLD,0.20)
 	_figma_card(canvas,"Goal/%s/%s" % [period,String(row.get("id",""))],Rect2(17,y,354,44),fill,border,13)
-	_figma_text(canvas,String(row.get("title","GOAL")),Rect2(30,y+7,168,17),12,FIGMA_INK)
+	var goal_title := _figma_text(canvas,String(row.get("title","GOAL")),Rect2(30,y+5,168,15),11,FIGMA_INK)
+	goal_title.name = "GoalTitle/%s/%s" % [period,String(row.get("id",""))]
+	_fit_single_line_control_text(goal_title,164.0,11,9)
 	var crowns := int(row.get("crowns",0))
 	var reward_text := "+%d" % int(row.get("coins",0))
 	if crowns > 0:
 		reward_text += " • ♛%d" % crowns
-	_figma_text(canvas,"%d/%d • %s" % [int(row.get("progress",0)),int(row.get("target",1)),reward_text],Rect2(30,y+24,190,15),10,FIGMA_MUTED)
+	var goal_progress := _figma_text(canvas,"%d/%d • %s" % [int(row.get("progress",0)),int(row.get("target",1)),reward_text],Rect2(30,y+25,190,13),9,FIGMA_MUTED)
+	goal_progress.name = "GoalProgress/%s/%s" % [period,String(row.get("id",""))]
+	_fit_single_line_control_text(goal_progress,186.0,9,8)
 	var action_text := "DONE" if claimed else ("CLAIM" if claimable else "GO")
 	var action_fill := Color("#7d8a94") if claimed else (FIGMA_GREEN if claimable else Color("#7a57e0"))
 	var action := _figma_button(canvas,"GoalAction/%s/%s" % [period,String(row.get("id",""))],action_text,Rect2(274,y,78,44),action_fill,Callable(),Color.WHITE,11,10)
@@ -731,12 +737,14 @@ func build_profile() -> void:
 		[str(int(SaveManager.data.get("crown_tokens",0))),"CROWNS",288.0]
 	]
 	for stat in stats:
-		_figma_text(canvas,String(stat[0]),Rect2(float(stat[2]),194,64,23),17,FIGMA_INK)
-		_figma_text(canvas,String(stat[1]),Rect2(float(stat[2])-4,222,72,18),11,FIGMA_MUTED)
+		var stat_value := _figma_text(canvas,String(stat[0]),Rect2(float(stat[2]),193,64,21),16,FIGMA_INK)
+		_fit_single_line_control_text(stat_value,60.0,16,12)
+		var stat_label := _figma_text(canvas,String(stat[1]),Rect2(float(stat[2])-4,218,72,14),10,FIGMA_MUTED)
+		_fit_single_line_control_text(stat_label,68.0,10,8)
 	var profile_rank := CompetitionManager.game_all_time_rank(_profile_game)
 	var rank_text := "UNRANKED" if profile_rank <= 0 else "RANK #%d" % profile_rank
 	_figma_text(canvas,"%s • %d/%d ACHIEVEMENTS" % [rank_text,MetaProgressionManager.total_achievements(),MetaProgressionManager.total_achievement_slots()],Rect2(31,244,220,18),11,FIGMA_GOLD)
-	var friends_button := _figma_button(canvas,"ProfileFriendsButton","FRIENDS",Rect2(272,224,79,44),Color("#7a57e0"),Callable(self,"build_friends"),Color.WHITE,10,9)
+	var friends_button := _figma_button(canvas,"ProfileFriendsButton","FRIENDS",Rect2(272,240,79,24),Color("#7a57e0"),Callable(self,"build_friends"),Color.WHITE,10,9)
 	friends_button.tooltip_text = "Friend codes and campaign progress rankings"
 
 	_figma_text(canvas,"ACHIEVEMENTS",Rect2(19,282,170,20),15,FIGMA_GOLD)
@@ -765,8 +773,12 @@ func _figma_achievement_row(canvas: Control, achievement: Dictionary, y: float) 
 	var done := progress >= need
 	var accent := FIGMA_GREEN if done else Unjam3DTheme.game_accent(_profile_game)
 	_figma_card(canvas,"ProfileAchievement/%s/%s" % [_profile_game,id],Rect2(17,y,354,52),Color("#27282b") if _dark() else Color("#fffef8"),Color(accent,0.28),14)
-	_figma_text(canvas,String(achievement.get("title","Achievement")),Rect2(31,y+8,210,18),13,FIGMA_INK)
-	_figma_text(canvas,"%d / %d" % [mini(progress,need),need],Rect2(31,y+29,150,16),11,FIGMA_MUTED)
+	var achievement_title := _figma_text(canvas,String(achievement.get("title","Achievement")),Rect2(31,y+6,210,15),12,FIGMA_INK)
+	achievement_title.name = "ProfileAchievementTitle/%s" % id
+	_fit_single_line_control_text(achievement_title,206.0,12,9)
+	var achievement_progress := _figma_text(canvas,"%d / %d" % [mini(progress,need),need],Rect2(31,y+29,150,13),10,FIGMA_MUTED)
+	achievement_progress.name = "ProfileAchievementProgress/%s" % id
+	_fit_single_line_control_text(achievement_progress,146.0,10,8)
 	var status := _figma_text(canvas,"✓" if done else "•",Rect2(315,y+13,28,28),18,accent,true)
 	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
@@ -855,10 +867,14 @@ func build_friends(refresh_remote: bool = true) -> void:
 
 	var status_text := _friends_status
 	if status_text.is_empty():
-		status_text = "Only your UNJAM name and level rank are visible."
-	var privacy_note := _figma_text(canvas,status_text,Rect2(31,663,328,42),12,FIGMA_MUTED,true)
+		status_text = "Only your name and level rank are public."
+	var privacy_note := _figma_text(canvas,status_text,Rect2(31,663,328,36),11,FIGMA_MUTED,true)
+	privacy_note.name = "FriendsPrivacyNote"
 	privacy_note.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_fit_wrapped_text(privacy_note,316.0,12,11)
+	_fit_wrapped_text(privacy_note,316.0,11,9)
+	privacy_note.custom_minimum_size = Vector2.ZERO
+	privacy_note.position = Vector2(31,663)
+	privacy_note.size = Vector2(328,36)
 	_figma_bottom_nav(canvas,"home")
 
 func _figma_friend_period_tabs(canvas: Control) -> void:
@@ -1198,8 +1214,10 @@ func build_compete_leaderboard(refresh_remote: bool = true) -> void:
 	_figma_compete_game_tabs(canvas, 91.0, false)
 
 	_figma_card(canvas,"CompetitionPlayerProgress",Rect2(17,145,354,60),Color("#282a2e") if _dark() else Color("#fffaf2"),Color(accent,0.38),16)
-	_figma_text(canvas,MultiGameManager.display_name(_ranking_game).to_upper(),Rect2(31,155,160,18),13,accent)
-	_figma_text(canvas,"%d LEVELS • ★%d" % [CompetitionManager.game_all_time_levels(_ranking_game),CompetitionManager.game_all_time_stars(_ranking_game)],Rect2(31,177,190,18),12,FIGMA_INK)
+	var ranking_game_title := _figma_text(canvas,MultiGameManager.display_name(_ranking_game).to_upper(),Rect2(31,154,160,15),12,accent)
+	_fit_single_line_control_text(ranking_game_title,156.0,12,10)
+	var ranking_progress := _figma_text(canvas,"%d LEVELS • ★%d" % [CompetitionManager.game_all_time_levels(_ranking_game),CompetitionManager.game_all_time_stars(_ranking_game)],Rect2(31,178,190,14),10,FIGMA_INK)
+	_fit_single_line_control_text(ranking_progress,186.0,10,9)
 	var week := _figma_text(canvas,"WEEK +%d" % CompetitionManager.game_weekly_levels(_ranking_game),Rect2(242,164,105,22),12,FIGMA_MUTED,true)
 	week.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 
