@@ -450,20 +450,20 @@ func _figma_header(canvas: Control, title_text: String, subtitle_text: String, p
 	var back_button := _figma_button(canvas, "FigmaBack", "←", Rect2(17,19,52,52), back_fill, back_callback, back_color, 18, 27)
 	back_button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	back_button.tooltip_text = "Back"
-	var header_title := _figma_text(canvas, title_text, Rect2(83,21,186,28), 23, heading_color)
+	var header_title := _figma_text(canvas, title_text, Rect2(83,21,186,27), 23, heading_color)
 	header_title.name = "FigmaHeaderTitle"
 	header_title.clip_text = true
-	_fit_single_line_control_text(header_title, 182.0, 23, 14)
+	# Apply the display font before fitting so its actual metrics cannot expand
+	# back into the subtitle band after compact-screen layout.
 	FigmaReferenceCanvas.style_display_title(header_title, pill_fill.lightened(0.20), Color("#071d55"), 1)
+	_fit_single_line_control_text(header_title, 182.0, 23, 14)
 	if not subtitle_text.strip_edges().is_empty():
-		var subtitle := _figma_text(canvas, subtitle_text, Rect2(83,55,186,22), 14, muted_color)
+		var subtitle := _figma_text(canvas, subtitle_text, Rect2(83,55,186,18), 13, muted_color)
 		subtitle.name = "FigmaHeaderSubtitle"
 		subtitle.autowrap_mode = TextServer.AUTOWRAP_OFF
 		subtitle.clip_text = true
 		subtitle.custom_minimum_size = Vector2.ZERO
-		_fit_single_line_control_text(subtitle, 182.0, 14, 10)
-		FigmaReferenceCanvas.set_rect(subtitle, 83, 55, 186, 22)
-		_fit_wrapped_text(subtitle, 182.0, 14, 11)
+		_fit_single_line_control_text(subtitle, 182.0, 13, 10)
 	if pill_text.strip_edges().is_empty():
 		return
 	if pill_callback.is_valid():
