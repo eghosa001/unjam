@@ -6,7 +6,7 @@ func _initialize() -> void:
 	_check("res://scripts/ui/unjam_2d_game_art.gd", ["class_name Unjam2DGameArt", "_draw_rescue", "_draw_water", "_draw_block"], failures)
 	_check("res://scripts/ui/unjam_meta_art.gd", ["class_name UnjamMetaArt", "_draw_compete", "_draw_collection"], failures)
 	_check("res://scripts/ui/premium_main_casual.gd", ["FigmaSurface390x844", "META_ART_SCRIPT", "_figma_surface_accent"], failures)
-	_check("res://scripts/game/rescue_rush_casual.gd", ["FigmaRescue390x844", "RescueBoardPanel", "RescueHintAction"], failures)
+	_check("res://scripts/game/rescue_rush_casual.gd", ["FigmaRescue390x844", "RescueBoardPanel", "RescueBoardWorldArt", "RescueHintAction"], failures)
 	_check("res://scripts/ui/rescue_token.gd", ["class_name RescueToken", "extends Control", "func celebrate"], failures)
 	_check("res://scripts/game/water_sort_casual.gd", ["FigmaWater390x844", "GameplayStage", "WaterHintAction"], failures)
 	_check("res://scripts/ui/water_tube_3d_motion.gd", ["extends \"res://scripts/ui/water_tube_reference_motion.gd\"", "func set_pour_progress"], failures)
