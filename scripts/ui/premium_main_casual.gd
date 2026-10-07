@@ -2,6 +2,7 @@ extends "res://scripts/ui/premium_main.gd"
 
 const FIGMA_LEVEL_PAGE_SIZE := 20
 const GardenUpgradePreviewScene = preload("res://scripts/ui/garden_upgrade_preview.gd")
+const META_ART_SCRIPT = preload("res://scripts/ui/unjam_meta_art.gd")
 const FIGMA_BG_TOP := Color("#e9e5dd")
 const FIGMA_BG_BOTTOM := Color("#8f887f")
 const FIGMA_NAVY := Color("#252a30")
@@ -147,17 +148,56 @@ func _figma_surface(active: String, bottom_tint: Color = FIGMA_BG_BOTTOM, top_ti
 	canvas.name = "FigmaSurface390x844"
 	content.add_child(canvas)
 
-	# Minimal surfaces use one quiet neutral plane. Game accents are reserved for
-	# actions, progress and selection rather than decorative scenery.
+	# Secondary systems now live in restrained game-world colour fields instead of
+	# a beige application shell. Information cards remain simple and readable.
 	var bg := PanelContainer.new()
 	bg.name = "FigmaSurfaceBackground"
-	var fill := Color("#1f2023") if _dark() else Color("#eee8df")
-	var edge := Color("#3d4045") if _dark() else Color("#c8c3ba")
-	bg.add_theme_stylebox_override("panel", FigmaReferenceCanvas.flat_gloss(fill, 34, edge, 1, 0.11))
+	var accent := _figma_surface_accent(active)
+	var light_top := top_tint.lerp(accent.lightened(0.62), 0.18)
+	var light_mid := Color("#eef1ee").lerp(accent.lightened(0.68), 0.24)
+	var light_bottom := bottom_tint.lerp(accent.lightened(0.56), 0.20)
+	var dark_top := Color("#1c2027").lerp(accent.darkened(0.64), 0.26)
+	var dark_mid := Color("#171b22").lerp(accent.darkened(0.70), 0.22)
+	var dark_bottom := Color("#11151c").lerp(accent.darkened(0.76), 0.20)
+	bg.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(
+		dark_top if _dark() else light_top,
+		dark_mid if _dark() else light_mid,
+		dark_bottom if _dark() else light_bottom,
+		34,
+		Color(accent, 0.14),
+		1,
+		0.15
+	))
 	FigmaReferenceCanvas.set_rect(bg, 0, 0, 390, 844)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(bg)
+
+	if active in ["compete", "friends", "goals", "profile", "collection", "daily"]:
+		var art := META_ART_SCRIPT.new()
+		art.name = "MetaArt/%s" % active.capitalize()
+		art.configure(active, _dark())
+		FigmaReferenceCanvas.set_rect(art, 0, 0, 390, 844)
+		canvas.add_child(art)
 	return canvas
+
+func _figma_surface_accent(active: String) -> Color:
+	match active:
+		"compete":
+			return FIGMA_GOLD
+		"friends":
+			return Color("#7a57e0")
+		"goals":
+			return FIGMA_ORANGE
+		"profile":
+			return Color("#8066e8")
+		"collection":
+			return FIGMA_GREEN
+		"daily":
+			return Color("#f0a33b")
+		"games":
+			return _accent()
+		_:
+			return Color("#6b8498")
 
 func _figma_text(canvas: Control, text_value: String, rect: Rect2, font_size: int, color: Color = FIGMA_INK, center := false) -> Label:
 	var label := FigmaReferenceCanvas.label(text_value, font_size, _figma_theme_text(color), true)
