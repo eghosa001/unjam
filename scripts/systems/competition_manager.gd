@@ -55,6 +55,15 @@ func weekly_score() -> int:
 	var player = snapshot.get("player_weekly", {})
 	return int(player.get("score", 0)) if player is Dictionary else 0
 
+func weekly_division() -> String:
+	var points := weekly_score()
+	if points >= 14000: return "CHAMPION"
+	if points >= 9000: return "DIAMOND"
+	if points >= 6000: return "PLATINUM"
+	if points >= 3000: return "GOLD"
+	if points >= 1500: return "SILVER"
+	return "BRONZE"
+
 func previous_week_reward() -> Dictionary:
 	var value = snapshot.get("previous_week_reward", {})
 	return value if value is Dictionary else {}
