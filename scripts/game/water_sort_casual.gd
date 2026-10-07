@@ -36,8 +36,11 @@ func build_ui() -> void:
 
 func load_level() -> void:
 	super.load_level()
-	# Late campaign labels can reach five digits. Fit the live value after the
-	# inherited loader writes it so level 10,000 still preserves the move/star lanes.
+	_fit_water_level_meta()
+
+func _fit_water_level_meta() -> void:
+	# Late campaign labels can reach five digits. Fit the live value after any
+	# loader writes it so level 10,000 still preserves the move/star lanes.
 	if meta_label != null and is_instance_valid(meta_label):
 		RefCanvas.fit_single_line_text(meta_label,151.0,14,10)
 		RefCanvas.set_rect(meta_label,37,91,155,20)
