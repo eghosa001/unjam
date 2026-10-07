@@ -41,9 +41,11 @@ func _run() -> void:
 		return
 	for viewport_size in VIEWPORTS:
 		if not await _validate_viewport(viewport_size):
+			quit(1)
 			return
 	for viewport_size in STRESS_VIEWPORTS:
 		if not await _validate_late_game_viewport(viewport_size):
+			quit(1)
 			return
 	print("Viewport-fit validation passed: audited all production surfaces for canvas bounds, text clipping/overlap and scaled touch targets, plus level 10,000 gameplay across compact phones, tablets, foldables, landscape and square windows.")
 	quit(0)
@@ -177,6 +179,7 @@ func _validate_viewport(viewport_size: Vector2i) -> bool:
 
 func _validate_secondary_surfaces(main: Control, viewport_size: Vector2i) -> bool:
 	var content_owner := func() -> Control: return main.get("content") as Control
+	var all_ok := true
 	var cases := [
 		["build_daily_games", [], "Daily"],
 		["build_collection_upgrades", [], "Collection Upgrades"],
@@ -192,20 +195,20 @@ func _validate_secondary_surfaces(main: Control, viewport_size: Vector2i) -> boo
 		main.callv(method, args)
 		await _frames(4)
 		if not _assert_canvas(content_owner.call(), "FigmaSurface390x844", viewport_size, String(case_value[2])):
-			return false
+			all_ok = false
 
 	main.call("_open_games_surface")
 	await _frames(6)
 	var live := main.get_node_or_null("PremiumLive") as Control
 	if live == null or not _assert_canvas(live, "FigmaSelector390x844", viewport_size, "Choose Game"):
-		return false
+		all_ok = false
 
 	var shop := main.get_node_or_null("MonetizationHub")
 	if shop != null and shop.has_method("open_shop"):
 		shop.call("open_shop")
 		await _frames(5)
 		if not _assert_canvas(shop, "FigmaShop390x844", viewport_size, "Shop"):
-			return false
+			all_ok = false
 		if shop.has_method("_close_shop"):
 			shop.call("_close_shop")
 			await _frames(3)
@@ -217,7 +220,7 @@ func _validate_secondary_surfaces(main: Control, viewport_size: Vector2i) -> boo
 		coin_prompt.call("show_for", "HINT", balance + 25)
 		await _frames(4)
 		if not _assert_canvas(coin_prompt, "FigmaInsufficientCoins390x844", viewport_size, "Insufficient Coins"):
-			return false
+			all_ok = false
 		var overlay = coin_prompt.get("overlay")
 		if overlay != null and is_instance_valid(overlay):
 			overlay.visible = false
@@ -230,11 +233,10 @@ func _validate_secondary_surfaces(main: Control, viewport_size: Vector2i) -> boo
 	result.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	await _frames(4)
 	if not _assert_canvas(result, "FigmaResult390x844", viewport_size, "Result"):
-		result.queue_free()
-		return false
+		all_ok = false
 	result.queue_free()
 	await _frames(2)
-	return true
+	return all_ok
 
 func _validate_late_game_viewport(viewport_size: Vector2i) -> bool:
 	root.size = viewport_size
@@ -302,6 +304,7 @@ func _assert_canvas(owner: Node, canvas_name: String, viewport_size: Vector2i, l
 func _assert_visible_text_geometry(canvas: Control, viewport_size: Vector2i, context: String) -> bool:
 	var canvas_rect := canvas.get_global_rect()
 	var text_controls: Array[Control] = []
+	var errors: Array[String] = []
 	for raw in canvas.find_children("*", "", true, false):
 		if not raw is Control:
 			continue
@@ -313,30 +316,30 @@ func _assert_visible_text_geometry(canvas: Control, viewport_size: Vector2i, con
 			if label.text.strip_edges().is_empty():
 				continue
 			if not _rect_inside(label.get_global_rect(), canvas_rect):
-				return _fail("%s text escapes its reference canvas at %s: %s %s" % [context,str(viewport_size),label.name,str(label.get_global_rect())])
+				errors.append("%s text escapes its reference canvas at %s: %s [%s] %s" % [context,str(viewport_size),label.name,_control_text(label),str(label.get_global_rect())])
 			if label.get_visible_line_count() < label.get_line_count():
-				return _fail("%s text is vertically clipped at %s: %s lines=%d visible=%d text=%s" % [context,str(viewport_size),label.name,label.get_line_count(),label.get_visible_line_count(),label.text])
+				errors.append("%s text is vertically clipped at %s: %s lines=%d visible=%d text=%s" % [context,str(viewport_size),label.name,label.get_line_count(),label.get_visible_line_count(),label.text])
 			if label.autowrap_mode == TextServer.AUTOWRAP_OFF and not _single_line_text_fits(label, label.text):
-				return _fail("%s label text clips horizontally at %s: %s text=%s rect=%s" % [context,str(viewport_size),label.name,label.text,str(label.size)])
+				errors.append("%s label text clips horizontally at %s: %s text=%s rect=%s" % [context,str(viewport_size),label.name,label.text,str(label.size)])
 			text_controls.append(label)
 		elif control is LineEdit:
 			var edit := control as LineEdit
 			if not _rect_inside(edit.get_global_rect(), canvas_rect):
-				return _fail("%s text field escapes its reference canvas at %s: %s %s" % [context,str(viewport_size),edit.name,str(edit.get_global_rect())])
+				errors.append("%s text field escapes its reference canvas at %s: %s %s" % [context,str(viewport_size),edit.name,str(edit.get_global_rect())])
 			if edit.mouse_filter != Control.MOUSE_FILTER_IGNORE and edit.get_global_rect().size.y < 48.0:
-				return _fail("%s text field touch target falls below 48px after scaling at %s: %s %s" % [context,str(viewport_size),edit.name,str(edit.get_global_rect().size)])
+				errors.append("%s text field touch target falls below 48px after scaling at %s: %s %s" % [context,str(viewport_size),edit.name,str(edit.get_global_rect().size)])
 		elif control is Button:
 			var button := control as Button
 			if button.text.strip_edges().is_empty():
 				continue
 			if not _rect_inside(button.get_global_rect(), canvas_rect):
-				return _fail("%s button escapes its reference canvas at %s: %s %s" % [context,str(viewport_size),button.name,str(button.get_global_rect())])
+				errors.append("%s button escapes its reference canvas at %s: %s [%s] %s" % [context,str(viewport_size),button.name,_control_text(button),str(button.get_global_rect())])
 			if not _single_line_text_fits(button, button.text):
-				return _fail("%s button text clips at %s: %s text=%s rect=%s" % [context,str(viewport_size),button.name,button.text,str(button.size)])
+				errors.append("%s button text clips at %s: %s text=%s rect=%s" % [context,str(viewport_size),button.name,button.text,str(button.size)])
 			if bool(button.get_meta("unjam_figma_exact_geometry", false)):
 				var physical_size := button.get_global_rect().size
 				if physical_size.x < 48.0 or physical_size.y < 48.0:
-					return _fail("%s exact touch target falls below 48px after scaling at %s: %s %s" % [context,str(viewport_size),button.name,str(physical_size)])
+					errors.append("%s exact touch target falls below 48px after scaling at %s: %s %s" % [context,str(viewport_size),button.name,str(physical_size)])
 			text_controls.append(button)
 
 	for i in range(text_controls.size()):
@@ -347,7 +350,11 @@ func _assert_visible_text_geometry(canvas: Control, viewport_size: Vector2i, con
 				continue
 			var overlap := a.get_global_rect().intersection(b.get_global_rect())
 			if overlap.size.x > 2.0 and overlap.size.y > 2.0:
-				return _fail("%s visible text/control overlap at %s: %s [%s] %s intersects %s [%s] %s by %s" % [context,str(viewport_size),a.name,_control_text(a),str(a.get_global_rect()),b.name,_control_text(b),str(b.get_global_rect()),str(overlap)])
+				errors.append("%s visible text/control overlap at %s: %s [%s] %s intersects %s [%s] %s by %s" % [context,str(viewport_size),a.name,_control_text(a),str(a.get_global_rect()),b.name,_control_text(b),str(b.get_global_rect()),str(overlap)])
+	if not errors.is_empty():
+		for message in errors:
+			push_error(message)
+		return false
 	return true
 
 func _control_text(control: Control) -> String:
