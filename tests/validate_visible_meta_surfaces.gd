@@ -66,8 +66,8 @@ func _run() -> void:
 	for token in ["func build_goals()", "func build_profile()", "CollectionAchievementsView", "DAILY CHECK-IN", "SEASON JOURNEY", "ACHIEVEMENTS"]:
 		if not main.contains(token):
 			failures.append("Goals/Profile surface contract missing: %s" % token)
-	if not selector.contains('["COMPETE", "★"'):
-		failures.append("Games selector still hides competition behind old Daily naming")
+	if not selector.contains('"COMPETE" if String(item[0]) == "DAILY"'):
+		failures.append("Games selector does not visibly relabel Daily as Compete")
 	if not cloud.contains('"meta_progression"') or not edge.contains('"meta_progression"'):
 		failures.append("Meta progression is not protected by cloud save")
 
