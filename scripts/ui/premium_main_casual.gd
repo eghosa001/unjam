@@ -391,12 +391,12 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 	)
 	var xs := {"home":22.0, "games":94.0, "daily":166.0, "collection":238.0, "settings":310.0}
 	var hit_x := {"home":14.0, "games":86.0, "daily":158.0, "collection":230.0, "settings":302.0}
-	var names := {"home":"HOME", "games":"GAMES", "daily":"COMPETE", "collection":"COLLECT", "settings":"SETTINGS"}
+	var names := {"home":"HOME", "games":"GAMES", "daily":"DAILY", "collection":"COLLECT", "settings":"SETTINGS"}
 	var glyphs := {"home":"⌂", "games":"▦", "daily":"★", "collection":"◆", "settings":"⚙"}
 	var callbacks := {
 		"home": Callable(self,"build_home"),
 		"games": Callable(self,"_open_games_surface"),
-		"daily": Callable(self,"build_compete_leaderboard"),
+		"daily": Callable(self,"build_daily_games"),
 		"collection": Callable(self,"build_collection"),
 		"settings": Callable(self,"build_settings"),
 	}
@@ -957,9 +957,8 @@ func build_daily_games() -> void:
 	_figma_daily_card(canvas, "block_puzzle", 363, bonus)
 	_figma_daily_progress(canvas)
 	_figma_daily_tip(canvas, bonus)
-	# Daily is a Live Now reward activity, not a primary nav destination.
-	# Leave every primary destination tappable, including HOME and COMPETE.
-	_figma_bottom_nav(canvas, "")
+	# Daily is a primary destination; campaign rankings remain a separate Compete flow.
+	_figma_bottom_nav(canvas, "daily")
 
 func _figma_daily_progress(canvas: Control) -> void:
 	var done_count := 0
@@ -1067,7 +1066,8 @@ func build_compete_leaderboard(refresh_remote: bool = true) -> void:
 	else:
 		var note := _figma_text(canvas,"Weekly rewards settle after each reset.",Rect2(44,663,302,40),12,FIGMA_MUTED,true)
 		_fit_wrapped_text(note,292.0,12,10)
-	_figma_bottom_nav(canvas,"daily")
+	# Rankings are intentionally separate from the Daily destination.
+	_figma_bottom_nav(canvas,"")
 
 func _figma_compete_game_tabs(canvas: Control, y: float, compact: bool = false) -> void:
 	var ids: Array[String] = ["rescue_rush","water_sort","block_puzzle"]
