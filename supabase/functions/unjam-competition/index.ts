@@ -186,6 +186,19 @@ async function removeFriend(sb: any, playerHash: string, displayName: string, fr
   if (deleteError) throw deleteError;
   return await socialSnapshot(sb, playerHash, displayName, day);
 }
+
+async function rotateFriendCode(sb: any, playerHash: string, displayName: string, day: Date) {
+  await ensureSocialProfile(sb, playerHash, displayName);
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const friendCode = randomFriendCode();
+    const { error } = await sb.from("social_profiles")
+      .update({ friend_code: friendCode, updated_at: new Date().toISOString() })
+      .eq("player_hash", playerHash);
+    if (!error) return await socialSnapshot(sb, playerHash, displayName, day);
+    if (error.code !== "23505") throw error;
+  }
+  throw new Error("Could not rotate friend code");
+}
 function metric(m: Record<string, unknown>, key: string, min: number, max: number, fallback = 0): number {
   const n = Number(m[key] ?? fallback);
   return Number.isFinite(n) ? Math.max(min, Math.min(max, Math.trunc(n))) : fallback;
@@ -302,6 +315,13 @@ Deno.serve(async (req: Request) => {
     catch (error) {
       console.error("remove friend failed", { error: String(error) });
       return json({ ok: false, reason: "Friends service unavailable" }, 503);
+    }
+  }
+  if (action === "rotate_friend_code") {
+    try { return json(await rotateFriendCode(sb, hash, name, day)); }
+    catch (error) {
+      console.error("rotate friend code failed", { error: String(error) });
+      return json({ ok: false, reason: "Could not create a new friend code" }, 503);
     }
   }
   if (action === "snapshot") return json(await snapshotFor(sb, hash, day));
