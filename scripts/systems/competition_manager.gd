@@ -117,15 +117,16 @@ func rotate_friend_code() -> void:
 	_social_action("rotate_friend_code", "")
 
 func _social_action(action: String, code: String) -> void:
+	var clean := code.strip_edges().to_upper().replace(" ", "").replace("-", "")
+	if action != "rotate_friend_code" and clean.length() != 8:
+		social_action_finished.emit(false, "Enter the 8-character friend code")
+		return
 	if _social_in_flight:
+		social_action_finished.emit(false, "Friends are syncing. Try again.")
 		return
 	var cloud_id := String(SaveManager.data.get("cloud_save_id", ""))
 	if cloud_id.length() != 64:
 		social_action_finished.emit(false, "Cloud identity is not ready yet")
-		return
-	var clean := code.strip_edges().to_upper().replace(" ", "").replace("-", "")
-	if action != "rotate_friend_code" and clean.length() != 8:
-		social_action_finished.emit(false, "Enter the 8-character friend code")
 		return
 	_social_in_flight = true
 	var payload := {
