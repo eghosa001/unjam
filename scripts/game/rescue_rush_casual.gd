@@ -12,6 +12,7 @@ const BLUE := Color(0.03,0.43,0.78)
 const ORANGE := Color(1.0,0.55,0.12)
 
 var figma_canvas: FigmaReferenceCanvas
+var board_backdrop_grid: GridContainer
 
 func _compact_objective_instruction() -> String:
 	match objective_type:
@@ -183,6 +184,23 @@ func _build_figma_rescue(canvas: Control) -> void:
 	board_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	board_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	board_panel.add_child(board_art)
+
+	# A persistent lattice sits below pieces and route highlights. Every board
+	# coordinate is visible at a glance, including occupied cells, so players can
+	# read position/direction without guessing against the scenic illustration.
+	var backdrop_margin := MarginContainer.new()
+	backdrop_margin.name = "RescueBoardBackdropMargin"
+	backdrop_margin.z_index = 1
+	backdrop_margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for side in ["left","right","top","bottom"]:
+		backdrop_margin.add_theme_constant_override("margin_%s" % side,10)
+	board_panel.add_child(backdrop_margin)
+	board_backdrop_grid = GridContainer.new()
+	board_backdrop_grid.name = "RescueBoardBackdropGrid"
+	board_backdrop_grid.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	backdrop_margin.add_child(board_backdrop_grid)
+	_rebuild_rescue_grid_backdrop(_shell_dark_mode())
+
 	var margin := MarginContainer.new()
 	margin.z_index = 2
 	for side in ["left","right","top","bottom"]:
@@ -229,6 +247,40 @@ func _build_figma_rescue(canvas: Control) -> void:
 	RefCanvas.set_rect(frame_border, 0, 0, 390, 844)
 	frame_border.z_index = 900
 	canvas.add_child(frame_border)
+
+func _rescue_grid_slot_style(dark: bool) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.06,0.23,0.17,0.34) if dark else Color(0.86,1.0,0.90,0.22)
+	style.border_color = Color(0.58,0.96,0.70,0.24) if dark else Color(0.13,0.48,0.30,0.22)
+	style.border_width_left = 1
+	style.border_width_right = 1
+	style.border_width_top = 1
+	style.border_width_bottom = 1
+	style.corner_radius_top_left = 8
+	style.corner_radius_top_right = 8
+	style.corner_radius_bottom_left = 8
+	style.corner_radius_bottom_right = 8
+	return style
+
+func _rebuild_rescue_grid_backdrop(dark: bool) -> void:
+	if board_backdrop_grid == null or not is_instance_valid(board_backdrop_grid):
+		return
+	for child in board_backdrop_grid.get_children():
+		board_backdrop_grid.remove_child(child)
+		child.queue_free()
+	board_backdrop_grid.columns = width
+	var gap := _figma_board_gap()
+	board_backdrop_grid.add_theme_constant_override("h_separation", gap)
+	board_backdrop_grid.add_theme_constant_override("v_separation", gap)
+	var cell_size := _figma_board_cell_size()
+	for y in range(height):
+		for x in range(width):
+			var cell := PanelContainer.new()
+			cell.name = "RescueGridSlot_%d_%d" % [x,y]
+			cell.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			cell.custom_minimum_size = Vector2(cell_size,cell_size)
+			cell.add_theme_stylebox_override("panel", _rescue_grid_slot_style(dark))
+			board_backdrop_grid.add_child(cell)
 
 func _action(text_value: String, _fill: Color) -> Button:
 	var fill := Color("#183d31")
@@ -304,6 +356,17 @@ func _fit_board_to_viewport() -> void:
 	board_grid.add_theme_constant_override("h_separation",gap)
 	board_grid.add_theme_constant_override("v_separation",gap)
 	var cell_size := _figma_board_cell_size()
+
+	if board_backdrop_grid != null and is_instance_valid(board_backdrop_grid):
+		if board_backdrop_grid.get_child_count() != width * height:
+			_rebuild_rescue_grid_backdrop(_shell_dark_mode())
+		board_backdrop_grid.columns = width
+		board_backdrop_grid.add_theme_constant_override("h_separation",gap)
+		board_backdrop_grid.add_theme_constant_override("v_separation",gap)
+		for cell in board_backdrop_grid.get_children():
+			if cell is Control:
+				(cell as Control).custom_minimum_size = Vector2(cell_size,cell_size)
+
 	for child in board_grid.get_children():
 		if child is Control:
 			(child as Control).custom_minimum_size = Vector2(cell_size,cell_size)
@@ -449,6 +512,10 @@ func apply_theme_mode(dark: bool) -> void:
 			Color("#152b25") if dark else Color("#5e8c85"),
 			26, Color(0.46,0.78,0.58,0.72) if dark else Color(0.94,1.0,0.88,0.72), 2, 0.45
 		))
+	if board_backdrop_grid != null and is_instance_valid(board_backdrop_grid):
+		for cell in board_backdrop_grid.get_children():
+			if cell is PanelContainer:
+				(cell as PanelContainer).add_theme_stylebox_override("panel", _rescue_grid_slot_style(dark))
 	for label in [moves_label, rescue_label, chain_label]:
 		if label != null:
 			label.add_theme_color_override("font_color", Color("#eafbf0") if dark else OFF_WHITE)

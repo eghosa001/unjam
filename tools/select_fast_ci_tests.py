@@ -205,6 +205,12 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
         add(groups, "progression")
         explicit_tests.add("validate_visible_meta_surfaces")
 
+    if p == "scripts/ui/unjam_meta_art.gd":
+        add(groups, "secondary_ui")
+        explicit_tests.add("validate_visible_meta_surfaces")
+        visual.update({"collection", "daily", "goals", "profile", "friends", "settings"})
+        return True
+
     if any(token in p for token in ("water_sort", "water_tube", "/water_", "water_")):
         add(groups, "water")
         visual.add("water")
@@ -255,6 +261,8 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
                 add(groups, "games_ui")
             elif home_ui:
                 add(groups, "home")
+            elif p.endswith("unjam_meta_art.gd"):
+                add(groups, "secondary_ui")
             else:
                 add(groups, "secondary_ui" if p.endswith(("premium_main_casual.gd", "premium_main.gd")) else "ui")
             if p.endswith(("figma_reference_canvas.gd", "unjam_3d_theme.gd")):
@@ -266,6 +274,8 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
                 visual.add("home")
             elif games_ui:
                 visual.add("games")
+            elif p.endswith("unjam_meta_art.gd"):
+                visual.update({"collection", "daily", "goals", "profile", "friends", "settings"})
             elif p.endswith(("premium_main_casual.gd", "premium_main.gd")):
                 visual.update({"home", "levels", "collection", "daily", "goals", "profile", "friends", "settings"})
             elif tutorial_ui:
@@ -752,6 +762,7 @@ def self_test() -> None:
         (["scripts/ui/premium_live_hub_3d.gd"], ["games_ui"], ["games"], True),
         (["scripts/ui/unjam_3d_game_art.gd"], ["games_ui"], ["games"], True),
         (["scripts/ui/unjam_flat_game_logo.gd"], ["games_ui", "home"], ["games", "home"], True),
+        (["scripts/ui/unjam_meta_art.gd"], ["secondary_ui"], ["collection", "daily", "friends", "goals", "profile", "settings"], True),
         (["assets/art/home/rescue_rush_hero.svg"], ["home"], ["home"], True),
         (["assets/art/meta/collection.svg"], ["secondary_ui"], ["collection", "daily", "friends", "goals", "profile", "settings"], True),
         (["assets/art/meta_wide/collection.svg"], ["secondary_ui"], ["collection", "daily", "friends", "goals", "profile", "settings"], True),
