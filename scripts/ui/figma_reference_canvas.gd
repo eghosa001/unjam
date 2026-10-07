@@ -16,6 +16,15 @@ static var _flat_gloss_cache: Dictionary = {}
 static var _rounded_gradient3_cache: Dictionary = {}
 static var _horizontal_gradient_cache: Dictionary = {}
 
+static func release_cached_styles() -> void:
+	# Test/teardown hook. Runtime keeps these immutable nine-slice materials hot,
+	# but audit processes must release them before exit so leak detection remains
+	# meaningful and never masks a real Control/Resource lifecycle problem.
+	_rounded_gradient_cache.clear()
+	_flat_gloss_cache.clear()
+	_rounded_gradient3_cache.clear()
+	_horizontal_gradient_cache.clear()
+
 static func _style_cache_key(kind: String, colors: Array[Color], radius: float, border_color: Color, border_width: float, midpoint: float = -1.0) -> String:
 	var parts := PackedStringArray([kind])
 	for color in colors:
