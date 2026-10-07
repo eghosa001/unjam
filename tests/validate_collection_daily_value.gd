@@ -47,6 +47,7 @@ func _run() -> void:
 	var water := _read("res://scripts/game/water_sort_10000.gd")
 	var water_base := _read("res://scripts/game/water_sort.gd")
 	var block := _read("res://scripts/game/block_puzzle.gd")
+	var multi := _read("res://scripts/core/economy_multi_game_manager.gd")
 
 	for token in ["COMPETE", "CompetitionManager.weekly_rank", "build_daily_games"]:
 		if not home.contains(token):
@@ -63,6 +64,8 @@ func _run() -> void:
 		failures.append("Water Sort does not submit ranked Daily results")
 	if not block.contains("CompetitionManager.submit_daily_result"):
 		failures.append("Block Puzzle does not submit ranked Daily results")
+	if not multi.contains('rewards["base_coins"] = safe_reward if bool(rewards.get("first_clear", false)) else 0'):
+		failures.append("Water/Block first-clear rewards are not exposed for safe campaign doubling")
 	for source in [rescue, water_base, block]:
 		if not source.contains("Undo is disabled in ranked Daily competition"):
 			failures.append("A ranked Daily game still allows undo")
