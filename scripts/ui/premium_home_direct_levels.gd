@@ -488,7 +488,7 @@ func _refresh_home_selection() -> void:
 	var title := figma_canvas.get_node_or_null("HomeHeroGameTitle") as Label
 	if title != null:
 		title.text = _short_game_name(selected_game)
-		title.add_theme_font_size_override("font_size", 23 if selected_game == "block_puzzle" else 27)
+		title.add_theme_font_size_override("font_size", 22 if selected_game == "block_puzzle" else 25)
 		var title_accent := Unjam3DTheme.game_accent(selected_game)
 		title.add_theme_color_override("font_color", title_accent.lightened(0.16) if _home_dark() else title_accent.darkened(0.20))
 		title.add_theme_color_override("font_outline_color", Color.TRANSPARENT)
