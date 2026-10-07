@@ -1445,7 +1445,7 @@ func _figma_collection_tip(canvas: Control) -> void:
 	title.name = "CollectionTipTitle"
 	var current_value := _figma_text(canvas, "+%d DAILY  •  +%d GIFT" % [daily_bonus, gift_amount], Rect2(63, 639, 288, 20), 13, FIGMA_GOLD)
 	current_value.name = "CollectionTipValue"
-	var detail := _figma_text(canvas, "5 levels each • permanent effect per upgrade", Rect2(63, 659, 288, 20), 11, FIGMA_MUTED)
+	var detail := _figma_text(canvas, "5 levels each • permanent effect per upgrade", Rect2(63, 664, 288, 20), 11, FIGMA_MUTED)
 	detail.name = "CollectionTipDetail"
 	detail.clip_text = true
 	# Label minimum metrics are computed before font fitting. Reset the minimum
@@ -1453,7 +1453,7 @@ func _figma_collection_tip(canvas: Control) -> void:
 	# expand this line beyond the Collection card.
 	detail.custom_minimum_size = Vector2.ZERO
 	_fit_single_line_control_text(detail, 284.0, 11, 9)
-	detail.position = Vector2(63,659)
+	detail.position = Vector2(63,664)
 	detail.size = Vector2(288,20)
 
 func _figma_collection_progress(canvas: Control, game_id: String, x: float) -> void:
