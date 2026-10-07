@@ -598,9 +598,12 @@ func build_friends(refresh_remote: bool = true) -> void:
 	_figma_card(canvas,"FriendsCode",Rect2(17,91,354,76),Color("#fffef8"),Color(FIGMA_CYAN,0.30),17)
 	_figma_text(canvas,"YOUR FRIEND CODE",Rect2(31,103,180,18),13,FIGMA_MUTED)
 	var code_text := friend_code if not friend_code.is_empty() else "SYNCING…"
-	_figma_text(canvas,code_text,Rect2(31,126,190,27),20,FIGMA_INK,true)
-	var copy := _figma_button(canvas,"FriendsCopyCode","COPY",Rect2(267,109,84,42),FIGMA_CYAN,Callable(self,"_copy_friend_code"),Color.WHITE,12,11)
+	_figma_text(canvas,code_text,Rect2(31,126,174,27),20,FIGMA_INK,true)
+	var copy := _figma_button(canvas,"FriendsCopyCode","COPY",Rect2(218,109,63,42),FIGMA_CYAN,Callable(self,"_copy_friend_code"),Color.WHITE,10,10)
 	copy.disabled = friend_code.is_empty()
+	var rotate := _figma_button(canvas,"FriendsRotateCode","NEW",Rect2(288,109,63,42),Color("#7a57e0"),Callable(self,"_rotate_friend_code"),Color.WHITE,10,10)
+	rotate.disabled = friend_code.is_empty()
+	rotate.tooltip_text = "Create a new code. Existing friends stay connected."
 
 	_figma_card(canvas,"FriendsAdd",Rect2(17,180,354,82),Color("#fffef8"),Color("#7a57e0"),17)
 	_figma_text(canvas,"ADD A FRIEND",Rect2(31,191,140,18),13,FIGMA_MUTED)
@@ -674,6 +677,13 @@ func _copy_friend_code() -> void:
 	_friends_status = "Friend code copied."
 	FeedbackManager.effect()
 	build_friends(false)
+
+func _rotate_friend_code() -> void:
+	var callback := Callable(self,"_on_friend_action_finished")
+	if not CompetitionManager.social_action_finished.is_connected(callback):
+		CompetitionManager.social_action_finished.connect(callback, CONNECT_ONE_SHOT)
+	_friends_status = "Creating a new code…"
+	CompetitionManager.rotate_friend_code()
 
 func _add_friend_from_input(code_input: LineEdit) -> void:
 	if code_input == null or not is_instance_valid(code_input):
