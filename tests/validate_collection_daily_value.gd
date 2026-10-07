@@ -52,7 +52,7 @@ func _run() -> void:
 	for token in ["build_daily_games"]:
 		if not home.contains(token):
 			failures.append("Home Daily retention contract missing: %s" % token)
-	for token in ["daily\":\"COMPETE", "build_compete_leaderboard", "CAMPAIGN RANKINGS", "collection_item_level", "L%d/%d"]:
+	for token in ["daily\":\"DAILY", "build_daily_games", "build_compete_leaderboard", "CAMPAIGN RANKINGS", "collection_item_level", "L%d/%d"]:
 		if not main.contains(token):
 			failures.append("Compete/Collection UI contract missing: %s" % token)
 	for token in ["submit_campaign_progress", "claim_weekly_reward", "game_all_time_top", "game_weekly_top", "already_claimed"]:
