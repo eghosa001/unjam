@@ -35,7 +35,7 @@ func _release() -> void:
 
 func _draw_shell(rect: Rect2, center: Vector2, pulse: float) -> void:
 	# One fast glossy 2D face. Pieces should be readable arrows, not miniature boxes.
-	var radius := minf(rect.size.x, rect.size.y) * 0.22
+	var radius := minf(rect.size.x, rect.size.y) * 0.18
 	var face := rect.grow(-0.25)
 	var cast := Rect2(face.position + Vector2(0, maxf(2.0, face.size.y * 0.08)), face.size)
 	draw_style_box(_rounded(Color(0.01,0.04,0.10,0.26), radius, Color.TRANSPARENT, 0), cast)
@@ -56,7 +56,7 @@ func _draw_motion_trail(_center: Vector2, _pulse: float) -> void:
 func _draw_arrow(center: Vector2, dir: String, scale_value: float) -> void:
 	var v := _dir_vec(dir)
 	var n := Vector2(-v.y, v.x)
-	var readable_scale := scale_value * 1.36
+	var readable_scale := scale_value * 1.42
 	var glyph_center := center - Vector2(0, 2.0)
 	var tip := glyph_center + v * readable_scale
 	var tail := glyph_center - v * readable_scale * 0.76
