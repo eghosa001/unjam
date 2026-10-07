@@ -360,10 +360,14 @@ func render_board() -> void:
 			if not rescued and pos == rescue_pos:
 				var slot := PanelContainer.new()
 				slot.custom_minimum_size = Vector2(cell_size, cell_size)
-				slot.add_theme_stylebox_override("panel", style_box(Color("3e3216"), 28, Color("ffd166"), 3))
+				slot.clip_contents = false
+				slot.add_theme_stylebox_override("panel", style_box(Color(1.0, 0.82, 0.28, 0.035), 28, Color(1.0, 0.86, 0.40, 0.18), 1))
 				var token := RescueToken.new()
 				token.custom_minimum_size = Vector2(cell_size, cell_size)
 				token.configure(rescue_id, Color("ffd166"))
+				token.pivot_offset = Vector2(cell_size, cell_size) * 0.5
+				token.scale = Vector2.ONE * (1.30 if width <= 7 else 1.18)
+				token.z_index = 8
 				slot.add_child(token)
 				board_grid.add_child(slot)
 				_animate_cell(slot, x, y)
