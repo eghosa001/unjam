@@ -286,6 +286,50 @@ func _clamp_pour_source_position(desired: Vector2, ghost_size: Vector2, viewport
 	var max_x := maxf(edge_margin, viewport_width - ghost_size.x - edge_margin)
 	return Vector2(clampf(desired.x, edge_margin, max_x), desired.y)
 
+func _clamp_rotated_source_position(desired: Vector2, ghost: Control, final_rotation: float, viewport_size: Vector2) -> Vector2:
+	# Clamp the *rotated* bottle silhouette, not only its unrotated Control rect.
+	# A tall tube tilted 50–60 degrees can extend far beyond its original width.
+	var min_x: float = INF
+	var max_x: float = -INF
+	var min_y: float = INF
+	var corners: Array[Vector2] = [
+		Vector2.ZERO,
+		Vector2(ghost.size.x, 0.0),
+		ghost.size,
+		Vector2(0.0, ghost.size.y),
+	]
+	for corner: Vector2 in corners:
+		var relative: Vector2 = corner - ghost.pivot_offset
+		var scaled := Vector2(relative.x * ghost.scale.x, relative.y * ghost.scale.y)
+		var rotated: Vector2 = scaled.rotated(final_rotation)
+		var point: Vector2 = ghost.pivot_offset + rotated
+		min_x = minf(min_x, point.x)
+		max_x = maxf(max_x, point.x)
+		min_y = minf(min_y, point.y)
+	var edge_margin := 12.0
+	var left_bound := edge_margin
+	var right_bound := viewport_size.x - edge_margin
+	# The phone edge is only the fallback. Prefer the live Water playfield so the
+	# pouring source never appears to enter from outside the game scene.
+	var stage := find_child("GameplayStage", true, false) as Control
+	if stage != null:
+		var stage_global := stage.get_global_rect()
+		var stage_left := _game_local(stage_global.position).x + 8.0
+		var stage_right := _game_local(stage_global.end).x - 8.0
+		if stage_right - stage_left > ghost.size.x:
+			left_bound = maxf(left_bound, stage_left)
+			right_bound = minf(right_bound, stage_right)
+	var x := desired.x
+	if x + min_x < left_bound:
+		x += left_bound - (x + min_x)
+	if x + max_x > right_bound:
+		x -= (x + max_x) - right_bound
+	# Keep the pouring mouth comfortably below the phone header as well.
+	var y := desired.y
+	if y + min_y < edge_margin:
+		y += edge_margin - (y + min_y)
+	return Vector2(x, y)
+
 func _release_pour_visual_lock(source_index: int, target_index: int) -> void:
 	active_source_tubes.erase(source_index)
 	active_target_tubes.erase(target_index)
@@ -353,7 +397,7 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 	var receiver_local := _receiver_rim_local(receiver)
 	var target_lip := _control_point(receiver, receiver_local)
 	# Keep a premium pour angle without visually detaching the neck from the bottle body.
-	var tilt_degrees := 32.0 if MotionSystem.reduced() else 62.0
+	var tilt_degrees := 30.0 if MotionSystem.reduced() else 52.0
 	var final_rotation := deg_to_rad(tilt_degrees * direction)
 	var source_local_at_pour := _source_rim_local(ghost, direction)
 	# Keep the pouring lip visibly above and to the source side of the receiving
@@ -363,7 +407,9 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 	var rim_height_gap := clampf(ghost.size.y * 0.28, 76.0, 116.0)
 	var desired_source_rim := target_lip + Vector2(-direction * rim_side_gap, -rim_height_gap)
 	var desired := _position_for_tilted_rim(ghost, source_local_at_pour, desired_source_rim, final_rotation)
-	desired = _clamp_pour_source_position(desired, ghost.size, get_viewport_rect().size.x)
+	var viewport_size := get_viewport_rect().size
+	desired = _clamp_pour_source_position(desired, ghost.size, viewport_size.x)
+	desired = _clamp_rotated_source_position(desired, ghost, final_rotation, viewport_size)
 	var travel_time := MotionSystem.duration(&"travel")
 	var travel := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	travel.tween_property(ghost, "position", desired, travel_time)
@@ -384,7 +430,7 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 	FeedbackManager.pour_start()
 	var stream := Line2D.new()
 	stream.name = "PourStream"
-	stream.width = 10.0
+	stream.width = 12.0
 	stream.default_color = Color(liquid, 0.96)
 	stream.begin_cap_mode = Line2D.LINE_CAP_ROUND
 	stream.end_cap_mode = Line2D.LINE_CAP_ROUND
@@ -394,7 +440,7 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 	add_child(stream)
 	var shine := Line2D.new()
 	shine.name = "PourStreamHighlight"
-	shine.width = 3.0
+	shine.width = 4.0
 	shine.default_color = Color(liquid.lightened(0.42), 0.90)
 	shine.begin_cap_mode = Line2D.LINE_CAP_ROUND
 	shine.end_cap_mode = Line2D.LINE_CAP_ROUND
@@ -421,7 +467,7 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 		stream.points = _liquid_arc_points(source_mouth, receiver_mouth, direction)
 		shine.points = stream.points
 	flow.tween_method(update_flow, 0.0, 1.0, pour_time)
-	flow.parallel().tween_property(stream, "width", 13.5, pour_time * 0.55)
+	flow.parallel().tween_property(stream, "width", 16.0, pour_time * 0.55)
 	if not MotionSystem.reduced():
 		flow.parallel().tween_property(receiver, "scale", Vector2(1.025, 0.988), pour_time * 0.45)
 	await flow.finished

@@ -435,18 +435,7 @@ func _draw() -> void:
 			points.append(point)
 	if points.is_empty():
 		return
-	# Give each tray choice a shallow physical base so the draggable piece reads
-	# immediately against the pale tray without changing placement geometry.
-	var pedestal_rect := Rect2(Vector2(3.0, 7.0), size - Vector2(6.0, 14.0))
-	var pedestal_fill := Color(accent.darkened(0.58), 0.10 if not selected else 0.18)
-	var pedestal_border := Color(accent.lightened(0.24), 0.24 if not selected else 0.62)
-	draw_style_box(_style(pedestal_fill, pedestal_border, 2, 14), pedestal_rect)
-	var pedestal_gloss := Rect2(
-		pedestal_rect.position + Vector2(10.0, 7.0),
-		Vector2(maxf(8.0, pedestal_rect.size.x - 20.0), 5.0)
-	)
-	draw_style_box(_style(Color(1, 1, 1, 0.10), Color.TRANSPARENT, 0, 3), pedestal_gloss)
-
+	# The tray is intentionally border-free; the piece silhouette itself is the control.
 	var max_x := 0
 	var max_y := 0
 	for point in points:
@@ -478,44 +467,18 @@ func _tray_cell_size(max_x: int, max_y: int) -> float:
 	var fit_cell := minf((size.x - 10.0) / float(max_x + 1), (size.y - 10.0) / float(max_y + 1))
 	# Tray pieces should be immediately legible and close to the 32.6px board
 	# cells, while still fitting the tallest three-cell shapes without clipping.
-	return clampf(minf(32.0, fit_cell), 18.0, 32.0)
+	return clampf(minf(35.0, fit_cell), 18.0, 35.0)
 
 func _draw_block(rect: Rect2, fill: Color) -> void:
-	# Use real top/right extrusion instead of a second full-size dark rectangle.
-	# The old offset shadow could read as a duplicate brick in the piece tray.
-	var depth := clampf(rect.size.x * 0.10, 3.0, 7.0)
-	var front := Rect2(rect.position + Vector2(0.0, depth), rect.size - Vector2(depth, depth))
-	var bottom_shadow := Rect2(
-		Vector2(front.position.x + 3.0, front.end.y + 1.0),
-		Vector2(maxf(2.0, front.size.x - 4.0), maxf(3.0, depth * 0.65))
-	)
-	draw_style_box(_style(Color("#1f2940", 0.28), Color.TRANSPARENT, 0, 4), bottom_shadow)
-	var top_face := PackedVector2Array([
-		front.position,
-		front.position + Vector2(depth, -depth),
-		Vector2(front.end.x + depth, front.position.y - depth),
-		Vector2(front.end.x, front.position.y)
-	])
-	var right_face := PackedVector2Array([
-		Vector2(front.end.x, front.position.y),
-		Vector2(front.end.x + depth, front.position.y - depth),
-		Vector2(front.end.x + depth, front.end.y - depth),
-		Vector2(front.end.x, front.end.y)
-	])
-	draw_colored_polygon(top_face, fill.lightened(0.24))
-	draw_colored_polygon(right_face, fill.darkened(0.10))
-	var right_face_outline := PackedVector2Array([right_face[0], right_face[1], right_face[2], right_face[3], right_face[0]])
-	draw_polyline(right_face_outline, Color(fill.lightened(0.22), 0.64), 1.4, true)
-	draw_style_box(_style(fill, fill.lightened(0.28), 2, 6), front)
-	var inner := front.grow(-3.0)
-	draw_style_box(_style(Color(fill.lightened(0.10), 0.20), Color(1, 1, 1, 0.08), 1, 4), inner)
-	draw_line(front.position + Vector2(6, 5), Vector2(front.end.x - 6, front.position.y + 5), Color(fill.lightened(0.58), 0.96), 2.6, true)
-	var gloss_band := Rect2(
-		front.position + Vector2(front.size.x * 0.16, front.size.y * 0.18),
-		Vector2(front.size.x * 0.46, maxf(3.0, front.size.y * 0.16))
-	)
-	draw_style_box(_style(Color(1, 1, 1, 0.16), Color(1, 1, 1, 0.06), 1, 5), gloss_band)
-	draw_circle(front.position + Vector2(front.size.x * 0.25, front.size.y * 0.30), maxf(1.2, front.size.x * 0.045), Color(1,1,1,0.52))
+	var radius := maxi(5, int(rect.size.x * 0.18))
+	var shadow := Rect2(rect.position + Vector2(0, maxf(2.0, rect.size.y * 0.10)), rect.size)
+	draw_style_box(_style(Color(0.02,0.025,0.08,0.26), Color.TRANSPARENT, 0, radius), shadow)
+	draw_style_box(_style(fill, Color(fill.lightened(0.30),0.42), 1, radius), rect)
+	var lower := Rect2(Vector2(rect.position.x + rect.size.x*0.09, rect.end.y - rect.size.y*0.18), Vector2(rect.size.x*0.82, rect.size.y*0.10))
+	draw_style_box(_style(Color(fill.darkened(0.34),0.24), Color.TRANSPARENT, 0, maxi(2,radius/2)), lower)
+	var gloss := Rect2(rect.position + Vector2(rect.size.x*0.12,rect.size.y*0.10), Vector2(rect.size.x*0.58,maxf(3.0,rect.size.y*0.14)))
+	draw_style_box(_style(Color(1,1,1,0.28),Color.TRANSPARENT,0,maxi(2,radius/2)),gloss)
+	draw_circle(rect.position + Vector2(rect.size.x*0.23,rect.size.y*0.30),maxf(1.2,rect.size.x*0.038),Color(1,1,1,0.46))
 
 func _sanitize_shape(value: Array) -> Array:
 	var unique := {}

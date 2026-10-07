@@ -171,46 +171,40 @@ func _process(delta: float) -> void:
 
 func _draw() -> void:
 	var rect := Rect2(Vector2(1.5, 1.5), size - Vector2(3, 3))
-	var board_fill := Color(0.27, 0.19, 0.43, 0.99)
-	if hover_amount > 0.01 and not occupied:
-		board_fill = board_fill.lightened(0.045 * hover_amount)
-	_draw_box(Rect2(rect.position + Vector2(0, 3), rect.size), Color("#241445"), 6, Color.TRANSPARENT, 0)
-	_draw_box(rect, board_fill, 6, Color(0.62, 0.47, 0.80, 0.82), 1)
-	# Production wells are recessed, not raised cubes. A dark inner edge gives the
-	# same inset read without adding another visible block layer.
-	var inner_well := rect.grow(-2.5)
-	_draw_box(inner_well, Color(0.235, 0.155, 0.395, 0.99), 5, Color(0.055, 0.02, 0.12, 0.42), 1)
-	# Recess lighting: dark top/left edges and a faint lower rim make empty cells
-	# feel carved into the board, while occupied cubes remain visibly raised.
-	draw_line(inner_well.position + Vector2(5, 3), Vector2(inner_well.end.x - 5, inner_well.position.y + 3), Color(0.04,0.015,0.08,0.52), 2.0, true)
-	draw_line(inner_well.position + Vector2(3, 5), Vector2(inner_well.position.x + 3, inner_well.end.y - 5), Color(0.04,0.015,0.08,0.42), 1.7, true)
-	draw_line(Vector2(inner_well.position.x + 6, inner_well.end.y - 3), Vector2(inner_well.end.x - 6, inner_well.end.y - 3), Color(0.72,0.54,0.92,0.28), 1.5, true)
-	var inset := rect.grow(-3.0)
+	var inset := rect.grow(-2.5)
+
+	# Empty cells intentionally recede. The board should read as a play field,
+	# not sixty-four individually outlined buttons.
+	if not occupied and not preview:
+		var idle_fill := Color(0.31, 0.20, 0.48, 0.055 + hover_amount * 0.055)
+		var idle_edge := Color(0.72, 0.58, 0.92, 0.025 + hover_amount * 0.10)
+		_draw_box(inset, idle_fill, 6, idle_edge, 1)
+
 	if occupied or preview:
-		var fill := Color(accent, 0.52) if preview else accent
+		var fill := Color(accent, 0.54) if preview else accent
 		_draw_block(inset, fill)
+
 	if footprint_active:
-		# Keep the target footprint visually distinct from the single floating drag
-		# piece. Drawing another full 3D block here made every dragged brick look
-		# doubled when it crossed the board.
 		var pulse := 0.72 + 0.28 * sin(footprint_phase)
-		var edge := Color(footprint_color.lightened(0.42), 0.72 + pulse * 0.20) if footprint_valid else Color("ff8ba3", 0.92)
-		var wash := Color(footprint_color, 0.08 + pulse * 0.06) if footprint_valid else Color("ff4f73", 0.10)
-		_draw_box(inset.grow(1.0), wash, 6, edge, 3)
+		var edge := Color(footprint_color.lightened(0.42), 0.72 + pulse * 0.20) if footprint_valid else Color("#ff8ba3", 0.92)
+		var wash := Color(footprint_color, 0.11 + pulse * 0.07) if footprint_valid else Color("#ff4f73", 0.12)
+		_draw_box(inset.grow(1.0), wash, 7, edge, 3)
+
 	if clear_phase > 0.001 and not occupied:
 		var clear_fill := Color(clear_color, clampf(clear_phase, 0.0, 1.0))
-		_draw_block(rect.grow(-3.0), clear_fill)
-		var flash_alpha := clampf(clear_phase * 0.42, 0.0, 0.42)
-		_draw_box(rect.grow(-6.0), Color(1, 1, 1, flash_alpha), 6, Color.TRANSPARENT, 0)
+		_draw_block(inset, clear_fill)
+		_draw_box(inset.grow(-3.0), Color(1, 1, 1, clampf(clear_phase * 0.32, 0.0, 0.32)), 5, Color.TRANSPARENT, 0)
+
 	if impact > 0.001:
-		_draw_box(rect.grow(1.0 + impact * 3.0), Color.TRANSPARENT, 6, Color(accent.lightened(0.42), impact * 0.90), 3)
+		_draw_box(inset.grow(1.0 + impact * 3.0), Color.TRANSPARENT, 7, Color(accent.lightened(0.42), impact * 0.86), 3)
 	_draw_special_overlay(rect)
+
 	if clear_echo > 0.001:
-		var neon := Color("ff416c", clear_echo)
-		_draw_box(rect.grow(1.0 + clear_echo * 4.0), Color(neon, 0.08), 6, neon, 3)
-		var c := rect.get_center()
-		var r := rect.size.x * (0.14 + (1.0 - clear_echo) * 0.46)
-		draw_arc(c, r, 0.0, TAU, 24, Color("ff7a96", clear_echo), 2.5, true)
+		var neon := Color("#ff416c", clear_echo)
+		_draw_box(inset.grow(1.0 + clear_echo * 4.0), Color(neon, 0.06), 7, neon, 3)
+		var center := inset.get_center()
+		var radius := inset.size.x * (0.14 + (1.0 - clear_echo) * 0.46)
+		draw_arc(center, radius, 0.0, TAU, 24, Color("#ff7a96", clear_echo), 2.5, true)
 
 func _draw_special_overlay(rect: Rect2) -> void:
 	if special_kind.is_empty() or special_layers <= 0:
@@ -254,45 +248,20 @@ func _draw_special_overlay(rect: Rect2) -> void:
 		draw_string(ThemeDB.fallback_font, badge.position + Vector2(3, 14), str(special_layers), HORIZONTAL_ALIGNMENT_CENTER, 12, 12, Color.WHITE)
 
 func _draw_block(rect: Rect2, fill: Color) -> void:
-	_draw_extruded_cube(rect, fill)
-
-func _draw_extruded_cube(rect: Rect2, fill: Color) -> void:
-	# True geometric extrusion in the CanvasItem renderer: separate top/right
-	# polygons plus a beveled front face. It gives real depth without turning the
-	# authoritative 8x8 board into a costly 3D voxel simulation.
-	var depth := clampf(rect.size.x * 0.11, 4.0, 8.0)
-	var shadow_rect := Rect2(rect.position + Vector2(1.0, depth + 5.0), rect.size - Vector2(depth, depth))
-	_draw_box(shadow_rect, Color("#1f2940", 0.30), 6, Color.TRANSPARENT, 0)
-
-	var front := Rect2(rect.position + Vector2(0.0, depth), rect.size - Vector2(depth, depth))
-	var top_face := PackedVector2Array([
-		front.position,
-		front.position + Vector2(depth, -depth),
-		Vector2(front.end.x + depth, front.position.y - depth),
-		Vector2(front.end.x, front.position.y)
-	])
-	var right_face := PackedVector2Array([
-		Vector2(front.end.x, front.position.y),
-		Vector2(front.end.x + depth, front.position.y - depth),
-		Vector2(front.end.x + depth, front.end.y - depth),
-		Vector2(front.end.x, front.end.y)
-	])
-	draw_colored_polygon(top_face, fill.lightened(0.24))
-	draw_colored_polygon(right_face, fill.darkened(0.10))
-	var right_face_outline := PackedVector2Array([right_face[0], right_face[1], right_face[2], right_face[3], right_face[0]])
-	draw_polyline(right_face_outline, Color(fill.lightened(0.22), 0.64), 1.4, true)
-	_draw_box(front, fill, 7, fill.lightened(0.24), 2)
-
-	var bevel := front.grow(-3.0)
-	_draw_box(bevel, Color(fill.lightened(0.08), 0.28), 5, Color(1, 1, 1, 0.10), 1)
-	var highlight_y := front.position.y + maxf(4.0, front.size.y * 0.10)
-	draw_line(Vector2(front.position.x + 7, highlight_y), Vector2(front.end.x - 7, highlight_y), Color(1, 1, 1, 0.68), 2.5, true)
+	# Saturated two-tone 2D material: one face, one contact shadow, one highlight.
+	# This keeps pieces rich without the noisy pseudo-3D top/right polygons.
+	var radius := maxi(5, int(rect.size.x * 0.18))
+	var shadow := Rect2(rect.position + Vector2(0, maxf(2.0, rect.size.y * 0.09)), rect.size)
+	_draw_box(shadow, Color(0.02, 0.025, 0.08, 0.28), radius, Color.TRANSPARENT, 0)
+	_draw_box(rect, fill, radius, Color(fill.lightened(0.30), 0.40), 1)
+	var shade := Rect2(Vector2(rect.position.x + rect.size.x * 0.08, rect.end.y - rect.size.y * 0.17), Vector2(rect.size.x * 0.84, rect.size.y * 0.10))
+	_draw_box(shade, Color(fill.darkened(0.34), 0.24), maxi(2, radius / 2), Color.TRANSPARENT, 0)
 	var gloss := Rect2(
-		front.position + Vector2(front.size.x * 0.16, front.size.y * 0.17),
-		Vector2(front.size.x * 0.48, maxf(3.0, front.size.y * 0.15))
+		rect.position + Vector2(rect.size.x * 0.12, rect.size.y * 0.10),
+		Vector2(rect.size.x * 0.58, maxf(3.0, rect.size.y * 0.14))
 	)
-	_draw_box(gloss, Color(1,1,1,0.12), 4, Color(1,1,1,0.05), 1)
-	draw_circle(front.position + Vector2(front.size.x * 0.28, front.size.y * 0.30), maxf(1.5, front.size.x * 0.040), Color(1, 1, 1, 0.52))
+	_draw_box(gloss, Color(1,1,1,0.28), maxi(2, radius / 2), Color.TRANSPARENT, 0)
+	draw_circle(rect.position + Vector2(rect.size.x * 0.23, rect.size.y * 0.30), maxf(1.2, rect.size.x * 0.038), Color(1,1,1,0.46))
 
 func _draw_box(rect: Rect2, color: Color, radius: int, border: Color, border_width: int) -> void:
 	var style := StyleBoxFlat.new()

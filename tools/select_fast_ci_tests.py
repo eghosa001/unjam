@@ -31,6 +31,7 @@ GROUP_TESTS = {
     "home": [
         "validate_home_direct_levels_runtime",
         "validate_home_premium_visual_hierarchy",
+        "validate_3d_visual_reboot",
         "validate_home_return_atomic",
         "validate_viewport_fit",
         "validate_bottom_nav_touch_zones",

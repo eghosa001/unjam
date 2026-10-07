@@ -32,45 +32,18 @@ func _release() -> void:
 
 
 func _draw_shell(rect: Rect2, center: Vector2, pulse: float) -> void:
+	# One fast glossy 2D face. Pieces should be readable arrows, not miniature boxes.
 	var radius := minf(rect.size.x, rect.size.y) * 0.22
-	var depth := clampf(rect.size.y * 0.16, 6.0, 10.0)
-	var front := Rect2(rect.position + Vector2(0, -1.0), Vector2(rect.size.x, maxf(12.0, rect.size.y - depth)))
-	# A separated cast shadow gives the piece a real footprint instead of a dark
-	# outline glued to the face.
-	var cast := Rect2(front.position + Vector2(3.0, depth + 5.0), front.size)
-	draw_style_box(_rounded(Color(0.01, 0.04, 0.10, 0.34), radius, Color.TRANSPARENT, 0), cast)
-	# Draw the darker body behind the face so the lower/right edges read as
-	# thickness even when neighboring tiles are packed tightly.
-	var body := Rect2(front.position + Vector2(0, depth), front.size)
-	draw_style_box(_rounded(accent.darkened(0.43), radius, accent.darkened(0.56), 2), body)
-	var lower_lip := PackedVector2Array([
-		Vector2(front.position.x + radius * 0.50, front.end.y - 1.0),
-		Vector2(front.end.x - radius * 0.50, front.end.y - 1.0),
-		Vector2(front.end.x - radius * 0.66, front.end.y + depth - 1.0),
-		Vector2(front.position.x + radius * 0.66, front.end.y + depth - 1.0),
-	])
-	draw_colored_polygon(lower_lip, accent.darkened(0.31))
-	# Front face: strong edge contrast plus a subtle inset face makes the bevel
-	# read at phone size without introducing a per-piece viewport.
-	draw_style_box(_rounded(accent, radius, glow.lightened(0.10), 3), front)
-	var inset := Rect2(front.position + Vector2(4.0, 4.0), front.size - Vector2(8.0, 8.0))
-	draw_style_box(_rounded(Color(accent.lightened(0.025), 0.94), radius * 0.78, Color(accent.lightened(0.26), 0.34), 1), inset)
-	# Directional top/left bevels mimic a shared scene light.
-	var top_bevel := PackedVector2Array([
-		front.position + Vector2(radius * 0.45, 3.0),
-		Vector2(front.end.x - radius * 0.45, front.position.y + 3.0),
-		Vector2(front.end.x - radius * 0.64, front.position.y + 10.0),
-		front.position + Vector2(radius * 0.64, 10.0),
-	])
-	draw_colored_polygon(top_bevel, Color(accent.lightened(0.40), 0.58))
-	draw_line(front.position + Vector2(5.0, radius * 0.72), front.position + Vector2(5.0, front.size.y - radius * 0.62), Color(1, 1, 1, 0.18), 2.0, true)
-	# Localized lacquer highlight; keep it asymmetric so the face does not look
-	# like a flat gradient panel.
-	var gloss_rect := Rect2(front.position + Vector2(9.0, 8.0), Vector2(front.size.x * 0.46, maxf(7.0, front.size.y * 0.13)))
-	draw_style_box(_rounded(Color(1, 1, 1, 0.31), radius * 0.38, Color.TRANSPARENT, 0), gloss_rect)
-	draw_circle(front.position + Vector2(front.size.x * 0.25, front.size.y * 0.27), maxf(2.0, front.size.x * 0.035), Color(1, 1, 1, 0.50))
+	var face := rect.grow(-1.0)
+	var cast := Rect2(face.position + Vector2(0, maxf(2.0, face.size.y * 0.08)), face.size)
+	draw_style_box(_rounded(Color(0.01,0.04,0.10,0.26), radius, Color.TRANSPARENT, 0), cast)
+	draw_style_box(_rounded(accent, radius, Color(accent.lightened(0.28),0.38), 1), face)
+	var lower := Rect2(Vector2(face.position.x + face.size.x*0.09, face.end.y-face.size.y*0.15), Vector2(face.size.x*0.82,face.size.y*0.08))
+	draw_style_box(_rounded(Color(accent.darkened(0.34),0.24),radius*0.45,Color.TRANSPARENT,0),lower)
+	var gloss_rect := Rect2(face.position + Vector2(face.size.x*0.12, face.size.y*0.09), Vector2(face.size.x*0.58,maxf(4.0,face.size.y*0.13)))
+	draw_style_box(_rounded(Color(1,1,1,0.27),radius*0.44,Color.TRANSPARENT,0),gloss_rect)
 	if hover_amount > 0.01:
-		draw_arc(center - Vector2(0, depth * 0.30), front.size.x * 0.54, 0, TAU, 36, Color(glow, 0.20), 4.0, true)
+		draw_arc(center, face.size.x*0.53, 0, TAU, 32, Color(glow,0.18), 3.0, true)
 
 func _draw_motion_trail(_center: Vector2, _pulse: float) -> void:
 	# Direction is communicated by the printed glyph itself. Motion trails made

@@ -1,6 +1,7 @@
 extends "res://scripts/game/rescue_rush_motion_final.gd"
 
 const RefCanvas = preload("res://scripts/ui/figma_reference_canvas.gd")
+const GAMEPLAY_ART = preload("res://scripts/ui/unjam_gameplay_art.gd")
 
 
 const NAVY := Color(0.03,0.23,0.47)
@@ -128,7 +129,7 @@ func _build_figma_rescue(canvas: Control) -> void:
 	var status_panel := PanelContainer.new()
 	status_panel.name = "CompactStatusStrip"
 	RefCanvas.add_shadow(canvas, Rect2(17,81,354,48), 15, Color(0.02,0.10,0.18,0.22), 5, Vector2(0,4))
-	status_panel.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#365448"),Color("#29483d"),Color("#20392f"),15,Color(0.49,0.72,0.56,0.36),1.1,0.24))
+	status_panel.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color(0.18,0.37,0.30,0.52),Color(0.12,0.30,0.25,0.48),Color(0.08,0.22,0.20,0.46),15,Color(0.55,0.92,0.66,0.12),1.0,0.12))
 	RefCanvas.set_rect(status_panel,17,81,354,48)
 	status_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(status_panel)
@@ -147,11 +148,11 @@ func _build_figma_rescue(canvas: Control) -> void:
 	var objective := PanelContainer.new()
 	objective.name = "RescueObjectiveCard"
 	RefCanvas.add_shadow(canvas, Rect2(17,137,354,34), 12, Color(0.02,0.10,0.18,0.14), 3, Vector2(0,3))
-	objective.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#fffdf7"),Color("#faf7ef"),Color("#f1ede2"),12,Color(0.55,0.76,0.61,0.32),1.0,0.22))
+	objective.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#173d31"),Color("#123429"),Color("#0c2b24"),12,Color(0.55,0.96,0.67,0.16),1.0,0.12))
 	RefCanvas.set_rect(objective,17,137,354,34)
 	objective.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(objective)
-	var objective_label := RefCanvas.label(_compact_objective_instruction(),16,Color("#088c3d"),true)
+	var objective_label := RefCanvas.label(_compact_objective_instruction(),15,Color("#b9ffd0"),true)
 	objective_label.name = "RescueObjectiveLabel"
 	objective_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	RefCanvas.set_rect(objective_label,29,137,330,34)
@@ -159,15 +160,22 @@ func _build_figma_rescue(canvas: Control) -> void:
 
 	var depth := PanelContainer.new()
 	depth.name = "RescueBoardDepth"
-	depth.add_theme_stylebox_override("panel",RefCanvas.rounded_gradient3(Color("#335257"),Color("#25434b"),Color("#1a3340"),26))
+	depth.add_theme_stylebox_override("panel",RefCanvas.solid_box(Color(0.02,0.11,0.10,0.16),26))
 	RefCanvas.set_rect(depth,23,194,344,344)
 	canvas.add_child(depth)
 	board_panel = PanelContainer.new()
 	board_panel.name = "RescueBoardPanel"
-	board_panel.add_theme_stylebox_override("panel",RefCanvas.rounded_gradient3(Color("#d1ebc2"),Color("#99c4ab"),Color("#5e8c85"),26,Color(0.94,1.0,0.88,0.72),2,0.45))
+	board_panel.add_theme_stylebox_override("panel",RefCanvas.rounded_gradient3(Color("#1b5840"),Color("#124632"),Color("#0b3528"),26,Color(0.62,0.96,0.72,0.10),1,0.10))
 	RefCanvas.set_rect(board_panel,21,180,348,348)
 	canvas.add_child(board_panel)
+	var board_art := GAMEPLAY_ART.new()
+	board_art.name = "RescueBoardWorldArt"
+	board_art.configure("rescue_board", GREEN, _shell_dark_mode(), level_number)
+	board_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	board_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	board_panel.add_child(board_art)
 	var margin := MarginContainer.new()
+	margin.z_index = 2
 	for side in ["left","right","top","bottom"]:
 		margin.add_theme_constant_override("margin_%s" % side,10)
 	board_panel.add_child(margin)
@@ -214,9 +222,9 @@ func _build_figma_rescue(canvas: Control) -> void:
 	canvas.add_child(frame_border)
 
 func _action(text_value: String, _fill: Color) -> Button:
-	var fill := Color("#365448")
-	var border := Color(0.45,0.78,0.56,0.46)
-	var result := RefCanvas.premium_button(text_value,15,OFF_WHITE,fill,16,border,1.1)
+	var fill := Color("#183d31")
+	var border := Color(0.45,0.90,0.58,0.18)
+	var result := RefCanvas.premium_button(text_value,14,OFF_WHITE,fill,16,border,1.0)
 	result.custom_minimum_size = Vector2(106,60)
 	result.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	return result
@@ -240,65 +248,42 @@ func _figma_board_cell_size() -> int:
 	return int(clampf(floor((available - float(gap * maxi(span - 1,0))) / float(maxi(span,1))),30.0,43.0))
 
 func _make_empty_cell(_cell_size: int, pos: Vector2i, route: Dictionary) -> Control:
-	# The inherited premium renderer sizes its first pass for a much larger board.
-	# On the audited 390x844 Figma board, the two-line EXIT label from that pass
-	# forced one GridContainer column/row wider than the 41px reference tiles.
-	# Build empty cells at the final Figma size and use the single portal arrow
-	# shown by the production design so child minimums cannot expand the pedestal.
 	var slot := super._make_empty_cell(_figma_board_cell_size(), pos, route)
 	var route_cells: Array = route.get("cells", [])
 	var on_route := pos in route_cells
 	var is_edge_exit := on_route and not is_inside(pos + Vector2i(route.get("direction", Vector2i.RIGHT)))
-	var well_fill := Color(0.08,0.23,0.22,0.42)
-	var well_edge := Color(0.82,1.0,0.88,0.24)
-	if on_route:
-		well_fill = Color(0.22,0.74,0.44,0.12)
-		well_edge = Color(0.45,0.94,0.63,0.56 if is_edge_exit else 0.34)
 	var well_style := StyleBoxFlat.new()
-	well_style.bg_color = well_fill
-	well_style.corner_radius_top_left = 10
-	well_style.corner_radius_top_right = 10
-	well_style.corner_radius_bottom_left = 10
-	well_style.corner_radius_bottom_right = 10
-	var edge_width := 2 if is_edge_exit else 1
-	well_style.border_width_left = edge_width
-	well_style.border_width_right = edge_width
-	well_style.border_width_top = edge_width
-	well_style.border_width_bottom = edge_width
-	well_style.border_color = well_edge
-	# Contact shadow plus a pale bottom rim makes each empty slot read as a
-	# recessed socket instead of a flat rounded square.
-	well_style.shadow_color = Color(0.01, 0.08, 0.10, 0.38)
-	well_style.shadow_size = 3
-	well_style.shadow_offset = Vector2(0, 2)
+	well_style.corner_radius_top_left = 9
+	well_style.corner_radius_top_right = 9
+	well_style.corner_radius_bottom_left = 9
+	well_style.corner_radius_bottom_right = 9
+
+	if on_route:
+		# The playable route is a luminous lane; everything else intentionally recedes.
+		var open_lane := int(route.get("blockers",1)) == 0
+		well_style.bg_color = Color("#45e781", 0.12 if open_lane else 0.055)
+		well_style.border_color = Color("#8ff5b5", 0.72 if is_edge_exit else 0.10)
+		var bw := 2 if is_edge_exit else 1
+		well_style.border_width_left = bw
+		well_style.border_width_right = bw
+		well_style.border_width_top = bw
+		well_style.border_width_bottom = bw
+	else:
+		well_style.bg_color = Color(0.86,1.0,0.90,0.008)
+		well_style.border_color = Color.TRANSPARENT
+		well_style.border_width_left = 0
+		well_style.border_width_right = 0
+		well_style.border_width_top = 0
+		well_style.border_width_bottom = 0
+
 	slot.add_theme_stylebox_override("panel", well_style)
-	var rim := Panel.new()
-	rim.name = "RescueWellInnerRim"
-	rim.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	rim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	rim.offset_left = 3
-	rim.offset_top = 3
-	rim.offset_right = -3
-	rim.offset_bottom = -3
-	var rim_style := StyleBoxFlat.new()
-	rim_style.bg_color = Color.TRANSPARENT
-	rim_style.corner_radius_top_left = 7
-	rim_style.corner_radius_top_right = 7
-	rim_style.corner_radius_bottom_left = 7
-	rim_style.corner_radius_bottom_right = 7
-	rim_style.border_width_bottom = 1
-	rim_style.border_width_right = 1
-	rim_style.border_color = Color(0.84, 1.0, 0.90, 0.24)
-	rim.add_theme_stylebox_override("panel", rim_style)
-	rim.show_behind_parent = false
-	rim.z_index = 1
-	slot.add_child(rim)
 	for child in slot.get_children():
 		if child is Label:
 			var label := child as Label
 			if "EXIT" in label.text:
-				label.text = _escape_arrow(Vector2i(route.get("direction", Vector2i.RIGHT)))
-				label.add_theme_font_size_override("font_size",20)
+				label.text = _escape_arrow(Vector2i(route.get("direction",Vector2i.RIGHT)))
+				label.add_theme_font_size_override("font_size",24)
+				label.add_theme_color_override("font_color",Color("#b7ffd0"))
 				label.custom_minimum_size = Vector2.ZERO
 	return slot
 

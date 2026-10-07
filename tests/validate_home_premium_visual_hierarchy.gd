@@ -19,37 +19,34 @@ func _run() -> void:
 		return _fail("Premium Home surface is missing")
 	var canvas := home.find_child("FigmaHome390x844", true, false) as Control
 	var hero := home.find_child("FigmaHomeHero", true, false) as Control
-	var preview := home.find_child("FigmaHomeHeroPreview", true, false) as Control
+	var hero_art := home.find_child("HomeHeroFlatGameLogo", true, false) as Control
 	var primary := home.find_child("HomePrimaryAction", true, false) as Button
 	var choose := home.find_child("HomeChooseGameButton", true, false) as Button
 	var showcase := home.find_child("HomeWorldProgress", true, false) as Control
 	var showcase_mark := home.find_child("HomeWorldFlatGameLogo", true, false) as Control
 	var nav := home.find_child("HomeBottomNav3D", true, false) as Control
-	if canvas == null or hero == null or preview == null or primary == null or choose == null or showcase == null or showcase_mark == null or nav == null:
+	if canvas == null or hero == null or hero_art == null or primary == null or choose == null or showcase == null or showcase_mark == null or nav == null:
 		return _fail("Figma Home hierarchy is incomplete")
 	if not _rect_eq(Rect2(hero.position, hero.size), Rect2(21,121,346,224)):
 		return _fail("Home hero drifted from Figma 346x224 reference")
-	if not _rect_eq(Rect2(preview.position, preview.size), Rect2(229,144,115,136)):
-		return _fail("Home preview drifted from approved crowding-safe 115x136 reference")
-	if not _rect_eq(Rect2(primary.position, primary.size), Rect2(41,285,178,48)):
+	if not _rect_eq(Rect2(hero_art.position, hero_art.size), Rect2(174,129,184,204)):
+		return _fail("Home illustrated game art is not large enough to dominate the hero")
+	if not _rect_eq(Rect2(primary.position, primary.size), Rect2(37,285,172,48)):
 		return _fail("Home primary action drifted from Figma reference")
 	if not _rect_eq(Rect2(choose.position, choose.size), Rect2(21,365,166,52)):
 		return _fail("Home Choose Game action drifted from Figma reference")
 	if not _rect_eq(Rect2(showcase.position, showcase.size), Rect2(21,582,346,150)):
 		return _fail("Home world showcase does not fill the lower dead-space region")
-	if not _rect_eq(Rect2(showcase_mark.position, showcase_mark.size), Rect2(35,594,42,42)):
+	if not _rect_eq(Rect2(showcase_mark.position, showcase_mark.size), Rect2(32,590,52,48)):
 		return _fail("Home compact world game mark drifted from its approved frame")
-	if showcase_mark.get_script() == null or not String(showcase_mark.get_script().resource_path).ends_with("unjam_flat_game_logo.gd"):
-		return _fail("Home world showcase is not using the shared flat game identity renderer")
-	if not bool(showcase_mark.get_meta("unjam_flat_game_logo", false)):
-		return _fail("Home world game identity lost its flat-logo contract")
-	var hero_mark := home.find_child("HomeHeroFlatGameLogo", true, false) as Control
-	if hero_mark == null or not bool(hero_mark.get_meta("unjam_flat_game_logo", false)):
-		return _fail("Home hero is missing the flat selected-game identity mark")
+	if showcase_mark.get_script() == null or not String(showcase_mark.get_script().resource_path).ends_with("unjam_2d_game_art.gd"):
+		return _fail("Home world showcase is not using the shared illustrated 2D renderer")
+	if hero_art.get_script() == null or not String(hero_art.get_script().resource_path).ends_with("unjam_2d_game_art.gd"):
+		return _fail("Home hero is missing the illustrated selected-game art")
 	for game_id in ["rescue_rush", "water_sort", "block_puzzle"]:
 		var quick_mark := home.find_child("HomeQuickSwitchFlatLogo_%s" % game_id, true, false) as Control
-		if quick_mark == null or not bool(quick_mark.get_meta("unjam_flat_game_logo", false)):
-			return _fail("Home Quick Switch flat logo is missing for %s" % game_id)
+		if quick_mark == null or quick_mark.get_script() == null or not String(quick_mark.get_script().resource_path).ends_with("unjam_2d_game_art.gd"):
+			return _fail("Home Quick Switch illustrated art is missing for %s" % game_id)
 	if showcase.get_rect().end.y >= nav.position.y - 8.0:
 		return _fail("Home world showcase crowds the bottom navigation")
 	var world_title := home.find_child("HomeWorldProgressTitle", true, false) as Label
@@ -94,7 +91,7 @@ func _run() -> void:
 
 	main.queue_free()
 	await _frames(2)
-	print("Home Figma visual hierarchy validated with consistent flat game identity.")
+	print("HOME_ILLUSTRATED_2D_VISUAL_HIERARCHY_OK")
 	quit(0)
 
 func _rect_eq(actual: Rect2, expected: Rect2) -> bool:

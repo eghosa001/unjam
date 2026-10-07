@@ -99,6 +99,11 @@ func _run() -> void:
 	if clamped_left.x < 10.0 or clamped_right.x + source_size.x > phone_width - 9.0:
 		game.queue_free()
 		return _fail("Water pour source clamp allows a tilted bottle outside the phone viewport")
+	var rotated_start := Vector2(-30.0, 120.0)
+	var rotated_clamped: Vector2 = game.call("_clamp_rotated_source_position", rotated_start, ghost, deg_to_rad(52.0), Vector2(phone_width,960.0))
+	if rotated_clamped.x <= rotated_start.x:
+		game.queue_free()
+		return _fail("Rotated Water source clamp did not pull an off-screen tilted bottle inward")
 
 	var live_board := game.get("board") as GridContainer
 	if live_board != null and live_board.get_child_count() >= 2:
@@ -120,7 +125,7 @@ func _run() -> void:
 		await process_frame
 
 	var motion_text := _read("res://scripts/game/water_sort_reference_motion.gd")
-	for token in ["_source_rim_local", "_receiver_rim_local", "_position_for_tilted_rim", "_liquid_arc_points", "_pour_direction", "_clamp_pour_source_position", "_release_pour_visual_lock"]:
+	for token in ["_source_rim_local", "_receiver_rim_local", "_position_for_tilted_rim", "_liquid_arc_points", "_pour_direction", "_clamp_pour_source_position", "_clamp_rotated_source_position", "_release_pour_visual_lock"]:
 		if not motion_text.contains(token):
 			game.queue_free()
 			return _fail("Water Sort motion contract missing %s" % token)

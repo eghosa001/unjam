@@ -69,8 +69,10 @@ func _source_contracts() -> bool:
 		return _fail("Water pour motion no longer resolves visible bottle rims")
 	if not water_motion.contains("pending_completion") or not water_motion.contains("_complete_if_visuals_settled"):
 		return _fail("Water completion no longer waits for pour visuals")
-	if not water_tube_3d.contains("_project_rim_point") or not water_tube_3d.contains("camera_3d.unproject_position"):
-		return _fail("Water 3D rim projection contract is missing")
+	if not water_tube_3d.contains('extends "res://scripts/ui/water_tube_reference_motion.gd"') or not water_tube_3d.contains("func set_pour_progress"):
+		return _fail("Water 2D bottle compatibility/motion contract is missing")
+	if water_tube_3d.contains("SubViewport") or water_tube_3d.contains("Camera3D"):
+		return _fail("Water bottle renderer reintroduced nested 3D viewport work")
 	if not rescue_motion.contains("_offscreen_target") or not rescue_motion.contains("_wait_for_escape_visuals"):
 		return _fail("Rescue completion no longer waits for escape visuals")
 	if not block_scene.contains("block_puzzle_10000.gd") or not block_campaign.contains('extends "res://scripts/game/block_puzzle_final_polish.gd"'):

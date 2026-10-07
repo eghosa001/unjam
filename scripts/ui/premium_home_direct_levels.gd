@@ -1,6 +1,7 @@
 extends "res://scripts/ui/premium_home_casual.gd"
 
 const FLAT_GAME_LOGO_SCRIPT = preload("res://scripts/ui/unjam_flat_game_logo.gd")
+const GAME_ART_SCRIPT = preload("res://scripts/ui/unjam_2d_game_art.gd")
 
 const RefCanvas = preload("res://scripts/ui/figma_reference_canvas.gd")
 
@@ -100,46 +101,71 @@ func _on_economy_balance_changed(new_balance: int, _delta: int, _reason: String)
 func _add_frame_background(canvas: Control) -> void:
 	var bg := PanelContainer.new()
 	bg.name = "FigmaHomeBackground"
-	var fill := Color("#1f2023") if _home_dark() else Color("#eee8df")
-	var edge := Color("#3d4045") if _home_dark() else Color("#c8c3ba")
-	bg.add_theme_stylebox_override("panel", RefCanvas.flat_gloss(fill, 34, edge, 1, 0.11))
+	var accent := Unjam3DTheme.game_accent(selected_game)
+	var fill := (Color("#171b24").lerp(accent.darkened(0.58), 0.30) if _home_dark()
+		else Color("#e7ecea").lerp(accent.lightened(0.42), 0.44))
+	var edge := Color(accent, 0.18)
+	bg.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(
+		fill.lightened(0.055), fill, fill.darkened(0.10), 34, edge, 1, 0.16
+	))
 	RefCanvas.set_rect(bg, 0, 0, 390, 844)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(bg)
+
+	var glow := PanelContainer.new()
+	glow.name = "HomeAccentGlow"
+	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	glow.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(accent, 0.12 if not _home_dark() else 0.08), 120))
+	RefCanvas.set_rect(glow, 178, 82, 248, 280)
+	canvas.add_child(glow)
 
 func _add_hero(canvas: Control) -> void:
 	var hero := PanelContainer.new()
 	hero.name = "FigmaHomeHero"
 	var accent := Unjam3DTheme.game_accent(selected_game)
-	var fill := Color("#27292d") if _home_dark() else Color("#fffaf2")
-	var edge := Color(accent.r, accent.g, accent.b, 0.30 if _home_dark() else 0.24)
-	hero.add_theme_stylebox_override("panel", RefCanvas.flat_gloss(fill, 20, edge, 1, 0.14))
+	var fill := (Color("#13242b").lerp(accent.darkened(0.52), 0.38) if _home_dark()
+		else Color("#edf4ef").lerp(accent.lightened(0.38), 0.42))
+	hero.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(
+		fill.lightened(0.08), fill, fill.darkened(0.12), 24, Color(accent, 0.22), 1, 0.20
+	))
 	RefCanvas.set_rect(hero, 21, 121, 346, 224)
 	hero.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(hero)
 
+	# Art is now the visual anchor, not a tiny logo sitting inside another card.
+	_add_hero_preview(canvas, selected_game)
+
 	var level := _home_current_level(selected_game)
 	var world := MultiGameManager.world_for_game_level(selected_game, level)
-	var game_title_size := 23 if selected_game == "block_puzzle" else 27
-	var game_title := _add_text(canvas, _short_game_name(selected_game), Rect2(41, 151, 180, 34), game_title_size, NAVY, true)
+	var game_title_size := 22 if selected_game == "block_puzzle" else 25
+	var game_title := _add_text(canvas, _short_game_name(selected_game), Rect2(37, 146, 158, 58), game_title_size, NAVY, true)
 	game_title.name = "HomeHeroGameTitle"
-	game_title.add_theme_color_override("font_color", accent.lightened(0.16) if _home_dark() else accent.darkened(0.20))
-	var game_meta := _add_text(canvas, "LEVEL %d • WORLD %d" % [level, world], Rect2(41, 190, 170, 17), 14, MUTED, false)
+	game_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	game_title.add_theme_color_override("font_color", Color("#f7fbff") if _home_dark() else accent.darkened(0.28))
+	var game_meta := _add_text(canvas, "LEVEL %d • WORLD %d" % [level, world], Rect2(37, 207, 154, 20), 13, MUTED, false)
 	game_meta.name = "HomeHeroGameMeta"
+	var cue := _add_text(canvas, _hero_cue(selected_game), Rect2(37, 236, 154, 32), 11, MUTED, true)
+	cue.name = "HomeHeroCue"
+	cue.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
 	var continue_button := _add_action(
 		canvas,
-		Rect2(41, 285, 178, 48),
-		Unjam3DTheme.game_accent(selected_game),
+		Rect2(37, 285, 172, 48),
+		accent,
 		"CONTINUE • LEVEL %d" % level,
-		14,
+		13,
 		OFF_WHITE,
 		Callable(self, "_continue_selected_game"),
 		16
 	)
 	continue_button.name = "HomePrimaryAction"
 	primary_button = continue_button
-	_add_hero_preview(canvas, selected_game)
+
+func _hero_cue(game_id: String) -> String:
+	match game_id:
+		"water_sort": return "POUR • MATCH • CLEAR"
+		"block_puzzle": return "PLACE • CLEAR • COMBO"
+		_: return "READ • MOVE • ESCAPE"
 
 func _add_hero_preview(canvas: Control, game_id: String) -> void:
 	var preview_root := Control.new()
@@ -147,37 +173,33 @@ func _add_hero_preview(canvas: Control, game_id: String) -> void:
 	preview_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	RefCanvas.set_rect(preview_root, 0, 0, 390, 844)
 	canvas.add_child(preview_root)
-	var stage := PanelContainer.new()
-	stage.name = "FigmaHomeHeroPreview"
-	var accent := Unjam3DTheme.game_accent(game_id)
-	var stage_fill := Color("#222326") if _home_dark() else Color("#ebe7df")
-	stage_fill = stage_fill.lerp(accent.darkened(0.36) if _home_dark() else accent.lightened(0.76), 0.10)
-	stage.add_theme_stylebox_override("panel", RefCanvas.flat_gloss(stage_fill, 16, Color(accent.r, accent.g, accent.b, 0.24), 1, 0.13))
-	RefCanvas.set_rect(stage, 229, 144, 115, 136)
-	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	preview_root.add_child(stage)
-	var mark := FLAT_GAME_LOGO_SCRIPT.new()
-	mark.name = "HomeHeroFlatGameLogo"
-	mark.configure(game_id)
-	RefCanvas.set_rect(mark, 239, 154, 95, 116)
-	preview_root.add_child(mark)
+	var art := GAME_ART_SCRIPT.new()
+	# Preserve the established node id used by visual QA while upgrading what it renders.
+	art.name = "HomeHeroFlatGameLogo"
+	art.configure(game_id, false, _home_dark())
+	RefCanvas.set_rect(art, 174, 129, 184, 204)
+	preview_root.add_child(art)
 
 func _add_quick_actions(canvas: Control) -> void:
-	# Home keeps one primary action in the hero. These are quiet secondary actions.
-	var choose := _add_action(canvas, Rect2(21, 365, 166, 52), Color("#d4d1ca") if not _home_dark() else Color("#2a2b2e"), "CHOOSE GAME", 12, NAVY if not _home_dark() else DARK_INK, Callable(self, "_open_game_selector"), 14)
+	# Secondary navigation still has game identity: one saturated game action and
+	# one trophy action, rather than two generic application bars.
+	var selected_accent := Unjam3DTheme.game_accent(selected_game)
+	var choose_fill := selected_accent.darkened(0.18) if _home_dark() else selected_accent
+	var choose := _add_action(canvas, Rect2(21, 365, 166, 52), choose_fill, "▦  CHOOSE GAME", 12, OFF_WHITE, Callable(self, "_open_game_selector"), 14)
 	choose.name = "HomeChooseGameButton"
 	# Open the selector only after the finger is released. The button overlaps the
 	# Water Sort card coordinates on the next surface, so press-mode can let the
 	# same Android touch carry through and immediately launch that game.
 	choose.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
-	var compete := _add_action(canvas, Rect2(197, 365, 170, 52), Color("#d9d5ca") if not _home_dark() else Color("#2a2b2e"), "COMPETE", 12, NAVY if not _home_dark() else DARK_INK, Callable(self, "_open_compete"), 14)
+	var compete_fill := Color("#7052d8") if _home_dark() else Color("#7659e8")
+	var compete := _add_action(canvas, Rect2(197, 365, 170, 52), compete_fill, "★  COMPETE", 12, OFF_WHITE, Callable(self, "_open_compete"), 14)
 	# Keep the stable node id used by older automation while the player-facing
 	# action now opens campaign progression rankings instead of Daily.
 	compete.name = "HomeDailyGamesButton"
 	compete.tooltip_text = "Campaign rankings • all-time and weekly"
 
 	# Sidekick stays discoverable without taking a third content column.
-	var sidekick := _add_action(canvas, Rect2(261, 15, 108, 44), Color("#dedbd4") if not _home_dark() else Color("#292a2d"), "SIDEKICK • β", 11, NAVY if not _home_dark() else DARK_INK, Callable(self, "_open_sidekick"), 14)
+	var sidekick := _add_action(canvas, Rect2(261, 15, 108, 44), Color("#4f446e") if _home_dark() else Color("#d9d0f5"), "SIDEKICK • β", 11, OFF_WHITE if _home_dark() else Color("#493b70"), Callable(self, "_open_sidekick"), 14)
 	sidekick.name = "HomePlaymateSidekickBeta"
 	sidekick.tooltip_text = LocalizationManager.localize("PLAYMATE SIDEKICK") + " • " + LocalizationManager.localize("BETA")
 
@@ -223,20 +245,20 @@ func _add_quick_switch(canvas: Control) -> void:
 		RefCanvas.set_rect(card, x, 465, 108, 94)
 		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		canvas.add_child(card)
-		var mark := FLAT_GAME_LOGO_SCRIPT.new()
+		var mark := GAME_ART_SCRIPT.new()
 		mark.name = "HomeQuickSwitchFlatLogo_%s" % id
-		mark.configure(id)
-		RefCanvas.set_rect(mark, x + 38, 471, 32, 32)
+		mark.configure(id, true, _home_dark())
+		RefCanvas.set_rect(mark, x + 7, 468, 94, 48)
 		canvas.add_child(mark)
-		var switch_font := 11 if id == "block_puzzle" else 12
-		var switch_name := _add_text(canvas, String(entry[1]), Rect2(x + 2, 504, 104, 19), switch_font, entry[2], true)
+		var switch_font := 10 if id == "block_puzzle" else 11
+		var switch_name := _add_text(canvas, String(entry[1]), Rect2(x + 2, 516, 104, 17), switch_font, entry[2], true)
 		switch_name.name = "HomeQuickSwitchName_%s" % id
 		switch_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		switch_name.clip_text = true
 		RefCanvas.fit_single_line_text(switch_name, 100.0, switch_font, 9)
 		var level := _home_current_level(id)
 		var stars := MultiGameManager.total_stars(id)
-		var switch_meta := _add_text(canvas, "L%d • ★%s" % [level, _compact_number(stars)], Rect2(x + 6, 528, 96, 18), 12, MUTED, false)
+		var switch_meta := _add_text(canvas, "L%d • ★%s" % [level, _compact_number(stars)], Rect2(x + 6, 537, 96, 16), 11, MUTED, false)
 		switch_meta.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		var tap := Button.new()
 		tap.name = "HomeDirect_%s" % id
@@ -270,18 +292,19 @@ func _add_world_progress(canvas: Control) -> void:
 	var showcase_rect := Rect2(21, 582, 346, 150)
 	var panel := PanelContainer.new()
 	panel.name = "HomeWorldProgress"
-	var fill := Color("#292a2d") if _home_dark() else Color("#efede8")
-	panel.add_theme_stylebox_override("panel", RefCanvas.flat_gloss(fill, 18, Color(accent.r, accent.g, accent.b, 0.24), 1, 0.10))
+	var fill := (Color("#20262b").lerp(accent.darkened(0.50),0.22) if _home_dark()
+		else Color("#edf1ee").lerp(accent.lightened(0.48),0.34))
+	panel.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(fill.lightened(0.05),fill,fill.darkened(0.08),18,Color(accent,0.18),1,0.10))
 	RefCanvas.set_rect(panel, showcase_rect.position.x, showcase_rect.position.y, showcase_rect.size.x, showcase_rect.size.y)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(panel)
 
 	# Keep the shared selected-game identity present, but compact: the hero and
 	# quick-switch row already carry the large art. This frees room for live meta.
-	var mark := FLAT_GAME_LOGO_SCRIPT.new()
+	var mark := GAME_ART_SCRIPT.new()
 	mark.name = "HomeWorldFlatGameLogo"
-	mark.configure(selected_game)
-	RefCanvas.set_rect(mark, 35, 594, 42, 42)
+	mark.configure(selected_game, true, _home_dark())
+	RefCanvas.set_rect(mark, 32, 590, 52, 48)
 	root.add_child(mark)
 
 	var world_title := _add_text(root, "%s %d" % [MultiGameManager.progression_scope_label(selected_game), world], Rect2(86, 592, 150, 22), 15, OFF_WHITE if _home_dark() else NAVY, true)
@@ -295,7 +318,7 @@ func _add_world_progress(canvas: Control) -> void:
 	progress.min_value = 0
 	progress.max_value = total
 	progress.value = completed_in_world
-	progress.add_theme_stylebox_override("background", RefCanvas.solid_box(Color("#3b3d41") if _home_dark() else Color("#cbc6bd"), 4))
+	progress.add_theme_stylebox_override("background", RefCanvas.solid_box(Color(0.05,0.08,0.10,0.28) if _home_dark() else Color(1,1,1,0.42), 4))
 	progress.add_theme_stylebox_override("fill", RefCanvas.solid_box(accent, 4))
 	RefCanvas.set_rect(progress, 258, 607, 91, 7)
 	root.add_child(progress)
@@ -456,12 +479,10 @@ func _open_daily_games() -> void:
 
 func _switch_card_style(game_id: String, accent: Color) -> StyleBox:
 	var selected := game_id == selected_game
-	var base_fill := Color("#27282b") if _home_dark() else Color("#f5f2ec")
-	var card_fill := base_fill.lerp(accent.darkened(0.42) if _home_dark() else accent.lightened(0.76), 0.10 if selected else 0.025)
-	var border_width := 1.0
-	var neutral_edge := Color("#3a3d42") if _home_dark() else Color("#cbc6bc")
-	var border_color := Color(accent.r, accent.g, accent.b, 0.62) if selected else neutral_edge
-	return RefCanvas.flat_gloss(card_fill, 16, border_color, border_width, 0.10 if selected else 0.065)
+	var base_fill := Color("#202832") if _home_dark() else Color("#f1f5f3")
+	var card_fill := base_fill.lerp(accent.darkened(0.45) if _home_dark() else accent.lightened(0.62), 0.22 if selected else 0.08)
+	var border_color := Color(accent, 0.46) if selected else Color(accent, 0.10)
+	return RefCanvas.rounded_gradient3(card_fill.lightened(0.05), card_fill, card_fill.darkened(0.08), 16, border_color, 1, 0.12)
 
 func _refresh_home_selection() -> void:
 	if figma_canvas == null or not is_instance_valid(figma_canvas):
@@ -472,7 +493,7 @@ func _refresh_home_selection() -> void:
 	var title := figma_canvas.get_node_or_null("HomeHeroGameTitle") as Label
 	if title != null:
 		title.text = _short_game_name(selected_game)
-		title.add_theme_font_size_override("font_size", 23 if selected_game == "block_puzzle" else 27)
+		title.add_theme_font_size_override("font_size", 22 if selected_game == "block_puzzle" else 25)
 		var title_accent := Unjam3DTheme.game_accent(selected_game)
 		title.add_theme_color_override("font_color", title_accent.lightened(0.16) if _home_dark() else title_accent.darkened(0.20))
 		title.add_theme_color_override("font_outline_color", Color.TRANSPARENT)
