@@ -97,7 +97,7 @@ jobs:
           grep -Fx 'admob_test_mode=true' project.godot
           sed -i 's/gradle_build\/export_format=1/gradle_build\/export_format=0/' export_presets.cfg
           sed -i 's/version\/code=[0-9]\+/version\/code=10/' export_presets.cfg
-          sed -i 's/version\/name="[^"]*"/version\/name="1.0.9-test"/' export_presets.cfg
+          sed -i 's/version\/name="[^"]*"/version\/name="1.0.10-test"/' export_presets.cfg
           grep -Fx 'gradle_build/export_format=0' export_presets.cfg
           grep -Fx 'version/code=10' export_presets.cfg
           grep -Fx 'version/name="1.0.10-test"' export_presets.cfg
