@@ -1,7 +1,7 @@
 class_name PremiumResultOverlay
 extends Control
 
-const GAME_ART_SCRIPT = preload("res://scripts/ui/unjam_3d_game_art.gd")
+const GAME_ART_SCRIPT = preload("res://scripts/ui/unjam_2d_game_art.gd")
 
 signal continue_requested
 signal secondary_requested
@@ -225,13 +225,34 @@ func _result_game_id() -> String:
 	return "rescue_rush"
 
 func _add_identity(game_id: String) -> void:
-	# Use the same lit one-shot diorama language as Home and Choose Game. The old
-	# hand-drawn chick/tubes/cubes looked like placeholder glyphs beside the 3D stars.
+	# Results reuse the same authored 2D identity as Home/Choose Game. Keep it
+	# compact and static: the win moment is carried by the illustration, stars
+	# and burst feedback rather than a hidden 3D viewport.
+	var halo := PanelContainer.new()
+	halo.name = "ResultIdentityHalo"
+	halo.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color(accent, 0.10), 42))
+	FigmaReferenceCanvas.set_rect(halo, 119, 220, 150, 86)
+	halo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_canvas.add_child(halo)
+
 	var art := GAME_ART_SCRIPT.new()
-	art.name = "ResultGameArt3D"
-	art.configure(game_id)
-	FigmaReferenceCanvas.set_rect(art, 139, 232, 110, 66)
+	art.name = "ResultGameArt2D"
+	art.configure(game_id, true, _dark_theme())
+	FigmaReferenceCanvas.set_rect(art, 126, 216, 136, 92)
+	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_canvas.add_child(art)
+
+	for spec in [
+		[112.0, 250.0, 4.0],
+		[274.0, 240.0, 5.0],
+		[287.0, 286.0, 3.0],
+	]:
+		var spark := PanelContainer.new()
+		spark.name = "ResultIdentitySpark"
+		spark.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color(1, 0.96, 0.62, 0.82), float(spec[2])))
+		FigmaReferenceCanvas.set_rect(spark, float(spec[0]), float(spec[1]), float(spec[2]) * 2.0, float(spec[2]) * 2.0)
+		spark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_canvas.add_child(spark)
 
 func _celebrate() -> void:
 	if not is_inside_tree():
