@@ -99,6 +99,8 @@ func _sanitize() -> void:
 	data.competition_display_name = String(data.get("competition_display_name", "")).strip_edges().left(20)
 	if not data.get("collection_levels", {}) is Dictionary:
 		data.collection_levels = {}
+	if not data.get("meta_progression", {}) is Dictionary:
+		data.meta_progression = {}
 	if not data.get("competition_claimed_periods", []) is Array:
 		data.competition_claimed_periods = []
 	if not data.get("reward_double_claims", []) is Array:
