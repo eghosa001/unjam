@@ -108,7 +108,7 @@ jobs:
           tools/install_monetization_plugins.sh
           test -f addons/admob/android/bin/ads/poing_godot_admob_ads.gd
 
-      - name: Import and run production gates
+      - name: Import and run current production gates
         shell: bash
         run: |
           set -o pipefail
@@ -116,16 +116,49 @@ jobs:
           if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" build-import.log; then exit 1; fi
           set -euo pipefail
           for t in \
+            validate_motion_quality \
+            validate_decorative_3d_frame_budget \
+            validate_runtime_efficiency \
             validate_monetization \
             validate_admob_production \
             validate_billing_production \
+            validate_shop_navigation_runtime \
             validate_restore_purchase_flow \
-            validate_gameplay_interactions \
-            validate_navigation_state_and_text_fit_v8 \
-            validate_flat_polish_v8 \
+            validate_premium_ux \
+            validate_visual_quality_contract \
+            validate_production_completion \
+            validate_uiux_regressions \
+            validate_navigation_surface_coverage \
+            validate_theme_integrity \
+            validate_viewport_fit \
+            validate_robustness \
+            validate_production_hardening_regressions \
+            validate_soothing_audio_palette \
             validate_launcher_icon_safe_zone \
             validate_touch_enhancer_scope \
-            validate_bottom_nav_touch_zones; do
+            validate_bottom_nav_touch_zones \
+            validate_campaign \
+            validate_campaign_diversity \
+            validate_level_launch \
+            validate_gameplay_interactions \
+            validate_progression_transitions \
+            validate_water_sort_type_safety \
+            validate_water_tube_3d_layering \
+            validate_water_premium_visual_hierarchy \
+            validate_water_idle_status_after_pour \
+            validate_water_tubes_sleep_idle \
+            validate_water_assist_runtime \
+            validate_block_progression_10000 \
+            validate_block_constructive_solvability \
+            validate_block_objective_runtime \
+            validate_block_level_pack_codec \
+            validate_block_exact_solver \
+            validate_block_visual_integrity \
+            validate_block_modes_boosters \
+            validate_block_bot_calibration \
+            validate_water_progression \
+            validate_water_pour_arc \
+            validate_water_constructive_solvability; do
             echo "===== $t ====="
             timeout 180s godot --headless --path . --script "res://tests/$t.gd"
           done
