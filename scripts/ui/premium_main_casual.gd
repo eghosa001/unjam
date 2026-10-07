@@ -1423,8 +1423,10 @@ func _figma_collection_tip(canvas: Control) -> void:
 	title.name = "CollectionTipTitle"
 	var current_value := _figma_text(canvas, "+%d DAILY  •  +%d GIFT" % [daily_bonus, gift_amount], Rect2(63, 639, 288, 20), 13, FIGMA_GOLD)
 	current_value.name = "CollectionTipValue"
-	var detail := _figma_text(canvas, "Each structure has 5 levels and its own permanent effect.", Rect2(63, 659, 288, 20), 12, FIGMA_MUTED)
+	var detail := _figma_text(canvas, "5 levels each • permanent effect per upgrade", Rect2(63, 659, 288, 20), 11, FIGMA_MUTED)
 	detail.name = "CollectionTipDetail"
+	detail.clip_text = true
+	_fit_single_line_control_text(detail, 284.0, 11, 9)
 
 func _figma_collection_progress(canvas: Control, game_id: String, x: float) -> void:
 	var accent := Unjam3DTheme.game_accent(game_id)
