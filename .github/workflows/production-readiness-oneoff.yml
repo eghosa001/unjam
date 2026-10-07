@@ -70,7 +70,8 @@ jobs:
       - name: Run production UX performance and robustness gates
         shell: bash
         run: |
-          set -euxo pipefail
+          set -uo pipefail
+          touch production-failures.txt
           tests=(
             validate_motion_quality
             validate_decorative_3d_frame_budget
@@ -96,14 +97,19 @@ jobs:
           )
           for t in "${tests[@]}"; do
             echo "===== START $t ====="
-            timeout 180s godot --headless --path . --script "res://tests/$t.gd"
-            echo "===== PASS $t ====="
+            if timeout 180s godot --headless --path . --script "res://tests/$t.gd"; then
+              echo "===== PASS $t ====="
+            else
+              echo "===== FAIL $t ====="
+              echo "$t" >> production-failures.txt
+            fi
           done
 
       - name: Run production gameplay and progression gates
         shell: bash
         run: |
-          set -euxo pipefail
+          set -uo pipefail
+          touch production-failures.txt
           tests=(
             validate_campaign
             validate_campaign_diversity
@@ -132,19 +138,39 @@ jobs:
           )
           for t in "${tests[@]}"; do
             echo "===== START $t ====="
-            timeout 240s godot --headless --path . --script "res://tests/$t.gd"
-            echo "===== PASS $t ====="
+            if timeout 240s godot --headless --path . --script "res://tests/$t.gd"; then
+              echo "===== PASS $t ====="
+            else
+              echo "===== FAIL $t ====="
+              echo "$t" >> production-failures.txt
+            fi
           done
 
       - name: Run full curated/authored campaign integrity gates
         shell: bash
         run: |
-          set -euxo pipefail
+          set -uo pipefail
+          touch production-failures.txt
           for t in validate_water_curated_catalog_10000 validate_rescue_authored_catalog_10000; do
             echo "===== START $t ====="
-            timeout 300s godot --headless --path . --script "res://tests/$t.gd"
-            echo "===== PASS $t ====="
+            if timeout 300s godot --headless --path . --script "res://tests/$t.gd"; then
+              echo "===== PASS $t ====="
+            else
+              echo "===== FAIL $t ====="
+              echo "$t" >> production-failures.txt
+            fi
           done
+
+      - name: Fail on collected production blockers
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -s production-failures.txt ]]; then
+            echo "Production blockers:"
+            sort -u production-failures.txt
+            exit 1
+          fi
+          echo "All production-readiness tests passed."
 
       - name: Upload audit logs
         if: always()
@@ -154,5 +180,6 @@ jobs:
           path: |
             production-import.log
             production-boot.log
+            production-failures.txt
           if-no-files-found: warn
           retention-days: 3
