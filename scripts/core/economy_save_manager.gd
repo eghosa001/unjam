@@ -60,6 +60,7 @@ func complete_level(level_number: int, stars: int, rescue_id: String, coin_rewar
 	var safe_reward := EconomyManager.collection_campaign_reward(maxi(0, coin_reward))
 	var previous := int(data.get("coins", 0))
 	var rewards := super.complete_level(level_number, stars, rescue_id, safe_reward)
+	MetaProgressionManager.record_campaign_complete("rescue_rush", stars, bool(rewards.get("first_clear", false)))
 	_notify_economy(previous, "level_reward", {
 		"level": level_number,
 		"stars": stars,
