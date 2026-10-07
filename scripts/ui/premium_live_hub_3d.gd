@@ -193,7 +193,7 @@ func _add_bottom_nav(canvas: Control) -> void:
 	var items := [
 		["HOME", "⌂", 22.0, 14.0, Callable(self, "_go_home"), false, Color("#ffd54f")],
 		["GAMES", "▦", 94.0, 86.0, Callable(), true, Color("#ffd54f")],
-		["DAILY", "★", 166.0, 158.0, func(): get_parent().call("build_compete_leaderboard"), false, Color("#ffd54f")],
+		["DAILY", "★", 166.0, 158.0, func(): get_parent().call("build_daily_games"), false, Color("#ffd54f")],
 		["COLLECT", "◆", 238.0, 230.0, func(): get_parent().call("build_collection"), false, Color("#ffd54f")],
 		["SETTINGS", "⚙", 310.0, 302.0, func(): get_parent().call("build_settings"), false, Color("#ffd54f")],
 	]
@@ -219,7 +219,7 @@ func _add_bottom_nav(canvas: Control) -> void:
 		var glyph := _add_text(canvas, String(item[1]), Rect2(float(item[2]) - 1.0, 763, 58, 24), 20, glyph_color, true)
 		glyph.name = "SelectorNavGlyph_%s" % String(item[0])
 		glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		var display_name := "COMPETE" if String(item[0]) == "DAILY" else String(item[0])
+		var display_name := String(item[0])
 		var label_width := 70.0 if String(item[0]) in ["COLLECT", "SETTINGS"] else 58.0
 		var label_x := float(item[3]) + (72.0 - label_width) * 0.5
 		var label := _add_text(canvas, display_name, Rect2(label_x, 789, label_width, 24), 13, label_color, selected)
