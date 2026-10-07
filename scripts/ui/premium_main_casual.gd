@@ -1406,10 +1406,14 @@ func build_collection() -> void:
 	]
 	for metric in metrics:
 		var metric_key := String(metric[1])
-		var metric_value := _figma_text(canvas,_compact_stat(int(metric[0])),Rect2(float(metric[2]),136,62,26),18,FIGMA_INK)
+		# Keep value and caption in distinct compact bands. Font ascent/descent
+		# can otherwise make their intrinsic rectangles overlap on narrow phones.
+		var metric_value := _figma_text(canvas,_compact_stat(int(metric[0])),Rect2(float(metric[2]),135,62,22),17,FIGMA_INK)
 		metric_value.name = "CollectionMetricValue_%s" % metric_key
-		var metric_label := _figma_text(canvas,metric_key,Rect2(float(metric[2])-3,163,70,22),14,FIGMA_MUTED)
+		_fit_single_line_control_text(metric_value, 60.0, 17, 12)
+		var metric_label := _figma_text(canvas,metric_key,Rect2(float(metric[2])-3,162,70,18),12,FIGMA_MUTED)
 		metric_label.name = "CollectionMetricLabel_%s" % metric_key
+		_fit_single_line_control_text(metric_label, 68.0, 12, 10)
 
 	_figma_text(canvas,"GAMES",Rect2(17,202,190,21),16,FIGMA_INK)
 	_figma_collection_progress(canvas,"rescue_rush",17)
