@@ -56,7 +56,7 @@ func _draw_motion_trail(_center: Vector2, _pulse: float) -> void:
 func _draw_arrow(center: Vector2, dir: String, scale_value: float) -> void:
 	var v := _dir_vec(dir)
 	var n := Vector2(-v.y, v.x)
-	var readable_scale := scale_value * 1.28
+	var readable_scale := scale_value * 1.36
 	var glyph_center := center - Vector2(0, 2.0)
 	var tip := glyph_center + v * readable_scale
 	var tail := glyph_center - v * readable_scale * 0.76
