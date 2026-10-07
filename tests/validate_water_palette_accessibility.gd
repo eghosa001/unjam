@@ -42,14 +42,15 @@ func _initialize() -> void:
 	]:
 		if not reference_source.contains(token) or not legacy_source.contains(token) or not gameplay_source.contains(token):
 			failures.append("Water bottle/stream renderers disagree on accessible palette token: %s" % token)
+	var liquid_source := _read("res://scripts/ui/water_tube_reference_motion.gd")
 	for token in [
-		"func _liquid_material_3d(color: Color)",
-		"material.roughness = 0.22",
-		"material.clearcoat = 0.24",
-		"material.emission_energy_multiplier = 0.075",
+		"_materials.vertical_shade(liquid, 0.76)",
+		"_materials.vertical_shade(liquid, 0.20)",
+		"_materials.glass_highlight(Color.WHITE, specular_alpha)",
+		"next_color != _slot_color(slot)",
 	]:
-		if not motion_source.contains(token):
-			failures.append("Water liquid anti-wash material contract is missing: %s" % token)
+		if not liquid_source.contains(token):
+			failures.append("Water 2D anti-wash material contract is missing: %s" % token)
 
 	if not failures.is_empty():
 		for failure in failures:
