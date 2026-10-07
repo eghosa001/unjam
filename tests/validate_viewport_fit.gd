@@ -2,7 +2,10 @@ extends SceneTree
 
 const MAX_CAMPAIGN_LEVEL := 10000
 const VIEWPORTS := [
-	# Compact and tall phones.
+	# Compact and tall phones. 432x936 is a compact modern portrait stress case
+	# where the 390x844 reference surface still preserves a 48px exact-button
+	# floor after scaling.
+	Vector2i(432,936),
 	Vector2i(540,960),
 	Vector2i(720,1280),
 	Vector2i(720,1600),
@@ -23,6 +26,7 @@ const VIEWPORTS := [
 	Vector2i(1200,1200)
 ]
 const STRESS_VIEWPORTS := [
+	Vector2i(432,936),
 	Vector2i(540,960),
 	Vector2i(720,1280),
 	Vector2i(1536,2048),
@@ -41,7 +45,7 @@ func _run() -> void:
 	for viewport_size in STRESS_VIEWPORTS:
 		if not await _validate_late_game_viewport(viewport_size):
 			return
-	print("Viewport-fit validation passed: audited 390x844 Figma canvases across phones, tablets, foldables, landscape and square windows with level 10,000 stress cases.")
+	print("Viewport-fit validation passed: audited canvas bounds, text clipping, text/control overlap, scaled touch targets and level 10,000 gameplay across compact phones, tablets, foldables, landscape and square windows.")
 	quit(0)
 
 func _source_contracts() -> bool:
@@ -224,7 +228,66 @@ func _assert_canvas(owner: Node, canvas_name: String, viewport_size: Vector2i, l
 	var screen := _logical_screen(canvas)
 	if not _rect_inside(canvas.get_global_rect(),screen):
 		return _fail("%s reference canvas spills outside logical viewport %s for window %s: %s" % [label,str(screen.size),str(viewport_size),str(canvas.get_global_rect())])
+	if not _assert_visible_text_geometry(canvas, viewport_size, label):
+		return false
 	return true
+
+func _assert_visible_text_geometry(canvas: Control, viewport_size: Vector2i, context: String) -> bool:
+	var canvas_rect := canvas.get_global_rect()
+	var text_controls: Array[Control] = []
+	for raw in canvas.find_children("*", "", true, false):
+		if not raw is Control:
+			continue
+		var control := raw as Control
+		if not control.is_visible_in_tree():
+			continue
+		if control is Label:
+			var label := control as Label
+			if label.text.strip_edges().is_empty():
+				continue
+			if not _rect_inside(label.get_global_rect(), canvas_rect):
+				return _fail("%s text escapes its reference canvas at %s: %s %s" % [context,str(viewport_size),label.name,str(label.get_global_rect())])
+			if label.get_visible_line_count() < label.get_line_count():
+				return _fail("%s text is vertically clipped at %s: %s lines=%d visible=%d text=%s" % [context,str(viewport_size),label.name,label.get_line_count(),label.get_visible_line_count(),label.text])
+			if label.autowrap_mode == TextServer.AUTOWRAP_OFF and not _single_line_text_fits(label, label.text):
+				return _fail("%s label text clips horizontally at %s: %s text=%s rect=%s" % [context,str(viewport_size),label.name,label.text,str(label.size)])
+			text_controls.append(label)
+		elif control is Button:
+			var button := control as Button
+			if button.text.strip_edges().is_empty():
+				continue
+			if not _rect_inside(button.get_global_rect(), canvas_rect):
+				return _fail("%s button escapes its reference canvas at %s: %s %s" % [context,str(viewport_size),button.name,str(button.get_global_rect())])
+			if not _single_line_text_fits(button, button.text):
+				return _fail("%s button text clips at %s: %s text=%s rect=%s" % [context,str(viewport_size),button.name,button.text,str(button.size)])
+			if bool(button.get_meta("unjam_figma_exact_geometry", false)):
+				var physical_size := button.get_global_rect().size
+				if physical_size.x < 48.0 or physical_size.y < 48.0:
+					return _fail("%s exact touch target falls below 48px after scaling at %s: %s %s" % [context,str(viewport_size),button.name,str(physical_size)])
+			text_controls.append(button)
+
+	for i in range(text_controls.size()):
+		var a := text_controls[i]
+		for j in range(i + 1, text_controls.size()):
+			var b := text_controls[j]
+			if a.is_ancestor_of(b) or b.is_ancestor_of(a):
+				continue
+			var overlap := a.get_global_rect().intersection(b.get_global_rect())
+			if overlap.size.x > 2.0 and overlap.size.y > 2.0:
+				return _fail("%s visible text/control overlap at %s: %s %s intersects %s %s by %s" % [context,str(viewport_size),a.name,str(a.get_global_rect()),b.name,str(b.get_global_rect()),str(overlap)])
+	return true
+
+func _single_line_text_fits(control: Control, value: String) -> bool:
+	var font := control.get_theme_font("font")
+	if font == null:
+		return true
+	var font_size := control.get_theme_font_size("font_size")
+	if font_size <= 0:
+		return true
+	var max_width := 0.0
+	for raw_line in value.split("\n"):
+		max_width = maxf(max_width, font.get_string_size(String(raw_line), HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x)
+	return max_width <= control.size.x + 2.0
 
 func _logical_screen(node: Node) -> Rect2:
 	var viewport := node.get_viewport() if node != null else root
