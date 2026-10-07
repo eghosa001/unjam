@@ -152,8 +152,8 @@ func _build_ui() -> void:
 	status_label = _add_text(
 		canvas,
 		"Restore purchases anytime\nRewarded ads stay optional",
-		Rect2(37,716,316,40),
-		13,
+		Rect2(37,735,316,42),
+		11,
 		Color("#c6d9ec")
 	)
 	status_label.name = "ShopStatusMessage"
@@ -261,7 +261,7 @@ func _add_shop_status(canvas: Control) -> void:
 	var ad_free := _is_owned_product(StoreManager.PRODUCT_REMOVE_ADS, remove_info)
 	var starter_owned := _is_owned_product(StoreManager.PRODUCT_STARTER_PACK, starter_info)
 
-	FigmaReferenceCanvas.add_shadow(canvas,Rect2(17,617,354,148),18,Color(0.03,0.10,0.20,0.20),5,Vector2(0,4))
+	FigmaReferenceCanvas.add_shadow(canvas,Rect2(17,617,354,174),18,Color(0.03,0.10,0.20,0.20),5,Vector2(0,4))
 	var panel := PanelContainer.new()
 	panel.name = "ShopStatusPanel"
 	var panel_top := Color("#192644") if _shop_dark() else Color("#eef5ff")
@@ -272,7 +272,7 @@ func _add_shop_status(canvas: Control) -> void:
 		Color(0.55,0.46,0.92,0.64) if _shop_dark() else Color(0.50,0.63,0.90,0.42),
 		1.2,0.46
 	))
-	FigmaReferenceCanvas.set_rect(panel,17,617,354,148)
+	FigmaReferenceCanvas.set_rect(panel,17,617,354,174)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(panel)
 
@@ -288,7 +288,7 @@ func _add_shop_status(canvas: Control) -> void:
 		"ShopStatusAds",
 		"ADS",
 		"OFF" if ad_free else "STANDARD",
-		Rect2(31,674,98,40),
+		Rect2(31,674,98,52),
 		Color("#26d07c") if ad_free else Color("#ff9a32")
 	)
 	_shop_status_chip(
@@ -296,7 +296,7 @@ func _add_shop_status(canvas: Control) -> void:
 		"ShopStatusStarter",
 		"STARTER",
 		"OWNED" if starter_owned else "AVAILABLE",
-		Rect2(145,674,98,40),
+		Rect2(145,674,98,52),
 		Color("#b078ff")
 	)
 	_shop_status_chip(
@@ -304,7 +304,7 @@ func _add_shop_status(canvas: Control) -> void:
 		"ShopStatusRewards",
 		"REWARDS",
 		"OPTIONAL",
-		Rect2(259,674,98,40),
+		Rect2(259,674,98,52),
 		Color("#2dd4b6")
 	)
 
@@ -318,12 +318,12 @@ func _shop_status_chip(canvas: Control, name_value: String, title: String, state
 	FigmaReferenceCanvas.set_rect(chip,rect.position.x,rect.position.y,rect.size.x,rect.size.y)
 	chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(chip)
-	var title_label := _add_text(canvas,title,Rect2(rect.position.x+5,rect.position.y+2,rect.size.x-10,13),10,Color("#d6e2ef"))
+	var title_label := _add_text(canvas,title,Rect2(rect.position.x+5,rect.position.y+2,rect.size.x-10,20),10,Color("#d6e2ef"))
 	title_label.name = "%sTitle" % name_value
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	FigmaReferenceCanvas.fit_single_line_text(title_label,rect.size.x-14,10,8)
-	var state_label := _add_text(canvas,state,Rect2(rect.position.x+5,rect.position.y+22,rect.size.x-10,13),10,accent.lightened(0.28))
+	var state_label := _add_text(canvas,state,Rect2(rect.position.x+5,rect.position.y+29,rect.size.x-10,20),10,accent.lightened(0.28))
 	state_label.name = "%sState" % name_value
 	state_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	state_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
