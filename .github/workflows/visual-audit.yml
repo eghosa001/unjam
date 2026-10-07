@@ -4,6 +4,11 @@ on:
   workflow_dispatch:
   pull_request:
     branches: [main]
+    paths:
+      - "tests/validate_viewport_fit.gd"
+      - "scripts/ui/premium_home_direct_levels.gd"
+      - "scripts/ui/premium_main_casual.gd"
+      - ".github/workflows/visual-audit.yml"
 
 permissions:
   contents: read
