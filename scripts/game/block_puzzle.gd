@@ -627,6 +627,10 @@ func any_move_available() -> bool:
 	return false
 
 func undo_move() -> void:
+	if daily_mode:
+		if hint_label != null:
+			hint_label.text = "Undo is disabled in ranked Daily competition."
+		return
 	if history.is_empty() or completed:
 		return
 	var state: Dictionary = history.pop_back()
