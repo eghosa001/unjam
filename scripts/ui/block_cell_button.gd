@@ -176,8 +176,8 @@ func _draw() -> void:
 	# Empty cells intentionally recede. The board should read as a play field,
 	# not sixty-four individually outlined buttons.
 	if not occupied and not preview:
-		var idle_fill := Color(0.31, 0.20, 0.48, 0.13 + hover_amount * 0.07)
-		var idle_edge := Color(0.72, 0.58, 0.92, 0.08 + hover_amount * 0.12)
+		var idle_fill := Color(0.31, 0.20, 0.48, 0.055 + hover_amount * 0.055)
+		var idle_edge := Color(0.72, 0.58, 0.92, 0.025 + hover_amount * 0.10)
 		_draw_box(inset, idle_fill, 6, idle_edge, 1)
 
 	if occupied or preview:
