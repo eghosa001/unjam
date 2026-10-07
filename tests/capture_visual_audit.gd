@@ -704,15 +704,30 @@ func _shutdown_visual_audit() -> void:
 			break
 
 	# Only after the surface is truly gone should persistent audit helpers drop
-	# their generated resources. This keeps the leak gate strict and deterministic.
+	# their generated resources. Fast single-surface audits can otherwise quit
+	# while short-lived global feedback particles/tweens are still finishing.
+	for tween in get_processed_tweens():
+		if tween != null and tween.is_valid():
+			tween.kill()
+
+	var premium_visuals := root.get_node_or_null("PremiumVisuals")
+	if premium_visuals != null:
+		if premium_visuals.has_method("clear_ambient"):
+			premium_visuals.call("clear_ambient")
+		var overlay = premium_visuals.get("overlay")
+		if overlay != null and is_instance_valid(overlay):
+			for child in overlay.get_children():
+				overlay.remove_child(child)
+				child.queue_free()
+
 	var feedback := root.get_node_or_null("FeedbackManager")
 	if feedback != null and feedback.has_method("shutdown_audio"):
 		feedback.call("shutdown_audio")
 	FigmaReferenceCanvas.release_cached_styles()
 
-	# Give RefCounted style/image resources time to release after their final
-	# scene owners and cache owners are both gone.
-	await _settle(24)
+	# Flush queued frees and RefCounted styles after all scene/global visual
+	# owners have released them. Keep this strict rather than suppressing leaks.
+	await _settle(36)
 	# Defer the actual exit one more frame so _shutdown_visual_audit() and its
 	# caller return first, releasing local PackedScene/image/resource references.
 	call_deferred("_finish_visual_audit_quit")
