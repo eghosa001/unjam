@@ -219,12 +219,12 @@ func _build_figma_block(canvas: Control) -> void:
 
 	var tray := PanelContainer.new()
 	tray.name = "BlockTray"
-	FigmaReferenceCanvas.add_shadow(canvas, Rect2(17,526,354,150), 22, Color(0.07,0.03,0.16,0.07), 4, Vector2(0,4))
+	FigmaReferenceCanvas.add_shadow(canvas, Rect2(17,526,354,120), 22, Color(0.07,0.03,0.16,0.07), 4, Vector2(0,4))
 	tray.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(
 		Color(0.16,0.09,0.22,0.42), Color(0.12,0.06,0.18,0.38), Color(0.08,0.04,0.13,0.42), 22,
 		Color(0.67,0.55,0.72,0.08), 1.0, 0.08
 	))
-	FigmaReferenceCanvas.set_rect(tray, 17, 526, 354, 150)
+	FigmaReferenceCanvas.set_rect(tray, 17, 526, 354, 120)
 	tray.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(tray)
 	var tray_art := GAMEPLAY_ART.new()
@@ -236,13 +236,13 @@ func _build_figma_block(canvas: Control) -> void:
 	piece_row.name = "BlockPieceRow"
 	piece_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	piece_row.add_theme_constant_override("separation", 7)
-	FigmaReferenceCanvas.set_rect(piece_row, 31, 545, 326, 112)
+	FigmaReferenceCanvas.set_rect(piece_row, 31, 536, 326, 96)
 	canvas.add_child(piece_row)
 
 	var status_region := Control.new()
 	status_region.name = "BlockStatus"
 	status_region.clip_contents = true
-	FigmaReferenceCanvas.set_rect(status_region, 18, 682, 354, 20)
+	FigmaReferenceCanvas.set_rect(status_region, 18, 654, 354, 20)
 	canvas.add_child(status_region)
 	status_label = FigmaReferenceCanvas.label("", 14, Color(1,0.995,0.97), true)
 	status_label.name = "BlockStatusText"
@@ -255,7 +255,7 @@ func _build_figma_block(canvas: Control) -> void:
 	var hint_region := Control.new()
 	hint_region.name = "BlockHint"
 	hint_region.clip_contents = true
-	FigmaReferenceCanvas.set_rect(hint_region, 18, 706, 354, 20)
+	FigmaReferenceCanvas.set_rect(hint_region, 18, 678, 354, 20)
 	canvas.add_child(hint_region)
 	hint_label = FigmaReferenceCanvas.label("", 14, Color(1,0.995,0.97), true)
 	hint_label.name = "BlockHintText"
@@ -365,9 +365,9 @@ func _apply_figma_block_theme(dark: bool) -> void:
 
 func _tray_piece_button_size() -> Vector2:
 	# This scene is authored on a 390x844 Figma canvas and scales uniformly as a
-	# whole. Keep three 104px slots inside the 326px row, but give each piece 112px
-	# of vertical room so three-cell shapes render at board-like scale.
-	return Vector2(104, 112)
+	# whole. Keep three 104px slots inside the 326px row while trimming unused
+	# vertical tray space so the blocks themselves own the visual hierarchy.
+	return Vector2(104, 96)
 
 func load_level() -> void:
 	_clear_transition_active = false
