@@ -289,25 +289,23 @@ func _clamp_pour_source_position(desired: Vector2, ghost_size: Vector2, viewport
 func _clamp_rotated_source_position(desired: Vector2, ghost: Control, final_rotation: float, viewport_size: Vector2) -> Vector2:
 	# Clamp the *rotated* bottle silhouette, not only its unrotated Control rect.
 	# A tall tube tilted 50–60 degrees can extend far beyond its original width.
-	var min_x := INF
-	var max_x := -INF
-	var min_y := INF
-	var max_y := -INF
-	var corners := [
+	var min_x: float = INF
+	var max_x: float = -INF
+	var min_y: float = INF
+	var corners: Array[Vector2] = [
 		Vector2.ZERO,
 		Vector2(ghost.size.x, 0.0),
 		ghost.size,
 		Vector2(0.0, ghost.size.y),
 	]
-	for corner in corners:
-		var relative := corner - ghost.pivot_offset
+	for corner: Vector2 in corners:
+		var relative: Vector2 = corner - ghost.pivot_offset
 		var scaled := Vector2(relative.x * ghost.scale.x, relative.y * ghost.scale.y)
-		var rotated := scaled.rotated(final_rotation)
-		var p := ghost.pivot_offset + rotated
-		min_x = minf(min_x, p.x)
-		max_x = maxf(max_x, p.x)
-		min_y = minf(min_y, p.y)
-		max_y = maxf(max_y, p.y)
+		var rotated: Vector2 = scaled.rotated(final_rotation)
+		var point: Vector2 = ghost.pivot_offset + rotated
+		min_x = minf(min_x, point.x)
+		max_x = maxf(max_x, point.x)
+		min_y = minf(min_y, point.y)
 	var edge_margin := 12.0
 	var x := desired.x
 	if x + min_x < edge_margin:
