@@ -146,10 +146,10 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
         add(groups, "home")
         visual.add("home")
         return True
-    if p.startswith("assets/art/meta/"):
+    if p.startswith("assets/art/meta/") or p.startswith("assets/art/meta_wide/"):
         add(groups, "secondary_ui")
         explicit_tests.add("validate_visible_meta_surfaces")
-        visual.update({"collection", "daily", "goals", "profile", "friends"})
+        visual.update({"collection", "daily", "goals", "profile", "friends", "settings"})
         return True
     if p.startswith("assets/art/brand/"):
         add(groups, "home", "games_ui")
