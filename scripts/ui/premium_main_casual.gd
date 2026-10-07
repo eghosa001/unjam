@@ -318,6 +318,11 @@ func _figma_text(canvas: Control, text_value: String, rect: Rect2, font_size: in
 	var label := FigmaReferenceCanvas.label(text_value, font_size, _figma_theme_text(color), true)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER if center else HORIZONTAL_ALIGNMENT_LEFT
 	FigmaReferenceCanvas.set_rect(label, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
+	# Figma rectangles are authoritative. Label font minimums must never silently
+	# enlarge a text control into a neighboring card/button or beyond the screen.
+	label.custom_minimum_size = Vector2.ZERO
+	label.position = rect.position
+	label.size = rect.size
 	canvas.add_child(label)
 	return label
 
