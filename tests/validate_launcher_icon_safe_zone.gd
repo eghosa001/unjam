@@ -72,7 +72,7 @@ func _initialize() -> void:
 			failures.append("Android branding pipeline missing: %s" % token)
 
 	_check_size("res://store_assets/unjam_google_play_icon_512.png", Vector2i(512, 512), "Canonical launcher artwork", failures)
-	_check_safe_margin("res://assets/icon_launcher_adaptive_432.png", 70, "Adaptive launcher foreground", failures)
+	_check_generated_safe_margin("res://store_assets/unjam_google_play_icon_512.png", 432, 280, 70, "Adaptive launcher foreground", failures)
 	_check_size("res://assets/unjam_startup_logo.png", Vector2i(320, 320), "Exported full startup logo", failures)
 	_check_loadable("res://assets/splash_emblem_safe_432.png", "Safe system splash emblem", failures)
 
@@ -93,12 +93,17 @@ func _check_size(path: String, expected: Vector2i, label: String, failures: Arra
 		failures.append("%s must be %dx%d" % [label, expected.x, expected.y])
 
 
-func _check_safe_margin(path: String, min_margin: int, label: String, failures: Array[String]) -> void:
-	var image := Image.load_from_file(path)
-	if image == null or image.is_empty():
-		failures.append("%s failed to load" % label)
+func _check_generated_safe_margin(source_path: String, canvas_size: int, content_size: int, min_margin: int, label: String, failures: Array[String]) -> void:
+	var source := Image.load_from_file(source_path)
+	if source == null or source.is_empty():
+		failures.append("%s source failed to load" % label)
 		return
-	image.convert(Image.FORMAT_RGBA8)
+	source.convert(Image.FORMAT_RGBA8)
+	source.resize(content_size, content_size, Image.INTERPOLATE_LANCZOS)
+	var image := Image.create(canvas_size, canvas_size, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0, 0, 0, 0))
+	var offset := Vector2i((canvas_size - content_size) / 2, (canvas_size - content_size) / 2)
+	image.blit_rect(source, Rect2i(Vector2i.ZERO, source.get_size()), offset)
 	var size := image.get_size()
 	var min_x := size.x
 	var min_y := size.y
