@@ -30,7 +30,7 @@ func _init() -> void:
 	_require("res://scripts/ui/insufficient_coins_prompt.gd", ["card_mid", "rounded_gradient3"], errors)
 	_require("res://scripts/game/rescue_rush_casual.gd", ["rounded_gradient3"], errors)
 	_require("res://scripts/game/rescue_rush_polished.gd", ["one tween owner", "final_target", "travel_time", "launch_scale", "shape_tween"], errors)
-	_require("res://scripts/game/water_sort_casual.gd", ["rounded_gradient3", "Premium glass needs contrast", "#123d63", "#061f39"], errors)
+	_require("res://scripts/game/water_sort_casual.gd", ["rounded_gradient3", "Premium glass needs contrast", "#0d4267", "#04243c", "WaterStageWorldArt"], errors)
 	_require("res://scripts/core/multi_game_manager.gd", ["func daily_started_games", "func daily_selected_game", "func claim_daily_game", "daily_game_choices"], errors)
 	_require("res://scripts/game/water_sort_casual.gd", ["stage_height := 420.0", "count <= 12 else 5", "height_width_limit"], errors)
 	_require("res://scripts/game/water_sort_10000.gd", ["if tubes.size() > 10:", "meta_label.text = \"DAILY CHALLENGE\" if daily_mode else \"LEVEL %d • WORLD %d\"", "premium_feedback.show_banner"], errors)
