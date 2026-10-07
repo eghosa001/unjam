@@ -467,7 +467,7 @@ func _tray_cell_size(max_x: int, max_y: int) -> float:
 	var fit_cell := minf((size.x - 10.0) / float(max_x + 1), (size.y - 10.0) / float(max_y + 1))
 	# Tray pieces should be immediately legible and close to the 32.6px board
 	# cells, while still fitting the tallest three-cell shapes without clipping.
-	return clampf(minf(32.0, fit_cell), 18.0, 32.0)
+	return clampf(minf(35.0, fit_cell), 18.0, 35.0)
 
 func _draw_block(rect: Rect2, fill: Color) -> void:
 	var radius := maxi(5, int(rect.size.x * 0.18))
