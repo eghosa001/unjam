@@ -293,6 +293,7 @@ func _figma_header(canvas: Control, title_text: String, subtitle_text: String, p
 		subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		subtitle.clip_text = true
 		FigmaReferenceCanvas.set_rect(subtitle, 83, 49, 186, 34)
+		_fit_wrapped_text(subtitle, 182.0, 14, 11)
 	if pill_text.strip_edges().is_empty():
 		return
 	if pill_callback.is_valid():
@@ -524,6 +525,7 @@ func build_profile() -> void:
 	name_edit.max_length = 20
 	name_edit.add_theme_font_size_override("font_size",15)
 	name_edit.add_theme_color_override("font_color",_figma_theme_text(FIGMA_INK))
+	name_edit.add_theme_color_override("font_placeholder_color",Color("#8f99a5") if _dark() else Color("#68717b"))
 	name_edit.add_theme_stylebox_override("normal",FigmaReferenceCanvas.flat_gloss(Color("#f5f2ec") if not _dark() else Color("#27282b"),12,Color(FIGMA_CYAN,0.34),1,0.08))
 	FigmaReferenceCanvas.set_rect(name_edit,31,105,218,42)
 	canvas.add_child(name_edit)
@@ -540,9 +542,11 @@ func build_profile() -> void:
 	for stat in stats:
 		_figma_text(canvas,String(stat[0]),Rect2(float(stat[2]),194,64,23),17,FIGMA_INK)
 		_figma_text(canvas,String(stat[1]),Rect2(float(stat[2])-4,222,72,18),11,FIGMA_MUTED)
-	_figma_text(canvas,"%s • %d/%d ACHIEVEMENTS" % [CompetitionManager.weekly_division(),MetaProgressionManager.total_achievements(),MetaProgressionManager.total_achievement_slots()],Rect2(31,244,220,18),11,FIGMA_GOLD)
+	var profile_rank := CompetitionManager.game_all_time_rank(_profile_game)
+	var rank_text := "UNRANKED" if profile_rank <= 0 else "RANK #%d" % profile_rank
+	_figma_text(canvas,"%s • %d/%d ACHIEVEMENTS" % [rank_text,MetaProgressionManager.total_achievements(),MetaProgressionManager.total_achievement_slots()],Rect2(31,244,220,18),11,FIGMA_GOLD)
 	var friends_button := _figma_button(canvas,"ProfileFriendsButton","FRIENDS",Rect2(272,238,79,28),Color("#7a57e0"),Callable(self,"build_friends"),Color.WHITE,10,9)
-	friends_button.tooltip_text = "Friend codes and Friends Weekly Leaderboard"
+	friends_button.tooltip_text = "Friend codes and campaign progress rankings"
 
 	_figma_text(canvas,"ACHIEVEMENTS",Rect2(19,285,170,20),15,FIGMA_GOLD)
 	_figma_profile_game_tabs(canvas)
