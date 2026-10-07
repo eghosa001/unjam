@@ -456,13 +456,13 @@ func _figma_header(canvas: Control, title_text: String, subtitle_text: String, p
 	_fit_single_line_control_text(header_title, 182.0, 23, 14)
 	FigmaReferenceCanvas.style_display_title(header_title, pill_fill.lightened(0.20), Color("#071d55"), 1)
 	if not subtitle_text.strip_edges().is_empty():
-		var subtitle := _figma_text(canvas, subtitle_text, Rect2(83,49,186,22), 14, muted_color)
+		var subtitle := _figma_text(canvas, subtitle_text, Rect2(83,55,186,22), 14, muted_color)
 		subtitle.name = "FigmaHeaderSubtitle"
 		subtitle.autowrap_mode = TextServer.AUTOWRAP_OFF
 		subtitle.clip_text = true
 		subtitle.custom_minimum_size = Vector2.ZERO
 		_fit_single_line_control_text(subtitle, 182.0, 14, 10)
-		FigmaReferenceCanvas.set_rect(subtitle, 83, 49, 186, 22)
+		FigmaReferenceCanvas.set_rect(subtitle, 83, 55, 186, 22)
 		_fit_wrapped_text(subtitle, 182.0, 14, 11)
 	if pill_text.strip_edges().is_empty():
 		return
