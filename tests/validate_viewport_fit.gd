@@ -119,9 +119,11 @@ func _validate_viewport(viewport_size: Vector2i) -> bool:
 		if wide_art.size.x < float(viewport_size.x) * 0.40 or wide_art.size.y < float(viewport_size.y) * 0.60:
 			return _fail("Collection landscape artwork is too small to use the tablet canvas")
 
-	if viewport_size in STRESS_VIEWPORTS:
-		if not await _validate_secondary_surfaces(main, viewport_size):
-			return false
+	# Secondary production surfaces carry the same clipping and touch-target
+	# requirements as Home/gameplay, so audit them at every supported viewport,
+	# not only the stress subset.
+	if not await _validate_secondary_surfaces(main, viewport_size):
+		return false
 
 	main.call("build_level_select")
 	await _frames(5)
