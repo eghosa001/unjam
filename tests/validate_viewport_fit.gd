@@ -45,7 +45,7 @@ func _run() -> void:
 	for viewport_size in STRESS_VIEWPORTS:
 		if not await _validate_late_game_viewport(viewport_size):
 			return
-	print("Viewport-fit validation passed: audited canvas bounds, text clipping, text/control overlap, scaled touch targets and level 10,000 gameplay across compact phones, tablets, foldables, landscape and square windows.")
+	print("Viewport-fit validation passed: audited all production surfaces for canvas bounds, text clipping/overlap and scaled touch targets, plus level 10,000 gameplay across compact phones, tablets, foldables, landscape and square windows.")
 	quit(0)
 
 func _source_contracts() -> bool:
@@ -119,6 +119,10 @@ func _validate_viewport(viewport_size: Vector2i) -> bool:
 		if wide_art.size.x < float(viewport_size.x) * 0.40 or wide_art.size.y < float(viewport_size.y) * 0.60:
 			return _fail("Collection landscape artwork is too small to use the tablet canvas")
 
+	if viewport_size in STRESS_VIEWPORTS:
+		if not await _validate_secondary_surfaces(main, viewport_size):
+			return false
+
 	main.call("build_level_select")
 	await _frames(5)
 	if not _assert_canvas(main.get("content") as Control,"FigmaSurface390x844",viewport_size,"Rescue levels"):
@@ -167,6 +171,66 @@ func _validate_viewport(viewport_size: Vector2i) -> bool:
 
 	main.queue_free()
 	await process_frame
+	return true
+
+func _validate_secondary_surfaces(main: Control, viewport_size: Vector2i) -> bool:
+	var content_owner := func() -> Control: return main.get("content") as Control
+	var cases := [
+		["build_daily_games", [], "Daily"],
+		["build_collection_upgrades", [], "Collection Upgrades"],
+		["build_goals", [], "Goals"],
+		["build_profile", [], "Profile"],
+		["build_friends", [false], "Friends"],
+		["build_compete_leaderboard", [false], "Compete"],
+		["show_playmate_sidekick", ["rescue_rush"], "Sidekick"],
+	]
+	for case_value in cases:
+		var method := String(case_value[0])
+		var args: Array = case_value[1]
+		main.callv(method, args)
+		await _frames(4)
+		if not _assert_canvas(content_owner.call(), "FigmaSurface390x844", viewport_size, String(case_value[2])):
+			return false
+
+	main.call("_open_games_surface")
+	await _frames(6)
+	var live := main.get_node_or_null("PremiumLive") as Control
+	if live == null or not _assert_canvas(live, "FigmaSelector390x844", viewport_size, "Choose Game"):
+		return false
+
+	var shop := main.get_node_or_null("MonetizationHub")
+	if shop != null and shop.has_method("open_shop"):
+		shop.call("open_shop")
+		await _frames(5)
+		if not _assert_canvas(shop, "FigmaShop390x844", viewport_size, "Shop"):
+			return false
+		if shop.has_method("_close_shop"):
+			shop.call("_close_shop")
+			await _frames(3)
+
+	var coin_prompt := main.get_node_or_null("InsufficientCoinsPrompt")
+	if coin_prompt != null and coin_prompt.has_method("show_for"):
+		var balance := int(EconomyManager.balance())
+		coin_prompt.call("show_for", "HINT", balance + 25)
+		await _frames(4)
+		if not _assert_canvas(coin_prompt, "FigmaInsufficientCoins390x844", viewport_size, "Insufficient Coins"):
+			return false
+		var overlay = coin_prompt.get("overlay")
+		if overlay != null and is_instance_valid(overlay):
+			overlay.visible = false
+		await _frames(2)
+
+	var result := PremiumResultOverlay.new()
+	result.configure("LEVEL COMPLETE", "Production layout stress", "3 MOVES", 3, Color("#21c763"), "CONTINUE")
+	result.configure_secondary("DOUBLE REWARD", true)
+	main.add_child(result)
+	result.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	await _frames(4)
+	if not _assert_canvas(result, "FigmaResult390x844", viewport_size, "Result"):
+		result.queue_free()
+		return false
+	result.queue_free()
+	await _frames(2)
 	return true
 
 func _validate_late_game_viewport(viewport_size: Vector2i) -> bool:
@@ -252,6 +316,12 @@ func _assert_visible_text_geometry(canvas: Control, viewport_size: Vector2i, con
 			if label.autowrap_mode == TextServer.AUTOWRAP_OFF and not _single_line_text_fits(label, label.text):
 				return _fail("%s label text clips horizontally at %s: %s text=%s rect=%s" % [context,str(viewport_size),label.name,label.text,str(label.size)])
 			text_controls.append(label)
+		elif control is LineEdit:
+			var edit := control as LineEdit
+			if not _rect_inside(edit.get_global_rect(), canvas_rect):
+				return _fail("%s text field escapes its reference canvas at %s: %s %s" % [context,str(viewport_size),edit.name,str(edit.get_global_rect())])
+			if edit.mouse_filter != Control.MOUSE_FILTER_IGNORE and edit.get_global_rect().size.y < 48.0:
+				return _fail("%s text field touch target falls below 48px after scaling at %s: %s %s" % [context,str(viewport_size),edit.name,str(edit.get_global_rect().size)])
 		elif control is Button:
 			var button := control as Button
 			if button.text.strip_edges().is_empty():
