@@ -144,6 +144,16 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
     if p.startswith(".github/") or p in {"tools/select_fast_ci_tests.py", "tools/validate_release_contract.py"}:
         return False
 
+    if p in {
+        "scripts/systems/competition_manager.gd",
+        "supabase/functions/unjam-competition/index.ts",
+        "supabase/migrations/20261007_create_social_friends.sql",
+    }:
+        explicit_tests.add("validate_friends_social")
+        if p == "scripts/systems/competition_manager.gd":
+            add(groups, "daily")
+        return True
+
     is_code = suffix in CODE_SUFFIXES or p.startswith(("scripts/", "scenes/", "addons/", "data/"))
     if not is_code:
         return False
