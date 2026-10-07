@@ -65,12 +65,17 @@ func _run() -> void:
 			ghost.queue_free()
 			game.queue_free()
 			return _fail("Projected 3D Water Sort rim anchor falls outside the rendered tube control")
-	var tall_tilt := float(game.call("_pour_tilt_degrees", Vector2(60.0,183.0)))
-	var compact_tilt := float(game.call("_pour_tilt_degrees", Vector2(58.0,133.0)))
+	var tall_tilt := float(game.call("_pour_tilt_degrees_for", Vector2(60.0,183.0), false))
+	var compact_tilt := float(game.call("_pour_tilt_degrees_for", Vector2(58.0,133.0), false))
+	var reduced_tilt := float(game.call("_pour_tilt_degrees_for", Vector2(60.0,183.0), true))
 	if tall_tilt >= compact_tilt or tall_tilt < 39.0 or compact_tilt > 52.1:
 		ghost.queue_free()
 		game.queue_free()
 		return _fail("Water pour tilt is not adapting safely to long onboarding bottles")
+	if absf(reduced_tilt - 30.0) > 0.01:
+		ghost.queue_free()
+		game.queue_free()
+		return _fail("Water reduced-motion tilt drifted from the compact 30-degree contract")
 
 	var direction := 1.0
 	var final_rotation := deg_to_rad(70.0)
