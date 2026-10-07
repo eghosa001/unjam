@@ -39,14 +39,23 @@ func _run() -> void:
 		return _fail("Block objective text escapes the score card")
 	if goal.autowrap_mode == TextServer.AUTOWRAP_OFF or not goal.clip_text:
 		return _fail("Block objective text is not bounded for late-game goals")
+	var meta := game.find_child("BlockLevelMeta",true,false) as Label
+	var status := game.find_child("BlockStatusText",true,false) as Label
+	var guidance := game.find_child("BlockHintText",true,false) as Label
+	if meta == null or status == null or guidance == null:
+		return _fail("Block compact secondary typography nodes are missing")
+	if meta.get_theme_font_size("font_size") < 14 or goal.get_theme_font_size("font_size") < 15 or status.get_theme_font_size("font_size") < 15 or guidance.get_theme_font_size("font_size") < 15:
+		return _fail("Block secondary typography fell below the compact-phone readability floor")
 	if piece_row.custom_minimum_size.y < 95.0 or piece_row.custom_minimum_size.y > 97.0:
 		return _fail("Block piece row drifted from the 96px premium tray slot height")
 	if game.find_child("BlockPuzzle3DEnvironment",true,false) != null:
 		return _fail("Retired oversized Block 3D environment returned above Figma composition")
 	for booster_name in ["Booster_Undo","Booster_Hammer","Booster_Shuffle","Booster_Rotate"]:
 		var booster := game.find_child(booster_name,true,false) as Button
-		if booster == null or booster.custom_minimum_size.distance_to(Vector2(77,48)) > 1.0:
+		if booster == null or booster.custom_minimum_size.distance_to(Vector2(80,52)) > 1.0:
 			return _fail("%s is missing or not compact premium-sized" % booster_name)
+		if booster.get_theme_font_size("font_size") < 12:
+			return _fail("%s fell below the 12px booster readability floor" % booster_name)
 
 	var single := BlockPieceButton.new()
 	single.size = Vector2(104,72)
