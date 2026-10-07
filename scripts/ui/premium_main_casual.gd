@@ -336,8 +336,8 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 	)
 	var xs := {"home":22.0, "games":94.0, "daily":166.0, "collection":238.0, "settings":310.0}
 	var hit_x := {"home":14.0, "games":86.0, "daily":158.0, "collection":230.0, "settings":302.0}
-	var names := {"home":"HOME", "games":"GAMES", "daily":"DAILY", "collection":"COLLECT", "settings":"SETTINGS"}
-	var glyphs := {"home":"⌂", "games":"▦", "daily":"✦", "collection":"◆", "settings":"⚙"}
+	var names := {"home":"HOME", "games":"GAMES", "daily":"COMPETE", "collection":"COLLECT", "settings":"SETTINGS"}
+	var glyphs := {"home":"⌂", "games":"▦", "daily":"🏆", "collection":"◆", "settings":"⚙"}
 	var callbacks := {
 		"home": Callable(self,"build_home"),
 		"games": Callable(self,"_open_games_surface"),
@@ -557,13 +557,14 @@ func _show_current_tutorial() -> void:
 func build_daily_games() -> void:
 	current_surface = "daily"
 	_remove_active_game()
+	CompetitionManager.refresh_snapshot()
 	var canvas := _figma_surface("daily", Color("#ead9b8"))
 	var bonus := EconomyManager.collection_daily_bonus()
 	var done_count := 0
 	for game_id in MultiGameManager.GAME_IDS:
 		if _daily_done(game_id):
 			done_count += 1
-	_figma_header(canvas, "DAILY", _figma_today_label(), "%d/3" % done_count, FIGMA_GOLD)
+	_figma_header(canvas, "COMPETE", "DAILY CUP • WEEKLY", "%d/3" % done_count, FIGMA_GOLD)
 
 	_figma_daily_card(canvas, "rescue_rush", 115, bonus)
 	_figma_daily_card(canvas, "water_sort", 239, bonus)
@@ -620,32 +621,75 @@ func _figma_daily_progress(canvas: Control) -> void:
 		_fit_single_line_control_text(label, 86.0, 13, 11)
 
 func _figma_daily_tip(canvas: Control, collection_bonus: int) -> void:
-	# Use the lower Daily space for useful progress context without inventing an
-	# extra reward that does not exist in the economy contract.
-	var done_count := 0
-	for game_id in MultiGameManager.GAME_IDS:
-		if _daily_done(game_id):
-			done_count += 1
-	var remaining := maxi(0, 3 - done_count)
+	var weekly_rank := CompetitionManager.weekly_rank()
+	var weekly_score := CompetitionManager.weekly_score()
 	var tip_fill := Color("#27282b") if _dark() else Color("#f5f2ec")
 	var tip_border := Color(FIGMA_GOLD, 0.22 if _dark() else 0.18)
-	_figma_card(canvas, "DailyTip", Rect2(17, 598, 354, 80), tip_fill, tip_border, 16)
-	var star_icon := _figma_text(canvas, "✦", Rect2(33, 614, 24, 24), 18, FIGMA_GOLD, true)
-	star_icon.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	var title_text := "TODAY COMPLETE" if done_count >= 3 else ("%d DAILY GAME LEFT" % remaining if remaining == 1 else "%d DAILY GAMES LEFT" % remaining)
-	var title := _figma_text(canvas, title_text, Rect2(63, 607, 288, 22), 15, FIGMA_GOLD if done_count >= 3 else FIGMA_INK)
-	title.name = "DailyTipTitle"
-	var detail_text := "All three Daily Games are complete for today."
-	if done_count < 3:
-		if collection_bonus > 0:
-			detail_text = "Collection adds +%d coins to each Daily Game." % collection_bonus
-		else:
-			detail_text = "Garden upgrades boost each Daily Game reward."
-	var detail := _figma_text(canvas, detail_text, Rect2(63, 631, 282, 38), 12, FIGMA_MUTED)
-	detail.name = "DailyTipDetail"
-	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	detail.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	detail.clip_text = false
+	_figma_card(canvas, "CompetitionSummary", Rect2(17, 598, 354, 80), tip_fill, tip_border, 16)
+	_figma_text(canvas, "WEEKLY LEAGUE", Rect2(33, 608, 190, 20), 15, FIGMA_GOLD)
+	var rank_text := "#%d" % weekly_rank if weekly_rank > 0 else "UNRANKED"
+	_figma_text(canvas, "%s  •  %d PTS" % [rank_text, weekly_score], Rect2(33, 633, 190, 20), 13, FIGMA_INK)
+	var detail := "+%d Daily coins from Collection" % collection_bonus if collection_bonus > 0 else "Top weekly finishes earn coins + Crowns"
+	_figma_text(canvas, detail, Rect2(33, 654, 196, 18), 11, FIGMA_MUTED)
+	var rankings := _figma_button(canvas, "CompetitionRankings", "RANKINGS", Rect2(244,617,107,44), Color("#7a57e0"), Callable(self,"build_compete_leaderboard"), Color.WHITE, 14, 12)
+	rankings.tooltip_text = "Open Daily Cup and Weekly League leaderboards"
+
+func build_compete_leaderboard(refresh_remote: bool = true) -> void:
+	current_surface = "daily"
+	_remove_active_game()
+	if refresh_remote:
+		var refresh_callback := Callable(self, "_on_competition_snapshot_for_rankings")
+		if not CompetitionManager.snapshot_updated.is_connected(refresh_callback):
+			CompetitionManager.snapshot_updated.connect(refresh_callback, CONNECT_ONE_SHOT)
+		CompetitionManager.refresh_snapshot()
+	var canvas := _figma_surface("daily", Color("#ead9b8"))
+	_figma_header(canvas, "RANKINGS", "DAILY CUP • WEEKLY", "↻", FIGMA_GOLD, Callable(self,"build_daily_games"), Callable(CompetitionManager,"refresh_snapshot"))
+	_figma_leaderboard_panel(canvas, "TODAY", CompetitionManager.daily_top(), 96.0, CompetitionManager.daily_rank(), CompetitionManager.daily_score())
+	_figma_leaderboard_panel(canvas, "THIS WEEK", CompetitionManager.weekly_top(), 372.0, CompetitionManager.weekly_rank(), CompetitionManager.weekly_score())
+	var reward := CompetitionManager.previous_week_reward()
+	if bool(reward.get("eligible", false)) and not bool(reward.get("claimed", false)):
+		var claim := _figma_button(canvas, "CompetitionClaimWeekly", "CLAIM LAST WEEK", Rect2(112,681,166,44), FIGMA_GREEN, Callable(self,"_claim_weekly_competition_reward"), Color.WHITE, 14, 12)
+		claim.tooltip_text = "Claim last week's placement reward"
+	else:
+		_figma_text(canvas, "League rewards settle after each weekly reset.", Rect2(44,688,302,26), 12, FIGMA_MUTED, true)
+	_figma_bottom_nav(canvas, "daily")
+
+func _on_competition_snapshot_for_rankings(_snapshot: Dictionary) -> void:
+	if current_surface == "daily":
+		build_compete_leaderboard(false)
+
+func _claim_weekly_competition_reward() -> void:
+	var reward_callback := Callable(self, "_on_weekly_competition_reward")
+	if not CompetitionManager.weekly_reward_claimed.is_connected(reward_callback):
+		CompetitionManager.weekly_reward_claimed.connect(reward_callback, CONNECT_ONE_SHOT)
+	CompetitionManager.claim_weekly_reward()
+
+func _on_weekly_competition_reward(_coins: int, _crowns: int) -> void:
+	FeedbackManager.effect()
+	build_compete_leaderboard(false)
+
+func _figma_leaderboard_panel(canvas: Control, title_text: String, entries: Array, y: float, own_rank: int, own_score: int) -> void:
+	_figma_card(canvas, "Leaderboard/%s" % title_text, Rect2(17,y,354,252), Color("#fffef8"), Color(FIGMA_GOLD,0.34), 18)
+	_figma_text(canvas, title_text, Rect2(33,y+14,130,20), 16, FIGMA_GOLD)
+	var own_text := "YOU  —" if own_rank <= 0 else "YOU  #%d • %d" % [own_rank, own_score]
+	var own := _figma_text(canvas, own_text, Rect2(180,y+14,171,20), 13, FIGMA_INK, true)
+	own.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	var shown := mini(5, entries.size())
+	if shown <= 0:
+		_figma_text(canvas, "No ranked results yet. Complete a Daily Game.", Rect2(33,y+64,318,44), 13, FIGMA_MUTED, true)
+		return
+	for i in range(shown):
+		var row = entries[i]
+		if not row is Dictionary:
+			continue
+		var row_y := y + 48.0 + float(i) * 37.0
+		var place := i + 1
+		var medal := "★" if place == 1 else str(place)
+		_figma_text(canvas, medal, Rect2(35,row_y,28,24), 14, FIGMA_GOLD, true)
+		var name_text := String(row.get("name", "PLAYER")).left(18)
+		_figma_text(canvas, name_text, Rect2(70,row_y,184,24), 13, FIGMA_INK)
+		var points := _figma_text(canvas, "%d" % int(row.get("score", 0)), Rect2(270,row_y,70,24), 13, FIGMA_MUTED, true)
+		points.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 
 func _figma_today_label() -> String:
 	var d := Time.get_date_dict_from_system()
@@ -757,12 +801,10 @@ func build_collection() -> void:
 		achievement_parts.append("%s %d/%d" % [_figma_short_game(game_id),unlocked,total])
 	_figma_text(canvas," • ".join(achievement_parts),Rect2(33,382,310,24),14,FIGMA_MUTED)
 
-	var decorations: Array = SaveManager.data.get("decorations",[])
 	var rescued: Array = SaveManager.data.get("rescued",[])
-	var owned := decorations.size()
 	_figma_card(canvas,"Garden",Rect2(17,429,354,96),Color("#fffef8"),Color(0.55,0.86,0.71,0.32),18)
 	_figma_text(canvas,"RESCUE GARDEN",Rect2(33,443,230,22),17,FIGMA_GOLD)
-	_figma_text(canvas,"%d friends home • %d / 6 upgrades" % [rescued.size(),owned],Rect2(33,474,250,22),14,FIGMA_MUTED)
+	_figma_text(canvas,"%d friends • %d / %d upgrade levels" % [rescued.size(),EconomyManager.collection_total_levels(),EconomyManager.collection_max_total_levels()],Rect2(33,474,300,22),14,FIGMA_MUTED)
 	_figma_text(canvas,"BONUS  +%d DAILY • +%d GIFT" % [EconomyManager.collection_daily_bonus(),EconomyManager.garden_gift_amount()],Rect2(33,499,310,22),14,FIGMA_MUTED)
 
 	# Figma state transition: swipe upward through the Garden/Boost region to
@@ -815,7 +857,7 @@ func _figma_collection_tip(canvas: Control) -> void:
 	title.name = "CollectionTipTitle"
 	var current_value := _figma_text(canvas, "+%d DAILY  •  +%d GIFT" % [daily_bonus, gift_amount], Rect2(63, 639, 288, 20), 13, FIGMA_GOLD)
 	current_value.name = "CollectionTipValue"
-	var detail := _figma_text(canvas, "Each upgrade adds +5 Daily and +10 Gift coins.", Rect2(63, 659, 288, 20), 13, FIGMA_MUTED)
+	var detail := _figma_text(canvas, "Each structure now has 5 levels and its own permanent effect.", Rect2(63, 659, 288, 20), 11, FIGMA_MUTED)
 	detail.name = "CollectionTipDetail"
 
 func _figma_collection_progress(canvas: Control, game_id: String, x: float) -> void:
@@ -855,13 +897,12 @@ func build_collection_upgrades() -> void:
 	scroll_to_summary.gui_input.connect(_collection_upgrades_scroll_input.bind(scroll_to_summary))
 	canvas.add_child(scroll_to_summary)
 
-	var owned_count := EconomyManager.collection_owned_count()
 	_figma_text(canvas,"GARDEN UPGRADES",Rect2(23,99,342,28),22,Color("#1c8552"))
-	_figma_text(canvas,"Permanent value • %d / 6 owned" % owned_count,Rect2(23,131,342,18),14,Color("#597a8f"))
+	_figma_text(canvas,"Permanent progression • %d / %d levels" % [EconomyManager.collection_total_levels(),EconomyManager.collection_max_total_levels()],Rect2(23,131,342,18),14,Color("#597a8f"))
 	_figma_solid_card(canvas,"CollectionScroll/Boost",Rect2(23,163,342,60),Color("#f0fff5"),Color(0.30,0.78,0.48,0.42),16,false)
 	var boost_text := _figma_text(
 		canvas,
-		"+%d EVERY DAILY GAME   •   +%d GARDEN GIFT" % [EconomyManager.collection_daily_bonus(),EconomyManager.garden_gift_amount()],
+		"DAILY +%d  •  GIFT +%d  •  CAMPAIGN +%d%%" % [EconomyManager.collection_daily_bonus(),EconomyManager.garden_gift_amount(),EconomyManager.collection_campaign_reward_bonus_pct()],
 		Rect2(33,184,322,18),
 		13,
 		Color("#1f8a52"),
@@ -877,56 +918,38 @@ func build_collection_upgrades() -> void:
 		["cottage","RESCUE COTTAGE","HOME",500],
 		["rainbow_bridge","RAINBOW BRIDGE","WONDER",750],
 	]
-	var owned_decorations: Array = SaveManager.data.get("decorations",[])
 	for i in range(upgrades.size()):
 		var spec: Array = upgrades[i]
 		var id := String(spec[0])
 		var display_name := String(spec[1])
-		var flavor := String(spec[2])
-		var cost := int(spec[3])
+		var base_cost := int(spec[3])
+		var level := EconomyManager.collection_item_level(id)
+		var maxed := level >= EconomyManager.COLLECTION_MAX_LEVEL
+		var cost := EconomyManager.collection_level_cost(id,base_cost)
 		var y := 235.0 + float(i)*78.0
-		var owned := id in owned_decorations
-		var card_fill := Color("#f0fff5") if owned else Color("#fcfaff")
-		var card_border := Color(0.32,0.78,0.49,0.46) if owned else Color(0.72,0.58,0.90,0.46)
-		var title_color := Color("#1f854f") if owned else Color("#4d3373")
-		_figma_solid_card(
-			canvas,
-			"CollectionScroll/Upgrade/%d" % i,
-			Rect2(23,y,342,70),
-			card_fill,
-			card_border,
-			16,
-			false
-		)
-		_figma_text(canvas,display_name,Rect2(37,y+8,140,20),15,title_color)
-		_figma_text(canvas,"%s  •  +5 DAILY  •  +10 GIFT" % flavor,Rect2(37,y+34,144,24),12,Color("#6b8091"))
+		var card_fill := Color("#f0fff5") if level > 0 else Color("#fcfaff")
+		var card_border := Color(0.32,0.78,0.49,0.46) if level > 0 else Color(0.72,0.58,0.90,0.46)
+		var title_color := Color("#1f854f") if level > 0 else Color("#4d3373")
+		_figma_solid_card(canvas, "CollectionScroll/Upgrade/%d" % i, Rect2(23,y,342,70), card_fill, card_border, 16, false)
+		_figma_text(canvas,"%s  •  L%d/%d" % [display_name,level,EconomyManager.COLLECTION_MAX_LEVEL],Rect2(37,y+8,190,20),14,title_color)
+		_figma_text(canvas,EconomyManager.collection_effect_text(id,level),Rect2(37,y+34,190,24),11,Color("#6b8091"))
 		var preview := GardenUpgradePreviewScene.new() as GardenUpgradePreview
 		preview.name = "CollectionUpgradePreview/%s" % id
-		preview.configure(id,owned)
-		FigmaReferenceCanvas.set_rect(preview,184,y+9,50,50)
+		preview.configure(id,level > 0)
+		FigmaReferenceCanvas.set_rect(preview,197,y+9,38,50)
 		canvas.add_child(preview)
-		var state_text := "OWNED" if owned else "%d COINS" % cost
-		var pill_fill := Color("#e0f2e5") if owned else Color("#7a57e0")
-		var state_text_color := Color("#4d7a59") if owned else Color.WHITE
-		var state := _figma_button(
-			canvas,
-			"CollectionUpgrade/%s" % id,
-			state_text,
-			Rect2(251,y+13,96,44),
-			pill_fill,
-			Callable(),
-			state_text_color,
-			12,
-			13
-		)
-		state.disabled = owned
-		if owned:
+		var state_text := "MAX" if maxed else "%d COINS" % cost
+		var pill_fill := Color("#e0f2e5") if maxed else Color("#7a57e0")
+		var state_text_color := Color("#4d7a59") if maxed else Color.WHITE
+		var state := _figma_button(canvas, "CollectionUpgrade/%s" % id, state_text, Rect2(251,y+13,96,44), pill_fill, Callable(), state_text_color, 12, 13)
+		state.disabled = maxed
+		if maxed:
 			var owned_style := FigmaReferenceCanvas.solid_box(Color("#e0f2e5"),12,Color.TRANSPARENT,0)
 			state.add_theme_stylebox_override("disabled",owned_style)
 			state.add_theme_color_override("font_disabled_color",Color("#4d7a59"))
 			state.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		else:
-			state.pressed.connect(_buy_collection_upgrade.bind(id,cost))
+			state.pressed.connect(_buy_collection_upgrade.bind(id,base_cost))
 
 	var return_hint := _figma_text(canvas,"Swipe up to return to your Collection summary",Rect2(37,710,314,18),13,Color("#6e8596"),true)
 	return_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -968,28 +991,24 @@ func _collection_scroll_input(event: InputEvent, owner: Control, toward_upgrades
 			owner.accept_event()
 			build_collection()
 
-func _buy_collection_upgrade(id: String, cost: int) -> bool:
-	if id in SaveManager.data.get("decorations",[]):
+func _buy_collection_upgrade(id: String, base_cost: int) -> bool:
+	if EconomyManager.collection_item_level(id) >= EconomyManager.COLLECTION_MAX_LEVEL:
 		return true
-	if EconomyManager.unlock_collection_item(id,cost):
+	var cost := EconomyManager.collection_level_cost(id,base_cost)
+	if EconomyManager.upgrade_collection_item(id,base_cost):
 		FeedbackManager.effect()
 		PremiumVisuals.burst(Vector2(get_viewport_rect().size.x*0.5,get_viewport_rect().size.y*0.45),FIGMA_GOLD,18)
 		build_collection_upgrades()
 		return true
 	var prompt := get_node_or_null("InsufficientCoinsPrompt")
 	if prompt != null and prompt.has_method("show_for"):
-		prompt.call(
-			"show_for",
-			display_name_for_upgrade(id),
-			cost,
-			Callable(self,"_retry_collection_upgrade").bind(id,cost)
-		)
+		prompt.call("show_for", "%s UPGRADE" % display_name_for_upgrade(id), cost, Callable(self,"_retry_collection_upgrade").bind(id,base_cost))
 	else:
 		FeedbackManager.blocked()
 	return false
 
-func _retry_collection_upgrade(id: String, cost: int) -> bool:
-	if EconomyManager.unlock_collection_item(id,cost):
+func _retry_collection_upgrade(id: String, base_cost: int) -> bool:
+	if EconomyManager.upgrade_collection_item(id,base_cost):
 		FeedbackManager.effect()
 		build_collection_upgrades()
 		return true
