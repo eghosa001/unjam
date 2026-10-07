@@ -252,7 +252,7 @@ func _add_hero(canvas: Control) -> void:
 
 	var continue_button := _add_action(
 		canvas,
-		Rect2(37, 287, 172, 48),
+		Rect2(37, 285, 172, 48),
 		accent,
 		"CONTINUE • LEVEL %d" % level,
 		13,
