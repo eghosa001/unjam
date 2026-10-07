@@ -3,7 +3,7 @@ extends SceneTree
 func _init() -> void:
 	var errors: Array[String] = []
 	_require("res://project.godot", ["theme/default_font_multichannel_signed_distance_field=false"], errors)
-	_require("res://scripts/ui/premium_home_direct_levels.gd", ["RESCUE RUSH", "WATER SORT", "BLOCK PUZZLE", "daily_done_count", "HomeHeroFlatGameLogo", "HomeWorldFlatGameLogo", "#e4dfd5", "#1f1f1f"], errors)
+	_require("res://scripts/ui/premium_home_direct_levels.gd", ["RESCUE RUSH", "WATER SORT", "BLOCK PUZZLE", "HomeDailyChallengeButton", "Callable(self, \"_open_compete\")", "HomeHeroFlatGameLogo", "HomeWorldFlatGameLogo", "#e4dfd5", "#1f1f1f"], errors)
 	_require("res://scripts/ui/premium_home_direct_levels.gd", ["HomeNavActivePlate", "HomeNavGlyph_", "HomeGamesNavButton", "\"GAMES\", \"▦\"", "\"DAILY\", \"✦\"", "\"COLLECT\", \"◆\"", "Rect2(261, 15, 108, 44)", "HomePlaymateSidekickBeta"], errors)
 	_require("res://scripts/ui/premium_home_overhaul.gd", ["Progress, stars, wallet", "_sync()"], errors)
 	_require("res://scripts/ui/premium_home_casual.gd", ["HomeCoinShopButton", "HomeGamesNavButton", "HomeDailyNavButton", "HomeCollectionNavButton", "HomeSettingsNavButton", "GAMES", "DAILY", "COLLECT"], errors)
@@ -15,7 +15,7 @@ func _init() -> void:
 	_require("res://scripts/ui/unjam_3d_backdrop.gd", ["_sky_gradient_texture", "_river_gradient_texture", "draw_texture_rect(_sky_gradient()", "draw_texture_rect(_river_gradient()", "TEXTURE_FILTER_LINEAR"], errors)
 	_require("res://scripts/ui/figma_button_backdrop.gd", ["Premium toy-like controls", "var pressed := false", "button_down.connect", "height_loss"], errors)
 	_require("res://scripts/ui/unjam_3d_backdrop.gd", ["Fewer, larger foliage clusters"], errors)
-	_require("res://scripts/ui/premium_main_casual.gd", ["FigmaSurfaceBackground", "#202124", "#e6e3dc", "resolved_fill = Color(\"#2a2b2e\")"], errors)
+	_require("res://scripts/ui/premium_main_casual.gd", ["FigmaSurfaceBackground", "#1f2023", "#eee8df", "resolved_fill = Color(\"#2a2b2e\")"], errors)
 	_require("res://scripts/ui/premium_main_casual.gd", ["StdNavTopGloss", "StdNavActivePlate_", "StdNavGlyph_", "\"games\":\"▦\"", "\"daily\":\"★\"", "\"collection\":\"◆\"", "\"settings\":\"⚙\""], errors)
 	_require("res://scripts/ui/premium_home_direct_levels.gd", ["HomeCurrencyGem3D", "HomeCurrencyStar3D", "HomePlaymateSidekickBeta", "FigmaHomeBackground", "flat_gloss(fill, 34, edge, 1"], errors)
 	_require("res://scripts/ui/premium_result_overlay.gd", ["ResultKeyLight", "ResultStar3D", "ResultGameArt3D", "add_collectible_star"], errors)
