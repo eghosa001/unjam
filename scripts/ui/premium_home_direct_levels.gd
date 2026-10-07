@@ -102,8 +102,8 @@ func _add_frame_background(canvas: Control) -> void:
 	var bg := PanelContainer.new()
 	bg.name = "FigmaHomeBackground"
 	var accent := Unjam3DTheme.game_accent(selected_game)
-	var fill := (Color("#171b24").lerp(accent.darkened(0.62), 0.24) if _home_dark()
-		else Color("#e9eef2").lerp(accent.lightened(0.62), 0.30))
+	var fill := (Color("#171b24").lerp(accent.darkened(0.58), 0.30) if _home_dark()
+		else Color("#e7ecea").lerp(accent.lightened(0.42), 0.44))
 	var edge := Color(accent, 0.18)
 	bg.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(
 		fill.lightened(0.055), fill, fill.darkened(0.10), 34, edge, 1, 0.16
@@ -123,8 +123,8 @@ func _add_hero(canvas: Control) -> void:
 	var hero := PanelContainer.new()
 	hero.name = "FigmaHomeHero"
 	var accent := Unjam3DTheme.game_accent(selected_game)
-	var fill := (Color("#16242d").lerp(accent.darkened(0.56), 0.30) if _home_dark()
-		else Color("#f3f8f5").lerp(accent.lightened(0.62), 0.30))
+	var fill := (Color("#13242b").lerp(accent.darkened(0.52), 0.38) if _home_dark()
+		else Color("#edf4ef").lerp(accent.lightened(0.38), 0.42))
 	hero.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(
 		fill.lightened(0.08), fill, fill.darkened(0.12), 24, Color(accent, 0.22), 1, 0.20
 	))
@@ -181,21 +181,25 @@ func _add_hero_preview(canvas: Control, game_id: String) -> void:
 	preview_root.add_child(art)
 
 func _add_quick_actions(canvas: Control) -> void:
-	# Home keeps one primary action in the hero. These are quiet secondary actions.
-	var choose := _add_action(canvas, Rect2(21, 365, 166, 52), Color("#d4d1ca") if not _home_dark() else Color("#2a2b2e"), "CHOOSE GAME", 12, NAVY if not _home_dark() else DARK_INK, Callable(self, "_open_game_selector"), 14)
+	# Secondary navigation still has game identity: one saturated game action and
+	# one trophy action, rather than two generic application bars.
+	var selected_accent := Unjam3DTheme.game_accent(selected_game)
+	var choose_fill := selected_accent.darkened(0.18) if _home_dark() else selected_accent
+	var choose := _add_action(canvas, Rect2(21, 365, 166, 52), choose_fill, "▦  CHOOSE GAME", 12, OFF_WHITE, Callable(self, "_open_game_selector"), 14)
 	choose.name = "HomeChooseGameButton"
 	# Open the selector only after the finger is released. The button overlaps the
 	# Water Sort card coordinates on the next surface, so press-mode can let the
 	# same Android touch carry through and immediately launch that game.
 	choose.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
-	var compete := _add_action(canvas, Rect2(197, 365, 170, 52), Color("#d9d5ca") if not _home_dark() else Color("#2a2b2e"), "COMPETE", 12, NAVY if not _home_dark() else DARK_INK, Callable(self, "_open_compete"), 14)
+	var compete_fill := Color("#7052d8") if _home_dark() else Color("#7659e8")
+	var compete := _add_action(canvas, Rect2(197, 365, 170, 52), compete_fill, "★  COMPETE", 12, OFF_WHITE, Callable(self, "_open_compete"), 14)
 	# Keep the stable node id used by older automation while the player-facing
 	# action now opens campaign progression rankings instead of Daily.
 	compete.name = "HomeDailyGamesButton"
 	compete.tooltip_text = "Campaign rankings • all-time and weekly"
 
 	# Sidekick stays discoverable without taking a third content column.
-	var sidekick := _add_action(canvas, Rect2(261, 15, 108, 44), Color("#dedbd4") if not _home_dark() else Color("#292a2d"), "SIDEKICK • β", 11, NAVY if not _home_dark() else DARK_INK, Callable(self, "_open_sidekick"), 14)
+	var sidekick := _add_action(canvas, Rect2(261, 15, 108, 44), Color("#4f446e") if _home_dark() else Color("#d9d0f5"), "SIDEKICK • β", 11, OFF_WHITE if _home_dark() else Color("#493b70"), Callable(self, "_open_sidekick"), 14)
 	sidekick.name = "HomePlaymateSidekickBeta"
 	sidekick.tooltip_text = LocalizationManager.localize("PLAYMATE SIDEKICK") + " • " + LocalizationManager.localize("BETA")
 
@@ -288,8 +292,9 @@ func _add_world_progress(canvas: Control) -> void:
 	var showcase_rect := Rect2(21, 582, 346, 150)
 	var panel := PanelContainer.new()
 	panel.name = "HomeWorldProgress"
-	var fill := Color("#292a2d") if _home_dark() else Color("#efede8")
-	panel.add_theme_stylebox_override("panel", RefCanvas.flat_gloss(fill, 18, Color(accent.r, accent.g, accent.b, 0.24), 1, 0.10))
+	var fill := (Color("#20262b").lerp(accent.darkened(0.50),0.22) if _home_dark()
+		else Color("#edf1ee").lerp(accent.lightened(0.48),0.34))
+	panel.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(fill.lightened(0.05),fill,fill.darkened(0.08),18,Color(accent,0.18),1,0.10))
 	RefCanvas.set_rect(panel, showcase_rect.position.x, showcase_rect.position.y, showcase_rect.size.x, showcase_rect.size.y)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(panel)
@@ -313,7 +318,7 @@ func _add_world_progress(canvas: Control) -> void:
 	progress.min_value = 0
 	progress.max_value = total
 	progress.value = completed_in_world
-	progress.add_theme_stylebox_override("background", RefCanvas.solid_box(Color("#3b3d41") if _home_dark() else Color("#cbc6bd"), 4))
+	progress.add_theme_stylebox_override("background", RefCanvas.solid_box(Color(0.05,0.08,0.10,0.28) if _home_dark() else Color(1,1,1,0.42), 4))
 	progress.add_theme_stylebox_override("fill", RefCanvas.solid_box(accent, 4))
 	RefCanvas.set_rect(progress, 258, 607, 91, 7)
 	root.add_child(progress)
