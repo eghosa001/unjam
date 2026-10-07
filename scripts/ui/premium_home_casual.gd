@@ -83,7 +83,7 @@ func build_home_launcher() -> void:
 	lower_balance_spacer.name = "HomeLowerBalanceSpacer"
 	lower_balance_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(lower_balance_spacer)
-	_make_motto(root)
+	_make_live_now(root)
 	_make_bottom_nav()
 	_animate_entry(root)
 
@@ -98,13 +98,30 @@ func _make_status_bar(parent: VBoxContainer) -> void:
 	for game_id in MultiGameManager.GAME_IDS:
 		cleared += int(MultiGameManager.progress_for(game_id).get("levels_completed", 0))
 	var player_level := maxi(1, 1 + int(cleared / 10))
-	bar.add_child(_make_badge("☺  LV %d" % player_level, Unjam3DTheme.WATER))
+	bar.add_child(_make_profile_badge(player_level))
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bar.add_child(spacer)
 	home_coin_button = _make_shop_badge()
 	bar.add_child(home_coin_button)
 	bar.add_child(_make_badge("★  %s  +" % _compact_number(_total_stars()), Unjam3DTheme.GOLD))
+
+func _make_profile_badge(player_level: int) -> Button:
+	var viewport_size := get_viewport_rect().size
+	var button := Button.new()
+	button.name = "HomeProfileButton"
+	button.text = "☺  LV %d" % player_level
+	button.tooltip_text = "Open Profile & Achievements"
+	button.custom_minimum_size = Vector2(150.0 if viewport_size.x < 600.0 else (188.0 if viewport_size.x < 800.0 else 204.0), 62.0 if viewport_size.y < 1100.0 else 76.0)
+	button.add_theme_font_size_override("font_size", 19 if viewport_size.x < 600.0 else 24)
+	Unjam3DTheme.gloss_button(button, Unjam3DTheme.WATER, true, 27, _theme_mode() == "dark")
+	button.pressed.connect(func() -> void:
+		FeedbackManager.tap()
+		var main := get_parent()
+		if main != null and main.has_method("build_profile"):
+			main.call("build_profile")
+	)
+	return button
 
 func _make_badge(text_value: String, fill: Color) -> PanelContainer:
 	var badge := PanelContainer.new()
@@ -250,22 +267,62 @@ func _make_daily_games_action(parent: VBoxContainer) -> void:
 	)
 	parent.add_child(daily)
 
-func _make_motto(parent: VBoxContainer) -> void:
+func _make_live_now(parent: VBoxContainer) -> void:
 	var viewport_size := get_viewport_rect().size
-	var center := CenterContainer.new()
-	parent.add_child(center)
-	var stone := PanelContainer.new()
-	stone.name = "HomeMottoStone"
-	stone.custom_minimum_size = Vector2(minf(760.0, maxf(390.0, viewport_size.x - 48.0)), 72 if viewport_size.y < 1100.0 else (100 if viewport_size.y >= 1400.0 else 86))
-	stone.add_theme_stylebox_override("panel", Unjam3DTheme.panel_3d(Color("24314a") if _theme_mode() == "dark" else Color("c8c4a7"), 30, Color("eef0cf"), 3, 8))
-	center.add_child(stone)
-	var label := Label.new()
-	label.text = "SMALL PUZZLES  •  BRIGHTER DAYS  ♥"
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 19 if viewport_size.y < 1100.0 else 24)
-	Unjam3DTheme.label_3d(label, Color("f3f7ff") if _theme_mode() == "dark" else Color("244279"), Color(1,1,1,0.82), 2)
-	stone.add_child(label)
+	var short_phone := viewport_size.y < 1100.0
+	var wrap := VBoxContainer.new()
+	wrap.name = "HomeLiveNow"
+	wrap.add_theme_constant_override("separation", 4)
+	parent.add_child(wrap)
+
+	var title := Label.new()
+	title.text = "LIVE NOW"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 14 if short_phone else 17)
+	Unjam3DTheme.label_3d(title, Color.WHITE, Unjam3DTheme.NAVY, 3)
+	wrap.add_child(title)
+
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	wrap.add_child(row)
+
+	var ready := MetaProgressionManager.ready_claim_count()
+	var goals := Button.new()
+	goals.name = "HomeGoalsButton"
+	goals.text = "◎  GOALS\n%d READY" % ready if ready > 0 else "◎  GOALS\nTODAY"
+	goals.tooltip_text = "Daily login, missions, weekly goals and Season Journey"
+	goals.custom_minimum_size = Vector2(0, 66 if short_phone else 78)
+	goals.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	goals.add_theme_font_size_override("font_size", 15 if viewport_size.x < 600.0 else 18)
+	Unjam3DTheme.gloss_button(goals, Unjam3DTheme.ORANGE, true, 20, _theme_mode() == "dark")
+	goals.pressed.connect(func() -> void:
+		FeedbackManager.tap()
+		var main := get_parent()
+		if main != null and main.has_method("build_goals"):
+			main.call("build_goals")
+	)
+	row.add_child(goals)
+
+	var season := MetaProgressionManager.season_info()
+	var next_target := int(season.get("next_target", 0))
+	var season_text := "◈  JOURNEY\n%d PTS" % int(season.get("points", 0))
+	if next_target > 0:
+		season_text = "◈  JOURNEY\n%d / %d" % [int(season.get("points", 0)), next_target]
+	var journey := Button.new()
+	journey.name = "HomeSeasonJourneyButton"
+	journey.text = season_text
+	journey.tooltip_text = "Open this month's Season Journey"
+	journey.custom_minimum_size = Vector2(0, 66 if short_phone else 78)
+	journey.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	journey.add_theme_font_size_override("font_size", 15 if viewport_size.x < 600.0 else 18)
+	Unjam3DTheme.gloss_button(journey, Unjam3DTheme.PURPLE, true, 20, _theme_mode() == "dark")
+	journey.pressed.connect(func() -> void:
+		FeedbackManager.tap()
+		var main := get_parent()
+		if main != null and main.has_method("build_goals"):
+			main.call("build_goals")
+	)
+	row.add_child(journey)
 
 func _make_bottom_nav() -> void:
 	var nav := PanelContainer.new()
