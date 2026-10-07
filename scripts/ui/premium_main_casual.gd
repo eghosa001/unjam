@@ -1206,7 +1206,7 @@ func build_collection() -> void:
 		var total := MultiGameManager.achievement_definitions(game_id).size()
 		achievement_parts.append("%s %d/%d" % [_figma_short_game(game_id),unlocked,total])
 	_figma_text(canvas," • ".join(achievement_parts),Rect2(33,382,310,24),14,FIGMA_MUTED)
-	var achievements_view := _figma_button(canvas,"CollectionAchievementsView","VIEW",Rect2(286,353,65,32),Color("#7a57e0"),Callable(self,"build_profile"),Color.WHITE,11,10)
+	var achievements_view := _figma_button(canvas,"CollectionAchievementsView","VIEW",Rect2(286,347,65,44),Color("#7a57e0"),Callable(self,"build_profile"),Color.WHITE,11,10)
 	achievements_view.tooltip_text = "Open detailed Profile & Achievements"
 
 	var rescued: Array = SaveManager.data.get("rescued",[])
