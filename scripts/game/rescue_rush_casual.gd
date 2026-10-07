@@ -378,7 +378,7 @@ func render_board() -> void:
 		else:
 			moves_label.text = "MOVES %d   •   3★≤%d   •   LIVES %s%s" % [moves, par_moves, lives_text, chain_suffix]
 		moves_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		moves_label.add_theme_font_size_override("font_size",14)
+		moves_label.add_theme_font_size_override("font_size",15)
 	if rescue_label != null:
 		rescue_label.visible = false
 	if chain_label != null:
