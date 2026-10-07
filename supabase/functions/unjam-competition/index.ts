@@ -137,6 +137,7 @@ async function socialSnapshot(sb: any, playerHash: string, displayName: string, 
       name: String(profile.display_name ?? total.display_name ?? "PLAYER").slice(0, 20),
       score: Number(total.score ?? 0),
       games_count: Number(total.games_count ?? 0),
+      friend_code: String(profile.friend_code ?? ""),
       you: hash === playerHash,
     };
   }).sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
