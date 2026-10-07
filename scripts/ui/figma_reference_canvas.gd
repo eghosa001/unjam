@@ -6,6 +6,7 @@ const REFERENCE_SIZE := Vector2(390.0, 844.0)
 const WORLD_BACKDROP_SCRIPT = preload("res://scripts/ui/unjam_3d_backdrop.gd")
 
 var extra_scale := 1.0
+var fit_bias := Vector2(0.5, 0.5)
 
 # Screen navigation rebuilds many Figma-authored controls. Re-generating the
 # the same generated gradient images on every tap was expensive enough to be visible as
@@ -67,8 +68,13 @@ func _fit_reference_canvas() -> void:
 		available = parent_control.size
 	var factor := minf(available.x / REFERENCE_SIZE.x, available.y / REFERENCE_SIZE.y) * extra_scale
 	scale = Vector2.ONE * factor
-	position = (available - REFERENCE_SIZE * factor) * 0.5
+	var slack := available - REFERENCE_SIZE * factor
+	position = Vector2(slack.x * clampf(fit_bias.x, 0.0, 1.0), slack.y * clampf(fit_bias.y, 0.0, 1.0))
 	size = REFERENCE_SIZE
+
+func set_fit_bias(horizontal: float = 0.5, vertical: float = 0.5) -> void:
+	fit_bias = Vector2(clampf(horizontal, 0.0, 1.0), clampf(vertical, 0.0, 1.0))
+	_fit_reference_canvas()
 
 static func solid_box(color: Color, radius: float = 0.0, border_color: Color = Color.TRANSPARENT, border_width: float = 0.0) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
