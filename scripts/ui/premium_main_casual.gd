@@ -626,7 +626,7 @@ func _figma_daily_tip(canvas: Control, collection_bonus: int) -> void:
 	var tip_fill := Color("#27282b") if _dark() else Color("#f5f2ec")
 	var tip_border := Color(FIGMA_GOLD, 0.22 if _dark() else 0.18)
 	_figma_card(canvas, "CompetitionSummary", Rect2(17, 598, 354, 80), tip_fill, tip_border, 16)
-	var league_title := _figma_text(canvas, "WEEKLY LEAGUE", Rect2(33, 608, 190, 20), 15, FIGMA_GOLD)
+	var league_title := _figma_text(canvas, "WEEKLY • %s" % CompetitionManager.weekly_division(), Rect2(33, 608, 190, 20), 15, FIGMA_GOLD)
 	league_title.name = "DailyTipTitle"
 	var rank_text := "#%d" % weekly_rank if weekly_rank > 0 else "UNRANKED"
 	_figma_text(canvas, "%s  •  %d PTS" % [rank_text, weekly_score], Rect2(33, 633, 190, 20), 13, FIGMA_INK)
@@ -807,7 +807,7 @@ func build_collection() -> void:
 	_figma_card(canvas,"Garden",Rect2(17,429,354,96),Color("#fffef8"),Color(0.55,0.86,0.71,0.32),18)
 	_figma_text(canvas,"RESCUE GARDEN",Rect2(33,443,230,22),17,FIGMA_GOLD)
 	_figma_text(canvas,"%d friends • %d / %d upgrade levels" % [rescued.size(),EconomyManager.collection_total_levels(),EconomyManager.collection_max_total_levels()],Rect2(33,474,300,22),14,FIGMA_MUTED)
-	_figma_text(canvas,"BONUS  +%d DAILY • +%d GIFT" % [EconomyManager.collection_daily_bonus(),EconomyManager.garden_gift_amount()],Rect2(33,499,310,22),14,FIGMA_MUTED)
+	_figma_text(canvas,"+%d DAILY • +%d GIFT • ♛ %d" % [EconomyManager.collection_daily_bonus(),EconomyManager.garden_gift_amount(),int(SaveManager.data.get("crown_tokens",0))],Rect2(33,499,310,22),13,FIGMA_MUTED)
 
 	# Figma state transition: swipe upward through the Garden/Boost region to
 	# reveal the dedicated six-upgrade Collection state.
@@ -855,7 +855,7 @@ func _figma_collection_tip(canvas: Control) -> void:
 	_figma_card(canvas, "CollectionTip", Rect2(17, 606, 354, 82), tip_fill, tip_border, 16)
 	var icon := _figma_text(canvas, "◆", Rect2(33, 622, 24, 24), 17, FIGMA_GREEN, true)
 	icon.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	var title := _figma_text(canvas, "GARDEN REWARDS", Rect2(63, 615, 288, 22), 15, FIGMA_INK)
+	var title := _figma_text(canvas, EconomyManager.competition_prestige_title(), Rect2(63, 615, 288, 22), 15, FIGMA_INK)
 	title.name = "CollectionTipTitle"
 	var current_value := _figma_text(canvas, "+%d DAILY  •  +%d GIFT" % [daily_bonus, gift_amount], Rect2(63, 639, 288, 20), 13, FIGMA_GOLD)
 	current_value.name = "CollectionTipValue"
