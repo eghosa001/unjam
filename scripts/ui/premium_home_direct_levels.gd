@@ -98,7 +98,7 @@ func _on_economy_balance_changed(new_balance: int, _delta: int, _reason: String)
 func _add_frame_background(canvas: Control) -> void:
 	var bg := PanelContainer.new()
 	bg.name = "FigmaHomeBackground"
-	var fill := Color("#202124") if _home_dark() else Color("#e6e3dc")
+	var fill := Color("#1f2023") if _home_dark() else Color("#eee8df")
 	var edge := Color("#3d4045") if _home_dark() else Color("#c8c3ba")
 	bg.add_theme_stylebox_override("panel", RefCanvas.flat_gloss(fill, 34, edge, 1, 0.11))
 	RefCanvas.set_rect(bg, 0, 0, 390, 844)
@@ -109,7 +109,7 @@ func _add_hero(canvas: Control) -> void:
 	var hero := PanelContainer.new()
 	hero.name = "FigmaHomeHero"
 	var accent := Unjam3DTheme.game_accent(selected_game)
-	var fill := Color("#27282b") if _home_dark() else Color("#f7f4ee")
+	var fill := Color("#27292d") if _home_dark() else Color("#fffaf2")
 	var edge := Color(accent.r, accent.g, accent.b, 0.30 if _home_dark() else 0.24)
 	hero.add_theme_stylebox_override("panel", RefCanvas.flat_gloss(fill, 20, edge, 1, 0.14))
 	RefCanvas.set_rect(hero, 21, 121, 346, 224)
@@ -168,15 +168,11 @@ func _add_quick_actions(canvas: Control) -> void:
 	# Water Sort card coordinates on the next surface, so press-mode can let the
 	# same Android touch carry through and immediately launch that game.
 	choose.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
-	var main := get_parent()
-	var daily_done_count := 0
-	if main != null and main.has_method("_daily_done"):
-		for game_id in MultiGameManager.GAME_IDS:
-			if bool(main.call("_daily_done", game_id)):
-				daily_done_count += 1
-	var daily_label := "COMPETE • DONE" if daily_done_count >= MultiGameManager.GAME_IDS.size() else "COMPETE • %d/3" % daily_done_count
-	var daily := _add_action(canvas, Rect2(197, 365, 170, 52), Color("#d9d5ca") if not _home_dark() else Color("#2a2b2e"), daily_label, 12, NAVY if not _home_dark() else DARK_INK, Callable(self, "_open_daily_games"), 14)
-	daily.name = "HomeDailyGamesButton"
+	var compete := _add_action(canvas, Rect2(197, 365, 170, 52), Color("#d9d5ca") if not _home_dark() else Color("#2a2b2e"), "COMPETE", 12, NAVY if not _home_dark() else DARK_INK, Callable(self, "_open_compete"), 14)
+	# Keep the stable node id used by older automation while the player-facing
+	# action now opens campaign progression rankings instead of Daily.
+	compete.name = "HomeDailyGamesButton"
+	compete.tooltip_text = "Campaign rankings • all-time and weekly"
 
 	# Sidekick stays discoverable without taking a third content column.
 	var sidekick := _add_action(canvas, Rect2(261, 15, 108, 44), Color("#dedbd4") if not _home_dark() else Color("#292a2d"), "SIDEKICK • β", 11, NAVY if not _home_dark() else DARK_INK, Callable(self, "_open_sidekick"), 14)
@@ -305,20 +301,19 @@ func _add_world_progress(canvas: Control) -> void:
 	var live_title := _add_text(root, "LIVE NOW", Rect2(35, 643, 100, 18), 12, GOLD, true)
 	live_title.name = "HomeLiveNowTitle"
 
+	var daily := _add_action(root, Rect2(35, 670, 96, 44), Color("#7a57e0"), "DAILY", 11, OFF_WHITE, Callable(self, "_open_daily_games"), 12)
+	daily.name = "HomeDailyChallengeButton"
+	daily.tooltip_text = "Daily challenges • streaks and rewards"
+
 	var ready := MetaProgressionManager.ready_claim_count()
 	var goals_text := "GOALS %d" % ready if ready > 0 else "GOALS"
-	var goals := _add_action(root, Rect2(35, 670, 96, 44), Color("#ee8a2d") if not _home_dark() else Color("#9a5620"), goals_text, 11, OFF_WHITE, Callable(self, "_open_goals"), 12)
+	var goals := _add_action(root, Rect2(147, 670, 96, 44), Color("#ee8a2d") if not _home_dark() else Color("#9a5620"), goals_text, 11, OFF_WHITE, Callable(self, "_open_goals"), 12)
 	goals.name = "HomeGoalsButton"
-	goals.tooltip_text = "Daily check-in, missions and claimable rewards"
-
-	var season := MetaProgressionManager.season_info()
-	var journey := _add_action(root, Rect2(147, 670, 96, 44), Color("#7a57e0"), "JOURNEY", 11, OFF_WHITE, Callable(self, "_open_goals"), 12)
-	journey.name = "HomeSeasonJourneyButton"
-	journey.tooltip_text = "Season Journey • %d points" % int(season.get("points", 0))
+	goals.tooltip_text = "Daily check-in, missions and Season Journey"
 
 	var friends := _add_action(root, Rect2(259, 670, 90, 44), Color("#22a9e8"), "FRIENDS", 11, OFF_WHITE, Callable(self, "_open_friends"), 12)
 	friends.name = "HomeFriendsButton"
-	friends.tooltip_text = "Friend Codes • %d friends" % CompetitionManager.friend_count()
+	friends.tooltip_text = "Friend codes • compare campaign progress"
 
 func _add_bottom_nav_reference(canvas: Control) -> void:
 	var shell := PanelContainer.new()
@@ -333,7 +328,7 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 	var items := [
 		["HOME", "⌂", 22.0, 14.0, Callable(), "HomeNavButton", true, GOLD],
 		["GAMES", "▦", 94.0, 86.0, Callable(self, "_open_game_selector"), "HomeGamesNavButton", false, GOLD],
-		["DAILY", "✦", 166.0, 158.0, Callable(self, "_open_daily_games"), "HomeDailyNavButton", false, GOLD],
+		["DAILY", "✦", 166.0, 158.0, Callable(self, "_open_compete"), "HomeDailyNavButton", false, GOLD],
 		["COLLECT", "◆", 238.0, 230.0, func(): get_parent().call("build_collection"), "HomeCollectionNavButton", false, GOLD],
 		["SETTINGS", "⚙", 310.0, 302.0, func(): get_parent().call("build_settings"), "HomeSettingsNavButton", false, GOLD],
 	]
@@ -444,6 +439,12 @@ func _open_game_selector() -> void:
 		# _open_games_surface owns navigation feedback so every caller produces
 		# exactly one tap instead of stacking duplicate sounds on the same action.
 		main.call("_open_games_surface")
+
+func _open_compete() -> void:
+	var main := get_parent()
+	if main != null and main.has_method("build_compete_leaderboard"):
+		FeedbackManager.tap()
+		main.call("build_compete_leaderboard")
 
 func _open_daily_games() -> void:
 	var main := get_parent()
