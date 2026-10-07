@@ -35,7 +35,7 @@ func _sync_motion() -> void:
 	var motion := get_node_or_null("/root/MotionSystem")
 	if motion != null and motion.has_method("reduced"):
 		reduced = bool(motion.call("reduced"))
-	set_process(is_visible_in_tree() and not reduced)
+	set_process(is_visible_in_tree() and not reduced and not compact)
 
 func _process(delta: float) -> void:
 	phase += delta
