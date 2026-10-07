@@ -96,11 +96,11 @@ jobs:
           grep -Fx 'test_mode=false' project.godot
           grep -Fx 'admob_test_mode=true' project.godot
           sed -i 's/gradle_build\/export_format=1/gradle_build\/export_format=0/' export_presets.cfg
-          sed -i 's/version\/code=[0-9]\+/version\/code=9/' export_presets.cfg
-          sed -i 's/version\/name="[^"]*"/version\/name="1.0.9-test"/' export_presets.cfg
+          sed -i 's/version\/code=[0-9]\+/version\/code=10/' export_presets.cfg
+          sed -i 's/version\/name="[^"]*"/version\/name="1.0.10-test"/' export_presets.cfg
           grep -Fx 'gradle_build/export_format=0' export_presets.cfg
-          grep -Fx 'version/code=9' export_presets.cfg
-          grep -Fx 'version/name="1.0.9-test"' export_presets.cfg
+          grep -Fx 'version/code=10' export_presets.cfg
+          grep -Fx 'version/name="1.0.10-test"' export_presets.cfg
 
       - name: Import project
         shell: bash
@@ -136,7 +136,7 @@ jobs:
           "$AAPT" dump badging "$APK" | tee build/android/unjam-latest-debug-badging.txt
           "$AAPT" dump permissions "$APK" | tee build/android/unjam-latest-debug-permissions.txt
           "$AAPT" dump xmltree "$APK" AndroidManifest.xml | tee build/android/unjam-latest-debug-manifest.txt
-          grep -F "package: name='com.eghosa.unjamgam' versionCode='9' versionName='1.0.9-test'" build/android/unjam-latest-debug-badging.txt
+          grep -F "package: name='com.eghosa.unjamgam' versionCode='10' versionName='1.0.10-test'" build/android/unjam-latest-debug-badging.txt
           grep -F "targetSdkVersion:'36'" build/android/unjam-latest-debug-badging.txt
           grep -F "native-code: 'arm64-v8a'" build/android/unjam-latest-debug-badging.txt
           grep -F "com.google.android.gms.permission.AD_ID" build/android/unjam-latest-debug-permissions.txt

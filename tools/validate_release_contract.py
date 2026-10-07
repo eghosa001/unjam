@@ -198,7 +198,7 @@ def main() -> int:
         'SPLASH_SOURCE := "res://store_assets/unjam_approved_logo_transparent.png"',
         'SYSTEM_SPLASH_OUT := "res://assets/splash_emblem_safe_432.png"',
         'LEGACY_CONTENT := 512',
-        'ADAPTIVE_CONTENT := 344',
+        'ADAPTIVE_CONTENT := 280',
         'SYSTEM_SPLASH_CONTENT := 280',
         'SPLASH_SIZE := 432',
         'Image.INTERPOLATE_LANCZOS',

@@ -240,11 +240,23 @@ func _build_figma_rescue(canvas: Control) -> void:
 	restart.pressed.connect(restart_level)
 	actions.add_child(restart)
 
-	hint_label = RefCanvas.label("",15,NAVY,true)
+	# Use the lower playfield intentionally instead of leaving a large inactive
+	# band below the controls. Guidance remains contextual and never competes
+	# with the board; the final ~84px are kept clear for visual/system breathing room.
+	RefCanvas.add_shadow(canvas, Rect2(21,640,346,120), 18, Color(0.02,0.10,0.18,0.18), 4, Vector2(0,4))
+	var guidance_panel := PanelContainer.new()
+	guidance_panel.name = "RescueGuidanceCard"
+	guidance_panel.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color(0.10,0.28,0.22,0.70),Color(0.08,0.23,0.19,0.68),Color(0.05,0.18,0.16,0.66),18,Color(0.55,0.96,0.67,0.12),1.0,0.12))
+	RefCanvas.set_rect(guidance_panel,21,640,346,120)
+	guidance_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(guidance_panel)
+
+	hint_label = RefCanvas.label("Tap a clear arrow • follow the grid to the open edge.",15,OFF_WHITE,true)
 	hint_label.name = "RescueGuidanceText"
 	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	RefCanvas.set_rect(hint_label,21,636,346,42)
+	RefCanvas.set_rect(hint_label,39,650,310,98)
 	canvas.add_child(hint_label)
 
 	var frame_border := PanelContainer.new()

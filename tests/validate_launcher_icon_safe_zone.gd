@@ -64,7 +64,7 @@ func _initialize() -> void:
 		'const ADAPTIVE_OUT := "res://assets/icon_launcher_adaptive_432.png"',
 		'const SYSTEM_SPLASH_OUT := "res://assets/splash_emblem_safe_432.png"',
 		"const LEGACY_CONTENT := 512",
-		"const ADAPTIVE_CONTENT := 344",
+		"const ADAPTIVE_CONTENT := 280",
 		"const SYSTEM_SPLASH_CONTENT := 280",
 		"Image.INTERPOLATE_LANCZOS",
 	]:
@@ -72,6 +72,7 @@ func _initialize() -> void:
 			failures.append("Android branding pipeline missing: %s" % token)
 
 	_check_size("res://store_assets/unjam_google_play_icon_512.png", Vector2i(512, 512), "Canonical launcher artwork", failures)
+	_check_generated_safe_margin("res://store_assets/unjam_google_play_icon_512.png", 432, 280, 70, "Adaptive launcher foreground", failures)
 	_check_size("res://assets/unjam_startup_logo.png", Vector2i(320, 320), "Exported full startup logo", failures)
 	_check_loadable("res://assets/splash_emblem_safe_432.png", "Safe system splash emblem", failures)
 
@@ -90,6 +91,39 @@ func _check_size(path: String, expected: Vector2i, label: String, failures: Arra
 		return
 	if image.get_size() != expected:
 		failures.append("%s must be %dx%d" % [label, expected.x, expected.y])
+
+
+func _check_generated_safe_margin(source_path: String, canvas_size: int, content_size: int, min_margin: int, label: String, failures: Array[String]) -> void:
+	var source := Image.load_from_file(source_path)
+	if source == null or source.is_empty():
+		failures.append("%s source failed to load" % label)
+		return
+	source.convert(Image.FORMAT_RGBA8)
+	source.resize(content_size, content_size, Image.INTERPOLATE_LANCZOS)
+	var image := Image.create(canvas_size, canvas_size, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0, 0, 0, 0))
+	var offset := Vector2i((canvas_size - content_size) / 2, (canvas_size - content_size) / 2)
+	image.blit_rect(source, Rect2i(Vector2i.ZERO, source.get_size()), offset)
+	var size := image.get_size()
+	var min_x := size.x
+	var min_y := size.y
+	var max_x := -1
+	var max_y := -1
+	for y in range(size.y):
+		for x in range(size.x):
+			if image.get_pixel(x, y).a > 0.03:
+				min_x = mini(min_x, x)
+				min_y = mini(min_y, y)
+				max_x = maxi(max_x, x)
+				max_y = maxi(max_y, y)
+	if max_x < 0 or max_y < 0:
+		failures.append("%s has no visible pixels" % label)
+		return
+	var margins := [min_x, min_y, (size.x - 1) - max_x, (size.y - 1) - max_y]
+	for margin in margins:
+		if int(margin) < min_margin:
+			failures.append("%s escapes safe area: margins=%s expected >= %dpx" % [label, str(margins), min_margin])
+			return
 
 func _check_loadable(path: String, label: String, failures: Array[String]) -> void:
 	var image := Image.load_from_file(path)
