@@ -325,9 +325,9 @@ func _add_crowns(amount: int) -> void:
 	SaveManager.data["crown_tokens"] = maxi(0, int(SaveManager.data.get("crown_tokens", 0))) + amount
 
 func _persist() -> void:
+	# CloudSaveManager already listens to SaveManager.save_committed and
+	# debounces uploads, so one local save is the only persistence call needed.
 	SaveManager.save()
-	if get_node_or_null("/root/CloudSaveManager") != null:
-		CloudSaveManager.queue_sync()
 
 func _date_key() -> String:
 	var d := Time.get_date_dict_from_system()
