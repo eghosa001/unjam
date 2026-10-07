@@ -210,7 +210,8 @@ func _validate_secondary_surfaces(main: Control, viewport_size: Vector2i) -> boo
 
 	var coin_prompt := main.get_node_or_null("InsufficientCoinsPrompt")
 	if coin_prompt != null and coin_prompt.has_method("show_for"):
-		var balance := int(EconomyManager.balance())
+		var economy := root.get_node_or_null("EconomyManager")
+		var balance := int(economy.call("balance")) if economy != null and economy.has_method("balance") else 0
 		coin_prompt.call("show_for", "HINT", balance + 25)
 		await _frames(4)
 		if not _assert_canvas(coin_prompt, "FigmaInsufficientCoins390x844", viewport_size, "Insufficient Coins"):
