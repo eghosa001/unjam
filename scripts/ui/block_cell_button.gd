@@ -185,14 +185,25 @@ func _draw() -> void:
 	# Empty cells intentionally recede. The board should read as a play field,
 	# not sixty-four individually outlined buttons.
 	if not occupied and not preview:
-		# Empty cells are shallow wells, not outlined buttons. A single soft edge
-		# keeps the 8x8 grid readable while letting placed blocks remain the hero.
-		var idle_fill := Color(0.30, 0.15, 0.50, 0.24 + hover_amount * 0.06)
-		var idle_edge := Color(0.84, 0.69, 1.0, 0.13 + hover_amount * 0.11)
-		_draw_box(inset, idle_fill, 7, idle_edge, 1)
+		# Quiet inset pads: empty cells are defined by fill/depth, not 64 bright
+		# outlines. Placed blocks therefore own the colour and contrast hierarchy.
+		var idle_fill := Color(0.29, 0.14, 0.48, 0.31 + hover_amount * 0.05)
+		_draw_box(inset, idle_fill, 7, Color.TRANSPARENT, 0)
 		var well := inset.grow(-3.0)
-		_draw_box(well, Color(0.10, 0.05, 0.19, 0.16), 5, Color.TRANSPARENT, 0)
-		draw_circle(well.position + Vector2(well.size.x * 0.30, well.size.y * 0.27), maxf(1.0, well.size.x * 0.035), Color(1, 1, 1, 0.10))
+		_draw_box(well, Color(0.085, 0.04, 0.17, 0.24), 5, Color.TRANSPARENT, 0)
+		var gloss_y := inset.position.y + 3.0
+		draw_line(
+			Vector2(inset.position.x + 6.0, gloss_y),
+			Vector2(inset.end.x - 6.0, gloss_y),
+			Color(0.94, 0.85, 1.0, 0.075 + hover_amount * 0.04),
+			1.2,
+			true
+		)
+		draw_circle(
+			well.position + Vector2(well.size.x * 0.31, well.size.y * 0.28),
+			maxf(1.0, well.size.x * 0.030),
+			Color(1, 1, 1, 0.075)
+		)
 
 	if occupied or preview:
 		var fill := Color(accent, 0.54) if preview else accent
