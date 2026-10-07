@@ -205,6 +205,12 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
         add(groups, "progression")
         explicit_tests.add("validate_visible_meta_surfaces")
 
+    if p == "scripts/ui/unjam_meta_art.gd":
+        add(groups, "secondary_ui")
+        explicit_tests.add("validate_visible_meta_surfaces")
+        visual.update({"collection", "daily", "goals", "profile", "friends", "settings"})
+        return True
+
     if any(token in p for token in ("water_sort", "water_tube", "/water_", "water_")):
         add(groups, "water")
         visual.add("water")
