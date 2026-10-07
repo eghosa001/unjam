@@ -674,7 +674,9 @@ func complete_level() -> void:
 	var completion_rewards: Dictionary = {}
 	var base_reward := 100 + stars * 25 if daily_mode else 0
 	if daily_mode:
-		MultiGameManager.complete_daily(GAME_ID, base_reward)
+		var daily_completed_now := MultiGameManager.complete_daily(GAME_ID, base_reward)
+		if daily_completed_now:
+			MetaProgressionManager.record_daily_complete(GAME_ID, stars)
 		CompetitionManager.submit_daily_result(GAME_ID, {
 			"stars": stars, "score": score, "lines": lines_cleared,
 			"placements": placements, "par": par_placements
