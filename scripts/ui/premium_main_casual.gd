@@ -1800,7 +1800,10 @@ func _build_figma_level_browser(game_id: String) -> void:
 			text_color = FIGMA_OFF_WHITE
 		elif milestone:
 			border = Color(FIGMA_GOLD,0.85)
-		var card := _figma_button(canvas,"Level/%d" % level_number,str(level_number),Rect2(x,y,82,70),fill,Callable(),text_color,16,16)
+		# The tile button owns background + hit target only. Number and status use
+		# separate authored bands so LOCK/stars never paint over the level number.
+		var card := _figma_button(canvas,"Level/%d" % level_number,"",Rect2(x,y,82,70),fill,Callable(),text_color,16,16)
+		card.tooltip_text = "Level %d" % level_number
 		card.disabled = not unlocked
 		_style_figma_level_card(card,accent,border,unlocked,is_current)
 		if unlocked:
@@ -1809,9 +1812,17 @@ func _build_figma_level_browser(game_id: String) -> void:
 				card.pressed.connect(start_level.bind(level_number))
 			else:
 				card.pressed.connect(start_multi_level.bind(game_id,level_number,false))
+		var number_color := FIGMA_OFF_WHITE if is_current else text_color
+		var number_label := _figma_text(canvas,str(level_number),Rect2(x+8,y+7,66,23),16,number_color,true)
+		number_label.name = "LevelNumber_%d" % level_number
+		number_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_fit_single_line_control_text(number_label,62.0,16,12)
 		var star_text := "LOCK" if not unlocked else ("★".repeat(stars) if stars > 0 else "···")
 		var star_color := (Color("#9e9485") if _dark() else Color("#958b7c")) if not unlocked else (FIGMA_DARK_MUTED if _dark() else FIGMA_MUTED)
-		_figma_text(canvas,star_text,Rect2(x+8,y+39,66,19),13,star_color,true)
+		var status_label := _figma_text(canvas,star_text,Rect2(x+8,y+43,66,18),11,star_color,true)
+		status_label.name = "LevelStatus_%d" % level_number
+		status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_fit_single_line_control_text(status_label,62.0,11,9)
 		index += 1
 
 func _figma_level_tabs(canvas: Control, active_game_id: String) -> void:
