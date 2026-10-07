@@ -1,6 +1,8 @@
 extends Button
 class_name BlockPieceButton
 
+const AUTHORED_TILE_OVERLAY: Texture2D = preload("res://assets/art/gameplay/block_tile_overlay.svg")
+
 const DragPreview = preload("res://scripts/ui/block_drag_preview.gd")
 const TOUCH_LIFT := 132.0
 const TOUCH_SNAP_RADIUS := 112.0
@@ -474,6 +476,7 @@ func _draw_block(rect: Rect2, fill: Color) -> void:
 	var shadow := Rect2(rect.position + Vector2(0, maxf(2.0, rect.size.y * 0.10)), rect.size)
 	draw_style_box(_style(Color(0.02,0.025,0.08,0.26), Color.TRANSPARENT, 0, radius), shadow)
 	draw_style_box(_style(fill, Color(fill.lightened(0.30),0.42), 1, radius), rect)
+	draw_texture_rect(AUTHORED_TILE_OVERLAY, rect.grow(1.0), false, Color.WHITE)
 	var lower := Rect2(Vector2(rect.position.x + rect.size.x*0.09, rect.end.y - rect.size.y*0.18), Vector2(rect.size.x*0.82, rect.size.y*0.10))
 	draw_style_box(_style(Color(fill.darkened(0.34),0.24), Color.TRANSPARENT, 0, maxi(2,radius/2)), lower)
 	var gloss := Rect2(rect.position + Vector2(rect.size.x*0.12,rect.size.y*0.10), Vector2(rect.size.x*0.58,maxf(3.0,rect.size.y*0.14)))
