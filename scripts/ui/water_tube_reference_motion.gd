@@ -33,14 +33,14 @@ func visual_pour_rim_local(direction: float) -> Vector2:
 	# Match the exact lip drawn in _draw(). The stream must begin on the outside
 	# edge of the visible glass mouth, never from the tube centre.
 	var lift := -13.0 if is_selected and pour_mode == 0 else 0.0
-	var outer := Rect2(Vector2(size.x * 0.18, 13.0 + lift), Vector2(size.x * 0.64, size.y - 42.0))
+	var outer := Rect2(Vector2(size.x * 0.13, 13.0 + lift), Vector2(size.x * 0.74, size.y - 42.0))
 	var neck_h := outer.size.y * 0.10
 	var body := Rect2(outer.position + Vector2(0, neck_h * 0.40), Vector2(outer.size.x, outer.size.y - neck_h * 0.40))
 	var dir := 1.0 if direction >= 0.0 else -1.0
 	return Vector2(body.get_center().x + dir * body.size.x * 0.50, body.position.y + 3.0)
 
 func visual_receive_rim_local() -> Vector2:
-	var outer := Rect2(Vector2(size.x * 0.18, 13.0), Vector2(size.x * 0.64, size.y - 42.0))
+	var outer := Rect2(Vector2(size.x * 0.13, 13.0), Vector2(size.x * 0.74, size.y - 42.0))
 	var neck_h := outer.size.y * 0.10
 	var body := Rect2(outer.position + Vector2(0, neck_h * 0.40), Vector2(outer.size.x, outer.size.y - neck_h * 0.40))
 	return Vector2(body.get_center().x, body.position.y + 3.0)
@@ -72,17 +72,17 @@ func _process(delta: float) -> void:
 
 func _draw() -> void:
 	var lift := -13.0 if is_selected and pour_mode == 0 else 0.0
-	var outer := Rect2(Vector2(size.x * 0.18, 13.0 + lift), Vector2(size.x * 0.64, size.y - 42.0))
+	var outer := Rect2(Vector2(size.x * 0.13, 13.0 + lift), Vector2(size.x * 0.74, size.y - 42.0))
 	var neck_h := outer.size.y * 0.10
 	var body := Rect2(outer.position + Vector2(0, neck_h * 0.40), Vector2(outer.size.x, outer.size.y - neck_h * 0.40))
-	var inner := Rect2(body.position + Vector2(7, 10), body.size - Vector2(14, 20))
-	var radius := minf(18.0, body.size.x * 0.30)
+	var inner := Rect2(body.position + Vector2(5, 10), body.size - Vector2(10, 20))
+	var radius := minf(20.0, body.size.x * 0.31)
 	_draw_glass_shape(Rect2(body.position + Vector2(0, 8), body.size), _materials.contact_shadow(0.20), Color.TRANSPARENT, radius, 0.0)
 	var outline := Color(1, 1, 1, 0.82)
 	if is_selected and pour_mode == 0: outline = Color("fff3b4")
 	if invalid_flash > 0.0: outline = Color("ff4d67")
 	if success_flash > 0.0: outline = Color("7ff0b0")
-	_draw_glass_shape(body, Color(1, 1, 1, 0.045), outline, radius, 3.0)
+	_draw_glass_shape(body, Color(0.74, 0.95, 1.0, 0.055), outline, radius, 3.6)
 	var slot_h := inner.size.y / float(CAPACITY)
 	for slot in range(CAPACITY):
 		var fraction := _slot_fill(slot)
@@ -116,10 +116,10 @@ func _draw() -> void:
 				draw_rect(Rect2(r.position, Vector2(r.size.x, light_h)), Color(upper_color, 0.48), true)
 			draw_line(Vector2(r.position.x + 2, r.position.y + 2), Vector2(r.end.x - 2, r.position.y + 2 - wave * 0.3), upper_color.lightened(0.10), 2.0, true)
 	var lip_y := body.position.y + 3.0
-	draw_line(Vector2(body.position.x - 3, lip_y), Vector2(body.end.x + 3, lip_y), outline, 4.0, true)
+	draw_line(Vector2(body.position.x - 4, lip_y), Vector2(body.end.x + 4, lip_y), outline, 5.0, true)
 	var specular_alpha := 0.28
 	var specular_shift := 0.0 if MotionSystem.reduced() else sin(pulse * 0.85) * 2.0
-	draw_line(Vector2(body.position.x + 9 + specular_shift, body.position.y + 18), Vector2(body.position.x + 9 + specular_shift, body.end.y - 24), _materials.glass_highlight(Color.WHITE, specular_alpha), 3.0, true)
+	draw_line(Vector2(body.position.x + 8 + specular_shift, body.position.y + 18), Vector2(body.position.x + 8 + specular_shift, body.end.y - 24), _materials.glass_highlight(Color.WHITE, specular_alpha + 0.08), 4.0, true)
 	draw_line(Vector2(body.end.x - 7, body.position.y + 23), Vector2(body.end.x - 7, body.size.y * 0.38 + body.position.y), Color(1, 1, 1, 0.13), 2.0, true)
 	if is_selected and pour_mode == 0:
 		var a := 0.35 if MotionSystem.reduced() else 0.35 + 0.12 * sin(pulse * 5.0)
