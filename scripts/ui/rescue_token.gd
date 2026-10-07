@@ -2,7 +2,7 @@ class_name RescueToken
 extends Control
 
 # Fast illustrated 2D rescue character. The public API intentionally matches the
-# former SubViewport-based token so gameplay/reward logic stays untouched.
+# former rendered token so gameplay/reward logic stays untouched.
 var rescue_id := "chick"
 var accent := Color("#ffd166")
 var rarity := ""
