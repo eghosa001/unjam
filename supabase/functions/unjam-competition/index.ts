@@ -34,6 +34,157 @@ function cleanName(value: unknown, cloudId: string): string {
   const safe = raw.replace(/[^\p{L}\p{N} _.-]/gu, "").slice(0, 20);
   return safe || `PLAYER ${cloudId.slice(-6).toUpperCase()}`;
 }
+
+const FRIEND_CODE_CHARS = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+const MAX_FRIENDS = 50;
+
+function cleanFriendCode(value: unknown): string {
+  const code = typeof value === "string" ? value.trim().toUpperCase().replace(/[^A-Z0-9]/g, "") : "";
+  return /^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{8}$/.test(code) ? code : "";
+}
+
+function randomFriendCode(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(8));
+  let out = "";
+  for (const byte of bytes) out += FRIEND_CODE_CHARS[byte % FRIEND_CODE_CHARS.length];
+  return out;
+}
+
+async function ensureSocialProfile(sb: any, playerHash: string, displayName: string) {
+  const { data: existing, error: readError } = await sb.from("social_profiles")
+    .select("friend_code,display_name").eq("player_hash", playerHash).maybeSingle();
+  if (readError) throw readError;
+  if (existing) {
+    if (String(existing.display_name ?? "") !== displayName) {
+      const { error: updateError } = await sb.from("social_profiles")
+        .update({ display_name: displayName, updated_at: new Date().toISOString() })
+        .eq("player_hash", playerHash);
+      if (updateError) throw updateError;
+    }
+    return { friend_code: String(existing.friend_code), display_name: displayName };
+  }
+
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const friendCode = randomFriendCode();
+    const { error: insertError } = await sb.from("social_profiles").insert({
+      player_hash: playerHash,
+      friend_code: friendCode,
+      display_name: displayName,
+      updated_at: new Date().toISOString(),
+    });
+    if (!insertError) return { friend_code: friendCode, display_name: displayName };
+    if (insertError.code !== "23505") throw insertError;
+
+    const { data: raceWinner } = await sb.from("social_profiles")
+      .select("friend_code,display_name").eq("player_hash", playerHash).maybeSingle();
+    if (raceWinner) return {
+      friend_code: String(raceWinner.friend_code),
+      display_name: String(raceWinner.display_name ?? displayName),
+    };
+  }
+  throw new Error("Could not allocate friend code");
+}
+
+async function friendHashes(sb: any, playerHash: string): Promise<string[]> {
+  const [{ data: left, error: leftError }, { data: right, error: rightError }] = await Promise.all([
+    sb.from("social_friends").select("player_hash_b").eq("player_hash_a", playerHash),
+    sb.from("social_friends").select("player_hash_a").eq("player_hash_b", playerHash),
+  ]);
+  if (leftError) throw leftError;
+  if (rightError) throw rightError;
+  const hashes = new Set<string>();
+  for (const row of left ?? []) hashes.add(String(row.player_hash_b));
+  for (const row of right ?? []) hashes.add(String(row.player_hash_a));
+  return [...hashes].slice(0, MAX_FRIENDS);
+}
+
+async function socialSnapshot(sb: any, playerHash: string, displayName: string, day: Date) {
+  const own = await ensureSocialProfile(sb, playerHash, displayName);
+  const hashes = await friendHashes(sb, playerHash);
+  const allHashes = [playerHash, ...hashes];
+  const weekKey = isoDay(weekStart(day));
+
+  const profilesResult = hashes.length
+    ? await sb.from("social_profiles").select("player_hash,friend_code,display_name").in("player_hash", hashes)
+    : { data: [], error: null };
+  if (profilesResult.error) throw profilesResult.error;
+
+  const totalsResult = await sb.from("competition_totals")
+    .select("player_hash,display_name,score,games_count")
+    .eq("period_type", "weekly").eq("period_key", weekKey)
+    .in("player_hash", allHashes);
+  if (totalsResult.error) throw totalsResult.error;
+
+  const profileByHash = new Map<string, any>();
+  profileByHash.set(playerHash, { player_hash: playerHash, friend_code: own.friend_code, display_name: displayName });
+  for (const row of profilesResult.data ?? []) profileByHash.set(String(row.player_hash), row);
+
+  const totalByHash = new Map<string, any>();
+  for (const row of totalsResult.data ?? []) totalByHash.set(String(row.player_hash), row);
+
+  const friends = hashes.map((hash) => {
+    const profile = profileByHash.get(hash) ?? {};
+    return {
+      name: String(profile.display_name ?? "PLAYER").slice(0, 20),
+      friend_code: String(profile.friend_code ?? ""),
+    };
+  }).sort((a, b) => a.name.localeCompare(b.name));
+
+  const weekly = allHashes.map((hash) => {
+    const profile = profileByHash.get(hash) ?? {};
+    const total = totalByHash.get(hash) ?? {};
+    return {
+      name: String(profile.display_name ?? total.display_name ?? "PLAYER").slice(0, 20),
+      score: Number(total.score ?? 0),
+      games_count: Number(total.games_count ?? 0),
+      you: hash === playerHash,
+    };
+  }).sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
+    .map((row, index) => ({ ...row, rank: index + 1 }));
+
+  return {
+    ok: true,
+    friend_code: own.friend_code,
+    friend_count: friends.length,
+    max_friends: MAX_FRIENDS,
+    friends,
+    friends_weekly: weekly,
+    week_start: weekKey,
+  };
+}
+
+async function addFriend(sb: any, playerHash: string, displayName: string, friendCode: string, day: Date) {
+  await ensureSocialProfile(sb, playerHash, displayName);
+  const hashes = await friendHashes(sb, playerHash);
+  if (hashes.length >= MAX_FRIENDS) return { ok: false, reason: "Friend list is full" };
+
+  const { data: target, error: targetError } = await sb.from("social_profiles")
+    .select("player_hash").eq("friend_code", friendCode).maybeSingle();
+  if (targetError) throw targetError;
+  if (!target) return { ok: false, reason: "Friend code not found" };
+  const targetHash = String(target.player_hash);
+  if (targetHash === playerHash) return { ok: false, reason: "You cannot add your own code" };
+
+  const a = playerHash < targetHash ? playerHash : targetHash;
+  const b = playerHash < targetHash ? targetHash : playerHash;
+  const { error: insertError } = await sb.from("social_friends").insert({ player_hash_a: a, player_hash_b: b });
+  if (insertError && insertError.code !== "23505") throw insertError;
+  return await socialSnapshot(sb, playerHash, displayName, day);
+}
+
+async function removeFriend(sb: any, playerHash: string, displayName: string, friendCode: string, day: Date) {
+  const { data: target, error: targetError } = await sb.from("social_profiles")
+    .select("player_hash").eq("friend_code", friendCode).maybeSingle();
+  if (targetError) throw targetError;
+  if (!target) return await socialSnapshot(sb, playerHash, displayName, day);
+  const targetHash = String(target.player_hash);
+  const a = playerHash < targetHash ? playerHash : targetHash;
+  const b = playerHash < targetHash ? targetHash : playerHash;
+  const { error: deleteError } = await sb.from("social_friends")
+    .delete().eq("player_hash_a", a).eq("player_hash_b", b);
+  if (deleteError) throw deleteError;
+  return await socialSnapshot(sb, playerHash, displayName, day);
+}
 function metric(m: Record<string, unknown>, key: string, min: number, max: number, fallback = 0): number {
   const n = Number(m[key] ?? fallback);
   return Number.isFinite(n) ? Math.max(min, Math.min(max, Math.trunc(n))) : fallback;
@@ -124,6 +275,34 @@ Deno.serve(async (req: Request) => {
   if (!url || !secret) return json({ ok: false, reason: "Competition service unavailable" }, 503);
   const sb = createClient(url, secret, { auth: { persistSession: false, autoRefreshToken: false } });
   const hash = await sha256Hex(cloudId.toLowerCase()), name = cleanName(body.display_name, cloudId), action = String(body.action ?? "");
+
+  if (action === "social_snapshot") {
+    try { return json(await socialSnapshot(sb, hash, name, day)); }
+    catch (error) {
+      console.error("social snapshot failed", { error: String(error) });
+      return json({ ok: false, reason: "Friends service unavailable" }, 503);
+    }
+  }
+  if (action === "add_friend") {
+    const friendCode = cleanFriendCode(body.friend_code);
+    if (!friendCode) return json({ ok: false, reason: "Enter a valid 8-character friend code" }, 400);
+    try {
+      const result = await addFriend(sb, hash, name, friendCode, day);
+      return json(result, result.ok ? 200 : 400);
+    } catch (error) {
+      console.error("add friend failed", { error: String(error) });
+      return json({ ok: false, reason: "Friends service unavailable" }, 503);
+    }
+  }
+  if (action === "remove_friend") {
+    const friendCode = cleanFriendCode(body.friend_code);
+    if (!friendCode) return json({ ok: false, reason: "Invalid friend code" }, 400);
+    try { return json(await removeFriend(sb, hash, name, friendCode, day)); }
+    catch (error) {
+      console.error("remove friend failed", { error: String(error) });
+      return json({ ok: false, reason: "Friends service unavailable" }, 503);
+    }
+  }
   if (action === "snapshot") return json(await snapshotFor(sb, hash, day));
   if (action === "submit") {
     const gameId = String(body.game_id ?? ""); if (!GAME_IDS.has(gameId)) return json({ ok: false, reason: "Invalid game" }, 400);
