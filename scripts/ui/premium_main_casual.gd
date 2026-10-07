@@ -317,6 +317,8 @@ func _figma_surface_accent(active: String) -> Color:
 func _figma_text(canvas: Control, text_value: String, rect: Rect2, font_size: int, color: Color = FIGMA_INK, center := false) -> Label:
 	var label := FigmaReferenceCanvas.label(text_value, font_size, _figma_theme_text(color), true)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER if center else HORIZONTAL_ALIGNMENT_LEFT
+	label.clip_text = true
+	label.set_meta("unjam_authored_rect", rect)
 	FigmaReferenceCanvas.set_rect(label, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	# Figma rectangles are authoritative. Label font minimums must never silently
 	# enlarge a text control into a neighboring card/button or beyond the screen.
@@ -334,6 +336,10 @@ func _fit_single_line_control_text(control: Control, max_width: float, start_siz
 		return
 	var authored_position := control.position
 	var authored_size := control.size
+	if control.has_meta("unjam_authored_rect"):
+		var authored_rect: Rect2 = control.get_meta("unjam_authored_rect")
+		authored_position = authored_rect.position
+		authored_size = authored_rect.size
 	var text_value := ""
 	if control is Label:
 		text_value = (control as Label).text
@@ -364,6 +370,10 @@ func _fit_wrapped_text(label: Label, max_width: float, start_size: int, min_size
 		return
 	var authored_position := label.position
 	var authored_size := label.size
+	if label.has_meta("unjam_authored_rect"):
+		var authored_rect: Rect2 = label.get_meta("unjam_authored_rect")
+		authored_position = authored_rect.position
+		authored_size = authored_rect.size
 	var raw_text := label.text.strip_edges()
 	var words := raw_text.split(" ", false)
 	var size := start_size
@@ -412,6 +422,7 @@ func _figma_button(canvas: Control, name_value: String, text_value: String, rect
 	var button := FigmaReferenceCanvas.premium_button(text_value, font_size, resolved_text, resolved_fill, radius, Color(resolved_fill.r, resolved_fill.g, resolved_fill.b, 0.38), 1)
 	button.name = name_value
 	button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+	button.set_meta("unjam_authored_rect", rect)
 	FigmaReferenceCanvas.set_rect(button, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	_fit_single_line_control_text(button, maxf(24.0, rect.size.x - 18.0), font_size, 10)
 	if callback.is_valid():
