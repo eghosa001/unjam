@@ -57,8 +57,13 @@ func _run() -> void:
 				counts[color] = int(counts.get(color, 0)) + 1
 		if actual_empties != empties:
 			errors.append("Water %d empty-bottle mismatch" % n)
-		for color in range(colors):
-			if int(counts.get(color, 0)) != 4:
+		# Curated boards may deliberately remap palette IDs for visual variety.
+		# The gameplay invariant is cardinality plus four units per used colour,
+		# not that the IDs must literally be 0..colors-1.
+		if counts.size() != colors:
+			errors.append("Water %d color cardinality: expected %d, got %d" % [n, colors, counts.size()])
+		for amount in counts.values():
+			if int(amount) != 4:
 				errors.append("Water %d distribution" % n)
 		water_board_signatures[_water_signature(tubes)] = true
 	if water_profile_signatures.size() < 100:
