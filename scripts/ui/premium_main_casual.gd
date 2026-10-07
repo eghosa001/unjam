@@ -1361,8 +1361,11 @@ func build_collection() -> void:
 		[total_badges,"BADGES",287.0]
 	]
 	for metric in metrics:
-		_figma_text(canvas,_compact_stat(int(metric[0])),Rect2(float(metric[2]),136,62,26),18,FIGMA_INK)
-		_figma_text(canvas,String(metric[1]),Rect2(float(metric[2])-3,159,70,22),14,FIGMA_MUTED)
+		var metric_key := String(metric[1])
+		var metric_value := _figma_text(canvas,_compact_stat(int(metric[0])),Rect2(float(metric[2]),136,62,26),18,FIGMA_INK)
+		metric_value.name = "CollectionMetricValue_%s" % metric_key
+		var metric_label := _figma_text(canvas,metric_key,Rect2(float(metric[2])-3,163,70,22),14,FIGMA_MUTED)
+		metric_label.name = "CollectionMetricLabel_%s" % metric_key
 
 	_figma_text(canvas,"GAMES",Rect2(17,202,190,21),16,FIGMA_INK)
 	_figma_collection_progress(canvas,"rescue_rush",17)
@@ -1439,16 +1442,11 @@ func _figma_collection_tip(canvas: Control) -> void:
 	var detail := _figma_text(canvas, "5 levels each • permanent effect per upgrade", Rect2(63, 659, 288, 20), 11, FIGMA_MUTED)
 	detail.name = "CollectionTipDetail"
 	detail.clip_text = true
-	# Label minimum metrics can expand beyond an authored rectangle even with
-	# clip_text enabled. Reset the minimum after fitting so compact viewports keep
-	# this explanatory line inside the Collection card/canvas.
+	# Label minimum metrics are computed before font fitting. Reset the minimum
+	# and restore the authored card box afterwards so compact viewports cannot
+	# expand this line beyond the Collection card.
 	detail.custom_minimum_size = Vector2.ZERO
 	_fit_single_line_control_text(detail, 284.0, 11, 9)
-	detail.position = Vector2(63,659)
-	detail.size = Vector2(288,20)
-	# Label minimum size is computed before the font-fit helper. Reassert the
-	# authored card box afterwards so the old wider minimum cannot escape right.
-	detail.custom_minimum_size = Vector2.ZERO
 	detail.position = Vector2(63,659)
 	detail.size = Vector2(288,20)
 
