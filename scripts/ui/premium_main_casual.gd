@@ -266,7 +266,7 @@ func _figma_solid_card(canvas: Control, name_value: String, rect: Rect2, tint: C
 func _figma_header(canvas: Control, title_text: String, subtitle_text: String, pill_text: String, pill_fill: Color, back_callback: Callable = Callable(self, "build_home"), pill_callback: Callable = Callable(), dark_mode: bool = false) -> void:
 	var use_dark := dark_mode or _dark()
 	var heading_color := FIGMA_OFF_WHITE if not use_dark else FIGMA_DARK_INK
-	var muted_color := Color("#dbe6f4") if not use_dark else FIGMA_DARK_MUTED
+	var muted_color := FIGMA_MUTED if not use_dark else FIGMA_DARK_MUTED
 	var back_color := FIGMA_DARK_INK if use_dark else FIGMA_NAVY
 	var back_fill := Color("#cbc4b8") if not use_dark else Color("#2c2c2c")
 	var back_button := _figma_button(canvas, "FigmaBack", "←", Rect2(17,19,52,52), back_fill, back_callback, back_color, 18, 27)
@@ -640,7 +640,9 @@ func build_friends(refresh_remote: bool = true) -> void:
 	var status_text := _friends_status
 	if status_text.is_empty():
 		status_text = "Friend codes reveal only your UNJAM name and ranked score."
-	_figma_text(canvas,status_text,Rect2(31,672,328,34),11,FIGMA_MUTED,true)
+	var privacy_note := _figma_text(canvas,status_text,Rect2(31,662,328,44),11,FIGMA_MUTED,true)
+	privacy_note.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_fit_wrapped_text(privacy_note, 316.0, 11, 10)
 	_figma_bottom_nav(canvas,"home")
 
 func _figma_friend_rank_row(canvas: Control, row: Dictionary, index: int, y: float) -> void:
