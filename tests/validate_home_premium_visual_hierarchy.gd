@@ -78,8 +78,8 @@ func _run() -> void:
 	var settings_label := home.find_child("HomeNavLabel_SETTINGS", true, false) as Label
 	if daily_label == null or settings_label == null:
 		return _fail("Home Daily/Settings navigation labels are missing")
-	if daily_label.text != "COMPETE":
-		return _fail("Home competition destination is still labeled Daily")
+	if daily_label.text != "DAILY":
+		return _fail("Home Daily destination is mislabeled")
 	if daily_label.get_global_rect().end.x >= collection_label.get_global_rect().position.x:
 		return _fail("Home Daily label overlaps Collection")
 	if collection_label.get_global_rect().end.x >= settings_label.get_global_rect().position.x:
