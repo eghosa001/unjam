@@ -2,6 +2,7 @@ extends "res://scripts/ui/premium_home_casual.gd"
 
 const FLAT_GAME_LOGO_SCRIPT = preload("res://scripts/ui/unjam_flat_game_logo.gd")
 const GAME_ART_SCRIPT = preload("res://scripts/ui/unjam_2d_game_art.gd")
+const UNJAM_WORDMARK: Texture2D = preload("res://assets/art/brand/unjam_wordmark.svg")
 
 const RefCanvas = preload("res://scripts/ui/figma_reference_canvas.gd")
 
@@ -74,7 +75,15 @@ func _build_reference_home(canvas: Control) -> void:
 	_add_frame_background(canvas)
 	var brand_title := _add_text(canvas, "UNJAM", Rect2(21, 23, 101, 34), 27, OFF_WHITE, true)
 	brand_title.name = "HomeBrandTitle3D"
-	RefCanvas.style_display_title(brand_title, Color("#ffb92f"), Color("#071d55"), 2)
+	brand_title.visible = false
+	var wordmark := TextureRect.new()
+	wordmark.name = "HomeBrandWordmark"
+	wordmark.texture = UNJAM_WORDMARK
+	wordmark.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	wordmark.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	wordmark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	RefCanvas.set_rect(wordmark, 18, 18, 126, 42)
+	canvas.add_child(wordmark)
 
 	_add_pill(canvas, Rect2(21, 64, 108, 40), Color("#d6d1c7") if not _home_dark() else Color("#2c2c2c"), "LV %d  ›" % _home_current_level(selected_game), 13, NAVY if not _home_dark() else DARK_INK, "HomeSelectedGameLevel")
 	# Visual pill remains compact, while the invisible interaction target meets
