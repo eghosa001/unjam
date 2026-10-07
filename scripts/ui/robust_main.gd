@@ -51,6 +51,8 @@ func _refresh_day_sensitive_surface(today_key: String) -> void:
 		call_deferred("build_home")
 	elif current_surface == "daily" and has_method("build_daily_games"):
 		call_deferred("build_daily_games")
+	elif current_surface == "compete" and has_method("build_compete_leaderboard"):
+		call_deferred("build_compete_leaderboard")
 
 
 func _prime_game_scene(path: String) -> void:
