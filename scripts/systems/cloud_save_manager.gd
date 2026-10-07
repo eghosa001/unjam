@@ -25,6 +25,7 @@ const CLOUD_KEYS := [
 	"competition_claimed_periods",
 	"competition_display_name",
 	"reward_double_claims",
+	"meta_progression",
 	"lantern_shield_month",
 	"lantern_shield_uses",
 	"garden_last_gift_date",
