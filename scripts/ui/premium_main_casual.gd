@@ -729,7 +729,7 @@ func build_profile() -> void:
 	var save_name := _figma_button(canvas,"ProfileSaveName","SAVE",Rect2(263,104,88,44),FIGMA_CYAN,Callable(),Color.WHITE,13,11)
 	save_name.pressed.connect(_save_profile_name.bind(name_edit))
 
-	_figma_card(canvas,"ProfileStats",Rect2(17,176,354,92),profile_card_fill,Color(FIGMA_CYAN,0.24),17)
+	_figma_card(canvas,"ProfileStats",Rect2(17,176,354,110),profile_card_fill,Color(FIGMA_CYAN,0.24),17)
 	var stats := [
 		[_compact_stat(MetaProgressionManager.total_levels_completed()),"LEVELS",30.0],
 		[_compact_stat(MetaProgressionManager.total_stars()),"STARS",116.0],
@@ -744,14 +744,14 @@ func build_profile() -> void:
 	var profile_rank := CompetitionManager.game_all_time_rank(_profile_game)
 	var rank_text := "UNRANKED" if profile_rank <= 0 else "RANK #%d" % profile_rank
 	_figma_text(canvas,"%s • %d/%d ACHIEVEMENTS" % [rank_text,MetaProgressionManager.total_achievements(),MetaProgressionManager.total_achievement_slots()],Rect2(31,244,220,18),11,FIGMA_GOLD)
-	var friends_button := _figma_button(canvas,"ProfileFriendsButton","FRIENDS",Rect2(272,240,79,24),Color("#7a57e0"),Callable(self,"build_friends"),Color.WHITE,10,9)
+	var friends_button := _figma_button(canvas,"ProfileFriendsButton","FRIENDS",Rect2(272,240,79,44),Color("#7a57e0"),Callable(self,"build_friends"),Color.WHITE,10,9)
 	friends_button.tooltip_text = "Friend codes and campaign progress rankings"
 
-	_figma_text(canvas,"ACHIEVEMENTS",Rect2(19,282,170,20),15,FIGMA_GOLD)
+	_figma_text(canvas,"ACHIEVEMENTS",Rect2(19,294,170,20),15,FIGMA_GOLD)
 	_figma_profile_game_tabs(canvas)
 	var defs := MultiGameManager.achievement_definitions(_profile_game)
 	for i in range(defs.size()):
-		_figma_achievement_row(canvas,defs[i] as Dictionary,358.0+float(i)*60.0)
+		_figma_achievement_row(canvas,defs[i] as Dictionary,370.0+float(i)*60.0)
 	_figma_bottom_nav(canvas,"home")
 
 func _figma_profile_game_tabs(canvas: Control) -> void:
@@ -760,7 +760,7 @@ func _figma_profile_game_tabs(canvas: Control) -> void:
 	for i in range(ids.size()):
 		var selected: bool = _profile_game == ids[i]
 		var fill := Unjam3DTheme.game_accent(ids[i]) if selected else Color("#7d8a94")
-		var button := _figma_button(canvas,"ProfileGame/%s" % ids[i],labels[i],Rect2(19.0+float(i)*118.0,306,108,44),fill,Callable(),Color.WHITE,11,10)
+		var button := _figma_button(canvas,"ProfileGame/%s" % ids[i],labels[i],Rect2(19.0+float(i)*118.0,318,108,44),fill,Callable(),Color.WHITE,11,10)
 		if not selected:
 			button.pressed.connect(_set_profile_game.bind(ids[i]))
 		else:
@@ -837,7 +837,7 @@ func build_friends(refresh_remote: bool = true) -> void:
 	code_input.add_theme_color_override("caret_color",_figma_theme_text(FIGMA_INK))
 	code_input.add_theme_stylebox_override("normal",FigmaReferenceCanvas.flat_gloss(Color("#24262a") if _dark() else Color("#fffaf2"),11,Color("#7a57e0"),1,0.16,10.0))
 	code_input.custom_minimum_size = Vector2.ZERO
-	FigmaReferenceCanvas.set_rect(code_input,31,216,211,36)
+	FigmaReferenceCanvas.set_rect(code_input,31,212,211,44)
 	canvas.add_child(code_input)
 	var add_button := _figma_button(canvas,"FriendsAddButton","ADD",Rect2(258,212,93,44),Color("#7a57e0"),Callable(),Color.WHITE,12,11)
 	add_button.pressed.connect(_add_friend_from_input.bind(code_input))
