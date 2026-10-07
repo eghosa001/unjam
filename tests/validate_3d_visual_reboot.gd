@@ -2,7 +2,7 @@ extends SceneTree
 
 func _initialize() -> void:
 	var failures: Array[String] = []
-	_check("res://scripts/ui/premium_home_direct_levels.gd", ["FigmaHome390x844", "GAME_ART_SCRIPT", "HomeHeroFlatGameLogo", "HomeLevelsNavButton"], failures)
+	_check("res://scripts/ui/premium_home_direct_levels.gd", ["FigmaHome390x844", "GAME_ART_SCRIPT", "HomeHeroFlatGameLogo", "HomeGamesNavButton"], failures)
 	_check("res://scripts/ui/unjam_2d_game_art.gd", ["class_name Unjam2DGameArt", "_draw_rescue", "_draw_water", "_draw_block"], failures)
 	_check("res://scripts/ui/unjam_meta_art.gd", ["class_name UnjamMetaArt", "_draw_compete", "_draw_collection"], failures)
 	_check("res://scripts/ui/premium_main_casual.gd", ["FigmaSurface390x844", "META_ART_SCRIPT", "_figma_surface_accent"], failures)
