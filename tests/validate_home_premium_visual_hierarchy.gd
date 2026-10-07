@@ -58,12 +58,12 @@ func _run() -> void:
 	if world_title == null or world_value == null or completion == null:
 		return _fail("Home world journey typography nodes are missing")
 	var goals := home.find_child("HomeGoalsButton", true, false) as Button
-	var journey := home.find_child("HomeSeasonJourneyButton", true, false) as Button
+	var daily := home.find_child("HomeDailyChallengeButton", true, false) as Button
 	var friends := home.find_child("HomeFriendsButton", true, false) as Button
 	var profile := home.find_child("HomeProfileButton", true, false) as Button
-	if goals == null or journey == null or friends == null or profile == null:
+	if goals == null or daily == null or friends == null or profile == null:
 		return _fail("Home live/meta destinations are missing")
-	for action in [goals, journey, friends]:
+	for action in [daily, goals, friends]:
 		if action.size.x < 88.0 or action.size.y < 40.0:
 			return _fail("Home Live Now action is too small for touch")
 	if world_title.get_theme_font_size("font_size") < 12 or world_value.get_theme_font_size("font_size") < 12:
