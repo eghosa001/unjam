@@ -915,8 +915,9 @@ func build_daily_games() -> void:
 	_figma_daily_card(canvas, "block_puzzle", 363, bonus)
 	_figma_daily_progress(canvas)
 	_figma_daily_tip(canvas, bonus)
-	# Daily is a Live Now reward activity, not the competition destination.
-	_figma_bottom_nav(canvas, "home")
+	# Daily is a Live Now reward activity, not a primary nav destination.
+	# Leave every primary destination tappable, including HOME and COMPETE.
+	_figma_bottom_nav(canvas, "")
 
 func _figma_daily_progress(canvas: Control) -> void:
 	var done_count := 0
