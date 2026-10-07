@@ -3,6 +3,8 @@ extends "res://scripts/ui/premium_main.gd"
 const FIGMA_LEVEL_PAGE_SIZE := 20
 const GardenUpgradePreviewScene = preload("res://scripts/ui/garden_upgrade_preview.gd")
 const META_ART_SCRIPT = preload("res://scripts/ui/unjam_meta_art.gd")
+const GAME_ART_SCRIPT = preload("res://scripts/ui/unjam_2d_game_art.gd")
+const UNJAM_WORDMARK: Texture2D = preload("res://assets/art/brand/unjam_wordmark.svg")
 const FIGMA_BG_TOP := Color("#e9e5dd")
 const FIGMA_BG_BOTTOM := Color("#8f887f")
 const FIGMA_NAVY := Color("#252a30")
@@ -144,9 +146,23 @@ func _figma_surface(active: String, bottom_tint: Color = FIGMA_BG_BOTTOM, top_ti
 	viewport_bg.color = Color("#1f1f1f") if _dark() else Color("#e6e3dc")
 	viewport_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	content.add_child(viewport_bg)
+	var wide_stage := Control.new()
+	wide_stage.name = "FigmaWideSurfaceStage"
+	wide_stage.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	wide_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content.add_child(wide_stage)
+
 	var canvas := FigmaReferenceCanvas.new()
 	canvas.name = "FigmaSurface390x844"
 	content.add_child(canvas)
+	var available := content.size
+	if available.x <= 2.0 or available.y <= 2.0:
+		available = get_viewport_rect().size
+	var wide := available.x >= 1180.0 and available.x / maxf(1.0, available.y) >= 1.22
+	wide_stage.visible = wide
+	if wide:
+		canvas.set_fit_bias(0.10, 0.5)
+		_build_figma_wide_surface_stage(wide_stage, active, available)
 
 	# Secondary systems now live in restrained game-world colour fields instead of
 	# a beige application shell. Information cards remain simple and readable.
@@ -179,6 +195,90 @@ func _figma_surface(active: String, bottom_tint: Color = FIGMA_BG_BOTTOM, top_ti
 		FigmaReferenceCanvas.set_rect(art, 0, 0, 390, 844)
 		canvas.add_child(art)
 	return canvas
+
+func _build_figma_wide_surface_stage(stage: Control, active: String, available: Vector2) -> void:
+	var accent := _figma_surface_accent(active)
+	var dark := _dark()
+
+	var glow := PanelContainer.new()
+	glow.name = "FigmaWideSurfaceGlow"
+	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var glow_size := minf(available.y * 0.82, available.x * 0.42)
+	glow.position = Vector2(available.x * 0.57, available.y * 0.09)
+	glow.size = Vector2(glow_size, glow_size)
+	glow.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color(accent.r, accent.g, accent.b, 0.13 if dark else 0.10), glow_size * 0.48))
+	stage.add_child(glow)
+
+	var mark := TextureRect.new()
+	mark.name = "FigmaWideSurfaceWordmark"
+	mark.texture = UNJAM_WORDMARK
+	mark.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	mark.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var mark_w := minf(available.x * 0.24, 560.0)
+	mark.position = Vector2(available.x * 0.58, available.y * 0.055)
+	mark.size = Vector2(mark_w, mark_w * 0.265)
+	stage.add_child(mark)
+
+	var title_text := active.to_upper()
+	if active == "games":
+		title_text = _wide_selected_game_name()
+	elif active == "compete":
+		title_text = "RANKINGS"
+	var title := FigmaReferenceCanvas.label(title_text, int(clampf(available.y * 0.036, 38.0, 62.0)), Color.WHITE, true)
+	title.name = "FigmaWideSurfaceTitle"
+	FigmaReferenceCanvas.style_display_title(title, accent.lightened(0.18), Color("#09141f"), 3)
+	title.position = Vector2(available.x * 0.56, available.y * 0.15)
+	title.size = Vector2(available.x * 0.37, available.y * 0.07)
+	stage.add_child(title)
+
+	var subtitle := FigmaReferenceCanvas.label(_wide_surface_subtitle(active), int(clampf(available.y * 0.014, 18.0, 26.0)), Color("#d7e1ea") if dark else Color("#354450"), true)
+	subtitle.name = "FigmaWideSurfaceSubtitle"
+	subtitle.position = Vector2(available.x * 0.56, available.y * 0.215)
+	subtitle.size = Vector2(available.x * 0.36, available.y * 0.045)
+	stage.add_child(subtitle)
+
+	if active in ["compete", "friends", "goals", "profile", "collection", "daily"]:
+		var art := META_ART_SCRIPT.new()
+		art.name = "FigmaWideMetaArt"
+		art.configure(active, dark)
+		var art_h := available.y * 0.70
+		var art_w := art_h * (390.0 / 844.0)
+		art.position = Vector2(available.x * 0.70, available.y * 0.26)
+		art.size = Vector2(art_w, art_h)
+		art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		stage.add_child(art)
+	else:
+		var game_art := GAME_ART_SCRIPT.new()
+		game_art.name = "FigmaWideGameArt"
+		game_art.configure(_wide_selected_game_id(), false, dark)
+		var art_side := minf(available.y * 0.60, available.x * 0.34)
+		game_art.position = Vector2(available.x * 0.62, available.y * 0.30)
+		game_art.size = Vector2(art_side, art_side)
+		game_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		stage.add_child(game_art)
+
+func _wide_selected_game_id() -> String:
+	var id := String(selected_game_id)
+	return id if id in ["rescue_rush", "water_sort", "block_puzzle"] else "rescue_rush"
+
+func _wide_selected_game_name() -> String:
+	match _wide_selected_game_id():
+		"water_sort": return "WATER SORT"
+		"block_puzzle": return "BLOCK PUZZLE"
+		_: return "RESCUE RUSH"
+
+func _wide_surface_subtitle(active: String) -> String:
+	match active:
+		"compete": return "CAMPAIGN PROGRESS • LEAGUES • WEEKLY RANK"
+		"friends": return "PLAYMATES • PRIVATE CODES • FRIEND RANKINGS"
+		"goals": return "DAILY MISSIONS • WEEKLY MISSIONS • SEASON JOURNEY"
+		"profile": return "PLAYER STATS • ACHIEVEMENTS • GAME MASTERY"
+		"collection": return "RESCUE GARDEN • UPGRADES • PERMANENT BONUSES"
+		"daily": return "CHECK-IN • DAILY PUZZLES • REWARDS"
+		"settings": return "SOUND • COMFORT • APPEARANCE • SUPPORT"
+		"games": return "CHOOSE A WORLD • KEEP YOUR CAMPAIGN MOVING"
+		_: return "UNJAM • THREE PUZZLES • ONE JOURNEY"
 
 func _figma_surface_accent(active: String) -> Color:
 	match active:
