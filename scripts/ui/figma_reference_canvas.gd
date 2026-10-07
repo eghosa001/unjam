@@ -479,6 +479,8 @@ static func fit_single_line_text(control: Control, max_width: float, start_size:
 	var font := control.get_theme_font("font")
 	if font == null:
 		return
+	var authored_position := control.position
+	var authored_size := control.size
 	var value := ""
 	if control is Label:
 		value = (control as Label).text
@@ -490,6 +492,11 @@ static func fit_single_line_text(control: Control, max_width: float, start_size:
 	while size > min_size and font.get_string_size(value, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x > max_width:
 		size -= 1
 	control.add_theme_font_size_override("font_size", size)
+	control.custom_minimum_size = Vector2.ZERO
+	control.position = authored_position
+	control.size = authored_size
+	if control is Label:
+		(control as Label).clip_text = true
 
 
 static func premium_button(text_value: String, font_size: int, text_color: Color, fill: Color, radius: float, border: Color = Color.TRANSPARENT, border_width: float = 0.0) -> Button:
