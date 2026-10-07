@@ -60,7 +60,7 @@ func _run() -> void:
 	var cloud := _read("res://scripts/systems/cloud_save_manager.gd")
 	var edge := _read("res://supabase/functions/unjam-cloud-save/index.ts")
 
-	for token in ["HomeProfileButton", "HomeGoalsButton", "HomeDailyChallengeButton", "HomeSidekickButton", "LIVE NOW"]:
+	for token in ["HomeProfileButton", "HomeGoalsButton", "HomeDailyChallengeButton", "HomeFriendsButton", "HomePlaymateSidekickBeta", "LIVE NOW"]:
 		if not home.contains(token):
 			failures.append("Home is missing visible meta entry: %s" % token)
 	for token in ["func build_goals()", "func build_profile()", "CollectionAchievementsView", "DAILY CHECK-IN", "SEASON JOURNEY", "ACHIEVEMENTS"]:
