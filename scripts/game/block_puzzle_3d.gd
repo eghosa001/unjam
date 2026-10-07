@@ -159,7 +159,7 @@ func _build_figma_block(canvas: Control) -> void:
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	FigmaReferenceCanvas.set_rect(title_label, 115, 15, 184, 30)
 	canvas.add_child(title_label)
-	var level_meta := FigmaReferenceCanvas.label("", 13, Color(0.92,0.98,1.0), false)
+	var level_meta := FigmaReferenceCanvas.label("", 14, Color(0.92,0.98,1.0), true)
 	level_meta.name = "BlockLevelMeta"
 	level_meta.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	FigmaReferenceCanvas.set_rect(level_meta, 115, 43, 184, 20)
@@ -175,7 +175,7 @@ func _build_figma_block(canvas: Control) -> void:
 	score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	FigmaReferenceCanvas.set_rect(score_label, 33, 94, 52, 44)
 	canvas.add_child(score_label)
-	goal_label = FigmaReferenceCanvas.label("", 14, Color(0.96,0.87,1.0), false)
+	goal_label = FigmaReferenceCanvas.label("", 15, Color(0.96,0.87,1.0), true)
 	goal_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	goal_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	goal_label.clip_text = true
@@ -253,7 +253,7 @@ func _build_figma_block(canvas: Control) -> void:
 	status_region.clip_contents = true
 	FigmaReferenceCanvas.set_rect(status_region, 18, 654, 354, 20)
 	canvas.add_child(status_region)
-	status_label = FigmaReferenceCanvas.label("", 14, Color(1,0.995,0.97), true)
+	status_label = FigmaReferenceCanvas.label("", 15, Color(1,0.995,0.97), true)
 	status_label.name = "BlockStatusText"
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status_label.clip_text = true
@@ -266,7 +266,7 @@ func _build_figma_block(canvas: Control) -> void:
 	hint_region.clip_contents = true
 	FigmaReferenceCanvas.set_rect(hint_region, 18, 678, 354, 20)
 	canvas.add_child(hint_region)
-	hint_label = FigmaReferenceCanvas.label("", 14, Color(1,0.995,0.97), true)
+	hint_label = FigmaReferenceCanvas.label("", 15, Color(1,0.995,0.97), true)
 	hint_label.name = "BlockHintText"
 	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint_label.clip_text = true
