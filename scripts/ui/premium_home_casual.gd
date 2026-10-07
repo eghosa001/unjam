@@ -233,7 +233,7 @@ func _make_daily_games_action(parent: VBoxContainer) -> void:
 	daily.name = "HomeDailyGamesButton"
 	var rank := CompetitionManager.weekly_rank()
 	var rank_text := "#%d" % rank if rank > 0 else "UNRANKED"
-	daily.text = "🏆  COMPETE   •   %d/3 DAILY   •   %s %s" % [completed, CompetitionManager.weekly_division(), rank_text]
+	daily.text = "★  COMPETE   •   %d/3 DAILY   •   %s %s" % [completed, CompetitionManager.weekly_division(), rank_text]
 	if bonus > 0:
 		daily.tooltip_text = "Daily Cup + Weekly League. Collection adds +%d coins to each Daily Game." % bonus
 	else:
@@ -286,7 +286,7 @@ func _make_bottom_nav() -> void:
 	var entries: Array = [
 		["⌂\nHOME", Callable(), "HomeNavButton", Color("33b9ff"), "Home"],
 		["▦\nGAMES", Callable(self, "_open_game_selector"), "HomeGamesNavButton", Color("7b6cff"), "Games"],
-		["🏆\nCOMPETE", func(): get_parent().call("build_daily_games"), "HomeDailyNavButton", Color("f5c93a"), "Compete"],
+		["★\nCOMPETE", func(): get_parent().call("build_daily_games"), "HomeDailyNavButton", Color("f5c93a"), "Compete"],
 		["◆\nCOLLECT", func(): get_parent().call("build_collection"), "HomeCollectionNavButton", Color("24c96b"), "Collection"],
 		["⚙\nSETTINGS", func(): get_parent().call("build_settings"), "HomeSettingsNavButton", Color("35c6ff"), "Settings"]
 	]
