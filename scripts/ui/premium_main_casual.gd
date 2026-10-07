@@ -327,6 +327,8 @@ func _fit_single_line_control_text(control: Control, max_width: float, start_siz
 	var font := control.get_theme_font("font")
 	if font == null:
 		return
+	var authored_position := control.position
+	var authored_size := control.size
 	var text_value := ""
 	if control is Label:
 		text_value = (control as Label).text
@@ -338,6 +340,11 @@ func _fit_single_line_control_text(control: Control, max_width: float, start_siz
 	while size > min_size and font.get_string_size(text_value, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x > max_width:
 		size -= 1
 	control.add_theme_font_size_override("font_size", size)
+	control.custom_minimum_size = Vector2.ZERO
+	control.position = authored_position
+	control.size = authored_size
+	if control is Label:
+		(control as Label).clip_text = true
 func _fit_wrapped_text(label: Label, max_width: float, start_size: int, min_size: int = 10) -> void:
 	if label == null or max_width <= 0.0:
 		return
