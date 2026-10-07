@@ -3,6 +3,12 @@ name: Production Readiness One-Off
 on:
   pull_request:
     branches: [main]
+    paths:
+      - "tests/validate_viewport_fit.gd"
+      - "tests/validate_runtime_efficiency.gd"
+      - "scripts/ui/premium_home_direct_levels.gd"
+      - "scripts/ui/premium_main_casual.gd"
+      - ".github/workflows/production-readiness-oneoff.yml"
 
 permissions:
   contents: read
