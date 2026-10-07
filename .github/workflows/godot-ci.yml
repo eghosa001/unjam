@@ -140,6 +140,8 @@ jobs:
               friends)
                 test -s build/visual-audit/19-friends-540x960-dark.png
                 test -s build/visual-audit/19b-friends-540x960-light.png
+                test -s build/visual-audit/19c-friends-empty-540x960-dark.png
+                test -s build/visual-audit/19d-friends-empty-540x960-light.png
                 ;;
               settings) test -s build/visual-audit/06b-settings-540x960-dark.png ;;
               shop) test -s build/visual-audit/06d-shop-540x960-dark.png ;;
