@@ -52,8 +52,8 @@ func _run() -> void:
 	single.size = Vector2(104,72)
 	single.configure([Vector2i.ZERO],false,Color("8b7cf6"),0)
 	var tray_cell := single.tray_visual_cell_size()
-	if tray_cell < 34.5 or tray_cell > 35.1:
-		return _fail("Single Block tray piece no longer matches the premium board-scale target: %.2f" % tray_cell)
+	if tray_cell < 36.5 or tray_cell > 37.1:
+		return _fail("Single Block tray piece no longer matches the premium tray-emphasis target: %.2f" % tray_cell)
 	single.queue_free()
 
 	game.queue_free()
