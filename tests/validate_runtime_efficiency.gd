@@ -96,7 +96,7 @@ func _hot_paths_stay_lightweight() -> bool:
 	var water_process := water.get_slice("func _process", 1).get_slice("func _draw", 0)
 	if not "queue_redraw()" in water_process or "_refresh_liquid_3d" in water_process or "_refresh_meniscus_3d" in water_process:
 		return _fail("Water arrival feedback is no longer redraw-only 2D")
-	if not "DECORATIVE_RENDER_FPS := 20.0" in FileAccess.get_file_as_string("res://scripts/ui/water_tube_reference_button.gd"):
+	if not "ACTIVE_REDRAW_FPS := 30.0" in FileAccess.get_file_as_string("res://scripts/ui/water_tube_reference_button.gd"):
 		return _fail("Water 2D bottle redraw budget is no longer capped")
 	for forbidden in ["SubViewport", "Camera3D", "MeshInstance3D", "StandardMaterial3D"]:
 		if forbidden in water:
