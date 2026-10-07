@@ -1434,6 +1434,11 @@ func _figma_collection_tip(canvas: Control) -> void:
 	detail.name = "CollectionTipDetail"
 	detail.clip_text = true
 	_fit_single_line_control_text(detail, 284.0, 11, 9)
+	# Label minimum size is computed before the font-fit helper. Reassert the
+	# authored card box afterwards so the old wider minimum cannot escape right.
+	detail.custom_minimum_size = Vector2.ZERO
+	detail.position = Vector2(63,659)
+	detail.size = Vector2(288,20)
 
 func _figma_collection_progress(canvas: Control, game_id: String, x: float) -> void:
 	var accent := Unjam3DTheme.game_accent(game_id)
