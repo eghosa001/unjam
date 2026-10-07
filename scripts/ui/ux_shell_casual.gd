@@ -2,6 +2,9 @@ extends "res://scripts/ui/ux_shell_premium.gd"
 
 var _tutorial_canvas: FigmaReferenceCanvas
 var _tutorial_demo_root: Control
+var _tutorial_world_art: Control
+
+const GAME_ART_SCRIPT = preload("res://scripts/ui/unjam_2d_game_art.gd")
 
 # Compatibility fallback retained for theme-integrity/source contracts; the visible
 # tutorial canvas uses the approved deeper Figma 3D scene palette.
@@ -118,6 +121,14 @@ func _build_shell() -> void:
 	FigmaReferenceCanvas.set_rect(demo_panel,43,207,302,184)
 	demo_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_tutorial_canvas.add_child(demo_panel)
+	_tutorial_world_art = GAME_ART_SCRIPT.new()
+	_tutorial_world_art.name = "TutorialAuthoredWorldArt"
+	_tutorial_world_art.configure("rescue_rush", true, false)
+	FigmaReferenceCanvas.set_rect(_tutorial_world_art, 64, 214, 260, 168)
+	_tutorial_world_art.modulate.a = 0.22
+	_tutorial_world_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tutorial_canvas.add_child(_tutorial_world_art)
+
 	_tutorial_demo_root = Control.new()
 	_tutorial_demo_root.name = "TutorialDemoArt"
 	FigmaReferenceCanvas.set_rect(_tutorial_demo_root,43,207,302,184)
@@ -239,6 +250,9 @@ func show_tutorial(game_id: String = "rescue_rush") -> void:
 
 func _apply_figma_tutorial_theme(game_id: String) -> void:
 	var dark := theme_mode == "dark"
+	if _tutorial_world_art != null and is_instance_valid(_tutorial_world_art):
+		_tutorial_world_art.configure(game_id, true, dark)
+		_tutorial_world_art.modulate.a = 0.18 if dark else 0.24
 	var accent := Color("#21c763")
 	var bottom := Color("#e4f8ec")
 	var demo_top := Color("#e9fdef")
