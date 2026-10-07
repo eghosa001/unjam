@@ -81,9 +81,9 @@ func _fit_figma_board_layout() -> void:
 	board_shell.position = Vector2(22, 164)
 	board_shell.size = Vector2(346, 346)
 	if piece_row != null:
-		piece_row.custom_minimum_size = Vector2(326, 112)
-		piece_row.position = Vector2(31, 545)
-		piece_row.size = Vector2(326, 112)
+		piece_row.custom_minimum_size = Vector2(326, 96)
+		piece_row.position = Vector2(31, 536)
+		piece_row.size = Vector2(326, 96)
 		piece_row.add_theme_constant_override("separation", 7)
 
 func build_ui() -> void:
