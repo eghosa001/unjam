@@ -45,12 +45,13 @@ func _run() -> void:
 	var competition := _read("res://scripts/systems/competition_manager.gd")
 	var rescue := _read("res://scripts/game/game.gd")
 	var water := _read("res://scripts/game/water_sort_10000.gd")
+	var water_base := _read("res://scripts/game/water_sort.gd")
 	var block := _read("res://scripts/game/block_puzzle.gd")
 
 	for token in ["COMPETE", "CompetitionManager.weekly_rank", "build_daily_games"]:
 		if not home.contains(token):
 			failures.append("Home does not expose competition prominently: %s" % token)
-	for token in [""daily":"COMPETE"", "build_compete_leaderboard", "WEEKLY LEAGUE", "collection_item_level", "L%d/%d"]:
+	for token in ["daily\":\"COMPETE", "build_compete_leaderboard", "WEEKLY LEAGUE", "collection_item_level", "L%d/%d"]:
 		if not main.contains(token):
 			failures.append("Compete/Collection UI contract missing: %s" % token)
 	for token in ["submit_daily_result", "claim_weekly_reward", "weekly_top", "daily_top"]:
@@ -62,7 +63,7 @@ func _run() -> void:
 		failures.append("Water Sort does not submit ranked Daily results")
 	if not block.contains("CompetitionManager.submit_daily_result"):
 		failures.append("Block Puzzle does not submit ranked Daily results")
-	for source in [rescue, water, block]:
+	for source in [rescue, water_base, block]:
 		if not source.contains("Undo is disabled in ranked Daily competition"):
 			failures.append("A ranked Daily game still allows undo")
 
