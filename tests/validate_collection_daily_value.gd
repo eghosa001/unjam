@@ -54,7 +54,7 @@ func _run() -> void:
 	for token in ["daily\":\"COMPETE", "build_compete_leaderboard", "weekly_division", "collection_item_level", "L%d/%d"]:
 		if not main.contains(token):
 			failures.append("Compete/Collection UI contract missing: %s" % token)
-	for token in ["submit_daily_result", "claim_weekly_reward", "weekly_top", "daily_top"]:
+	for token in ["submit_daily_result", "claim_weekly_reward", "weekly_top", "daily_top", "already_claimed"]:
 		if not competition.contains(token):
 			failures.append("Competition manager contract missing: %s" % token)
 	if not rescue.contains("CompetitionManager.submit_daily_result"):
