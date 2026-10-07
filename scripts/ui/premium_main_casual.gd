@@ -31,6 +31,8 @@ var _collection_scroll_origin_y := 0.0
 var _settings_help_game := "rescue_rush"
 var _settings_theme_toggle_pending := false
 var _profile_game := "rescue_rush"
+var _ranking_game := "rescue_rush"
+var _friends_period := "all_time"
 var _friends_status := ""
 const SETTINGS_HELP_GAMES := ["rescue_rush", "water_sort", "block_puzzle"]
 
@@ -149,7 +151,7 @@ func _figma_surface(active: String, bottom_tint: Color = FIGMA_BG_BOTTOM, top_ti
 	# actions, progress and selection rather than decorative scenery.
 	var bg := PanelContainer.new()
 	bg.name = "FigmaSurfaceBackground"
-	var fill := Color("#202124") if _dark() else Color("#e6e3dc")
+	var fill := Color("#1f2023") if _dark() else Color("#eee8df")
 	var edge := Color("#3d4045") if _dark() else Color("#c8c3ba")
 	bg.add_theme_stylebox_override("panel", FigmaReferenceCanvas.flat_gloss(fill, 34, edge, 1, 0.11))
 	FigmaReferenceCanvas.set_rect(bg, 0, 0, 390, 844)
@@ -187,6 +189,8 @@ func _fit_wrapped_text(label: Label, max_width: float, start_size: int, min_size
 	var font := label.get_theme_font("font")
 	if font == null:
 		return
+	var authored_position := label.position
+	var authored_size := label.size
 	var raw_text := label.text.strip_edges()
 	var words := raw_text.split(" ", false)
 	var size := start_size
@@ -219,6 +223,11 @@ func _fit_wrapped_text(label: Label, max_width: float, start_size: int, min_size
 	if not current.is_empty():
 		wrapped.append(current)
 	label.text = "\n".join(wrapped)
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.clip_text = true
+	label.custom_minimum_size = Vector2.ZERO
+	label.position = authored_position
+	label.size = authored_size
 
 
 func _figma_button(canvas: Control, name_value: String, text_value: String, rect: Rect2, fill: Color, callback: Callable, text_color: Color = FIGMA_OFF_WHITE, radius: float = 14.0, font_size: int = 12) -> Button:
@@ -240,9 +249,10 @@ func _figma_button(canvas: Control, name_value: String, text_value: String, rect
 func _figma_card(canvas: Control, name_value: String, rect: Rect2, tint: Color = Color(1.0, 0.995, 0.97), accent: Color = Color(0.70, 0.88, 0.96, 0.45), radius: float = 16.0) -> PanelContainer:
 	var card := PanelContainer.new()
 	card.name = name_value
-	var resolved_tint := Color("#27282b") if _dark() else Color("#f5f2ec")
-	var resolved_accent := Color(accent.r, accent.g, accent.b, 0.22 if _dark() else 0.18)
-	card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.flat_gloss(resolved_tint, radius, resolved_accent, 1, 0.10))
+	var base_tint := Color("#282a2e") if _dark() else Color("#fffaf2")
+	var resolved_tint := base_tint.lerp(Color(accent.r,accent.g,accent.b,1.0),0.035)
+	var resolved_accent := Color(accent.r, accent.g, accent.b, 0.34 if _dark() else 0.30)
+	card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.flat_gloss(resolved_tint, radius, resolved_accent, 1, 0.17))
 	FigmaReferenceCanvas.set_rect(card, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(card)
@@ -278,11 +288,14 @@ func _figma_header(canvas: Control, title_text: String, subtitle_text: String, p
 	_fit_single_line_control_text(header_title, 182.0, 23, 14)
 	FigmaReferenceCanvas.style_display_title(header_title, pill_fill.lightened(0.20), Color("#071d55"), 1)
 	if not subtitle_text.strip_edges().is_empty():
-		var subtitle := _figma_text(canvas, subtitle_text, Rect2(83,49,186,34), 14, muted_color)
+		var subtitle := _figma_text(canvas, subtitle_text, Rect2(83,49,186,22), 14, muted_color)
 		subtitle.name = "FigmaHeaderSubtitle"
-		subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		subtitle.autowrap_mode = TextServer.AUTOWRAP_OFF
 		subtitle.clip_text = true
-		FigmaReferenceCanvas.set_rect(subtitle, 83, 49, 186, 34)
+		subtitle.custom_minimum_size = Vector2.ZERO
+		_fit_single_line_control_text(subtitle, 182.0, 14, 10)
+		FigmaReferenceCanvas.set_rect(subtitle, 83, 49, 186, 22)
+		_fit_wrapped_text(subtitle, 182.0, 14, 11)
 	if pill_text.strip_edges().is_empty():
 		return
 	if pill_callback.is_valid():
@@ -343,7 +356,7 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 	var callbacks := {
 		"home": Callable(self,"build_home"),
 		"games": Callable(self,"_open_games_surface"),
-		"daily": Callable(self,"build_daily_games"),
+		"daily": Callable(self,"build_compete_leaderboard"),
 		"collection": Callable(self,"build_collection"),
 		"settings": Callable(self,"build_settings"),
 	}
@@ -514,10 +527,11 @@ func build_profile() -> void:
 	name_edit.max_length = 20
 	name_edit.add_theme_font_size_override("font_size",15)
 	name_edit.add_theme_color_override("font_color",_figma_theme_text(FIGMA_INK))
+	name_edit.add_theme_color_override("font_placeholder_color",Color("#8f99a5") if _dark() else Color("#68717b"))
 	name_edit.add_theme_stylebox_override("normal",FigmaReferenceCanvas.flat_gloss(Color("#f5f2ec") if not _dark() else Color("#27282b"),12,Color(FIGMA_CYAN,0.34),1,0.08))
 	FigmaReferenceCanvas.set_rect(name_edit,31,105,218,42)
 	canvas.add_child(name_edit)
-	var save_name := _figma_button(canvas,"ProfileSaveName","SAVE",Rect2(263,105,88,42),FIGMA_CYAN,Callable(),Color.WHITE,13,11)
+	var save_name := _figma_button(canvas,"ProfileSaveName","SAVE",Rect2(263,104,88,44),FIGMA_CYAN,Callable(),Color.WHITE,13,11)
 	save_name.pressed.connect(_save_profile_name.bind(name_edit))
 
 	_figma_card(canvas,"ProfileStats",Rect2(17,176,354,92),profile_card_fill,Color(FIGMA_CYAN,0.24),17)
@@ -530,9 +544,11 @@ func build_profile() -> void:
 	for stat in stats:
 		_figma_text(canvas,String(stat[0]),Rect2(float(stat[2]),194,64,23),17,FIGMA_INK)
 		_figma_text(canvas,String(stat[1]),Rect2(float(stat[2])-4,222,72,18),11,FIGMA_MUTED)
-	_figma_text(canvas,"%s • %d/%d ACHIEVEMENTS" % [CompetitionManager.weekly_division(),MetaProgressionManager.total_achievements(),MetaProgressionManager.total_achievement_slots()],Rect2(31,244,220,18),11,FIGMA_GOLD)
-	var friends_button := _figma_button(canvas,"ProfileFriendsButton","FRIENDS",Rect2(272,238,79,28),Color("#7a57e0"),Callable(self,"build_friends"),Color.WHITE,10,9)
-	friends_button.tooltip_text = "Friend codes and Friends Weekly Leaderboard"
+	var profile_rank := CompetitionManager.game_all_time_rank(_profile_game)
+	var rank_text := "UNRANKED" if profile_rank <= 0 else "RANK #%d" % profile_rank
+	_figma_text(canvas,"%s • %d/%d ACHIEVEMENTS" % [rank_text,MetaProgressionManager.total_achievements(),MetaProgressionManager.total_achievement_slots()],Rect2(31,244,220,18),11,FIGMA_GOLD)
+	var friends_button := _figma_button(canvas,"ProfileFriendsButton","FRIENDS",Rect2(272,224,79,44),Color("#7a57e0"),Callable(self,"build_friends"),Color.WHITE,10,9)
+	friends_button.tooltip_text = "Friend codes and campaign progress rankings"
 
 	_figma_text(canvas,"ACHIEVEMENTS",Rect2(19,285,170,20),15,FIGMA_GOLD)
 	_figma_profile_game_tabs(canvas)
@@ -584,13 +600,13 @@ func build_friends(refresh_remote: bool = true) -> void:
 		var refresh_callback := Callable(self, "_on_friends_social_updated")
 		if not CompetitionManager.social_updated.is_connected(refresh_callback):
 			CompetitionManager.social_updated.connect(refresh_callback, CONNECT_ONE_SHOT)
-		CompetitionManager.refresh_social()
+		CompetitionManager.refresh_social(_ranking_game)
 	var canvas := _figma_surface("friends", Color("#d9e4f5"))
-	var friends_card_fill := Color("#27282b") if _dark() else Color("#fffef8")
+	var friends_card_fill := Color("#282a2e") if _dark() else Color("#fffaf2")
 	_figma_header(
 		canvas,
 		"FRIENDS",
-		"Private codes • weekly scores",
+		"Progress • private codes",
 		"↻",
 		Color("#7a57e0"),
 		Callable(self,"build_profile"),
@@ -598,13 +614,13 @@ func build_friends(refresh_remote: bool = true) -> void:
 	)
 
 	var friend_code := CompetitionManager.friend_code()
-	_figma_card(canvas,"FriendsCode",Rect2(17,91,354,76),friends_card_fill,Color(FIGMA_CYAN,0.30),17)
+	_figma_card(canvas,"FriendsCode",Rect2(17,91,354,76),friends_card_fill,Color(FIGMA_CYAN,0.38),17)
 	_figma_text(canvas,"YOUR FRIEND CODE",Rect2(31,103,180,18),13,FIGMA_MUTED)
 	var code_text := friend_code if not friend_code.is_empty() else "SYNCING…"
 	_figma_text(canvas,code_text,Rect2(31,126,174,27),20,FIGMA_INK,true)
-	var copy := _figma_button(canvas,"FriendsCopyCode","COPY",Rect2(218,109,63,42),FIGMA_CYAN,Callable(self,"_copy_friend_code"),Color.WHITE,10,10)
+	var copy := _figma_button(canvas,"FriendsCopyCode","COPY",Rect2(218,108,63,44),FIGMA_CYAN,Callable(self,"_copy_friend_code"),Color.WHITE,10,10)
 	copy.disabled = friend_code.is_empty()
-	var rotate := _figma_button(canvas,"FriendsRotateCode","NEW",Rect2(288,109,63,42),Color("#7a57e0"),Callable(self,"_rotate_friend_code"),Color.WHITE,10,10)
+	var rotate := _figma_button(canvas,"FriendsRotateCode","NEW",Rect2(288,108,63,44),Color("#7a57e0"),Callable(self,"_rotate_friend_code"),Color.WHITE,10,10)
 	rotate.disabled = friend_code.is_empty()
 	rotate.tooltip_text = "Create a new code. Existing friends stay connected."
 
@@ -616,46 +632,80 @@ func build_friends(refresh_remote: bool = true) -> void:
 	code_input.max_length = 10
 	code_input.add_theme_font_size_override("font_size",14)
 	code_input.add_theme_color_override("font_color",_figma_theme_text(FIGMA_INK))
-	code_input.add_theme_stylebox_override("normal",FigmaReferenceCanvas.flat_gloss(Color("#f5f2ec") if not _dark() else Color("#27282b"),11,Color("#7a57e0"),1,0.08))
+	code_input.add_theme_color_override("font_placeholder_color",Color("#8f99a5") if _dark() else Color("#68717b"))
+	code_input.add_theme_color_override("caret_color",_figma_theme_text(FIGMA_INK))
+	code_input.add_theme_stylebox_override("normal",FigmaReferenceCanvas.flat_gloss(Color("#24262a") if _dark() else Color("#fffaf2"),11,Color("#7a57e0"),1,0.16))
+	code_input.custom_minimum_size = Vector2.ZERO
 	FigmaReferenceCanvas.set_rect(code_input,31,216,211,36)
 	canvas.add_child(code_input)
-	var add_button := _figma_button(canvas,"FriendsAddButton","ADD",Rect2(258,214,93,40),Color("#7a57e0"),Callable(),Color.WHITE,12,11)
+	var add_button := _figma_button(canvas,"FriendsAddButton","ADD",Rect2(258,212,93,44),Color("#7a57e0"),Callable(),Color.WHITE,12,11)
 	add_button.pressed.connect(_add_friend_from_input.bind(code_input))
 
 	var count := CompetitionManager.friend_count()
-	_figma_text(canvas,"FRIENDS WEEKLY • %d/%d" % [count,CompetitionManager.max_friends()],Rect2(19,280,240,20),15,FIGMA_GOLD)
-	var global_button := _figma_button(canvas,"FriendsGlobalRanks","GLOBAL",Rect2(286,275,65,30),FIGMA_GOLD,Callable(self,"build_compete_leaderboard"),FIGMA_NAVY,10,9)
-	global_button.tooltip_text = "Open global Daily and Weekly rankings"
+	_figma_text(canvas,"FRIENDS • %d/%d" % [count,CompetitionManager.max_friends()],Rect2(19,277,190,20),15,FIGMA_INK)
+	var global_button := _figma_button(canvas,"FriendsGlobalRanks","GLOBAL",Rect2(286,270,65,44),FIGMA_GOLD,Callable(self,"build_compete_leaderboard"),FIGMA_NAVY,10,9)
+	global_button.tooltip_text = "Open global campaign rankings"
 
-	_figma_card(canvas,"FriendsLeaderboard",Rect2(17,312,354,344),friends_card_fill,Color(FIGMA_GOLD,0.30),18)
-	var rows := CompetitionManager.friends_weekly()
+	_figma_friend_period_tabs(canvas)
+	_figma_compete_game_tabs(canvas, 357.0, true)
+
+	_figma_card(canvas,"FriendsLeaderboard",Rect2(17,411,354,241),friends_card_fill,Color(FIGMA_CYAN,0.34),18)
+	var period_title := "ALL-TIME" if _friends_period == "all_time" else "THIS WEEK"
+	var game_title := MultiGameManager.display_name(_ranking_game).to_upper()
+	_figma_text(canvas,"%s • %s" % [game_title,period_title],Rect2(31,423,250,20),14,Unjam3DTheme.game_accent(_ranking_game))
+	var rows := CompetitionManager.friends_all_time() if _friends_period == "all_time" else CompetitionManager.friends_weekly()
 	if rows.size() <= 1 and count <= 0:
-		_figma_text(canvas,"Share your code with another UNJAM player, then add their code here.",Rect2(38,355,310,70),13,FIGMA_MUTED,true)
-		_figma_text(canvas,"Friends appear here with this week's ranked score.",Rect2(38,435,310,48),12,FIGMA_MUTED,true)
+		var empty_title := _figma_text(canvas,"Share your code to connect.",Rect2(38,474,310,28),14,FIGMA_INK,true)
+		empty_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		var empty_detail := _figma_text(canvas,"Friends appear here by levels cleared.",Rect2(38,512,310,42),12,FIGMA_MUTED,true)
+		_fit_wrapped_text(empty_detail,300.0,12,11)
 	else:
-		var shown := mini(7,rows.size())
+		var shown := mini(4,rows.size())
 		for i in range(shown):
-			_figma_friend_rank_row(canvas,rows[i] as Dictionary,i,330.0+float(i)*43.0)
+			_figma_friend_rank_row(canvas,rows[i] as Dictionary,i,448.0+float(i)*46.0)
 
 	var status_text := _friends_status
 	if status_text.is_empty():
-		status_text = "Friend codes reveal only your UNJAM name and ranked score."
-	var privacy_note := _figma_text(canvas,status_text,Rect2(31,662,328,44),11,FIGMA_MUTED,true)
+		status_text = "Only your UNJAM name and level rank are visible."
+	var privacy_note := _figma_text(canvas,status_text,Rect2(31,663,328,42),11,FIGMA_MUTED,true)
 	privacy_note.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_fit_wrapped_text(privacy_note, 316.0, 11, 10)
+	_fit_wrapped_text(privacy_note,316.0,11,10)
 	_figma_bottom_nav(canvas,"home")
+
+func _figma_friend_period_tabs(canvas: Control) -> void:
+	var specs := [
+		["all_time","ALL-TIME",19.0],
+		["weekly","WEEKLY",128.0],
+	]
+	for spec in specs:
+		var period := String(spec[0])
+		var selected := _friends_period == period
+		var fill := Color("#7a57e0") if selected else (Color("#36383d") if _dark() else Color("#d8d2c8"))
+		var text_color := Color.WHITE if selected else FIGMA_INK
+		var button := _figma_button(canvas,"FriendsPeriod/%s" % period,String(spec[1]),Rect2(float(spec[2]),307,101,44),fill,Callable(),text_color,9,9)
+		if not selected:
+			button.pressed.connect(_set_friends_period.bind(period))
+		else:
+			button.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+func _set_friends_period(period: String) -> void:
+	if period in ["all_time","weekly"]:
+		_friends_period = period
+		build_friends(false)
 
 func _figma_friend_rank_row(canvas: Control, row: Dictionary, index: int, y: float) -> void:
 	var is_you := bool(row.get("you",false))
-	var accent := FIGMA_CYAN if is_you else FIGMA_GOLD
+	var accent := FIGMA_CYAN if is_you else Unjam3DTheme.game_accent(_ranking_game)
 	var rank := int(row.get("rank",index+1))
-	_figma_text(canvas,"YOU" if is_you else str(rank),Rect2(30,y+8,38,24),12,accent,true)
-	_figma_text(canvas,String(row.get("name","PLAYER")).left(16),Rect2(75,y+8,145,24),12,FIGMA_INK)
-	var points := _figma_text(canvas,"%d" % int(row.get("score",0)),Rect2(225,y+8,66,24),12,FIGMA_MUTED,true)
-	points.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_figma_text(canvas,"YOU" if is_you else str(rank),Rect2(30,y+6,38,24),12,accent,true)
+	_figma_text(canvas,String(row.get("name","PLAYER")).left(15),Rect2(75,y+6,130,24),12,FIGMA_INK)
+	var levels := maxi(0,int(row.get("levels_completed",0)))
+	var stars := maxi(0,int(row.get("stars",0)))
+	var progress := _figma_text(canvas,"L%d • ★%d" % [levels,stars],Rect2(205,y+6,96,24),11,FIGMA_MUTED,true)
+	progress.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	if not is_you:
 		var code := String(row.get("friend_code",""))
-		var remove := _figma_button(canvas,"FriendRemove/%d" % index,"×",Rect2(310,y+5,34,30),Color("#7d8a94"),Callable(),Color.WHITE,12,15)
+		var remove := _figma_button(canvas,"FriendRemove/%d" % index,"×",Rect2(306,y,42,44),Color("#7d8a94"),Callable(),Color.WHITE,12,15)
 		remove.tooltip_text = "Remove friend"
 		if not code.is_empty():
 			remove.pressed.connect(_remove_friend.bind(code))
@@ -667,7 +717,7 @@ func _refresh_friends() -> void:
 	var callback := Callable(self,"_on_friends_social_updated")
 	if not CompetitionManager.social_updated.is_connected(callback):
 		CompetitionManager.social_updated.connect(callback, CONNECT_ONE_SHOT)
-	CompetitionManager.refresh_social()
+	CompetitionManager.refresh_social(_ranking_game)
 
 func _on_friends_social_updated(_snapshot: Dictionary) -> void:
 	if current_surface == "friends":
@@ -854,21 +904,22 @@ func _show_current_tutorial() -> void:
 func build_daily_games() -> void:
 	current_surface = "daily"
 	_remove_active_game()
-	CompetitionManager.refresh_snapshot()
 	var canvas := _figma_surface("daily", Color("#ead9b8"))
 	var bonus := EconomyManager.collection_daily_bonus()
 	var done_count := 0
 	for game_id in MultiGameManager.GAME_IDS:
 		if _daily_done(game_id):
 			done_count += 1
-	_figma_header(canvas, "COMPETE", "DAILY CUP • WEEKLY", "%d/3" % done_count, FIGMA_GOLD)
+	_figma_header(canvas, "DAILY", "Check-in • play • rewards", "%d/3" % done_count, FIGMA_GOLD)
 
 	_figma_daily_card(canvas, "rescue_rush", 115, bonus)
 	_figma_daily_card(canvas, "water_sort", 239, bonus)
 	_figma_daily_card(canvas, "block_puzzle", 363, bonus)
 	_figma_daily_progress(canvas)
 	_figma_daily_tip(canvas, bonus)
-	_figma_bottom_nav(canvas, "daily")
+	# Daily is a Live Now reward activity, not a primary nav destination.
+	# Leave every primary destination tappable, including HOME and COMPETE.
+	_figma_bottom_nav(canvas, "")
 
 func _figma_daily_progress(canvas: Control) -> void:
 	var done_count := 0
@@ -876,7 +927,7 @@ func _figma_daily_progress(canvas: Control) -> void:
 		if _daily_done(game_id):
 			done_count += 1
 
-	_figma_card(canvas, "DailyProgress", Rect2(17,487,354,106), Color("#fffef8"), Color(FIGMA_GOLD,0.38), 18)
+	_figma_card(canvas, "DailyProgress", Rect2(17,487,354,106), Color("#fffef8"), Color(FIGMA_GOLD,0.42), 18)
 	_figma_text(canvas, "TODAY", Rect2(33,500,80,20), 15, FIGMA_INK)
 	var count := _figma_text(canvas, "%d / 3 COMPLETE" % done_count, Rect2(210,500,141,20), 13, FIGMA_MUTED, true)
 	count.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -887,7 +938,7 @@ func _figma_daily_progress(canvas: Control) -> void:
 	progress.max_value = 3
 	progress.value = done_count
 	progress.add_theme_stylebox_override("background", FigmaReferenceCanvas.solid_box(Color("#d8cdb7"), 6))
-	progress.add_theme_stylebox_override("fill", FigmaReferenceCanvas.solid_box(FIGMA_GOLD, 6))
+	progress.add_theme_stylebox_override("fill", FigmaReferenceCanvas.flat_gloss(FIGMA_GOLD, 6, Color("#fff4b3"), 1, 0.22))
 	FigmaReferenceCanvas.set_rect(progress, 33, 530, 318, 9)
 	canvas.add_child(progress)
 
@@ -918,42 +969,92 @@ func _figma_daily_progress(canvas: Control) -> void:
 		_fit_single_line_control_text(label, 86.0, 13, 11)
 
 func _figma_daily_tip(canvas: Control, collection_bonus: int) -> void:
-	var weekly_rank := CompetitionManager.weekly_rank()
-	var weekly_score := CompetitionManager.weekly_score()
-	var tip_fill := Color("#27282b") if _dark() else Color("#f5f2ec")
-	var tip_border := Color(FIGMA_GOLD, 0.22 if _dark() else 0.18)
-	_figma_card(canvas, "CompetitionSummary", Rect2(17, 598, 354, 80), tip_fill, tip_border, 16)
-	var league_title := _figma_text(canvas, "WEEKLY • %s" % CompetitionManager.weekly_division(), Rect2(33, 608, 190, 20), 15, FIGMA_GOLD)
-	league_title.name = "DailyTipTitle"
-	var rank_text := "#%d" % weekly_rank if weekly_rank > 0 else "UNRANKED"
-	_figma_text(canvas, "%s  •  %d PTS" % [rank_text, weekly_score], Rect2(33, 633, 190, 20), 13, FIGMA_INK)
-	var detail := "+%d Daily coins from Collection" % collection_bonus if collection_bonus > 0 else "Top weekly finishes earn coins + Crowns"
-	var league_detail := _figma_text(canvas, detail, Rect2(33, 654, 196, 18), 12, FIGMA_MUTED)
-	league_detail.name = "DailyTipDetail"
-	var rankings := _figma_button(canvas, "CompetitionRankings", "RANKINGS", Rect2(244,617,107,44), Color("#7a57e0"), Callable(self,"build_compete_leaderboard"), Color.WHITE, 14, 12)
-	rankings.tooltip_text = "Open Daily Cup and Weekly League leaderboards"
+	var login := MetaProgressionManager.daily_login_info()
+	var claimed := bool(login.get("claimed",false))
+	var reward := maxi(0,int(login.get("reward",0)))
+	var tip_fill := Color("#282a2e") if _dark() else Color("#fffaf2")
+	var tip_border := Color(FIGMA_ORANGE,0.34)
+	_figma_card(canvas, "DailyCheckIn", Rect2(17,598,354,80), tip_fill, tip_border, 16)
+	var title := _figma_text(canvas,"DAILY CHECK-IN • DAY %d/7" % int(login.get("day",1)),Rect2(33,609,205,20),15,FIGMA_ORANGE)
+	title.name = "DailyTipTitle"
+	var bonus_text := " • +%d COLLECTION" % collection_bonus if collection_bonus > 0 else ""
+	var detail := _figma_text(canvas,"+%d COINS%s" % [reward,bonus_text],Rect2(33,636,205,20),12,FIGMA_MUTED)
+	detail.name = "DailyTipDetail"
+	var action_text := "GOALS" if claimed else "CLAIM"
+	var action_cb := Callable(self,"build_goals") if claimed else Callable(self,"_claim_daily_login_from_daily")
+	var action_fill := Color("#7a57e0") if claimed else FIGMA_ORANGE
+	var action := _figma_button(canvas,"DailyCheckInAction",action_text,Rect2(244,617,107,44),action_fill,action_cb,Color.WHITE,14,12)
+	action.tooltip_text = "Daily check-in, missions and Season Journey"
+
+func _claim_daily_login_from_daily() -> void:
+	if MetaProgressionManager.claim_daily_login() > 0:
+		FeedbackManager.effect()
+	build_daily_games()
 
 func build_compete_leaderboard(refresh_remote: bool = true) -> void:
-	current_surface = "daily"
+	current_surface = "compete"
 	_remove_active_game()
 	if refresh_remote:
 		var refresh_callback := Callable(self, "_on_competition_snapshot_for_rankings")
 		if not CompetitionManager.snapshot_updated.is_connected(refresh_callback):
 			CompetitionManager.snapshot_updated.connect(refresh_callback, CONNECT_ONE_SHOT)
 		CompetitionManager.refresh_snapshot()
-	var canvas := _figma_surface("daily", Color("#ead9b8"))
-	_figma_header(canvas, "RANKINGS", "DAILY CUP • WEEKLY", "↻", FIGMA_GOLD, Callable(self,"build_daily_games"), Callable(self,"_refresh_competition_rankings"))
-	_figma_leaderboard_panel(canvas, "TODAY", CompetitionManager.daily_top(), 96.0, CompetitionManager.daily_rank(), CompetitionManager.daily_score())
-	_figma_leaderboard_panel(canvas, "THIS WEEK", CompetitionManager.weekly_top(), 372.0, CompetitionManager.weekly_rank(), CompetitionManager.weekly_score())
-	var friends_rank := _figma_button(canvas,"CompetitionFriendsButton","FRIENDS",Rect2(241,635,110,38),Color("#7a57e0"),Callable(self,"build_friends"),Color.WHITE,12,11)
-	friends_rank.tooltip_text = "Compare this week's score with friends"
-	var reward := CompetitionManager.previous_week_reward()
+	var canvas := _figma_surface("compete", Color("#ead9b8"))
+	var accent := Unjam3DTheme.game_accent(_ranking_game)
+	_figma_header(canvas, "RANKINGS", "CAMPAIGN RANKINGS", "↻", accent, Callable(self,"build_home"), Callable(self,"_refresh_competition_rankings"))
+	_figma_compete_game_tabs(canvas, 91.0, false)
+
+	_figma_card(canvas,"CompetitionPlayerProgress",Rect2(17,145,354,60),Color("#282a2e") if _dark() else Color("#fffaf2"),Color(accent,0.38),16)
+	_figma_text(canvas,MultiGameManager.display_name(_ranking_game).to_upper(),Rect2(31,155,160,18),13,accent)
+	_figma_text(canvas,"%d LEVELS • ★%d" % [CompetitionManager.game_all_time_levels(_ranking_game),CompetitionManager.game_all_time_stars(_ranking_game)],Rect2(31,177,190,18),12,FIGMA_INK)
+	var week := _figma_text(canvas,"WEEK +%d" % CompetitionManager.game_weekly_levels(_ranking_game),Rect2(242,164,105,22),12,FIGMA_MUTED,true)
+	week.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+
+	_figma_progress_leaderboard_panel(canvas,"ALL-TIME",CompetitionManager.game_all_time_top(_ranking_game),215.0,CompetitionManager.game_all_time_rank(_ranking_game),CompetitionManager.game_all_time_levels(_ranking_game),CompetitionManager.game_all_time_stars(_ranking_game),accent)
+	_figma_progress_leaderboard_panel(canvas,"THIS WEEK",CompetitionManager.game_weekly_top(_ranking_game),405.0,CompetitionManager.game_weekly_rank(_ranking_game),CompetitionManager.game_weekly_levels(_ranking_game),CompetitionManager.game_weekly_stars(_ranking_game),accent)
+
+	var daily := _figma_button(canvas,"CompetitionDailyButton","DAILY",Rect2(31,598,94,44),FIGMA_ORANGE,Callable(self,"build_daily_games"),Color.WHITE,12,11)
+	daily.tooltip_text = "Daily challenges, check-in and rewards"
+	var friends_rank := _figma_button(canvas,"CompetitionFriendsButton","FRIENDS",Rect2(140,598,103,44),Color("#7a57e0"),Callable(self,"build_friends"),Color.WHITE,12,11)
+	friends_rank.tooltip_text = "Compare campaign progress with friends"
+	var refresh := _figma_button(canvas,"CompetitionRefreshButton","REFRESH",Rect2(258,598,93,44),accent,Callable(self,"_refresh_competition_rankings"),Color.WHITE,12,10)
+	refresh.tooltip_text = "Refresh campaign rankings"
+
+	var reward := CompetitionManager.previous_week_reward(_ranking_game)
 	if bool(reward.get("eligible", false)) and not bool(reward.get("claimed", false)):
-		var claim := _figma_button(canvas, "CompetitionClaimWeekly", "CLAIM LAST WEEK", Rect2(112,681,166,44), FIGMA_GREEN, Callable(self,"_claim_weekly_competition_reward"), Color.WHITE, 14, 12)
-		claim.tooltip_text = "Claim last week's placement reward"
+		var claim := _figma_button(canvas,"CompetitionClaimWeekly","CLAIM LAST WEEK",Rect2(112,659,166,44),FIGMA_GREEN,Callable(self,"_claim_weekly_competition_reward"),Color.WHITE,14,12)
+		claim.tooltip_text = "Claim last week's %s placement reward" % MultiGameManager.display_name(_ranking_game)
 	else:
-		_figma_text(canvas, "League rewards settle after each weekly reset.", Rect2(44,688,302,26), 12, FIGMA_MUTED, true)
-	_figma_bottom_nav(canvas, "daily")
+		var note := _figma_text(canvas,"Weekly rewards settle after each reset.",Rect2(44,663,302,40),12,FIGMA_MUTED,true)
+		_fit_wrapped_text(note,292.0,12,10)
+	_figma_bottom_nav(canvas,"daily")
+
+func _figma_compete_game_tabs(canvas: Control, y: float, compact: bool = false) -> void:
+	var ids: Array[String] = ["rescue_rush","water_sort","block_puzzle"]
+	var labels: Array[String] = ["RESCUE","WATER","BLOCK"]
+	var width := 108.0 if not compact else 106.0
+	var gap := 8.0 if not compact else 10.0
+	var start_x := 19.0
+	for i in range(ids.size()):
+		var selected := _ranking_game == ids[i]
+		var accent := Unjam3DTheme.game_accent(ids[i])
+		var fill := accent if selected else (Color("#36383d") if _dark() else Color("#d8d2c8"))
+		var text_color := Color.WHITE if selected else FIGMA_INK
+		var button := _figma_button(canvas,"RankingGame_%s" % ids[i],labels[i],Rect2(start_x+float(i)*(width+gap),y,width,44),fill,Callable(),text_color,10,10)
+		if not selected:
+			button.pressed.connect(_set_ranking_game.bind(ids[i]))
+		else:
+			button.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+func _set_ranking_game(game_id: String) -> void:
+	if game_id not in MultiGameManager.GAME_IDS:
+		return
+	_ranking_game = game_id
+	if current_surface == "friends":
+		CompetitionManager.refresh_social(_ranking_game)
+		build_friends(false)
+	else:
+		build_compete_leaderboard(false)
 
 func _refresh_competition_rankings() -> void:
 	var refresh_callback := Callable(self, "_on_competition_snapshot_for_rankings")
@@ -962,41 +1063,42 @@ func _refresh_competition_rankings() -> void:
 	CompetitionManager.refresh_snapshot()
 
 func _on_competition_snapshot_for_rankings(_snapshot: Dictionary) -> void:
-	if current_surface == "daily":
+	if current_surface == "compete":
 		build_compete_leaderboard(false)
 
 func _claim_weekly_competition_reward() -> void:
 	var reward_callback := Callable(self, "_on_weekly_competition_reward")
 	if not CompetitionManager.weekly_reward_claimed.is_connected(reward_callback):
 		CompetitionManager.weekly_reward_claimed.connect(reward_callback, CONNECT_ONE_SHOT)
-	CompetitionManager.claim_weekly_reward()
+	CompetitionManager.claim_weekly_reward(_ranking_game)
 
 func _on_weekly_competition_reward(_coins: int, _crowns: int) -> void:
 	FeedbackManager.effect()
 	build_compete_leaderboard(false)
 
-func _figma_leaderboard_panel(canvas: Control, title_text: String, entries: Array, y: float, own_rank: int, own_score: int) -> void:
-	_figma_card(canvas, "Leaderboard/%s" % title_text, Rect2(17,y,354,252), Color("#fffef8"), Color(FIGMA_GOLD,0.34), 18)
-	_figma_text(canvas, title_text, Rect2(33,y+14,130,20), 16, FIGMA_GOLD)
-	var own_text := "YOU  —" if own_rank <= 0 else "YOU  #%d • %d" % [own_rank, own_score]
-	var own := _figma_text(canvas, own_text, Rect2(180,y+14,171,20), 13, FIGMA_INK, true)
+func _figma_progress_leaderboard_panel(canvas: Control, title_text: String, entries: Array, y: float, own_rank: int, own_levels: int, own_stars: int, accent: Color) -> void:
+	_figma_card(canvas,"Leaderboard/%s" % title_text,Rect2(17,y,354,180),Color("#fffaf2"),Color(accent,0.36),18)
+	_figma_text(canvas,title_text,Rect2(33,y+12,120,20),15,accent)
+	var own_text := "YOU —" if own_rank <= 0 else "YOU #%d • L%d" % [own_rank,own_levels]
+	var own := _figma_text(canvas,own_text,Rect2(185,y+12,166,20),12,FIGMA_INK,true)
 	own.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	var shown := mini(5, entries.size())
+	var shown := mini(4,entries.size())
 	if shown <= 0:
-		_figma_text(canvas, "No ranked results yet. Complete a Daily Game.", Rect2(33,y+64,318,44), 13, FIGMA_MUTED, true)
+		var empty := _figma_text(canvas,"Finish campaign levels to enter this ranking.",Rect2(38,y+72,310,42),12,FIGMA_MUTED,true)
+		_fit_wrapped_text(empty,300.0,12,10)
 		return
 	for i in range(shown):
 		var row = entries[i]
 		if not row is Dictionary:
 			continue
-		var row_y := y + 48.0 + float(i) * 37.0
-		var place := i + 1
-		var medal := "★" if place == 1 else str(place)
-		_figma_text(canvas, medal, Rect2(35,row_y,28,24), 14, FIGMA_GOLD, true)
-		var name_text := String(row.get("name", "PLAYER")).left(18)
-		_figma_text(canvas, name_text, Rect2(70,row_y,184,24), 13, FIGMA_INK)
-		var points := _figma_text(canvas, "%d" % int(row.get("score", 0)), Rect2(270,row_y,70,24), 13, FIGMA_MUTED, true)
-		points.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		var row_y := y+42.0+float(i)*33.0
+		var place := i+1
+		_figma_text(canvas,"★" if place == 1 else str(place),Rect2(34,row_y,28,24),13,accent,true)
+		_figma_text(canvas,String(row.get("name","PLAYER")).left(15),Rect2(70,row_y,135,24),12,FIGMA_INK)
+		var levels := maxi(0,int(row.get("levels_completed",0)))
+		var stars := maxi(0,int(row.get("stars",0)))
+		var progress := _figma_text(canvas,"L%d • ★%d" % [levels,stars],Rect2(210,row_y,130,24),11,FIGMA_MUTED,true)
+		progress.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 
 func _figma_today_label() -> String:
 	var d := Time.get_date_dict_from_system()
@@ -1107,7 +1209,7 @@ func build_collection() -> void:
 		var total := MultiGameManager.achievement_definitions(game_id).size()
 		achievement_parts.append("%s %d/%d" % [_figma_short_game(game_id),unlocked,total])
 	_figma_text(canvas," • ".join(achievement_parts),Rect2(33,382,310,24),14,FIGMA_MUTED)
-	var achievements_view := _figma_button(canvas,"CollectionAchievementsView","VIEW",Rect2(286,353,65,32),Color("#7a57e0"),Callable(self,"build_profile"),Color.WHITE,11,10)
+	var achievements_view := _figma_button(canvas,"CollectionAchievementsView","VIEW",Rect2(286,347,65,44),Color("#7a57e0"),Callable(self,"build_profile"),Color.WHITE,11,10)
 	achievements_view.tooltip_text = "Open detailed Profile & Achievements"
 
 	var rescued: Array = SaveManager.data.get("rescued",[])

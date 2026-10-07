@@ -14,6 +14,7 @@ var snapshot: Dictionary = {}
 var social_snapshot: Dictionary = {}
 var _snapshot_in_flight := false
 var _social_in_flight := false
+var _social_game_id := "rescue_rush"
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -34,6 +35,60 @@ func set_display_name(value: String) -> void:
 	SaveManager.data["competition_display_name"] = clean
 	SaveManager.save()
 	refresh_snapshot()
+
+func _local_progress(game_id: String) -> Dictionary:
+	if game_id not in GAME_IDS:
+		return {}
+	var highest_unlocked := clampi(int(MultiGameManager.highest_level(game_id)), 1, MultiGameManager.CAMPAIGN_LEVELS + 1)
+	var levels_completed := clampi(highest_unlocked - 1, 0, MultiGameManager.CAMPAIGN_LEVELS)
+	return {
+		"levels_completed": levels_completed,
+		"highest_level": levels_completed,
+		"stars": clampi(int(MultiGameManager.total_stars(game_id)), 0, levels_completed * 3),
+	}
+
+func _all_local_progress() -> Dictionary:
+	var result := {}
+	for game_id in GAME_IDS:
+		result[game_id] = _local_progress(game_id)
+	return result
+
+func _game_snapshot(game_id: String) -> Dictionary:
+	var all_games = snapshot.get("game_rankings", {})
+	if not all_games is Dictionary:
+		return {}
+	var value = (all_games as Dictionary).get(game_id, {})
+	return value if value is Dictionary else {}
+
+func _game_player(game_id: String, key: String) -> Dictionary:
+	var value = _game_snapshot(game_id).get(key, {})
+	return value if value is Dictionary else {}
+
+func game_all_time_top(game_id: String) -> Array:
+	var value = _game_snapshot(game_id).get("all_time_top", [])
+	return value if value is Array else []
+
+func game_weekly_top(game_id: String) -> Array:
+	var value = _game_snapshot(game_id).get("weekly_top", [])
+	return value if value is Array else []
+
+func game_all_time_rank(game_id: String) -> int:
+	return int(_game_player(game_id, "player_all_time").get("rank", 0))
+
+func game_weekly_rank(game_id: String) -> int:
+	return int(_game_player(game_id, "player_weekly").get("rank", 0))
+
+func game_all_time_levels(game_id: String) -> int:
+	return int(_game_player(game_id, "player_all_time").get("levels_completed", 0))
+
+func game_weekly_levels(game_id: String) -> int:
+	return int(_game_player(game_id, "player_weekly").get("levels_completed", 0))
+
+func game_all_time_stars(game_id: String) -> int:
+	return int(_game_player(game_id, "player_all_time").get("stars", 0))
+
+func game_weekly_stars(game_id: String) -> int:
+	return int(_game_player(game_id, "player_weekly").get("stars", 0))
 
 func daily_top() -> Array:
 	var value = snapshot.get("daily_top", [])
@@ -81,11 +136,17 @@ func friends() -> Array:
 	var value = social_snapshot.get("friends", [])
 	return value if value is Array else []
 
+func friends_all_time() -> Array:
+	var value = social_snapshot.get("friends_all_time", [])
+	return value if value is Array else []
+
 func friends_weekly() -> Array:
 	var value = social_snapshot.get("friends_weekly", [])
 	return value if value is Array else []
 
-func refresh_social() -> void:
+func refresh_social(game_id: String = "") -> void:
+	if not game_id.is_empty() and game_id in GAME_IDS:
+		_social_game_id = game_id
 	if OS.get_environment("UNJAM_FAST_VISUAL_AUDIT") == "1" or _social_in_flight:
 		return
 	var cloud_id := String(SaveManager.data.get("cloud_save_id", ""))
@@ -98,6 +159,7 @@ func refresh_social() -> void:
 		"cloud_save_id": cloud_id,
 		"display_name": display_name(),
 		"competition_day": DailyChallenge.date_key(),
+		"game_id": _social_game_id,
 	}, func(ok: bool, _status: int, body: Dictionary) -> void:
 		_social_in_flight = false
 		if ok and bool(body.get("ok", false)):
@@ -134,6 +196,7 @@ func _social_action(action: String, code: String) -> void:
 		"cloud_save_id": cloud_id,
 		"display_name": display_name(),
 		"competition_day": DailyChallenge.date_key(),
+		"game_id": _social_game_id,
 	}
 	if not clean.is_empty():
 		payload["friend_code"] = clean
@@ -153,12 +216,12 @@ func _social_action(action: String, code: String) -> void:
 			social_action_finished.emit(false, String(body.get("reason", "Friends service unavailable")))
 	)
 
-func previous_week_reward() -> Dictionary:
-	var value = snapshot.get("previous_week_reward", {})
+func previous_week_reward(game_id: String = "rescue_rush") -> Dictionary:
+	var value = _game_snapshot(game_id).get("previous_week_reward", {})
 	return value if value is Dictionary else {}
 
-func can_claim_weekly_reward() -> bool:
-	var reward := previous_week_reward()
+func can_claim_weekly_reward(game_id: String = "rescue_rush") -> bool:
+	var reward := previous_week_reward(game_id)
 	return bool(reward.get("eligible", false)) and not bool(reward.get("claimed", false))
 
 func refresh_snapshot() -> void:
@@ -173,15 +236,43 @@ func refresh_snapshot() -> void:
 		return
 	_snapshot_in_flight = true
 	_request_json({
-		"action": "snapshot",
+		"action": "progress_snapshot",
 		"cloud_save_id": cloud_id,
 		"display_name": display_name(),
 		"competition_day": DailyChallenge.date_key(),
+		"progress": _all_local_progress(),
 	}, func(ok: bool, _status: int, body: Dictionary) -> void:
 		_snapshot_in_flight = false
 		if ok and bool(body.get("ok", false)):
 			snapshot = body.duplicate(true)
 			snapshot_updated.emit(snapshot)
+	)
+
+func submit_campaign_progress(game_id: String, level_number: int, stars: int, first_clear: bool) -> void:
+	if game_id not in GAME_IDS:
+		return
+	var cloud_id := String(SaveManager.data.get("cloud_save_id", ""))
+	if cloud_id.length() != 64:
+		submission_finished.emit(game_id, false, 0)
+		return
+	var local_progress := _local_progress(game_id)
+	_request_json({
+		"action": "submit_progress",
+		"cloud_save_id": cloud_id,
+		"display_name": display_name(),
+		"competition_day": DailyChallenge.date_key(),
+		"game_id": game_id,
+		"level_number": clampi(level_number, 1, MultiGameManager.CAMPAIGN_LEVELS),
+		"stars": clampi(stars, 1, 3),
+		"first_clear": first_clear,
+		"progress": local_progress,
+		"all_progress": _all_local_progress(),
+	}, func(ok: bool, _status: int, body: Dictionary) -> void:
+		var accepted := ok and bool(body.get("ok", false))
+		if accepted and body.get("snapshot", {}) is Dictionary:
+			snapshot = (body.get("snapshot", {}) as Dictionary).duplicate(true)
+			snapshot_updated.emit(snapshot)
+		submission_finished.emit(game_id, accepted, int(local_progress.get("levels_completed", 0)))
 	)
 
 func submit_daily_result(game_id: String, metrics: Dictionary) -> void:
@@ -207,43 +298,49 @@ func submit_daily_result(game_id: String, metrics: Dictionary) -> void:
 		submission_finished.emit(game_id, accepted, points)
 	)
 
-func claim_weekly_reward() -> void:
+func claim_weekly_reward(game_id: String = "rescue_rush") -> void:
+	if game_id not in GAME_IDS:
+		return
 	var cloud_id := String(SaveManager.data.get("cloud_save_id", ""))
 	if cloud_id.length() != 64:
 		return
 	_request_json({
-		"action": "claim_weekly",
+		"action": "claim_progress_weekly",
 		"cloud_save_id": cloud_id,
 		"display_name": display_name(),
 		"competition_day": DailyChallenge.date_key(),
+		"game_id": game_id,
 	}, func(ok: bool, _status: int, body: Dictionary) -> void:
 		if not ok or not bool(body.get("ok", false)):
 			return
 		var period_key := String(body.get("period_key", ""))
+		var claim_key := "%s:%s" % [period_key, game_id]
 		var already_claimed := bool(body.get("already_claimed", false))
 		var local_claims = SaveManager.data.get("competition_claimed_periods", [])
 		if not local_claims is Array:
 			local_claims = []
 		if already_claimed:
-			# The server is authoritative for weekly payout idempotency. Never
-			# re-credit a reward locally after reinstall or delayed cloud restore.
-			if not period_key.is_empty() and period_key not in local_claims:
-				local_claims.append(period_key)
+			if not claim_key.is_empty() and claim_key not in local_claims:
+				local_claims.append(claim_key)
 				SaveManager.data["competition_claimed_periods"] = local_claims
 				SaveManager.save()
 			refresh_snapshot()
 			return
-		if not period_key.is_empty() and period_key not in local_claims:
+		if not period_key.is_empty() and claim_key not in local_claims:
 			var coins := maxi(0, int(body.get("coins", 0)))
 			var base_crowns := maxi(0, int(body.get("crowns", 0)))
 			var crowns := EconomyManager.competition_crown_reward(base_crowns)
 			if coins > 0:
-				EconomyManager.grant(coins, "weekly_competition_reward", {"period": period_key, "rank": int(body.get("rank", 0))})
+				EconomyManager.grant(coins, "weekly_progression_reward", {
+					"period": period_key,
+					"game": game_id,
+					"rank": int(body.get("rank", 0)),
+				})
 			if crowns > 0:
 				SaveManager.data["crown_tokens"] = maxi(0, int(SaveManager.data.get("crown_tokens", 0))) + crowns
-			local_claims.append(period_key)
-			if local_claims.size() > 104:
-				local_claims = local_claims.slice(local_claims.size() - 104)
+			local_claims.append(claim_key)
+			if local_claims.size() > 312:
+				local_claims = local_claims.slice(local_claims.size() - 312)
 			SaveManager.data["competition_claimed_periods"] = local_claims
 			SaveManager.save()
 			weekly_reward_claimed.emit(coins, crowns)

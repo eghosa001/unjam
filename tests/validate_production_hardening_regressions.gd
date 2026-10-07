@@ -404,8 +404,8 @@ func _validate_release_workflow_exists() -> bool:
 		return _fail("Protected Android release workflow is missing")
 	if not source.contains("version_code:") or not source.contains("VERSION_CODE"):
 		return _fail("Release workflow does not require an explicit monotonic Play version code")
-	if not source.contains('VERSION_CODE: ${{ inputs.version_code }}'):
-		return _fail("Release workflow does not pass the requested Play version code into its configuration step")
+	if not source.contains('VERSION_CODE: ${{ env.RELEASE_VERSION_CODE }}'):
+		return _fail("Release workflow does not pass the resolved Play version code into its configuration step")
 	if source.contains("GITHUB_RUN_NUMBER"):
 		return _fail("Release workflow still derives Play version code from workflow run number")
 	if source.contains("STORE_PASSWORD") or source.contains("GODOT_ANDROID_KEYSTORE_RELEASE_STORE_PASSWORD"):

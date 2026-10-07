@@ -30,6 +30,9 @@ func complete_level(id: String, n: int, stars: int, coin_reward := 25, context: 
 	if id != "rescue_rush" and economy != null and economy.has_method("collection_campaign_reward"):
 		safe_reward = int(economy.call("collection_campaign_reward", safe_reward))
 	var rewards := super.complete_level(id, n, stars, safe_reward, context)
+	# Campaign progression is the competitive source of truth. Daily challenges
+	# remain a separate retention/reward loop and never submit leaderboard points.
+	CompetitionManager.submit_campaign_progress(id, n, stars, bool(rewards.get("first_clear", false)))
 	# Expose the real first-clear base reward to result overlays. Replays must not
 	# create a new ad-double opportunity when no base coins were awarded.
 	if not rewards.has("base_coins"):

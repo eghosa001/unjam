@@ -629,7 +629,7 @@ func any_move_available() -> bool:
 func undo_move() -> void:
 	if daily_mode:
 		if hint_label != null:
-			hint_label.text = "Undo is disabled in ranked Daily competition."
+			hint_label.text = "Undo is disabled in this Daily challenge."
 		return
 	if history.is_empty() or completed:
 		return
@@ -677,10 +677,6 @@ func complete_level() -> void:
 		var daily_completed_now := MultiGameManager.complete_daily(GAME_ID, base_reward)
 		if daily_completed_now:
 			MetaProgressionManager.record_daily_complete(GAME_ID, stars)
-		CompetitionManager.submit_daily_result(GAME_ID, {
-			"stars": stars, "score": score, "lines": lines_cleared,
-			"placements": placements, "par": par_placements
-		})
 	else:
 		completion_rewards = MultiGameManager.complete_level(GAME_ID, level_number, stars, 30)
 		base_reward = int(completion_rewards.get("base_coins", 0))

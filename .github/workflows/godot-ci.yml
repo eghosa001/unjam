@@ -112,7 +112,7 @@ jobs:
         run: |
           set -euxo pipefail
           mkdir -p build/visual-audit
-          timeout 180s xvfb-run -a godot --path . --rendering-method gl_compatibility --script res://tests/capture_visual_audit.gd 2>&1 | tee visual-audit.log
+          timeout 180s xvfb-run -a godot --verbose --path . --rendering-method gl_compatibility --script res://tests/capture_visual_audit.gd 2>&1 | tee visual-audit.log
           if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access|ObjectDB instances were leaked|Leaked instance:" visual-audit.log; then exit 1; fi
 
           IFS=',' read -ra SCOPES <<< "$UNJAM_FAST_VISUAL_AUDIT_SCOPE"
@@ -140,6 +140,8 @@ jobs:
               friends)
                 test -s build/visual-audit/19-friends-540x960-dark.png
                 test -s build/visual-audit/19b-friends-540x960-light.png
+                test -s build/visual-audit/19c-friends-empty-540x960-dark.png
+                test -s build/visual-audit/19d-friends-empty-540x960-light.png
                 ;;
               settings) test -s build/visual-audit/06b-settings-540x960-dark.png ;;
               shop) test -s build/visual-audit/06d-shop-540x960-dark.png ;;

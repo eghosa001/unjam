@@ -351,6 +351,39 @@ func _seed_social_visual_data() -> void:
 	var competition := root.get_node_or_null("CompetitionManager")
 	if competition == null:
 		return
+	competition.set("snapshot", {
+		"week_start": "2026-10-05",
+		"game_rankings": {
+			"rescue_rush": {
+				"all_time_top": [
+					{"name":"YOU","levels_completed":642,"highest_level":642,"stars":1704},
+					{"name":"PLAYMATE 27","levels_completed":588,"highest_level":588,"stars":1490},
+					{"name":"PUZZLE PAL","levels_completed":511,"highest_level":511,"stars":1320},
+					{"name":"SORT MASTER","levels_completed":460,"highest_level":460,"stars":1198},
+				],
+				"weekly_top": [
+					{"name":"YOU","levels_completed":24,"highest_level":642,"stars":68},
+					{"name":"PLAYMATE 27","levels_completed":21,"highest_level":588,"stars":60},
+					{"name":"PUZZLE PAL","levels_completed":17,"highest_level":511,"stars":46},
+				],
+				"player_all_time":{"rank":1,"levels_completed":642,"highest_level":642,"stars":1704},
+				"player_weekly":{"rank":1,"levels_completed":24,"highest_level":642,"stars":68},
+				"previous_week_reward":{"eligible":false,"claimed":false},
+			},
+			"water_sort": {
+				"all_time_top":[],"weekly_top":[],
+				"player_all_time":{"rank":0,"levels_completed":0,"highest_level":0,"stars":0},
+				"player_weekly":{"rank":0,"levels_completed":0,"highest_level":0,"stars":0},
+				"previous_week_reward":{"eligible":false,"claimed":false},
+			},
+			"block_puzzle": {
+				"all_time_top":[],"weekly_top":[],
+				"player_all_time":{"rank":0,"levels_completed":0,"highest_level":0,"stars":0},
+				"player_weekly":{"rank":0,"levels_completed":0,"highest_level":0,"stars":0},
+				"previous_week_reward":{"eligible":false,"claimed":false},
+			},
+		},
+	})
 	competition.set("social_snapshot", {
 		"friend_code": "7K4M2P9R",
 		"friend_count": 2,
@@ -359,10 +392,32 @@ func _seed_social_visual_data() -> void:
 			{"name":"PLAYMATE 27","friend_code":"6H3N8R5T"},
 			{"name":"PUZZLE PAL","friend_code":"4V7C2K8M"},
 		],
+		"friends_all_time": [
+			{"name":"YOU","levels_completed":642,"stars":1704,"friend_code":"7K4M2P9R","you":true,"rank":1},
+			{"name":"PLAYMATE 27","levels_completed":588,"stars":1490,"friend_code":"6H3N8R5T","you":false,"rank":2},
+			{"name":"PUZZLE PAL","levels_completed":511,"stars":1320,"friend_code":"4V7C2K8M","you":false,"rank":3},
+		],
 		"friends_weekly": [
-			{"name":"YOU","score":1850,"games_count":6,"friend_code":"7K4M2P9R","you":true,"rank":1},
-			{"name":"PLAYMATE 27","score":1420,"games_count":5,"friend_code":"6H3N8R5T","you":false,"rank":2},
-			{"name":"PUZZLE PAL","score":860,"games_count":3,"friend_code":"4V7C2K8M","you":false,"rank":3},
+			{"name":"YOU","levels_completed":24,"stars":68,"friend_code":"7K4M2P9R","you":true,"rank":1},
+			{"name":"PLAYMATE 27","levels_completed":21,"stars":60,"friend_code":"6H3N8R5T","you":false,"rank":2},
+			{"name":"PUZZLE PAL","levels_completed":17,"stars":46,"friend_code":"4V7C2K8M","you":false,"rank":3},
+		],
+	})
+
+func _seed_empty_social_visual_data() -> void:
+	var competition := root.get_node_or_null("CompetitionManager")
+	if competition == null:
+		return
+	competition.set("social_snapshot", {
+		"friend_code": "7K4M2P9R",
+		"friend_count": 0,
+		"max_friends": 50,
+		"friends": [],
+		"friends_all_time": [
+			{"name":"YOU","levels_completed":0,"stars":0,"friend_code":"7K4M2P9R","you":true,"rank":1},
+		],
+		"friends_weekly": [
+			{"name":"YOU","levels_completed":0,"stars":0,"friend_code":"7K4M2P9R","you":true,"rank":1},
 		],
 	})
 
@@ -419,9 +474,13 @@ func _run_fast_visual_audit(main: Node, shell: Node) -> void:
 			await _capture("05f-collection-upgrades-540x960-dark")
 
 	if _fast_visual_enabled("daily"):
+		_seed_social_visual_data()
 		main.call("build_daily_games")
 		await _settle(5)
 		await _capture("05d-daily-540x960-dark")
+		main.call("build_compete_leaderboard", false)
+		await _settle(5)
+		await _capture("05e-compete-540x960-dark")
 
 	if _fast_visual_enabled("goals"):
 		main.call("build_goals")
@@ -438,6 +497,10 @@ func _run_fast_visual_audit(main: Node, shell: Node) -> void:
 		main.call("build_friends", false)
 		await _settle(5)
 		await _capture("19-friends-540x960-dark")
+		_seed_empty_social_visual_data()
+		main.call("build_friends", false)
+		await _settle(5)
+		await _capture("19c-friends-empty-540x960-dark")
 
 	if _fast_visual_enabled("settings"):
 		main.call("build_settings")
@@ -507,9 +570,13 @@ func _run_fast_visual_audit(main: Node, shell: Node) -> void:
 			await _settle(5)
 			await _capture("13b-collection-540x960-light")
 		if _fast_visual_enabled("daily"):
+			_seed_social_visual_data()
 			main.call("build_daily_games")
 			await _settle(5)
 			await _capture("05g-daily-540x960-light")
+			main.call("build_compete_leaderboard", false)
+			await _settle(5)
+			await _capture("05h-compete-540x960-light")
 		if _fast_visual_enabled("goals"):
 			main.call("build_goals")
 			await _settle(5)
@@ -523,6 +590,10 @@ func _run_fast_visual_audit(main: Node, shell: Node) -> void:
 			main.call("build_friends", false)
 			await _settle(5)
 			await _capture("19b-friends-540x960-light")
+			_seed_empty_social_visual_data()
+			main.call("build_friends", false)
+			await _settle(5)
+			await _capture("19d-friends-empty-540x960-light")
 		if _fast_visual_enabled("settings"):
 			main.call("build_settings")
 			await _settle(5)
@@ -627,6 +698,11 @@ func _shutdown_visual_audit() -> void:
 	var feedback := root.get_node_or_null("FeedbackManager")
 	if feedback != null and feedback.has_method("shutdown_audio"):
 		feedback.call("shutdown_audio")
+
+	# The production UI intentionally keeps generated lacquer/nine-slice styles
+	# cached for fast navigation. The short-lived audit process must drop that
+	# cache before exit so the leak gate measures scene lifecycle, not cache policy.
+	FigmaReferenceCanvas.release_cached_styles()
 
 	# Large UI surfaces can queue nested Control/Resource frees for several
 	# frames. Wait until the transient scene is truly gone, then allow a short

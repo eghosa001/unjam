@@ -154,7 +154,7 @@ async function socialSnapshot(sb: any, playerHash: string, displayName: string, 
   };
 }
 
-async function addFriend(sb: any, playerHash: string, displayName: string, friendCode: string, day: Date) {
+async function addFriend(sb: any, playerHash: string, displayName: string, friendCode: string, day: Date, gameId: string) {
   await ensureSocialProfile(sb, playerHash, displayName);
   const hashes = await friendHashes(sb, playerHash);
   if (hashes.length >= MAX_FRIENDS) return { ok: false, reason: "Friend list is full" };
@@ -170,31 +170,31 @@ async function addFriend(sb: any, playerHash: string, displayName: string, frien
   const b = playerHash < targetHash ? targetHash : playerHash;
   const { error: insertError } = await sb.from("social_friends").insert({ player_hash_a: a, player_hash_b: b });
   if (insertError && insertError.code !== "23505") throw insertError;
-  return await socialSnapshot(sb, playerHash, displayName, day);
+  return await socialProgressSnapshot(sb, playerHash, displayName, day, gameId);
 }
 
-async function removeFriend(sb: any, playerHash: string, displayName: string, friendCode: string, day: Date) {
+async function removeFriend(sb: any, playerHash: string, displayName: string, friendCode: string, day: Date, gameId: string) {
   const { data: target, error: targetError } = await sb.from("social_profiles")
     .select("player_hash").eq("friend_code", friendCode).maybeSingle();
   if (targetError) throw targetError;
-  if (!target) return await socialSnapshot(sb, playerHash, displayName, day);
+  if (!target) return await socialProgressSnapshot(sb, playerHash, displayName, day, gameId);
   const targetHash = String(target.player_hash);
   const a = playerHash < targetHash ? playerHash : targetHash;
   const b = playerHash < targetHash ? targetHash : playerHash;
   const { error: deleteError } = await sb.from("social_friends")
     .delete().eq("player_hash_a", a).eq("player_hash_b", b);
   if (deleteError) throw deleteError;
-  return await socialSnapshot(sb, playerHash, displayName, day);
+  return await socialProgressSnapshot(sb, playerHash, displayName, day, gameId);
 }
 
-async function rotateFriendCode(sb: any, playerHash: string, displayName: string, day: Date) {
+async function rotateFriendCode(sb: any, playerHash: string, displayName: string, day: Date, gameId: string) {
   await ensureSocialProfile(sb, playerHash, displayName);
   for (let attempt = 0; attempt < 6; attempt++) {
     const friendCode = randomFriendCode();
     const { error } = await sb.from("social_profiles")
       .update({ friend_code: friendCode, updated_at: new Date().toISOString() })
       .eq("player_hash", playerHash);
-    if (!error) return await socialSnapshot(sb, playerHash, displayName, day);
+    if (!error) return await socialProgressSnapshot(sb, playerHash, displayName, day, gameId);
     if (error.code !== "23505") throw error;
   }
   throw new Error("Could not rotate friend code");
@@ -277,6 +277,280 @@ async function refreshTotals(sb: any, hash: string, name: string, day: Date) {
   if (wErr) throw wErr;
 }
 
+
+const ALL_TIME_KEY = "1970-01-01";
+
+function cleanGameId(value: unknown): string {
+  const gameId = String(value ?? "");
+  return GAME_IDS.has(gameId) ? gameId : "rescue_rush";
+}
+
+function progressRankScore(levelsCompleted: number, stars: number): number {
+  return clamp(levelsCompleted, 0, 10000) * 100000 + clamp(stars, 0, 30000);
+}
+
+function cleanProgress(value: unknown): { levels_completed: number; highest_level: number; stars: number } {
+  const raw = value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+  const levels = metric(raw, "levels_completed", 0, 10000, 0);
+  const highest = metric(raw, "highest_level", 0, 10000, levels);
+  const stars = metric(raw, "stars", 0, Math.max(0, levels * 3), 0);
+  return { levels_completed: levels, highest_level: Math.max(levels, highest), stars };
+}
+
+async function upsertAllTimeProgress(
+  sb: any,
+  playerHash: string,
+  displayName: string,
+  gameId: string,
+  rawProgress: unknown,
+) {
+  const incoming = cleanProgress(rawProgress);
+  const { data: existing, error: readError } = await sb.from("progression_rankings")
+    .select("levels_completed,highest_level,stars")
+    .eq("scope_type", "all_time").eq("period_key", ALL_TIME_KEY)
+    .eq("game_id", gameId).eq("player_hash", playerHash).maybeSingle();
+  if (readError) throw readError;
+
+  const levelsCompleted = Math.max(incoming.levels_completed, Number(existing?.levels_completed ?? 0));
+  const highestLevel = Math.max(incoming.highest_level, Number(existing?.highest_level ?? 0), levelsCompleted);
+  const stars = Math.min(levelsCompleted * 3, Math.max(incoming.stars, Number(existing?.stars ?? 0)));
+  const rankScore = progressRankScore(levelsCompleted, stars);
+  const { error } = await sb.from("progression_rankings").upsert({
+    scope_type: "all_time",
+    period_key: ALL_TIME_KEY,
+    game_id: gameId,
+    player_hash: playerHash,
+    display_name: displayName,
+    levels_completed: levelsCompleted,
+    highest_level: highestLevel,
+    stars,
+    rank_score: rankScore,
+    updated_at: new Date().toISOString(),
+  }, { onConflict: "scope_type,period_key,game_id,player_hash" });
+  if (error) throw error;
+  return { levels_completed: levelsCompleted, highest_level: highestLevel, stars, rank_score: rankScore };
+}
+
+async function recordProgressEvent(
+  sb: any,
+  playerHash: string,
+  gameId: string,
+  levelNumber: number,
+  stars: number,
+  weekKey: string,
+): Promise<boolean> {
+  const { data: existing, error: readError } = await sb.from("progression_level_events")
+    .select("best_stars,first_clear_week")
+    .eq("player_hash", playerHash).eq("game_id", gameId).eq("level_number", levelNumber).maybeSingle();
+  if (readError) throw readError;
+  if (existing) {
+    const bestStars = Math.max(clamp(stars, 1, 3), Number(existing.best_stars ?? 1));
+    if (bestStars !== Number(existing.best_stars ?? 1)) {
+      const { error } = await sb.from("progression_level_events")
+        .update({ best_stars: bestStars, updated_at: new Date().toISOString() })
+        .eq("player_hash", playerHash).eq("game_id", gameId).eq("level_number", levelNumber);
+      if (error) throw error;
+    }
+    return false;
+  }
+  const { error } = await sb.from("progression_level_events").insert({
+    player_hash: playerHash,
+    game_id: gameId,
+    level_number: levelNumber,
+    best_stars: clamp(stars, 1, 3),
+    first_clear_week: weekKey,
+    updated_at: new Date().toISOString(),
+  });
+  if (error && error.code !== "23505") throw error;
+  return !error;
+}
+
+async function refreshWeeklyProgress(sb: any, playerHash: string, displayName: string, gameId: string, weekKey: string) {
+  const { data: events, error } = await sb.from("progression_level_events")
+    .select("level_number,best_stars")
+    .eq("player_hash", playerHash).eq("game_id", gameId).eq("first_clear_week", weekKey);
+  if (error) throw error;
+  const levelsCompleted = (events ?? []).length;
+  if (levelsCompleted <= 0) {
+    await sb.from("progression_rankings")
+      .delete().eq("scope_type", "weekly").eq("period_key", weekKey)
+      .eq("game_id", gameId).eq("player_hash", playerHash);
+    return;
+  }
+  const stars = (events ?? []).reduce((sum: number, row: any) => sum + clamp(Number(row.best_stars ?? 1), 1, 3), 0);
+  const highestLevel = (events ?? []).reduce((value: number, row: any) => Math.max(value, Number(row.level_number ?? 0)), 0);
+  const { error: upsertError } = await sb.from("progression_rankings").upsert({
+    scope_type: "weekly",
+    period_key: weekKey,
+    game_id: gameId,
+    player_hash: playerHash,
+    display_name: displayName,
+    levels_completed: levelsCompleted,
+    highest_level: highestLevel,
+    stars,
+    rank_score: progressRankScore(levelsCompleted, stars),
+    updated_at: new Date().toISOString(),
+  }, { onConflict: "scope_type,period_key,game_id,player_hash" });
+  if (upsertError) throw upsertError;
+}
+
+function publicProgressRows(rows: any[] | null | undefined) {
+  return (rows ?? []).map((row) => ({
+    name: String(row.display_name ?? "PLAYER").slice(0, 20),
+    levels_completed: Number(row.levels_completed ?? 0),
+    highest_level: Number(row.highest_level ?? 0),
+    stars: Number(row.stars ?? 0),
+  }));
+}
+
+async function progressRankFor(sb: any, scopeType: string, periodKey: string, gameId: string, playerHash: string) {
+  const { data: mine, error } = await sb.from("progression_rankings")
+    .select("rank_score,levels_completed,highest_level,stars")
+    .eq("scope_type", scopeType).eq("period_key", periodKey)
+    .eq("game_id", gameId).eq("player_hash", playerHash).maybeSingle();
+  if (error) throw error;
+  if (!mine || Number(mine.levels_completed ?? 0) <= 0) {
+    return { rank: 0, levels_completed: 0, highest_level: 0, stars: 0 };
+  }
+  const { count, error: countError } = await sb.from("progression_rankings")
+    .select("*", { count: "exact", head: true })
+    .eq("scope_type", scopeType).eq("period_key", periodKey).eq("game_id", gameId)
+    .gt("rank_score", Number(mine.rank_score ?? 0));
+  if (countError) throw countError;
+  return {
+    rank: Number(count ?? 0) + 1,
+    levels_completed: Number(mine.levels_completed ?? 0),
+    highest_level: Number(mine.highest_level ?? 0),
+    stars: Number(mine.stars ?? 0),
+  };
+}
+
+async function progressTop(sb: any, scopeType: string, periodKey: string, gameId: string) {
+  const { data, error } = await sb.from("progression_rankings")
+    .select("display_name,levels_completed,highest_level,stars,rank_score")
+    .eq("scope_type", scopeType).eq("period_key", periodKey).eq("game_id", gameId)
+    .gt("levels_completed", 0)
+    .order("rank_score", { ascending: false }).order("updated_at", { ascending: true }).limit(20);
+  if (error) throw error;
+  return publicProgressRows(data);
+}
+
+function progressionRewardForRank(rank: number) {
+  if (rank === 1) return { coins: 350, crowns: 10 };
+  if (rank <= 3) return { coins: 250, crowns: 7 };
+  if (rank <= 10) return { coins: 150, crowns: 4 };
+  if (rank <= 25) return { coins: 90, crowns: 2 };
+  return { coins: 40, crowns: 1 };
+}
+
+async function previousProgressReward(sb: any, playerHash: string, gameId: string, currentWeek: Date) {
+  const periodKey = isoDay(new Date(currentWeek.getTime() - 7 * DAY_MS));
+  const rank = await progressRankFor(sb, "weekly", periodKey, gameId, playerHash);
+  if (rank.rank <= 0 || rank.levels_completed <= 0) {
+    return { eligible: false, claimed: false, period_key: periodKey, game_id: gameId, rank: 0, coins: 0, crowns: 0 };
+  }
+  const reward = progressionRewardForRank(rank.rank);
+  const { data: claim, error } = await sb.from("progression_reward_claims")
+    .select("claimed_at").eq("player_hash", playerHash).eq("period_key", periodKey).eq("game_id", gameId).maybeSingle();
+  if (error) throw error;
+  return { eligible: true, claimed: Boolean(claim), period_key: periodKey, game_id: gameId, ...rank, ...reward };
+}
+
+async function progressionSnapshotFor(sb: any, playerHash: string, displayName: string, day: Date, progress: unknown) {
+  const weekKey = isoDay(weekStart(day));
+  const raw = progress && typeof progress === "object" && !Array.isArray(progress) ? progress as Record<string, unknown> : {};
+  const gameRankings: Record<string, unknown> = {};
+  for (const gameId of GAME_IDS) {
+    await upsertAllTimeProgress(sb, playerHash, displayName, gameId, raw[gameId]);
+    const [allTimeTop, weeklyTop, playerAllTime, playerWeekly, reward] = await Promise.all([
+      progressTop(sb, "all_time", ALL_TIME_KEY, gameId),
+      progressTop(sb, "weekly", weekKey, gameId),
+      progressRankFor(sb, "all_time", ALL_TIME_KEY, gameId, playerHash),
+      progressRankFor(sb, "weekly", weekKey, gameId, playerHash),
+      previousProgressReward(sb, playerHash, gameId, weekStart(day)),
+    ]);
+    gameRankings[gameId] = {
+      all_time_top: allTimeTop,
+      weekly_top: weeklyTop,
+      player_all_time: playerAllTime,
+      player_weekly: playerWeekly,
+      previous_week_reward: reward,
+    };
+  }
+  return { ok: true, week_start: weekKey, game_rankings: gameRankings };
+}
+
+async function socialProgressSnapshot(
+  sb: any,
+  playerHash: string,
+  displayName: string,
+  day: Date,
+  gameId: string,
+) {
+  const own = await ensureSocialProfile(sb, playerHash, displayName);
+  const hashes = await friendHashes(sb, playerHash);
+  const allHashes = [playerHash, ...hashes];
+  const weekKey = isoDay(weekStart(day));
+
+  const profilesResult = hashes.length
+    ? await sb.from("social_profiles").select("player_hash,friend_code,display_name").in("player_hash", hashes)
+    : { data: [], error: null };
+  if (profilesResult.error) throw profilesResult.error;
+
+  const [allTimeResult, weeklyResult] = await Promise.all([
+    sb.from("progression_rankings")
+      .select("player_hash,display_name,levels_completed,highest_level,stars,rank_score")
+      .eq("scope_type", "all_time").eq("period_key", ALL_TIME_KEY).eq("game_id", gameId)
+      .in("player_hash", allHashes),
+    sb.from("progression_rankings")
+      .select("player_hash,display_name,levels_completed,highest_level,stars,rank_score")
+      .eq("scope_type", "weekly").eq("period_key", weekKey).eq("game_id", gameId)
+      .in("player_hash", allHashes),
+  ]);
+  if (allTimeResult.error) throw allTimeResult.error;
+  if (weeklyResult.error) throw weeklyResult.error;
+
+  const profileByHash = new Map<string, any>();
+  profileByHash.set(playerHash, { player_hash: playerHash, friend_code: own.friend_code, display_name: displayName });
+  for (const row of profilesResult.data ?? []) profileByHash.set(String(row.player_hash), row);
+
+  const friendRows = hashes.map((hash) => {
+    const profile = profileByHash.get(hash) ?? {};
+    return { name: String(profile.display_name ?? "PLAYER").slice(0, 20), friend_code: String(profile.friend_code ?? "") };
+  }).sort((a, b) => a.name.localeCompare(b.name));
+
+  const mapRows = (rows: any[]) => {
+    const byHash = new Map<string, any>();
+    for (const row of rows ?? []) byHash.set(String(row.player_hash), row);
+    return allHashes.map((hash) => {
+      const profile = profileByHash.get(hash) ?? {};
+      const row = byHash.get(hash) ?? {};
+      return {
+        name: String(profile.display_name ?? row.display_name ?? "PLAYER").slice(0, 20),
+        levels_completed: Number(row.levels_completed ?? 0),
+        highest_level: Number(row.highest_level ?? 0),
+        stars: Number(row.stars ?? 0),
+        rank_score: Number(row.rank_score ?? 0),
+        friend_code: String(profile.friend_code ?? ""),
+        you: hash === playerHash,
+      };
+    }).sort((a, b) => b.rank_score - a.rank_score || a.name.localeCompare(b.name))
+      .map((row, index) => ({ ...row, rank: index + 1 }));
+  };
+
+  return {
+    ok: true,
+    game_id: gameId,
+    friend_code: own.friend_code,
+    friend_count: friendRows.length,
+    max_friends: MAX_FRIENDS,
+    friends: friendRows,
+    friends_all_time: mapRows(allTimeResult.data ?? []),
+    friends_weekly: mapRows(weeklyResult.data ?? []),
+    week_start: weekKey,
+  };
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method !== "POST") return json({ ok: false, reason: "POST required" }, 405);
   if (!validAppKey(req.headers.get("apikey") ?? "")) return json({ ok: false, reason: "Invalid app key" }, 401);
@@ -290,8 +564,61 @@ Deno.serve(async (req: Request) => {
   const sb = createClient(url, secret, { auth: { persistSession: false, autoRefreshToken: false } });
   const hash = await sha256Hex(cloudId.toLowerCase()), name = cleanName(body.display_name, cloudId), action = String(body.action ?? "");
 
+  if (action === "progress_snapshot") {
+    try { return json(await progressionSnapshotFor(sb, hash, name, day, body.progress)); }
+    catch (error) {
+      console.error("progress snapshot failed", { error: String(error) });
+      return json({ ok: false, reason: "Rankings unavailable" }, 503);
+    }
+  }
+  if (action === "submit_progress") {
+    const gameId = String(body.game_id ?? "");
+    if (!GAME_IDS.has(gameId)) return json({ ok: false, reason: "Invalid game" }, 400);
+    const levelNumber = metric(body, "level_number", 1, 10000, 1);
+    const stars = metric(body, "stars", 1, 3, 1);
+    const firstClear = body.first_clear === true;
+    const weekKey = isoDay(weekStart(day));
+    try {
+      const allTime = await upsertAllTimeProgress(sb, hash, name, gameId, body.progress);
+      if (firstClear && levelNumber <= allTime.levels_completed) {
+        await recordProgressEvent(sb, hash, gameId, levelNumber, stars, weekKey);
+      }
+      await refreshWeeklyProgress(sb, hash, name, gameId, weekKey);
+      return json({ ok: true, game_id: gameId, snapshot: await progressionSnapshotFor(sb, hash, name, day, body.all_progress) });
+    } catch (error) {
+      console.error("submit progress failed", { error: String(error) });
+      return json({ ok: false, reason: "Rankings unavailable" }, 503);
+    }
+  }
+  if (action === "claim_progress_weekly") {
+    const gameId = String(body.game_id ?? "");
+    if (!GAME_IDS.has(gameId)) return json({ ok: false, reason: "Invalid game" }, 400);
+    const periodKey = isoDay(new Date(weekStart(day).getTime() - 7 * DAY_MS));
+    try {
+      const rank = await progressRankFor(sb, "weekly", periodKey, gameId, hash);
+      if (rank.rank <= 0 || rank.levels_completed <= 0) return json({ ok: false, reason: "No completed weekly league" }, 404);
+      const reward = progressionRewardForRank(rank.rank);
+      const claim = {
+        player_hash: hash, period_key: periodKey, game_id: gameId,
+        rank: rank.rank, levels_completed: rank.levels_completed,
+        coins: reward.coins, crowns: reward.crowns,
+      };
+      const { error } = await sb.from("progression_reward_claims").insert(claim);
+      if (error && error.code !== "23505") return json({ ok: false, reason: "Reward service unavailable" }, 503);
+      if (error?.code === "23505") {
+        const { data: existing } = await sb.from("progression_reward_claims")
+          .select("rank,levels_completed,coins,crowns")
+          .eq("player_hash", hash).eq("period_key", periodKey).eq("game_id", gameId).maybeSingle();
+        return json({ ok: true, period_key: periodKey, game_id: gameId, already_claimed: true, ...(existing ?? claim) });
+      }
+      return json({ ok: true, period_key: periodKey, game_id: gameId, already_claimed: false, ...claim });
+    } catch (error) {
+      console.error("claim progression reward failed", { error: String(error) });
+      return json({ ok: false, reason: "Reward service unavailable" }, 503);
+    }
+  }
   if (action === "social_snapshot") {
-    try { return json(await socialSnapshot(sb, hash, name, day)); }
+    try { return json(await socialProgressSnapshot(sb, hash, name, day, cleanGameId(body.game_id))); }
     catch (error) {
       console.error("social snapshot failed", { error: String(error) });
       return json({ ok: false, reason: "Friends service unavailable" }, 503);
@@ -301,7 +628,7 @@ Deno.serve(async (req: Request) => {
     const friendCode = cleanFriendCode(body.friend_code);
     if (!friendCode) return json({ ok: false, reason: "Enter a valid 8-character friend code" }, 400);
     try {
-      const result = await addFriend(sb, hash, name, friendCode, day);
+      const result = await addFriend(sb, hash, name, friendCode, day, cleanGameId(body.game_id));
       return json(result, result.ok ? 200 : 400);
     } catch (error) {
       console.error("add friend failed", { error: String(error) });
@@ -311,14 +638,14 @@ Deno.serve(async (req: Request) => {
   if (action === "remove_friend") {
     const friendCode = cleanFriendCode(body.friend_code);
     if (!friendCode) return json({ ok: false, reason: "Invalid friend code" }, 400);
-    try { return json(await removeFriend(sb, hash, name, friendCode, day)); }
+    try { return json(await removeFriend(sb, hash, name, friendCode, day, cleanGameId(body.game_id))); }
     catch (error) {
       console.error("remove friend failed", { error: String(error) });
       return json({ ok: false, reason: "Friends service unavailable" }, 503);
     }
   }
   if (action === "rotate_friend_code") {
-    try { return json(await rotateFriendCode(sb, hash, name, day)); }
+    try { return json(await rotateFriendCode(sb, hash, name, day, cleanGameId(body.game_id))); }
     catch (error) {
       console.error("rotate friend code failed", { error: String(error) });
       return json({ ok: false, reason: "Could not create a new friend code" }, 503);

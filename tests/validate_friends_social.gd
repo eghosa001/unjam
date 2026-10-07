@@ -44,10 +44,10 @@ func _run() -> void:
 	var edge := _read("res://supabase/functions/unjam-competition/index.ts")
 	var migration := _read("res://supabase/migrations/20261007_create_social_friends.sql")
 
-	for token in ["social_snapshot", "friends_weekly", "MAX_FRIENDS", "add_friend", "remove_friend", "rotate_friend_code"]:
+	for token in ["social_snapshot", "friends_all_time", "friends_weekly", "MAX_FRIENDS", "add_friend", "remove_friend", "rotate_friend_code"]:
 		if not manager.contains(token) and not edge.contains(token):
 			failures.append("Social contract missing token: %s" % token)
-	for token in ["func build_friends", "ProfileFriendsButton", "CompetitionFriendsButton", "FriendsCodeInput", "Friends Weekly", "FriendsRotateCode"]:
+	for token in ["func build_friends", "ProfileFriendsButton", "CompetitionFriendsButton", "FriendsCodeInput", "func _figma_friend_period_tabs", "func _figma_compete_game_tabs", "FriendsRotateCode"]:
 		if not ui.to_lower().contains(token.to_lower()):
 			failures.append("Friends UI is not directly accessible: %s" % token)
 	for token in ["enable row level security", "revoke all on table public.social_profiles from anon, authenticated", "revoke all on table public.social_friends from anon, authenticated", "grant select, insert, update, delete on table public.social_profiles to service_role"]:

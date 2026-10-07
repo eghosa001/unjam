@@ -677,11 +677,6 @@ func complete_level() -> void:
 				"difficulty": String(level_data.get("difficulty", level_data.get("difficulty_label", "medium")))
 			}
 		)
-	if daily_mode:
-		CompetitionManager.submit_daily_result("rescue_rush", {
-			"stars": stars, "moves": moves, "par": par_moves,
-			"mistakes": mistakes_this_level, "hints": hints_used_this_level, "undos": undos_used_this_level
-		})
 	AdManager.note_level_completed()
 	AnalyticsManager.level_completed(level_number, moves, stars)
 	AnalyticsManager.track("rescue_level_difficulty", {
@@ -754,7 +749,7 @@ func show_result(stars: int) -> void:
 func undo_move() -> void:
 	if daily_mode:
 		if hint_label != null:
-			hint_label.text = "Undo is disabled in ranked Daily competition."
+			hint_label.text = "Undo is disabled in this Daily challenge."
 		return
 	if history.is_empty() or rescued or board_locked:
 		return

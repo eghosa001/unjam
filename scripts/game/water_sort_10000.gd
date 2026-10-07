@@ -605,7 +605,6 @@ func complete_level() -> void:
 		var daily_completed_now := MultiGameManager.complete_daily(GAME_ID, base_reward)
 		if daily_completed_now:
 			MetaProgressionManager.record_daily_complete(GAME_ID, stars)
-		CompetitionManager.submit_daily_result(GAME_ID, {"stars": stars, "moves": moves, "par": par_moves})
 	else:
 		completion_rewards = MultiGameManager.complete_level(GAME_ID, level_number, stars, 25 + color_count * 2)
 		base_reward = int(completion_rewards.get("base_coins", 0))

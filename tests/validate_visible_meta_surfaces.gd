@@ -54,13 +54,13 @@ func _run() -> void:
 	if not meta.claim_next_ready_season_tier():
 		failures.append("Ready Season Journey tier could not be claimed")
 
-	var home := _read("res://scripts/ui/premium_home_casual.gd")
+	var home := _read("res://scripts/ui/premium_home_direct_levels.gd")
 	var main := _read("res://scripts/ui/premium_main_casual.gd")
 	var selector := _read("res://scripts/ui/premium_live_hub_3d.gd")
 	var cloud := _read("res://scripts/systems/cloud_save_manager.gd")
 	var edge := _read("res://supabase/functions/unjam-cloud-save/index.ts")
 
-	for token in ["HomeProfileButton", "HomeGoalsButton", "HomeSeasonJourneyButton", "HomeSidekickButton", "LIVE NOW"]:
+	for token in ["HomeProfileButton", "HomeGoalsButton", "HomeDailyChallengeButton", "HomeFriendsButton", "HomePlaymateSidekickBeta", "LIVE NOW"]:
 		if not home.contains(token):
 			failures.append("Home is missing visible meta entry: %s" % token)
 	for token in ["func build_goals()", "func build_profile()", "CollectionAchievementsView", "DAILY CHECK-IN", "SEASON JOURNEY", "ACHIEVEMENTS"]:
