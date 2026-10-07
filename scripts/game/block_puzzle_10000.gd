@@ -494,6 +494,9 @@ func place_selected(origin: Vector2i) -> void:
 	_save_checkpoint()
 
 func _use_booster(kind: String) -> void:
+	if daily_mode:
+		_booster_unavailable("Ranked Daily Games do not allow boosters.")
+		return
 	if completed or _clear_transition_active:
 		return
 	match kind:
@@ -682,7 +685,9 @@ func _refresh_booster_buttons() -> void:
 		var button = booster_buttons[key] as Button
 		if button == null or not is_instance_valid(button):
 			continue
-		button.disabled = completed or _clear_transition_active
+		button.disabled = completed or _clear_transition_active or daily_mode
+		if daily_mode:
+			button.tooltip_text = "Boosters are disabled in ranked Daily competition."
 	var undo_button = booster_buttons.get("undo") as Button
 	if undo_button != null:
 		undo_button.disabled = undo_button.disabled or history.is_empty()

@@ -1,0 +1,204 @@
+extends Node
+
+signal snapshot_updated(snapshot: Dictionary)
+signal submission_finished(game_id: String, ok: bool, points: int)
+signal weekly_reward_claimed(coins: int, crowns: int)
+
+const FUNCTION_NAME := "unjam-competition"
+const GAME_IDS := ["rescue_rush", "water_sort", "block_puzzle"]
+const REQUEST_TIMEOUT_SECONDS := 12.0
+
+var snapshot: Dictionary = {}
+var _snapshot_in_flight := false
+
+func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	call_deferred("refresh_snapshot")
+
+func display_name() -> String:
+	var custom := String(SaveManager.data.get("competition_display_name", "")).strip_edges()
+	if not custom.is_empty():
+		return custom.left(20)
+	var cloud_id := String(SaveManager.data.get("cloud_save_id", ""))
+	var suffix := cloud_id.right(6).to_upper() if cloud_id.length() >= 6 else "PLAYER"
+	return "PLAYER %s" % suffix
+
+func set_display_name(value: String) -> void:
+	var clean := value.strip_edges().replace("\n", " ").replace("\r", " ")
+	if clean.length() > 20:
+		clean = clean.left(20)
+	SaveManager.data["competition_display_name"] = clean
+	SaveManager.save()
+	refresh_snapshot()
+
+func daily_top() -> Array:
+	var value = snapshot.get("daily_top", [])
+	return value if value is Array else []
+
+func weekly_top() -> Array:
+	var value = snapshot.get("weekly_top", [])
+	return value if value is Array else []
+
+func daily_rank() -> int:
+	var player = snapshot.get("player_daily", {})
+	return int(player.get("rank", 0)) if player is Dictionary else 0
+
+func weekly_rank() -> int:
+	var player = snapshot.get("player_weekly", {})
+	return int(player.get("rank", 0)) if player is Dictionary else 0
+
+func daily_score() -> int:
+	var player = snapshot.get("player_daily", {})
+	return int(player.get("score", 0)) if player is Dictionary else 0
+
+func weekly_score() -> int:
+	var player = snapshot.get("player_weekly", {})
+	return int(player.get("score", 0)) if player is Dictionary else 0
+
+func weekly_division() -> String:
+	var points := weekly_score()
+	if points >= 14000: return "CHAMPION"
+	if points >= 9000: return "DIAMOND"
+	if points >= 6000: return "PLATINUM"
+	if points >= 3000: return "GOLD"
+	if points >= 1500: return "SILVER"
+	return "BRONZE"
+
+func previous_week_reward() -> Dictionary:
+	var value = snapshot.get("previous_week_reward", {})
+	return value if value is Dictionary else {}
+
+func can_claim_weekly_reward() -> bool:
+	var reward := previous_week_reward()
+	return bool(reward.get("eligible", false)) and not bool(reward.get("claimed", false))
+
+func refresh_snapshot() -> void:
+	# Deterministic screenshot/visual-audit runs should never leave live HTTP
+	# requests behind at process shutdown.
+	if OS.get_environment("UNJAM_FAST_VISUAL_AUDIT") == "1":
+		return
+	if _snapshot_in_flight:
+		return
+	var cloud_id := String(SaveManager.data.get("cloud_save_id", ""))
+	if cloud_id.length() != 64:
+		return
+	_snapshot_in_flight = true
+	_request_json({
+		"action": "snapshot",
+		"cloud_save_id": cloud_id,
+		"display_name": display_name(),
+		"competition_day": DailyChallenge.date_key(),
+	}, func(ok: bool, _status: int, body: Dictionary) -> void:
+		_snapshot_in_flight = false
+		if ok and bool(body.get("ok", false)):
+			snapshot = body.duplicate(true)
+			snapshot_updated.emit(snapshot)
+	)
+
+func submit_daily_result(game_id: String, metrics: Dictionary) -> void:
+	if game_id not in GAME_IDS:
+		return
+	var cloud_id := String(SaveManager.data.get("cloud_save_id", ""))
+	if cloud_id.length() != 64:
+		submission_finished.emit(game_id, false, 0)
+		return
+	_request_json({
+		"action": "submit",
+		"cloud_save_id": cloud_id,
+		"display_name": display_name(),
+		"competition_day": DailyChallenge.date_key(),
+		"game_id": game_id,
+		"metrics": metrics.duplicate(true),
+	}, func(ok: bool, _status: int, body: Dictionary) -> void:
+		var accepted := ok and bool(body.get("ok", false))
+		var points := int(body.get("score", 0)) if accepted else 0
+		if accepted and body.get("snapshot", {}) is Dictionary:
+			snapshot = (body.get("snapshot", {}) as Dictionary).duplicate(true)
+			snapshot_updated.emit(snapshot)
+		submission_finished.emit(game_id, accepted, points)
+	)
+
+func claim_weekly_reward() -> void:
+	var cloud_id := String(SaveManager.data.get("cloud_save_id", ""))
+	if cloud_id.length() != 64:
+		return
+	_request_json({
+		"action": "claim_weekly",
+		"cloud_save_id": cloud_id,
+		"display_name": display_name(),
+		"competition_day": DailyChallenge.date_key(),
+	}, func(ok: bool, _status: int, body: Dictionary) -> void:
+		if not ok or not bool(body.get("ok", false)):
+			return
+		var period_key := String(body.get("period_key", ""))
+		var already_claimed := bool(body.get("already_claimed", false))
+		var local_claims = SaveManager.data.get("competition_claimed_periods", [])
+		if not local_claims is Array:
+			local_claims = []
+		if already_claimed:
+			# The server is authoritative for weekly payout idempotency. Never
+			# re-credit a reward locally after reinstall or delayed cloud restore.
+			if not period_key.is_empty() and period_key not in local_claims:
+				local_claims.append(period_key)
+				SaveManager.data["competition_claimed_periods"] = local_claims
+				SaveManager.save()
+			refresh_snapshot()
+			return
+		if not period_key.is_empty() and period_key not in local_claims:
+			var coins := maxi(0, int(body.get("coins", 0)))
+			var base_crowns := maxi(0, int(body.get("crowns", 0)))
+			var crowns := EconomyManager.competition_crown_reward(base_crowns)
+			if coins > 0:
+				EconomyManager.grant(coins, "weekly_competition_reward", {"period": period_key, "rank": int(body.get("rank", 0))})
+			if crowns > 0:
+				SaveManager.data["crown_tokens"] = maxi(0, int(SaveManager.data.get("crown_tokens", 0))) + crowns
+			local_claims.append(period_key)
+			if local_claims.size() > 104:
+				local_claims = local_claims.slice(local_claims.size() - 104)
+			SaveManager.data["competition_claimed_periods"] = local_claims
+			SaveManager.save()
+			weekly_reward_claimed.emit(coins, crowns)
+		refresh_snapshot()
+	)
+
+func _request_json(payload: Dictionary, callback: Callable) -> void:
+	var endpoint := _function_endpoint()
+	var headers := _request_headers()
+	if endpoint.is_empty() or headers.is_empty():
+		if callback.is_valid():
+			callback.call(false, 0, {})
+		return
+	var request := HTTPRequest.new()
+	request.timeout = REQUEST_TIMEOUT_SECONDS
+	request.max_redirects = 0
+	add_child(request)
+	request.request_completed.connect(func(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
+		var parsed := _decode_response_json(body)
+		var success := result == HTTPRequest.RESULT_SUCCESS and response_code >= 200 and response_code < 300
+		if callback.is_valid():
+			callback.call(success, response_code, parsed)
+		request.queue_free()
+	)
+	var error := request.request(endpoint, headers, HTTPClient.METHOD_POST, JSON.stringify(payload))
+	if error != OK:
+		request.queue_free()
+		if callback.is_valid():
+			callback.call(false, 0, {})
+
+func _decode_response_json(body: PackedByteArray) -> Dictionary:
+	if body.is_empty():
+		return {}
+	var parsed = JSON.parse_string(body.get_string_from_utf8())
+	return parsed if parsed is Dictionary else {}
+
+func _function_endpoint() -> String:
+	var base := String(ProjectSettings.get_setting("monetization/supabase_url", "")).strip_edges().trim_suffix("/")
+	if not base.begins_with("https://"):
+		return ""
+	return "%s/functions/v1/%s" % [base, FUNCTION_NAME]
+
+func _request_headers() -> PackedStringArray:
+	var key := String(ProjectSettings.get_setting("monetization/supabase_publishable_key", "")).strip_edges()
+	if key.is_empty():
+		return PackedStringArray()
+	return PackedStringArray(["Content-Type: application/json", "apikey: %s" % key])

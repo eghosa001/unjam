@@ -26,7 +26,14 @@ func complete_daily(id: String, reward := 100) -> bool:
 
 func complete_level(id: String, n: int, stars: int, coin_reward := 25, context: Dictionary = {}) -> Dictionary:
 	var safe_reward := maxi(0, int(coin_reward))
+	var economy := _economy()
+	if id != "rescue_rush" and economy != null and economy.has_method("collection_campaign_reward"):
+		safe_reward = int(economy.call("collection_campaign_reward", safe_reward))
 	var rewards := super.complete_level(id, n, stars, safe_reward, context)
+	# Expose the real first-clear base reward to result overlays. Replays must not
+	# create a new ad-double opportunity when no base coins were awarded.
+	if not rewards.has("base_coins"):
+		rewards["base_coins"] = safe_reward if bool(rewards.get("first_clear", false)) else 0
 	# Rescue Rush delegates to SaveManager.complete_level() and is already synced.
 	if id == "rescue_rush":
 		return rewards
@@ -38,9 +45,9 @@ func complete_level(id: String, n: int, stars: int, coin_reward := 25, context: 
 	if bool(rewards.get("world_badge", false)):
 		direct_delta += 250
 	if direct_delta != 0:
-		var economy := _economy()
-		if economy != null and economy.has_method("record_external_delta"):
-			economy.call("record_external_delta", direct_delta, "level_reward", {
+		var economy_tracker := _economy()
+		if economy_tracker != null and economy_tracker.has_method("record_external_delta"):
+			economy_tracker.call("record_external_delta", direct_delta, "level_reward", {
 				"game": id,
 				"level": n,
 				"stars": stars,

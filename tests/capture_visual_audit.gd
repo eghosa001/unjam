@@ -577,7 +577,15 @@ func _shutdown_visual_audit() -> void:
 	if feedback != null and feedback.has_method("shutdown_audio"):
 		feedback.call("shutdown_audio")
 
-	await _settle(12)
+	# Large UI surfaces can queue nested Control/Resource frees for several
+	# frames. Wait until the transient scene is truly gone, then allow a short
+	# resource-flush window before quitting. This keeps leak detection strict
+	# without depending on logging speed/timing.
+	for _i in range(60):
+		await process_frame
+		if scene == null or not is_instance_valid(scene):
+			break
+	await _settle(24)
 	# Defer the actual exit one more frame so _shutdown_visual_audit() and its
 	# caller return first, releasing local PackedScene/image/resource references.
 	call_deferred("_finish_visual_audit_quit")

@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.unjam-cloud-save]
 verify_jwt = false
+
+[functions.unjam-competition]
+verify_jwt = false

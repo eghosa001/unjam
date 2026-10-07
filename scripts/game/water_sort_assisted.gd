@@ -56,6 +56,10 @@ func load_level() -> void:
 	_refresh_extra_tube_button()
 
 func add_extra_tube() -> bool:
+	if daily_mode:
+		status_label.text = "Ranked Daily Games do not allow extra tubes."
+		FeedbackManager.blocked()
+		return false
 	if completed:
 		return false
 	if extra_tube_used:
@@ -159,6 +163,11 @@ func _refresh_extra_tube_button() -> void:
 	if button == null:
 		return
 	var balance := EconomyManager.balance()
+	if daily_mode:
+		button.disabled = true
+		button.text = "RANKED • NO EXTRA TUBE"
+		button.tooltip_text = "Extra tubes are disabled in ranked Daily competition."
+		return
 	button.disabled = extra_tube_used
 	button.text = "✓  TUBE USED" if extra_tube_used else "+  TUBE • %d◈" % EXTRA_TUBE_COST
 	button.tooltip_text = "Already used this attempt • Balance %d" % balance if extra_tube_used else "Costs %d coins • Balance %d" % [EXTRA_TUBE_COST, balance]

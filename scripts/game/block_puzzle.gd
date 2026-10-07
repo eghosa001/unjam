@@ -627,6 +627,10 @@ func any_move_available() -> bool:
 	return false
 
 func undo_move() -> void:
+	if daily_mode:
+		if hint_label != null:
+			hint_label.text = "Undo is disabled in ranked Daily competition."
+		return
 	if history.is_empty() or completed:
 		return
 	var state: Dictionary = history.pop_back()
@@ -667,15 +671,51 @@ func complete_level() -> void:
 	completed = true
 	MultiGameManager.clear_checkpoint(GAME_ID)
 	var stars := 3 if placements <= par_placements else (2 if placements <= par_placements + 6 else 1)
+	var completion_rewards: Dictionary = {}
+	var base_reward := 100 + stars * 25 if daily_mode else 0
 	if daily_mode:
-		MultiGameManager.complete_daily(GAME_ID, 100 + stars * 25)
+		MultiGameManager.complete_daily(GAME_ID, base_reward)
+		CompetitionManager.submit_daily_result(GAME_ID, {
+			"stars": stars, "score": score, "lines": lines_cleared,
+			"placements": placements, "par": par_placements
+		})
 	else:
-		MultiGameManager.complete_level(GAME_ID, level_number, stars, 30)
+		completion_rewards = MultiGameManager.complete_level(GAME_ID, level_number, stars, 30)
+		base_reward = int(completion_rewards.get("base_coins", 0))
 	status_label.text = "LEVEL COMPLETE  •  %d ★" % stars
 	_spawn_score_popup("SPECTACULAR!", Color("ff665e"), 0.0, true)
 	AnalyticsManager.track("block_puzzle_completed", {"level": level_number, "score": score, "lines": lines_cleared, "placements": placements, "stars": stars, "daily": daily_mode})
-	await get_tree().create_timer(0.9).timeout
-	finished.emit(-1 if daily_mode else level_number)
+	await get_tree().create_timer(0.28).timeout
+	var displayed_reward := base_reward + (EconomyManager.collection_daily_bonus() if daily_mode else int(completion_rewards.get("bonus_coins", 0)))
+	var result := PremiumResultOverlay.new()
+	result.configure(
+		"DAILY BLOCK COMPLETE" if daily_mode else "BLOCK PUZZLE COMPLETE",
+		"Board objective cleared.",
+		"SCORE %d   •   %d LINES\n%d PLACEMENTS   •   +%d COINS" % [score, lines_cleared, placements, displayed_reward],
+		stars,
+		Color("ff665e"),
+		"BACK HOME" if daily_mode else "NEXT PUZZLE"
+	)
+	var claim_id := "daily:block_puzzle:%s" % DailyChallenge.date_key() if daily_mode else "campaign:block_puzzle:%d" % level_number
+	if base_reward > 0 and not EconomyManager.reward_double_claimed(claim_id):
+		result.configure_secondary("DOUBLE BASE REWARD", true)
+	add_child(result)
+	result.secondary_requested.connect(func() -> void:
+		result.set_secondary_state("WATCHING AD…", false)
+		var on_failed := func(reason: String) -> void:
+			if is_instance_valid(result):
+				result.set_secondary_state("DOUBLE BASE REWARD", true, reason)
+		var on_reward := func() -> void:
+			var granted := EconomyManager.claim_reward_double(claim_id, base_reward)
+			if is_instance_valid(result):
+				result.set_secondary_state("BASE REWARD DOUBLED" if granted else "ALREADY CLAIMED", false)
+		AdManager.show_rewarded("double_reward_block", on_reward, on_failed)
+	)
+	result.continue_requested.connect(func() -> void:
+		finished.emit(-1 if daily_mode else level_number)
+		queue_free()
+	)
+
 
 func restart_level() -> void:
 	MultiGameManager.clear_checkpoint(GAME_ID)

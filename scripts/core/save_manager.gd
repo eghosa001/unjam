@@ -9,6 +9,13 @@ const RESET_PRESERVED_KEYS := [
 	# must never destroy that balance. Decorations are sold as permanent unlocks.
 	"coins",
 	"decorations",
+	"collection_levels",
+	"crown_tokens",
+	"competition_claimed_periods",
+	"competition_display_name",
+	"reward_double_claims",
+	"lantern_shield_month",
+	"lantern_shield_uses",
 	# Resetting progression must not silently rewrite accessibility/preferences or
 	# force the privacy flow back to an unknown local state.
 	"sound",
@@ -57,6 +64,13 @@ const DEFAULT_DATA := {
 	"reduce_motion": false,
 	"fast_animation": false,
 	"decorations": [],
+	"collection_levels": {},
+	"crown_tokens": 0,
+	"competition_claimed_periods": [],
+	"competition_display_name": "",
+	"reward_double_claims": [],
+	"lantern_shield_month": "",
+	"lantern_shield_uses": 0,
 	"garden_last_gift_date": "",
 	"garden_gifts_claimed": 0,
 	"daily_last_date": "",

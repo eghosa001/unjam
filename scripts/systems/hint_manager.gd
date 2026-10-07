@@ -35,6 +35,10 @@ func coin_balance() -> int:
 	return maxi(0, int(save.data.get("coins", 0))) if save != null else 0
 
 
+func current_hint_cost() -> int:
+	var economy := _economy()
+	return int(economy.call("hint_cost", HINT_COST)) if economy != null and economy.has_method("hint_cost") else HINT_COST
+
 func request_hint(placement: String, reveal_hint: Callable, unavailable: Callable = Callable()) -> bool:
 	if not reveal_hint.is_valid():
 		return false
@@ -44,9 +48,9 @@ func request_hint(placement: String, reveal_hint: Callable, unavailable: Callabl
 	var economy := _economy()
 	var paid := false
 	if economy != null:
-		paid = bool(economy.call("spend", HINT_COST, "hint_%s" % placement, {"placement": placement}))
+		paid = bool(economy.call("spend", current_hint_cost(), "hint_%s" % placement, {"placement": placement}))
 	else:
-		paid = bool(save.call("spend_coins", HINT_COST))
+		paid = bool(save.call("spend_coins", current_hint_cost()))
 	if paid:
 		_grant(placement, "coins", reveal_hint)
 		return true
@@ -56,7 +60,7 @@ func request_hint(placement: String, reveal_hint: Callable, unavailable: Callabl
 	# the legacy optional rewarded fallback so existing monetization contracts and
 	# non-Main test harnesses remain valid.
 	if _show_recovery_prompt(placement, reveal_hint):
-		_track("hint_recovery_prompt", {"placement": placement, "cost": HINT_COST, "balance": coin_balance()})
+		_track("hint_recovery_prompt", {"placement": placement, "cost": current_hint_cost(), "balance": coin_balance()})
 		return true
 
 	var ads := _ads()
@@ -67,9 +71,9 @@ func request_hint(placement: String, reveal_hint: Callable, unavailable: Callabl
 			_grant(placement, "rewarded_ad", reveal_hint)
 		))
 	if accepted:
-		_track("hint_rewarded_requested", {"placement": placement, "cost": HINT_COST})
+		_track("hint_rewarded_requested", {"placement": placement, "cost": current_hint_cost()})
 		return true
-	var reason := "Need %d coins. Rewarded ad is unavailable right now." % HINT_COST
+	var reason := "Need %d coins. Rewarded ad is unavailable right now." % current_hint_cost()
 	if unavailable.is_valid():
 		unavailable.call(reason)
 	hint_unavailable.emit(placement, reason)
@@ -78,6 +82,11 @@ func request_hint(placement: String, reveal_hint: Callable, unavailable: Callabl
 
 func request_hint_for_game(game: Node) -> bool:
 	if game == null or not is_instance_valid(game) or not game.has_method("show_hint"):
+		return false
+	if bool(game.get("daily_mode")):
+		var reason := "Ranked Daily Games use the same tools for everyone — hints are disabled."
+		_show_unavailable_on_game(reason, game)
+		hint_unavailable.emit(_game_id(game), reason)
 		return false
 	var placement := _game_id(game)
 	var unavailable := Callable(self, "_show_unavailable_on_game").bind(game)
@@ -120,7 +129,7 @@ func _show_recovery_prompt(placement: String, reveal_hint: Callable) -> bool:
 	if prompt == null or not prompt.has_method("show_for"):
 		return false
 	var retry := Callable(self, "_retry_hint").bind(placement, reveal_hint)
-	prompt.call("show_for", "%s HINT" % placement.replace("_", " ").to_upper(), HINT_COST, retry)
+	prompt.call("show_for", "%s HINT" % placement.replace("_", " ").to_upper(), current_hint_cost(), retry)
 	return true
 
 func _retry_hint(placement: String, reveal_hint: Callable) -> bool:
@@ -129,7 +138,7 @@ func _retry_hint(placement: String, reveal_hint: Callable) -> bool:
 func _grant(placement: String, source: String, reveal_hint: Callable) -> void:
 	reveal_hint.call()
 	hint_granted.emit(placement, source)
-	_track("hint_granted", {"placement": placement, "source": source, "cost": HINT_COST if source == "coins" else 0})
+	_track("hint_granted", {"placement": placement, "source": source, "cost": current_hint_cost() if source == "coins" else 0})
 
 func _track(event_name: String, properties: Dictionary) -> void:
 	var analytics := _analytics()
@@ -195,24 +204,29 @@ func _refresh_hint_button(game: Node, button: Button = null) -> void:
 	if target == null:
 		return
 	var prefix := String(target.get_meta("unjam_hint_prefix", ""))
+	if bool(game.get("daily_mode")):
+		target.disabled = true
+		target.tooltip_text = "Hints are disabled in ranked Daily competition."
+		return
+	target.disabled = false
 	if bool(target.get_meta("unjam_figma_hint", false)):
 		target.text = String(target.get_meta("unjam_hint_authored_text", target.text))
 		var badge := target.get_node_or_null("HintCoinCost") as Label
 		if badge != null:
-			badge.text = "◈%d" % HINT_COST
+			badge.text = "◈%d" % current_hint_cost()
 	else:
-		target.text = "%sHINT • %d\n◈ %d" % [prefix, HINT_COST, coin_balance()]
-	target.tooltip_text = "Hint costs %d coins. Balance: %d. If you are short, Shop or an optional rewarded ad can help." % [HINT_COST, coin_balance()]
+		target.text = "%sHINT • %d\n◈ %d" % [prefix, current_hint_cost(), coin_balance()]
+	target.tooltip_text = "Hint costs %d coins. Balance: %d. If you are short, Shop or an optional rewarded ad can help." % [current_hint_cost(), coin_balance()]
 
 
 func _ensure_figma_cost_badge(button: Button) -> void:
 	var existing := button.get_node_or_null("HintCoinCost") as Label
 	if existing != null:
-		existing.text = "◈%d" % HINT_COST
+		existing.text = "◈%d" % current_hint_cost()
 		return
 	var badge := Label.new()
 	badge.name = "HintCoinCost"
-	badge.text = "◈%d" % HINT_COST
+	badge.text = "◈%d" % current_hint_cost()
 	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var top_right := bool(button.get_meta("unjam_hint_badge_top_right", false))
