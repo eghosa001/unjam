@@ -468,7 +468,7 @@ func _figma_header(canvas: Control, title_text: String, subtitle_text: String, p
 		subtitle.autowrap_mode = TextServer.AUTOWRAP_OFF
 		subtitle.clip_text = true
 		subtitle.custom_minimum_size = Vector2.ZERO
-		_fit_single_line_control_text(subtitle, 182.0, 13, 10)
+		_fit_single_line_control_text(subtitle, 182.0, 13, 8)
 		# Font fitting can leave an older Label minimum cached. Reassert the
 		# authored one-line lane so the subtitle never grows into the header pill.
 		subtitle.custom_minimum_size = Vector2.ZERO
@@ -1492,7 +1492,7 @@ func build_collection_upgrades() -> void:
 	_figma_header(
 		canvas,
 		"COLLECTION",
-		"Progress • friends • rewards",
+		"Progress & rewards",
 		"◈ +",
 		FIGMA_GREEN,
 		Callable(self,"build_home"),
