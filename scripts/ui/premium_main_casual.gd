@@ -288,11 +288,13 @@ func _figma_header(canvas: Control, title_text: String, subtitle_text: String, p
 	_fit_single_line_control_text(header_title, 182.0, 23, 14)
 	FigmaReferenceCanvas.style_display_title(header_title, pill_fill.lightened(0.20), Color("#071d55"), 1)
 	if not subtitle_text.strip_edges().is_empty():
-		var subtitle := _figma_text(canvas, subtitle_text, Rect2(83,49,186,34), 14, muted_color)
+		var subtitle := _figma_text(canvas, subtitle_text, Rect2(83,49,186,22), 14, muted_color)
 		subtitle.name = "FigmaHeaderSubtitle"
-		subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		subtitle.autowrap_mode = TextServer.AUTOWRAP_OFF
 		subtitle.clip_text = true
-		FigmaReferenceCanvas.set_rect(subtitle, 83, 49, 186, 34)
+		subtitle.custom_minimum_size = Vector2.ZERO
+		_fit_single_line_control_text(subtitle, 182.0, 14, 10)
+		FigmaReferenceCanvas.set_rect(subtitle, 83, 49, 186, 22)
 		_fit_wrapped_text(subtitle, 182.0, 14, 11)
 	if pill_text.strip_edges().is_empty():
 		return
@@ -604,7 +606,7 @@ func build_friends(refresh_remote: bool = true) -> void:
 	_figma_header(
 		canvas,
 		"FRIENDS",
-		"Campaign progress • private codes",
+		"Progress • private codes",
 		"↻",
 		Color("#7a57e0"),
 		Callable(self,"build_profile"),
@@ -908,7 +910,7 @@ func build_daily_games() -> void:
 	for game_id in MultiGameManager.GAME_IDS:
 		if _daily_done(game_id):
 			done_count += 1
-	_figma_header(canvas, "DAILY", "Daily check-in • challenges • rewards", "%d/3" % done_count, FIGMA_GOLD)
+	_figma_header(canvas, "DAILY", "Check-in • play • rewards", "%d/3" % done_count, FIGMA_GOLD)
 
 	_figma_daily_card(canvas, "rescue_rush", 115, bonus)
 	_figma_daily_card(canvas, "water_sort", 239, bonus)
