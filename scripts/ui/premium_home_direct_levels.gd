@@ -369,7 +369,7 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 	var items := [
 		["HOME", "⌂", 22.0, 14.0, Callable(), "HomeNavButton", true, GOLD],
 		["GAMES", "▦", 94.0, 86.0, Callable(self, "_open_game_selector"), "HomeGamesNavButton", false, GOLD],
-		["DAILY", "✦", 166.0, 158.0, Callable(self, "_open_compete"), "HomeDailyNavButton", false, GOLD],
+		["DAILY", "✦", 166.0, 158.0, Callable(self, "_open_daily_games"), "HomeDailyNavButton", false, GOLD],
 		["COLLECT", "◆", 238.0, 230.0, func(): get_parent().call("build_collection"), "HomeCollectionNavButton", false, GOLD],
 		["SETTINGS", "⚙", 310.0, 302.0, func(): get_parent().call("build_settings"), "HomeSettingsNavButton", false, GOLD],
 	]
@@ -389,7 +389,7 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 		var glyph := _add_text(canvas, item[1], Rect2(float(item[2]) - 1.0, 765, 58, 22), 20, icon_color, true)
 		glyph.name = "HomeNavGlyph_%s" % String(item[0])
 		glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		var display_name := "COMPETE" if String(item[0]) == "DAILY" else String(item[0])
+		var display_name := String(item[0])
 		var label_width := 66.0 if String(item[0]) in ["COLLECT", "SETTINGS"] else 58.0
 		var label_x := float(item[3]) + (72.0 - label_width) * 0.5
 		var label := _add_text(canvas, display_name, Rect2(label_x, 790, label_width, 20), 13, nav_color, selected)
