@@ -129,6 +129,18 @@ jobs:
                 test -s build/visual-audit/05f-collection-upgrades-540x960-dark.png
                 ;;
               daily) test -s build/visual-audit/05d-daily-540x960-dark.png ;;
+              goals)
+                test -s build/visual-audit/17-goals-540x960-dark.png
+                test -s build/visual-audit/17b-goals-540x960-light.png
+                ;;
+              profile)
+                test -s build/visual-audit/18-profile-540x960-dark.png
+                test -s build/visual-audit/18b-profile-540x960-light.png
+                ;;
+              friends)
+                test -s build/visual-audit/19-friends-540x960-dark.png
+                test -s build/visual-audit/19b-friends-540x960-light.png
+                ;;
               settings) test -s build/visual-audit/06b-settings-540x960-dark.png ;;
               shop) test -s build/visual-audit/06d-shop-540x960-dark.png ;;
               coins) test -s build/visual-audit/06f-insufficient-coins-540x960-dark.png ;;
