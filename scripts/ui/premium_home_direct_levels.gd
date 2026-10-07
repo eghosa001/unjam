@@ -478,20 +478,20 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 			plate.name = "HomeNavActivePlate"
 			plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			plate.add_theme_stylebox_override("panel", RefCanvas.flat_gloss(Color(accent.r, accent.g, accent.b, 0.12 if _home_dark() else 0.15), 12, Color(accent.r, accent.g, accent.b, 0.40), 1, 0.16))
-			RefCanvas.set_rect(plate, float(item[3]) + 8.0, 764, 56, 52)
+			RefCanvas.set_rect(plate, float(item[3]) + 8.0, 761, 56, 58)
 			canvas.add_child(plate)
-		var glyph := _add_text(canvas, item[1], Rect2(float(item[2]) - 1.0, 765, 58, 22), 20, icon_color, true)
+		var glyph := _add_text(canvas, item[1], Rect2(float(item[2]) - 1.0, 761, 58, 24), 18, icon_color, true)
 		glyph.name = "HomeNavGlyph_%s" % String(item[0])
 		glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		var display_name := String(item[0])
 		var label_width := 66.0 if String(item[0]) in ["COLLECT", "SETTINGS"] else 58.0
 		var label_x := float(item[3]) + (72.0 - label_width) * 0.5
-		var label := _add_text(canvas, display_name, Rect2(label_x, 794, label_width, 20), 13, nav_color, selected)
+		var label := _add_text(canvas, display_name, Rect2(label_x, 799, label_width, 18), 12, nav_color, selected)
 		label.name = "HomeNavLabel_%s" % String(item[0])
 		label.custom_minimum_size = Vector2.ZERO
-		RefCanvas.fit_single_line_text(label, label_width - 2.0, 13, 10)
-		label.position = Vector2(label_x, 794)
-		label.size = Vector2(label_width, 20)
+		RefCanvas.fit_single_line_text(label, label_width - 2.0, 12, 10)
+		label.position = Vector2(label_x, 799)
+		label.size = Vector2(label_width, 18)
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		label.clip_text = true
