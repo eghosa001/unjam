@@ -1439,7 +1439,13 @@ func _figma_collection_tip(canvas: Control) -> void:
 	var detail := _figma_text(canvas, "5 levels each • permanent effect per upgrade", Rect2(63, 659, 288, 20), 11, FIGMA_MUTED)
 	detail.name = "CollectionTipDetail"
 	detail.clip_text = true
+	# Label minimum metrics can expand beyond an authored rectangle even with
+	# clip_text enabled. Reset the minimum after fitting so compact viewports keep
+	# this explanatory line inside the Collection card/canvas.
+	detail.custom_minimum_size = Vector2.ZERO
 	_fit_single_line_control_text(detail, 284.0, 11, 9)
+	detail.position = Vector2(63,659)
+	detail.size = Vector2(288,20)
 	# Label minimum size is computed before the font-fit helper. Reassert the
 	# authored card box afterwards so the old wider minimum cannot escape right.
 	detail.custom_minimum_size = Vector2.ZERO
