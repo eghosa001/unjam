@@ -1,6 +1,7 @@
 extends "res://scripts/game/water_sort_ultra_motion.gd"
 
 const RefCanvas = preload("res://scripts/ui/figma_reference_canvas.gd")
+const GAMEPLAY_ART = preload("res://scripts/ui/unjam_gameplay_art.gd")
 
 const SKY_TOP := Color("#6f98ad")
 const SKY_MID := Color("#a9c4ce")
@@ -117,10 +118,15 @@ func _build_figma_water(canvas: Control) -> void:
 	# Premium glass needs contrast. Keep the overall Water screen bright, but give
 	# the playfield a deep ocean-glass surface so crystal edges and liquid volume
 	# remain readable even with many bottles at late levels.
-	gameplay_stage.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#123d63"), Color("#0a3155"), Color("#061f39"), 20, Color(0.52, 0.90, 1.0, 0.22), 1.0, 0.12))
+	gameplay_stage.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#0d4267"), Color("#073453"), Color("#04243c"), 20, Color(0.52, 0.90, 1.0, 0.10), 1.0, 0.08))
 	RefCanvas.set_rect(gameplay_stage, 17, 169, 354, 450)
 	gameplay_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(gameplay_stage)
+	var water_art := GAMEPLAY_ART.new()
+	water_art.name = "WaterStageWorldArt"
+	water_art.configure("water_stage", BLUE, _shell_dark_mode(), level_number)
+	water_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	gameplay_stage.add_child(water_art)
 
 	board = GridContainer.new()
 	board.name = "WaterBoard"
@@ -369,10 +375,10 @@ func apply_theme_mode(dark: bool) -> void:
 		objective_label.add_theme_color_override("font_color", Color("#dff7ff") if dark else NAVY)
 	if gameplay_stage != null:
 		gameplay_stage.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(
-			Color("#0d2b46") if dark else Color("#123d63"),
-			Color("#071f36") if dark else Color("#0a3155"),
-			Color("#031522") if dark else Color("#061f39"),
-			20, Color(0.52,0.90,1.0,0.24 if dark else 0.22), 1.0, 0.12
+			Color("#092d49") if dark else Color("#0d4267"),
+			Color("#061f35") if dark else Color("#073453"),
+			Color("#031522") if dark else Color("#04243c"),
+			20, Color(0.52,0.90,1.0,0.12 if dark else 0.10), 1.0, 0.08
 		))
 	if status_label != null:
 		status_label.add_theme_color_override("font_color", Color("#e8f5ff") if dark else NAVY)
