@@ -34,6 +34,14 @@ func build_ui() -> void:
 	_build_figma_water(figma_canvas)
 	call_deferred("apply_theme_mode", _shell_dark_mode())
 
+func load_level() -> void:
+	super.load_level()
+	# Late campaign labels can reach five digits. Fit the live value after the
+	# inherited loader writes it so level 10,000 still preserves the move/star lanes.
+	if meta_label != null and is_instance_valid(meta_label):
+		RefCanvas.fit_single_line_text(meta_label,151.0,14,10)
+		RefCanvas.set_rect(meta_label,37,91,155,20)
+
 func _build_figma_water(canvas: Control) -> void:
 	var sky := PanelContainer.new()
 	sky.name = "WaterScenicSky"
@@ -86,6 +94,7 @@ func _build_figma_water(canvas: Control) -> void:
 	info.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(info)
 	meta_label = _make_label("", 14, Color(0.92, 0.98, 1.0), true)
+	meta_label.name = "WaterLevelMeta"
 	meta_label.clip_text = true
 	meta_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	RefCanvas.set_rect(meta_label, 37, 91, 155, 20)
