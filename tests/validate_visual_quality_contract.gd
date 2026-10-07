@@ -133,6 +133,13 @@ func _validate_authored_art_assets() -> bool:
 		"res://assets/art/meta/profile.svg",
 		"res://assets/art/meta/collection.svg",
 		"res://assets/art/meta/daily.svg",
+		"res://assets/art/meta_wide/collection.svg",
+		"res://assets/art/meta_wide/daily.svg",
+		"res://assets/art/meta_wide/compete.svg",
+		"res://assets/art/meta_wide/goals.svg",
+		"res://assets/art/meta_wide/profile.svg",
+		"res://assets/art/meta_wide/friends.svg",
+		"res://assets/art/meta_wide/settings.svg",
 		"res://assets/art/fx/spark.svg",
 	]
 	for path in required:
@@ -159,6 +166,9 @@ func _validate_authored_art_assets() -> bool:
 			return _fail("Gameplay world is not asset-driven: " + token)
 	if not meta_source.contains("assets/art/meta/collection.svg"):
 		return _fail("Meta surfaces are not bound to authored illustration assets")
+	var premium_main_source := FileAccess.get_file_as_string("res://scripts/ui/premium_main_casual.gd")
+	if not premium_main_source.contains("assets/art/meta_wide/collection.svg") or not premium_main_source.contains("FigmaWideMetaArtwork"):
+		return _fail("Landscape tablet meta surfaces are not bound to dedicated authored art")
 	if not fx_source.contains("SPARK_TEXTURE") or not fx_source.contains("_spawn_spark_burst"):
 		return _fail("Premium event feedback is missing authored sparkle motion")
 	for source_and_token in [[rescue_game_source, "RescueAuthoredScreenWorld"], [water_game_source, "WaterAuthoredScreenWorld"], [block_game_source, "BlockAuthoredScreenWorld"]]:
