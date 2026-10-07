@@ -107,6 +107,13 @@ func _validate_viewport(viewport_size: Vector2i) -> bool:
 	await _frames(5)
 	if not _assert_canvas(main.get("content") as Control,"FigmaSurface390x844",viewport_size,"Collection"):
 		return false
+	if viewport_size.x >= 1180 and float(viewport_size.x) / maxf(1.0, float(viewport_size.y)) >= 1.22:
+		var wide_stage := (main.get("content") as Control).find_child("FigmaWideSurfaceStage", true, false) as Control
+		var wide_art := (main.get("content") as Control).find_child("FigmaWideMetaArtwork", true, false) as TextureRect
+		if wide_stage == null or not wide_stage.visible or wide_art == null:
+			return _fail("Collection landscape tablet is missing authored wide artwork")
+		if wide_art.size.x < float(viewport_size.x) * 0.40 or wide_art.size.y < float(viewport_size.y) * 0.60:
+			return _fail("Collection landscape artwork is too small to use the tablet canvas")
 
 	main.call("build_level_select")
 	await _frames(5)
