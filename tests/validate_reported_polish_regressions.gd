@@ -23,7 +23,7 @@ func _init() -> void:
 	_require_source("res://scripts/game/game.gd", ["moves > par_moves", "moves > par_moves + 3", "assist_penalty"], "Rescue star move/assist scoring", errors)
 	_require_source("res://scripts/game/water_sort_10000.gd", ["moves <= par_moves", "moves <= two_star_moves"], "Water Sort star move scoring", errors)
 	_require_source("res://scripts/game/block_puzzle.gd", ["placements <= par_placements", "placements <= par_placements + 6"], "Block Puzzle star placement scoring", errors)
-	_require_source("res://scripts/game/block_puzzle_3d.gd", ["Rect2(17,526,354,120)", "set_rect(piece_row, 31, 536, 326, 96)", "return Vector2(104, 96)"], "Block tray phone-scale fit", errors)
+	_require_source("res://scripts/game/block_puzzle_3d.gd", ["Rect2(17,526,354,120)", "set_rect(piece_row, 20, 536, 350, 96)", "return Vector2(104, 96)"], "Block tray phone-scale fit", errors)
 	_require_source("res://scripts/ui/block_piece_button.gd", ["The tray is intentionally border-free", "Color(1,1,1,0.28)"], "Block tray visual hierarchy", errors)
 	_require_source("res://scripts/game/water_sort_reference_motion.gd", ["tilt_degrees := 30.0 if MotionSystem.reduced() else 52.0", "_clamp_rotated_source_position"], "Water pour silhouette cohesion and phone framing", errors)
 	_require_source("res://scripts/ui/water_tube_3d_motion.gd", ["extends \"res://scripts/ui/water_tube_reference_motion.gd\"", "Tiny bubbles/ripples on landing"], "Water bottle 2D glass readability", errors)
