@@ -154,20 +154,29 @@ func _navigation_lifecycle_is_bounded() -> bool:
 		main.call(method)
 		await _frames(2)
 	main.call("_open_games_surface")
-	await _frames(4)
+	await _frames(10)
 	var warm_nodes := int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT))
+	var warm_tree_nodes := _tree_node_count(root)
 	var warm_orphans := int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT))
+	print("NAV_LIFECYCLE_BASELINE perf=%d tree=%d orphan=%d" % [warm_nodes,warm_tree_nodes,warm_orphans])
 
-	for _cycle in range(5):
+	for cycle in range(5):
 		for method in surfaces:
 			main.call(method)
-			await _frames(2)
+			await _frames(4)
+			print("NAV_LIFECYCLE_SAMPLE cycle=%d surface=%s perf=%d tree=%d orphan=%d" % [cycle,String(method),int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT)),_tree_node_count(root),int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT))])
 		main.call("_open_games_surface")
-		await _frames(2)
-	await _frames(6)
+		await _frames(6)
+		print("NAV_LIFECYCLE_SAMPLE cycle=%d surface=games perf=%d tree=%d orphan=%d" % [cycle,int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT)),_tree_node_count(root),int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT))])
+	await _frames(10)
 
 	var final_nodes := int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT))
+	var final_tree_nodes := _tree_node_count(root)
 	var final_orphans := int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT))
+	if final_tree_nodes > warm_tree_nodes + 12:
+		main.queue_free()
+		await _frames(3)
+		return _fail("Repeated navigation leaks scene-tree nodes: warm=%d final=%d" % [warm_tree_nodes,final_tree_nodes])
 	if final_nodes > warm_nodes + 24:
 		main.queue_free()
 		await _frames(3)
@@ -180,6 +189,12 @@ func _navigation_lifecycle_is_bounded() -> bool:
 	main.queue_free()
 	await _frames(4)
 	return true
+
+func _tree_node_count(node: Node) -> int:
+	var total := 1
+	for child in node.get_children():
+		total += _tree_node_count(child)
+	return total
 
 func _frames(count: int) -> void:
 	for _i in range(count):
