@@ -166,6 +166,8 @@ func _validate_authored_art_assets() -> bool:
 			return _fail("Gameplay world is not asset-driven: " + token)
 	if not meta_source.contains("assets/art/meta/collection.svg"):
 		return _fail("Meta surfaces are not bound to authored illustration assets")
+	if not meta_source.contains("PHONE_SAFE_ART_SOURCE") or not meta_source.contains("draw_texture_rect_region"):
+		return _fail("Phone meta artwork is not constrained to a collision-safe decorative band")
 	var premium_main_source := FileAccess.get_file_as_string("res://scripts/ui/premium_main_casual.gd")
 	if not premium_main_source.contains("assets/art/meta_wide/collection.svg") or not premium_main_source.contains("FigmaWideMetaArtwork"):
 		return _fail("Landscape tablet meta surfaces are not bound to dedicated authored art")
