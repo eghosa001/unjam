@@ -366,7 +366,7 @@ func render_board() -> void:
 				token.custom_minimum_size = Vector2(cell_size, cell_size)
 				token.configure(rescue_id, Color("ffd166"))
 				token.pivot_offset = Vector2(cell_size, cell_size) * 0.5
-				token.scale = Vector2.ONE * (1.30 if width <= 7 else 1.18)
+				token.scale = Vector2.ONE * (1.52 if width <= 5 else (1.40 if width <= 7 else 1.24))
 				token.z_index = 8
 				slot.add_child(token)
 				board_grid.add_child(slot)
