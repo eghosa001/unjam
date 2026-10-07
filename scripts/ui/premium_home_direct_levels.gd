@@ -75,7 +75,10 @@ func _build_reference_home(canvas: Control) -> void:
 	brand_title.name = "HomeBrandTitle3D"
 	RefCanvas.style_display_title(brand_title, Color("#ffb92f"), Color("#071d55"), 2)
 
-	_add_pill(canvas, Rect2(21, 64, 108, 40), Color("#d6d1c7") if not _home_dark() else Color("#2c2c2c"), "LV %d" % _home_current_level(selected_game), 13, NAVY if not _home_dark() else DARK_INK, "HomeSelectedGameLevel")
+	_add_pill(canvas, Rect2(21, 64, 108, 40), Color("#d6d1c7") if not _home_dark() else Color("#2c2c2c"), "LV %d  ›" % _home_current_level(selected_game), 13, NAVY if not _home_dark() else DARK_INK, "HomeSelectedGameLevel")
+	var profile_hit := _add_action(canvas, Rect2(21, 64, 108, 40), Color(1,1,1,0.001), "", 10, Color(1,1,1,0.001), Callable(self, "_open_profile"), 20)
+	profile_hit.name = "HomeProfileButton"
+	profile_hit.tooltip_text = "Open Profile & Achievements"
 	home_coin_button = _add_action(canvas, Rect2(151, 62, 102, 44), Color("#cbc4b8"), "   %s +" % _compact_number(EconomyManager.balance()), 13, NAVY, Callable(self, "_open_shop"), 20)
 	home_coin_button.name = "HomeCoinShopButton"
 	RefCanvas.add_collectible_gem(canvas, Vector2(166, 84), 8.0, "HomeCurrencyGem3D")
@@ -171,7 +174,7 @@ func _add_quick_actions(canvas: Control) -> void:
 		for game_id in MultiGameManager.GAME_IDS:
 			if bool(main.call("_daily_done", game_id)):
 				daily_done_count += 1
-	var daily_label := "DAILY • DONE" if daily_done_count >= MultiGameManager.GAME_IDS.size() else "DAILY • %d/3" % daily_done_count
+	var daily_label := "COMPETE • DONE" if daily_done_count >= MultiGameManager.GAME_IDS.size() else "COMPETE • %d/3" % daily_done_count
 	var daily := _add_action(canvas, Rect2(197, 365, 170, 52), Color("#d9d5ca") if not _home_dark() else Color("#2a2b2e"), daily_label, 12, NAVY if not _home_dark() else DARK_INK, Callable(self, "_open_daily_games"), 14)
 	daily.name = "HomeDailyGamesButton"
 
@@ -184,6 +187,21 @@ func _open_sidekick() -> void:
 	var main := get_parent()
 	if main != null and main.has_method("show_playmate_sidekick"):
 		main.call("show_playmate_sidekick", selected_game)
+
+func _open_profile() -> void:
+	var main := get_parent()
+	if main != null and main.has_method("build_profile"):
+		main.call("build_profile")
+
+func _open_goals() -> void:
+	var main := get_parent()
+	if main != null and main.has_method("build_goals"):
+		main.call("build_goals")
+
+func _open_friends() -> void:
+	var main := get_parent()
+	if main != null and main.has_method("build_friends"):
+		main.call("build_friends")
 
 func _add_quick_switch(canvas: Control) -> void:
 	_add_text(canvas, "GAMES", Rect2(21, 437, 160, 18), 14, OFF_WHITE if _home_dark() else INK, true)
@@ -260,15 +278,17 @@ func _add_world_progress(canvas: Control) -> void:
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(panel)
 
+	# Keep the shared selected-game identity present, but compact: the hero and
+	# quick-switch row already carry the large art. This frees room for live meta.
 	var mark := FLAT_GAME_LOGO_SCRIPT.new()
 	mark.name = "HomeWorldFlatGameLogo"
 	mark.configure(selected_game)
-	RefCanvas.set_rect(mark, 47, 603, 118, 108)
+	RefCanvas.set_rect(mark, 35, 594, 42, 42)
 	root.add_child(mark)
 
-	var world_title := _add_text(root, "%s %d" % [MultiGameManager.progression_scope_label(selected_game), world], Rect2(195, 598, 152, 26), 18, OFF_WHITE if _home_dark() else NAVY, true)
+	var world_title := _add_text(root, "%s %d" % [MultiGameManager.progression_scope_label(selected_game), world], Rect2(86, 592, 150, 22), 15, OFF_WHITE if _home_dark() else NAVY, true)
 	world_title.name = "HomeWorldProgressTitle"
-	var world_value := _add_text(root, "LEVEL %d • %d/%d" % [level, completed_in_world, total], Rect2(195, 632, 152, 19), 13, MUTED, false)
+	var world_value := _add_text(root, "LEVEL %d • %d/%d" % [level, completed_in_world, total], Rect2(86, 615, 164, 18), 12, MUTED, false)
 	world_value.name = "HomeWorldProgressValue"
 
 	var progress := ProgressBar.new()
@@ -277,10 +297,28 @@ func _add_world_progress(canvas: Control) -> void:
 	progress.min_value = 0
 	progress.max_value = total
 	progress.value = completed_in_world
-	progress.add_theme_stylebox_override("background", RefCanvas.solid_box(Color("#3b3d41") if _home_dark() else Color("#cbc6bd"), 5))
-	progress.add_theme_stylebox_override("fill", RefCanvas.solid_box(accent, 5))
-	RefCanvas.set_rect(progress, 195, 694, 150, 8)
+	progress.add_theme_stylebox_override("background", RefCanvas.solid_box(Color("#3b3d41") if _home_dark() else Color("#cbc6bd"), 4))
+	progress.add_theme_stylebox_override("fill", RefCanvas.solid_box(accent, 4))
+	RefCanvas.set_rect(progress, 258, 607, 91, 7)
 	root.add_child(progress)
+
+	var live_title := _add_text(root, "LIVE NOW", Rect2(35, 643, 100, 18), 12, GOLD, true)
+	live_title.name = "HomeLiveNowTitle"
+
+	var ready := MetaProgressionManager.ready_claim_count()
+	var goals_text := "GOALS %d" % ready if ready > 0 else "GOALS"
+	var goals := _add_action(root, Rect2(35, 670, 96, 44), Color("#ee8a2d") if not _home_dark() else Color("#9a5620"), goals_text, 11, OFF_WHITE, Callable(self, "_open_goals"), 12)
+	goals.name = "HomeGoalsButton"
+	goals.tooltip_text = "Daily check-in, missions and claimable rewards"
+
+	var season := MetaProgressionManager.season_info()
+	var journey := _add_action(root, Rect2(147, 670, 96, 44), Color("#7a57e0"), "JOURNEY", 11, OFF_WHITE, Callable(self, "_open_goals"), 12)
+	journey.name = "HomeSeasonJourneyButton"
+	journey.tooltip_text = "Season Journey • %d points" % int(season.get("points", 0))
+
+	var friends := _add_action(root, Rect2(259, 670, 90, 44), Color("#22a9e8"), "FRIENDS", 11, OFF_WHITE, Callable(self, "_open_friends"), 12)
+	friends.name = "HomeFriendsButton"
+	friends.tooltip_text = "Friend Codes • %d friends" % CompetitionManager.friend_count()
 
 func _add_bottom_nav_reference(canvas: Control) -> void:
 	var shell := PanelContainer.new()
@@ -315,12 +353,15 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 		var glyph := _add_text(canvas, item[1], Rect2(float(item[2]) - 1.0, 765, 58, 22), 20, icon_color, true)
 		glyph.name = "HomeNavGlyph_%s" % String(item[0])
 		glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		var display_name := String(item[0])
+		var display_name := "COMPETE" if String(item[0]) == "DAILY" else String(item[0])
 		var label_width := 66.0 if String(item[0]) in ["COLLECT", "SETTINGS"] else 58.0
 		var label_x := float(item[3]) + (72.0 - label_width) * 0.5
 		var label := _add_text(canvas, display_name, Rect2(label_x, 790, label_width, 20), 13, nav_color, selected)
 		label.name = "HomeNavLabel_%s" % String(item[0])
-		RefCanvas.fit_single_line_text(label, label_width - 2.0, 13, 11)
+		label.custom_minimum_size = Vector2.ZERO
+		RefCanvas.fit_single_line_text(label, label_width - 2.0, 13, 10)
+		label.position = Vector2(label_x, 790)
+		label.size = Vector2(label_width, 20)
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		label.clip_text = true

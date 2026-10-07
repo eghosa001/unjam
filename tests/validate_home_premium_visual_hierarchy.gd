@@ -37,8 +37,8 @@ func _run() -> void:
 		return _fail("Home Choose Game action drifted from Figma reference")
 	if not _rect_eq(Rect2(showcase.position, showcase.size), Rect2(21,582,346,150)):
 		return _fail("Home world showcase does not fill the lower dead-space region")
-	if not _rect_eq(Rect2(showcase_mark.position, showcase_mark.size), Rect2(47,603,118,108)):
-		return _fail("Home world flat game mark drifted from its approved frame")
+	if not _rect_eq(Rect2(showcase_mark.position, showcase_mark.size), Rect2(35,594,42,42)):
+		return _fail("Home compact world game mark drifted from its approved frame")
 	if showcase_mark.get_script() == null or not String(showcase_mark.get_script().resource_path).ends_with("unjam_flat_game_logo.gd"):
 		return _fail("Home world showcase is not using the shared flat game identity renderer")
 	if not bool(showcase_mark.get_meta("unjam_flat_game_logo", false)):
@@ -57,6 +57,15 @@ func _run() -> void:
 	var completion := home.find_child("HomeWorldProgressRoot", true, false) as Control
 	if world_title == null or world_value == null or completion == null:
 		return _fail("Home world journey typography nodes are missing")
+	var goals := home.find_child("HomeGoalsButton", true, false) as Button
+	var journey := home.find_child("HomeSeasonJourneyButton", true, false) as Button
+	var friends := home.find_child("HomeFriendsButton", true, false) as Button
+	var profile := home.find_child("HomeProfileButton", true, false) as Button
+	if goals == null or journey == null or friends == null or profile == null:
+		return _fail("Home live/meta destinations are missing")
+	for action in [goals, journey, friends]:
+		if action.size.x < 88.0 or action.size.y < 40.0:
+			return _fail("Home Live Now action is too small for touch")
 	if world_title.get_theme_font_size("font_size") < 12 or world_value.get_theme_font_size("font_size") < 12:
 		return _fail("Home world journey primary metadata fell below 12px reference size")
 	if "/" not in world_value.text or world_value.get_theme_font_size("font_size") < 12:
@@ -72,6 +81,8 @@ func _run() -> void:
 	var settings_label := home.find_child("HomeNavLabel_SETTINGS", true, false) as Label
 	if daily_label == null or settings_label == null:
 		return _fail("Home Daily/Settings navigation labels are missing")
+	if daily_label.text != "COMPETE":
+		return _fail("Home competition destination is still labeled Daily")
 	if daily_label.get_global_rect().end.x >= collection_label.get_global_rect().position.x:
 		return _fail("Home Daily label overlaps Collection")
 	if collection_label.get_global_rect().end.x >= settings_label.get_global_rect().position.x:
