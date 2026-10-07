@@ -113,11 +113,11 @@ func _build_figma_water(canvas: Control) -> void:
 
 	gameplay_stage = PanelContainer.new()
 	gameplay_stage.name = "GameplayStage"
-	RefCanvas.add_shadow(canvas, Rect2(17,169,354,450), 20, Color(0.01,0.12,0.23,0.18), 8, Vector2(0,7))
+	RefCanvas.add_shadow(canvas, Rect2(17,169,354,450), 18, Color(0.01,0.12,0.23,0.12), 5, Vector2(0,4))
 	# Premium glass needs contrast. Keep the overall Water screen bright, but give
 	# the playfield a deep ocean-glass surface so crystal edges and liquid volume
 	# remain readable even with many bottles at late levels.
-	gameplay_stage.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#173d67"), Color("#0b3158"), Color("#061f3c"), 20, Color(0.52, 0.90, 1.0, 0.72), 1.5))
+	gameplay_stage.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#123d63"), Color("#0a3155"), Color("#061f39"), 20, Color(0.52, 0.90, 1.0, 0.22), 1.0, 0.12))
 	RefCanvas.set_rect(gameplay_stage, 17, 169, 354, 450)
 	gameplay_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(gameplay_stage)
@@ -369,10 +369,10 @@ func apply_theme_mode(dark: bool) -> void:
 		objective_label.add_theme_color_override("font_color", Color("#dff7ff") if dark else NAVY)
 	if gameplay_stage != null:
 		gameplay_stage.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(
-			Color("#102d4a") if dark else Color("#173d67"),
-			Color("#092640") if dark else Color("#0b3158"),
-			Color("#041827") if dark else Color("#061f3c"),
-			20, Color(0.52,0.90,1.0,0.72), 1.5
+			Color("#0d2b46") if dark else Color("#123d63"),
+			Color("#071f36") if dark else Color("#0a3155"),
+			Color("#031522") if dark else Color("#061f39"),
+			20, Color(0.52,0.90,1.0,0.24 if dark else 0.22), 1.0, 0.12
 		))
 	if status_label != null:
 		status_label.add_theme_color_override("font_color", Color("#e8f5ff") if dark else NAVY)
