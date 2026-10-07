@@ -601,7 +601,7 @@ func build_goals() -> void:
 	_figma_text(canvas, "DAILY CHECK-IN • DAY %d/7" % int(login.get("day",1)), Rect2(31,103,208,22), 15, FIGMA_INK)
 	_figma_text(canvas, "+%d COINS" % int(login.get("reward",0)), Rect2(31,129,150,20), 13, FIGMA_GOLD)
 	var login_claimed := bool(login.get("claimed",false))
-	var login_button := _figma_button(canvas,"GoalsLoginClaim","CLAIMED" if login_claimed else "CLAIM",Rect2(260,105,92,42),Color("#7d8a94") if login_claimed else FIGMA_ORANGE,Callable(),Color.WHITE,13,12)
+	var login_button := _figma_button(canvas,"GoalsLoginClaim","CLAIMED" if login_claimed else "CLAIM",Rect2(260,104,92,44),Color("#7d8a94") if login_claimed else FIGMA_ORANGE,Callable(),Color.WHITE,13,12)
 	login_button.disabled = login_claimed
 	if not login_claimed:
 		login_button.pressed.connect(_claim_daily_login)
@@ -645,7 +645,7 @@ func _figma_goal_row(canvas: Control, row: Dictionary, period: String, y: float)
 	_figma_text(canvas,"%d/%d • %s" % [int(row.get("progress",0)),int(row.get("target",1)),reward_text],Rect2(30,y+24,190,15),10,FIGMA_MUTED)
 	var action_text := "DONE" if claimed else ("CLAIM" if claimable else "GO")
 	var action_fill := Color("#7d8a94") if claimed else (FIGMA_GREEN if claimable else Color("#7a57e0"))
-	var action := _figma_button(canvas,"GoalAction/%s/%s" % [period,String(row.get("id",""))],action_text,Rect2(274,y+6,78,32),action_fill,Callable(),Color.WHITE,11,10)
+	var action := _figma_button(canvas,"GoalAction/%s/%s" % [period,String(row.get("id",""))],action_text,Rect2(274,y,78,44),action_fill,Callable(),Color.WHITE,11,10)
 	action.disabled = claimed
 	if claimable:
 		action.pressed.connect(_claim_goal.bind(period,String(row.get("id",""))))
@@ -684,7 +684,7 @@ func build_profile() -> void:
 	name_edit.add_theme_color_override("font_color",_figma_theme_text(FIGMA_INK))
 	name_edit.add_theme_color_override("font_placeholder_color",Color("#8f99a5") if _dark() else Color("#68717b"))
 	name_edit.add_theme_stylebox_override("normal",FigmaReferenceCanvas.flat_gloss(Color("#f5f2ec") if not _dark() else Color("#27282b"),12,Color(FIGMA_CYAN,0.34),1,0.08,10.0))
-	FigmaReferenceCanvas.set_rect(name_edit,31,105,218,42)
+	FigmaReferenceCanvas.set_rect(name_edit,31,104,218,44)
 	canvas.add_child(name_edit)
 	var save_name := _figma_button(canvas,"ProfileSaveName","SAVE",Rect2(263,104,88,44),FIGMA_CYAN,Callable(),Color.WHITE,13,11)
 	save_name.pressed.connect(_save_profile_name.bind(name_edit))
@@ -705,11 +705,11 @@ func build_profile() -> void:
 	var friends_button := _figma_button(canvas,"ProfileFriendsButton","FRIENDS",Rect2(272,224,79,44),Color("#7a57e0"),Callable(self,"build_friends"),Color.WHITE,10,9)
 	friends_button.tooltip_text = "Friend codes and campaign progress rankings"
 
-	_figma_text(canvas,"ACHIEVEMENTS",Rect2(19,285,170,20),15,FIGMA_GOLD)
+	_figma_text(canvas,"ACHIEVEMENTS",Rect2(19,282,170,20),15,FIGMA_GOLD)
 	_figma_profile_game_tabs(canvas)
 	var defs := MultiGameManager.achievement_definitions(_profile_game)
 	for i in range(defs.size()):
-		_figma_achievement_row(canvas,defs[i] as Dictionary,345.0+float(i)*60.0)
+		_figma_achievement_row(canvas,defs[i] as Dictionary,358.0+float(i)*60.0)
 	_figma_bottom_nav(canvas,"home")
 
 func _figma_profile_game_tabs(canvas: Control) -> void:
@@ -718,7 +718,7 @@ func _figma_profile_game_tabs(canvas: Control) -> void:
 	for i in range(ids.size()):
 		var selected: bool = _profile_game == ids[i]
 		var fill := Unjam3DTheme.game_accent(ids[i]) if selected else Color("#7d8a94")
-		var button := _figma_button(canvas,"ProfileGame/%s" % ids[i],labels[i],Rect2(19.0+float(i)*118.0,310,108,30),fill,Callable(),Color.WHITE,11,10)
+		var button := _figma_button(canvas,"ProfileGame/%s" % ids[i],labels[i],Rect2(19.0+float(i)*118.0,306,108,44),fill,Callable(),Color.WHITE,11,10)
 		if not selected:
 			button.pressed.connect(_set_profile_game.bind(ids[i]))
 		else:
@@ -860,7 +860,7 @@ func _figma_friend_rank_row(canvas: Control, row: Dictionary, index: int, y: flo
 	progress.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	if not is_you:
 		var code := String(row.get("friend_code",""))
-		var remove := _figma_button(canvas,"FriendRemove/%d" % index,"×",Rect2(306,y,42,44),Color("#7d8a94"),Callable(),Color.WHITE,12,15)
+		var remove := _figma_button(canvas,"FriendRemove/%d" % index,"×",Rect2(304,y,44,44),Color("#7d8a94"),Callable(),Color.WHITE,12,15)
 		remove.tooltip_text = "Remove friend"
 		if not code.is_empty():
 			remove.pressed.connect(_remove_friend.bind(code))
