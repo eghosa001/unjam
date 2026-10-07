@@ -76,7 +76,9 @@ func _build_reference_home(canvas: Control) -> void:
 	RefCanvas.style_display_title(brand_title, Color("#ffb92f"), Color("#071d55"), 2)
 
 	_add_pill(canvas, Rect2(21, 64, 108, 40), Color("#d6d1c7") if not _home_dark() else Color("#2c2c2c"), "LV %d  ›" % _home_current_level(selected_game), 13, NAVY if not _home_dark() else DARK_INK, "HomeSelectedGameLevel")
-	var profile_hit := _add_action(canvas, Rect2(21, 64, 108, 40), Color(1,1,1,0.001), "", 10, Color(1,1,1,0.001), Callable(self, "_open_profile"), 20)
+	# Visual pill remains compact, while the invisible interaction target meets
+	# the 44px mobile touch contract and stays clear of neighboring wallet pills.
+	var profile_hit := _add_action(canvas, Rect2(21, 60, 108, 48), Color(1,1,1,0.001), "", 10, Color(1,1,1,0.001), Callable(self, "_open_profile"), 20)
 	profile_hit.name = "HomeProfileButton"
 	profile_hit.tooltip_text = "Open Profile & Achievements"
 	home_coin_button = _add_action(canvas, Rect2(151, 62, 102, 44), Color("#cbc4b8"), "   %s +" % _compact_number(EconomyManager.balance()), 13, NAVY, Callable(self, "_open_shop"), 20)
