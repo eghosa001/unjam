@@ -93,6 +93,20 @@ func _sanitize() -> void:
 	data.coins = clampi(int(data.get("coins", 0)), 0, 2000000000)
 	data.prestige_points = max(0, int(data.get("prestige_points", 0)))
 	data.achievement_points = max(0, int(data.get("achievement_points", 0)))
+	data.crown_tokens = max(0, int(data.get("crown_tokens", 0)))
+	data.lantern_shield_uses = max(0, int(data.get("lantern_shield_uses", 0)))
+	data.lantern_shield_month = String(data.get("lantern_shield_month", ""))
+	data.competition_display_name = String(data.get("competition_display_name", "")).strip_edges().left(20)
+	if not data.get("collection_levels", {}) is Dictionary:
+		data.collection_levels = {}
+	if not data.get("competition_claimed_periods", []) is Array:
+		data.competition_claimed_periods = []
+	if not data.get("reward_double_claims", []) is Array:
+		data.reward_double_claims = []
+	if data.competition_claimed_periods.size() > 104:
+		data.competition_claimed_periods = data.competition_claimed_periods.slice(data.competition_claimed_periods.size() - 104)
+	if data.reward_double_claims.size() > 512:
+		data.reward_double_claims = data.reward_double_claims.slice(data.reward_double_claims.size() - 512)
 	data.rewarded_ads_watched = max(0, int(data.get("rewarded_ads_watched", 0)))
 	data.lifetime_purchased_coins = max(0, int(data.get("lifetime_purchased_coins", 0)))
 	data.purchase_coin_debt = max(0, int(data.get("purchase_coin_debt", 0)))
