@@ -42,7 +42,11 @@ func complete_daily(date_key: String, reward: int = 100) -> bool:
 	var bonus := EconomyManager.collection_daily_bonus() if get_node_or_null("/root/EconomyManager") != null else 0
 	var total_reward := safe_reward + bonus
 	var previous := int(data.get("coins", 0))
+	var previous_streak := int(data.get("daily_streak", 0))
+	var previous_date := String(data.get("daily_last_date", ""))
 	var completed := super.complete_daily(date_key, total_reward)
+	if completed:
+		EconomyManager.maybe_restore_daily_streak(previous_date, date_key, previous_streak)
 	if completed:
 		_notify_economy(previous, "daily_reward", {
 			"date": date_key,
@@ -53,7 +57,7 @@ func complete_daily(date_key: String, reward: int = 100) -> bool:
 	return completed
 
 func complete_level(level_number: int, stars: int, rescue_id: String, coin_reward: int = 25) -> Dictionary:
-	var safe_reward := maxi(0, coin_reward)
+	var safe_reward := EconomyManager.collection_campaign_reward(maxi(0, coin_reward))
 	var previous := int(data.get("coins", 0))
 	var rewards := super.complete_level(level_number, stars, rescue_id, safe_reward)
 	_notify_economy(previous, "level_reward", {
