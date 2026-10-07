@@ -286,6 +286,40 @@ func _clamp_pour_source_position(desired: Vector2, ghost_size: Vector2, viewport
 	var max_x := maxf(edge_margin, viewport_width - ghost_size.x - edge_margin)
 	return Vector2(clampf(desired.x, edge_margin, max_x), desired.y)
 
+func _clamp_rotated_source_position(desired: Vector2, ghost: Control, final_rotation: float, viewport_size: Vector2) -> Vector2:
+	# Clamp the *rotated* bottle silhouette, not only its unrotated Control rect.
+	# A tall tube tilted 50–60 degrees can extend far beyond its original width.
+	var min_x := INF
+	var max_x := -INF
+	var min_y := INF
+	var max_y := -INF
+	var corners := [
+		Vector2.ZERO,
+		Vector2(ghost.size.x, 0.0),
+		ghost.size,
+		Vector2(0.0, ghost.size.y),
+	]
+	for corner in corners:
+		var relative := corner - ghost.pivot_offset
+		var scaled := Vector2(relative.x * ghost.scale.x, relative.y * ghost.scale.y)
+		var rotated := scaled.rotated(final_rotation)
+		var p := ghost.pivot_offset + rotated
+		min_x = minf(min_x, p.x)
+		max_x = maxf(max_x, p.x)
+		min_y = minf(min_y, p.y)
+		max_y = maxf(max_y, p.y)
+	var edge_margin := 12.0
+	var x := desired.x
+	if x + min_x < edge_margin:
+		x += edge_margin - (x + min_x)
+	if x + max_x > viewport_size.x - edge_margin:
+		x -= (x + max_x) - (viewport_size.x - edge_margin)
+	# Keep the pouring mouth comfortably below the phone header as well.
+	var y := desired.y
+	if y + min_y < edge_margin:
+		y += edge_margin - (y + min_y)
+	return Vector2(x, y)
+
 func _release_pour_visual_lock(source_index: int, target_index: int) -> void:
 	active_source_tubes.erase(source_index)
 	active_target_tubes.erase(target_index)
@@ -353,7 +387,7 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 	var receiver_local := _receiver_rim_local(receiver)
 	var target_lip := _control_point(receiver, receiver_local)
 	# Keep a premium pour angle without visually detaching the neck from the bottle body.
-	var tilt_degrees := 32.0 if MotionSystem.reduced() else 62.0
+	var tilt_degrees := 30.0 if MotionSystem.reduced() else 52.0
 	var final_rotation := deg_to_rad(tilt_degrees * direction)
 	var source_local_at_pour := _source_rim_local(ghost, direction)
 	# Keep the pouring lip visibly above and to the source side of the receiving
@@ -363,7 +397,9 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 	var rim_height_gap := clampf(ghost.size.y * 0.28, 76.0, 116.0)
 	var desired_source_rim := target_lip + Vector2(-direction * rim_side_gap, -rim_height_gap)
 	var desired := _position_for_tilted_rim(ghost, source_local_at_pour, desired_source_rim, final_rotation)
-	desired = _clamp_pour_source_position(desired, ghost.size, get_viewport_rect().size.x)
+	var viewport_size := get_viewport_rect().size
+	desired = _clamp_pour_source_position(desired, ghost.size, viewport_size.x)
+	desired = _clamp_rotated_source_position(desired, ghost, final_rotation, viewport_size)
 	var travel_time := MotionSystem.duration(&"travel")
 	var travel := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	travel.tween_property(ghost, "position", desired, travel_time)
