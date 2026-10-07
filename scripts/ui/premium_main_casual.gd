@@ -219,7 +219,7 @@ func _build_figma_wide_surface_stage(stage: Control, active: String, available: 
 		halo.name = "FigmaWideSurfaceHalo"
 		halo.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var halo_size: float = float(halo_data[1])
-		halo.position = halo_data[0] as Vector2
+		halo.position = Vector2(halo_data[0])
 		halo.size = Vector2(halo_size, halo_size)
 		halo.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color(accent.r, accent.g, accent.b, float(halo_data[2])), halo_size * 0.50))
 		stage.add_child(halo)
