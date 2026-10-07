@@ -81,8 +81,8 @@ func _add_booster_bar() -> void:
 	var bar := HBoxContainer.new()
 	bar.name = "CampaignBoosters"
 	bar.alignment = BoxContainer.ALIGNMENT_CENTER
-	bar.add_theme_constant_override("separation", 7)
-	FigmaReferenceCanvas.set_rect(bar, 17, 732, 349, 54)
+	bar.add_theme_constant_override("separation", 8)
+	FigmaReferenceCanvas.set_rect(bar, 25, 736, 333, 48)
 	for spec in [
 		["undo", "UNDO", "↶"],
 		["hammer", "HAMMER", "◆"],
@@ -91,16 +91,16 @@ func _add_booster_bar() -> void:
 	]:
 		var key := String(spec[0])
 		var button := FigmaReferenceCanvas.premium_button(
-			"%s  %s\n◈ %d" % [String(spec[2]), String(spec[1]), int(BOOSTER_COSTS[key])],
-			14,
-			Color(1, 0.995, 0.97),
-			Color("#7d21d6"),
-			15,
-			Color(0.75, 0.56, 0.92, 0.56),
-			1.3
+			"%s %s  ◈%d" % [String(spec[2]), String(spec[1]), int(BOOSTER_COSTS[key])],
+			11,
+			Color("#f7edff"),
+			Color("#4a2768"),
+			13,
+			Color(0.75, 0.56, 0.92, 0.24),
+			1.0
 		)
 		button.name = "Booster_%s" % key.capitalize()
-		button.custom_minimum_size = Vector2(82, 54)
+		button.custom_minimum_size = Vector2(77, 48)
 		button.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 		button.pressed.connect(_use_booster.bind(key))
 		bar.add_child(button)
