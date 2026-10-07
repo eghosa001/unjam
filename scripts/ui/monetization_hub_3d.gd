@@ -84,15 +84,18 @@ func _build_ui() -> void:
 	back.pressed.connect(_close_shop)
 	canvas.add_child(back)
 
-	var shop_title := _add_text(canvas,"UNJAM SHOP",Rect2(83,21,186,28),23,Color("#fffef7"))
+	var shop_title := _add_text(canvas,"UNJAM SHOP",Rect2(83,21,186,27),23,Color("#fffef7"))
 	shop_title.name = "ShopTitle3D"
 	shop_title.clip_text = true
 	FigmaReferenceCanvas.style_display_title(shop_title, Color("#ffb92f"), Color("#071d55"), 2)
-	var shop_subtitle := _add_text(canvas,"Upgrades • rewards",Rect2(83,51,186,30),13,Color("#c6d9ec"))
+	FigmaReferenceCanvas.fit_single_line_text(shop_title,182.0,23,14)
+	FigmaReferenceCanvas.set_rect(shop_title,83,21,186,27)
+	var shop_subtitle := _add_text(canvas,"Upgrades • rewards",Rect2(83,56,186,16),11,Color("#c6d9ec"))
 	shop_subtitle.name = "ShopSubtitle"
-	shop_subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	shop_subtitle.autowrap_mode = TextServer.AUTOWRAP_OFF
 	shop_subtitle.clip_text = true
-	FigmaReferenceCanvas.set_rect(shop_subtitle,83,51,186,30)
+	FigmaReferenceCanvas.fit_single_line_text(shop_subtitle,182.0,11,9)
+	FigmaReferenceCanvas.set_rect(shop_subtitle,83,56,186,16)
 	balance_label = _add_text(canvas,"",Rect2(297,37,60,15),12,FigmaReferenceCanvas.accessible_text_color(Color("#fffef7"),Color("#ff8c1f")))
 	balance_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	FigmaReferenceCanvas.add_shadow(canvas,Rect2(285,21,84,46),23,Color(0.02,0.15,0.30,0.16),3,Vector2(0,2))
@@ -273,9 +276,12 @@ func _add_shop_status(canvas: Control) -> void:
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(panel)
 
-	_add_text(canvas,"YOUR SHOP STATUS",Rect2(33,629,200,21),16,Color("#cba6ff") if _shop_dark() else Color("#7b45c5"))
-	var status_note := _add_text(canvas,"Real entitlements • optional rewards",Rect2(33,651,250,20),13,Color("#a9bdd0") if _shop_dark() else Color("#607a91"))
+	var status_heading := _add_text(canvas,"YOUR SHOP STATUS",Rect2(33,628,200,16),14,Color("#cba6ff") if _shop_dark() else Color("#7b45c5"))
+	status_heading.name = "ShopStatusHeading"
+	FigmaReferenceCanvas.fit_single_line_text(status_heading,196.0,14,11)
+	var status_note := _add_text(canvas,"Real entitlements • optional rewards",Rect2(33,652,250,15),11,Color("#a9bdd0") if _shop_dark() else Color("#607a91"))
 	status_note.name = "ShopStatusNote"
+	FigmaReferenceCanvas.fit_single_line_text(status_note,246.0,11,9)
 
 	_shop_status_chip(
 		canvas,
@@ -312,14 +318,16 @@ func _shop_status_chip(canvas: Control, name_value: String, title: String, state
 	FigmaReferenceCanvas.set_rect(chip,rect.position.x,rect.position.y,rect.size.x,rect.size.y)
 	chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(chip)
-	var title_label := _add_text(canvas,title,Rect2(rect.position.x+5,rect.position.y+1,rect.size.x-10,18),13,Color("#d6e2ef"))
+	var title_label := _add_text(canvas,title,Rect2(rect.position.x+5,rect.position.y+2,rect.size.x-10,13),10,Color("#d6e2ef"))
 	title_label.name = "%sTitle" % name_value
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	var state_label := _add_text(canvas,state,Rect2(rect.position.x+5,rect.position.y+19,rect.size.x-10,19),13,accent.lightened(0.28))
+	FigmaReferenceCanvas.fit_single_line_text(title_label,rect.size.x-14,10,8)
+	var state_label := _add_text(canvas,state,Rect2(rect.position.x+5,rect.position.y+22,rect.size.x-10,13),10,accent.lightened(0.28))
 	state_label.name = "%sState" % name_value
 	state_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	state_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	FigmaReferenceCanvas.fit_single_line_text(state_label,rect.size.x-14,10,8)
 
 func _is_owned_product(product_id: String, _info: Dictionary) -> bool:
 	return StoreManager.is_product_owned(product_id)
