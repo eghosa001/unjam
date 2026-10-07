@@ -307,11 +307,23 @@ func _clamp_rotated_source_position(desired: Vector2, ghost: Control, final_rota
 		max_x = maxf(max_x, point.x)
 		min_y = minf(min_y, point.y)
 	var edge_margin := 12.0
+	var left_bound := edge_margin
+	var right_bound := viewport_size.x - edge_margin
+	# The phone edge is only the fallback. Prefer the live Water playfield so the
+	# pouring source never appears to enter from outside the game scene.
+	var stage := find_child("GameplayStage", true, false) as Control
+	if stage != null:
+		var stage_global := stage.get_global_rect()
+		var stage_left := _game_local(stage_global.position).x + 8.0
+		var stage_right := _game_local(stage_global.end).x - 8.0
+		if stage_right - stage_left > ghost.size.x:
+			left_bound = maxf(left_bound, stage_left)
+			right_bound = minf(right_bound, stage_right)
 	var x := desired.x
-	if x + min_x < edge_margin:
-		x += edge_margin - (x + min_x)
-	if x + max_x > viewport_size.x - edge_margin:
-		x -= (x + max_x) - (viewport_size.x - edge_margin)
+	if x + min_x < left_bound:
+		x += left_bound - (x + min_x)
+	if x + max_x > right_bound:
+		x -= (x + max_x) - right_bound
 	# Keep the pouring mouth comfortably below the phone header as well.
 	var y := desired.y
 	if y + min_y < edge_margin:
