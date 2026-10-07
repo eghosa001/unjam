@@ -233,7 +233,7 @@ func _make_daily_games_action(parent: VBoxContainer) -> void:
 	daily.name = "HomeDailyGamesButton"
 	var rank := CompetitionManager.weekly_rank()
 	var rank_text := "#%d" % rank if rank > 0 else "UNRANKED"
-	daily.text = "🏆  COMPETE   •   %d/3 DAILY   •   WEEKLY %s" % [completed, rank_text]
+	daily.text = "🏆  COMPETE   •   %d/3 DAILY   •   %s %s" % [completed, CompetitionManager.weekly_division(), rank_text]
 	if bonus > 0:
 		daily.tooltip_text = "Daily Cup + Weekly League. Collection adds +%d coins to each Daily Game." % bonus
 	else:
