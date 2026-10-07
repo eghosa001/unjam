@@ -344,7 +344,13 @@ func _fit_single_line_control_text(control: Control, max_width: float, start_siz
 	control.position = authored_position
 	control.size = authored_size
 	if control is Label:
-		(control as Label).clip_text = true
+		var fitted_label := control as Label
+		fitted_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+		fitted_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		fitted_label.clip_text = true
+		fitted_label.custom_minimum_size = Vector2.ZERO
+		fitted_label.position = authored_position
+		fitted_label.size = authored_size
 func _fit_wrapped_text(label: Label, max_width: float, start_size: int, min_size: int = 10) -> void:
 	if label == null or max_width <= 0.0:
 		return
