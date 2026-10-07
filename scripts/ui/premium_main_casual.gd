@@ -517,7 +517,7 @@ func build_profile() -> void:
 	_remove_active_game()
 	var canvas := _figma_surface("profile", Color("#d8e9f5"))
 	var profile_card_fill := Color("#27282b") if _dark() else Color("#fffef8")
-	_figma_header(canvas, "PROFILE", "LV %d • stats • achievements" % MetaProgressionManager.player_level(), "◈ +", FIGMA_CYAN, Callable(self,"build_home"), Callable(self,"_figma_open_shop"))
+	_figma_header(canvas, "PROFILE", "LV %d • PLAYER STATS" % MetaProgressionManager.player_level(), "◈ +", FIGMA_CYAN, Callable(self,"build_home"), Callable(self,"_figma_open_shop"))
 
 	_figma_card(canvas,"ProfileIdentity",Rect2(17,91,354,70),profile_card_fill,Color(FIGMA_CYAN,0.34),17)
 	var name_edit := LineEdit.new()
