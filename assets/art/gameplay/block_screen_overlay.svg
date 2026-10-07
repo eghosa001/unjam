@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="390" height="844" viewBox="0 0 390 844">
+<defs>
+ <radialGradient id="p"><stop stop-color="#d894ff" stop-opacity=".20"/><stop offset="1" stop-color="#d894ff" stop-opacity="0"/></radialGradient>
+ <linearGradient id="streak" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#ff6aa7" stop-opacity="0"/><stop offset=".5" stop-color="#c991ff" stop-opacity=".19"/><stop offset="1" stop-color="#67d9ff" stop-opacity="0"/></linearGradient>
+</defs>
+<circle cx="20" cy="704" r="130" fill="url(#p)"/><circle cx="385" cy="648" r="132" fill="url(#p)" opacity=".7"/>
+<path d="M-20 743L410 626" stroke="url(#streak)" stroke-width="21" stroke-linecap="round"/>
+<path d="M-15 797L400 699" stroke="url(#streak)" stroke-width="7" stroke-linecap="round" opacity=".75"/>
+<g fill="#fff1ad" opacity=".48"><path d="M47 679l4 9 9 4-9 4-4 9-4-9-9-4 9-4z"/><path d="M339 737l3 7 7 3-7 3-3 7-3-7-7-3 7-3z"/></g>
+<g fill="#d9b6ff" opacity=".10"><rect x="18" y="758" width="38" height="38" rx="9" transform="rotate(-12 37 777)"/><rect x="320" y="592" width="47" height="47" rx="11" transform="rotate(18 343 615)"/><rect x="290" y="792" width="31" height="31" rx="8" transform="rotate(-25 305 807)"/></g>
+</svg>

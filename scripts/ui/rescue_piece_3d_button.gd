@@ -1,6 +1,8 @@
 extends "res://scripts/ui/premium_piece_button.gd"
 class_name RescuePiece3DButton
 
+const AUTHORED_TILE_OVERLAY: Texture2D = preload("res://assets/art/gameplay/rescue_tile_overlay.svg")
+
 # Legacy class name retained so Rescue Rush gameplay and escape-animation code do
 # not need to change. The tile itself keeps premium depth, but the directional
 # arrow is intentionally flat and high-contrast. Direction must read instantly
@@ -33,11 +35,12 @@ func _release() -> void:
 
 func _draw_shell(rect: Rect2, center: Vector2, pulse: float) -> void:
 	# One fast glossy 2D face. Pieces should be readable arrows, not miniature boxes.
-	var radius := minf(rect.size.x, rect.size.y) * 0.22
-	var face := rect.grow(-1.0)
+	var radius := minf(rect.size.x, rect.size.y) * 0.18
+	var face := rect.grow(-0.25)
 	var cast := Rect2(face.position + Vector2(0, maxf(2.0, face.size.y * 0.08)), face.size)
 	draw_style_box(_rounded(Color(0.01,0.04,0.10,0.26), radius, Color.TRANSPARENT, 0), cast)
 	draw_style_box(_rounded(accent, radius, Color(accent.lightened(0.28),0.38), 1), face)
+	draw_texture_rect(AUTHORED_TILE_OVERLAY, face.grow(1.0), false, Color.WHITE)
 	var lower := Rect2(Vector2(face.position.x + face.size.x*0.09, face.end.y-face.size.y*0.15), Vector2(face.size.x*0.82,face.size.y*0.08))
 	draw_style_box(_rounded(Color(accent.darkened(0.34),0.24),radius*0.45,Color.TRANSPARENT,0),lower)
 	var gloss_rect := Rect2(face.position + Vector2(face.size.x*0.12, face.size.y*0.09), Vector2(face.size.x*0.58,maxf(4.0,face.size.y*0.13)))
@@ -53,7 +56,7 @@ func _draw_motion_trail(_center: Vector2, _pulse: float) -> void:
 func _draw_arrow(center: Vector2, dir: String, scale_value: float) -> void:
 	var v := _dir_vec(dir)
 	var n := Vector2(-v.y, v.x)
-	var readable_scale := scale_value * 1.16
+	var readable_scale := scale_value * 1.42
 	var glyph_center := center - Vector2(0, 2.0)
 	var tip := glyph_center + v * readable_scale
 	var tail := glyph_center - v * readable_scale * 0.76

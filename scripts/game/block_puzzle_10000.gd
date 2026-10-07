@@ -81,18 +81,18 @@ func _add_booster_bar() -> void:
 	var bar := HBoxContainer.new()
 	bar.name = "CampaignBoosters"
 	bar.alignment = BoxContainer.ALIGNMENT_CENTER
-	bar.add_theme_constant_override("separation", 8)
-	FigmaReferenceCanvas.set_rect(bar, 25, 736, 333, 48)
+	bar.add_theme_constant_override("separation", 4)
+	FigmaReferenceCanvas.set_rect(bar, 25, 726, 333, 64)
 	for spec in [
-		["undo", "UNDO", "↶"],
-		["hammer", "HAMMER", "◆"],
-		["shuffle", "SHUFFLE", "⟳"],
-		["rotate", "ROTATE", "↻"],
+		["undo", "UNDO", ""],
+		["hammer", "HAMMER", ""],
+		["shuffle", "SHUFFLE", ""],
+		["rotate", "ROTATE", ""],
 	]:
 		var key := String(spec[0])
 		var button := FigmaReferenceCanvas.premium_button(
-			"%s %s  ◈%d" % [String(spec[2]), String(spec[1]), int(BOOSTER_COSTS[key])],
-			10,
+			"%s\n◈ %d" % [String(spec[1]), int(BOOSTER_COSTS[key])],
+			13,
 			Color("#f0e6f8"),
 			Color(0.16, 0.08, 0.24, 0.52),
 			13,
@@ -100,7 +100,8 @@ func _add_booster_bar() -> void:
 			1.0
 		)
 		button.name = "Booster_%s" % key.capitalize()
-		button.custom_minimum_size = Vector2(77, 48)
+		button.tooltip_text = "%s booster • %d coins" % [key.capitalize(), int(BOOSTER_COSTS[key])]
+		button.custom_minimum_size = Vector2(80, 58)
 		button.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 		button.pressed.connect(_use_booster.bind(key))
 		bar.add_child(button)
@@ -345,9 +346,7 @@ func render() -> void:
 		var move_text := ""
 		if campaign_move_limit > 0:
 			move_text = " • %d/%d MOVES" % [placements, campaign_move_limit]
-		goal_label.text = "WIN • %d/%d PTS • %d/%d LINES%s" % [
-			score, target_score, lines_cleared, target_lines, move_text
-		]
+		goal_label.text = "GOAL %d PTS • %d LINES%s" % [target_score, target_lines, move_text]
 		_render_special_cells()
 		var special_text := _objective_status_text()
 		if campaign_failed:

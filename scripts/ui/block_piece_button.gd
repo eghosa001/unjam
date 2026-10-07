@@ -1,6 +1,8 @@
 extends Button
 class_name BlockPieceButton
 
+const AUTHORED_TILE_OVERLAY: Texture2D = preload("res://assets/art/gameplay/block_tile_overlay.svg")
+
 const DragPreview = preload("res://scripts/ui/block_drag_preview.gd")
 const TOUCH_LIFT := 132.0
 const TOUCH_SNAP_RADIUS := 112.0
@@ -445,7 +447,7 @@ func _draw() -> void:
 	var total := Vector2((max_x + 1) * cell, (max_y + 1) * cell)
 	var origin := (size - total) * 0.5
 	for point in points:
-		var rect := Rect2(origin + Vector2(point) * cell + Vector2(2, 2), Vector2(cell - 4, cell - 4))
+		var rect := Rect2(origin + Vector2(point) * cell + Vector2(1, 1), Vector2(cell - 2, cell - 2))
 		_draw_block(rect, accent)
 	if selected:
 		var pulse := 0.55 + 0.45 * sin(phase * 7.0)
@@ -464,16 +466,17 @@ func tray_visual_cell_size() -> float:
 	return _tray_cell_size(max_x, max_y)
 
 func _tray_cell_size(max_x: int, max_y: int) -> float:
-	var fit_cell := minf((size.x - 10.0) / float(max_x + 1), (size.y - 10.0) / float(max_y + 1))
-	# Tray pieces should be immediately legible and close to the 32.6px board
+	var fit_cell := minf((size.x - 4.0) / float(max_x + 1), (size.y - 4.0) / float(max_y + 1))
+	# Tray pieces should be immediately legible and slightly larger than the 32.6px board
 	# cells, while still fitting the tallest three-cell shapes without clipping.
-	return clampf(minf(35.0, fit_cell), 18.0, 35.0)
+	return clampf(minf(37.0, fit_cell), 18.0, 37.0)
 
 func _draw_block(rect: Rect2, fill: Color) -> void:
 	var radius := maxi(5, int(rect.size.x * 0.18))
 	var shadow := Rect2(rect.position + Vector2(0, maxf(2.0, rect.size.y * 0.10)), rect.size)
 	draw_style_box(_style(Color(0.02,0.025,0.08,0.26), Color.TRANSPARENT, 0, radius), shadow)
 	draw_style_box(_style(fill, Color(fill.lightened(0.30),0.42), 1, radius), rect)
+	draw_texture_rect(AUTHORED_TILE_OVERLAY, rect.grow(1.0), false, Color.WHITE)
 	var lower := Rect2(Vector2(rect.position.x + rect.size.x*0.09, rect.end.y - rect.size.y*0.18), Vector2(rect.size.x*0.82, rect.size.y*0.10))
 	draw_style_box(_style(Color(fill.darkened(0.34),0.24), Color.TRANSPARENT, 0, maxi(2,radius/2)), lower)
 	var gloss := Rect2(rect.position + Vector2(rect.size.x*0.12,rect.size.y*0.10), Vector2(rect.size.x*0.58,maxf(3.0,rect.size.y*0.14)))

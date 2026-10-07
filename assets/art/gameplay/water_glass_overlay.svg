@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="236" viewBox="0 0 128 236">
+<defs>
+  <linearGradient id="hl" x1="0" y1="0" x2="0.6" y2="1">
+    <stop stop-color="#ffffff" stop-opacity=".82"/>
+    <stop offset=".52" stop-color="#d9fbff" stop-opacity=".42"/>
+    <stop offset="1" stop-color="#8deaff" stop-opacity=".06"/>
+  </linearGradient>
+</defs>
+<!-- Highlight-only authored pass: the runtime bottle owns the silhouette. -->
+<path d="M32 31C23 68 25 148 34 194" fill="none" stroke="url(#hl)" stroke-width="8" stroke-linecap="round"/>
+<path d="M92 43C100 70 99 104 95 127" fill="none" stroke="#8deaff" stroke-opacity=".30" stroke-width="4" stroke-linecap="round"/>
+<path d="M45 18C54 13 69 12 81 16" fill="none" stroke="#ffffff" stroke-opacity=".66" stroke-width="6" stroke-linecap="round"/>
+<ellipse cx="39" cy="38" rx="7" ry="4" fill="#ffffff" opacity=".74"/>
+<path d="M96 154l4 9 9 4-9 4-4 9-4-9-9-4 9-4z" fill="#d6fbff" opacity=".36"/>
+</svg>

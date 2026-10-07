@@ -1,6 +1,7 @@
 extends "res://scripts/game/block_puzzle_ultra_motion.gd"
 
 const GAMEPLAY_ART = preload("res://scripts/ui/unjam_gameplay_art.gd")
+const BLOCK_SCREEN_OVERLAY: Texture2D = preload("res://assets/art/gameplay/block_screen_overlay.svg")
 
 # Bright 3D presentation layer. Core placement, scoring and grid rules remain
 # inherited from the proven motion/gameplay stack. This layer owns the premium
@@ -81,9 +82,9 @@ func _fit_figma_board_layout() -> void:
 	board_shell.position = Vector2(22, 164)
 	board_shell.size = Vector2(346, 346)
 	if piece_row != null:
-		piece_row.custom_minimum_size = Vector2(326, 96)
-		piece_row.position = Vector2(31, 536)
-		piece_row.size = Vector2(326, 96)
+		piece_row.custom_minimum_size = Vector2(350, 96)
+		piece_row.position = Vector2(20, 536)
+		piece_row.size = Vector2(350, 96)
 		piece_row.add_theme_constant_override("separation", 7)
 
 func build_ui() -> void:
@@ -127,6 +128,14 @@ func _build_figma_block(canvas: Control) -> void:
 	platform.polygon = PackedVector2Array([Vector2(14, 434), Vector2(376, 434), Vector2(350, 86), Vector2(40, 86)])
 	platform.color = Color(0.56,0.35,0.76,0.18)
 	canvas.add_child(platform)
+	var scenic_overlay := TextureRect.new()
+	scenic_overlay.name = "BlockAuthoredScreenWorld"
+	scenic_overlay.texture = BLOCK_SCREEN_OVERLAY
+	scenic_overlay.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	scenic_overlay.stretch_mode = TextureRect.STRETCH_SCALE
+	scenic_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	FigmaReferenceCanvas.set_rect(scenic_overlay, 0, 0, 390, 844)
+	canvas.add_child(scenic_overlay)
 
 	FigmaReferenceCanvas.add_shadow(canvas, Rect2(15,15,54,54), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
 	var back := FigmaReferenceCanvas.premium_button("←", 22, Color(0.03,0.23,0.47), Color(0.98,0.96,1.0), 16, Color(0.84,0.68,0.98,0.52), 1.4)
@@ -150,7 +159,7 @@ func _build_figma_block(canvas: Control) -> void:
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	FigmaReferenceCanvas.set_rect(title_label, 115, 15, 184, 30)
 	canvas.add_child(title_label)
-	var level_meta := FigmaReferenceCanvas.label("", 13, Color(0.92,0.98,1.0), false)
+	var level_meta := FigmaReferenceCanvas.label("", 14, Color(0.92,0.98,1.0), true)
 	level_meta.name = "BlockLevelMeta"
 	level_meta.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	FigmaReferenceCanvas.set_rect(level_meta, 115, 43, 184, 20)
@@ -166,7 +175,7 @@ func _build_figma_block(canvas: Control) -> void:
 	score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	FigmaReferenceCanvas.set_rect(score_label, 33, 94, 52, 44)
 	canvas.add_child(score_label)
-	goal_label = FigmaReferenceCanvas.label("", 14, Color(0.96,0.87,1.0), false)
+	goal_label = FigmaReferenceCanvas.label("", 15, Color(0.96,0.87,1.0), true)
 	goal_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	goal_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	goal_label.clip_text = true
@@ -236,7 +245,7 @@ func _build_figma_block(canvas: Control) -> void:
 	piece_row.name = "BlockPieceRow"
 	piece_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	piece_row.add_theme_constant_override("separation", 7)
-	FigmaReferenceCanvas.set_rect(piece_row, 31, 536, 326, 96)
+	FigmaReferenceCanvas.set_rect(piece_row, 20, 536, 350, 96)
 	canvas.add_child(piece_row)
 
 	var status_region := Control.new()
@@ -244,7 +253,7 @@ func _build_figma_block(canvas: Control) -> void:
 	status_region.clip_contents = true
 	FigmaReferenceCanvas.set_rect(status_region, 18, 654, 354, 20)
 	canvas.add_child(status_region)
-	status_label = FigmaReferenceCanvas.label("", 14, Color(1,0.995,0.97), true)
+	status_label = FigmaReferenceCanvas.label("", 15, Color(1,0.995,0.97), true)
 	status_label.name = "BlockStatusText"
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status_label.clip_text = true
@@ -257,7 +266,7 @@ func _build_figma_block(canvas: Control) -> void:
 	hint_region.clip_contents = true
 	FigmaReferenceCanvas.set_rect(hint_region, 18, 678, 354, 20)
 	canvas.add_child(hint_region)
-	hint_label = FigmaReferenceCanvas.label("", 14, Color(1,0.995,0.97), true)
+	hint_label = FigmaReferenceCanvas.label("", 15, Color(1,0.995,0.97), true)
 	hint_label.name = "BlockHintText"
 	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint_label.clip_text = true

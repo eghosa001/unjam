@@ -1,6 +1,15 @@
 extends Button
 class_name BlockCellButton
 
+const AUTHORED_TILE_OVERLAY: Texture2D = preload("res://assets/art/gameplay/block_tile_overlay.svg")
+const AUTHORED_SPECIALS := {
+	"crate": preload("res://assets/art/gameplay/special_crate.svg"),
+	"ice": preload("res://assets/art/gameplay/special_ice.svg"),
+	"lock": preload("res://assets/art/gameplay/special_lock.svg"),
+	"steel": preload("res://assets/art/gameplay/special_steel.svg"),
+	"target": preload("res://assets/art/gameplay/special_target.svg"),
+}
+
 var occupied := false
 var preview := false
 var accent := Color("4f7cff")
@@ -176,9 +185,25 @@ func _draw() -> void:
 	# Empty cells intentionally recede. The board should read as a play field,
 	# not sixty-four individually outlined buttons.
 	if not occupied and not preview:
-		var idle_fill := Color(0.31, 0.20, 0.48, 0.055 + hover_amount * 0.055)
-		var idle_edge := Color(0.72, 0.58, 0.92, 0.025 + hover_amount * 0.10)
-		_draw_box(inset, idle_fill, 6, idle_edge, 1)
+		# Quiet inset pads: empty cells are defined by fill/depth, not 64 bright
+		# outlines. Placed blocks therefore own the colour and contrast hierarchy.
+		var idle_fill := Color(0.29, 0.14, 0.48, 0.31 + hover_amount * 0.05)
+		_draw_box(inset, idle_fill, 7, Color.TRANSPARENT, 0)
+		var well := inset.grow(-3.0)
+		_draw_box(well, Color(0.085, 0.04, 0.17, 0.24), 5, Color.TRANSPARENT, 0)
+		var gloss_y := inset.position.y + 3.0
+		draw_line(
+			Vector2(inset.position.x + 6.0, gloss_y),
+			Vector2(inset.end.x - 6.0, gloss_y),
+			Color(0.94, 0.85, 1.0, 0.075 + hover_amount * 0.04),
+			1.2,
+			true
+		)
+		draw_circle(
+			well.position + Vector2(well.size.x * 0.31, well.size.y * 0.28),
+			maxf(1.0, well.size.x * 0.030),
+			Color(1, 1, 1, 0.075)
+		)
 
 	if occupied or preview:
 		var fill := Color(accent, 0.54) if preview else accent
@@ -210,6 +235,14 @@ func _draw_special_overlay(rect: Rect2) -> void:
 	if special_kind.is_empty() or special_layers <= 0:
 		return
 	var inset := rect.grow(-5.0)
+	if AUTHORED_SPECIALS.has(special_kind):
+		var special_texture := AUTHORED_SPECIALS[special_kind] as Texture2D
+		draw_texture_rect(special_texture, inset.grow(2.0), false, Color.WHITE)
+		if special_layers > 1:
+			var authored_badge := Rect2(Vector2(inset.end.x - 22, inset.position.y + 4), Vector2(18, 18))
+			_draw_box(authored_badge, Color("241638", 0.92), 8, Color(1, 1, 1, 0.28), 1)
+			draw_string(ThemeDB.fallback_font, authored_badge.position + Vector2(3, 14), str(special_layers), HORIZONTAL_ALIGNMENT_CENTER, 12, 12, Color.WHITE)
+		return
 	if special_kind == "crate":
 		_draw_box(inset, Color("915a35", 0.88), 5, Color("e6b77e"), 2)
 		draw_line(inset.position + Vector2(5, 5), inset.end - Vector2(5, 5), Color("f5d2a4"), 3.0, true)
@@ -254,6 +287,7 @@ func _draw_block(rect: Rect2, fill: Color) -> void:
 	var shadow := Rect2(rect.position + Vector2(0, maxf(2.0, rect.size.y * 0.09)), rect.size)
 	_draw_box(shadow, Color(0.02, 0.025, 0.08, 0.28), radius, Color.TRANSPARENT, 0)
 	_draw_box(rect, fill, radius, Color(fill.lightened(0.30), 0.40), 1)
+	draw_texture_rect(AUTHORED_TILE_OVERLAY, rect.grow(1.0), false, Color.WHITE)
 	var shade := Rect2(Vector2(rect.position.x + rect.size.x * 0.08, rect.end.y - rect.size.y * 0.17), Vector2(rect.size.x * 0.84, rect.size.y * 0.10))
 	_draw_box(shade, Color(fill.darkened(0.34), 0.24), maxi(2, radius / 2), Color.TRANSPARENT, 0)
 	var gloss := Rect2(

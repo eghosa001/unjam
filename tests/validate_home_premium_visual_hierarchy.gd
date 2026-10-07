@@ -78,8 +78,8 @@ func _run() -> void:
 	var settings_label := home.find_child("HomeNavLabel_SETTINGS", true, false) as Label
 	if daily_label == null or settings_label == null:
 		return _fail("Home Daily/Settings navigation labels are missing")
-	if daily_label.text != "COMPETE":
-		return _fail("Home competition destination is still labeled Daily")
+	if daily_label.text != "DAILY":
+		return _fail("Home Daily destination is mislabeled")
 	if daily_label.get_global_rect().end.x >= collection_label.get_global_rect().position.x:
 		return _fail("Home Daily label overlaps Collection")
 	if collection_label.get_global_rect().end.x >= settings_label.get_global_rect().position.x:
@@ -88,6 +88,25 @@ func _run() -> void:
 		return _fail("Retired giant mascot returned to Figma Home")
 	if home.find_child("HomeGameStrip", true, false) != null:
 		return _fail("Retired oversized game strip returned to Figma Home")
+	var wide_stage_phone := home.find_child("HomeWideStage", true, false) as Control
+	if wide_stage_phone == null or wide_stage_phone.visible:
+		return _fail("Phone Home must keep the wide tablet stage hidden")
+
+	# Landscape tablets must use their extra canvas rather than centering a narrow
+	# phone surface inside empty letterbox space.
+	root.size = Vector2i(2560, 1600)
+	await _frames(8)
+	var wide_stage := home.find_child("HomeWideStage", true, false) as Control
+	var wide_art := home.find_child("HomeWideSelectedGameArt", true, false) as Control
+	var wide_cta := home.find_child("HomeWideContinueAction", true, false) as Button
+	if wide_stage == null or not wide_stage.visible or wide_art == null or wide_cta == null:
+		return _fail("Landscape Home is missing its authored split-stage composition")
+	if wide_art.size.x < 700.0 or wide_art.size.y < 700.0:
+		return _fail("Landscape Home selected-game artwork is not visually dominant")
+	if canvas.get_global_rect().get_center().x >= 1280.0:
+		return _fail("Landscape Home phone panel was not biased left for the wide art stage")
+	if wide_art.get_global_rect().position.x <= canvas.get_global_rect().end.x + 40.0:
+		return _fail("Landscape Home art stage crowds the interactive phone panel")
 
 	main.queue_free()
 	await _frames(2)

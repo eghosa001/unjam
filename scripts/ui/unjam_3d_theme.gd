@@ -3,6 +3,7 @@ extends RefCounted
 
 static var _readable_font: FontVariation
 static var _strong_font: FontVariation
+static var _display_font: FontVariation
 
 static func readable_font() -> FontVariation:
 	if _readable_font == null:
@@ -23,6 +24,17 @@ static func strong_font() -> FontVariation:
 		font.variation_embolden = 0.38
 		_strong_font = font
 	return _strong_font
+
+static func display_font() -> FontVariation:
+	if _display_font == null:
+		var font := FontVariation.new()
+		font.base_font = ThemeDB.fallback_font
+		# Display-only treatment: wide game titles/score moments can carry much
+		# more weight than body copy without closing counters on small screens.
+		font.variation_embolden = 0.68
+		font.variation_transform = Transform2D(Vector2(1.035, 0.0), Vector2(0.0, 1.0), Vector2.ZERO)
+		_display_font = font
+	return _display_font
 
 const SKY_TOP := Color("41b9ff")
 const SKY_BOTTOM := Color("dff8ff")

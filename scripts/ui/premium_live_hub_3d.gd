@@ -1,7 +1,8 @@
 extends "res://scripts/ui/premium_live_hub.gd"
 
 const RefCanvas = preload("res://scripts/ui/figma_reference_canvas.gd")
-const FLAT_GAME_LOGO_SCRIPT = preload("res://scripts/ui/unjam_flat_game_logo.gd")
+const GAME_ART_SCRIPT = preload("res://scripts/ui/unjam_2d_game_art.gd")
+const UNJAM_WORDMARK: Texture2D = preload("res://assets/art/brand/unjam_wordmark.svg")
 
 const BG_TOP := Color("#e9e5dd")
 const BG_MID := Color("#b9b2a7")
@@ -24,6 +25,7 @@ const DARK_SCENE_MID := Color("#272727")
 const DARK_SCENE_BOTTOM := Color("#1f1f1f")
 
 var figma_canvas: FigmaReferenceCanvas
+var wide_stage: Control
 
 func _selector_dark() -> bool:
 	return _theme_mode() == "dark"
@@ -54,10 +56,79 @@ func _build() -> void:
 	viewport_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(viewport_bg)
 
+	wide_stage = Control.new()
+	wide_stage.name = "SelectorWideStage"
+	wide_stage.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	wide_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	wide_stage.visible = false
+	add_child(wide_stage)
+
 	figma_canvas = RefCanvas.new()
 	figma_canvas.name = "FigmaSelector390x844"
 	add_child(figma_canvas)
 	_build_reference_selector(figma_canvas)
+	if not resized.is_connected(_sync_wide_selector_stage):
+		resized.connect(_sync_wide_selector_stage)
+	call_deferred("_sync_wide_selector_stage")
+
+func _sync_wide_selector_stage() -> void:
+	if figma_canvas == null or not is_instance_valid(figma_canvas):
+		return
+	var available := size
+	if available.x <= 2.0 or available.y <= 2.0:
+		available = get_viewport_rect().size
+	var wide := available.x >= 1180.0 and available.x / maxf(1.0, available.y) >= 1.22
+	figma_canvas.set_fit_bias(0.10 if wide else 0.5, 0.5)
+	if wide_stage == null or not is_instance_valid(wide_stage):
+		return
+	wide_stage.visible = wide
+	for child in wide_stage.get_children():
+		wide_stage.remove_child(child)
+		child.queue_free()
+	if not wide:
+		return
+	_build_wide_selector_stage(wide_stage, available)
+
+func _build_wide_selector_stage(stage: Control, available: Vector2) -> void:
+	var dark := _selector_dark()
+	var mark_w := minf(available.x * 0.22, 520.0)
+	var mark := TextureRect.new()
+	mark.name = "SelectorWideWordmark"
+	mark.texture = UNJAM_WORDMARK
+	mark.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	mark.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	mark.position = Vector2(available.x * 0.60, available.y * 0.045)
+	mark.size = Vector2(mark_w, mark_w * 0.265)
+	stage.add_child(mark)
+
+	var title := RefCanvas.label("CHOOSE YOUR PUZZLE", int(clampf(available.y * 0.034, 38.0, 60.0)), Color.WHITE, true)
+	title.name = "SelectorWideTitle"
+	RefCanvas.style_display_title(title, Color("#f7fbff"), Color("#09141f"), 3)
+	title.position = Vector2(available.x * 0.55, available.y * 0.15)
+	title.size = Vector2(available.x * 0.40, available.y * 0.07)
+	stage.add_child(title)
+
+	var subtitle := RefCanvas.label("RESCUE • SORT • BUILD • KEEP YOUR CAMPAIGN MOVING", int(clampf(available.y * 0.014, 18.0, 25.0)), Color("#d6e0ea") if dark else Color("#354450"), true)
+	subtitle.name = "SelectorWideSubtitle"
+	subtitle.position = Vector2(available.x * 0.55, available.y * 0.215)
+	subtitle.size = Vector2(available.x * 0.40, available.y * 0.04)
+	stage.add_child(subtitle)
+
+	var big := minf(available.y * 0.42, available.x * 0.30)
+	_add_selector_wide_art(stage, "rescue_rush", Vector2(available.x * 0.63, available.y * 0.27), Vector2(big, big))
+	var small := minf(available.y * 0.29, available.x * 0.21)
+	_add_selector_wide_art(stage, "water_sort", Vector2(available.x * 0.55, available.y * 0.66), Vector2(small, small))
+	_add_selector_wide_art(stage, "block_puzzle", Vector2(available.x * 0.76, available.y * 0.66), Vector2(small, small))
+
+func _add_selector_wide_art(stage: Control, game_id: String, position_value: Vector2, size_value: Vector2) -> void:
+	var art := GAME_ART_SCRIPT.new()
+	art.name = "SelectorWideArt_%s" % game_id
+	art.configure(game_id, false, _selector_dark())
+	art.position = position_value
+	art.size = size_value
+	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stage.add_child(art)
 
 func _build_reference_selector(canvas: Control) -> void:
 	var background := PanelContainer.new()
@@ -167,11 +238,12 @@ func _add_card_preview(canvas: Control, game_id: String, card_y: float) -> void:
 	RefCanvas.set_rect(frame, 243, card_y + 23, 104, 112)
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(frame)
-	var mark := FLAT_GAME_LOGO_SCRIPT.new()
-	mark.name = "SelectorFlatGameLogo_%s" % game_id
-	mark.configure(game_id)
-	RefCanvas.set_rect(mark, 258, card_y + 31, 74, 92)
-	canvas.add_child(mark)
+	var art := GAME_ART_SCRIPT.new()
+	art.name = "SelectorAuthoredGameArt_%s" % game_id
+	art.configure(game_id, true, _selector_dark())
+	RefCanvas.set_rect(art, 249, card_y + 27, 92, 104)
+	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(art)
 
 func _add_bottom_nav(canvas: Control) -> void:
 	var shell := PanelContainer.new()
@@ -193,7 +265,7 @@ func _add_bottom_nav(canvas: Control) -> void:
 	var items := [
 		["HOME", "⌂", 22.0, 14.0, Callable(self, "_go_home"), false, Color("#ffd54f")],
 		["GAMES", "▦", 94.0, 86.0, Callable(), true, Color("#ffd54f")],
-		["DAILY", "★", 166.0, 158.0, func(): get_parent().call("build_compete_leaderboard"), false, Color("#ffd54f")],
+		["DAILY", "★", 166.0, 158.0, func(): get_parent().call("build_daily_games"), false, Color("#ffd54f")],
 		["COLLECT", "◆", 238.0, 230.0, func(): get_parent().call("build_collection"), false, Color("#ffd54f")],
 		["SETTINGS", "⚙", 310.0, 302.0, func(): get_parent().call("build_settings"), false, Color("#ffd54f")],
 	]
@@ -219,7 +291,7 @@ func _add_bottom_nav(canvas: Control) -> void:
 		var glyph := _add_text(canvas, String(item[1]), Rect2(float(item[2]) - 1.0, 763, 58, 24), 20, glyph_color, true)
 		glyph.name = "SelectorNavGlyph_%s" % String(item[0])
 		glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		var display_name := "COMPETE" if String(item[0]) == "DAILY" else String(item[0])
+		var display_name := String(item[0])
 		var label_width := 70.0 if String(item[0]) in ["COLLECT", "SETTINGS"] else 58.0
 		var label_x := float(item[3]) + (72.0 - label_width) * 0.5
 		var label := _add_text(canvas, display_name, Rect2(label_x, 789, label_width, 24), 13, label_color, selected)

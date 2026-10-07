@@ -51,6 +51,18 @@ func _run() -> void:
 	var expected_objective := String(game.call("_compact_objective_instruction"))
 	if objective.text != expected_objective:
 		return _fail("Rescue objective copy drifted from active objective: %s != %s" % [objective.text, expected_objective])
+	var subtitle := game.find_child("*", true, false) as Control
+	var status_labels := [game.get("moves_label") as Label, game.get("rescue_label") as Label, game.get("chain_label") as Label]
+	var guidance := game.find_child("RescueGuidanceText", true, false) as Label
+	for label in status_labels:
+		if label == null or label.get_theme_font_size("font_size") < 15:
+			return _fail("Rescue status typography fell below the 15px compact-phone floor")
+	if guidance == null or guidance.get_theme_font_size("font_size") < 15:
+		return _fail("Rescue guidance typography fell below the 15px compact-phone floor")
+	for action_name in ["RescueUndoAction", "RescueHintAction", "RescueRestartAction"]:
+		var action := game.find_child(action_name, true, false) as Button
+		if action == null or action.get_theme_font_size("font_size") < 15:
+			return _fail("%s fell below the 15px action readability floor" % action_name)
 
 	var arrow_source := _read("res://scripts/ui/rescue_piece_3d_button.gd")
 	for token in [

@@ -3,6 +3,17 @@ extends "res://scripts/ui/premium_main.gd"
 const FIGMA_LEVEL_PAGE_SIZE := 20
 const GardenUpgradePreviewScene = preload("res://scripts/ui/garden_upgrade_preview.gd")
 const META_ART_SCRIPT = preload("res://scripts/ui/unjam_meta_art.gd")
+const GAME_ART_SCRIPT = preload("res://scripts/ui/unjam_2d_game_art.gd")
+const UNJAM_WORDMARK: Texture2D = preload("res://assets/art/brand/unjam_wordmark.svg")
+const WIDE_META_ART := {
+	"collection": preload("res://assets/art/meta_wide/collection.svg"),
+	"daily": preload("res://assets/art/meta_wide/daily.svg"),
+	"compete": preload("res://assets/art/meta_wide/compete.svg"),
+	"goals": preload("res://assets/art/meta_wide/goals.svg"),
+	"profile": preload("res://assets/art/meta_wide/profile.svg"),
+	"friends": preload("res://assets/art/meta_wide/friends.svg"),
+	"settings": preload("res://assets/art/meta_wide/settings.svg"),
+}
 const FIGMA_BG_TOP := Color("#e9e5dd")
 const FIGMA_BG_BOTTOM := Color("#8f887f")
 const FIGMA_NAVY := Color("#252a30")
@@ -19,7 +30,7 @@ const FIGMA_DARK_TOP := Color("#343434")
 const FIGMA_DARK_BOTTOM := Color("#1c1c1c")
 const FIGMA_DARK_CARD := Color("#252525")
 const FIGMA_DARK_INK := Color("#f5f7fa")
-const FIGMA_DARK_MUTED := Color("#a7b1bc")
+const FIGMA_DARK_MUTED := Color("#bbc5cf")
 const FIGMA_SCENE_TOP := Color("#e4dfd5")
 const FIGMA_SCENE_MID := Color("#b3aca2")
 const FIGMA_SCENE_BOTTOM := Color("#80786e")
@@ -144,9 +155,23 @@ func _figma_surface(active: String, bottom_tint: Color = FIGMA_BG_BOTTOM, top_ti
 	viewport_bg.color = Color("#1f1f1f") if _dark() else Color("#e6e3dc")
 	viewport_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	content.add_child(viewport_bg)
+	var wide_stage := Control.new()
+	wide_stage.name = "FigmaWideSurfaceStage"
+	wide_stage.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	wide_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content.add_child(wide_stage)
+
 	var canvas := FigmaReferenceCanvas.new()
 	canvas.name = "FigmaSurface390x844"
 	content.add_child(canvas)
+	var available := content.size
+	if available.x <= 2.0 or available.y <= 2.0:
+		available = get_viewport_rect().size
+	var wide := available.x >= 1180.0 and available.x / maxf(1.0, available.y) >= 1.22
+	wide_stage.visible = wide
+	if wide:
+		canvas.set_fit_bias(0.10, 0.5)
+		_build_figma_wide_surface_stage(wide_stage, active, available)
 
 	# Secondary systems now live in restrained game-world colour fields instead of
 	# a beige application shell. Information cards remain simple and readable.
@@ -179,6 +204,96 @@ func _figma_surface(active: String, bottom_tint: Color = FIGMA_BG_BOTTOM, top_ti
 		FigmaReferenceCanvas.set_rect(art, 0, 0, 390, 844)
 		canvas.add_child(art)
 	return canvas
+
+func _build_figma_wide_surface_stage(stage: Control, active: String, available: Vector2) -> void:
+	var accent := _figma_surface_accent(active)
+	var dark := _dark()
+
+	# A pair of soft halos establishes depth without turning the wide region into
+	# a second dark card. The authored illustration below remains the visual hero.
+	for halo_data in [
+		[Vector2(available.x * 0.61, available.y * 0.16), minf(available.y * 0.44, available.x * 0.22), 0.10],
+		[Vector2(available.x * 0.78, available.y * 0.56), minf(available.y * 0.34, available.x * 0.18), 0.055],
+	]:
+		var halo := PanelContainer.new()
+		halo.name = "FigmaWideSurfaceHalo"
+		halo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var halo_size: float = float(halo_data[1])
+		halo.position = Vector2(halo_data[0])
+		halo.size = Vector2(halo_size, halo_size)
+		halo.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color(accent.r, accent.g, accent.b, float(halo_data[2])), halo_size * 0.50))
+		stage.add_child(halo)
+
+	var mark := TextureRect.new()
+	mark.name = "FigmaWideSurfaceWordmark"
+	mark.texture = UNJAM_WORDMARK
+	mark.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	mark.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var mark_w := minf(available.x * 0.24, 560.0)
+	mark.position = Vector2(available.x * 0.58, available.y * 0.055)
+	mark.size = Vector2(mark_w, mark_w * 0.265)
+	stage.add_child(mark)
+
+	var title_text := active.to_upper()
+	if active == "games":
+		title_text = _wide_selected_game_name()
+	elif active == "compete":
+		title_text = "RANKINGS"
+	var title := FigmaReferenceCanvas.label(title_text, int(clampf(available.y * 0.036, 38.0, 62.0)), Color.WHITE, true)
+	title.name = "FigmaWideSurfaceTitle"
+	FigmaReferenceCanvas.style_display_title(title, accent.lightened(0.18), Color("#09141f"), 3)
+	title.position = Vector2(available.x * 0.56, available.y * 0.15)
+	title.size = Vector2(available.x * 0.37, available.y * 0.07)
+	stage.add_child(title)
+
+	var subtitle := FigmaReferenceCanvas.label(_wide_surface_subtitle(active), int(clampf(available.y * 0.014, 18.0, 26.0)), Color("#d7e1ea") if dark else Color("#354450"), true)
+	subtitle.name = "FigmaWideSurfaceSubtitle"
+	subtitle.position = Vector2(available.x * 0.56, available.y * 0.215)
+	subtitle.size = Vector2(available.x * 0.36, available.y * 0.045)
+	stage.add_child(subtitle)
+
+	if WIDE_META_ART.has(active):
+		var art := TextureRect.new()
+		art.name = "FigmaWideMetaArtwork"
+		art.texture = WIDE_META_ART[active] as Texture2D
+		art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		art.position = Vector2(available.x * 0.50, available.y * 0.255)
+		art.size = Vector2(available.x * 0.47, available.y * 0.70)
+		stage.add_child(art)
+	else:
+		var game_art := GAME_ART_SCRIPT.new()
+		game_art.name = "FigmaWideGameArt"
+		game_art.configure(_wide_selected_game_id(), false, dark)
+		var art_side := minf(available.y * 0.60, available.x * 0.34)
+		game_art.position = Vector2(available.x * 0.62, available.y * 0.30)
+		game_art.size = Vector2(art_side, art_side)
+		game_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		stage.add_child(game_art)
+
+func _wide_selected_game_id() -> String:
+	var id := String(selected_game_id)
+	return id if id in ["rescue_rush", "water_sort", "block_puzzle"] else "rescue_rush"
+
+func _wide_selected_game_name() -> String:
+	match _wide_selected_game_id():
+		"water_sort": return "WATER SORT"
+		"block_puzzle": return "BLOCK PUZZLE"
+		_: return "RESCUE RUSH"
+
+func _wide_surface_subtitle(active: String) -> String:
+	match active:
+		"compete": return "CAMPAIGN PROGRESS • LEAGUES • WEEKLY RANK"
+		"friends": return "PLAYMATES • PRIVATE CODES • FRIEND RANKINGS"
+		"goals": return "DAILY MISSIONS • WEEKLY MISSIONS • SEASON JOURNEY"
+		"profile": return "PLAYER STATS • ACHIEVEMENTS • GAME MASTERY"
+		"collection": return "RESCUE GARDEN • UPGRADES • PERMANENT BONUSES"
+		"daily": return "CHECK-IN • DAILY PUZZLES • REWARDS"
+		"settings": return "SOUND • COMFORT • APPEARANCE • SUPPORT"
+		"games": return "CHOOSE A WORLD • KEEP YOUR CAMPAIGN MOVING"
+		_: return "UNJAM • THREE PUZZLES • ONE JOURNEY"
 
 func _figma_surface_accent(active: String) -> Color:
 	match active:
@@ -391,12 +506,12 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 	)
 	var xs := {"home":22.0, "games":94.0, "daily":166.0, "collection":238.0, "settings":310.0}
 	var hit_x := {"home":14.0, "games":86.0, "daily":158.0, "collection":230.0, "settings":302.0}
-	var names := {"home":"HOME", "games":"GAMES", "daily":"COMPETE", "collection":"COLLECT", "settings":"SETTINGS"}
+	var names := {"home":"HOME", "games":"GAMES", "daily":"DAILY", "collection":"COLLECT", "settings":"SETTINGS"}
 	var glyphs := {"home":"⌂", "games":"▦", "daily":"★", "collection":"◆", "settings":"⚙"}
 	var callbacks := {
 		"home": Callable(self,"build_home"),
 		"games": Callable(self,"_open_games_surface"),
-		"daily": Callable(self,"build_compete_leaderboard"),
+		"daily": Callable(self,"build_daily_games"),
 		"collection": Callable(self,"build_collection"),
 		"settings": Callable(self,"build_settings"),
 	}
@@ -683,7 +798,7 @@ func build_friends(refresh_remote: bool = true) -> void:
 
 	var count := CompetitionManager.friend_count()
 	_figma_text(canvas,"FRIENDS • %d/%d" % [count,CompetitionManager.max_friends()],Rect2(19,277,190,20),15,FIGMA_INK)
-	var global_button := _figma_button(canvas,"FriendsGlobalRanks","GLOBAL",Rect2(286,270,65,44),FIGMA_GOLD,Callable(self,"build_compete_leaderboard"),FIGMA_NAVY,10,9)
+	var global_button := _figma_button(canvas,"FriendsGlobalRanks","GLOBAL",Rect2(286,270,65,44),FIGMA_GOLD,Callable(self,"build_compete_leaderboard"),FIGMA_NAVY,10,11)
 	global_button.tooltip_text = "Open global campaign rankings"
 
 	_figma_friend_period_tabs(canvas)
@@ -707,9 +822,9 @@ func build_friends(refresh_remote: bool = true) -> void:
 	var status_text := _friends_status
 	if status_text.is_empty():
 		status_text = "Only your UNJAM name and level rank are visible."
-	var privacy_note := _figma_text(canvas,status_text,Rect2(31,663,328,42),11,FIGMA_MUTED,true)
+	var privacy_note := _figma_text(canvas,status_text,Rect2(31,663,328,42),12,FIGMA_MUTED,true)
 	privacy_note.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_fit_wrapped_text(privacy_note,316.0,11,10)
+	_fit_wrapped_text(privacy_note,316.0,12,11)
 	_figma_bottom_nav(canvas,"home")
 
 func _figma_friend_period_tabs(canvas: Control) -> void:
@@ -722,7 +837,7 @@ func _figma_friend_period_tabs(canvas: Control) -> void:
 		var selected := _friends_period == period
 		var fill := Color("#7a57e0") if selected else (Color("#36383d") if _dark() else Color("#d8d2c8"))
 		var text_color := Color.WHITE if selected else FIGMA_INK
-		var button := _figma_button(canvas,"FriendsPeriod/%s" % period,String(spec[1]),Rect2(float(spec[2]),307,101,44),fill,Callable(),text_color,9,9)
+		var button := _figma_button(canvas,"FriendsPeriod/%s" % period,String(spec[1]),Rect2(float(spec[2]),307,101,44),fill,Callable(),text_color,9,11)
 		if not selected:
 			button.pressed.connect(_set_friends_period.bind(period))
 		else:
@@ -737,11 +852,11 @@ func _figma_friend_rank_row(canvas: Control, row: Dictionary, index: int, y: flo
 	var is_you := bool(row.get("you",false))
 	var accent := FIGMA_CYAN if is_you else Unjam3DTheme.game_accent(_ranking_game)
 	var rank := int(row.get("rank",index+1))
-	_figma_text(canvas,"YOU" if is_you else str(rank),Rect2(30,y+6,38,24),12,accent,true)
-	_figma_text(canvas,String(row.get("name","PLAYER")).left(15),Rect2(75,y+6,130,24),12,FIGMA_INK)
+	_figma_text(canvas,"YOU" if is_you else str(rank),Rect2(30,y+6,38,24),13,accent,true)
+	_figma_text(canvas,String(row.get("name","PLAYER")).left(15),Rect2(75,y+6,130,24),13,FIGMA_INK)
 	var levels := maxi(0,int(row.get("levels_completed",0)))
 	var stars := maxi(0,int(row.get("stars",0)))
-	var progress := _figma_text(canvas,"L%d • ★%d" % [levels,stars],Rect2(205,y+6,96,24),11,FIGMA_MUTED,true)
+	var progress := _figma_text(canvas,"L%d • ★%d" % [levels,stars],Rect2(205,y+6,96,24),12,FIGMA_MUTED,true)
 	progress.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	if not is_you:
 		var code := String(row.get("friend_code",""))
@@ -957,9 +1072,8 @@ func build_daily_games() -> void:
 	_figma_daily_card(canvas, "block_puzzle", 363, bonus)
 	_figma_daily_progress(canvas)
 	_figma_daily_tip(canvas, bonus)
-	# Daily is a Live Now reward activity, not a primary nav destination.
-	# Leave every primary destination tappable, including HOME and COMPETE.
-	_figma_bottom_nav(canvas, "")
+	# Daily is a primary destination; campaign rankings remain a separate Compete flow.
+	_figma_bottom_nav(canvas, "daily")
 
 func _figma_daily_progress(canvas: Control) -> void:
 	var done_count := 0
@@ -1067,7 +1181,8 @@ func build_compete_leaderboard(refresh_remote: bool = true) -> void:
 	else:
 		var note := _figma_text(canvas,"Weekly rewards settle after each reset.",Rect2(44,663,302,40),12,FIGMA_MUTED,true)
 		_fit_wrapped_text(note,292.0,12,10)
-	_figma_bottom_nav(canvas,"daily")
+	# Rankings are intentionally separate from the Daily destination.
+	_figma_bottom_nav(canvas,"")
 
 func _figma_compete_game_tabs(canvas: Control, y: float, compact: bool = false) -> void:
 	var ids: Array[String] = ["rescue_rush","water_sort","block_puzzle"]
@@ -1120,7 +1235,7 @@ func _figma_progress_leaderboard_panel(canvas: Control, title_text: String, entr
 	_figma_card(canvas,"Leaderboard/%s" % title_text,Rect2(17,y,354,180),Color("#fffaf2"),Color(accent,0.36),18)
 	_figma_text(canvas,title_text,Rect2(33,y+12,120,20),15,accent)
 	var own_text := "YOU —" if own_rank <= 0 else "YOU #%d • L%d" % [own_rank,own_levels]
-	var own := _figma_text(canvas,own_text,Rect2(185,y+12,166,20),12,FIGMA_INK,true)
+	var own := _figma_text(canvas,own_text,Rect2(185,y+12,166,20),13,FIGMA_INK,true)
 	own.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var shown := mini(4,entries.size())
 	if shown <= 0:
@@ -1134,10 +1249,10 @@ func _figma_progress_leaderboard_panel(canvas: Control, title_text: String, entr
 		var row_y := y+42.0+float(i)*33.0
 		var place := i+1
 		_figma_text(canvas,"★" if place == 1 else str(place),Rect2(34,row_y,28,24),13,accent,true)
-		_figma_text(canvas,String(row.get("name","PLAYER")).left(15),Rect2(70,row_y,135,24),12,FIGMA_INK)
+		_figma_text(canvas,String(row.get("name","PLAYER")).left(15),Rect2(70,row_y,135,24),13,FIGMA_INK)
 		var levels := maxi(0,int(row.get("levels_completed",0)))
 		var stars := maxi(0,int(row.get("stars",0)))
-		var progress := _figma_text(canvas,"L%d • ★%d" % [levels,stars],Rect2(210,row_y,130,24),11,FIGMA_MUTED,true)
+		var progress := _figma_text(canvas,"L%d • ★%d" % [levels,stars],Rect2(210,row_y,130,24),12,FIGMA_MUTED,true)
 		progress.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 
 func _figma_today_label() -> String:

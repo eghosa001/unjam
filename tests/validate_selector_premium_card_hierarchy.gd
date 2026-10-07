@@ -36,6 +36,13 @@ func _run() -> void:
 		var preview_frame := _find_node_named(main, "SelectorGamePreviewFrame_%s" % game_id) as PanelContainer
 		if preview_frame == null or preview_frame.get_theme_stylebox("panel") == null:
 			failures.append("Selector gameplay preview frame is missing its material treatment for %s" % game_id)
+		var authored_art := _find_node_named(main, "SelectorAuthoredGameArt_%s" % game_id) as Control
+		if authored_art == null:
+			failures.append("Selector is not using authored game art for %s" % game_id)
+		elif authored_art.is_processing():
+			failures.append("Compact selector art should remain static for %s" % game_id)
+		if _find_node_named(main, "SelectorFlatGameLogo_%s" % game_id) != null:
+			failures.append("Selector still renders the retired procedural logo for %s" % game_id)
 		var play := _find_node_named(main, "SelectorPlay_%s" % game_id) as Button
 		if play == null or play.size.x < 72.0 or play.size.y < 42.0 or play.get_theme_font_size("font_size") < 14:
 			failures.append("Selector play CTA is not explicit/readable for %s" % game_id)

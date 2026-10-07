@@ -185,24 +185,72 @@ func _add_product_exact(canvas: Control, product_id: String, rect: Rect2, displa
 	_add_text(canvas,display_title,Rect2(33,rect.position.y+10,190,22),16,product_title_color)
 	_add_text(canvas,display_subtitle,Rect2(33,rect.position.y+34,200,19),13,product_subtitle_color)
 
-	var buy_text := StoreManager.price_text(product_id)
-	var disabled := false
-	if _is_owned_product(product_id,info):
-		buy_text = "OWNED"
-		disabled = true
-	elif StoreManager.is_purchase_pending(product_id):
-		buy_text = "PENDING"
-		disabled = true
-	# Localized Play prices, PENDING and UNAVAILABLE need more breathing room than
-	# the old 78 px pill. The wider CTA still leaves a safe gap after product copy.
-	FigmaReferenceCanvas.add_shadow(canvas,Rect2(257,rect.position.y+18,96,46),23,Color(0.02,0.15,0.30,0.16),3,Vector2(0,2))
-	var buy := FigmaReferenceCanvas.premium_button(buy_text,15,Color.WHITE,Color("#ff8c1f"),23,Color("#ffbd64"),1.2)
+	var state := _shop_product_visual_state(product_id, info)
+	var buy_text := String(state.get("text", "UNAVAILABLE"))
+	var enabled := bool(state.get("enabled", false))
+	var buy_fill: Color = state.get("fill", Color("#30343a"))
+	var buy_border: Color = state.get("border", Color("#555d66"))
+	var buy_text_color: Color = state.get("text_color", Color("#c8d0d8"))
+	var buy_font_size := int(state.get("font_size", 13))
+
+	# Only a real Play price/store action receives purchase-CTA emphasis. Owned,
+	# pending and unavailable states are quiet status chips, so an offline catalog
+	# never reads like five orange errors competing with the rewarded action.
+	if enabled:
+		FigmaReferenceCanvas.add_shadow(canvas,Rect2(257,rect.position.y+18,96,46),23,Color(0.02,0.15,0.30,0.16),3,Vector2(0,2))
+	var buy := FigmaReferenceCanvas.premium_button(buy_text,buy_font_size,buy_text_color,buy_fill,23,buy_border,1.0)
 	buy.name = "Buy_%s" % product_id
 	FigmaReferenceCanvas.set_rect(buy,257,rect.position.y+18,96,46)
-	buy.disabled = disabled
-	if not disabled:
+	buy.disabled = not enabled
+	if enabled:
 		buy.pressed.connect(_purchase.bind(product_id,buy))
+	else:
+		# Preserve full legibility for status chips instead of applying the generic
+		# 58% disabled treatment intended for temporarily disabled action buttons.
+		buy.add_theme_stylebox_override("disabled", FigmaReferenceCanvas.flat_gloss(buy_fill,23,buy_border,1.0,0.08))
+		buy.add_theme_color_override("font_disabled_color",buy_text_color)
+		buy.mouse_default_cursor_shape = Control.CURSOR_ARROW
+		if buy_text == "UNAVAILABLE":
+			buy.tooltip_text = "Google Play purchases are not available right now"
 	canvas.add_child(buy)
+
+func _shop_product_visual_state(product_id: String, info: Dictionary) -> Dictionary:
+	if _is_owned_product(product_id, info):
+		return {
+			"text":"OWNED",
+			"enabled":false,
+			"fill":Color("#224d41") if _shop_dark() else Color("#d9eee5"),
+			"border":Color("#4f9b7a"),
+			"text_color":Color("#9ee3c0") if _shop_dark() else Color("#28684f"),
+			"font_size":13,
+		}
+	if StoreManager.is_purchase_pending(product_id):
+		return {
+			"text":"PENDING",
+			"enabled":false,
+			"fill":Color("#4b432c") if _shop_dark() else Color("#eee6cf"),
+			"border":Color("#9b8750"),
+			"text_color":Color("#f1d98b") if _shop_dark() else Color("#705d25"),
+			"font_size":13,
+		}
+	var price := StoreManager.price_text(product_id)
+	if price == "UNAVAILABLE":
+		return {
+			"text":"UNAVAILABLE",
+			"enabled":false,
+			"fill":Color("#30343a") if _shop_dark() else Color("#e2e5e8"),
+			"border":Color("#555d66") if _shop_dark() else Color("#b8bec5"),
+			"text_color":Color("#c7d0d9") if _shop_dark() else Color("#58636d"),
+			"font_size":12,
+		}
+	return {
+		"text":price,
+		"enabled":true,
+		"fill":Color("#ff8c1f"),
+		"border":Color("#ffbd64"),
+		"text_color":Color.WHITE,
+		"font_size":15,
+	}
 
 func _add_shop_status(canvas: Control) -> void:
 	var remove_info: Dictionary = StoreManager.PRODUCTS[StoreManager.PRODUCT_REMOVE_ADS]

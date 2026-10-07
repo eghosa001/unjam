@@ -1,8 +1,8 @@
 extends "res://scripts/game/block_puzzle.gd"
 
 const PIECE_COLORS := [
-	Color("8b7cf6"), Color("5da9ff"), Color("2dd4b6"),
-	Color("ffb454"), Color("ff6b8a"), Color("67e8cf")
+	Color("a76cff"), Color("3fc6ff"), Color("25dda1"),
+	Color("ffc447"), Color("ff5579"), Color("4fe8d6")
 ]
 
 const ADVANCED_SHAPES := [

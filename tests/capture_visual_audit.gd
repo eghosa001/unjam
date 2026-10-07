@@ -452,6 +452,14 @@ func _run_fast_visual_audit(main: Node, shell: Node) -> void:
 			main.emit_signal("surface_changed", "live")
 		await _settle(5)
 		await _capture("02b-live-540x960-dark")
+		root.size = Vector2i(2560, 1600)
+		await _settle(6)
+		main.set("current_surface", "live")
+		if main.has_signal("surface_changed"):
+			main.emit_signal("surface_changed", "live")
+		await _capture("02c-live-2560x1600-tablet-landscape-dark")
+		root.size = Vector2i(540, 960)
+		await _settle(5)
 
 	if _fast_visual_enabled("levels"):
 		main.set("selected_game_id", "rescue_rush")
@@ -463,11 +471,24 @@ func _run_fast_visual_audit(main: Node, shell: Node) -> void:
 		main.call("build_multi_level_select")
 		await _settle(5)
 		await _capture("12b-levels-block-540x960-dark")
+		root.size = Vector2i(2560, 1600)
+		await _settle(6)
+		main.set("selected_game_id", "block_puzzle")
+		main.call("build_multi_level_select")
+		await _capture("12c-levels-block-2560x1600-tablet-landscape-dark")
+		root.size = Vector2i(540, 960)
+		await _settle(5)
 
 	if _fast_visual_enabled("collection"):
 		main.call("build_collection")
 		await _settle(5)
 		await _capture("05b-collection-540x960-dark")
+		root.size = Vector2i(2560, 1600)
+		await _settle(6)
+		main.call("build_collection")
+		await _capture("05i-collection-2560x1600-tablet-landscape-dark")
+		root.size = Vector2i(540, 960)
+		await _settle(5)
 		if main.has_method("build_collection_upgrades"):
 			main.call("build_collection_upgrades")
 			await _settle(5)
@@ -481,16 +502,37 @@ func _run_fast_visual_audit(main: Node, shell: Node) -> void:
 		main.call("build_compete_leaderboard", false)
 		await _settle(5)
 		await _capture("05e-compete-540x960-dark")
+		root.size = Vector2i(2560, 1600)
+		await _settle(6)
+		main.call("build_daily_games")
+		await _capture("05j-daily-2560x1600-tablet-landscape-dark")
+		main.call("build_compete_leaderboard", false)
+		await _settle(5)
+		await _capture("05k-compete-2560x1600-tablet-landscape-dark")
+		root.size = Vector2i(540, 960)
+		await _settle(5)
 
 	if _fast_visual_enabled("goals"):
 		main.call("build_goals")
 		await _settle(5)
 		await _capture("17-goals-540x960-dark")
+		root.size = Vector2i(2560, 1600)
+		await _settle(6)
+		main.call("build_goals")
+		await _capture("17c-goals-2560x1600-tablet-landscape-dark")
+		root.size = Vector2i(540, 960)
+		await _settle(5)
 
 	if _fast_visual_enabled("profile"):
 		main.call("build_profile")
 		await _settle(5)
 		await _capture("18-profile-540x960-dark")
+		root.size = Vector2i(2560, 1600)
+		await _settle(6)
+		main.call("build_profile")
+		await _capture("18c-profile-2560x1600-tablet-landscape-dark")
+		root.size = Vector2i(540, 960)
+		await _settle(5)
 
 	if _fast_visual_enabled("friends"):
 		_seed_social_visual_data()
@@ -501,11 +543,24 @@ func _run_fast_visual_audit(main: Node, shell: Node) -> void:
 		main.call("build_friends", false)
 		await _settle(5)
 		await _capture("19c-friends-empty-540x960-dark")
+		root.size = Vector2i(2560, 1600)
+		await _settle(6)
+		_seed_social_visual_data()
+		main.call("build_friends", false)
+		await _capture("19e-friends-2560x1600-tablet-landscape-dark")
+		root.size = Vector2i(540, 960)
+		await _settle(5)
 
 	if _fast_visual_enabled("settings"):
 		main.call("build_settings")
 		await _settle(5)
 		await _capture("06b-settings-540x960-dark")
+		root.size = Vector2i(2560, 1600)
+		await _settle(6)
+		main.call("build_settings")
+		await _capture("06g-settings-2560x1600-tablet-landscape-dark")
+		root.size = Vector2i(540, 960)
+		await _settle(5)
 
 	if _fast_visual_enabled("shop"):
 		var shop := main.get_node_or_null("MonetizationHub")
@@ -689,23 +744,9 @@ func _run_fast_visual_audit(main: Node, shell: Node) -> void:
 	print("Selective fast visual audit captures written to %s" % OUT_DIR)
 
 func _shutdown_visual_audit() -> void:
-	# Tear down the transient scene before clearing generated-resource caches.
-	# Clearing first lets late/deferred UI teardown repopulate those caches and
-	# leaves otherwise harmless StyleBox/ImageTexture resources alive at exit.
-	var scene := current_scene
-	current_scene = null
-	if scene != null and is_instance_valid(scene):
-		scene.queue_free()
-
-	# Large UI surfaces can queue nested Control frees for several frames.
-	for _i in range(60):
-		await process_frame
-		if scene == null or not is_instance_valid(scene):
-			break
-
-	# Only after the surface is truly gone should persistent audit helpers drop
-	# their generated resources. Fast single-surface audits can otherwise quit
-	# while short-lived global feedback particles/tweens are still finishing.
+	# Stop transient animations first. A tween can retain a target long enough to
+	# survive a queued scene free, which makes the strict audit report an
+	# ObjectDB leak even though every capture completed correctly.
 	for tween in get_processed_tweens():
 		if tween != null and tween.is_valid():
 			tween.kill()
@@ -723,13 +764,29 @@ func _shutdown_visual_audit() -> void:
 	var feedback := root.get_node_or_null("FeedbackManager")
 	if feedback != null and feedback.has_method("shutdown_audio"):
 		feedback.call("shutdown_audio")
-	FigmaReferenceCanvas.release_cached_styles()
 
-	# Flush queued frees and RefCounted styles after all scene/global visual
-	# owners have released them. Keep this strict rather than suppressing leaks.
+	# Detach the transient Main scene before freeing it. This makes the audit
+	# teardown deterministic even when richer SVG imports shift frame timing and
+	# leave deferred UI callbacks scheduled on the final captured surface.
+	var scene := current_scene
+	current_scene = null
+	if scene != null and is_instance_valid(scene):
+		var parent := scene.get_parent()
+		if parent != null:
+			parent.remove_child(scene)
+		scene.free()
+	scene = null
+
+	# Flush queued particle/overlay frees, then kill any tween created by an
+	# autoload during teardown before dropping shared generated-style caches.
+	await _settle(24)
+	for tween in get_processed_tweens():
+		if tween != null and tween.is_valid():
+			tween.kill()
+	FigmaReferenceCanvas.release_cached_styles()
 	await _settle(36)
-	# Defer the actual exit one more frame so _shutdown_visual_audit() and its
-	# caller return first, releasing local PackedScene/image/resource references.
+
+	# Defer exit so this coroutine releases its remaining local references first.
 	call_deferred("_finish_visual_audit_quit")
 
 func _finish_visual_audit_quit() -> void:

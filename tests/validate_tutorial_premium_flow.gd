@@ -26,6 +26,7 @@ func _run() -> void:
 		var next := shell.get("tutorial_next_button") as Button
 		var back := shell.get("tutorial_prev_button") as Button
 		var demo := shell.find_child("TutorialDemoArt",true,false) as Control
+		var world_art := shell.find_child("TutorialAuthoredWorldArt",true,false) as Control
 		var close := shell.find_child("TutorialClose",true,false) as Button
 		var demo_panel := shell.find_child("TutorialDemoPanel",true,false) as Control
 		var step_card := shell.find_child("TutorialStepCard",true,false) as Control
@@ -37,6 +38,10 @@ func _run() -> void:
 			return _fail("%s tutorial reverted to a wall of text" % game_id)
 		if demo == null or demo.get_child_count() == 0 or step == null or step.text.is_empty():
 			return _fail("%s gameplay demo art is missing" % game_id)
+		if world_art == null or world_art.get_script() == null or not String(world_art.get_script().resource_path).ends_with("unjam_2d_game_art.gd"):
+			return _fail("%s tutorial is missing authored game-world art" % game_id)
+		if not bool(world_art.get("compact")) or world_art.is_processing():
+			return _fail("%s tutorial authored world art must remain compact and static" % game_id)
 		if game_id == "rescue_rush":
 			var exit_label := shell.find_child("TutorialDemoExitLabel",true,false) as Label
 			if exit_label == null or exit_label.get_theme_font_size("font_size") < 12:

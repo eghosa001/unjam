@@ -1,6 +1,7 @@
 extends "res://scripts/ui/water_tube_reference_button.gd"
 
 const MATERIALS_SCRIPT = preload("res://scripts/ui/procedural_materials.gd")
+const AUTHORED_GLASS_OVERLAY: Texture2D = preload("res://assets/art/gameplay/water_glass_overlay.svg")
 
 var pour_mode := 0
 var pour_color := 0
@@ -121,6 +122,8 @@ func _draw() -> void:
 	var specular_shift := 0.0 if MotionSystem.reduced() else sin(pulse * 0.85) * 2.0
 	draw_line(Vector2(body.position.x + 8 + specular_shift, body.position.y + 18), Vector2(body.position.x + 8 + specular_shift, body.end.y - 24), _materials.glass_highlight(Color.WHITE, specular_alpha + 0.08), 4.0, true)
 	draw_line(Vector2(body.end.x - 7, body.position.y + 23), Vector2(body.end.x - 7, body.size.y * 0.38 + body.position.y), Color(1, 1, 1, 0.13), 2.0, true)
+	# Authored glass silhouette/highlight pass sits above dynamic liquid.
+	draw_texture_rect(AUTHORED_GLASS_OVERLAY, body.grow(5.0), false, Color.WHITE)
 	if is_selected and pour_mode == 0:
 		var a := 0.35 if MotionSystem.reduced() else 0.35 + 0.12 * sin(pulse * 5.0)
 		draw_arc(body.get_center(), body.size.x * 0.68, 0, TAU, 42, Color(1.0, 0.88, 0.35, a), 4.0, true)

@@ -27,9 +27,13 @@ func _run() -> void:
 	var secondary := overlay.find_child("SecondaryAction",true,false) as Button
 	var secondary_shadow := overlay.find_child("SecondaryActionShadow",true,false) as Control
 	var stats := overlay.find_child("ResultStatsText",true,false) as Label
-	var identity_art := overlay.find_child("ResultGameArt3D",true,false) as Control
-	if card == null or title == null or subtitle == null or badge == null or primary == null or secondary == null or secondary_shadow == null or stats == null or identity_art == null:
+	var identity_art := overlay.find_child("ResultGameArt2D",true,false) as Control
+	var victory_halo := overlay.find_child("ResultVictoryHalo",true,false) as Control
+	var victory_rays := overlay.find_children("ResultVictoryRay_*","ColorRect",true,false)
+	if card == null or title == null or subtitle == null or badge == null or primary == null or secondary == null or secondary_shadow == null or stats == null or identity_art == null or victory_halo == null:
 		return _fail("Result hierarchy is incomplete")
+	if victory_rays.size() < 8:
+		return _fail("Result victory aura lost its lightweight ray hierarchy")
 	if badge.text != "RESCUE SECURED":
 		return _fail("Result status badge is missing or stale")
 	if subtitle.size.y < 64.0:
@@ -48,6 +52,12 @@ func _run() -> void:
 		return _fail("Result title overlaps subtitle")
 	if subtitle.get_rect().intersects(identity_art.get_rect()):
 		return _fail("Result subtitle overlaps game identity art")
+	if identity_art.get_script() == null or not String(identity_art.get_script().resource_path).ends_with("unjam_2d_game_art.gd"):
+		return _fail("Result identity is not using authored 2D game art")
+	if not bool(identity_art.get("compact")) or identity_art.is_processing():
+		return _fail("Result authored game art must remain compact and static")
+	if overlay.find_child("ResultGameArt3D",true,false) != null:
+		return _fail("Retired 3D result identity returned")
 	var stats_panel := overlay.find_child("Stats",true,false) as Control
 	var first_star := overlay.find_child("StarCard",true,false) as Control
 	if first_star != null and subtitle.get_rect().intersects(first_star.get_rect()):
@@ -57,6 +67,9 @@ func _run() -> void:
 	for node in overlay.find_children("StarCard","PanelContainer",true,false):
 		if stats_panel != null and (node as Control).get_rect().intersects(stats_panel.get_rect()):
 			return _fail("Result stars overlap stats panel")
+	var earned_glows := overlay.find_children("ResultStarGlow_*","PanelContainer",true,false)
+	if earned_glows.size() != 3:
+		return _fail("Three-star result lost its earned-star glow hierarchy")
 	if stats.text.is_empty():
 		return _fail("Result stats are missing")
 

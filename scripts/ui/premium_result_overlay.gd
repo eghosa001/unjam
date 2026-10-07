@@ -1,7 +1,7 @@
 class_name PremiumResultOverlay
 extends Control
 
-const GAME_ART_SCRIPT = preload("res://scripts/ui/unjam_3d_game_art.gd")
+const GAME_ART_SCRIPT = preload("res://scripts/ui/unjam_2d_game_art.gd")
 
 signal continue_requested
 signal secondary_requested
@@ -96,6 +96,8 @@ func _build() -> void:
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_canvas.add_child(card)
 
+	_add_victory_aura(dark)
+
 	var title := FigmaReferenceCanvas.label(_result_display_title(), 27, Color("#eef7ff") if dark else Unjam3DTheme.NAVY, true)
 	title.name = "ResultTitle"
 	FigmaReferenceCanvas.style_display_title(title, accent.lightened(0.22), Color("#071d55"), 2)
@@ -134,28 +136,40 @@ func _build() -> void:
 	_add_identity(_result_game_id())
 
 	for i in range(3):
-		var x := 60.0 + float(i) * 92.0
+		var x := 62.0 + float(i) * 90.0
 		var star_card := PanelContainer.new()
 		star_card.name = "StarCard"
+		star_card.set_meta("result_star_index", i)
 		var earned := i < stars
-		FigmaReferenceCanvas.add_shadow(_canvas, Rect2(x,306,78,72), 30, Color(0.02,0.14,0.26,0.20), 4, Vector2(0,3))
-		var star_mid := Color("#fff2b2") if earned else Color("#e3edf3")
+		var star_rect := Rect2(x, 306, 74, 70)
+		FigmaReferenceCanvas.add_shadow(_canvas, star_rect, 30, Color(0.02,0.08,0.16,0.18), 4, Vector2(0,3))
+		var earned_mid := Color("#3b3211") if dark else Color("#fff5c9")
+		var idle_mid := Color("#26313b") if dark else Color("#e9eef1")
+		var star_mid := earned_mid if earned else idle_mid
+		var star_edge := Color("#ffd84f", 0.74) if earned else Color("#a8bac7", 0.38)
 		star_card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(
-			star_mid.lightened(0.13),
+			star_mid.lightened(0.08),
 			star_mid,
-			star_mid.darkened(0.13),
+			star_mid.darkened(0.08),
 			30,
-			Color("#ffd63d") if earned else Color("#a9bac5"),
-			1.5,
-			0.40
+			star_edge,
+			1.2,
+			0.22
 		))
-		FigmaReferenceCanvas.set_rect(star_card, x, 306, 78, 72)
+		FigmaReferenceCanvas.set_rect(star_card, star_rect.position.x, star_rect.position.y, star_rect.size.x, star_rect.size.y)
 		star_card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_canvas.add_child(star_card)
+		if earned:
+			var star_glow := PanelContainer.new()
+			star_glow.name = "ResultStarGlow_%d" % i
+			star_glow.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color("#ffd84f", 0.09), 32))
+			FigmaReferenceCanvas.set_rect(star_glow, x - 7, 300, 88, 82)
+			star_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			_canvas.add_child(star_glow)
 		FigmaReferenceCanvas.add_collectible_star(
 			_canvas,
-			Vector2(x + 39.0, 342.0),
-			20.0,
+			Vector2(x + 37.0, 341.0),
+			24.0,
 			earned,
 			"ResultStar3D_%d" % i
 		)
@@ -163,15 +177,16 @@ func _build() -> void:
 	var stats_panel := PanelContainer.new()
 	stats_panel.name = "Stats"
 	FigmaReferenceCanvas.add_shadow(_canvas, Rect2(47,392,294,86), 18, Color(0.02,0.14,0.26,0.20), 3, Vector2(0,2))
-	var stats_mid := Color("#1a384d") if dark else Color("#ebfaff")
+	var stats_mid := (Color("#162a2b").lerp(accent.darkened(0.55), 0.26) if dark
+		else Color("#f3f7f4").lerp(accent.lightened(0.72), 0.26))
 	stats_panel.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(
-		stats_mid.lightened(0.14 if dark else 0.07),
+		stats_mid.lightened(0.10 if dark else 0.05),
 		stats_mid,
-		stats_mid.darkened(0.16 if dark else 0.08),
+		stats_mid.darkened(0.10 if dark else 0.06),
 		18,
-		Color("#1aa8ff"),
-		1.5,
-		0.40
+		Color(accent, 0.70 if dark else 0.44),
+		1.4,
+		0.28
 	))
 	FigmaReferenceCanvas.set_rect(stats_panel, 47, 392, 294, 86)
 	stats_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -194,7 +209,8 @@ func _build() -> void:
 	_secondary_shadow = FigmaReferenceCanvas.add_shadow(_canvas, Rect2(47,568,294,48), 16, Color(0.03,0.10,0.20,0.22), 4, Vector2(0,4))
 	_secondary_shadow.name = "SecondaryActionShadow"
 	_secondary_shadow.visible = has_secondary
-	_secondary_button = FigmaReferenceCanvas.premium_button(secondary_text, 15, Color.WHITE, Color("#086ec7"), 16, Color("#70b9ef"), 1.3)
+	var secondary_fill := accent.darkened(0.32) if dark else accent.darkened(0.12)
+	_secondary_button = FigmaReferenceCanvas.premium_button(secondary_text, 15, Color.WHITE, secondary_fill, 16, accent.lightened(0.24), 1.3)
 	_secondary_button.name = "SecondaryAction"
 	FigmaReferenceCanvas.set_rect(_secondary_button, 47, 568, 294, 48)
 	_secondary_button.visible = has_secondary
@@ -224,14 +240,71 @@ func _result_game_id() -> String:
 		return "block_puzzle"
 	return "rescue_rush"
 
+func _add_victory_aura(dark: bool) -> void:
+	var halo := PanelContainer.new()
+	halo.name = "ResultVictoryHalo"
+	halo.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color(accent, 0.08 if dark else 0.065), 100))
+	FigmaReferenceCanvas.set_rect(halo, 77, 196, 236, 190)
+	halo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_canvas.add_child(halo)
+
+	var center := Vector2(195, 278)
+	for i in range(10):
+		var angle := TAU * float(i) / 10.0
+		var ray := ColorRect.new()
+		ray.name = "ResultVictoryRay_%02d" % i
+		ray.color = Color((Color("#ffd95e") if i % 2 == 0 else accent).lightened(0.10), 0.075 if dark else 0.060)
+		ray.size = Vector2(4, 42)
+		ray.pivot_offset = Vector2(2, 21)
+		var radius := 76.0
+		ray.position = center + Vector2(cos(angle), sin(angle)) * radius - ray.pivot_offset
+		ray.rotation = angle + PI * 0.5
+		ray.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_canvas.add_child(ray)
+
+	for spec in [
+		[84.0, 270.0, 5.0, -0.32],
+		[298.0, 264.0, 6.0, 0.38],
+		[98.0, 360.0, 4.0, 0.28],
+		[287.0, 354.0, 5.0, -0.24],
+	]:
+		var confetti := ColorRect.new()
+		confetti.name = "ResultVictoryConfetti"
+		confetti.color = Color("#ffd95e", 0.62)
+		FigmaReferenceCanvas.set_rect(confetti, float(spec[0]), float(spec[1]), float(spec[2]), float(spec[2]) * 2.1)
+		confetti.rotation = float(spec[3])
+		confetti.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_canvas.add_child(confetti)
+
 func _add_identity(game_id: String) -> void:
-	# Use the same lit one-shot diorama language as Home and Choose Game. The old
-	# hand-drawn chick/tubes/cubes looked like placeholder glyphs beside the 3D stars.
+	# Results reuse the same authored 2D identity as Home/Choose Game. Keep it
+	# compact and static: the win moment is carried by the illustration, stars
+	# and burst feedback rather than a hidden 3D viewport.
+	var halo := PanelContainer.new()
+	halo.name = "ResultIdentityHalo"
+	halo.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color(accent, 0.10), 42))
+	FigmaReferenceCanvas.set_rect(halo, 116, 229, 156, 70)
+	halo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_canvas.add_child(halo)
+
 	var art := GAME_ART_SCRIPT.new()
-	art.name = "ResultGameArt3D"
-	art.configure(game_id)
-	FigmaReferenceCanvas.set_rect(art, 139, 232, 110, 66)
+	art.name = "ResultGameArt2D"
+	art.configure(game_id, true, _dark_theme())
+	FigmaReferenceCanvas.set_rect(art, 128, 231, 132, 67)
+	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_canvas.add_child(art)
+
+	for spec in [
+		[112.0, 250.0, 4.0],
+		[274.0, 240.0, 5.0],
+		[287.0, 286.0, 3.0],
+	]:
+		var spark := PanelContainer.new()
+		spark.name = "ResultIdentitySpark"
+		spark.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color(1, 0.96, 0.62, 0.82), float(spec[2])))
+		FigmaReferenceCanvas.set_rect(spark, float(spec[0]), float(spec[1]), float(spec[2]) * 2.0, float(spec[2]) * 2.0)
+		spark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_canvas.add_child(spark)
 
 func _celebrate() -> void:
 	if not is_inside_tree():
@@ -240,5 +313,16 @@ func _celebrate() -> void:
 	if visuals == null:
 		return
 	var center := get_viewport_rect().size * 0.5
+	if visuals.has_method("screen_flash"):
+		visuals.call("screen_flash", accent, 0.10)
 	if visuals.has_method("burst"):
-		visuals.call("burst", center + Vector2(0, -110), accent, 18)
+		visuals.call("burst", center + Vector2(0, -118), accent, 22)
+		visuals.call("burst", center + Vector2(0, -72), Color("#ffd85a"), 12)
+	if visuals.has_method("entrance"):
+		var star_cards := _canvas.find_children("StarCard", "PanelContainer", true, false)
+		for i in range(star_cards.size()):
+			var card := star_cards[i] as Control
+			if card != null:
+				visuals.call("entrance", card, 0.07 * float(i))
+		if _secondary_button != null and _secondary_button.visible:
+			visuals.call("entrance", _secondary_button, 0.24)

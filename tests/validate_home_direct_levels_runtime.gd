@@ -99,8 +99,8 @@ func _run() -> void:
 	var daily_nav_label := home.find_child("HomeNavLabel_DAILY",true,false) as Label
 	if profile == null or goals == null or daily == null or friends == null:
 		return _fail("Home meta destinations are not all directly accessible")
-	if daily_nav_label == null or daily_nav_label.text != "COMPETE":
-		return _fail("Home still exposes Daily instead of Compete")
+	if daily_nav_label == null or daily_nav_label.text != "DAILY":
+		return _fail("Home Daily navigation identity is incorrect")
 	profile.pressed.emit()
 	await _frames(2)
 	if String(main.get("current_surface")) != "profile":

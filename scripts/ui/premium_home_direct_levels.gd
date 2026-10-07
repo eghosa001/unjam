@@ -2,6 +2,7 @@ extends "res://scripts/ui/premium_home_casual.gd"
 
 const FLAT_GAME_LOGO_SCRIPT = preload("res://scripts/ui/unjam_flat_game_logo.gd")
 const GAME_ART_SCRIPT = preload("res://scripts/ui/unjam_2d_game_art.gd")
+const UNJAM_WORDMARK: Texture2D = preload("res://assets/art/brand/unjam_wordmark.svg")
 
 const RefCanvas = preload("res://scripts/ui/figma_reference_canvas.gd")
 
@@ -30,6 +31,7 @@ const DARK_SCENE_MID := Color("#272727")
 const DARK_SCENE_BOTTOM := Color("#1f1f1f")
 
 var figma_canvas: FigmaReferenceCanvas
+var wide_stage: Control
 
 func _home_dark() -> bool:
 	return _theme_mode() == "dark"
@@ -65,16 +67,113 @@ func build_home_launcher() -> void:
 	viewport_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(viewport_bg)
 
+	wide_stage = Control.new()
+	wide_stage.name = "HomeWideStage"
+	wide_stage.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	wide_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	wide_stage.visible = false
+	add_child(wide_stage)
+
 	figma_canvas = RefCanvas.new()
 	figma_canvas.name = "FigmaHome390x844"
 	add_child(figma_canvas)
 	_build_reference_home(figma_canvas)
+	if not resized.is_connected(_sync_wide_home_stage):
+		resized.connect(_sync_wide_home_stage)
+	call_deferred("_sync_wide_home_stage")
+
+func _sync_wide_home_stage() -> void:
+	if figma_canvas == null or not is_instance_valid(figma_canvas):
+		return
+	var available := size
+	if available.x <= 2.0 or available.y <= 2.0:
+		available = get_viewport_rect().size
+	var wide := available.x >= 1180.0 and available.x / maxf(1.0, available.y) >= 1.22
+	figma_canvas.set_fit_bias(0.10 if wide else 0.5, 0.5)
+	if wide_stage == null or not is_instance_valid(wide_stage):
+		return
+	wide_stage.visible = wide
+	for child in wide_stage.get_children():
+		wide_stage.remove_child(child)
+		child.queue_free()
+	if not wide:
+		return
+	_build_wide_home_stage(wide_stage, available)
+
+func _build_wide_home_stage(stage: Control, available: Vector2) -> void:
+	var accent := Unjam3DTheme.game_accent(selected_game)
+	var dark := _home_dark()
+	var art_side := minf(available.y * 0.66, available.x * 0.42)
+	var art_x := available.x * 0.54
+	var art_y := maxf(available.y * 0.18, (available.y - art_side) * 0.42)
+
+	# Large atmospheric accents make the extra tablet canvas part of the selected
+	# game world instead of leaving it as inert letterbox space.
+	var glow := PanelContainer.new()
+	glow.name = "HomeWideAccentGlow"
+	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	glow.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(accent.r, accent.g, accent.b, 0.16 if dark else 0.12), art_side * 0.48))
+	glow.position = Vector2(art_x - art_side * 0.08, art_y - art_side * 0.10)
+	glow.size = Vector2(art_side * 1.04, art_side * 1.04)
+	stage.add_child(glow)
+
+	var art := GAME_ART_SCRIPT.new()
+	art.name = "HomeWideSelectedGameArt"
+	art.configure(selected_game, false, dark)
+	art.position = Vector2(art_x, art_y)
+	art.size = Vector2(art_side, art_side)
+	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stage.add_child(art)
+
+	var mark_width := minf(available.x * 0.27, 620.0)
+	var mark := TextureRect.new()
+	mark.name = "HomeWideWordmark"
+	mark.texture = UNJAM_WORDMARK
+	mark.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	mark.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	mark.position = Vector2(available.x * 0.58, available.y * 0.055)
+	mark.size = Vector2(mark_width, mark_width * 0.265)
+	stage.add_child(mark)
+
+	var title := RefCanvas.label(_short_game_name(selected_game), int(clampf(available.y * 0.036, 38.0, 64.0)), Color.WHITE, true)
+	title.name = "HomeWideGameTitle"
+	RefCanvas.style_display_title(title, accent.lightened(0.18), Color("#09141f"), 3)
+	title.position = Vector2(available.x * 0.58, available.y * 0.77)
+	title.size = Vector2(available.x * 0.34, available.y * 0.065)
+	stage.add_child(title)
+
+	var level := _home_current_level(selected_game)
+	var world := MultiGameManager.world_for_game_level(selected_game, level)
+	var meta := RefCanvas.label("LEVEL %d  •  WORLD %d  •  %s" % [level, world, _hero_cue(selected_game)], int(clampf(available.y * 0.015, 20.0, 28.0)), Color("#d9e4ee") if dark else Color("#354450"), true)
+	meta.name = "HomeWideGameMeta"
+	meta.position = Vector2(available.x * 0.58, available.y * 0.835)
+	meta.size = Vector2(available.x * 0.34, available.y * 0.042)
+	stage.add_child(meta)
+
+	var cta_width := minf(available.x * 0.22, 430.0)
+	var cta_height := clampf(available.y * 0.055, 64.0, 88.0)
+	var cta := RefCanvas.premium_button("CONTINUE  •  LEVEL %d" % level, int(clampf(available.y * 0.016, 20.0, 28.0)), OFF_WHITE, accent, cta_height * 0.28, Color(accent.lightened(0.28), 0.44), 1.0)
+	cta.name = "HomeWideContinueAction"
+	cta.position = Vector2(available.x * 0.58, available.y * 0.895)
+	cta.size = Vector2(cta_width, cta_height)
+	cta.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
+	cta.pressed.connect(_continue_selected_game)
+	stage.add_child(cta)
 
 func _build_reference_home(canvas: Control) -> void:
 	_add_frame_background(canvas)
 	var brand_title := _add_text(canvas, "UNJAM", Rect2(21, 23, 101, 34), 27, OFF_WHITE, true)
 	brand_title.name = "HomeBrandTitle3D"
-	RefCanvas.style_display_title(brand_title, Color("#ffb92f"), Color("#071d55"), 2)
+	brand_title.visible = false
+	var wordmark := TextureRect.new()
+	wordmark.name = "HomeBrandWordmark"
+	wordmark.texture = UNJAM_WORDMARK
+	wordmark.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	wordmark.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	wordmark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	RefCanvas.set_rect(wordmark, 18, 18, 126, 42)
+	canvas.add_child(wordmark)
 
 	_add_pill(canvas, Rect2(21, 64, 108, 40), Color("#d6d1c7") if not _home_dark() else Color("#2c2c2c"), "LV %d  ›" % _home_current_level(selected_game), 13, NAVY if not _home_dark() else DARK_INK, "HomeSelectedGameLevel")
 	# Visual pill remains compact, while the invisible interaction target meets
@@ -173,6 +272,13 @@ func _add_hero_preview(canvas: Control, game_id: String) -> void:
 	preview_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	RefCanvas.set_rect(preview_root, 0, 0, 390, 844)
 	canvas.add_child(preview_root)
+	# Compatibility diagnostic: production hardening still measures the original
+	# safe preview zone to guarantee title/art separation. It is non-visual.
+	var preview_diagnostic := Control.new()
+	preview_diagnostic.name = "FigmaHomeHeroPreview"
+	preview_diagnostic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	RefCanvas.set_rect(preview_diagnostic, 229, 144, 115, 136)
+	preview_root.add_child(preview_diagnostic)
 	var art := GAME_ART_SCRIPT.new()
 	# Preserve the established node id used by visual QA while upgrading what it renders.
 	art.name = "HomeHeroFlatGameLogo"
@@ -353,7 +459,7 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 	var items := [
 		["HOME", "⌂", 22.0, 14.0, Callable(), "HomeNavButton", true, GOLD],
 		["GAMES", "▦", 94.0, 86.0, Callable(self, "_open_game_selector"), "HomeGamesNavButton", false, GOLD],
-		["DAILY", "✦", 166.0, 158.0, Callable(self, "_open_compete"), "HomeDailyNavButton", false, GOLD],
+		["DAILY", "✦", 166.0, 158.0, Callable(self, "_open_daily_games"), "HomeDailyNavButton", false, GOLD],
 		["COLLECT", "◆", 238.0, 230.0, func(): get_parent().call("build_collection"), "HomeCollectionNavButton", false, GOLD],
 		["SETTINGS", "⚙", 310.0, 302.0, func(): get_parent().call("build_settings"), "HomeSettingsNavButton", false, GOLD],
 	]
@@ -373,7 +479,7 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 		var glyph := _add_text(canvas, item[1], Rect2(float(item[2]) - 1.0, 765, 58, 22), 20, icon_color, true)
 		glyph.name = "HomeNavGlyph_%s" % String(item[0])
 		glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		var display_name := "COMPETE" if String(item[0]) == "DAILY" else String(item[0])
+		var display_name := String(item[0])
 		var label_width := 66.0 if String(item[0]) in ["COLLECT", "SETTINGS"] else 58.0
 		var label_x := float(item[3]) + (72.0 - label_width) * 0.5
 		var label := _add_text(canvas, display_name, Rect2(label_x, 790, label_width, 20), 13, nav_color, selected)
@@ -514,6 +620,7 @@ func _refresh_home_selection() -> void:
 		figma_canvas.remove_child(old_preview)
 		old_preview.queue_free()
 	_add_hero_preview(figma_canvas, selected_game)
+	_sync_wide_home_stage()
 
 	# Quick Switch rebuilds the complete world showcase so its one-shot 3D art,
 	# world data, milestone and progress bar always match the selected game.

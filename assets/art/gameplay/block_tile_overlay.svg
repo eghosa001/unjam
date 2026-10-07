@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+<defs>
+  <linearGradient id="top" x1="0" y1="0" x2="1" y2=".8">
+    <stop stop-color="#ffffff" stop-opacity=".72"/>
+    <stop offset=".45" stop-color="#ffffff" stop-opacity=".20"/>
+    <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+  </linearGradient>
+  <linearGradient id="edge" x1="0" y1="0" x2="1" y2="1">
+    <stop stop-color="#ffffff" stop-opacity=".36"/>
+    <stop offset=".58" stop-color="#ffffff" stop-opacity=".10"/>
+    <stop offset="1" stop-color="#091021" stop-opacity=".22"/>
+  </linearGradient>
+</defs>
+<rect x="9" y="14" width="110" height="106" rx="22" fill="#091021" opacity=".31"/>
+<rect x="8" y="8" width="110" height="106" rx="22" fill="#fff" fill-opacity=".026" stroke="url(#edge)" stroke-width="3"/>
+<rect x="14" y="14" width="98" height="93" rx="17" fill="none" stroke="#fff" stroke-opacity=".12" stroke-width="2"/>
+<path d="M22 28C45 14 75 14 101 23" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="10" stroke-linecap="round"/>
+<path d="M21 31L75 14C91 9 104 14 111 23L58 42C42 47 29 43 21 31Z" fill="url(#top)" opacity=".34"/>
+<path d="M19 92H108" stroke="#07101f" stroke-opacity=".24" stroke-width="13" stroke-linecap="round"/>
+<path d="M103 39V78" stroke="#fff" stroke-opacity=".12" stroke-width="4" stroke-linecap="round"/>
+<circle cx="31" cy="47" r="6" fill="#fff" opacity=".58"/>
+<circle cx="33" cy="44" r="2.3" fill="#fff" opacity=".95"/>
+</svg>

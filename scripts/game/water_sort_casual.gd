@@ -2,6 +2,7 @@ extends "res://scripts/game/water_sort_ultra_motion.gd"
 
 const RefCanvas = preload("res://scripts/ui/figma_reference_canvas.gd")
 const GAMEPLAY_ART = preload("res://scripts/ui/unjam_gameplay_art.gd")
+const WATER_SCREEN_OVERLAY: Texture2D = preload("res://assets/art/gameplay/water_screen_overlay.svg")
 
 const SKY_TOP := Color("#6f98ad")
 const SKY_MID := Color("#a9c4ce")
@@ -51,6 +52,14 @@ func _build_figma_water(canvas: Control) -> void:
 	platform.polygon = PackedVector2Array([Vector2(34, 500), Vector2(356, 500), Vector2(330, 190), Vector2(60, 190)])
 	platform.color = Color(0.52,0.72,0.76,0.42)
 	canvas.add_child(platform)
+	var scenic_overlay := TextureRect.new()
+	scenic_overlay.name = "WaterAuthoredScreenWorld"
+	scenic_overlay.texture = WATER_SCREEN_OVERLAY
+	scenic_overlay.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	scenic_overlay.stretch_mode = TextureRect.STRETCH_SCALE
+	scenic_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	RefCanvas.set_rect(scenic_overlay, 0, 0, 390, 844)
+	canvas.add_child(scenic_overlay)
 
 	RefCanvas.add_shadow(canvas, Rect2(15,15,54,54), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
 	var back := RefCanvas.premium_button("←", 22, NAVY, Color(0.96, 0.99, 1.0, 0.98), 16, Color(0.57, 0.84, 1.0, 0.52), 1.4)
@@ -76,19 +85,19 @@ func _build_figma_water(canvas: Control) -> void:
 	RefCanvas.set_rect(info, 17, 79, 354, 42)
 	info.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(info)
-	meta_label = _make_label("", 13, Color(0.92, 0.98, 1.0), true)
+	meta_label = _make_label("", 14, Color(0.92, 0.98, 1.0), true)
 	meta_label.clip_text = true
 	meta_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	RefCanvas.set_rect(meta_label, 37, 91, 155, 20)
 	canvas.add_child(meta_label)
-	move_label = _make_label("", 13, OFF_WHITE, true)
+	move_label = _make_label("", 14, OFF_WHITE, true)
 	move_label.name = "WaterMoveCount"
 	move_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	move_label.clip_text = true
 	move_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	RefCanvas.set_rect(move_label, 196, 91, 86, 20)
 	canvas.add_child(move_label)
-	star_target_label = _make_label("", 13, Color("#ffe08a"), true)
+	star_target_label = _make_label("", 14, Color("#ffe08a"), true)
 	star_target_label.name = "WaterThreeStarTarget"
 	star_target_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	star_target_label.clip_text = true
@@ -104,7 +113,7 @@ func _build_figma_water(canvas: Control) -> void:
 	RefCanvas.set_rect(objective, 17, 129, 354, 30)
 	objective.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(objective)
-	var objective_label := _make_label("WIN • ONE COLOUR PER FULL TUBE", 15, NAVY, true)
+	var objective_label := _make_label("WIN • ONE COLOUR PER FULL TUBE", 16, NAVY, true)
 	objective_label.name = "WaterObjectiveLabel"
 	objective_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	objective_label.tooltip_text = "Win when every non-empty tube is full and contains only one colour."
@@ -139,14 +148,14 @@ func _build_figma_water(canvas: Control) -> void:
 	# Keep status and guidance on independent rows. Sharing one y-band looked
 	# compact at READY but longer recovery/assist messages could collide with
 	# "Best move..." guidance on phone screens.
-	status_label = _make_label("", 15, NAVY, true)
+	status_label = _make_label("", 16, NAVY, true)
 	status_label.name = "WaterStatusText"
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	status_label.clip_text = true
 	status_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	RefCanvas.set_rect(status_label, 17, 626, 354, 22)
 	canvas.add_child(status_label)
-	hint_label = _make_label("", 15, GUIDANCE_ORANGE, true)
+	hint_label = _make_label("", 16, GUIDANCE_ORANGE, true)
 	hint_label.name = "WaterGuidanceText"
 	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	hint_label.clip_text = true
