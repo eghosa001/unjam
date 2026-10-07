@@ -447,7 +447,7 @@ func _draw() -> void:
 	var total := Vector2((max_x + 1) * cell, (max_y + 1) * cell)
 	var origin := (size - total) * 0.5
 	for point in points:
-		var rect := Rect2(origin + Vector2(point) * cell + Vector2(2, 2), Vector2(cell - 4, cell - 4))
+		var rect := Rect2(origin + Vector2(point) * cell + Vector2(1, 1), Vector2(cell - 2, cell - 2))
 		_draw_block(rect, accent)
 	if selected:
 		var pulse := 0.55 + 0.45 * sin(phase * 7.0)
@@ -466,7 +466,7 @@ func tray_visual_cell_size() -> float:
 	return _tray_cell_size(max_x, max_y)
 
 func _tray_cell_size(max_x: int, max_y: int) -> float:
-	var fit_cell := minf((size.x - 10.0) / float(max_x + 1), (size.y - 10.0) / float(max_y + 1))
+	var fit_cell := minf((size.x - 4.0) / float(max_x + 1), (size.y - 4.0) / float(max_y + 1))
 	# Tray pieces should be immediately legible and close to the 32.6px board
 	# cells, while still fitting the tallest three-cell shapes without clipping.
 	return clampf(minf(35.0, fit_cell), 18.0, 35.0)
