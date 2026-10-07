@@ -54,7 +54,7 @@ func _run() -> void:
 	if not meta.claim_next_ready_season_tier():
 		failures.append("Ready Season Journey tier could not be claimed")
 
-	var home := _read("res://scripts/ui/premium_home_casual.gd")
+	var home := _read("res://scripts/ui/premium_home_direct_levels.gd")
 	var main := _read("res://scripts/ui/premium_main_casual.gd")
 	var selector := _read("res://scripts/ui/premium_live_hub_3d.gd")
 	var cloud := _read("res://scripts/systems/cloud_save_manager.gd")
