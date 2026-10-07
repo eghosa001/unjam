@@ -230,6 +230,16 @@ func _fit_wrapped_text(label: Label, max_width: float, start_size: int, min_size
 	label.size = authored_size
 
 
+func _figma_line_edit_style(fill: Color, border: Color, radius: float = 12.0, gloss: float = 0.12) -> StyleBoxTexture:
+	# flat_gloss() is cached and shared. Duplicate only the lightweight StyleBox
+	# wrapper before adding input padding so card/button styles remain immutable.
+	var style := FigmaReferenceCanvas.flat_gloss(fill, radius, border, 1, gloss).duplicate() as StyleBoxTexture
+	style.set_content_margin(SIDE_LEFT, 10.0)
+	style.set_content_margin(SIDE_RIGHT, 10.0)
+	style.set_content_margin(SIDE_TOP, 4.0)
+	style.set_content_margin(SIDE_BOTTOM, 4.0)
+	return style
+
 func _figma_button(canvas: Control, name_value: String, text_value: String, rect: Rect2, fill: Color, callback: Callable, text_color: Color = FIGMA_OFF_WHITE, radius: float = 14.0, font_size: int = 12) -> Button:
 	var resolved_fill := fill
 	var resolved_text := text_color
@@ -528,7 +538,7 @@ func build_profile() -> void:
 	name_edit.add_theme_font_size_override("font_size",15)
 	name_edit.add_theme_color_override("font_color",_figma_theme_text(FIGMA_INK))
 	name_edit.add_theme_color_override("font_placeholder_color",Color("#8f99a5") if _dark() else Color("#68717b"))
-	name_edit.add_theme_stylebox_override("normal",FigmaReferenceCanvas.flat_gloss(Color("#f5f2ec") if not _dark() else Color("#27282b"),12,Color(FIGMA_CYAN,0.34),1,0.08))
+	name_edit.add_theme_stylebox_override("normal",_figma_line_edit_style(Color("#f5f2ec") if not _dark() else Color("#27282b"),Color(FIGMA_CYAN,0.34),12,0.08))
 	FigmaReferenceCanvas.set_rect(name_edit,31,105,218,42)
 	canvas.add_child(name_edit)
 	var save_name := _figma_button(canvas,"ProfileSaveName","SAVE",Rect2(263,104,88,44),FIGMA_CYAN,Callable(),Color.WHITE,13,11)
@@ -634,7 +644,7 @@ func build_friends(refresh_remote: bool = true) -> void:
 	code_input.add_theme_color_override("font_color",_figma_theme_text(FIGMA_INK))
 	code_input.add_theme_color_override("font_placeholder_color",Color("#8f99a5") if _dark() else Color("#68717b"))
 	code_input.add_theme_color_override("caret_color",_figma_theme_text(FIGMA_INK))
-	code_input.add_theme_stylebox_override("normal",FigmaReferenceCanvas.flat_gloss(Color("#24262a") if _dark() else Color("#fffaf2"),11,Color("#7a57e0"),1,0.16))
+	code_input.add_theme_stylebox_override("normal",_figma_line_edit_style(Color("#24262a") if _dark() else Color("#fffaf2"),Color("#7a57e0"),11,0.16))
 	code_input.custom_minimum_size = Vector2.ZERO
 	FigmaReferenceCanvas.set_rect(code_input,31,216,211,36)
 	canvas.add_child(code_input)
