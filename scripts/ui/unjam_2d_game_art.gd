@@ -110,7 +110,7 @@ func _draw_rescue_tile(center: Vector2, side: float, direction: Vector2, color: 
 
 func _draw_character(center: Vector2, r: float, body: Color) -> void:
 	# Soft contact shadow, then a large readable mascot silhouette.
-	draw_ellipse(center + Vector2(0, r * 0.88), Vector2(r * 0.82, r * 0.22), Color(0.02, 0.08, 0.10, 0.22))
+	_draw_oval(center + Vector2(0, r * 0.88), Vector2(r * 0.82, r * 0.22), Color(0.02, 0.08, 0.10, 0.22))
 	draw_circle(center + Vector2(0, r * 0.12), r * 0.78, body.darkened(0.04))
 	draw_circle(center - Vector2(0, r * 0.36), r * 0.73, body)
 	draw_circle(center - Vector2(r * 0.25, r * 0.52), r * 0.10, Color(1, 1, 1, 0.26))
@@ -230,7 +230,7 @@ func _round(rect: Rect2, fill: Color, radius: float, border: Color = Color.TRANS
 		style.border_color = border
 	draw_style_box(style, rect)
 
-func draw_ellipse(center: Vector2, radii: Vector2, color: Color) -> void:
+func _draw_oval(center: Vector2, radii: Vector2, color: Color) -> void:
 	var points := PackedVector2Array()
 	for i in range(32):
 		var a := TAU * float(i) / 32.0
