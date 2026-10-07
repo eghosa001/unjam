@@ -2,6 +2,7 @@ extends "res://scripts/game/water_sort_ultra_motion.gd"
 
 const RefCanvas = preload("res://scripts/ui/figma_reference_canvas.gd")
 const GAMEPLAY_ART = preload("res://scripts/ui/unjam_gameplay_art.gd")
+const WATER_SCREEN_OVERLAY: Texture2D = preload("res://assets/art/gameplay/water_screen_overlay.svg")
 
 const SKY_TOP := Color("#6f98ad")
 const SKY_MID := Color("#a9c4ce")
@@ -51,6 +52,14 @@ func _build_figma_water(canvas: Control) -> void:
 	platform.polygon = PackedVector2Array([Vector2(34, 500), Vector2(356, 500), Vector2(330, 190), Vector2(60, 190)])
 	platform.color = Color(0.52,0.72,0.76,0.42)
 	canvas.add_child(platform)
+	var scenic_overlay := TextureRect.new()
+	scenic_overlay.name = "WaterAuthoredScreenWorld"
+	scenic_overlay.texture = WATER_SCREEN_OVERLAY
+	scenic_overlay.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	scenic_overlay.stretch_mode = TextureRect.STRETCH_SCALE
+	scenic_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	RefCanvas.set_rect(scenic_overlay, 0, 0, 390, 844)
+	canvas.add_child(scenic_overlay)
 
 	RefCanvas.add_shadow(canvas, Rect2(15,15,54,54), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
 	var back := RefCanvas.premium_button("←", 22, NAVY, Color(0.96, 0.99, 1.0, 0.98), 16, Color(0.57, 0.84, 1.0, 0.52), 1.4)
