@@ -291,8 +291,11 @@ func _apply_tube_layout() -> void:
 	var stage_height := 420.0
 	var h_gap := 12.0 if columns <= 4 else (8.0 if rows == 1 else 9.0)
 	var v_gap := 14.0 if rows <= 2 else 10.0
-	# Premium water-sort bottles should read as substantial vessels, not needles.
-	var ratio := 3.8 if rows == 1 else (2.55 if rows == 2 else 2.30)
+	# Keep the one-row onboarding bottles only slightly taller than later boards.
+	# The former 3.8 ratio made levels 1–2 visually elongated and forced an
+	# exaggerated pour silhouette. A compact 3.05 ratio preserves substantial
+	# glass while keeping the same mouth/body geometry used by later stages.
+	var ratio := 3.05 if rows == 1 else (2.55 if rows == 2 else 2.30)
 	var preferred_width := 60.0 if rows == 1 else (70.0 if rows == 2 else 58.0)
 	var width_limit := floorf((stage_width - h_gap * float(maxi(columns - 1, 0))) / float(columns))
 	var row_height_limit := floorf((stage_height - v_gap * float(maxi(rows - 1, 0))) / float(rows))
