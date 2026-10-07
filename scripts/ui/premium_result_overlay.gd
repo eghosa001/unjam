@@ -231,14 +231,14 @@ func _add_identity(game_id: String) -> void:
 	var halo := PanelContainer.new()
 	halo.name = "ResultIdentityHalo"
 	halo.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color(accent, 0.10), 42))
-	FigmaReferenceCanvas.set_rect(halo, 119, 220, 150, 86)
+	FigmaReferenceCanvas.set_rect(halo, 116, 229, 156, 70)
 	halo.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_canvas.add_child(halo)
 
 	var art := GAME_ART_SCRIPT.new()
 	art.name = "ResultGameArt2D"
 	art.configure(game_id, true, _dark_theme())
-	FigmaReferenceCanvas.set_rect(art, 126, 216, 136, 92)
+	FigmaReferenceCanvas.set_rect(art, 128, 231, 132, 67)
 	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_canvas.add_child(art)
 
