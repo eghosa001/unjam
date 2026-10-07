@@ -347,6 +347,25 @@ func _run() -> void:
 	print("Visual audit captures written to %s" % OUT_DIR)
 	await _shutdown_visual_audit()
 
+func _seed_social_visual_data() -> void:
+	var competition := root.get_node_or_null("CompetitionManager")
+	if competition == null:
+		return
+	competition.set("social_snapshot", {
+		"friend_code": "7K4M2P9R",
+		"friend_count": 2,
+		"max_friends": 50,
+		"friends": [
+			{"name":"PLAYMATE 27","friend_code":"6H3N8R5T"},
+			{"name":"PUZZLE PAL","friend_code":"4V7C2K8M"},
+		],
+		"friends_weekly": [
+			{"name":"YOU","score":1850,"games_count":6,"friend_code":"7K4M2P9R","you":true,"rank":1},
+			{"name":"PLAYMATE 27","score":1420,"games_count":5,"friend_code":"6H3N8R5T","you":false,"rank":2},
+			{"name":"PUZZLE PAL","score":860,"games_count":3,"friend_code":"4V7C2K8M","you":false,"rank":3},
+		],
+	})
+
 func _fast_visual_enabled(scope: String) -> bool:
 	var requested := OS.get_environment("UNJAM_FAST_VISUAL_AUDIT_SCOPE").strip_edges()
 	if requested.is_empty():
@@ -404,6 +423,22 @@ func _run_fast_visual_audit(main: Node, shell: Node) -> void:
 		await _settle(5)
 		await _capture("05d-daily-540x960-dark")
 
+	if _fast_visual_enabled("goals"):
+		main.call("build_goals")
+		await _settle(5)
+		await _capture("17-goals-540x960-dark")
+
+	if _fast_visual_enabled("profile"):
+		main.call("build_profile")
+		await _settle(5)
+		await _capture("18-profile-540x960-dark")
+
+	if _fast_visual_enabled("friends"):
+		_seed_social_visual_data()
+		main.call("build_friends", false)
+		await _settle(5)
+		await _capture("19-friends-540x960-dark")
+
 	if _fast_visual_enabled("settings"):
 		main.call("build_settings")
 		await _settle(5)
@@ -445,6 +480,9 @@ func _run_fast_visual_audit(main: Node, shell: Node) -> void:
 		or _fast_visual_enabled("levels")
 		or _fast_visual_enabled("collection")
 		or _fast_visual_enabled("daily")
+		or _fast_visual_enabled("goals")
+		or _fast_visual_enabled("profile")
+		or _fast_visual_enabled("friends")
 		or _fast_visual_enabled("settings")
 	)
 	if needs_light_review:
@@ -472,6 +510,19 @@ func _run_fast_visual_audit(main: Node, shell: Node) -> void:
 			main.call("build_daily_games")
 			await _settle(5)
 			await _capture("05g-daily-540x960-light")
+		if _fast_visual_enabled("goals"):
+			main.call("build_goals")
+			await _settle(5)
+			await _capture("17b-goals-540x960-light")
+		if _fast_visual_enabled("profile"):
+			main.call("build_profile")
+			await _settle(5)
+			await _capture("18b-profile-540x960-light")
+		if _fast_visual_enabled("friends"):
+			_seed_social_visual_data()
+			main.call("build_friends", false)
+			await _settle(5)
+			await _capture("19b-friends-540x960-light")
 		if _fast_visual_enabled("settings"):
 			main.call("build_settings")
 			await _settle(5)
