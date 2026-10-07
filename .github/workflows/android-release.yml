@@ -6,11 +6,11 @@ on:
       version_name:
         description: Human-readable version (for example 1.0.0)
         required: true
-        default: 1.0.9
+        default: 1.0.10
       version_code:
         description: Monotonically increasing Google Play version code
         required: true
-        default: 9
+        default: 10
   push:
     branches: [main]
     paths:
@@ -31,8 +31,8 @@ jobs:
       EXPECTED_PACKAGE: com.eghosa.unjamgam
       EXPECTED_UPLOAD_SHA1: ${{ secrets.UNJAM_ANDROID_UPLOAD_SHA1 }}
       EXPECTED_BLOCK_REVIEW_SHA256: ${{ secrets.UNJAM_BLOCK_CAMPAIGN_REVIEW_SHA256 }}
-      RELEASE_VERSION_NAME: ${{ inputs.version_name || '1.0.9' }}
-      RELEASE_VERSION_CODE: ${{ inputs.version_code || '9' }}
+      RELEASE_VERSION_NAME: ${{ inputs.version_name || '1.0.10' }}
+      RELEASE_VERSION_CODE: ${{ inputs.version_code || '10' }}
       WATER_FULL_AUDIT: "1"
     steps:
       - uses: actions/checkout@v4
@@ -233,6 +233,7 @@ jobs:
           "$AAPT" dump permissions "$APK" | tee build/android/release-apk-permissions.txt
           "$AAPT" dump xmltree "$APK" AndroidManifest.xml | tee build/android/release-apk-manifest.txt
           grep -F "package: name='com.eghosa.unjamgam'" build/android/release-apk-badging.txt
+          grep -F "versionCode='$RELEASE_VERSION_CODE' versionName='$RELEASE_VERSION_NAME'" build/android/release-apk-badging.txt
           grep -F "targetSdkVersion:'36'" build/android/release-apk-badging.txt
           grep -F "native-code: 'arm64-v8a'" build/android/release-apk-badging.txt
           grep -F "android.permission.INTERNET" build/android/release-apk-permissions.txt
@@ -331,7 +332,7 @@ jobs:
       - name: Upload release AAB and verification records
         uses: actions/upload-artifact@v4
         with:
-          name: unjam-release-aab-production-v9
+          name: unjam-release-aab-production-v10
           path: |
             build/android/unjam-release.aab
             build/android/unjam-release.aab.sha256
