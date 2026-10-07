@@ -355,8 +355,8 @@ func _abort_pour_visuals(ghost: Node, receiver: Node, source_index: int, target_
 		receiver.queue_free()
 	_release_pour_visual_lock(source_index, target_index)
 
-func _pour_tilt_degrees(ghost_size: Vector2) -> float:
-	if MotionSystem.reduced():
+func _pour_tilt_degrees_for(ghost_size: Vector2, reduced_motion: bool) -> float:
+	if reduced_motion:
 		return 30.0
 	# Long onboarding bottles need a shallower tilt so their body follows the
 	# mouth instead of sweeping across the receiver. Compact later-stage bottles
@@ -364,6 +364,9 @@ func _pour_tilt_degrees(ghost_size: Vector2) -> float:
 	var aspect := ghost_size.y / maxf(1.0, ghost_size.x)
 	var tallness := clampf((aspect - 2.35) / 0.85, 0.0, 1.0)
 	return lerpf(52.0, 40.0, tallness)
+
+func _pour_tilt_degrees(ghost_size: Vector2) -> float:
+	return _pour_tilt_degrees_for(ghost_size, MotionSystem.reduced())
 
 func _play_premium_concurrent_pour(source_values: Array, target_values: Array, from_rect: Rect2, to_rect: Rect2, color_index: int, amount: int, source_index: int, target_index: int) -> void:
 	var liquid: Color = MotionTube.PALETTE[color_index]
