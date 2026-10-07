@@ -62,9 +62,10 @@ func _validate_reduced_motion_source() -> bool:
 	return true
 
 func _validate_readable_typography() -> bool:
-	var font := Unjam3DTheme.display_font()
-	if font == null or font.variation_embolden < 0.6:
+	var display_font := Unjam3DTheme.display_font()
+	if display_font == null or display_font.variation_embolden < 0.6:
 		return _fail("Premium display font is not strongly art-directed")
+	var font := Unjam3DTheme.strong_font()
 	var label := Label.new()
 	label.add_theme_font_size_override("font_size", 18)
 	Unjam3DTheme.label_3d(label, Color.WHITE, Color("071426"), 4)
