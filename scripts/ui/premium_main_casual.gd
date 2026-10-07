@@ -189,6 +189,8 @@ func _fit_wrapped_text(label: Label, max_width: float, start_size: int, min_size
 	var font := label.get_theme_font("font")
 	if font == null:
 		return
+	var authored_position := label.position
+	var authored_size := label.size
 	var raw_text := label.text.strip_edges()
 	var words := raw_text.split(" ", false)
 	var size := start_size
@@ -224,8 +226,8 @@ func _fit_wrapped_text(label: Label, max_width: float, start_size: int, min_size
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.clip_text = true
 	label.custom_minimum_size = Vector2.ZERO
-	label.reset_size()
-	label.size = Vector2(max_width, label.size.y)
+	label.position = authored_position
+	label.size = authored_size
 
 
 func _figma_button(canvas: Control, name_value: String, text_value: String, rect: Rect2, fill: Color, callback: Callable, text_color: Color = FIGMA_OFF_WHITE, radius: float = 14.0, font_size: int = 12) -> Button:
