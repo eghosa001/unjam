@@ -337,7 +337,7 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 	var xs := {"home":22.0, "games":94.0, "daily":166.0, "collection":238.0, "settings":310.0}
 	var hit_x := {"home":14.0, "games":86.0, "daily":158.0, "collection":230.0, "settings":302.0}
 	var names := {"home":"HOME", "games":"GAMES", "daily":"COMPETE", "collection":"COLLECT", "settings":"SETTINGS"}
-	var glyphs := {"home":"⌂", "games":"▦", "daily":"🏆", "collection":"◆", "settings":"⚙"}
+	var glyphs := {"home":"⌂", "games":"▦", "daily":"★", "collection":"◆", "settings":"⚙"}
 	var callbacks := {
 		"home": Callable(self,"build_home"),
 		"games": Callable(self,"_open_games_surface"),
