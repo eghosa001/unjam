@@ -251,7 +251,7 @@ func _build_figma_rescue(canvas: Control) -> void:
 	guidance_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(guidance_panel)
 
-	hint_label = RefCanvas.label("Tap a clear arrow • follow the grid to the open edge.",14,OFF_WHITE,true)
+	hint_label = RefCanvas.label("Tap a clear arrow • follow the grid to the open edge.",15,OFF_WHITE,true)
 	hint_label.name = "RescueGuidanceText"
 	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
