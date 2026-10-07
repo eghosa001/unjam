@@ -44,6 +44,9 @@ func _run() -> void:
 		return _fail("Water Sort board exceeds the audited stage height")
 	if tube.custom_minimum_size.x < 38.0 or tube.custom_minimum_size.y < 90.0:
 		return _fail("Water Sort bottles became too small for reliable compact-phone play")
+	var tube_aspect := tube.custom_minimum_size.y / maxf(1.0,tube.custom_minimum_size.x)
+	if tube_aspect > 3.15:
+		return _fail("Water Sort onboarding bottle is still too elongated for accurate pouring")
 	var objective_label := game.find_child("WaterObjectiveLabel", true, false) as Label
 	if objective_label == null:
 		return _fail("Water Sort objective label is missing")
