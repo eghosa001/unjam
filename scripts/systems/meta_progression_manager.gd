@@ -7,12 +7,12 @@ const LOGIN_REWARDS := [25, 35, 50, 65, 80, 100, 150]
 const DAILY_GOALS := [
 	{"id":"play2","title":"PLAY 2 PUZZLES","metric":"levels","target":2,"coins":60,"crowns":0},
 	{"id":"stars6","title":"EARN 6 STARS","metric":"stars","target":6,"coins":80,"crowns":0},
-	{"id":"daily1","title":"ENTER 1 DAILY CUP","metric":"daily_games","target":1,"coins":75,"crowns":1},
+	{"id":"daily1","title":"PLAY 1 DAILY GAME","metric":"daily_games","target":1,"coins":75,"crowns":1},
 ]
 const WEEKLY_GOALS := [
 	{"id":"play15","title":"PLAY 15 PUZZLES","metric":"levels","target":15,"coins":200,"crowns":2},
 	{"id":"stars35","title":"EARN 35 STARS","metric":"stars","target":35,"coins":250,"crowns":3},
-	{"id":"daily5","title":"PLAY 5 DAILY CUPS","metric":"daily_games","target":5,"coins":250,"crowns":5},
+	{"id":"daily5","title":"PLAY 5 DAILY GAMES","metric":"daily_games","target":5,"coins":250,"crowns":5},
 ]
 const SEASON_TIERS := [
 	{"need":100,"coins":100,"crowns":0},
