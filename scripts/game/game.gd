@@ -743,6 +743,10 @@ func show_result(stars: int) -> void:
 	)
 
 func undo_move() -> void:
+	if daily_mode:
+		if hint_label != null:
+			hint_label.text = "Undo is disabled in ranked Daily competition."
+		return
 	if history.is_empty() or rescued or board_locked:
 		return
 	var state: Dictionary = history.pop_back()
