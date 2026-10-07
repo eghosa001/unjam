@@ -113,6 +113,9 @@ func add_friend(code: String) -> void:
 func remove_friend(code: String) -> void:
 	_social_action("remove_friend", code)
 
+func rotate_friend_code() -> void:
+	_social_action("rotate_friend_code", "")
+
 func _social_action(action: String, code: String) -> void:
 	if _social_in_flight:
 		return
@@ -121,23 +124,30 @@ func _social_action(action: String, code: String) -> void:
 		social_action_finished.emit(false, "Cloud identity is not ready yet")
 		return
 	var clean := code.strip_edges().to_upper().replace(" ", "").replace("-", "")
-	if clean.length() != 8:
+	if action != "rotate_friend_code" and clean.length() != 8:
 		social_action_finished.emit(false, "Enter the 8-character friend code")
 		return
 	_social_in_flight = true
-	_request_json({
+	var payload := {
 		"action": action,
 		"cloud_save_id": cloud_id,
 		"display_name": display_name(),
 		"competition_day": DailyChallenge.date_key(),
-		"friend_code": clean,
-	}, func(ok: bool, _status: int, body: Dictionary) -> void:
+	}
+	if not clean.is_empty():
+		payload["friend_code"] = clean
+	_request_json(payload, func(ok: bool, _status: int, body: Dictionary) -> void:
 		_social_in_flight = false
 		var accepted := ok and bool(body.get("ok", false))
 		if accepted:
 			social_snapshot = body.duplicate(true)
 			social_updated.emit(social_snapshot)
-			social_action_finished.emit(true, "Friend added" if action == "add_friend" else "Friend removed")
+			var success_message := "Friend added"
+			if action == "remove_friend":
+				success_message = "Friend removed"
+			elif action == "rotate_friend_code":
+				success_message = "New friend code created"
+			social_action_finished.emit(true, success_message)
 		else:
 			social_action_finished.emit(false, String(body.get("reason", "Friends service unavailable")))
 	)
