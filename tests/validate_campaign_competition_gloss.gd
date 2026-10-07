@@ -41,8 +41,6 @@ func _run() -> void:
 		failures.append("Rankings do not own a distinct Compete surface")
 	if not ui.contains('"CAMPAIGN RANKINGS"'):
 		failures.append("Compete is not labeled as campaign progression rankings")
-	if not ui.contains("RankingGame_rescue_rush") or not ui.contains("RankingGame_water_sort") or not ui.contains("RankingGame_block_puzzle"):
-		failures.append("Compete does not expose all three game rankings")
 	if not ui.contains('"DAILY"') or not ui.contains('"Daily check-in'):
 		failures.append("Daily retention/reward surface is not clearly separated from rankings")
 
@@ -67,6 +65,38 @@ func _run() -> void:
 
 	if meta.contains("ENTER 1 DAILY CUP") or meta.contains("PLAY 5 DAILY CUPS"):
 		failures.append("Meta goals still describe Daily as a Cup competition")
+
+	var packed := load("res://scenes/Main.tscn") as PackedScene
+	if packed == null:
+		failures.append("Main scene is unavailable for competition runtime validation")
+	else:
+		var main := packed.instantiate()
+		root.add_child(main)
+		await process_frame
+		await process_frame
+		main.call("build_compete_leaderboard", false)
+		await process_frame
+		for game_id in ["rescue_rush","water_sort","block_puzzle"]:
+			var tab := main.find_child("RankingGame_%s" % game_id, true, false) as Button
+			if tab == null:
+				failures.append("Compete missing runtime game tab: %s" % game_id)
+			elif tab.size.y < 44.0:
+				failures.append("Compete game tab below 44px touch target: %s" % game_id)
+		for button_name in ["CompetitionDailyButton","CompetitionFriendsButton","CompetitionRefreshButton"]:
+			var action := main.find_child(button_name, true, false) as Button
+			if action == null or action.size.y < 44.0:
+				failures.append("Compete action missing or below touch floor: %s" % button_name)
+		main.call("build_friends", false)
+		await process_frame
+		for button_name in ["FriendsCopyCode","FriendsRotateCode","FriendsAddButton","FriendsGlobalRanks"]:
+			var action := main.find_child(button_name, true, false) as Button
+			if action == null or action.size.y < 44.0:
+				failures.append("Friends action missing or below touch floor: %s" % button_name)
+		var privacy := main.find_child("FriendsLeaderboard", true, false) as Control
+		if privacy == null:
+			failures.append("Friends leaderboard panel did not render")
+		main.queue_free()
+		await process_frame
 
 	if not failures.is_empty():
 		for failure in failures:
