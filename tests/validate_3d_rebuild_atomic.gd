@@ -30,14 +30,12 @@ func _run() -> void:
 
 	var token = load("res://scripts/ui/rescue_token.gd").new()
 	root.add_child(token)
+	token.call("configure", "fox", Color("#f58c42"), "gold")
 	await process_frame
-	var old_token = token.stage
-	token.call("_rebuild")
-	if token.stage == null or token.stage == old_token:
-		failures.append("Rescue token rebuild leaves its viewport blank for a frame")
-	if old_token != null and old_token.get_parent() != null:
-		failures.append("Rescue token rebuild leaves the old stage parented during replacement")
-	await process_frame
+	if String(token.get("rescue_id")) != "fox" or String(token.get("rarity")) != "gold":
+		failures.append("Rescue 2D mascot did not apply visual state atomically")
+	if token.get_child_count() != 0:
+		failures.append("Rescue 2D mascot created hidden renderer children")
 
 	var piece = load("res://scripts/ui/rescue_piece_3d_button.gd").new()
 	root.add_child(piece)
@@ -58,5 +56,5 @@ func _run() -> void:
 			push_error(failure)
 		quit(1)
 		return
-	print("3D renderer rebuilds replace old stages atomically without blank or duplicate frames.")
+	print("Hybrid visual renderers rebuild/update atomically without blank or duplicate frames.")
 	quit(0)
