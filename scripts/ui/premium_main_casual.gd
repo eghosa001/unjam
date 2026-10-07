@@ -517,7 +517,7 @@ func build_profile() -> void:
 	_remove_active_game()
 	var canvas := _figma_surface("profile", Color("#d8e9f5"))
 	var profile_card_fill := Color("#27282b") if _dark() else Color("#fffef8")
-	_figma_header(canvas, "PROFILE", "LV %d • stats • achievements" % MetaProgressionManager.player_level(), "◈ +", FIGMA_CYAN, Callable(self,"build_home"), Callable(self,"_figma_open_shop"))
+	_figma_header(canvas, "PROFILE", "LV %d • PLAYER STATS" % MetaProgressionManager.player_level(), "◈ +", FIGMA_CYAN, Callable(self,"build_home"), Callable(self,"_figma_open_shop"))
 
 	_figma_card(canvas,"ProfileIdentity",Rect2(17,91,354,70),profile_card_fill,Color(FIGMA_CYAN,0.34),17)
 	var name_edit := LineEdit.new()
@@ -528,7 +528,7 @@ func build_profile() -> void:
 	name_edit.add_theme_font_size_override("font_size",15)
 	name_edit.add_theme_color_override("font_color",_figma_theme_text(FIGMA_INK))
 	name_edit.add_theme_color_override("font_placeholder_color",Color("#8f99a5") if _dark() else Color("#68717b"))
-	name_edit.add_theme_stylebox_override("normal",FigmaReferenceCanvas.flat_gloss(Color("#f5f2ec") if not _dark() else Color("#27282b"),12,Color(FIGMA_CYAN,0.34),1,0.08))
+	name_edit.add_theme_stylebox_override("normal",FigmaReferenceCanvas.flat_gloss(Color("#f5f2ec") if not _dark() else Color("#27282b"),12,Color(FIGMA_CYAN,0.34),1,0.08,10.0))
 	FigmaReferenceCanvas.set_rect(name_edit,31,105,218,42)
 	canvas.add_child(name_edit)
 	var save_name := _figma_button(canvas,"ProfileSaveName","SAVE",Rect2(263,104,88,44),FIGMA_CYAN,Callable(),Color.WHITE,13,11)
@@ -634,7 +634,7 @@ func build_friends(refresh_remote: bool = true) -> void:
 	code_input.add_theme_color_override("font_color",_figma_theme_text(FIGMA_INK))
 	code_input.add_theme_color_override("font_placeholder_color",Color("#8f99a5") if _dark() else Color("#68717b"))
 	code_input.add_theme_color_override("caret_color",_figma_theme_text(FIGMA_INK))
-	code_input.add_theme_stylebox_override("normal",FigmaReferenceCanvas.flat_gloss(Color("#24262a") if _dark() else Color("#fffaf2"),11,Color("#7a57e0"),1,0.16))
+	code_input.add_theme_stylebox_override("normal",FigmaReferenceCanvas.flat_gloss(Color("#24262a") if _dark() else Color("#fffaf2"),11,Color("#7a57e0"),1,0.16,10.0))
 	code_input.custom_minimum_size = Vector2.ZERO
 	FigmaReferenceCanvas.set_rect(code_input,31,216,211,36)
 	canvas.add_child(code_input)

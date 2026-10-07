@@ -90,10 +90,10 @@ static func solid_box(color: Color, radius: float = 0.0, border_color: Color = C
 		style.set_content_margin(side, 0.0)
 	return style
 
-static func flat_gloss(base: Color, radius: float = 16.0, border_color: Color = Color.TRANSPARENT, border_width: float = 0.0, gloss_strength: float = 0.12) -> StyleBoxTexture:
+static func flat_gloss(base: Color, radius: float = 16.0, border_color: Color = Color.TRANSPARENT, border_width: float = 0.0, gloss_strength: float = 0.12, content_padding: float = 0.0) -> StyleBoxTexture:
 	# Lightweight premium gloss for the flat UI. This is a small cached texture:
 	# no 3D viewport, no bevel extrusion and no per-frame shader work.
-	var cache_key := _style_cache_key("flat_gloss", [base], radius, border_color, border_width, gloss_strength)
+	var cache_key := _style_cache_key("flat_gloss:%.3f" % maxf(0.0, content_padding), [base], radius, border_color, border_width, gloss_strength)
 	if _flat_gloss_cache.has(cache_key):
 		return _flat_gloss_cache[cache_key] as StyleBoxTexture
 	var image_size := 64
@@ -140,7 +140,7 @@ static func flat_gloss(base: Color, radius: float = 16.0, border_color: Color = 
 	var margin := maxi(6, int(ceil(r + bw + 1.0)))
 	for side in [SIDE_LEFT, SIDE_TOP, SIDE_RIGHT, SIDE_BOTTOM]:
 		style.set_texture_margin(side, margin)
-		style.set_content_margin(side, 0.0)
+		style.set_content_margin(side, maxf(0.0, content_padding))
 	_flat_gloss_cache[cache_key] = style
 	return style
 
