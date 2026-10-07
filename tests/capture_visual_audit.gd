@@ -744,23 +744,9 @@ func _run_fast_visual_audit(main: Node, shell: Node) -> void:
 	print("Selective fast visual audit captures written to %s" % OUT_DIR)
 
 func _shutdown_visual_audit() -> void:
-	# Tear down the transient scene before clearing generated-resource caches.
-	# Clearing first lets late/deferred UI teardown repopulate those caches and
-	# leaves otherwise harmless StyleBox/ImageTexture resources alive at exit.
-	var scene := current_scene
-	current_scene = null
-	if scene != null and is_instance_valid(scene):
-		scene.queue_free()
-
-	# Large UI surfaces can queue nested Control frees for several frames.
-	for _i in range(60):
-		await process_frame
-		if scene == null or not is_instance_valid(scene):
-			break
-
-	# Only after the surface is truly gone should persistent audit helpers drop
-	# their generated resources. Fast single-surface audits can otherwise quit
-	# while short-lived global feedback particles/tweens are still finishing.
+	# Stop transient animations first. A tween can retain a target long enough to
+	# survive a queued scene free, which makes the strict audit report an
+	# ObjectDB leak even though every capture completed correctly.
 	for tween in get_processed_tweens():
 		if tween != null and tween.is_valid():
 			tween.kill()
@@ -778,13 +764,29 @@ func _shutdown_visual_audit() -> void:
 	var feedback := root.get_node_or_null("FeedbackManager")
 	if feedback != null and feedback.has_method("shutdown_audio"):
 		feedback.call("shutdown_audio")
-	FigmaReferenceCanvas.release_cached_styles()
 
-	# Flush queued frees and RefCounted styles after all scene/global visual
-	# owners have released them. Keep this strict rather than suppressing leaks.
+	# Detach the transient Main scene before freeing it. This makes the audit
+	# teardown deterministic even when richer SVG imports shift frame timing and
+	# leave deferred UI callbacks scheduled on the final captured surface.
+	var scene := current_scene
+	current_scene = null
+	if scene != null and is_instance_valid(scene):
+		var parent := scene.get_parent()
+		if parent != null:
+			parent.remove_child(scene)
+		scene.free()
+	scene = null
+
+	# Flush queued particle/overlay frees, then kill any tween created by an
+	# autoload during teardown before dropping shared generated-style caches.
+	await _settle(24)
+	for tween in get_processed_tweens():
+		if tween != null and tween.is_valid():
+			tween.kill()
+	FigmaReferenceCanvas.release_cached_styles()
 	await _settle(36)
-	# Defer the actual exit one more frame so _shutdown_visual_audit() and its
-	# caller return first, releasing local PackedScene/image/resource references.
+
+	# Defer exit so this coroutine releases its remaining local references first.
 	call_deferred("_finish_visual_audit_quit")
 
 func _finish_visual_audit_quit() -> void:
