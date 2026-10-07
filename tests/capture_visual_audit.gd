@@ -404,6 +404,23 @@ func _seed_social_visual_data() -> void:
 		],
 	})
 
+func _seed_empty_social_visual_data() -> void:
+	var competition := root.get_node_or_null("CompetitionManager")
+	if competition == null:
+		return
+	competition.set("social_snapshot", {
+		"friend_code": "7K4M2P9R",
+		"friend_count": 0,
+		"max_friends": 50,
+		"friends": [],
+		"friends_all_time": [
+			{"name":"YOU","levels_completed":0,"stars":0,"friend_code":"7K4M2P9R","you":true,"rank":1},
+		],
+		"friends_weekly": [
+			{"name":"YOU","levels_completed":0,"stars":0,"friend_code":"7K4M2P9R","you":true,"rank":1},
+		],
+	})
+
 func _fast_visual_enabled(scope: String) -> bool:
 	var requested := OS.get_environment("UNJAM_FAST_VISUAL_AUDIT_SCOPE").strip_edges()
 	if requested.is_empty():
@@ -480,6 +497,10 @@ func _run_fast_visual_audit(main: Node, shell: Node) -> void:
 		main.call("build_friends", false)
 		await _settle(5)
 		await _capture("19-friends-540x960-dark")
+		_seed_empty_social_visual_data()
+		main.call("build_friends", false)
+		await _settle(5)
+		await _capture("19c-friends-empty-540x960-dark")
 
 	if _fast_visual_enabled("settings"):
 		main.call("build_settings")
@@ -569,6 +590,10 @@ func _run_fast_visual_audit(main: Node, shell: Node) -> void:
 			main.call("build_friends", false)
 			await _settle(5)
 			await _capture("19b-friends-540x960-light")
+			_seed_empty_social_visual_data()
+			main.call("build_friends", false)
+			await _settle(5)
+			await _capture("19d-friends-empty-540x960-light")
 		if _fast_visual_enabled("settings"):
 			main.call("build_settings")
 			await _settle(5)
