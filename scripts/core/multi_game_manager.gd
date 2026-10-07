@@ -244,6 +244,13 @@ func is_daily_completed(id:String)->bool:
  return date_key() in _progress_ref(id).get("daily_completed",[])
 
 func achievement_definitions(id:String)->Array:return [{"id":"first","title":"First Victory","need":1},{"id":"century","title":"Century Club","need":100},{"id":"perfect25","title":"Perfectionist","need":25},{"id":"world10","title":"World Traveller","need":10},{"id":"master","title":"10K Master","need":10000}]
+func achievement_progress(id:String,achievement_id:String)->int:
+ var p:=_progress_ref(id)
+ match achievement_id:
+  "first","century","master":return int(p.get("levels_completed",0))
+  "perfect25":return int(p.get("perfect_clears",0))
+  "world10":return (p.get("world_badges",[]) as Array).size()
+  _:return 0
 func unlocked_achievements(id:String)->Array:
  var p:=_progress_ref(id);var out:Array=[]
  for a in achievement_definitions(id):
