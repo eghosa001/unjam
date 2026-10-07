@@ -384,7 +384,7 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 	FeedbackManager.pour_start()
 	var stream := Line2D.new()
 	stream.name = "PourStream"
-	stream.width = 10.0
+	stream.width = 12.0
 	stream.default_color = Color(liquid, 0.96)
 	stream.begin_cap_mode = Line2D.LINE_CAP_ROUND
 	stream.end_cap_mode = Line2D.LINE_CAP_ROUND
@@ -394,7 +394,7 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 	add_child(stream)
 	var shine := Line2D.new()
 	shine.name = "PourStreamHighlight"
-	shine.width = 3.0
+	shine.width = 4.0
 	shine.default_color = Color(liquid.lightened(0.42), 0.90)
 	shine.begin_cap_mode = Line2D.LINE_CAP_ROUND
 	shine.end_cap_mode = Line2D.LINE_CAP_ROUND
@@ -421,7 +421,7 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 		stream.points = _liquid_arc_points(source_mouth, receiver_mouth, direction)
 		shine.points = stream.points
 	flow.tween_method(update_flow, 0.0, 1.0, pour_time)
-	flow.parallel().tween_property(stream, "width", 13.5, pour_time * 0.55)
+	flow.parallel().tween_property(stream, "width", 16.0, pour_time * 0.55)
 	if not MotionSystem.reduced():
 		flow.parallel().tween_property(receiver, "scale", Vector2(1.025, 0.988), pour_time * 0.45)
 	await flow.finished
