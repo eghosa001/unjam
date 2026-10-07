@@ -153,6 +153,7 @@ func _navigation_lifecycle_is_bounded() -> bool:
 	for method in surfaces:
 		main.call(method)
 		await _frames(2)
+	main.call("_open_games_surface")
 	await _frames(4)
 	var warm_nodes := int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT))
 	var warm_orphans := int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT))
