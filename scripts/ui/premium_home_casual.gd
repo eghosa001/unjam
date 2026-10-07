@@ -7,6 +7,7 @@ extends "res://scripts/ui/premium_home_overhaul.gd"
 var home_coin_button: Button
 
 func build_home_launcher() -> void:
+	CompetitionManager.refresh_snapshot()
 	for child in get_children():
 		remove_child(child)
 		child.queue_free()
@@ -230,10 +231,13 @@ func _make_daily_games_action(parent: VBoxContainer) -> void:
 	var bonus := EconomyManager.collection_daily_bonus()
 	var daily := Button.new()
 	daily.name = "HomeDailyGamesButton"
-	daily.text = "☀  DAILY GAMES   •   %d/3 COMPLETE" % completed
+	var rank := CompetitionManager.weekly_rank()
+	var rank_text := "#%d" % rank if rank > 0 else "UNRANKED"
+	daily.text = "🏆  COMPETE   •   %d/3 DAILY   •   WEEKLY %s" % [completed, rank_text]
 	if bonus > 0:
-		daily.text += "   •   +%d COLLECTION BONUS" % bonus
-	daily.tooltip_text = "Play today's Rescue Rush, Water Sort and Block Puzzle challenges"
+		daily.tooltip_text = "Daily Cup + Weekly League. Collection adds +%d coins to each Daily Game." % bonus
+	else:
+		daily.tooltip_text = "Daily Cup + Weekly League. Play all three ranked Daily Games."
 	daily.custom_minimum_size = Vector2(0, 84 if get_viewport_rect().size.y < 1100.0 else 94)
 	daily.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	daily.add_theme_font_size_override("font_size", 19 if get_viewport_rect().size.x < 600.0 else 23)
@@ -282,7 +286,7 @@ func _make_bottom_nav() -> void:
 	var entries: Array = [
 		["⌂\nHOME", Callable(), "HomeNavButton", Color("33b9ff"), "Home"],
 		["▦\nGAMES", Callable(self, "_open_game_selector"), "HomeGamesNavButton", Color("7b6cff"), "Games"],
-		["✦\nDAILY", func(): get_parent().call("build_daily_games"), "HomeDailyNavButton", Color("f5c93a"), "Daily Games"],
+		["🏆\nCOMPETE", func(): get_parent().call("build_daily_games"), "HomeDailyNavButton", Color("f5c93a"), "Compete"],
 		["◆\nCOLLECT", func(): get_parent().call("build_collection"), "HomeCollectionNavButton", Color("24c96b"), "Collection"],
 		["⚙\nSETTINGS", func(): get_parent().call("build_settings"), "HomeSettingsNavButton", Color("35c6ff"), "Settings"]
 	]
