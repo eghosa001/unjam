@@ -49,26 +49,25 @@ func _run() -> void:
 	var block := _read("res://scripts/game/block_puzzle.gd")
 	var multi := _read("res://scripts/core/economy_multi_game_manager.gd")
 
-	for token in ["COMPETE", "CompetitionManager.weekly_rank", "build_daily_games"]:
+	for token in ["build_daily_games"]:
 		if not home.contains(token):
-			failures.append("Home does not expose competition prominently: %s" % token)
-	for token in ["daily\":\"COMPETE", "build_compete_leaderboard", "weekly_division", "collection_item_level", "L%d/%d"]:
+			failures.append("Home Daily retention contract missing: %s" % token)
+	for token in ["daily\":\"COMPETE", "build_compete_leaderboard", "CAMPAIGN RANKINGS", "collection_item_level", "L%d/%d"]:
 		if not main.contains(token):
 			failures.append("Compete/Collection UI contract missing: %s" % token)
-	for token in ["submit_daily_result", "claim_weekly_reward", "weekly_top", "daily_top", "already_claimed"]:
+	for token in ["submit_campaign_progress", "claim_weekly_reward", "game_all_time_top", "game_weekly_top", "already_claimed"]:
 		if not competition.contains(token):
-			failures.append("Competition manager contract missing: %s" % token)
-	if not rescue.contains("CompetitionManager.submit_daily_result"):
-		failures.append("Rescue Rush does not submit ranked Daily results")
-	if not water.contains("CompetitionManager.submit_daily_result"):
-		failures.append("Water Sort does not submit ranked Daily results")
-	if not block.contains("CompetitionManager.submit_daily_result"):
-		failures.append("Block Puzzle does not submit ranked Daily results")
+			failures.append("Campaign competition manager contract missing: %s" % token)
+	for source in [rescue, water, block]:
+		if source.contains("CompetitionManager.submit_daily_result"):
+			failures.append("Daily challenge still submits obsolete ranked Daily points")
+	if not multi.contains("CompetitionManager.submit_campaign_progress"):
+		failures.append("Campaign completion does not submit progression to rankings")
 	if not multi.contains('rewards["base_coins"] = safe_reward if bool(rewards.get("first_clear", false)) else 0'):
 		failures.append("Water/Block first-clear rewards are not exposed for safe campaign doubling")
 	for source in [rescue, water_base, block]:
-		if not source.contains("Undo is disabled in ranked Daily competition"):
-			failures.append("A ranked Daily game still allows undo")
+		if not source.contains("Undo is disabled in this Daily challenge."):
+			failures.append("Daily challenge assist restriction lost its clear player-facing explanation")
 
 	save.data = original
 	save.save()
