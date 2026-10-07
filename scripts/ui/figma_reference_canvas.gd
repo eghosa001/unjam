@@ -381,6 +381,7 @@ static func add_scene_backdrop_layers(parent: Control, accent: Color, dark: bool
 		parent.add_child(vein)
 
 static func style_display_title(label_node: Label, fill: Color, outline_color: Color = Color("#071d55"), outline_size: int = 2) -> void:
+	label_node.add_theme_font_override("font", Unjam3DTheme.display_font())
 	label_node.add_theme_color_override("font_color", fill)
 	label_node.add_theme_color_override("font_outline_color", outline_color)
 	label_node.add_theme_constant_override("outline_size", outline_size)
