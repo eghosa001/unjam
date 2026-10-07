@@ -29,7 +29,7 @@ func _init() -> void:
 	_require_source("res://scripts/ui/water_tube_3d_motion.gd", ["extends \"res://scripts/ui/water_tube_reference_motion.gd\"", "Tiny bubbles/ripples on landing"], "Water bottle 2D glass readability", errors)
 	_require_source("res://scripts/ui/premium_main_casual.gd", ["if not subtitle_text.strip_edges().is_empty()", "premium_button(\"PRIVACY\",15", "premium_button(\"HOW TO PLAY\",15"], "Header/Settings readable action text", errors)
 	_require_source("res://scripts/ui/ux_shell_casual.gd", ["premium_button(\"‹ BACK\",15", "premium_button(\"NEXT ›\",15"], "Tutorial navigation readability", errors)
-	_require_source("res://scripts/ui/monetization_hub_3d.gd", ["premium_button(\"▶ +50 COINS\",15", "premium_button(\"RESTORE PURCHASES\",15", "premium_button(buy_text,15"], "Shop readable action text", errors)
+	_require_source("res://scripts/ui/monetization_hub_3d.gd", ["premium_button(\"▶ +50 COINS\",15", "premium_button(\"RESTORE PURCHASES\",15", "premium_button(buy_text,buy_font_size", "\"font_size\":12", "\"font_size\":15"], "Shop readable state-aware action text", errors)
 	_require_source("res://scripts/ui/premium_result_overlay.gd", ["premium_button(secondary_text, 15"], "Result secondary action readability", errors)
 	_require_source("res://scripts/game/block_puzzle_3d.gd", ["set_rect(status_region, 18, 654", "set_rect(hint_region, 18, 678"], "Block tray/status/guidance separation", errors)
 	_require_source("res://scripts/game/block_puzzle_10000.gd", ["set_rect(bar, 25, 726, 333, 64)", "button.custom_minimum_size = Vector2(80, 58)", "\\n◈ %d", "\n\t\t\t13,"], "Block booster readable lower thumb-zone separation", errors)
