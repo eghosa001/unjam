@@ -469,6 +469,11 @@ func _figma_header(canvas: Control, title_text: String, subtitle_text: String, p
 		subtitle.clip_text = true
 		subtitle.custom_minimum_size = Vector2.ZERO
 		_fit_single_line_control_text(subtitle, 182.0, 13, 10)
+		# Font fitting can leave an older Label minimum cached. Reassert the
+		# authored one-line lane so the subtitle never grows into the header pill.
+		subtitle.custom_minimum_size = Vector2.ZERO
+		subtitle.position = Vector2(83,55)
+		subtitle.size = Vector2(186,18)
 	if pill_text.strip_edges().is_empty():
 		return
 	if pill_callback.is_valid():
