@@ -3,13 +3,17 @@ extends Node
 signal snapshot_updated(snapshot: Dictionary)
 signal submission_finished(game_id: String, ok: bool, points: int)
 signal weekly_reward_claimed(coins: int, crowns: int)
+signal social_updated(snapshot: Dictionary)
+signal social_action_finished(ok: bool, message: String)
 
 const FUNCTION_NAME := "unjam-competition"
 const GAME_IDS := ["rescue_rush", "water_sort", "block_puzzle"]
 const REQUEST_TIMEOUT_SECONDS := 12.0
 
 var snapshot: Dictionary = {}
+var social_snapshot: Dictionary = {}
 var _snapshot_in_flight := false
+var _social_in_flight := false
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -63,6 +67,91 @@ func weekly_division() -> String:
 	if points >= 3000: return "GOLD"
 	if points >= 1500: return "SILVER"
 	return "BRONZE"
+
+func friend_code() -> String:
+	return String(social_snapshot.get("friend_code", ""))
+
+func friend_count() -> int:
+	return maxi(0, int(social_snapshot.get("friend_count", 0)))
+
+func max_friends() -> int:
+	return maxi(1, int(social_snapshot.get("max_friends", 50)))
+
+func friends() -> Array:
+	var value = social_snapshot.get("friends", [])
+	return value if value is Array else []
+
+func friends_weekly() -> Array:
+	var value = social_snapshot.get("friends_weekly", [])
+	return value if value is Array else []
+
+func refresh_social() -> void:
+	if OS.get_environment("UNJAM_FAST_VISUAL_AUDIT") == "1" or _social_in_flight:
+		return
+	var cloud_id := String(SaveManager.data.get("cloud_save_id", ""))
+	if cloud_id.length() != 64:
+		social_action_finished.emit(false, "Cloud identity is not ready yet")
+		return
+	_social_in_flight = true
+	_request_json({
+		"action": "social_snapshot",
+		"cloud_save_id": cloud_id,
+		"display_name": display_name(),
+		"competition_day": DailyChallenge.date_key(),
+	}, func(ok: bool, _status: int, body: Dictionary) -> void:
+		_social_in_flight = false
+		if ok and bool(body.get("ok", false)):
+			social_snapshot = body.duplicate(true)
+			social_updated.emit(social_snapshot)
+		else:
+			social_action_finished.emit(false, String(body.get("reason", "Friends service unavailable")))
+	)
+
+func add_friend(code: String) -> void:
+	_social_action("add_friend", code)
+
+func remove_friend(code: String) -> void:
+	_social_action("remove_friend", code)
+
+func rotate_friend_code() -> void:
+	_social_action("rotate_friend_code", "")
+
+func _social_action(action: String, code: String) -> void:
+	var clean := code.strip_edges().to_upper().replace(" ", "").replace("-", "")
+	if action != "rotate_friend_code" and clean.length() != 8:
+		social_action_finished.emit(false, "Enter the 8-character friend code")
+		return
+	if _social_in_flight:
+		social_action_finished.emit(false, "Friends are syncing. Try again.")
+		return
+	var cloud_id := String(SaveManager.data.get("cloud_save_id", ""))
+	if cloud_id.length() != 64:
+		social_action_finished.emit(false, "Cloud identity is not ready yet")
+		return
+	_social_in_flight = true
+	var payload := {
+		"action": action,
+		"cloud_save_id": cloud_id,
+		"display_name": display_name(),
+		"competition_day": DailyChallenge.date_key(),
+	}
+	if not clean.is_empty():
+		payload["friend_code"] = clean
+	_request_json(payload, func(ok: bool, _status: int, body: Dictionary) -> void:
+		_social_in_flight = false
+		var accepted := ok and bool(body.get("ok", false))
+		if accepted:
+			social_snapshot = body.duplicate(true)
+			social_updated.emit(social_snapshot)
+			var success_message := "Friend added"
+			if action == "remove_friend":
+				success_message = "Friend removed"
+			elif action == "rotate_friend_code":
+				success_message = "New friend code created"
+			social_action_finished.emit(true, success_message)
+		else:
+			social_action_finished.emit(false, String(body.get("reason", "Friends service unavailable")))
+	)
 
 func previous_week_reward() -> Dictionary:
 	var value = snapshot.get("previous_week_reward", {})

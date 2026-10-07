@@ -123,7 +123,7 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
         return True
     if p == "tests/capture_visual_audit.gd":
         visual.update({
-            "home", "games", "levels", "collection", "daily", "settings",
+            "home", "games", "levels", "collection", "daily", "goals", "profile", "friends", "settings",
             "shop", "coins", "rescue", "water", "block", "tutorial", "result"
         })
         return True
@@ -143,6 +143,16 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
         return False
     if p.startswith(".github/") or p in {"tools/select_fast_ci_tests.py", "tools/validate_release_contract.py"}:
         return False
+
+    if p in {
+        "scripts/systems/competition_manager.gd",
+        "supabase/functions/unjam-competition/index.ts",
+        "supabase/migrations/20261007_create_social_friends.sql",
+    }:
+        explicit_tests.add("validate_friends_social")
+        if p == "scripts/systems/competition_manager.gd":
+            add(groups, "daily")
+        return True
 
     is_code = suffix in CODE_SUFFIXES or p.startswith(("scripts/", "scenes/", "addons/", "data/"))
     if not is_code:
@@ -174,7 +184,7 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
 
     if p.startswith("scripts/systems/") and "premium_visuals" in p:
         add(groups, "ui")
-        visual.update({"games", "levels", "collection", "daily", "settings", "shop"})
+        visual.update({"games", "levels", "collection", "daily", "goals", "profile", "friends", "settings", "shop"})
 
     if p in {
         "scripts/ui/device_fit.gd",
@@ -216,7 +226,7 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
                 add(groups, "secondary_ui" if p.endswith(("premium_main_casual.gd", "premium_main.gd")) else "ui")
             if p.endswith(("figma_reference_canvas.gd", "unjam_3d_theme.gd")):
                 visual.update({
-                    "home", "games", "levels", "collection", "daily", "settings",
+                    "home", "games", "levels", "collection", "daily", "goals", "profile", "friends", "settings",
                     "shop", "rescue", "water", "block", "tutorial", "result"
                 })
             elif "premium_home" in p:
@@ -224,7 +234,7 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
             elif games_ui:
                 visual.add("games")
             elif p.endswith(("premium_main_casual.gd", "premium_main.gd")):
-                visual.update({"home", "levels", "collection", "daily", "settings"})
+                visual.update({"home", "levels", "collection", "daily", "goals", "profile", "friends", "settings"})
             elif tutorial_ui:
                 visual.add("tutorial")
             elif "premium_result_overlay" in p or "result" in p:
@@ -332,7 +342,7 @@ def git_changed_files(base: str, head: str) -> list[str]:
     return [line for line in out.splitlines() if line.strip()]
 
 PREMIUM_MAIN_PATH = "scripts/ui/premium_main_casual.gd"
-PREMIUM_MAIN_BROAD_SCOPES = {"home", "levels", "collection", "daily", "settings"}
+PREMIUM_MAIN_BROAD_SCOPES = {"home", "levels", "collection", "daily", "goals", "profile", "friends", "settings"}
 WATER_CAMPAIGN_PATH = "scripts/game/water_sort_10000.gd"
 WATER_CAMPAIGN_GENERATOR_FUNCTIONS = {
     "generate_tubes_with_solution",
@@ -461,7 +471,7 @@ def _premium_main_scopes(functions: set[str]) -> set[str]:
     for name in functions:
         low = name.lower()
         if name == "_figma_bottom_nav":
-            scopes.update({"collection", "daily", "settings"})
+            scopes.update({"collection", "daily", "goals", "profile", "friends", "settings"})
             continue
         if name.startswith(shared_prefixes):
             return set(PREMIUM_MAIN_BROAD_SCOPES)
@@ -471,6 +481,12 @@ def _premium_main_scopes(functions: set[str]) -> set[str]:
             scopes.add("collection")
         if "daily" in low:
             scopes.add("daily")
+        if "goal" in low or "season" in low:
+            scopes.add("goals")
+        if "profile" in low or "achievement" in low:
+            scopes.add("profile")
+        if "friend" in low or "social" in low:
+            scopes.add("friends")
         if "level_select" in low or "level_card" in low or "world_select" in low:
             scopes.add("levels")
         if low in {"build_home", "_on_surface_changed"} or "home" in low:
@@ -703,8 +719,8 @@ def self_test() -> None:
         (["scripts/ui/premium_live_hub_3d.gd"], ["games_ui"], ["games"], True),
         (["scripts/ui/unjam_3d_game_art.gd"], ["games_ui"], ["games"], True),
         (["scripts/ui/unjam_flat_game_logo.gd"], ["games_ui", "home"], ["games", "home"], True),
-        (["scripts/ui/premium_main_casual.gd"], ["secondary_ui"], ["collection", "daily", "home", "levels", "settings"], True),
-        (["scripts/systems/premium_visuals.gd"], ["ui"], ["collection", "daily", "games", "levels", "settings", "shop"], True),
+        (["scripts/ui/premium_main_casual.gd"], ["secondary_ui"], ["collection", "daily", "friends", "goals", "home", "levels", "profile", "settings"], True),
+        (["scripts/systems/premium_visuals.gd"], ["ui"], ["collection", "daily", "friends", "games", "goals", "levels", "profile", "settings", "shop"], True),
         (["scripts/ui/monetization_hub_3d.gd"], ["monetization"], ["shop"], True),
         (["scripts/ui/insufficient_coins_prompt.gd"], ["coin_recovery_ui"], ["coins"], True),
         (["scripts/ui/premium_result_overlay.gd"], ["result_ui"], ["result"], True),
@@ -735,7 +751,7 @@ def self_test() -> None:
     assert _premium_main_scopes({"build_settings", "_figma_setting_row"}) == {"settings"}
     assert _premium_main_scopes({"build_collection_upgrades"}) == {"collection"}
     assert _premium_main_scopes({"build_daily_games"}) == {"daily"}
-    assert _premium_main_scopes({"_figma_bottom_nav"}) == {"collection", "daily", "settings"}
+    assert _premium_main_scopes({"_figma_bottom_nav"}) == {"collection", "daily", "friends", "goals", "profile", "settings"}
     assert _premium_main_scopes({"_figma_surface"}) == PREMIUM_MAIN_BROAD_SCOPES
     assert _premium_main_tests({"daily"}) == ["validate_daily_readability", "validate_collection_daily_value"]
     assert "_curated_opening_level" in WATER_CAMPAIGN_GENERATOR_FUNCTIONS
