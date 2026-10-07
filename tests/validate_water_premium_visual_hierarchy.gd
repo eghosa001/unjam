@@ -51,8 +51,8 @@ func _run() -> void:
 		return _fail("Water Sort objective copy drifted from the explicit win-condition contract")
 	if game.find_child("WaterObjectiveDrop", true, false) == null:
 		return _fail("Water Sort objective droplet icon is missing")
-	if objective_label.get_theme_font_size("font_size") < 15:
-		return _fail("Water Sort objective typography drifted from 15px readability floor")
+	if objective_label.get_theme_font_size("font_size") < 16:
+		return _fail("Water Sort objective typography drifted from 16px readability floor")
 	if not _rect_eq(Rect2(emblem.position,emblem.size),Rect2(77,17,30,30)):
 		return _fail("Water identity emblem drifted from Figma header geometry")
 
@@ -64,6 +64,13 @@ func _run() -> void:
 	var star_target := game.find_child("WaterThreeStarTarget", true, false) as Label
 	if move_count == null or star_target == null:
 		return _fail("Water compact move/star HUD is missing")
+	var status := game.find_child("WaterStatusText", true, false) as Label
+	var guidance := game.find_child("WaterGuidanceText", true, false) as Label
+	var meta := game.get("meta_label") as Label
+	if status == null or guidance == null or meta == null:
+		return _fail("Water compact secondary typography nodes are missing")
+	if meta.get_theme_font_size("font_size") < 14 or move_count.get_theme_font_size("font_size") < 14 or star_target.get_theme_font_size("font_size") < 14 or status.get_theme_font_size("font_size") < 16 or guidance.get_theme_font_size("font_size") < 16:
+		return _fail("Water secondary typography fell below the compact-phone readability floor")
 	if move_count.text != "MOVES 12345" or star_target.text != "3★≤6789":
 		return _fail("Water compact move/star HUD does not preserve large values")
 	if move_count.position.x + move_count.size.x > 283.0 or star_target.position.x + star_target.size.x > 354.0:
