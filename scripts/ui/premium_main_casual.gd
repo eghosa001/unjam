@@ -1509,7 +1509,10 @@ func build_collection_upgrades() -> void:
 		Color("#1f8a52"),
 		true
 	)
+	boost_text.name = "CollectionUpgradeBoostSummary"
 	boost_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	boost_text.custom_minimum_size = Vector2.ZERO
+	_fit_single_line_control_text(boost_text, 318.0, 13, 9)
 
 	var upgrades := [
 		["tree","CANOPY TREE","SHADE",100],
@@ -1532,8 +1535,14 @@ func build_collection_upgrades() -> void:
 		var card_border := Color(0.32,0.78,0.49,0.46) if level > 0 else Color(0.72,0.58,0.90,0.46)
 		var title_color := Color("#1f854f") if level > 0 else Color("#4d3373")
 		_figma_solid_card(canvas, "CollectionScroll/Upgrade/%d" % i, Rect2(23,y,342,70), card_fill, card_border, 16, false)
-		_figma_text(canvas,"%s  •  L%d/%d" % [display_name,level,EconomyManager.COLLECTION_MAX_LEVEL],Rect2(37,y+8,190,20),14,title_color)
-		_figma_text(canvas,EconomyManager.collection_effect_text(id,level),Rect2(37,y+34,190,24),11,Color("#6b8091"))
+		var upgrade_title := _figma_text(canvas,"%s  •  L%d/%d" % [display_name,level,EconomyManager.COLLECTION_MAX_LEVEL],Rect2(37,y+8,154,20),14,title_color)
+		upgrade_title.name = "CollectionUpgradeTitle/%s" % id
+		upgrade_title.custom_minimum_size = Vector2.ZERO
+		_fit_single_line_control_text(upgrade_title, 150.0, 14, 9)
+		var effect_text := _figma_text(canvas,EconomyManager.collection_effect_text(id,level),Rect2(37,y+34,154,24),11,Color("#6b8091"))
+		effect_text.name = "CollectionUpgradeEffect/%s" % id
+		effect_text.custom_minimum_size = Vector2.ZERO
+		_fit_single_line_control_text(effect_text, 150.0, 11, 8)
 		var preview := GardenUpgradePreviewScene.new() as GardenUpgradePreview
 		preview.name = "CollectionUpgradePreview/%s" % id
 		preview.configure(id,level > 0)
