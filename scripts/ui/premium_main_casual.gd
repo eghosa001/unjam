@@ -425,10 +425,11 @@ func build_goals() -> void:
 	_remove_active_game()
 	var canvas := _figma_surface("goals", Color("#e8e0c8"))
 	var ready := MetaProgressionManager.ready_claim_count()
+	var goals_card_fill := Color("#27282b") if _dark() else Color("#fffef8")
 	_figma_header(canvas, "GOALS", "Live rewards • %d ready" % ready, "◈ +", FIGMA_ORANGE, Callable(self,"build_home"), Callable(self,"_figma_open_shop"))
 
 	var login := MetaProgressionManager.daily_login_info()
-	_figma_card(canvas, "GoalsLogin", Rect2(17,91,354,72), Color("#fffef8"), Color(FIGMA_ORANGE,0.36), 17)
+	_figma_card(canvas, "GoalsLogin", Rect2(17,91,354,72), goals_card_fill, Color(FIGMA_ORANGE,0.36), 17)
 	_figma_text(canvas, "DAILY CHECK-IN • DAY %d/7" % int(login.get("day",1)), Rect2(31,103,208,22), 15, FIGMA_INK)
 	_figma_text(canvas, "+%d COINS" % int(login.get("reward",0)), Rect2(31,129,150,20), 13, FIGMA_GOLD)
 	var login_claimed := bool(login.get("claimed",false))
@@ -448,7 +449,7 @@ func build_goals() -> void:
 		_figma_goal_row(canvas, weekly_rows[i] as Dictionary, "weekly", 380.0 + float(i) * 50.0)
 
 	var season := MetaProgressionManager.season_info()
-	_figma_card(canvas, "GoalsSeason", Rect2(17,548,354,134), Color("#fffef8"), Color("#7a57e0"), 18)
+	_figma_card(canvas, "GoalsSeason", Rect2(17,548,354,134), goals_card_fill, Color("#7a57e0"), 18)
 	_figma_text(canvas, "SEASON JOURNEY", Rect2(31,560,190,22), 16, Color("#7a57e0"))
 	_figma_text(canvas, "%d PTS • %d/%d TIERS" % [int(season.get("points",0)),int(season.get("completed",0)),int(season.get("tiers",0))], Rect2(31,587,210,20), 13, FIGMA_MUTED)
 	var next_target := int(season.get("next_target",0))
@@ -502,9 +503,10 @@ func build_profile() -> void:
 	current_surface = "profile"
 	_remove_active_game()
 	var canvas := _figma_surface("profile", Color("#d8e9f5"))
+	var profile_card_fill := Color("#27282b") if _dark() else Color("#fffef8")
 	_figma_header(canvas, "PROFILE", "LV %d • stats • achievements" % MetaProgressionManager.player_level(), "◈ +", FIGMA_CYAN, Callable(self,"build_home"), Callable(self,"_figma_open_shop"))
 
-	_figma_card(canvas,"ProfileIdentity",Rect2(17,91,354,70),Color("#fffef8"),Color(FIGMA_CYAN,0.34),17)
+	_figma_card(canvas,"ProfileIdentity",Rect2(17,91,354,70),profile_card_fill,Color(FIGMA_CYAN,0.34),17)
 	var name_edit := LineEdit.new()
 	name_edit.name = "ProfileNameEdit"
 	name_edit.text = CompetitionManager.display_name()
@@ -518,7 +520,7 @@ func build_profile() -> void:
 	var save_name := _figma_button(canvas,"ProfileSaveName","SAVE",Rect2(263,105,88,42),FIGMA_CYAN,Callable(),Color.WHITE,13,11)
 	save_name.pressed.connect(_save_profile_name.bind(name_edit))
 
-	_figma_card(canvas,"ProfileStats",Rect2(17,176,354,92),Color("#fffef8"),Color(FIGMA_CYAN,0.24),17)
+	_figma_card(canvas,"ProfileStats",Rect2(17,176,354,92),profile_card_fill,Color(FIGMA_CYAN,0.24),17)
 	var stats := [
 		[_compact_stat(MetaProgressionManager.total_levels_completed()),"LEVELS",30.0],
 		[_compact_stat(MetaProgressionManager.total_stars()),"STARS",116.0],
@@ -557,7 +559,7 @@ func _figma_achievement_row(canvas: Control, achievement: Dictionary, y: float) 
 	var progress := MultiGameManager.achievement_progress(_profile_game,id)
 	var done := progress >= need
 	var accent := FIGMA_GREEN if done else Unjam3DTheme.game_accent(_profile_game)
-	_figma_card(canvas,"ProfileAchievement/%s/%s" % [_profile_game,id],Rect2(17,y,354,52),Color("#fffef8"),Color(accent,0.28),14)
+	_figma_card(canvas,"ProfileAchievement/%s/%s" % [_profile_game,id],Rect2(17,y,354,52),Color("#27282b") if _dark() else Color("#fffef8"),Color(accent,0.28),14)
 	_figma_text(canvas,String(achievement.get("title","Achievement")),Rect2(31,y+8,210,18),13,FIGMA_INK)
 	_figma_text(canvas,"%d / %d" % [mini(progress,need),need],Rect2(31,y+29,150,16),11,FIGMA_MUTED)
 	var status := _figma_text(canvas,"✓" if done else "•",Rect2(315,y+13,28,28),18,accent,true)
@@ -584,6 +586,7 @@ func build_friends(refresh_remote: bool = true) -> void:
 			CompetitionManager.social_updated.connect(refresh_callback, CONNECT_ONE_SHOT)
 		CompetitionManager.refresh_social()
 	var canvas := _figma_surface("friends", Color("#d9e4f5"))
+	var friends_card_fill := Color("#27282b") if _dark() else Color("#fffef8")
 	_figma_header(
 		canvas,
 		"FRIENDS",
@@ -595,7 +598,7 @@ func build_friends(refresh_remote: bool = true) -> void:
 	)
 
 	var friend_code := CompetitionManager.friend_code()
-	_figma_card(canvas,"FriendsCode",Rect2(17,91,354,76),Color("#fffef8"),Color(FIGMA_CYAN,0.30),17)
+	_figma_card(canvas,"FriendsCode",Rect2(17,91,354,76),friends_card_fill,Color(FIGMA_CYAN,0.30),17)
 	_figma_text(canvas,"YOUR FRIEND CODE",Rect2(31,103,180,18),13,FIGMA_MUTED)
 	var code_text := friend_code if not friend_code.is_empty() else "SYNCING…"
 	_figma_text(canvas,code_text,Rect2(31,126,174,27),20,FIGMA_INK,true)
@@ -605,7 +608,7 @@ func build_friends(refresh_remote: bool = true) -> void:
 	rotate.disabled = friend_code.is_empty()
 	rotate.tooltip_text = "Create a new code. Existing friends stay connected."
 
-	_figma_card(canvas,"FriendsAdd",Rect2(17,180,354,82),Color("#fffef8"),Color("#7a57e0"),17)
+	_figma_card(canvas,"FriendsAdd",Rect2(17,180,354,82),friends_card_fill,Color("#7a57e0"),17)
 	_figma_text(canvas,"ADD A FRIEND",Rect2(31,191,140,18),13,FIGMA_MUTED)
 	var code_input := LineEdit.new()
 	code_input.name = "FriendsCodeInput"
@@ -624,7 +627,7 @@ func build_friends(refresh_remote: bool = true) -> void:
 	var global_button := _figma_button(canvas,"FriendsGlobalRanks","GLOBAL",Rect2(286,275,65,30),FIGMA_GOLD,Callable(self,"build_compete_leaderboard"),FIGMA_NAVY,10,9)
 	global_button.tooltip_text = "Open global Daily and Weekly rankings"
 
-	_figma_card(canvas,"FriendsLeaderboard",Rect2(17,312,354,344),Color("#fffef8"),Color(FIGMA_GOLD,0.30),18)
+	_figma_card(canvas,"FriendsLeaderboard",Rect2(17,312,354,344),friends_card_fill,Color(FIGMA_GOLD,0.30),18)
 	var rows := CompetitionManager.friends_weekly()
 	if rows.size() <= 1 and count <= 0:
 		_figma_text(canvas,"Share your code with another UNJAM player, then add their code here.",Rect2(38,355,310,70),13,FIGMA_MUTED,true)
