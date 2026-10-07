@@ -22,7 +22,7 @@ func _init() -> void:
 	_require("res://scripts/ui/ux_shell_casual.gd", ["TutorialKeyLight", "add_scene_backdrop_layers"], errors)
 	_require("res://scripts/ui/ux_shell_casual.gd", ["FigmaReferenceCanvas.label(\"EXIT\",12", "TutorialDemoExitLabel", "FigmaReferenceCanvas.set_rect(exit_label,160,34,46,17)"], errors)
 	_require("res://scripts/ui/premium_gameplay_feedback.gd", ["is_intro_banner", "BlockPremiumFeedback", "RescuePremiumFeedback", "viewport_size.y * 0.68"], errors)
-	_require("res://scripts/ui/premium_live_hub_3d.gd", ["SelectorFlatGameLogo_", "SelectorCardShadow_", "#202124", "#e6e3dc", "\"CHOOSE A GAME\", Rect2(78, 26, 196, 34), 22", "mark.configure(game_id)", "SelectorGamePreviewFrame_"], errors)
+	_require("res://scripts/ui/premium_live_hub_3d.gd", ["SelectorAuthoredGameArt_", "SelectorCardShadow_", "#202124", "#e6e3dc", "\"CHOOSE A GAME\", Rect2(78, 26, 196, 34), 22", "art.configure(game_id, true, _selector_dark())", "SelectorGamePreviewFrame_"], errors)
 	_require("res://scripts/ui/unjam_3d_game_art.gd", ["PROJECTION_ORTHOGONAL", "camera.size = 9.15", "camera.fov = 39.0", "flat_selector_mode", "Vector2i(416, 448) if flat_selector_mode else Vector2i(576, 432)", "unjam_flat_3d_preview", "Game-specific card-scale composition", "display_root.scale = Vector3.ONE * 1.05", "Vector3(-0.14, 0.05, 0.08)"], errors)
 	_require("res://scripts/ui/monetization_hub_3d.gd", ["add_scene_backdrop_layers", "ShopKeyLight", "ShopCurrencyGem3D", "add_collectible_gem", "style_display_title"], errors)
 	_require("res://scripts/ui/premium_home_direct_levels.gd", ["RefCanvas.rounded_gradient3(", "RefCanvas.flat_gloss(nav_fill, 18, nav_border, 1", "GAME_ART_SCRIPT"], errors)
