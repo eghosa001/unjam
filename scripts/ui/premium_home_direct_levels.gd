@@ -358,7 +358,10 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 		var label_x := float(item[3]) + (72.0 - label_width) * 0.5
 		var label := _add_text(canvas, display_name, Rect2(label_x, 790, label_width, 20), 13, nav_color, selected)
 		label.name = "HomeNavLabel_%s" % String(item[0])
-		RefCanvas.fit_single_line_text(label, label_width - 2.0, 13, 11)
+		label.custom_minimum_size = Vector2.ZERO
+		RefCanvas.fit_single_line_text(label, label_width - 2.0, 13, 10)
+		label.position = Vector2(label_x, 790)
+		label.size = Vector2(label_width, 20)
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		label.clip_text = true
