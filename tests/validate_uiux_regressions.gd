@@ -117,6 +117,8 @@ func _run() -> void:
 		return _fail("Block Puzzle campaign must preserve Figma presentation and final gameplay polish")
 	if not rescue_ui.contains("FigmaRescue390x844") or not rescue_ui.contains("RescueBoardPanel") or not rescue_scene.contains("rescue_rush_assisted.gd") or not rescue_assisted.contains('extends "res://scripts/game/rescue_rush_casual.gd"'):
 		return _fail("Rescue Rush assisted leaf is not preserving the Figma gameplay presentation")
+	if not rescue_ui.contains("RescueGuidanceCard") or not rescue_ui.contains("RefCanvas.set_rect(guidance_panel,21,640,346,120)") or not rescue_ui.contains("RefCanvas.set_rect(hint_label,39,650,310,98)"):
+		return _fail("Rescue Rush bottom playfield regressed to excessive inactive vertical space")
 
 	print("UI/UX regression contract validated")
 	quit(0)
