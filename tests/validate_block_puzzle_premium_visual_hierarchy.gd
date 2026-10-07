@@ -45,8 +45,8 @@ func _run() -> void:
 		return _fail("Retired oversized Block 3D environment returned above Figma composition")
 	for booster_name in ["Booster_Undo","Booster_Hammer","Booster_Shuffle","Booster_Rotate"]:
 		var booster := game.find_child(booster_name,true,false) as Button
-		if booster == null or booster.custom_minimum_size.distance_to(Vector2(82,54)) > 1.0:
-			return _fail("%s is missing or not Figma-sized" % booster_name)
+		if booster == null or booster.custom_minimum_size.distance_to(Vector2(77,48)) > 1.0:
+			return _fail("%s is missing or not compact premium-sized" % booster_name)
 
 	var single := BlockPieceButton.new()
 	single.size = Vector2(104,72)
