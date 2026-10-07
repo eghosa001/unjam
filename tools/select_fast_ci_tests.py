@@ -123,7 +123,7 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
         return True
     if p == "tests/capture_visual_audit.gd":
         visual.update({
-            "home", "games", "levels", "collection", "daily", "settings",
+            "home", "games", "levels", "collection", "daily", "goals", "profile", "friends", "settings",
             "shop", "coins", "rescue", "water", "block", "tutorial", "result"
         })
         return True
@@ -342,7 +342,7 @@ def git_changed_files(base: str, head: str) -> list[str]:
     return [line for line in out.splitlines() if line.strip()]
 
 PREMIUM_MAIN_PATH = "scripts/ui/premium_main_casual.gd"
-PREMIUM_MAIN_BROAD_SCOPES = {"home", "levels", "collection", "daily", "settings"}
+PREMIUM_MAIN_BROAD_SCOPES = {"home", "levels", "collection", "daily", "goals", "profile", "friends", "settings"}
 WATER_CAMPAIGN_PATH = "scripts/game/water_sort_10000.gd"
 WATER_CAMPAIGN_GENERATOR_FUNCTIONS = {
     "generate_tubes_with_solution",
@@ -471,7 +471,7 @@ def _premium_main_scopes(functions: set[str]) -> set[str]:
     for name in functions:
         low = name.lower()
         if name == "_figma_bottom_nav":
-            scopes.update({"collection", "daily", "settings"})
+            scopes.update({"collection", "daily", "goals", "profile", "friends", "settings"})
             continue
         if name.startswith(shared_prefixes):
             return set(PREMIUM_MAIN_BROAD_SCOPES)
@@ -481,6 +481,12 @@ def _premium_main_scopes(functions: set[str]) -> set[str]:
             scopes.add("collection")
         if "daily" in low:
             scopes.add("daily")
+        if "goal" in low or "season" in low:
+            scopes.add("goals")
+        if "profile" in low or "achievement" in low:
+            scopes.add("profile")
+        if "friend" in low or "social" in low:
+            scopes.add("friends")
         if "level_select" in low or "level_card" in low or "world_select" in low:
             scopes.add("levels")
         if low in {"build_home", "_on_surface_changed"} or "home" in low:
