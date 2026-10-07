@@ -237,19 +237,22 @@ func _add_hero(canvas: Control) -> void:
 	var level := _home_current_level(selected_game)
 	var world := MultiGameManager.world_for_game_level(selected_game, level)
 	var game_title_size := 22 if selected_game == "block_puzzle" else 25
-	var game_title := _add_text(canvas, _short_game_name(selected_game), Rect2(37, 146, 158, 58), game_title_size, NAVY, true)
+	# The selected game name is intentionally allowed to wrap, so reserve the
+	# actual two-line font height instead of letting Label minimum-size expansion
+	# push into the metadata below on compact displays.
+	var game_title := _add_text(canvas, _short_game_name(selected_game), Rect2(37, 140, 158, 72), game_title_size, NAVY, true)
 	game_title.name = "HomeHeroGameTitle"
 	game_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	game_title.add_theme_color_override("font_color", Color("#f7fbff") if _home_dark() else accent.darkened(0.28))
-	var game_meta := _add_text(canvas, "LEVEL %d • WORLD %d" % [level, world], Rect2(37, 207, 154, 20), 13, MUTED, false)
+	var game_meta := _add_text(canvas, "LEVEL %d • WORLD %d" % [level, world], Rect2(37, 218, 154, 20), 13, MUTED, false)
 	game_meta.name = "HomeHeroGameMeta"
-	var cue := _add_text(canvas, _hero_cue(selected_game), Rect2(37, 236, 154, 32), 11, MUTED, true)
+	var cue := _add_text(canvas, _hero_cue(selected_game), Rect2(37, 243, 154, 32), 11, MUTED, true)
 	cue.name = "HomeHeroCue"
 	cue.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
 	var continue_button := _add_action(
 		canvas,
-		Rect2(37, 285, 172, 48),
+		Rect2(37, 287, 172, 48),
 		accent,
 		"CONTINUE • LEVEL %d" % level,
 		13,
