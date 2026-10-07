@@ -108,6 +108,9 @@ func _validate_authored_art_assets() -> bool:
 		"res://assets/art/gameplay/rescue_board_bg.svg",
 		"res://assets/art/gameplay/water_stage_bg.svg",
 		"res://assets/art/gameplay/block_board_bg.svg",
+		"res://assets/art/gameplay/rescue_screen_overlay.svg",
+		"res://assets/art/gameplay/water_screen_overlay.svg",
+		"res://assets/art/gameplay/block_screen_overlay.svg",
 		"res://assets/art/gameplay/rescue/chick.svg",
 		"res://assets/art/gameplay/rescue/puppy.svg",
 		"res://assets/art/gameplay/rescue/kitten.svg",
@@ -143,6 +146,9 @@ func _validate_authored_art_assets() -> bool:
 	var world_source := FileAccess.get_file_as_string("res://scripts/ui/unjam_gameplay_art.gd")
 	var meta_source := FileAccess.get_file_as_string("res://scripts/ui/unjam_meta_art.gd")
 	var fx_source := FileAccess.get_file_as_string("res://scripts/ui/premium_gameplay_feedback.gd")
+	var rescue_game_source := FileAccess.get_file_as_string("res://scripts/game/rescue_rush_casual.gd")
+	var water_game_source := FileAccess.get_file_as_string("res://scripts/game/water_sort_casual.gd")
+	var block_game_source := FileAccess.get_file_as_string("res://scripts/game/block_puzzle_3d.gd")
 	for token in ["rescue_rush_hero.svg", "water_sort_hero.svg", "block_puzzle_hero.svg"]:
 		if not home_source.contains(token):
 			return _fail("Home art renderer is not bound to authored asset: " + token)
@@ -155,6 +161,9 @@ func _validate_authored_art_assets() -> bool:
 		return _fail("Meta surfaces are not bound to authored illustration assets")
 	if not fx_source.contains("SPARK_TEXTURE") or not fx_source.contains("_spawn_spark_burst"):
 		return _fail("Premium event feedback is missing authored sparkle motion")
+	for source_and_token in [[rescue_game_source, "RescueAuthoredScreenWorld"], [water_game_source, "WaterAuthoredScreenWorld"], [block_game_source, "BlockAuthoredScreenWorld"]]:
+		if not String(source_and_token[0]).contains(String(source_and_token[1])):
+			return _fail("Full-screen authored game world is missing: " + String(source_and_token[1]))
 	return true
 
 func _fail(message: String) -> bool:
