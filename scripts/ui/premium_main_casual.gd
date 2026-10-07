@@ -645,7 +645,7 @@ func build_compete_leaderboard(refresh_remote: bool = true) -> void:
 			CompetitionManager.snapshot_updated.connect(refresh_callback, CONNECT_ONE_SHOT)
 		CompetitionManager.refresh_snapshot()
 	var canvas := _figma_surface("daily", Color("#ead9b8"))
-	_figma_header(canvas, "RANKINGS", "DAILY CUP • WEEKLY", "↻", FIGMA_GOLD, Callable(self,"build_daily_games"), Callable(CompetitionManager,"refresh_snapshot"))
+	_figma_header(canvas, "RANKINGS", "DAILY CUP • WEEKLY", "↻", FIGMA_GOLD, Callable(self,"build_daily_games"), Callable(self,"_refresh_competition_rankings"))
 	_figma_leaderboard_panel(canvas, "TODAY", CompetitionManager.daily_top(), 96.0, CompetitionManager.daily_rank(), CompetitionManager.daily_score())
 	_figma_leaderboard_panel(canvas, "THIS WEEK", CompetitionManager.weekly_top(), 372.0, CompetitionManager.weekly_rank(), CompetitionManager.weekly_score())
 	var reward := CompetitionManager.previous_week_reward()
@@ -655,6 +655,12 @@ func build_compete_leaderboard(refresh_remote: bool = true) -> void:
 	else:
 		_figma_text(canvas, "League rewards settle after each weekly reset.", Rect2(44,688,302,26), 12, FIGMA_MUTED, true)
 	_figma_bottom_nav(canvas, "daily")
+
+func _refresh_competition_rankings() -> void:
+	var refresh_callback := Callable(self, "_on_competition_snapshot_for_rankings")
+	if not CompetitionManager.snapshot_updated.is_connected(refresh_callback):
+		CompetitionManager.snapshot_updated.connect(refresh_callback, CONNECT_ONE_SHOT)
+	CompetitionManager.refresh_snapshot()
 
 func _on_competition_snapshot_for_rankings(_snapshot: Dictionary) -> void:
 	if current_surface == "daily":
