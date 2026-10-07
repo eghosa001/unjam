@@ -25,7 +25,7 @@ func _init() -> void:
 	_require_source("res://scripts/game/block_puzzle.gd", ["placements <= par_placements", "placements <= par_placements + 6"], "Block Puzzle star placement scoring", errors)
 	_require_source("res://scripts/game/block_puzzle_3d.gd", ["Vector2(326, 112)", "Rect2(17,526,354,150)", "return Vector2(104, 112)"], "Block tray phone-scale fit", errors)
 	_require_source("res://scripts/ui/block_piece_button.gd", ["The tray is intentionally border-free", "Color(1,1,1,0.28)"], "Block tray visual hierarchy", errors)
-	_require_source("res://scripts/game/water_sort_reference_motion.gd", ["tilt_degrees := 32.0 if MotionSystem.reduced() else 62.0"], "Water pour silhouette cohesion", errors)
+	_require_source("res://scripts/game/water_sort_reference_motion.gd", ["tilt_degrees := 30.0 if MotionSystem.reduced() else 52.0", "_clamp_rotated_source_position"], "Water pour silhouette cohesion and phone framing", errors)
 	_require_source("res://scripts/ui/water_tube_3d_motion.gd", ["extends \"res://scripts/ui/water_tube_reference_motion.gd\"", "Tiny bubbles/ripples on landing"], "Water bottle 2D glass readability", errors)
 	_require_source("res://scripts/ui/premium_main_casual.gd", ["if not subtitle_text.strip_edges().is_empty()", "premium_button(\"PRIVACY\",15", "premium_button(\"HOW TO PLAY\",15"], "Header/Settings readable action text", errors)
 	_require_source("res://scripts/ui/ux_shell_casual.gd", ["premium_button(\"‹ BACK\",15", "premium_button(\"NEXT ›\",15"], "Tutorial navigation readability", errors)
