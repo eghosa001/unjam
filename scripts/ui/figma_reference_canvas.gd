@@ -94,14 +94,21 @@ static func flat_gloss(base: Color, radius: float = 16.0, border_color: Color = 
 	for y in range(image_size):
 		var fy := float(y) / float(image_size - 1)
 		# Gentle top-to-bottom material rolloff keeps the layout visually flat.
-		var pixel_fill := base.lightened(0.045).lerp(base.darkened(0.035), fy)
-		# Broad soft reflection across the upper quarter: lacquer/glass feel,
-		# without the old side bevels, hotspots or faux extrusion.
-		if fy >= 0.06 and fy <= 0.34:
-			var band := 1.0 - absf(fy - 0.18) / 0.16
-			pixel_fill = pixel_fill.lerp(Color(1,1,1,pixel_fill.a), maxf(0.0, band) * gloss_strength)
+		# Premium 2D lacquer: richer material rolloff and two baked highlight bands.
+		# This is generated once, cached, and nine-sliced; there is no per-frame
+		# shader, 3D viewport or animated material cost.
+		var pixel_fill := base.lightened(0.080).lerp(base.darkened(0.075), fy)
+		if fy >= 0.045 and fy <= 0.38:
+			var band := 1.0 - absf(fy - 0.19) / 0.19
+			var sheen := maxf(0.0, band) * gloss_strength * 1.35
+			pixel_fill = pixel_fill.lerp(Color(1,1,1,pixel_fill.a), minf(0.42, sheen))
+		if fy >= 0.12 and fy <= 0.20:
+			var crisp_band := 1.0 - absf(fy - 0.16) / 0.04
+			pixel_fill = pixel_fill.lerp(Color(1,1,1,pixel_fill.a), maxf(0.0, crisp_band) * gloss_strength * 0.30)
 		if fy < 0.035:
-			pixel_fill = pixel_fill.lerp(Color(1,1,1,pixel_fill.a), gloss_strength * 0.65)
+			pixel_fill = pixel_fill.lerp(Color(1,1,1,pixel_fill.a), gloss_strength * 0.92)
+		if fy > 0.90:
+			pixel_fill = pixel_fill.lerp(Color(0,0,0,pixel_fill.a), ((fy - 0.90) / 0.10) * 0.08)
 		for x in range(image_size):
 			var px := float(x) + 0.5
 			var py := float(y) + 0.5
@@ -493,9 +500,9 @@ static func premium_button(text_value: String, font_size: int, text_color: Color
 	# Flat geometry with a lightweight lacquer sheen. Still no 3D/depth stack.
 	var resolved_border := border if border.a > 0.0 else Color(fill.r, fill.g, fill.b, 0.0)
 	var resolved_width := minf(maxf(border_width, 0.0), 1.0)
-	var normal := flat_gloss(fill, radius, resolved_border, resolved_width, 0.13)
-	var hover := flat_gloss(fill.lightened(0.025), radius, resolved_border, resolved_width, 0.16)
-	var pressed := flat_gloss(fill.darkened(0.045), radius, resolved_border, resolved_width, 0.08)
+	var normal := flat_gloss(fill, radius, resolved_border, resolved_width, 0.20)
+	var hover := flat_gloss(fill.lightened(0.035), radius, resolved_border, resolved_width, 0.24)
+	var pressed := flat_gloss(fill.darkened(0.055), radius, resolved_border, resolved_width, 0.11)
 	var disabled := flat_gloss(Color(fill.r, fill.g, fill.b, 0.58), radius, resolved_border, resolved_width, 0.06)
 	result.add_theme_stylebox_override("normal", normal)
 	result.add_theme_stylebox_override("hover", hover)
