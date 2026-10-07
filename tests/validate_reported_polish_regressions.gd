@@ -32,7 +32,7 @@ func _init() -> void:
 	_require_source("res://scripts/ui/monetization_hub_3d.gd", ["premium_button(\"▶ +50 COINS\",15", "premium_button(\"RESTORE PURCHASES\",15", "premium_button(buy_text,15"], "Shop readable action text", errors)
 	_require_source("res://scripts/ui/premium_result_overlay.gd", ["premium_button(secondary_text, 15"], "Result secondary action readability", errors)
 	_require_source("res://scripts/game/block_puzzle_3d.gd", ["set_rect(status_region, 18, 654", "set_rect(hint_region, 18, 678"], "Block tray/status/guidance separation", errors)
-	_require_source("res://scripts/game/block_puzzle_10000.gd", ["set_rect(bar, 25, 732, 333, 56)", "button.custom_minimum_size = Vector2(80, 52)", "\\n◈%d", "\n\t\t\t12,"], "Block booster readable lower thumb-zone separation", errors)
+	_require_source("res://scripts/game/block_puzzle_10000.gd", ["set_rect(bar, 25, 726, 333, 64)", "button.custom_minimum_size = Vector2(80, 58)", "\\n◈ %d", "\n\t\t\t13,"], "Block booster readable lower thumb-zone separation", errors)
 	_require_source("res://scripts/ui/ux_shell_casual.gd", ["label(\"EXIT\",12,Color.WHITE", "set_rect(exit_label,160,34,46,17)"], "Tutorial exit label containment", errors)
 	_require_source("res://scripts/ui/figma_reference_canvas.gd", ["bright glyphs on some Android GPUs", "font_shadow_color\", Color.TRANSPARENT", "shadow_offset_y\", 0", "shadow_outline_size\", 0"], "crisp scaled Figma text", errors)
 	_require_source("res://scripts/ui/premium_main_casual.gd", ["Rect2(34,label_y-7,210,30),15", "button_text_color,19,15", "theme_text,19,15"], "Settings compact text minimums", errors)
