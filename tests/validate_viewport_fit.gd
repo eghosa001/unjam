@@ -345,8 +345,17 @@ func _assert_visible_text_geometry(canvas: Control, viewport_size: Vector2i, con
 				continue
 			var overlap := a.get_global_rect().intersection(b.get_global_rect())
 			if overlap.size.x > 2.0 and overlap.size.y > 2.0:
-				return _fail("%s visible text/control overlap at %s: %s %s intersects %s %s by %s" % [context,str(viewport_size),a.name,str(a.get_global_rect()),b.name,str(b.get_global_rect()),str(overlap)])
+				return _fail("%s visible text/control overlap at %s: %s [%s] %s intersects %s [%s] %s by %s" % [context,str(viewport_size),a.name,_control_text(a),str(a.get_global_rect()),b.name,_control_text(b),str(b.get_global_rect()),str(overlap)])
 	return true
+
+func _control_text(control: Control) -> String:
+	if control is Label:
+		return (control as Label).text.replace("\n"," / ")
+	if control is Button:
+		return (control as Button).text.replace("\n"," / ")
+	if control is LineEdit:
+		return (control as LineEdit).text
+	return ""
 
 func _single_line_text_fits(control: Control, value: String) -> bool:
 	var font := control.get_theme_font("font")
