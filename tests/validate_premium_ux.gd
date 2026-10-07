@@ -7,7 +7,7 @@ func _initialize() -> void:
 	_check_source("res://scripts/ui/premium_live_hub_3d.gd", ["FigmaSelector390x844", "GameCard3D_", "SelectorCardHit_", "SelectorBottomNav"], failures)
 	_check_source("res://scripts/game/water_sort_casual.gd", ["FigmaWater390x844", "GameplayStage", "WaterUndoAction", "WaterRetryAction"], failures)
 	_check_source("res://scripts/game/block_puzzle_3d.gd", ["FigmaBlock390x844", "BlockBoardShell", "BlockTray", "BlockPieceRow"], failures)
-	_check_source("res://scripts/game/rescue_rush_casual.gd", ["FigmaRescue390x844", "RescueBoardPanel", "_compact_objective_instruction", "RescueObjectiveLabel", '"full_escape"', '"perfect_rescue"', '"WIN •"', "RescueUndoAction", "RescueRestartAction"], failures)
+	_check_source("res://scripts/game/rescue_rush_casual.gd", ["FigmaRescue390x844", "RescueBoardPanel", "_compact_objective_instruction", "RescueObjectiveLabel", '"full_escape"', '"perfect_rescue"', "WIN • CLEAR ALL ARROWS", "WIN • RESCUE ≤ %d MOVES", "RescueUndoAction", "RescueRestartAction"], failures)
 	_check_source("res://scripts/ui/premium_result_overlay.gd", ["FigmaResult390x844", "ResultCard3D", "PrimaryAction"], failures)
 	_check_source("res://scripts/ui/ux_shell_casual.gd", ["FigmaTutorial390x844", "TutorialPanel", "TutorialDemoArt", "PLAY NOW"], failures)
 	_check_source("res://scripts/ui/monetization_hub_3d.gd", ["FigmaShop390x844", "ShopProduct_", "ShopRewardedCoinsButton"], failures)
