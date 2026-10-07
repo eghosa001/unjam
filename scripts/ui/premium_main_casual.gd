@@ -5,6 +5,15 @@ const GardenUpgradePreviewScene = preload("res://scripts/ui/garden_upgrade_previ
 const META_ART_SCRIPT = preload("res://scripts/ui/unjam_meta_art.gd")
 const GAME_ART_SCRIPT = preload("res://scripts/ui/unjam_2d_game_art.gd")
 const UNJAM_WORDMARK: Texture2D = preload("res://assets/art/brand/unjam_wordmark.svg")
+const WIDE_META_ART := {
+	"collection": preload("res://assets/art/meta_wide/collection.svg"),
+	"daily": preload("res://assets/art/meta_wide/daily.svg"),
+	"compete": preload("res://assets/art/meta_wide/compete.svg"),
+	"goals": preload("res://assets/art/meta_wide/goals.svg"),
+	"profile": preload("res://assets/art/meta_wide/profile.svg"),
+	"friends": preload("res://assets/art/meta_wide/friends.svg"),
+	"settings": preload("res://assets/art/meta_wide/settings.svg"),
+}
 const FIGMA_BG_TOP := Color("#e9e5dd")
 const FIGMA_BG_BOTTOM := Color("#8f887f")
 const FIGMA_NAVY := Color("#252a30")
@@ -200,14 +209,20 @@ func _build_figma_wide_surface_stage(stage: Control, active: String, available: 
 	var accent := _figma_surface_accent(active)
 	var dark := _dark()
 
-	var glow := PanelContainer.new()
-	glow.name = "FigmaWideSurfaceGlow"
-	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var glow_size := minf(available.y * 0.82, available.x * 0.42)
-	glow.position = Vector2(available.x * 0.57, available.y * 0.09)
-	glow.size = Vector2(glow_size, glow_size)
-	glow.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color(accent.r, accent.g, accent.b, 0.13 if dark else 0.10), glow_size * 0.48))
-	stage.add_child(glow)
+	# A pair of soft halos establishes depth without turning the wide region into
+	# a second dark card. The authored illustration below remains the visual hero.
+	for halo_data in [
+		[Vector2(available.x * 0.61, available.y * 0.16), minf(available.y * 0.44, available.x * 0.22), 0.10],
+		[Vector2(available.x * 0.78, available.y * 0.56), minf(available.y * 0.34, available.x * 0.18), 0.055],
+	]:
+		var halo := PanelContainer.new()
+		halo.name = "FigmaWideSurfaceHalo"
+		halo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var halo_size: float = float(halo_data[1])
+		halo.position = halo_data[0] as Vector2
+		halo.size = Vector2(halo_size, halo_size)
+		halo.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color(accent.r, accent.g, accent.b, float(halo_data[2])), halo_size * 0.50))
+		stage.add_child(halo)
 
 	var mark := TextureRect.new()
 	mark.name = "FigmaWideSurfaceWordmark"
@@ -238,15 +253,15 @@ func _build_figma_wide_surface_stage(stage: Control, active: String, available: 
 	subtitle.size = Vector2(available.x * 0.36, available.y * 0.045)
 	stage.add_child(subtitle)
 
-	if active in ["compete", "friends", "goals", "profile", "collection", "daily"]:
-		var art := META_ART_SCRIPT.new()
-		art.name = "FigmaWideMetaArt"
-		art.configure(active, dark)
-		var art_h := available.y * 0.70
-		var art_w := art_h * (390.0 / 844.0)
-		art.position = Vector2(available.x * 0.70, available.y * 0.26)
-		art.size = Vector2(art_w, art_h)
+	if WIDE_META_ART.has(active):
+		var art := TextureRect.new()
+		art.name = "FigmaWideMetaArtwork"
+		art.texture = WIDE_META_ART[active] as Texture2D
+		art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		art.position = Vector2(available.x * 0.50, available.y * 0.255)
+		art.size = Vector2(available.x * 0.47, available.y * 0.70)
 		stage.add_child(art)
 	else:
 		var game_art := GAME_ART_SCRIPT.new()
