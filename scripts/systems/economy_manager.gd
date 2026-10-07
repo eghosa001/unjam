@@ -48,6 +48,15 @@ func hint_cost(base_cost: int) -> int:
 	var discount := collection_item_level("bench") * 6
 	return maxi(5, int(round(float(base_cost) * (1.0 - float(discount) / 100.0))))
 
+func competition_prestige_title() -> String:
+	var crowns := maxi(0, int(SaveManager.data.get("crown_tokens", 0)))
+	if crowns >= 300: return "UNJAM LEGEND"
+	if crowns >= 150: return "DIAMOND CHAMPION"
+	if crowns >= 75: return "GOLD CONTENDER"
+	if crowns >= 30: return "SILVER CONTENDER"
+	if crowns >= 10: return "BRONZE CONTENDER"
+	return "ROOKIE"
+
 func competition_crown_reward(base_crowns: int) -> int:
 	if base_crowns <= 0:
 		return 0
