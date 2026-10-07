@@ -655,8 +655,11 @@ func complete_level() -> void:
 		stars = 1
 	completion_rewards = {}
 	_clear_checkpoint(false)
+	var daily_completed_now := false
 	if daily_mode:
-		SaveManager.complete_daily(String(level_data.get("daily_key", DailyChallenge.date_key())), 100)
+		daily_completed_now = SaveManager.complete_daily(String(level_data.get("daily_key", DailyChallenge.date_key())), 100)
+		if daily_completed_now:
+			MetaProgressionManager.record_daily_complete("rescue_rush", stars)
 	else:
 		# Route Rescue Rush through the shared multi-game completion path so its
 		# per-game daily tasks progress exactly like Water Sort and Block Puzzle.

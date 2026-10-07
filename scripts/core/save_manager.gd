@@ -14,6 +14,7 @@ const RESET_PRESERVED_KEYS := [
 	"competition_claimed_periods",
 	"competition_display_name",
 	"reward_double_claims",
+	"meta_progression",
 	"lantern_shield_month",
 	"lantern_shield_uses",
 	# Resetting progression must not silently rewrite accessibility/preferences or
@@ -69,6 +70,7 @@ const DEFAULT_DATA := {
 	"competition_claimed_periods": [],
 	"competition_display_name": "",
 	"reward_double_claims": [],
+	"meta_progression": {},
 	"lantern_shield_month": "",
 	"lantern_shield_uses": 0,
 	"garden_last_gift_date": "",

@@ -158,6 +158,10 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
         explicit_tests.add(progression_contracts[p])
         return True
 
+    if p == "scripts/systems/meta_progression_manager.gd":
+        add(groups, "progression")
+        explicit_tests.add("validate_visible_meta_surfaces")
+
     if any(token in p for token in ("water_sort", "water_tube", "/water_", "water_")):
         add(groups, "water")
         visual.add("water")

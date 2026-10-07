@@ -37,6 +37,7 @@ func complete_level(id: String, n: int, stars: int, coin_reward := 25, context: 
 	# Rescue Rush delegates to SaveManager.complete_level() and is already synced.
 	if id == "rescue_rush":
 		return rewards
+	MetaProgressionManager.record_campaign_complete(id, stars, bool(rewards.get("first_clear", false)))
 	var direct_delta := 0
 	if bool(rewards.get("first_clear", false)):
 		direct_delta += safe_reward
