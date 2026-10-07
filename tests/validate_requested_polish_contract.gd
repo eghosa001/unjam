@@ -18,7 +18,7 @@ func _init() -> void:
 	_require("res://scripts/ui/premium_main_casual.gd", ["FigmaSurfaceBackground", "#1c2027", "#eef1ee", "resolved_fill = Color(\"#2a2b2e\")"], errors)
 	_require("res://scripts/ui/premium_main_casual.gd", ["StdNavTopGloss", "StdNavActivePlate_", "StdNavGlyph_", "\"games\":\"▦\"", "\"daily\":\"★\"", "\"collection\":\"◆\"", "\"settings\":\"⚙\""], errors)
 	_require("res://scripts/ui/premium_home_direct_levels.gd", ["HomeCurrencyGem3D", "HomeCurrencyStar3D", "HomePlaymateSidekickBeta", "FigmaHomeBackground", "GAME_ART_SCRIPT", "HomeAccentGlow"], errors)
-	_require("res://scripts/ui/premium_result_overlay.gd", ["ResultKeyLight", "ResultStar3D", "ResultGameArt2D", "unjam_2d_game_art.gd", "add_collectible_star"], errors)
+	_require("res://scripts/ui/premium_result_overlay.gd", ["ResultKeyLight", "ResultStar3D", "ResultGameArt2D", "ResultVictoryHalo", "ResultVictoryRay_", "screen_flash", "ffd85a", "unjam_2d_game_art.gd", "add_collectible_star"], errors)
 	_require("res://scripts/ui/ux_shell_casual.gd", ["TutorialKeyLight", "TutorialAuthoredWorldArt", "GAME_ART_SCRIPT", "add_scene_backdrop_layers"], errors)
 	_require("res://scripts/ui/ux_shell_casual.gd", ["FigmaReferenceCanvas.label(\"EXIT\",12", "TutorialDemoExitLabel", "FigmaReferenceCanvas.set_rect(exit_label,160,34,46,17)"], errors)
 	_require("res://scripts/ui/premium_gameplay_feedback.gd", ["is_intro_banner", "BlockPremiumFeedback", "RescuePremiumFeedback", "viewport_size.y * 0.68"], errors)
