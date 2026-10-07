@@ -1133,7 +1133,12 @@ func _figma_daily_progress(canvas: Control) -> void:
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		label.clip_text = true
+		# Keep READY/complete status inside its 90px authored lane. Font minimum
+		# metrics must not push neighboring game labels into each other.
+		label.custom_minimum_size = Vector2.ZERO
 		_fit_single_line_control_text(label, 86.0, 13, 11)
+		label.position = Vector2(float(spec[2])+3,554)
+		label.size = Vector2(90,22)
 
 func _figma_daily_tip(canvas: Control, collection_bonus: int) -> void:
 	var login := MetaProgressionManager.daily_login_info()
