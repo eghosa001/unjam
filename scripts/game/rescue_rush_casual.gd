@@ -125,15 +125,22 @@ func _build_figma_rescue(canvas: Control) -> void:
 	retry.pressed.connect(restart_level)
 	canvas.add_child(retry)
 	_add_rescue_identity_emblem(canvas)
-	var title := RefCanvas.label("RESCUE RUSH",21,OFF_WHITE,true)
+	var title := RefCanvas.label("RESCUE RUSH",20,OFF_WHITE,true)
+	title.name = "RescueGameplayTitle"
 	RefCanvas.style_display_title(title, Color("#67f2a1"), Color("#06452c"), 2)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	RefCanvas.set_rect(title,115,15,184,30)
+	RefCanvas.set_rect(title,115,15,184,25)
+	RefCanvas.fit_single_line_text(title,180.0,20,15)
+	RefCanvas.set_rect(title,115,15,184,25)
 	canvas.add_child(title)
 	var world := int(level_data.get("world", 1))
-	var subtitle := RefCanvas.label("LEVEL %d • WORLD %d" % [level_number,world],14,Color(0.92,0.98,1.0),true)
+	var subtitle := RefCanvas.label("LEVEL %d • WORLD %d" % [level_number,world],12,Color(0.92,0.98,1.0),true)
+	subtitle.name = "RescueGameplayMeta"
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	RefCanvas.set_rect(subtitle,115,43,184,20)
+	subtitle.clip_text = true
+	RefCanvas.set_rect(subtitle,115,47,184,16)
+	RefCanvas.fit_single_line_text(subtitle,180.0,12,10)
+	RefCanvas.set_rect(subtitle,115,47,184,16)
 	canvas.add_child(subtitle)
 
 	var status_panel := PanelContainer.new()
