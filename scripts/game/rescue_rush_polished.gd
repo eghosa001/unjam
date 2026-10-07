@@ -227,7 +227,9 @@ func _spawn_speed_lines(origin_global: Vector2, direction: Vector2, color: Color
 func _spawn_chain_popup(center: Vector2, combo: int) -> void:
 	var label := _acquire_effect_label()
 	label.text = "ESCAPE!" if combo <= 1 else "CHAIN ×%d" % combo
-	label.position = center - Vector2(145, 54)
+	# Keep motion feedback above the moving piece/mascot so the character silhouette
+	# remains readable at the exact moment the player gets the reward cue.
+	label.position = center - Vector2(145, 104)
 	label.size = Vector2(290, 76)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
