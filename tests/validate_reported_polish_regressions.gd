@@ -28,6 +28,7 @@ func _init() -> void:
 	_require_source("res://scripts/game/water_sort_reference_motion.gd", ["func _pour_tilt_degrees", "return lerpf(52.0, 40.0, tallness)", "_clamp_rotated_source_position"], "Water pour height-aware silhouette cohesion and phone framing", errors)
 	_require_source("res://scripts/game/water_sort_casual.gd", ["var ratio := 3.05 if rows == 1"], "Water onboarding bottle proportions", errors)
 	_require_source("res://scripts/game/rescue_rush_casual.gd", ["RescueBoardBackdropGrid", "_rebuild_rescue_grid_backdrop"], "Rescue coordinate lattice", errors)
+	_require_source("res://scripts/game/rescue_rush_polished.gd", ["center - Vector2(120, 150)", "Vector2(240, 58)", "28 if combo <= 1 else 34"], "Rescue escape feedback collision-safe placement", errors)
 	_require_source("res://scripts/ui/unjam_meta_art.gd", ["PHONE_SAFE_ART_SOURCE", "draw_texture_rect_region"], "Phone artwork collision-safe band", errors)
 	_require_source("res://scripts/ui/water_tube_3d_motion.gd", ["extends \"res://scripts/ui/water_tube_reference_motion.gd\"", "Tiny bubbles/ripples on landing"], "Water bottle 2D glass readability", errors)
 	_require_source("res://scripts/ui/premium_main_casual.gd", ["if not subtitle_text.strip_edges().is_empty()", "premium_button(\"PRIVACY\",15", "premium_button(\"HOW TO PLAY\",15"], "Header/Settings readable action text", errors)
