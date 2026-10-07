@@ -626,11 +626,13 @@ func _figma_daily_tip(canvas: Control, collection_bonus: int) -> void:
 	var tip_fill := Color("#27282b") if _dark() else Color("#f5f2ec")
 	var tip_border := Color(FIGMA_GOLD, 0.22 if _dark() else 0.18)
 	_figma_card(canvas, "CompetitionSummary", Rect2(17, 598, 354, 80), tip_fill, tip_border, 16)
-	_figma_text(canvas, "WEEKLY LEAGUE", Rect2(33, 608, 190, 20), 15, FIGMA_GOLD)
+	var league_title := _figma_text(canvas, "WEEKLY LEAGUE", Rect2(33, 608, 190, 20), 15, FIGMA_GOLD)
+	league_title.name = "DailyTipTitle"
 	var rank_text := "#%d" % weekly_rank if weekly_rank > 0 else "UNRANKED"
 	_figma_text(canvas, "%s  •  %d PTS" % [rank_text, weekly_score], Rect2(33, 633, 190, 20), 13, FIGMA_INK)
 	var detail := "+%d Daily coins from Collection" % collection_bonus if collection_bonus > 0 else "Top weekly finishes earn coins + Crowns"
-	_figma_text(canvas, detail, Rect2(33, 654, 196, 18), 11, FIGMA_MUTED)
+	var league_detail := _figma_text(canvas, detail, Rect2(33, 654, 196, 18), 12, FIGMA_MUTED)
+	league_detail.name = "DailyTipDetail"
 	var rankings := _figma_button(canvas, "CompetitionRankings", "RANKINGS", Rect2(244,617,107,44), Color("#7a57e0"), Callable(self,"build_compete_leaderboard"), Color.WHITE, 14, 12)
 	rankings.tooltip_text = "Open Daily Cup and Weekly League leaderboards"
 
@@ -857,7 +859,7 @@ func _figma_collection_tip(canvas: Control) -> void:
 	title.name = "CollectionTipTitle"
 	var current_value := _figma_text(canvas, "+%d DAILY  •  +%d GIFT" % [daily_bonus, gift_amount], Rect2(63, 639, 288, 20), 13, FIGMA_GOLD)
 	current_value.name = "CollectionTipValue"
-	var detail := _figma_text(canvas, "Each structure now has 5 levels and its own permanent effect.", Rect2(63, 659, 288, 20), 11, FIGMA_MUTED)
+	var detail := _figma_text(canvas, "Each structure has 5 levels and its own permanent effect.", Rect2(63, 659, 288, 20), 12, FIGMA_MUTED)
 	detail.name = "CollectionTipDetail"
 
 func _figma_collection_progress(canvas: Control, game_id: String, x: float) -> void:
