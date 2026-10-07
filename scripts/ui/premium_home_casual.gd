@@ -324,6 +324,22 @@ func _make_live_now(parent: VBoxContainer) -> void:
 	)
 	row.add_child(journey)
 
+	var sidekick := Button.new()
+	sidekick.name = "HomeSidekickButton"
+	sidekick.text = "☺  SIDEKICK\nTIPS"
+	sidekick.tooltip_text = "Open Playmate Sidekick"
+	sidekick.custom_minimum_size = Vector2(0, 66 if short_phone else 78)
+	sidekick.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sidekick.add_theme_font_size_override("font_size", 13 if viewport_size.x < 600.0 else 17)
+	Unjam3DTheme.gloss_button(sidekick, Unjam3DTheme.WATER, true, 20, _theme_mode() == "dark")
+	sidekick.pressed.connect(func() -> void:
+		FeedbackManager.tap()
+		var main := get_parent()
+		if main != null and main.has_method("show_playmate_sidekick"):
+			main.call("show_playmate_sidekick")
+	)
+	row.add_child(sidekick)
+
 func _make_bottom_nav() -> void:
 	var nav := PanelContainer.new()
 	nav.name = "HomeBottomNav3D"
