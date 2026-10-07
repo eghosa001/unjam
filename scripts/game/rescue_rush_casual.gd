@@ -2,6 +2,7 @@ extends "res://scripts/game/rescue_rush_motion_final.gd"
 
 const RefCanvas = preload("res://scripts/ui/figma_reference_canvas.gd")
 const GAMEPLAY_ART = preload("res://scripts/ui/unjam_gameplay_art.gd")
+const RESCUE_SCREEN_OVERLAY: Texture2D = preload("res://assets/art/gameplay/rescue_screen_overlay.svg")
 
 
 const NAVY := Color(0.03,0.23,0.47)
@@ -99,6 +100,14 @@ func _build_figma_rescue(canvas: Control) -> void:
 	platform.polygon = PackedVector2Array([Vector2(22,481),Vector2(368,481),Vector2(340,147),Vector2(50,147)])
 	platform.color = Color(0.55,0.66,0.53,0.42)
 	canvas.add_child(platform)
+	var scenic_overlay := TextureRect.new()
+	scenic_overlay.name = "RescueAuthoredScreenWorld"
+	scenic_overlay.texture = RESCUE_SCREEN_OVERLAY
+	scenic_overlay.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	scenic_overlay.stretch_mode = TextureRect.STRETCH_SCALE
+	scenic_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	RefCanvas.set_rect(scenic_overlay, 0, 0, 390, 844)
+	canvas.add_child(scenic_overlay)
 
 	RefCanvas.add_shadow(canvas, Rect2(15,15,54,54), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
 	var back := RefCanvas.premium_button("←",22,NAVY,Color(0.97,1.0,0.96),16,Color(0.67,0.90,0.72,0.55),1.4)
