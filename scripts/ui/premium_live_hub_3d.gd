@@ -1,7 +1,6 @@
 extends "res://scripts/ui/premium_live_hub.gd"
 
 const RefCanvas = preload("res://scripts/ui/figma_reference_canvas.gd")
-const FLAT_GAME_LOGO_SCRIPT = preload("res://scripts/ui/unjam_flat_game_logo.gd")
 const GAME_ART_SCRIPT = preload("res://scripts/ui/unjam_2d_game_art.gd")
 const UNJAM_WORDMARK: Texture2D = preload("res://assets/art/brand/unjam_wordmark.svg")
 
