@@ -239,11 +239,12 @@ func _add_card_preview(canvas: Control, game_id: String, card_y: float) -> void:
 	RefCanvas.set_rect(frame, 243, card_y + 23, 104, 112)
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(frame)
-	var mark := FLAT_GAME_LOGO_SCRIPT.new()
-	mark.name = "SelectorFlatGameLogo_%s" % game_id
-	mark.configure(game_id)
-	RefCanvas.set_rect(mark, 258, card_y + 31, 74, 92)
-	canvas.add_child(mark)
+	var art := GAME_ART_SCRIPT.new()
+	art.name = "SelectorAuthoredGameArt_%s" % game_id
+	art.configure(game_id, true, _selector_dark())
+	RefCanvas.set_rect(art, 249, card_y + 27, 92, 104)
+	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(art)
 
 func _add_bottom_nav(canvas: Control) -> void:
 	var shell := PanelContainer.new()
