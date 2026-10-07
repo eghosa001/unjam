@@ -674,6 +674,11 @@ func complete_level() -> void:
 				"difficulty": String(level_data.get("difficulty", level_data.get("difficulty_label", "medium")))
 			}
 		)
+	if daily_mode:
+		CompetitionManager.submit_daily_result("rescue_rush", {
+			"stars": stars, "moves": moves, "par": par_moves,
+			"mistakes": mistakes_this_level, "hints": hints_used_this_level, "undos": undos_used_this_level
+		})
 	AdManager.note_level_completed()
 	AnalyticsManager.level_completed(level_number, moves, stars)
 	AnalyticsManager.track("rescue_level_difficulty", {
@@ -721,7 +726,8 @@ func show_result(stars: int) -> void:
 		"BACK HOME" if daily_mode else ("NEXT RESCUE" if LevelManager.has_level(level_number + 1) else "CAMPAIGN COMPLETE"),
 		"RESCUE SECURED"
 	)
-	if base_reward > 0:
+	var claim_id := "daily:rescue_rush:%s" % DailyChallenge.date_key() if daily_mode else "campaign:rescue_rush:%d" % level_number
+	if base_reward > 0 and not EconomyManager.reward_double_claimed(claim_id):
 		result.configure_secondary("DOUBLE BASE REWARD", true)
 	add_child(result)
 	result.secondary_requested.connect(func() -> void:
@@ -730,9 +736,9 @@ func show_result(stars: int) -> void:
 			if is_instance_valid(result):
 				result.set_secondary_state("DOUBLE BASE REWARD", true, reason)
 		var on_reward := func() -> void:
-			SaveManager.add_coins(base_reward)
+			var granted := EconomyManager.claim_reward_double(claim_id, base_reward)
 			if is_instance_valid(result):
-				result.set_secondary_state("BASE REWARD DOUBLED", false, "Reward granted")
+				result.set_secondary_state("BASE REWARD DOUBLED" if granted else "ALREADY CLAIMED", false, "Reward granted" if granted else "This reward was already doubled")
 		AdManager.show_rewarded("double_reward", on_reward, on_failed)
 	)
 	result.continue_requested.connect(func() -> void:
