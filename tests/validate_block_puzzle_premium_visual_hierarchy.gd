@@ -39,6 +39,8 @@ func _run() -> void:
 		return _fail("Block objective text escapes the score card")
 	if goal.autowrap_mode == TextServer.AUTOWRAP_OFF or not goal.clip_text:
 		return _fail("Block objective text is not bounded for late-game goals")
+	if not goal.text.begins_with("GOAL "):
+		return _fail("Block objective strip is not using the concise goal format")
 	var meta := game.find_child("BlockLevelMeta",true,false) as Label
 	var status := game.find_child("BlockStatusText",true,false) as Label
 	var guidance := game.find_child("BlockHintText",true,false) as Label
@@ -52,10 +54,10 @@ func _run() -> void:
 		return _fail("Retired oversized Block 3D environment returned above Figma composition")
 	for booster_name in ["Booster_Undo","Booster_Hammer","Booster_Shuffle","Booster_Rotate"]:
 		var booster := game.find_child(booster_name,true,false) as Button
-		if booster == null or booster.custom_minimum_size.distance_to(Vector2(80,52)) > 1.0:
+		if booster == null or booster.custom_minimum_size.distance_to(Vector2(80,58)) > 1.0:
 			return _fail("%s is missing or not compact premium-sized" % booster_name)
-		if booster.get_theme_font_size("font_size") < 12:
-			return _fail("%s fell below the 12px booster readability floor" % booster_name)
+		if booster.get_theme_font_size("font_size") < 13:
+			return _fail("%s fell below the 13px booster readability floor" % booster_name)
 
 	var single := BlockPieceButton.new()
 	single.size = Vector2(104,72)
