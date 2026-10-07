@@ -1123,9 +1123,9 @@ func _figma_daily_progress(canvas: Control) -> void:
 		_figma_solid_card(canvas, "DailyProgress/%s" % game_id, Rect2(float(spec[2]),550,96,32), fill, border, 12, false)
 		var label := _figma_text(
 			canvas,
-			"%s %s" % [String(spec[1]), "✓" if done else "READY"],
-			Rect2(float(spec[2])+3,554,90,22),
-			13,
+			"%s %s" % [String(spec[1]), "✓" if done else "GO"],
+			Rect2(float(spec[2])+4,555,88,20),
+			12,
 			accent.lightened(0.25) if _dark() else accent.darkened(0.24),
 			true
 		)
@@ -1136,7 +1136,7 @@ func _figma_daily_progress(canvas: Control) -> void:
 		# Keep READY/complete status inside its 90px authored lane. Font minimum
 		# metrics must not push neighboring game labels into each other.
 		label.custom_minimum_size = Vector2.ZERO
-		_fit_single_line_control_text(label, 86.0, 13, 11)
+		_fit_single_line_control_text(label, 84.0, 12, 10)
 		label.position = Vector2(float(spec[2])+3,554)
 		label.size = Vector2(90,22)
 
