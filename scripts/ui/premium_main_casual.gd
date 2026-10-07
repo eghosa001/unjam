@@ -424,7 +424,7 @@ func build_goals() -> void:
 	_remove_active_game()
 	var canvas := _figma_surface("goals", Color("#e8e0c8"))
 	var ready := MetaProgressionManager.ready_claim_count()
-	_figma_header(canvas, "GOALS", "Live rewards • visible every day", "%d READY" % ready, FIGMA_ORANGE, Callable(self,"build_home"))
+	_figma_header(canvas, "GOALS", "Live rewards • %d ready" % ready, "◈ +", FIGMA_ORANGE, Callable(self,"build_home"), Callable(self,"_figma_open_shop"))
 
 	var login := MetaProgressionManager.daily_login_info()
 	_figma_card(canvas, "GoalsLogin", Rect2(17,91,354,72), Color("#fffef8"), Color(FIGMA_ORANGE,0.36), 17)
@@ -501,7 +501,7 @@ func build_profile() -> void:
 	current_surface = "profile"
 	_remove_active_game()
 	var canvas := _figma_surface("profile", Color("#d8e9f5"))
-	_figma_header(canvas, "PROFILE", "Identity • stats • achievements", "LV %d" % MetaProgressionManager.player_level(), FIGMA_CYAN, Callable(self,"build_home"))
+	_figma_header(canvas, "PROFILE", "LV %d • stats • achievements" % MetaProgressionManager.player_level(), "◈ +", FIGMA_CYAN, Callable(self,"build_home"), Callable(self,"_figma_open_shop"))
 
 	_figma_card(canvas,"ProfileIdentity",Rect2(17,91,354,70),Color("#fffef8"),Color(FIGMA_CYAN,0.34),17)
 	var name_edit := LineEdit.new()
