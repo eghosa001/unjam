@@ -131,9 +131,19 @@ func claim_weekly_reward() -> void:
 		if not ok or not bool(body.get("ok", false)):
 			return
 		var period_key := String(body.get("period_key", ""))
+		var already_claimed := bool(body.get("already_claimed", false))
 		var local_claims = SaveManager.data.get("competition_claimed_periods", [])
 		if not local_claims is Array:
 			local_claims = []
+		if already_claimed:
+			# The server is authoritative for weekly payout idempotency. Never
+			# re-credit a reward locally after reinstall or delayed cloud restore.
+			if not period_key.is_empty() and period_key not in local_claims:
+				local_claims.append(period_key)
+				SaveManager.data["competition_claimed_periods"] = local_claims
+				SaveManager.save()
+			refresh_snapshot()
+			return
 		if not period_key.is_empty() and period_key not in local_claims:
 			var coins := maxi(0, int(body.get("coins", 0)))
 			var base_crowns := maxi(0, int(body.get("crowns", 0)))
