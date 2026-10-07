@@ -5,6 +5,15 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - "project.godot"
+      - "scenes/**"
+      - "scripts/game/**"
+      - "scripts/ui/**"
+      - "scripts/systems/premium_visuals.gd"
+      - "scripts/systems/robust_premium_visuals.gd"
+      - "assets/**"
+      - "tests/capture_visual_audit.gd"
+    paths:
       - "tests/validate_viewport_fit.gd"
       - "scripts/ui/premium_home_direct_levels.gd"
       - "scripts/ui/premium_main_casual.gd"
