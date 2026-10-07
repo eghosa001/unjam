@@ -684,34 +684,29 @@ func _run_fast_visual_audit(main: Node, shell: Node) -> void:
 	print("Selective fast visual audit captures written to %s" % OUT_DIR)
 
 func _shutdown_visual_audit() -> void:
-	# Tear down the transient scene before quitting. Calling quit() from inside
-	# this awaited coroutine can race queued frees and report intermittent
-	# ObjectDB/resource leaks even though the rendered surface is already done.
+	# Tear down the transient scene before clearing generated-resource caches.
+	# Clearing first lets late/deferred UI teardown repopulate those caches and
+	# leaves otherwise harmless StyleBox/ImageTexture resources alive at exit.
 	var scene := current_scene
 	current_scene = null
 	if scene != null and is_instance_valid(scene):
 		scene.queue_free()
 
-	# The visual runner synthesizes music through FeedbackManager. Release the
-	# generated stream/player before SceneTree quits so leak diagnostics remain
-	# meaningful instead of reporting the intentionally persistent autoload.
-	var feedback := root.get_node_or_null("FeedbackManager")
-	if feedback != null and feedback.has_method("shutdown_audio"):
-		feedback.call("shutdown_audio")
-
-	# The production UI intentionally keeps generated lacquer/nine-slice styles
-	# cached for fast navigation. The short-lived audit process must drop that
-	# cache before exit so the leak gate measures scene lifecycle, not cache policy.
-	FigmaReferenceCanvas.release_cached_styles()
-
-	# Large UI surfaces can queue nested Control/Resource frees for several
-	# frames. Wait until the transient scene is truly gone, then allow a short
-	# resource-flush window before quitting. This keeps leak detection strict
-	# without depending on logging speed/timing.
+	# Large UI surfaces can queue nested Control frees for several frames.
 	for _i in range(60):
 		await process_frame
 		if scene == null or not is_instance_valid(scene):
 			break
+
+	# Only after the surface is truly gone should persistent audit helpers drop
+	# their generated resources. This keeps the leak gate strict and deterministic.
+	var feedback := root.get_node_or_null("FeedbackManager")
+	if feedback != null and feedback.has_method("shutdown_audio"):
+		feedback.call("shutdown_audio")
+	FigmaReferenceCanvas.release_cached_styles()
+
+	# Give RefCounted style/image resources time to release after their final
+	# scene owners and cache owners are both gone.
 	await _settle(24)
 	# Defer the actual exit one more frame so _shutdown_visual_audit() and its
 	# caller return first, releasing local PackedScene/image/resource references.
