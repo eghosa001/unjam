@@ -15,6 +15,7 @@ on:
       - "scripts/ui/premium_live_hub.gd"
       - "scripts/ui/boot_splash.gd"
       - "scripts/ui/ui_touch_enhancer.gd"
+      - "tests/validate_runtime_efficiency.gd"
       - "scenes/Boot.tscn"
       - "scripts/systems/android_monetization_bridge.gd"
       - "scripts/systems/privacy_manager.gd"
