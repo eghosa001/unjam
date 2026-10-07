@@ -9,6 +9,7 @@ on:
       - "project.godot"
       - "export_presets.cfg"
       - "scripts/systems/feedback_manager.gd"
+      - "scripts/game/**"
       - "scripts/ui/robust_main.gd"
       - "scripts/ui/premium_home_direct_levels.gd"
       - "scripts/ui/premium_main_casual.gd"
