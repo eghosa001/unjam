@@ -77,7 +77,7 @@ func _draw() -> void:
 		reduced = bool(motion.call("reduced"))
 	var bob := 0.0 if reduced else sin(phase * 2.8) * s * 0.025
 	var center := Vector2(size.x * 0.5, size.y * 0.51 + bob)
-	var r := s * 0.31
+	var r := s * 0.36
 	var colors := _variant_colors()
 	var body: Color = colors[0]
 	var detail: Color = colors[1]
