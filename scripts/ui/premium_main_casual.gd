@@ -30,6 +30,7 @@ var _collection_scroll_tracking := false
 var _collection_scroll_origin_y := 0.0
 var _settings_help_game := "rescue_rush"
 var _settings_theme_toggle_pending := false
+var _profile_game := "rescue_rush"
 const SETTINGS_HELP_GAMES := ["rescue_rush", "water_sort", "block_puzzle"]
 
 var _sidekick_game := "rescue_rush"
@@ -417,6 +418,159 @@ func _finish_settings_theme_toggle() -> void:
 	if current_surface == "settings":
 		build_settings()
 
+
+func build_goals() -> void:
+	current_surface = "goals"
+	_remove_active_game()
+	var canvas := _figma_surface("goals", Color("#e8e0c8"))
+	var ready := MetaProgressionManager.ready_claim_count()
+	_figma_header(canvas, "GOALS", "Live rewards • visible every day", "%d READY" % ready, FIGMA_ORANGE, Callable(self,"build_home"))
+
+	var login := MetaProgressionManager.daily_login_info()
+	_figma_card(canvas, "GoalsLogin", Rect2(17,91,354,72), Color("#fffef8"), Color(FIGMA_ORANGE,0.36), 17)
+	_figma_text(canvas, "DAILY CHECK-IN • DAY %d/7" % int(login.get("day",1)), Rect2(31,103,208,22), 15, FIGMA_INK)
+	_figma_text(canvas, "+%d COINS" % int(login.get("reward",0)), Rect2(31,129,150,20), 13, FIGMA_GOLD)
+	var login_claimed := bool(login.get("claimed",false))
+	var login_button := _figma_button(canvas,"GoalsLoginClaim","CLAIMED" if login_claimed else "CLAIM",Rect2(260,105,92,42),Color("#7d8a94") if login_claimed else FIGMA_ORANGE,Callable(),Color.WHITE,13,12)
+	login_button.disabled = login_claimed
+	if not login_claimed:
+		login_button.pressed.connect(_claim_daily_login)
+
+	_figma_text(canvas, "DAILY MISSIONS", Rect2(19,178,180,20), 15, FIGMA_GOLD)
+	var daily_rows := MetaProgressionManager.daily_goals()
+	for i in range(daily_rows.size()):
+		_figma_goal_row(canvas, daily_rows[i] as Dictionary, "daily", 202.0 + float(i) * 50.0)
+
+	_figma_text(canvas, "WEEKLY MISSIONS", Rect2(19,356,190,20), 15, FIGMA_GOLD)
+	var weekly_rows := MetaProgressionManager.weekly_goals()
+	for i in range(weekly_rows.size()):
+		_figma_goal_row(canvas, weekly_rows[i] as Dictionary, "weekly", 380.0 + float(i) * 50.0)
+
+	var season := MetaProgressionManager.season_info()
+	_figma_card(canvas, "GoalsSeason", Rect2(17,548,354,134), Color("#fffef8"), Color("#7a57e0"), 18)
+	_figma_text(canvas, "SEASON JOURNEY", Rect2(31,560,190,22), 16, Color("#7a57e0"))
+	_figma_text(canvas, "%d PTS • %d/%d TIERS" % [int(season.get("points",0)),int(season.get("completed",0)),int(season.get("tiers",0))], Rect2(31,587,210,20), 13, FIGMA_MUTED)
+	var next_target := int(season.get("next_target",0))
+	var journey_detail := "ALL TIERS COMPLETE" if next_target <= 0 else "NEXT REWARD AT %d PTS" % next_target
+	_figma_text(canvas, journey_detail, Rect2(31,613,220,20), 12, FIGMA_MUTED)
+	var season_ready := int(season.get("ready",0))
+	var season_button := _figma_button(canvas,"GoalsSeasonClaim","CLAIM %d" % season_ready if season_ready > 0 else "IN PROGRESS",Rect2(246,575,106,46),FIGMA_GREEN if season_ready > 0 else Color("#7d8a94"),Callable(),Color.WHITE,13,11)
+	season_button.disabled = season_ready <= 0
+	if season_ready > 0:
+		season_button.pressed.connect(_claim_next_season_reward)
+	_figma_text(canvas, "First clears +10 • Daily Cup +25 • Replays +3", Rect2(31,646,310,18), 11, FIGMA_MUTED)
+	_figma_bottom_nav(canvas,"home")
+
+func _figma_goal_row(canvas: Control, row: Dictionary, period: String, y: float) -> void:
+	var claimable := bool(row.get("claimable",false))
+	var claimed := bool(row.get("claimed",false))
+	var fill := Color("#f5f2ec") if not _dark() else Color("#27282b")
+	var border := Color(FIGMA_GREEN,0.34) if claimable else Color(FIGMA_GOLD,0.20)
+	_figma_card(canvas,"Goal/%s/%s" % [period,String(row.get("id",""))],Rect2(17,y,354,44),fill,border,13)
+	_figma_text(canvas,String(row.get("title","GOAL")),Rect2(30,y+7,168,17),12,FIGMA_INK)
+	var crowns := int(row.get("crowns",0))
+	var reward_text := "+%d" % int(row.get("coins",0))
+	if crowns > 0:
+		reward_text += " • ♛%d" % crowns
+	_figma_text(canvas,"%d/%d • %s" % [int(row.get("progress",0)),int(row.get("target",1)),reward_text],Rect2(30,y+24,190,15),10,FIGMA_MUTED)
+	var action_text := "DONE" if claimed else ("CLAIM" if claimable else "GO")
+	var action_fill := Color("#7d8a94") if claimed else (FIGMA_GREEN if claimable else Color("#7a57e0"))
+	var action := _figma_button(canvas,"GoalAction/%s/%s" % [period,String(row.get("id",""))],action_text,Rect2(274,y+6,78,32),action_fill,Callable(),Color.WHITE,11,10)
+	action.disabled = claimed
+	if claimable:
+		action.pressed.connect(_claim_goal.bind(period,String(row.get("id",""))))
+	elif not claimed:
+		action.pressed.connect(build_home)
+
+func _claim_daily_login() -> void:
+	if MetaProgressionManager.claim_daily_login() > 0:
+		FeedbackManager.effect()
+	build_goals()
+
+func _claim_goal(period: String, id: String) -> void:
+	if MetaProgressionManager.claim_goal(period,id):
+		FeedbackManager.effect()
+	build_goals()
+
+func _claim_next_season_reward() -> void:
+	if MetaProgressionManager.claim_next_ready_season_tier():
+		FeedbackManager.effect()
+	build_goals()
+
+func build_profile() -> void:
+	current_surface = "profile"
+	_remove_active_game()
+	var canvas := _figma_surface("profile", Color("#d8e9f5"))
+	_figma_header(canvas, "PROFILE", "Identity • stats • achievements", "LV %d" % MetaProgressionManager.player_level(), FIGMA_CYAN, Callable(self,"build_home"))
+
+	_figma_card(canvas,"ProfileIdentity",Rect2(17,91,354,70),Color("#fffef8"),Color(FIGMA_CYAN,0.34),17)
+	var name_edit := LineEdit.new()
+	name_edit.name = "ProfileNameEdit"
+	name_edit.text = CompetitionManager.display_name()
+	name_edit.placeholder_text = "PLAYER NAME"
+	name_edit.max_length = 20
+	name_edit.add_theme_font_size_override("font_size",15)
+	name_edit.add_theme_color_override("font_color",_figma_theme_text(FIGMA_INK))
+	name_edit.add_theme_stylebox_override("normal",FigmaReferenceCanvas.flat_gloss(Color("#f5f2ec") if not _dark() else Color("#27282b"),12,Color(FIGMA_CYAN,0.34),1,0.08))
+	FigmaReferenceCanvas.set_rect(name_edit,31,105,218,42)
+	canvas.add_child(name_edit)
+	var save_name := _figma_button(canvas,"ProfileSaveName","SAVE",Rect2(263,105,88,42),FIGMA_CYAN,Callable(),Color.WHITE,13,11)
+	save_name.pressed.connect(_save_profile_name.bind(name_edit))
+
+	_figma_card(canvas,"ProfileStats",Rect2(17,176,354,92),Color("#fffef8"),Color(FIGMA_CYAN,0.24),17)
+	var stats := [
+		[_compact_stat(MetaProgressionManager.total_levels_completed()),"LEVELS",30.0],
+		[_compact_stat(MetaProgressionManager.total_stars()),"STARS",116.0],
+		[str(MetaProgressionManager.current_daily_streak()),"STREAK",202.0],
+		[str(int(SaveManager.data.get("crown_tokens",0))),"CROWNS",288.0]
+	]
+	for stat in stats:
+		_figma_text(canvas,String(stat[0]),Rect2(float(stat[2]),194,64,23),17,FIGMA_INK)
+		_figma_text(canvas,String(stat[1]),Rect2(float(stat[2])-4,222,72,18),11,FIGMA_MUTED)
+	_figma_text(canvas,"%s • %d/%d ACHIEVEMENTS" % [CompetitionManager.weekly_division(),MetaProgressionManager.total_achievements(),MetaProgressionManager.total_achievement_slots()],Rect2(31,244,320,18),11,FIGMA_GOLD)
+
+	_figma_text(canvas,"ACHIEVEMENTS",Rect2(19,285,170,20),15,FIGMA_GOLD)
+	_figma_profile_game_tabs(canvas)
+	var defs := MultiGameManager.achievement_definitions(_profile_game)
+	for i in range(defs.size()):
+		_figma_achievement_row(canvas,defs[i] as Dictionary,345.0+float(i)*60.0)
+	_figma_bottom_nav(canvas,"home")
+
+func _figma_profile_game_tabs(canvas: Control) -> void:
+	var ids := ["rescue_rush","water_sort","block_puzzle"]
+	var labels := ["RESCUE","WATER","BLOCK"]
+	for i in range(ids.size()):
+		var selected := _profile_game == ids[i]
+		var fill := Unjam3DTheme.game_accent(ids[i]) if selected else Color("#7d8a94")
+		var button := _figma_button(canvas,"ProfileGame/%s" % ids[i],labels[i],Rect2(19.0+float(i)*118.0,310,108,30),fill,Callable(),Color.WHITE,11,10)
+		if not selected:
+			button.pressed.connect(_set_profile_game.bind(ids[i]))
+		else:
+			button.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+func _figma_achievement_row(canvas: Control, achievement: Dictionary, y: float) -> void:
+	var id := String(achievement.get("id",""))
+	var need := maxi(1,int(achievement.get("need",1)))
+	var progress := MultiGameManager.achievement_progress(_profile_game,id)
+	var done := progress >= need
+	var accent := FIGMA_GREEN if done else Unjam3DTheme.game_accent(_profile_game)
+	_figma_card(canvas,"ProfileAchievement/%s/%s" % [_profile_game,id],Rect2(17,y,354,52),Color("#fffef8"),Color(accent,0.28),14)
+	_figma_text(canvas,String(achievement.get("title","Achievement")),Rect2(31,y+8,210,18),13,FIGMA_INK)
+	_figma_text(canvas,"%d / %d" % [mini(progress,need),need],Rect2(31,y+29,150,16),11,FIGMA_MUTED)
+	var status := _figma_text(canvas,"✓" if done else "•",Rect2(315,y+13,28,28),18,accent,true)
+	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+func _set_profile_game(game_id: String) -> void:
+	if game_id in MultiGameManager.GAME_IDS:
+		_profile_game = game_id
+		build_profile()
+
+func _save_profile_name(name_edit: LineEdit) -> void:
+	if name_edit == null or not is_instance_valid(name_edit):
+		return
+	CompetitionManager.set_display_name(name_edit.text)
+	FeedbackManager.effect()
+	build_profile()
 
 func build_settings() -> void:
 	current_surface = "settings"
@@ -808,6 +962,8 @@ func build_collection() -> void:
 		var total := MultiGameManager.achievement_definitions(game_id).size()
 		achievement_parts.append("%s %d/%d" % [_figma_short_game(game_id),unlocked,total])
 	_figma_text(canvas," • ".join(achievement_parts),Rect2(33,382,310,24),14,FIGMA_MUTED)
+	var achievements_view := _figma_button(canvas,"CollectionAchievementsView","VIEW",Rect2(286,353,65,32),Color("#7a57e0"),Callable(self,"build_profile"),Color.WHITE,11,10)
+	achievements_view.tooltip_text = "Open detailed Profile & Achievements"
 
 	var rescued: Array = SaveManager.data.get("rescued",[])
 	_figma_card(canvas,"Garden",Rect2(17,429,354,96),Color("#fffef8"),Color(0.55,0.86,0.71,0.32),18)
