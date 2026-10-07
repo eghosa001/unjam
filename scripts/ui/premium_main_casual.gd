@@ -537,10 +537,10 @@ func build_profile() -> void:
 	_figma_bottom_nav(canvas,"home")
 
 func _figma_profile_game_tabs(canvas: Control) -> void:
-	var ids := ["rescue_rush","water_sort","block_puzzle"]
-	var labels := ["RESCUE","WATER","BLOCK"]
+	var ids: Array[String] = ["rescue_rush","water_sort","block_puzzle"]
+	var labels: Array[String] = ["RESCUE","WATER","BLOCK"]
 	for i in range(ids.size()):
-		var selected := _profile_game == ids[i]
+		var selected: bool = _profile_game == ids[i]
 		var fill := Unjam3DTheme.game_accent(ids[i]) if selected else Color("#7d8a94")
 		var button := _figma_button(canvas,"ProfileGame/%s" % ids[i],labels[i],Rect2(19.0+float(i)*118.0,310,108,30),fill,Callable(),Color.WHITE,11,10)
 		if not selected:
