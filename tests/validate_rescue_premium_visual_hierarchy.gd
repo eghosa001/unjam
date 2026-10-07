@@ -26,8 +26,9 @@ func _run() -> void:
 
 	var board_panel := game.get("board_panel") as PanelContainer
 	var board_grid := game.get("board_grid") as GridContainer
+	var backdrop_grid := game.find_child("RescueBoardBackdropGrid",true,false) as GridContainer
 	var objective := game.find_child("RescueObjectiveLabel",true,false) as Label
-	if board_panel == null or board_grid == null or objective == null:
+	if board_panel == null or board_grid == null or backdrop_grid == null or objective == null:
 		return _fail("Rescue Rush gameplay hierarchy is incomplete")
 	if game.find_child("RescueScenicGround", true, false) != null:
 		return _fail("Rescue scenic background regained the opaque ground layer that creates horizontal seams")
@@ -42,8 +43,12 @@ func _run() -> void:
 		return _fail("Opening Rescue campaign level should preserve its 7x7 progression board")
 	if board_grid.columns != width or board_grid.get_child_count() != width * height:
 		return _fail("Rescue board does not render its complete progression grid")
+	if backdrop_grid.columns != width or backdrop_grid.get_child_count() != width * height:
+		return _fail("Rescue board backdrop does not expose every coordinate")
 	if board_grid.get_theme_constant("h_separation") != 5 or board_grid.get_theme_constant("v_separation") != 5:
 		return _fail("Rescue grid gaps are still too large")
+	if backdrop_grid.get_theme_constant("h_separation") != 5 or backdrop_grid.get_theme_constant("v_separation") != 5:
+		return _fail("Rescue backdrop grid is not aligned with the playable lattice")
 	var minimum_cell := 40.0
 	for child in board_grid.get_children():
 		if child is Control and (child as Control).custom_minimum_size.x < minimum_cell:
@@ -89,10 +94,13 @@ func _run() -> void:
 	root.add_child(late_game)
 	await _frames(10)
 	var late_grid := late_game.get("board_grid") as GridContainer
-	if late_grid == null or int(late_game.get("width")) < 8 or int(late_game.get("height")) < 8:
+	var late_backdrop := late_game.find_child("RescueBoardBackdropGrid",true,false) as GridContainer
+	if late_grid == null or late_backdrop == null or int(late_game.get("width")) < 8 or int(late_game.get("height")) < 8:
 		return _fail("Late Rescue finale did not load its dense board for rendering validation")
 	if late_grid.get_theme_constant("h_separation") != 3 or late_grid.get_theme_constant("v_separation") != 3:
 		return _fail("Dense Rescue finale spacing did not gain the compact 3px rendering gap")
+	if late_backdrop.get_child_count() != int(late_game.get("width")) * int(late_game.get("height")):
+		return _fail("Dense Rescue finale backdrop grid lost board coordinates")
 	late_game.queue_free()
 	await process_frame
 
