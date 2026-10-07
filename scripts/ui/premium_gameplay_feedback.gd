@@ -1,6 +1,8 @@
 extends Control
 class_name PremiumGameplayFeedback
 
+const SPARK_TEXTURE: Texture2D = preload("res://assets/art/fx/spark.svg")
+
 var _active_banner: Control
 
 func _ready() -> void:
@@ -55,6 +57,7 @@ func show_banner(text_value: String, accent: Color, center: Vector2, width: floa
 	panel.modulate.a = 0.0
 	add_child(panel)
 	_active_banner = panel
+	_spawn_spark_burst(center, accent, 8)
 
 	var label := Label.new()
 	label.text = text_value
@@ -105,6 +108,7 @@ func show_ring(center: Vector2, diameter: float, accent: Color) -> void:
 	style.corner_radius_bottom_right = radius
 	ring.add_theme_stylebox_override("panel", style)
 	add_child(ring)
+	_spawn_spark_burst(center, accent, 7)
 	if _reduced_motion():
 		ring.modulate.a = 0.65
 		get_tree().create_timer(0.16).timeout.connect(ring.queue_free)
@@ -133,6 +137,40 @@ func show_sweep(rect: Rect2, accent: Color) -> void:
 	tween.tween_property(sweep, "position:x", rect.end.x + 16.0, 0.24)
 	tween.tween_property(sweep, "modulate:a", 0.0, 0.24)
 	tween.finished.connect(sweep.queue_free)
+
+func _spawn_spark_burst(center: Vector2, accent: Color, amount: int = 8) -> void:
+	if _reduced_motion():
+		return
+	var visual_scale := _visual_scale()
+	var count := clampi(amount, 4, 12)
+	for i in range(count):
+		var spark := TextureRect.new()
+		spark.name = "PremiumSpark"
+		spark.texture = SPARK_TEXTURE
+		spark.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		spark.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		spark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var side := (17.0 + float(i % 3) * 4.0) * visual_scale
+		spark.size = Vector2(side, side)
+		spark.pivot_offset = spark.size * 0.5
+		spark.position = center - spark.size * 0.5
+		spark.modulate = accent.lightened(0.30)
+		spark.modulate.a = 0.0
+		spark.scale = Vector2(0.36, 0.36)
+		spark.rotation = float(i) * 0.42
+		add_child(spark)
+		var angle := TAU * float(i) / float(count) - PI * 0.5
+		var distance := (42.0 + 10.0 * float(i % 2)) * visual_scale
+		var target := spark.position + Vector2(cos(angle), sin(angle)) * distance
+		var tween := spark.create_tween().set_parallel(true).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tween.tween_property(spark, "position", target, 0.30)
+		tween.tween_property(spark, "scale", Vector2(0.90, 0.90), 0.16)
+		tween.tween_property(spark, "rotation", spark.rotation + 0.75, 0.30)
+		tween.tween_property(spark, "modulate:a", 0.90, 0.07)
+		var fade := spark.create_tween()
+		fade.tween_interval(0.15)
+		fade.tween_property(spark, "modulate:a", 0.0, 0.17)
+		fade.finished.connect(spark.queue_free)
 
 func _reduced_motion() -> bool:
 	var motion := get_node_or_null("/root/MotionSystem")
