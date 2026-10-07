@@ -30,7 +30,7 @@ const FIGMA_DARK_TOP := Color("#343434")
 const FIGMA_DARK_BOTTOM := Color("#1c1c1c")
 const FIGMA_DARK_CARD := Color("#252525")
 const FIGMA_DARK_INK := Color("#f5f7fa")
-const FIGMA_DARK_MUTED := Color("#a7b1bc")
+const FIGMA_DARK_MUTED := Color("#bbc5cf")
 const FIGMA_SCENE_TOP := Color("#e4dfd5")
 const FIGMA_SCENE_MID := Color("#b3aca2")
 const FIGMA_SCENE_BOTTOM := Color("#80786e")
@@ -798,7 +798,7 @@ func build_friends(refresh_remote: bool = true) -> void:
 
 	var count := CompetitionManager.friend_count()
 	_figma_text(canvas,"FRIENDS • %d/%d" % [count,CompetitionManager.max_friends()],Rect2(19,277,190,20),15,FIGMA_INK)
-	var global_button := _figma_button(canvas,"FriendsGlobalRanks","GLOBAL",Rect2(286,270,65,44),FIGMA_GOLD,Callable(self,"build_compete_leaderboard"),FIGMA_NAVY,10,9)
+	var global_button := _figma_button(canvas,"FriendsGlobalRanks","GLOBAL",Rect2(286,270,65,44),FIGMA_GOLD,Callable(self,"build_compete_leaderboard"),FIGMA_NAVY,10,11)
 	global_button.tooltip_text = "Open global campaign rankings"
 
 	_figma_friend_period_tabs(canvas)
@@ -822,9 +822,9 @@ func build_friends(refresh_remote: bool = true) -> void:
 	var status_text := _friends_status
 	if status_text.is_empty():
 		status_text = "Only your UNJAM name and level rank are visible."
-	var privacy_note := _figma_text(canvas,status_text,Rect2(31,663,328,42),11,FIGMA_MUTED,true)
+	var privacy_note := _figma_text(canvas,status_text,Rect2(31,663,328,42),12,FIGMA_MUTED,true)
 	privacy_note.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_fit_wrapped_text(privacy_note,316.0,11,10)
+	_fit_wrapped_text(privacy_note,316.0,12,11)
 	_figma_bottom_nav(canvas,"home")
 
 func _figma_friend_period_tabs(canvas: Control) -> void:
@@ -837,7 +837,7 @@ func _figma_friend_period_tabs(canvas: Control) -> void:
 		var selected := _friends_period == period
 		var fill := Color("#7a57e0") if selected else (Color("#36383d") if _dark() else Color("#d8d2c8"))
 		var text_color := Color.WHITE if selected else FIGMA_INK
-		var button := _figma_button(canvas,"FriendsPeriod/%s" % period,String(spec[1]),Rect2(float(spec[2]),307,101,44),fill,Callable(),text_color,9,9)
+		var button := _figma_button(canvas,"FriendsPeriod/%s" % period,String(spec[1]),Rect2(float(spec[2]),307,101,44),fill,Callable(),text_color,9,11)
 		if not selected:
 			button.pressed.connect(_set_friends_period.bind(period))
 		else:
@@ -852,11 +852,11 @@ func _figma_friend_rank_row(canvas: Control, row: Dictionary, index: int, y: flo
 	var is_you := bool(row.get("you",false))
 	var accent := FIGMA_CYAN if is_you else Unjam3DTheme.game_accent(_ranking_game)
 	var rank := int(row.get("rank",index+1))
-	_figma_text(canvas,"YOU" if is_you else str(rank),Rect2(30,y+6,38,24),12,accent,true)
-	_figma_text(canvas,String(row.get("name","PLAYER")).left(15),Rect2(75,y+6,130,24),12,FIGMA_INK)
+	_figma_text(canvas,"YOU" if is_you else str(rank),Rect2(30,y+6,38,24),13,accent,true)
+	_figma_text(canvas,String(row.get("name","PLAYER")).left(15),Rect2(75,y+6,130,24),13,FIGMA_INK)
 	var levels := maxi(0,int(row.get("levels_completed",0)))
 	var stars := maxi(0,int(row.get("stars",0)))
-	var progress := _figma_text(canvas,"L%d • ★%d" % [levels,stars],Rect2(205,y+6,96,24),11,FIGMA_MUTED,true)
+	var progress := _figma_text(canvas,"L%d • ★%d" % [levels,stars],Rect2(205,y+6,96,24),12,FIGMA_MUTED,true)
 	progress.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	if not is_you:
 		var code := String(row.get("friend_code",""))
@@ -1235,7 +1235,7 @@ func _figma_progress_leaderboard_panel(canvas: Control, title_text: String, entr
 	_figma_card(canvas,"Leaderboard/%s" % title_text,Rect2(17,y,354,180),Color("#fffaf2"),Color(accent,0.36),18)
 	_figma_text(canvas,title_text,Rect2(33,y+12,120,20),15,accent)
 	var own_text := "YOU —" if own_rank <= 0 else "YOU #%d • L%d" % [own_rank,own_levels]
-	var own := _figma_text(canvas,own_text,Rect2(185,y+12,166,20),12,FIGMA_INK,true)
+	var own := _figma_text(canvas,own_text,Rect2(185,y+12,166,20),13,FIGMA_INK,true)
 	own.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var shown := mini(4,entries.size())
 	if shown <= 0:
@@ -1249,10 +1249,10 @@ func _figma_progress_leaderboard_panel(canvas: Control, title_text: String, entr
 		var row_y := y+42.0+float(i)*33.0
 		var place := i+1
 		_figma_text(canvas,"★" if place == 1 else str(place),Rect2(34,row_y,28,24),13,accent,true)
-		_figma_text(canvas,String(row.get("name","PLAYER")).left(15),Rect2(70,row_y,135,24),12,FIGMA_INK)
+		_figma_text(canvas,String(row.get("name","PLAYER")).left(15),Rect2(70,row_y,135,24),13,FIGMA_INK)
 		var levels := maxi(0,int(row.get("levels_completed",0)))
 		var stars := maxi(0,int(row.get("stars",0)))
-		var progress := _figma_text(canvas,"L%d • ★%d" % [levels,stars],Rect2(210,row_y,130,24),11,FIGMA_MUTED,true)
+		var progress := _figma_text(canvas,"L%d • ★%d" % [levels,stars],Rect2(210,row_y,130,24),12,FIGMA_MUTED,true)
 		progress.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 
 func _figma_today_label() -> String:
