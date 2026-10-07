@@ -58,5 +58,5 @@ func _draw_asset(id: String) -> void:
 		texture,
 		destination,
 		PHONE_SAFE_ART_SOURCE,
-		Color(1,1,1,0.76 if dark_mode else 0.72)
+		Color(1,1,1,0.70 if dark_mode else 0.66)
 	)
