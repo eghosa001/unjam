@@ -140,6 +140,38 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
         add(groups, "branding")
         return True
 
+    # Authored art is executable visual input even when it is not code. Keep
+    # screenshot scope coupled to the surfaces that actually consume each asset.
+    if p.startswith("assets/art/home/"):
+        add(groups, "home")
+        visual.add("home")
+        return True
+    if p.startswith("assets/art/meta/"):
+        add(groups, "secondary_ui")
+        explicit_tests.add("validate_visible_meta_surfaces")
+        visual.update({"collection", "daily", "goals", "profile", "friends"})
+        return True
+    if p.startswith("assets/art/brand/"):
+        add(groups, "home", "games_ui")
+        visual.update({"home", "games"})
+        return True
+    if p.startswith("assets/art/gameplay/rescue"):
+        add(groups, "rescue")
+        visual.add("rescue")
+        return True
+    if p.startswith("assets/art/gameplay/water"):
+        add(groups, "water")
+        visual.add("water")
+        return True
+    if p.startswith("assets/art/gameplay/block") or p.startswith("assets/art/gameplay/special_"):
+        add(groups, "block")
+        visual.add("block")
+        return True
+    if p.startswith("assets/art/fx/"):
+        add(groups, "shared_gameplay_ui")
+        visual.update({"rescue", "water", "block"})
+        return True
+
     if p.startswith(DOC_PREFIXES) or suffix in DOC_SUFFIXES or p in {"license", "readme"}:
         return False
     if p.startswith(".github/") or p in {"tools/select_fast_ci_tests.py", "tools/validate_release_contract.py"}:
@@ -720,6 +752,12 @@ def self_test() -> None:
         (["scripts/ui/premium_live_hub_3d.gd"], ["games_ui"], ["games"], True),
         (["scripts/ui/unjam_3d_game_art.gd"], ["games_ui"], ["games"], True),
         (["scripts/ui/unjam_flat_game_logo.gd"], ["games_ui", "home"], ["games", "home"], True),
+        (["assets/art/home/rescue_rush_hero.svg"], ["home"], ["home"], True),
+        (["assets/art/meta/collection.svg"], ["secondary_ui"], ["collection", "daily", "friends", "goals", "profile"], True),
+        (["assets/art/brand/unjam_wordmark.svg"], ["games_ui", "home"], ["games", "home"], True),
+        (["assets/art/gameplay/rescue/chick.svg"], ["rescue"], ["rescue"], True),
+        (["assets/art/gameplay/water_glass_overlay.svg"], ["water"], ["water"], True),
+        (["assets/art/gameplay/block_tile_overlay.svg"], ["block"], ["block"], True),
         (["scripts/ui/premium_main_casual.gd"], ["secondary_ui"], ["collection", "daily", "friends", "goals", "home", "levels", "profile", "settings"], True),
         (["scripts/systems/premium_visuals.gd"], ["ui"], ["collection", "daily", "friends", "games", "goals", "levels", "profile", "settings", "shop"], True),
         (["scripts/ui/monetization_hub_3d.gd"], ["monetization"], ["shop"], True),
