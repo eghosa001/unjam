@@ -78,6 +78,7 @@ func load_level() -> void:
 			level_number,
 			int(level_profile.get("world", 1))
 		]
+		_fit_water_level_meta()
 	render_board()
 	_refresh_extra_tube_button()
 	call_deferred("_check_no_legal_pours")
