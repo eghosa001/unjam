@@ -452,6 +452,14 @@ func _run_fast_visual_audit(main: Node, shell: Node) -> void:
 			main.emit_signal("surface_changed", "live")
 		await _settle(5)
 		await _capture("02b-live-540x960-dark")
+		root.size = Vector2i(2560, 1600)
+		await _settle(6)
+		main.set("current_surface", "live")
+		if main.has_signal("surface_changed"):
+			main.emit_signal("surface_changed", "live")
+		await _capture("02c-live-2560x1600-tablet-landscape-dark")
+		root.size = Vector2i(540, 960)
+		await _settle(5)
 
 	if _fast_visual_enabled("levels"):
 		main.set("selected_game_id", "rescue_rush")
@@ -463,11 +471,24 @@ func _run_fast_visual_audit(main: Node, shell: Node) -> void:
 		main.call("build_multi_level_select")
 		await _settle(5)
 		await _capture("12b-levels-block-540x960-dark")
+		root.size = Vector2i(2560, 1600)
+		await _settle(6)
+		main.set("selected_game_id", "block_puzzle")
+		main.call("build_multi_level_select")
+		await _capture("12c-levels-block-2560x1600-tablet-landscape-dark")
+		root.size = Vector2i(540, 960)
+		await _settle(5)
 
 	if _fast_visual_enabled("collection"):
 		main.call("build_collection")
 		await _settle(5)
 		await _capture("05b-collection-540x960-dark")
+		root.size = Vector2i(2560, 1600)
+		await _settle(6)
+		main.call("build_collection")
+		await _capture("05i-collection-2560x1600-tablet-landscape-dark")
+		root.size = Vector2i(540, 960)
+		await _settle(5)
 		if main.has_method("build_collection_upgrades"):
 			main.call("build_collection_upgrades")
 			await _settle(5)
@@ -481,16 +502,37 @@ func _run_fast_visual_audit(main: Node, shell: Node) -> void:
 		main.call("build_compete_leaderboard", false)
 		await _settle(5)
 		await _capture("05e-compete-540x960-dark")
+		root.size = Vector2i(2560, 1600)
+		await _settle(6)
+		main.call("build_daily_games")
+		await _capture("05j-daily-2560x1600-tablet-landscape-dark")
+		main.call("build_compete_leaderboard", false)
+		await _settle(5)
+		await _capture("05k-compete-2560x1600-tablet-landscape-dark")
+		root.size = Vector2i(540, 960)
+		await _settle(5)
 
 	if _fast_visual_enabled("goals"):
 		main.call("build_goals")
 		await _settle(5)
 		await _capture("17-goals-540x960-dark")
+		root.size = Vector2i(2560, 1600)
+		await _settle(6)
+		main.call("build_goals")
+		await _capture("17c-goals-2560x1600-tablet-landscape-dark")
+		root.size = Vector2i(540, 960)
+		await _settle(5)
 
 	if _fast_visual_enabled("profile"):
 		main.call("build_profile")
 		await _settle(5)
 		await _capture("18-profile-540x960-dark")
+		root.size = Vector2i(2560, 1600)
+		await _settle(6)
+		main.call("build_profile")
+		await _capture("18c-profile-2560x1600-tablet-landscape-dark")
+		root.size = Vector2i(540, 960)
+		await _settle(5)
 
 	if _fast_visual_enabled("friends"):
 		_seed_social_visual_data()
@@ -501,11 +543,24 @@ func _run_fast_visual_audit(main: Node, shell: Node) -> void:
 		main.call("build_friends", false)
 		await _settle(5)
 		await _capture("19c-friends-empty-540x960-dark")
+		root.size = Vector2i(2560, 1600)
+		await _settle(6)
+		_seed_social_visual_data()
+		main.call("build_friends", false)
+		await _capture("19e-friends-2560x1600-tablet-landscape-dark")
+		root.size = Vector2i(540, 960)
+		await _settle(5)
 
 	if _fast_visual_enabled("settings"):
 		main.call("build_settings")
 		await _settle(5)
 		await _capture("06b-settings-540x960-dark")
+		root.size = Vector2i(2560, 1600)
+		await _settle(6)
+		main.call("build_settings")
+		await _capture("06g-settings-2560x1600-tablet-landscape-dark")
+		root.size = Vector2i(540, 960)
+		await _settle(5)
 
 	if _fast_visual_enabled("shop"):
 		var shop := main.get_node_or_null("MonetizationHub")
