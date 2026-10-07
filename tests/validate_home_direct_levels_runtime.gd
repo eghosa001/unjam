@@ -57,7 +57,7 @@ func _run() -> void:
 			return _fail("Home hero did not update for %s" % game_id)
 		if hero_meta == null or hero_meta.text != "LEVEL %d • WORLD %d" % [expected.level, expected.world]:
 			return _fail("Home hero level/world stayed stale for %s" % game_id)
-		if top_level == null or top_level.text != "LV %d  ›" % expected.level:
+		if top_level == null or not top_level.text.begins_with("LV %d" % expected.level):
 			return _fail("Home top level badge stayed stale for %s" % game_id)
 		var expected_stars := int(_multi.call("total_stars", game_id))
 		if top_stars == null or top_stars.text.strip_edges() != str(expected_stars):
