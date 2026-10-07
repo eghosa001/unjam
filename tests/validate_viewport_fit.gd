@@ -330,16 +330,16 @@ func _assert_visible_text_geometry(canvas: Control, viewport_size: Vector2i, con
 				errors.append("%s text field touch target falls below 48px after scaling at %s: %s %s" % [context,str(viewport_size),edit.name,str(edit.get_global_rect().size)])
 		elif control is Button:
 			var button := control as Button
-			if button.text.strip_edges().is_empty():
-				continue
 			if not _rect_inside(button.get_global_rect(), canvas_rect):
 				errors.append("%s button escapes its reference canvas at %s: %s [%s] %s" % [context,str(viewport_size),button.name,_control_text(button),str(button.get_global_rect())])
-			if not _single_line_text_fits(button, button.text):
-				errors.append("%s button text clips at %s: %s text=%s rect=%s" % [context,str(viewport_size),button.name,button.text,str(button.size)])
 			if bool(button.get_meta("unjam_figma_exact_geometry", false)):
 				var physical_size := button.get_global_rect().size
 				if physical_size.x < 48.0 or physical_size.y < 48.0:
 					errors.append("%s exact touch target falls below 48px after scaling at %s: %s %s" % [context,str(viewport_size),button.name,str(physical_size)])
+			if button.text.strip_edges().is_empty():
+				continue
+			if not _single_line_text_fits(button, button.text):
+				errors.append("%s button text clips at %s: %s text=%s rect=%s" % [context,str(viewport_size),button.name,button.text,str(button.size)])
 			text_controls.append(button)
 
 	for i in range(text_controls.size()):
