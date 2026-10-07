@@ -93,14 +93,16 @@ func _hot_paths_stay_lightweight() -> bool:
 	var checkpoint_fn := manager.get_slice("func _checkpoint_payload_matches", 1).get_slice("func save_checkpoint", 0)
 	if ".duplicate(true)" in checkpoint_fn:
 		return _fail("Checkpoint equality regressed to recursive copying")
-	var water_process := water.get_slice("func _process", 1).get_slice("func _sync_motion_processing", 0)
-	if "_refresh_liquid_3d()" in water_process or not "_refresh_meniscus_3d()" in water_process:
-		return _fail("Water arrival ripple regressed to full liquid-run rebuilds")
-	var water_configure := water.get_slice("func configure", 1).get_slice("func _ready", 0)
-	if not "_request_3d_frame()" in water_configure:
-		return _fail("Water configure path no longer refreshes one-shot 3D bottles after Android release visibility changes")
-	if not "SubViewport.UPDATE_ONCE" in water or not "Vector2i(160, 320)" in water:
-		return _fail("Water one-shot 3D viewport budget regressed")
+	var water_process := water.get_slice("func _process", 1).get_slice("func _draw", 0)
+	if not "queue_redraw()" in water_process or "_refresh_liquid_3d" in water_process or "_refresh_meniscus_3d" in water_process:
+		return _fail("Water arrival feedback is no longer redraw-only 2D")
+	if not "ACTIVE_REDRAW_FPS := 30.0" in FileAccess.get_file_as_string("res://scripts/ui/water_tube_reference_button.gd"):
+		return _fail("Water 2D bottle redraw budget is no longer capped")
+	for forbidden in ["SubViewport", "Camera3D", "MeshInstance3D", "StandardMaterial3D"]:
+		if forbidden in water:
+			return _fail("Water gameplay renderer reintroduced nested 3D allocation: " + forbidden)
+	if not 'extends "res://scripts/ui/water_tube_reference_motion.gd"' in water:
+		return _fail("Water compatibility renderer no longer delegates to the lightweight 2D liquid model")
 	var touch_added := touch_enhancer.get_slice("func _on_node_added", 1).get_slice("func _queue_enhancements", 0)
 	if "_queue_enhancements()" in touch_added or not "_apply_button_size" in touch_added:
 		return _fail("Touch enhancer regressed to whole-tree rescans for each new node")
