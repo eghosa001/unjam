@@ -85,7 +85,7 @@ func _draw() -> void:
 	if motion != null and motion.has_method("reduced"):
 		reduced = bool(motion.call("reduced"))
 	var bob := 0.0 if reduced else sin(phase * 2.8) * s * 0.025
-	var art_size := Vector2(s * 1.14, s * 1.14)
+	var art_size := Vector2(s * 1.30, s * 1.30)
 	var art_rect := Rect2(Vector2(size.x * 0.5, size.y * 0.50 + bob) - art_size * 0.5, art_size)
 	var texture := RESCUE_TEXTURES.get(rescue_id) as Texture2D
 	if texture == null:
@@ -93,4 +93,4 @@ func _draw() -> void:
 	draw_texture_rect(texture, art_rect, false, Color.WHITE)
 	if rarity in ["silver","gold","royal"]:
 		var ring := Color("#dce8f4") if rarity == "silver" else (Color("#ffd75c") if rarity == "gold" else Color("#b790ff"))
-		draw_arc(art_rect.get_center(), s * 0.53, 0, TAU, 42, Color(ring, 0.54), maxf(1.5, s * 0.028), true)
+		draw_arc(art_rect.get_center(), s * 0.60, 0, TAU, 42, Color(ring, 0.54), maxf(1.5, s * 0.028), true)
