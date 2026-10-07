@@ -1,5 +1,14 @@
 extends SceneTree
 
+var _invalid_signal_seen := false
+var _invalid_signal_ok := true
+var _invalid_signal_message := ""
+
+func _on_social_action_finished(ok: bool, message: String) -> void:
+	_invalid_signal_seen = true
+	_invalid_signal_ok = ok
+	_invalid_signal_message = message
+
 func _initialize() -> void:
 	call_deferred("_run")
 
@@ -18,14 +27,17 @@ func _run() -> void:
 	if competition.max_friends() != 50:
 		failures.append("Friend cap must remain 50")
 
-	var invalid_result: Array = []
-	var invalid_callback := func(ok: bool, message: String) -> void:
-		invalid_result = [ok, message]
+	_invalid_signal_seen = false
+	_invalid_signal_ok = true
+	_invalid_signal_message = ""
+	var invalid_callback := Callable(self, "_on_social_action_finished")
 	competition.social_action_finished.connect(invalid_callback, CONNECT_ONE_SHOT)
 	competition.add_friend("BAD")
 	await process_frame
-	if invalid_result.is_empty() or bool(invalid_result[0]):
+	if not _invalid_signal_seen or _invalid_signal_ok:
 		failures.append("Invalid friend codes must fail locally before networking")
+	elif not _invalid_signal_message.to_lower().contains("8-character"):
+		failures.append("Invalid friend-code feedback must explain the required format")
 
 	var manager := _read("res://scripts/systems/competition_manager.gd")
 	var ui := _read("res://scripts/ui/premium_main_casual.gd")
