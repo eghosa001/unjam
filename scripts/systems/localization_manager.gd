@@ -4,6 +4,7 @@ const SUPPORTED_LANGUAGES := ["en", "es", "fr", "pt", "de", "it", "ha", "yo", "i
 
 const TRANSLATIONS := {
 	"es": {
+		"LANGUAGE":"IDIOMA","LAST LEVEL":"ÚLTIMO NIVEL",
 		"HOME":"INICIO","GAMES":"JUEGOS","DAILY":"DIARIO","COLLECT":"COLECCIÓN","COLLECTION":"COLECCIÓN","SETTINGS":"AJUSTES",
 		"CHOOSE GAME":"ELEGIR JUEGO","CONTINUE":"CONTINUAR","LEVEL":"NIVEL","LEVELS":"NIVELES","WORLD":"MUNDO","CURRENT":"ACTUAL",
 		"NEXT":"SIGUIENTE","PREV":"ANTERIOR","BACK":"ATRÁS","PLAY":"JUGAR","PLAY NOW":"JUGAR AHORA","SOUND":"SONIDO",
@@ -24,6 +25,7 @@ const TRANSLATIONS := {
 		"Before placing a piece, check all three tray pieces.":"Antes de colocar una pieza, revisa las tres piezas de la bandeja."
 	},
 	"fr": {
+		"LANGUAGE":"LANGUE","LAST LEVEL":"DERNIER NIVEAU",
 		"HOME":"ACCUEIL","GAMES":"JEUX","DAILY":"QUOTIDIEN","COLLECT":"COLLECTION","COLLECTION":"COLLECTION","SETTINGS":"RÉGLAGES",
 		"CHOOSE GAME":"CHOISIR UN JEU","CONTINUE":"CONTINUER","LEVEL":"NIVEAU","LEVELS":"NIVEAUX","WORLD":"MONDE","CURRENT":"ACTUEL",
 		"NEXT":"SUIVANT","PREV":"PRÉCÉDENT","BACK":"RETOUR","PLAY":"JOUER","PLAY NOW":"JOUER","SOUND":"SON",
@@ -44,6 +46,7 @@ const TRANSLATIONS := {
 		"Before placing a piece, check all three tray pieces.":"Avant de placer une pièce, vérifie les trois pièces du plateau."
 	},
 	"pt": {
+		"LANGUAGE":"IDIOMA","LAST LEVEL":"ÚLTIMO NÍVEL",
 		"HOME":"INÍCIO","GAMES":"JOGOS","DAILY":"DIÁRIO","COLLECT":"COLEÇÃO","COLLECTION":"COLEÇÃO","SETTINGS":"DEFINIÇÕES",
 		"CHOOSE GAME":"ESCOLHER JOGO","CONTINUE":"CONTINUAR","LEVEL":"NÍVEL","LEVELS":"NÍVEIS","WORLD":"MUNDO","CURRENT":"ATUAL",
 		"NEXT":"SEGUINTE","PREV":"ANTERIOR","BACK":"VOLTAR","PLAY":"JOGAR","PLAY NOW":"JOGAR AGORA","SOUND":"SOM",
@@ -64,6 +67,7 @@ const TRANSLATIONS := {
 		"Before placing a piece, check all three tray pieces.":"Antes de colocar uma peça, verifique as três peças da bandeja."
 	},
 	"de": {
+		"LANGUAGE":"SPRACHE","LAST LEVEL":"LETZTES LEVEL",
 		"HOME":"START","GAMES":"SPIELE","DAILY":"TÄGLICH","COLLECT":"SAMMLUNG","COLLECTION":"SAMMLUNG","SETTINGS":"EINSTELLUNGEN",
 		"CHOOSE GAME":"SPIEL WÄHLEN","CONTINUE":"WEITER","LEVEL":"LEVEL","LEVELS":"LEVEL","WORLD":"WELT","CURRENT":"AKTUELL",
 		"NEXT":"WEITER","PREV":"ZURÜCK","BACK":"ZURÜCK","PLAY":"SPIELEN","PLAY NOW":"JETZT SPIELEN","SOUND":"TON",
@@ -84,6 +88,7 @@ const TRANSLATIONS := {
 		"Before placing a piece, check all three tray pieces.":"Prüfe vor dem Platzieren alle drei Teile in der Ablage."
 	},
 	"it": {
+		"LANGUAGE":"LINGUA","LAST LEVEL":"ULTIMO LIVELLO",
 		"HOME":"HOME","GAMES":"GIOCHI","DAILY":"GIORNALIERO","COLLECT":"RACCOLTA","COLLECTION":"RACCOLTA","SETTINGS":"IMPOSTAZIONI",
 		"CHOOSE GAME":"SCEGLI GIOCO","CONTINUE":"CONTINUA","LEVEL":"LIVELLO","LEVELS":"LIVELLI","WORLD":"MONDO","CURRENT":"ATTUALE",
 		"NEXT":"AVANTI","PREV":"INDIETRO","BACK":"INDIETRO","PLAY":"GIOCA","PLAY NOW":"GIOCA ORA","SOUND":"SUONO",
@@ -104,6 +109,7 @@ const TRANSLATIONS := {
 		"Before placing a piece, check all three tray pieces.":"Prima di posizionare un pezzo, controlla tutti e tre i pezzi."
 	},
 	"ha": {
+		"LANGUAGE":"HARSHE","LAST LEVEL":"MATAKIN ƘARSHE",
 		"HOME":"GIDA","GAMES":"WASANNI","DAILY":"KULLUM","COLLECT":"TARI","COLLECTION":"TARI","SETTINGS":"SAITUNA",
 		"CHOOSE GAME":"ZAƁI WASA","CONTINUE":"CI GABA","LEVEL":"MATAKI","LEVELS":"MATAKAI","WORLD":"DUNIYA","CURRENT":"YAZU",
 		"NEXT":"NA GABA","PREV":"NA BAYA","BACK":"BAYA","PLAY":"YI WASA","PLAY NOW":"YI WASA YANZU","SOUND":"SAUTI",
@@ -113,6 +119,7 @@ const TRANSLATIONS := {
 		"TIP":"SHAWARA","NEXT TIP":"SHAWARA TA GABA","PLAY THIS GAME":"YI WANNAN WASA","CHANGE GAME":"CANZA WASA"
 	},
 	"yo": {
+		"LANGUAGE":"ÈDÈ","LAST LEVEL":"ÌPELE TÓ KẸ́YÌN",
 		"HOME":"ILÉ","GAMES":"ÀWỌN ERÉ","DAILY":"OJOOJUMỌ́","COLLECT":"ÀKÓJỌ","COLLECTION":"ÀKÓJỌ","SETTINGS":"ÈTÒ",
 		"CHOOSE GAME":"YAN ERÉ","CONTINUE":"TẸ̀SÍWÁJÚ","LEVEL":"ÌPELE","LEVELS":"ÀWỌN ÌPELE","WORLD":"AYÉ","CURRENT":"LỌ́WỌ́LỌ́WỌ́",
 		"NEXT":"TÓ KÀN","PREV":"TẸ́LẸ̀","BACK":"PADÀ","PLAY":"ṢERÉ","PLAY NOW":"ṢERÉ BÁYÌÍ","SOUND":"OHÙN",
@@ -122,6 +129,7 @@ const TRANSLATIONS := {
 		"TIP":"ÌMỌ̀RÀN","NEXT TIP":"ÌMỌ̀RÀN TÓ KÀN","PLAY THIS GAME":"ṢERÉ ERÉ YÌÍ","CHANGE GAME":"YÍ ERÉ PADÀ"
 	},
 	"ig": {
+		"LANGUAGE":"ASỤSỤ","LAST LEVEL":"ỌKWA IKPEAZỤ",
 		"HOME":"ỤLỌ","GAMES":"EGWUREGWU","DAILY":"KWA ỤBỌCHỊ","COLLECT":"NCHỊKỌTA","COLLECTION":"NCHỊKỌTA","SETTINGS":"NTỌALA",
 		"CHOOSE GAME":"HỌRỌ EGWUREGWU","CONTINUE":"GAA N’IHU","LEVEL":"ỌKWA","LEVELS":"ỌKWA","WORLD":"ỤWA","CURRENT":"UGBUA",
 		"NEXT":"OSOTE","PREV":"GARA AGA","BACK":"LAGHACHI","PLAY":"GWUO","PLAY NOW":"GWUO UGBUA","SOUND":"ỤDA",
@@ -132,7 +140,7 @@ const TRANSLATIONS := {
 	}
 }
 
-const DYNAMIC_KEYS := ["SHOP & RESTORE","HOW TO PLAY","CHOOSE GAME","PLAY THIS GAME","CHANGE GAME","NEXT TIP","SOUND EFFECTS","REDUCED MOTION","FAST ANIMATION","PLAYMATE SIDEKICK","CONTINUE","LEVELS","LEVEL","WORLD","CURRENT","COMPLETE","DAILY","DONE","NEXT","PREV","BACK"]
+const DYNAMIC_KEYS := ["SHOP & RESTORE","HOW TO PLAY","CHOOSE GAME","PLAY THIS GAME","CHANGE GAME","NEXT TIP","SOUND EFFECTS","REDUCED MOTION","FAST ANIMATION","PLAYMATE SIDEKICK","LAST LEVEL","LANGUAGE","CONTINUE","LEVELS","LEVEL","WORLD","CURRENT","COMPLETE","DAILY","DONE","NEXT","PREV","BACK"]
 
 var language_code := "en"
 
@@ -140,7 +148,37 @@ func _ready() -> void:
 	language_code = _normalize_language(OS.get_locale_language())
 	TranslationServer.set_locale(language_code)
 	get_tree().node_added.connect(_on_node_added)
-	call_deferred("_translate_existing_tree")
+	# The save autoload is initialized after this autoload; read preferences only
+	# once the initial save has loaded, and then relocalize all existing nodes.
+	call_deferred("_restore_preferred_language")
+
+func _restore_preferred_language() -> void:
+	var save_manager := get_node_or_null("/root/SaveManager")
+	if save_manager != null and save_manager.get("data") is Dictionary:
+		var preference := String((save_manager.get("data") as Dictionary).get("language_code", "")).to_lower()
+		if preference in SUPPORTED_LANGUAGES:
+			language_code = preference
+	TranslationServer.set_locale(language_code)
+	_translate_existing_tree()
+
+func set_language(code: String, persist: bool = true) -> bool:
+	var requested := code.strip_edges().to_lower()
+	if requested not in SUPPORTED_LANGUAGES:
+		return false
+	language_code = requested
+	TranslationServer.set_locale(language_code)
+	if persist:
+		var save_manager := get_node_or_null("/root/SaveManager")
+		if save_manager != null and save_manager.get("data") is Dictionary:
+			(save_manager.get("data") as Dictionary)["language_code"] = requested
+			save_manager.call("save")
+	_translate_existing_tree()
+	return true
+
+func cycle_language() -> String:
+	var index := SUPPORTED_LANGUAGES.find(language_code)
+	set_language(String(SUPPORTED_LANGUAGES[(index + 1) % SUPPORTED_LANGUAGES.size()]))
+	return language_code
 
 func _normalize_language(raw: String) -> String:
 	var code := raw.strip_edges().to_lower()
@@ -212,24 +250,47 @@ func _translate_branch(node: Node) -> void:
 	for child in node.get_children():
 		_translate_branch(child)
 
+func _translation_source(node: Node, current: String) -> String:
+	# Preserve authored English even after a control is translated. If a screen
+	# changes its text dynamically, promote the new value as the next source.
+	var source := String(node.get_meta("unjam_l10n_source", current))
+	var last_display := String(node.get_meta("unjam_l10n_display", current))
+	if current != last_display:
+		source = current
+	node.set_meta("unjam_l10n_source", source)
+	return source
+
 func _translate_control(node: Node) -> void:
 	if node == null or not is_instance_valid(node):
 		return
 	if node is Label:
 		var label := node as Label
-		var translated := localize(label.text)
+		var source := _translation_source(label, label.text)
+		var translated := localize(source)
+		label.set_meta("unjam_l10n_display", translated)
 		if translated != label.text:
 			label.text = translated
 			_fit_localized_single_line(label, translated)
 	elif node is Button:
 		var button := node as Button
-		var translated := localize(button.text)
-		if translated != button.text:
+		var displayed := button.text
+		var source := _translation_source(button, displayed)
+		var translated := localize(source)
+		button.set_meta("unjam_l10n_display", translated)
+		# Preserve any deliberately richer accessible label, but do not leave a
+		# previous language spoken when accessibility_name mirrored button text.
+		if button.accessibility_name.is_empty() or button.accessibility_name == displayed or button.accessibility_name == source:
+			button.accessibility_name = translated
+		if translated != displayed:
 			button.text = translated
 			_fit_localized_single_line(button, translated)
 	elif node is RichTextLabel:
 		var rich := node as RichTextLabel
-		rich.text = localize(rich.text)
+		var source := _translation_source(rich, rich.text)
+		var translated := localize(source)
+		rich.set_meta("unjam_l10n_display", translated)
+		if translated != rich.text:
+			rich.text = translated
 
 func _fit_localized_single_line(control: Control, translated: String) -> void:
 	# English Figma geometry is already fitted by the authoring helpers.
@@ -242,7 +303,9 @@ func _fit_localized_single_line(control: Control, translated: String) -> void:
 	var font := control.get_theme_font("font")
 	if font == null:
 		return
-	var current_size := control.get_theme_font_size("font_size")
+	if not control.has_meta("unjam_l10n_font_size"):
+		control.set_meta("unjam_l10n_font_size", control.get_theme_font_size("font_size"))
+	var current_size := int(control.get_meta("unjam_l10n_font_size"))
 	var min_size := maxi(9, current_size - 4)
 	var available := maxf(18.0, control.size.x - (16.0 if control is Button else 4.0))
 	while current_size > min_size and font.get_string_size(translated, HORIZONTAL_ALIGNMENT_LEFT, -1, current_size).x > available:
