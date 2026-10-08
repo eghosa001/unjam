@@ -301,11 +301,11 @@ func _add_quick_actions(canvas: Control) -> void:
 	# same Android touch carry through and immediately launch that game.
 	choose.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 	var compete_fill := Color("#7052d8") if _home_dark() else Color("#7659e8")
-	var compete := _add_action(canvas, Rect2(197, 365, 170, 52), compete_fill, "★  COMPETE", 12, OFF_WHITE, Callable(self, "_open_compete"), 14)
+	var compete := _add_action(canvas, Rect2(197, 365, 170, 52), compete_fill, "★  RANKINGS", 12, OFF_WHITE, Callable(self, "_open_compete"), 14)
 	# Keep the stable node id used by older automation while the player-facing
 	# action now opens campaign progression rankings instead of Daily.
 	compete.name = "HomeDailyGamesButton"
-	compete.tooltip_text = "Campaign rankings • all-time and weekly"
+	compete.tooltip_text = "Open the full player leaderboard • today, weekly and all-time"
 
 	# Sidekick stays discoverable without taking a third content column.
 	var sidekick := _add_action(canvas, Rect2(261, 15, 108, 44), Color("#4f446e") if _home_dark() else Color("#d9d0f5"), "SIDEKICK • β", 11, OFF_WHITE if _home_dark() else Color("#493b70"), Callable(self, "_open_sidekick"), 14)
@@ -587,8 +587,12 @@ func _open_game_selector() -> void:
 
 func _open_compete() -> void:
 	var main := get_parent()
-	if main != null and main.has_method("build_compete_leaderboard"):
-		FeedbackManager.tap()
+	if main == null:
+		return
+	FeedbackManager.tap()
+	if main.has_method("show_leaderboard_popup"):
+		main.call("show_leaderboard_popup", "week")
+	elif main.has_method("build_compete_leaderboard"):
 		main.call("build_compete_leaderboard")
 
 func _open_daily_games() -> void:
