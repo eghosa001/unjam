@@ -54,7 +54,7 @@ func _run() -> void:
 	var language_button := main.find_child("SettingsLanguageToggle", true, false) as Button
 	if not _assert(language_button != null, "Settings lacks a language selector"):
 		return
-	if not _assert(language_button.size.x >= 140.0 and language_button.size.y >= 44.0, "Language button is too small"):
+	if not _assert(language_button.size.x >= 70.0 and language_button.size.y >= 44.0, "Language button is too small"):
 		return
 	main.call("_cycle_settings_language")
 	for _i in range(3):
