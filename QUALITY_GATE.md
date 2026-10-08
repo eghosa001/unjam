@@ -118,6 +118,11 @@ claim device-verified 60fps without device evidence.
 
 ## Shop availability truthfulness
 
+Async catalog updates must refresh product CTA price, enabled state and
+accessibility in-place. A price callback must not destroy the Shop overlay,
+reset the current screen, or double-connect a purchase callback. Test this
+against repeated catalog updates and five products.
+
 Connection to the Play Billing provider does not establish that a SKU is sold
 in the current user's region. A product cannot enable its Buy CTA without
 an actual localized price returned for that exact product ID. Products with
