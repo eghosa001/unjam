@@ -13,6 +13,8 @@ const SFX_GAIN_MULTIPLIER := 1.18
 const MUSIC_VOLUME_DB := -7.0
 const MUSIC_START_DB := -48.0
 const MUSIC_FADE_IN_SECONDS := 0.90
+const MUSIC_FADE_OUT_SECONDS := 0.18
+const NAV_TAP_MIN_INTERVAL_MS := 35
 # Each additional simultaneous chime is attenuated, reducing clipping risk
 # when rapid touches, clears and celebration sounds coincide on phone speakers.
 const ACTIVE_VOICE_DUCK_DB := 2.3
@@ -24,6 +26,8 @@ var music_player: AudioStreamPlayer
 var music_stream: AudioStream
 var last_music_enabled := false
 var _sfx_cursor := 0
+var _music_fade: Tween
+var _last_nav_tap_ms := -1000
 var _stream_cache: Dictionary = {}
 
 func _ready() -> void:
@@ -59,6 +63,7 @@ func _exit_tree() -> void:
 
 func shutdown_audio() -> void:
 	set_process(false)
+	_cancel_music_fade()
 	for sfx in sfx_players:
 		if sfx != null and is_instance_valid(sfx):
 			sfx.stop()
@@ -79,16 +84,24 @@ func apply_settings() -> void:
 	last_music_enabled = bool(SaveManager.data.get("music", true))
 	_sync_music()
 
+func _cancel_music_fade() -> void:
+	if _music_fade != null and _music_fade.is_valid():
+		_music_fade.kill()
+	_music_fade = null
+
 func _start_music_immediately() -> void:
 	if music_player == null or music_stream == null:
 		return
+	_cancel_music_fade()
 	if music_player.stream != music_stream:
 		music_player.stream = music_stream
-	if music_player.playing:
-		return
-	music_player.volume_db = MUSIC_START_DB
-	music_player.play()
+	if not music_player.playing:
+		music_player.volume_db = MUSIC_START_DB
+		music_player.play()
+	# Re-enabling music during fade-out must restore audible volume, not
+	# leave an already-playing stream stuck near silent.
 	var fade := create_tween()
+	_music_fade = fade
 	fade.set_trans(Tween.TRANS_SINE)
 	fade.set_ease(Tween.EASE_OUT)
 	fade.tween_property(music_player, "volume_db", MUSIC_VOLUME_DB, MUSIC_FADE_IN_SECONDS)
@@ -100,8 +113,20 @@ func _sync_music() -> void:
 	if last_music_enabled:
 		_start_music_immediately()
 	else:
-		music_player.stop()
-		music_player.volume_db = MUSIC_START_DB
+		_cancel_music_fade()
+		if not music_player.playing:
+			music_player.volume_db = MUSIC_START_DB
+			return
+		# Stop at near-silence, never truncate an active Ogg at full amplitude.
+		var fade := create_tween()
+		_music_fade = fade
+		fade.set_trans(Tween.TRANS_SINE)
+		fade.set_ease(Tween.EASE_IN)
+		fade.tween_property(music_player, "volume_db", MUSIC_START_DB, MUSIC_FADE_OUT_SECONDS)
+		fade.tween_callback(func() -> void:
+			if music_player != null and is_instance_valid(music_player) and not bool(SaveManager.data.get("music", true)):
+				music_player.stop()
+		)
 
 # ---------------------------------------------------------------------------
 # Semantic feedback API
@@ -160,11 +185,21 @@ func complete(kind: String = "level") -> void:
 
 # Backward-compatible API used throughout the existing scenes.
 func tap() -> void:
+	if not _accept_nav_tap(Time.get_ticks_msec()):
+		return
 	# Ordinary taps are SFX-only. Music state is synchronized only when an
 	# actual setting changes, so UI feedback can never restart the BGM stream.
 	# A tiny wooden tick: audible enough for confirmation, quiet enough for
 	# repeated menu use.
 	_play_chime([392.0], 0.080, 0.060, 0.20)
+
+func _accept_nav_tap(now_ms: int) -> bool:
+	# Double-fired UI signals and ultra-rapid taps should not pile synthesized
+	# ticks on top of music. Gameplay clear/snap events bypass this limit.
+	if now_ms - _last_nav_tap_ms < NAV_TAP_MIN_INTERVAL_MS:
+		return false
+	_last_nav_tap_ms = now_ms
+	return true
 
 func blocked() -> void:
 	# Low, rounded two-note fall. Avoid sub-200 Hz buzzy sine errors.
