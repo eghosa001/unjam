@@ -191,6 +191,23 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
     if not is_code:
         return False
 
+    # Language and coach policy regressions must follow the source that owns
+    # them, not run only on the commit where their test files were first added.
+    if p == "scripts/systems/localization_manager.gd":
+        # Keep shared-system checks targeted: the standard UI sample is
+        # already at the six-test fast-CI policy limit.
+        explicit_tests.update({
+            "validate_localization_integrity",
+            "validate_language_settings_runtime",
+            "validate_viewport_fit",
+            "validate_theme_integrity",
+        })
+        visual.add("settings")
+        return True
+    if p == "scripts/systems/sidekick_coach.gd":
+        explicit_tests.add("validate_sidekick_progress_coaching")
+        return True
+
     progression_contracts = {
         "scripts/core/water_sort_progression.gd": "validate_water_constructive_solvability",
         "scripts/core/block_puzzle_progression.gd": "validate_block_progression_10000",
