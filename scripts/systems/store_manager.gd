@@ -152,6 +152,9 @@ func purchase(product_id: String) -> bool:
 	if OS.get_name() == "Android" and not verifier_ready():
 		purchase_failed.emit(product_id, "Secure purchase verification is not configured")
 		return false
+	if OS.get_name() == "Android" and price_text(product_id) in ["NO PRICE", "UNAVAILABLE"]:
+		purchase_failed.emit(product_id, "This product has no active Google Play price in your region")
+		return false
 
 	_set_purchase_busy(product_id)
 	purchase_started.emit(product_id)
