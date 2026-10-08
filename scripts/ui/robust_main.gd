@@ -7,10 +7,18 @@ var _surface_emit_pending := false
 # Generation prevents a deferred win animation from reopening gameplay after
 # the player presses Back, changes game, or navigates to another surface.
 var _navigation_generation := 0
+var _pending_game_launch: Dictionary = {}
 var current_surface: String:
 	get:
 		return _current_surface
 	set(value):
+		# Leaving a pending Daily before scene instantiation must restore its
+		# parked campaign checkpoint, just like exiting a running Daily.
+		if _current_surface == "game_loading" and value not in ["game_loading", "game"] and not _pending_game_launch.is_empty():
+			var abandoned: Dictionary = _pending_game_launch.duplicate()
+			_pending_game_launch.clear()
+			if bool(abandoned.get("daily",false)):
+				_restore_campaign_checkpoint_after_daily(String(abandoned.get("game_id","")))
 		_navigation_generation += 1
 		_current_surface = value
 		if has_method("_sync_persistent_surfaces_now"):
@@ -64,12 +72,14 @@ func _prime_game_scene(path: String) -> void:
 		ResourceLoader.load_threaded_request(path)
 
 func _game_scene_resource(path: String) -> PackedScene:
-	var status := ResourceLoader.load_threaded_get_status(path)
-	if status == ResourceLoader.THREAD_LOAD_LOADED:
+	# Important: load_threaded_get() BLOCKS the caller until completion when
+	# called during THREAD_LOAD_IN_PROGRESS. Never invoke that on the UI thread.
+	var cached := ResourceLoader.get_cached_ref(path) as PackedScene
+	if cached != null:
+		return cached
+	if ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_LOADED:
 		return ResourceLoader.load_threaded_get(path) as PackedScene
-	if status == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
-		return ResourceLoader.load_threaded_get(path) as PackedScene
-	return load(path) as PackedScene
+	return null
 
 func _multi_page_count(game_id: String, world: int) -> int:
 	var first := MultiGameManager.first_level_in_game_world(game_id, world)
@@ -289,32 +299,8 @@ func start_multi_level(game_id: String, level_number: int, daily: bool = false) 
 
 func start_multi_level_mode(game_id: String, level_number: int, daily: bool = false, mode: String = "campaign") -> void:
 	selected_game_id = game_id
-	current_surface = "game"
-	_remove_active_game()
-	if content and is_instance_valid(content):
-		content.hide()
 	var scene_path := WATER_GAME_SCENE_PATH if game_id == "water_sort" else BLOCK_GAME_SCENE_PATH
-	var packed := _game_scene_resource(scene_path)
-	if packed == null:
-		push_error("Failed to load game scene: %s" % scene_path)
-		build_home()
-		return
-	var game_scene := packed.instantiate() as Control
-	game_scene.name = "ActiveGame"
-	game_scene.level_number = level_number
-	game_scene.daily_mode = daily
-	if game_id == "block_puzzle":
-		game_scene.set("play_mode", mode)
-	game_scene.set_meta("unjam_game_id", game_id)
-	game_scene.set_meta("unjam_level_number", level_number)
-	game_scene.set_meta("unjam_daily_mode", daily)
-	game_scene.finished.connect(_on_multi_finished.bind(game_id, daily))
-	game_scene.quit_requested.connect(_on_multi_quit.bind(game_scene, game_id, daily))
-	add_child(game_scene)
-	game_scene.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	game_scene.z_index = 100
-	active_game = game_scene
-	AnalyticsManager.track("game_scene_opened", {"game": game_id, "level": level_number, "daily": daily, "mode": mode})
+	_begin_game_scene_launch(scene_path, {"game_id":game_id,"level":level_number,"daily":daily,"mode":mode})
 
 func start_block_mode(mode: String) -> void:
 	var safe_mode := mode if mode in ["endless", "zen", "extreme"] else "campaign"
@@ -322,30 +308,164 @@ func start_block_mode(mode: String) -> void:
 	start_multi_level_mode("block_puzzle", level, false, safe_mode)
 
 func _spawn_rescue(level_number: int, daily: bool, custom_data: Dictionary) -> void:
-	current_surface = "game"
+	selected_game_id = "rescue_rush"
+	_begin_game_scene_launch(RESCUE_GAME_SCENE_PATH, {"game_id":"rescue_rush","level":level_number,"daily":daily,"custom_data":custom_data.duplicate(true)})
+
+func _begin_game_scene_launch(path: String, config: Dictionary) -> void:
+	# Cached scenes still start synchronously. Cold loads use Godot's threaded
+	# loader and poll between frames, never blocking navigation on an in-progress
+	# background resource request.
 	_remove_active_game()
-	if content and is_instance_valid(content):
-		content.hide()
-	var packed := _game_scene_resource(RESCUE_GAME_SCENE_PATH)
-	if packed == null:
-		push_error("Failed to load game scene: %s" % RESCUE_GAME_SCENE_PATH)
-		build_home()
+	var packed := _game_scene_resource(path)
+	if packed != null:
+		_pending_game_launch.clear()
+		_instantiate_game_scene(packed,config)
 		return
+	current_surface = "game_loading"
+	_pending_game_launch = config.duplicate(true)
+	_show_game_loading(config)
+	_prime_game_scene(path)
+	var generation := _navigation_generation
+	call_deferred("_await_game_scene",path,config.duplicate(true),generation)
+
+func _show_game_loading(config: Dictionary) -> void:
+	clear_content()
+	content.visible = true
+	content.mouse_filter = Control.MOUSE_FILTER_STOP
+	var tint := ColorRect.new()
+	tint.color = Color("#0c1729")
+	tint.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content.add_child(tint)
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content.add_child(center)
+	var panel := VBoxContainer.new()
+	panel.name = "GameLoadingCard"
+	panel.add_theme_constant_override("separation",20)
+	panel.custom_minimum_size = Vector2(280,180)
+	center.add_child(panel)
+	var label := Label.new()
+	label.name = "GameLoadingMessage"
+	label.text = "OPENING %s…" % MultiGameManager.display_name(String(config.get("game_id","rescue_rush"))).to_upper()
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size",24)
+	label.add_theme_color_override("font_color",Color("#f1fbff"))
+	label.accessibility_name = label.text
+	panel.add_child(label)
+	var progress := ProgressBar.new()
+	progress.name = "GameLoadingProgress"
+	progress.min_value = 0
+	progress.max_value = 1
+	progress.value = 0
+	progress.show_percentage = false
+	progress.custom_minimum_size = Vector2(0,12)
+	panel.add_child(progress)
+	var cancel := Button.new()
+	cancel.name = "GameLoadingCancel"
+	cancel.text = "BACK"
+	cancel.custom_minimum_size = Vector2(0,56)
+	cancel.focus_mode = Control.FOCUS_ALL
+	cancel.accessibility_name = "Cancel loading and return"
+	cancel.pressed.connect(_cancel_game_loading)
+	panel.add_child(cancel)
+	var retry := Button.new()
+	retry.name = "GameLoadingRetry"
+	retry.text = "RETRY"
+	retry.custom_minimum_size = Vector2(0,56)
+	retry.visible = false
+	retry.pressed.connect(_retry_game_loading)
+	panel.add_child(retry)
+
+func _cancel_game_loading() -> void:
+	if current_surface != "game_loading":
+		return
+	var config := _pending_game_launch.duplicate(true)
+	if bool(config.get("daily",false)):
+		_return_from_daily(String(config.get("game_id","")))
+	elif String(config.get("game_id","")) in MultiGameManager.GAME_IDS:
+		open_game_campaign(String(config["game_id"]))
+	else:
+		build_home()
+
+func _retry_game_loading() -> void:
+	if current_surface != "game_loading":
+		return
+	var config := _pending_game_launch.duplicate(true)
+	var path := RESCUE_GAME_SCENE_PATH if String(config.get("game_id","")) == "rescue_rush" else (WATER_GAME_SCENE_PATH if String(config.get("game_id","")) == "water_sort" else BLOCK_GAME_SCENE_PATH)
+	_begin_game_scene_launch(path,config)
+
+func _await_game_scene(path: String, config: Dictionary, generation: int) -> void:
+	var deadline := Time.get_ticks_msec() + 20000
+	while is_inside_tree() and generation == _navigation_generation and current_surface == "game_loading":
+		var progress: Array = []
+		var status := ResourceLoader.load_threaded_get_status(path,progress)
+		if status == ResourceLoader.THREAD_LOAD_LOADED:
+			var packed := ResourceLoader.load_threaded_get(path) as PackedScene
+			if packed != null:
+				_pending_game_launch.clear()
+				_instantiate_game_scene(packed,config)
+				return
+			_show_game_loading_error("Could not open this game. Try again or go back.")
+			return
+		if status == ResourceLoader.THREAD_LOAD_FAILED:
+			_show_game_loading_error("Game data could not be loaded. Retry or go back.")
+			return
+		if status == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
+			if ResourceLoader.load_threaded_request(path) != OK:
+				_show_game_loading_error("Game data is unavailable. Retry or go back.")
+				return
+		var bar := content.find_child("GameLoadingProgress",true,false) as ProgressBar if content != null else null
+		if bar != null and not progress.is_empty():
+			bar.value = clampf(float(progress[0]),0.0,1.0)
+		if Time.get_ticks_msec() > deadline:
+			_show_game_loading_error("Loading is taking too long. Retry or go back.")
+			return
+		await get_tree().process_frame
+
+func _show_game_loading_error(message: String) -> void:
+	var label := content.find_child("GameLoadingMessage",true,false) as Label if content != null else null
+	if label != null:
+		label.text = message
+		label.accessibility_name = message
+	var retry := content.find_child("GameLoadingRetry",true,false) as Button if content != null else null
+	if retry != null:
+		retry.visible = true
+
+func _instantiate_game_scene(packed: PackedScene, config: Dictionary) -> void:
 	var game_scene := packed.instantiate() as Control
+	if game_scene == null:
+		_show_game_loading_error("This game could not start. Try again.")
+		return
+	var game_id := String(config.get("game_id","rescue_rush"))
+	var level_number := int(config.get("level",1))
+	var daily := bool(config.get("daily",false))
+	var mode := String(config.get("mode","campaign"))
 	game_scene.name = "ActiveGame"
 	game_scene.level_number = level_number
 	game_scene.daily_mode = daily
-	if not custom_data.is_empty():
-		game_scene.custom_level_data = custom_data.duplicate(true)
-	game_scene.set_meta("unjam_game_id", "rescue_rush")
-	game_scene.set_meta("unjam_level_number", level_number)
-	game_scene.set_meta("unjam_daily_mode", daily)
-	game_scene.finished.connect(_on_rescue_finished.bind(daily))
-	game_scene.quit_requested.connect(_on_rescue_quit.bind(game_scene, daily))
+	if game_id == "block_puzzle":
+		game_scene.set("play_mode",mode)
+	elif game_id == "rescue_rush":
+		var custom: Dictionary = config.get("custom_data",{})
+		if not custom.is_empty():
+			game_scene.custom_level_data = custom.duplicate(true)
+	game_scene.set_meta("unjam_game_id",game_id)
+	game_scene.set_meta("unjam_level_number",level_number)
+	game_scene.set_meta("unjam_daily_mode",daily)
+	if game_id == "rescue_rush":
+		game_scene.finished.connect(_on_rescue_finished.bind(daily))
+		game_scene.quit_requested.connect(_on_rescue_quit.bind(game_scene,daily))
+	else:
+		game_scene.finished.connect(_on_multi_finished.bind(game_id,daily))
+		game_scene.quit_requested.connect(_on_multi_quit.bind(game_scene,game_id,daily))
+	current_surface = "game"
+	if content != null and is_instance_valid(content):
+		content.hide()
 	add_child(game_scene)
 	game_scene.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	game_scene.z_index = 100
 	active_game = game_scene
+	AnalyticsManager.track("game_scene_opened",{"game":game_id,"level":level_number,"daily":daily,"mode":mode})
 
 func _remove_active_game() -> void:
 	if active_game and is_instance_valid(active_game):
@@ -456,6 +576,9 @@ func _return_from_game(game_id: String, was_daily: bool, level_number: int = -1)
 
 
 func force_back_from_game() -> void:
+	if current_surface == "game_loading":
+		_cancel_game_loading()
+		return
 	# System Back and every in-game Back control resolve from the game that is
 	# actually open, never from a selector value that may have changed behind it.
 	var context := _active_game_context()
