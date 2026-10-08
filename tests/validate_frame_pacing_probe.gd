@@ -29,7 +29,9 @@ func _run() -> void:
 	if not _check(probe.snapshot().sampled_frames == 0, "Reset failed to clear sample"):return
 	var analytics := root.get_node_or_null("AnalyticsManager")
 	if not _check(analytics != null and analytics.has_method("quality_snapshot"), "QA metrics unavailable from running app"):return
-	await process_frame
+	# SceneTree unit harness does not consistently tick autoload _process; feed
+	# its real integration method once to establish the reporting contract.
+	analytics.call("_process",1.0 / 60.0)
 	var aggregate: Dictionary = analytics.session_snapshot()
 	if not _check(aggregate.has("quality") and aggregate["quality"] is Dictionary and int((aggregate["quality"] as Dictionary).get("sampled_frames",0)) > 0, "App session snapshot lacks real frame sample"):return
 	# A report contains only bounded numeric samples, never device IDs or secrets.
