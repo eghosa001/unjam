@@ -43,6 +43,7 @@ func _run() -> void:
 	var popup := main.get_node_or_null("PremiumLeaderboardPopup")
 	if not _check(popup != null,"Home rankings action did not open modal"):return
 	if not _check(_visible_controls(popup),"Modal missing close, period tabs, scroll area, retry or destination"):return
+	var ui_scale: float = float(popup.get("_ui_scale"))
 	# A real production regression: the global touch enhancer previously
 	# inflated 48px modal tabs to 88px+, clipping the leaderboard on phones.
 	var enhancer := main.get_node_or_null("UiTouchEnhancer")
@@ -53,8 +54,9 @@ func _run() -> void:
 		"LeaderboardGame_rescue_rush","LeaderboardGame_water_sort","LeaderboardGame_block_puzzle",
 		"LeaderboardRetry","LeaderboardPlay"]:
 		var action := popup.find_child(name,true,false) as Button
-		if not _check(action != null and action.size.y >= 44.0 and action.custom_minimum_size.y <= 56.0
-			and action.get_theme_font_size("font_size") <= 16
+		if not _check(action != null and action.size.y >= 44.0*ui_scale
+			and absf(action.custom_minimum_size.y - 48.0*ui_scale) < 3.0
+			and absf(float(action.get_theme_font_size("font_size")) - 14.0*ui_scale) < 2.0
 			and action.focus_mode == Control.FOCUS_ALL
 			and not action.accessibility_name.is_empty(),
 			"Leaderboard touch, clipping or screen-reader regression: %s (size=%s, min=%s, font=%d, focus=%d)" % [name,str(action.size if action != null else Vector2.ZERO),str(action.custom_minimum_size if action != null else Vector2.ZERO),action.get_theme_font_size("font_size") if action != null else 0,action.focus_mode if action != null else -1]):return
