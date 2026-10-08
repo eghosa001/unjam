@@ -188,10 +188,13 @@ func _build_reference_home(canvas: Control) -> void:
 	RefCanvas.add_collectible_star(canvas, Vector2(277, 84), 8.0, true, "HomeCurrencyStar3D")
 
 	_add_hero(canvas)
-	_add_quick_actions(canvas)
-	_add_quick_switch(canvas)
-	_add_world_progress(canvas)
+	_add_rank_summary(canvas)
+	_add_daily_feature(canvas)
+	_add_secondary_links(canvas)
 	_add_bottom_nav_reference(canvas)
+	if not CompetitionManager.snapshot_updated.is_connected(_on_home_ranking_updated):
+		CompetitionManager.snapshot_updated.connect(_on_home_ranking_updated)
+	_on_home_ranking_updated(CompetitionManager.snapshot)
 
 func _on_economy_balance_changed(new_balance: int, _delta: int, _reason: String) -> void:
 	if home_coin_button != null and is_instance_valid(home_coin_button):
@@ -254,13 +257,15 @@ func _add_hero(canvas: Control) -> void:
 		canvas,
 		Rect2(37, 285, 172, 48),
 		accent,
-		"CONTINUE • LEVEL %d" % level,
-		13,
+		"▦  CHOOSE GAME",
+		14,
 		OFF_WHITE,
-		Callable(self, "_continue_selected_game"),
+		Callable(self, "_open_game_selector"),
 		16
 	)
 	continue_button.name = "HomePrimaryAction"
+	continue_button.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
+	continue_button.tooltip_text = "Choose Rescue Rush, Water Sort or Block Puzzle"
 	primary_button = continue_button
 
 func _hero_cue(game_id: String) -> String:
@@ -288,6 +293,82 @@ func _add_hero_preview(canvas: Control, game_id: String) -> void:
 	art.configure(game_id, false, _home_dark())
 	RefCanvas.set_rect(art, 174, 129, 184, 204)
 	preview_root.add_child(art)
+
+# Keep Home focused on three decisions: choose a game, see your ranking,
+# or play the Daily challenge. Individual game cards and world progression
+# are available on Games; only compact secondary destinations stay here.
+func _add_rank_summary(canvas: Control) -> void:
+	var dark := _home_dark()
+	var panel := PanelContainer.new()
+	panel.name = "HomeRankSummaryCard"
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(
+		Color("#24293f") if dark else Color("#f0edfa"),
+		Color("#202538") if dark else Color("#e7e3f8"),
+		Color("#1b2030") if dark else Color("#ddd8f1"),
+		20, Color("#8b78d8"), 1, 0.12))
+	RefCanvas.set_rect(panel,21,365,346,162)
+	canvas.add_child(panel)
+	var title := _add_text(canvas,"YOUR WEEKLY RANK",Rect2(36,374,250,22),15,OFF_WHITE if dark else NAVY,true)
+	title.name = "HomeRankTitle"
+	var game_name := _add_text(canvas,_short_game_name(selected_game),Rect2(36,401,240,18),12,MUTED,false)
+	game_name.name = "HomeRankGameName"
+	var rank := _add_text(canvas,"—",Rect2(36,424,132,46),36,GOLD,true)
+	rank.name = "HomeRankValue"
+	rank.accessibility_name = "Weekly rank loading"
+	var progress := _add_text(canvas,"Refreshing rankings…",Rect2(177,436,175,27),12,MUTED,false)
+	progress.name = "HomeRankProgress"
+	progress.clip_text = true
+	var open := _add_action(canvas,Rect2(36,476,316,44),Color("#7659d4") if dark else Color("#6b52cb"),"★  VIEW LEADERBOARD",13,OFF_WHITE,Callable(self,"_open_compete"),14)
+	open.name = "HomeDailyGamesButton"
+	open.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
+	open.tooltip_text = "Expand real player rankings • today, weekly, all-time"
+
+func _on_home_ranking_updated(_data: Dictionary) -> void:
+	if figma_canvas == null or not is_instance_valid(figma_canvas):
+		return
+	var rank_label := figma_canvas.get_node_or_null("HomeRankValue") as Label
+	var progress_label := figma_canvas.get_node_or_null("HomeRankProgress") as Label
+	var name_label := figma_canvas.get_node_or_null("HomeRankGameName") as Label
+	if rank_label == null or progress_label == null:
+		return
+	var rank := CompetitionManager.game_weekly_rank(selected_game)
+	var levels := CompetitionManager.game_weekly_levels(selected_game)
+	rank_label.text = "#%d" % rank if rank > 0 else "—"
+	progress_label.text = "%d levels this week" % levels if rank > 0 else ("Complete a level to join" if not _data.is_empty() else "Rankings loading…")
+	rank_label.accessibility_name = "Your weekly rank is %d" % rank if rank > 0 else ("Not ranked yet" if not _data.is_empty() else "Rank loading")
+	if name_label != null:
+		name_label.text = _short_game_name(selected_game)
+
+func _add_daily_feature(canvas: Control) -> void:
+	var dark := _home_dark()
+	var daily_panel := PanelContainer.new()
+	daily_panel.name = "HomeDailyFeatureCard"
+	daily_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	daily_panel.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(
+		Color("#23342c") if dark else Color("#e4f7ea"),
+		Color("#1d2e28") if dark else Color("#d7f0df"),
+		Color("#182820") if dark else Color("#cbebd5"),
+		18,Color("#6fc69b"),1,0.08))
+	RefCanvas.set_rect(daily_panel,21,548,346,116)
+	canvas.add_child(daily_panel)
+	var title := _add_text(canvas,"DAILY CHALLENGE",Rect2(36,565,300,22),16,OFF_WHITE if dark else NAVY,true)
+	title.name = "HomeDailyFeatureTitle"
+	_add_text(canvas,"New puzzles every day",Rect2(36,606,165,24),12,MUTED,false)
+	var daily := _add_action(canvas,Rect2(221,598,131,51),Color("#368c65"),"PLAY DAILY",12,OFF_WHITE,Callable(self,"_open_daily_games"),14)
+	daily.name = "HomeDailyChallengeButton"
+	daily.tooltip_text = "Play today's puzzles and enter the Daily leaderboard"
+
+func _add_secondary_links(canvas: Control) -> void:
+	var dark := _home_dark()
+	var link_fill := Color("#353945") if dark else Color("#e7e8e7")
+	var link_text := OFF_WHITE if dark else NAVY
+	var goals := _add_action(canvas,Rect2(21,682,168,49),link_fill,"✦  GOALS",12,link_text,Callable(self,"_open_goals"),14)
+	goals.name = "HomeGoalsButton"
+	goals.tooltip_text = "Missions and collection progress"
+	var friends := _add_action(canvas,Rect2(199,682,168,49),link_fill,"♧  FRIENDS",12,link_text,Callable(self,"_open_friends"),14)
+	friends.name = "HomeFriendsButton"
+	friends.tooltip_text = "Friends and private rankings"
 
 func _add_quick_actions(canvas: Control) -> void:
 	# Secondary navigation still has game identity: one saturated game action and
@@ -590,6 +671,7 @@ func _open_compete() -> void:
 	if main == null:
 		return
 	FeedbackManager.tap()
+	main.set("_ranking_game", selected_game)
 	if main.has_method("show_leaderboard_popup"):
 		main.call("show_leaderboard_popup", "week")
 	elif main.has_method("build_compete_leaderboard"):
@@ -609,58 +691,10 @@ func _switch_card_style(game_id: String, accent: Color) -> StyleBox:
 	return RefCanvas.rounded_gradient3(card_fill.lightened(0.05), card_fill, card_fill.darkened(0.08), 16, border_color, 1, 0.12)
 
 func _refresh_home_selection() -> void:
-	if figma_canvas == null or not is_instance_valid(figma_canvas):
+	# Rebuild the selected hero and weekly-rank preview together, preventing a
+	# stale rank from a different game after a Games-screen selection.
+	if built:
 		build_home_launcher()
-		return
-	var level := _home_current_level(selected_game)
-	var world := MultiGameManager.world_for_game_level(selected_game, level)
-	var title := figma_canvas.get_node_or_null("HomeHeroGameTitle") as Label
-	if title != null:
-		title.text = _short_game_name(selected_game)
-		title.add_theme_font_size_override("font_size", 22 if selected_game == "block_puzzle" else 25)
-		var title_accent := Unjam3DTheme.game_accent(selected_game)
-		title.add_theme_color_override("font_color", title_accent.lightened(0.16) if _home_dark() else title_accent.darkened(0.20))
-		title.add_theme_color_override("font_outline_color", Color.TRANSPARENT)
-		title.add_theme_constant_override("outline_size", 0)
-	var meta := figma_canvas.get_node_or_null("HomeHeroGameMeta") as Label
-	if meta != null:
-		meta.text = "LEVEL %d • WORLD %d" % [level, world]
-	var top_level := figma_canvas.get_node_or_null("HomeSelectedGameLevel") as Label
-	if top_level != null:
-		top_level.text = "LV %d" % level
-	var top_stars := figma_canvas.get_node_or_null("HomeSelectedGameStars") as Label
-	if top_stars != null:
-		top_stars.text = "   %s" % _compact_number(MultiGameManager.total_stars(selected_game))
-	if primary_button != null and is_instance_valid(primary_button):
-		primary_button.text = "CONTINUE • LEVEL %d" % level
-	var old_preview := figma_canvas.get_node_or_null("HomeHeroPreviewRoot")
-	if old_preview != null:
-		figma_canvas.remove_child(old_preview)
-		old_preview.queue_free()
-	_add_hero_preview(figma_canvas, selected_game)
-	_sync_wide_home_stage()
-
-	# Quick Switch rebuilds the complete world showcase so its one-shot 3D art,
-	# world data, milestone and progress bar always match the selected game.
-	var old_world_progress := figma_canvas.get_node_or_null("HomeWorldProgressRoot")
-	if old_world_progress != null:
-		figma_canvas.remove_child(old_world_progress)
-		old_world_progress.queue_free()
-	_add_world_progress(figma_canvas)
-	var progress_accent := Unjam3DTheme.game_accent(selected_game)
-	var home_accent_glow := figma_canvas.get_node_or_null("HomeAccentGlow") as PanelContainer
-	if home_accent_glow != null:
-		home_accent_glow.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(progress_accent.r, progress_accent.g, progress_accent.b, 0.12 if not _home_dark() else 0.08), 120))
-
-	var accents := {
-		"rescue_rush": Color(0.13, 0.78, 0.39),
-		"water_sort": Color(0.10, 0.66, 1.0),
-		"block_puzzle": Color(0.78, 0.24, 1.0),
-	}
-	for id in accents.keys():
-		var card := figma_canvas.get_node_or_null("HomeSwitchCard_%s" % String(id)) as PanelContainer
-		if card != null:
-			card.add_theme_stylebox_override("panel", _switch_card_style(String(id), accents[id]))
 
 func _select_home_game(game_id: String) -> void:
 	if game_id == selected_game:

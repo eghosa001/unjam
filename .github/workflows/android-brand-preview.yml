@@ -1,0 +1,56 @@
+name: Android Branding Preview
+
+on:
+  pull_request:
+    paths:
+      - "tools/prepare_android_brand_assets.gd"
+      - "tests/validate_android_brand_raster.gd"
+      - "tests/validate_launcher_icon_safe_zone.gd"
+      - "store_assets/**"
+      - "assets/boot_mark.svg"
+      - "scenes/Boot.tscn"
+      - "export_presets.cfg"
+      - "project.godot"
+      - ".github/workflows/android-brand-preview.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-brand-preview-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Godot 4.7.2
+        uses: solarlabyrinth/action-setup-godot@v3
+        with:
+          version: 4.7.2-stable
+      - name: Generate branded Android assets
+        shell: bash
+        run: |
+          set -euxo pipefail
+          godot --headless --path . --script res://tools/prepare_android_brand_assets.gd
+          test -s assets/icon_user_512.png
+          test -s assets/icon_launcher_adaptive_432.png
+          test -s assets/splash_emblem_safe_432.png
+          test -s assets/icon_user_adaptive_432.png
+      - name: Validate icon safe zone and distortion
+        shell: bash
+        run: |
+          set -euxo pipefail
+          UNJAM_ANDROID_BRAND_RASTER_READY=1 godot --headless --path . --script res://tests/validate_android_brand_raster.gd
+      - name: Upload generated previews
+        uses: actions/upload-artifact@v4
+        with:
+          name: unjam-android-brand-previews
+          path: |
+            assets/icon_user_512.png
+            assets/icon_launcher_adaptive_432.png
+            assets/splash_emblem_safe_432.png
+            assets/icon_user_adaptive_432.png
+          retention-days: 7

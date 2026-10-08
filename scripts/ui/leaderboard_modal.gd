@@ -25,6 +25,8 @@ var _card: PanelContainer
 var _deadline: Timer
 var _loading := false
 var _failed := false
+var _ui_scale := 1.0
+var _inset: MarginContainer
 
 func configure(host: Control, dark_mode: bool, period: String = "week", game_id: String = "rescue_rush") -> void:
 	_host = host
@@ -131,14 +133,14 @@ func _build() -> void:
 	_card.add_theme_stylebox_override("panel",_style(card_color,Color("#7861ac") if _dark else Color("#ad91e0"),22))
 	center.add_child(_card)
 
-	var inset := MarginContainer.new()
+	_inset = MarginContainer.new()
 	for side in ["left","right","top","bottom"]:
-		inset.add_theme_constant_override("margin_%s" % side,18)
-	_card.add_child(inset)
+		_inset.add_theme_constant_override("margin_%s" % side,18)
+	_card.add_child(_inset)
 
 	_body = VBoxContainer.new()
 	_body.add_theme_constant_override("separation",11)
-	inset.add_child(_body)
+	_inset.add_child(_body)
 	var fg := Color("#f6f4fc") if _dark else Color("#253040")
 	var muted := Color("#b6c1d0") if _dark else Color("#52606f")
 
@@ -244,11 +246,53 @@ func _fit_viewport() -> void:
 	if _card == null or not is_instance_valid(_card):
 		return
 	var size := get_viewport().get_visible_rect().size
+	var portrait := size.y >= size.x
 	var short_screen := size.y < 620.0
-	_body.add_theme_constant_override("separation",6 if short_screen else 11)
+	# The old 540x790 cap made rankings appear as a tiny card on 1080px
+	# Android layouts. Occupy almost the entire portrait viewport while keeping
+	# real safe margins and a compact centered panel on wide tablets.
+	var width := minf(size.x - 24.0, size.x * 0.95)
+	var height := minf(size.y - 24.0, size.y * 0.94)
+	if not portrait:
+		width = minf(width, size.y * 1.08)
+	_ui_scale = clampf(minf(width / 510.0, height / 880.0), 0.85, 2.0)
+	_card.custom_minimum_size = Vector2(maxf(220.0,width),maxf(250.0,height))
+	_body.add_theme_constant_override("separation",int(9.0 * _ui_scale) if not short_screen else 5)
+	_game_bar.add_theme_constant_override("separation",int(7.0 * _ui_scale))
+	if _inset != null:
+		for side in ["left","right","top","bottom"]:
+			_inset.add_theme_constant_override("margin_%s" % side,int(14.0 * _ui_scale))
 	if _scroll != null:
-		_scroll.custom_minimum_size.y = 75 if short_screen else 145
-	_card.custom_minimum_size = Vector2(minf(540.0,maxf(240.0,size.x-28.0)),minf(790.0,maxf(290.0,size.y-32.0)))
+		_scroll.custom_minimum_size.y = maxf(60.0,96.0*_ui_scale)
+	var close := _card.find_child("LeaderboardClose",true,false) as Button
+	if close != null:
+		close.custom_minimum_size.x = 94*_ui_scale
+	for button_id in ["LeaderboardClose","LeaderboardRetry","LeaderboardPlay"]:
+		var button := _card.find_child(button_id,true,false) as Button
+		if button != null:
+			_scale_button(button,14)
+	for button in _period_buttons.values():
+		_scale_button(button as Button,14)
+	for button in _game_buttons.values():
+		_scale_button(button as Button,14)
+	_scale_label(_heading,23)
+	_scale_label(_summary,13)
+	_scale_label(_mine,17)
+	_scale_label(_status,12)
+	if _rows != null:
+		_render()
+
+func _scale_button(button: Button, baseline: int) -> void:
+	if button == null:
+		return
+	button.add_theme_font_size_override("font_size",int(baseline*_ui_scale))
+	button.custom_minimum_size.y = 48.0*_ui_scale
+	button.focus_mode = Control.FOCUS_ALL
+
+func _scale_label(label: Label, baseline: int) -> void:
+	if label != null:
+		label.add_theme_font_size_override("font_size",int(baseline*_ui_scale))
+
 
 func _set_period(period: String) -> void:
 	if period not in PERIODS or period == _period:
@@ -335,38 +379,38 @@ func _render() -> void:
 		var row = entries[i]
 		if not row is Dictionary:
 			continue
-		var name_text := String(row.get("name","PLAYER")).left(20)
+		var name_text := String(row.get("name","PLAYER")).left(30)
 		var score := maxi(0,int(row.get("score",0))) if today else maxi(0,int(row.get("levels_completed",0)))
 		var suffix := "PTS" if today else "LVL"
 		var panel := PanelContainer.new()
 		panel.name = "LeaderboardPlayer_%d" % (i+1)
-		panel.custom_minimum_size.y = 50
+		panel.custom_minimum_size.y = 57*_ui_scale
 		panel.add_theme_stylebox_override("panel",_style(Color("#303747") if _dark else Color("#f0edf6"),Color(accent_color,0.35),12))
 		_rows.add_child(panel)
 		var row_margin := MarginContainer.new()
-		row_margin.add_theme_constant_override("margin_left",12)
-		row_margin.add_theme_constant_override("margin_right",12)
+		row_margin.add_theme_constant_override("margin_left",int(12*_ui_scale))
+		row_margin.add_theme_constant_override("margin_right",int(12*_ui_scale))
 		panel.add_child(row_margin)
 		var lane := HBoxContainer.new()
-		lane.add_theme_constant_override("separation",10)
+		lane.add_theme_constant_override("separation",int(10*_ui_scale))
 		row_margin.add_child(lane)
-		var place := _label("#%d" % (i+1),15,accent_color)
-		place.custom_minimum_size.x = 40
+		var place := _label("#%d" % (i+1),int(16*_ui_scale),accent_color)
+		place.custom_minimum_size.x = 43*_ui_scale
 		lane.add_child(place)
-		var player := _label(name_text,15,Color("#f6f4fc") if _dark else Color("#253040"))
+		var player := _label(name_text,int(16*_ui_scale),Color("#f6f4fc") if _dark else Color("#253040"))
 		player.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		lane.add_child(player)
-		var points := _label("%d %s" % [score,suffix],13,Color("#c1d1de") if _dark else Color("#576472"))
+		var points := _label("%d %s" % [score,suffix],int(14*_ui_scale),Color("#c1d1de") if _dark else Color("#576472"))
 		points.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		points.custom_minimum_size.x = 87
+		points.custom_minimum_size.x = 93*_ui_scale
 		lane.add_child(points)
 		panel.accessibility_name = "Rank %d, %s, %d %s" % [i+1,name_text,score,suffix]
 		player.accessibility_name = panel.accessibility_name
 	if entries.is_empty():
-		var empty := _label("No scores yet. Be the first to play!" if today else "No campaign entries yet. Finish levels to join.",15,Color("#bdc8d7") if _dark else Color("#47556c"))
+		var empty := _label("No scores yet. Be the first to play!" if today else "No campaign entries yet. Finish levels to join.",int(15*_ui_scale),Color("#bdc8d7") if _dark else Color("#47556c"))
 		empty.name = "LeaderboardEmptyState"
 		empty.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		empty.custom_minimum_size.y = 85
+		empty.custom_minimum_size.y = 100*_ui_scale
 		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		empty.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		_rows.add_child(empty)
