@@ -673,16 +673,16 @@ func _figma_goal_row(canvas: Control, row: Dictionary, period: String, y: float)
 	var fill := Color("#f5f2ec") if not _dark() else Color("#27282b")
 	var border := Color(FIGMA_GREEN,0.34) if claimable else Color(FIGMA_GOLD,0.20)
 	_figma_card(canvas,"Goal/%s/%s" % [period,String(row.get("id",""))],Rect2(17,y,354,44),fill,border,13)
-	var goal_title := _figma_text(canvas,String(row.get("title","GOAL")),Rect2(30,y+5,168,15),11,FIGMA_INK)
+	var goal_title := _figma_text(canvas,String(row.get("title","GOAL")),Rect2(30,y+4,172,18),13,FIGMA_INK)
 	goal_title.name = "GoalTitle/%s/%s" % [period,String(row.get("id",""))]
-	_fit_single_line_control_text(goal_title,164.0,11,9)
+	_fit_single_line_control_text(goal_title,168.0,13,11)
 	var crowns := int(row.get("crowns",0))
 	var reward_text := "+%d" % int(row.get("coins",0))
 	if crowns > 0:
 		reward_text += " • ♛%d" % crowns
-	var goal_progress := _figma_text(canvas,"%d/%d • %s" % [int(row.get("progress",0)),int(row.get("target",1)),reward_text],Rect2(30,y+25,190,13),9,FIGMA_MUTED)
+	var goal_progress := _figma_text(canvas,"%d/%d • %s" % [int(row.get("progress",0)),int(row.get("target",1)),reward_text],Rect2(30,y+24,190,16),11,FIGMA_MUTED)
 	goal_progress.name = "GoalProgress/%s/%s" % [period,String(row.get("id",""))]
-	_fit_single_line_control_text(goal_progress,186.0,9,8)
+	_fit_single_line_control_text(goal_progress,186.0,11,10)
 	var action_text := "DONE" if claimed else ("CLAIM" if claimable else "GO")
 	var action_fill := Color("#7d8a94") if claimed else (FIGMA_GREEN if claimable else Color("#7a57e0"))
 	var action := _figma_button(canvas,"GoalAction/%s/%s" % [period,String(row.get("id",""))],action_text,Rect2(274,y,78,44),action_fill,Callable(),Color.WHITE,11,10)
@@ -1440,7 +1440,7 @@ func build_collection() -> void:
 	var rescued: Array = SaveManager.data.get("rescued",[])
 	_figma_card(canvas,"Garden",Rect2(17,429,354,96),Color("#fffef8"),Color(0.55,0.86,0.71,0.32),18)
 	_figma_text(canvas,"RESCUE GARDEN",Rect2(33,443,230,22),17,FIGMA_GOLD)
-	_figma_text(canvas,"%d friends • %d / %d upgrade levels" % [rescued.size(),EconomyManager.collection_total_levels(),EconomyManager.collection_max_total_levels()],Rect2(33,474,300,22),14,FIGMA_MUTED)
+	_figma_text(canvas,"%d friends • %d/%d upgrades" % [rescued.size(),EconomyManager.collection_total_levels(),EconomyManager.collection_max_total_levels()],Rect2(33,474,300,22),14,FIGMA_MUTED)
 	_figma_text(canvas,"+%d DAILY • +%d GIFT • ♛ %d" % [EconomyManager.collection_daily_bonus(),EconomyManager.garden_gift_amount(),int(SaveManager.data.get("crown_tokens",0))],Rect2(33,499,310,22),13,FIGMA_MUTED)
 
 	# Figma state transition: swipe upward through the Garden/Boost region to
@@ -1493,14 +1493,14 @@ func _figma_collection_tip(canvas: Control) -> void:
 	title.name = "CollectionTipTitle"
 	var current_value := _figma_text(canvas, "+%d DAILY  •  +%d GIFT" % [daily_bonus, gift_amount], Rect2(63, 639, 288, 20), 13, FIGMA_GOLD)
 	current_value.name = "CollectionTipValue"
-	var detail := _figma_text(canvas, "5 levels each • permanent effect per upgrade", Rect2(63, 664, 288, 20), 11, FIGMA_MUTED)
+	var detail := _figma_text(canvas, "PERMANENT BOOSTS • 5 LEVELS EACH", Rect2(63, 663, 288, 21), 12, FIGMA_MUTED)
 	detail.name = "CollectionTipDetail"
 	detail.clip_text = true
 	# Label minimum metrics are computed before font fitting. Reset the minimum
 	# and restore the authored card box afterwards so compact viewports cannot
 	# expand this line beyond the Collection card.
 	detail.custom_minimum_size = Vector2.ZERO
-	_fit_single_line_control_text(detail, 284.0, 11, 9)
+	_fit_single_line_control_text(detail, 284.0, 12, 11)
 	detail.position = Vector2(63,664)
 	detail.size = Vector2(288,20)
 
@@ -2044,7 +2044,7 @@ func show_playmate_sidekick(game_id: String = "") -> void:
 	_fit_single_line_control_text(level_badge, 82.0, 13, 10)
 
 	_figma_card(canvas, "SidekickTipCard", Rect2(17, 257, 354, 234), Color("#d8d4cc"), Color(accent, 0.42), 20)
-	_figma_text(canvas, "STRATEGY • LEVEL %d" % MultiGameManager.highest_level(_sidekick_game), Rect2(35, 278, 290, 20), 14, FIGMA_GOLD)
+	_figma_text(canvas, "LEVEL %d • %s" % [MultiGameManager.highest_level(_sidekick_game), LocalizationManager.localize("TIP")], Rect2(35, 278, 290, 20), 14, FIGMA_GOLD)
 	var tip := _figma_text(canvas, _sidekick_tip(), Rect2(35, 312, 300, 130), 15, _figma_theme_text(FIGMA_INK))
 	tip.name = "SidekickTip"
 	tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -2055,7 +2055,7 @@ func show_playmate_sidekick(game_id: String = "") -> void:
 	tip.position = Vector2(35, 312)
 	tip.size = Vector2(300, 130)
 	_fit_wrapped_text(tip, 296.0, 15, 12)
-	var identity := _figma_text(canvas, "SUGGESTED FROM YOUR CAMPAIGN PROGRESS", Rect2(35, 449, 318, 24), 12, _figma_theme_text(FIGMA_MUTED), true)
+	var identity := _figma_text(canvas, "BETA • OFFLINE COACH", Rect2(35, 449, 318, 24), 12, _figma_theme_text(FIGMA_MUTED), true)
 	identity.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	identity.clip_text = true
 	_fit_single_line_control_text(identity, 314.0, 12, 10)
