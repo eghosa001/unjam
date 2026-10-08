@@ -1402,7 +1402,7 @@ func _figma_daily_card(canvas: Control, game_id: String, y: float, collection_bo
 	daily_title.name = "DailyTitle_%s" % game_id
 	var title_fill := accent.lightened(0.22) if _dark() else accent.darkened(0.30)
 	var title_outline := Color("#151619") if _dark() else Color("#ffffff")
-	FigmaReferenceCanvas.style_display_title(daily_title, title_fill, title_outline, 1)
+	FigmaReferenceCanvas.style_display_title(daily_title, title_fill, title_outline, 2)
 	var detail := "CLEAR THE ROUTE" if game_id == "rescue_rush" else ("SORT THE COLOURS" if game_id == "water_sort" else "CLEAR THE BOARD")
 	_figma_text(canvas, detail, Rect2(33,y+47,182,18), 13, FIGMA_MUTED)
 	var reward := "+%d COINS" % (100 + collection_bonus) if game_id == "rescue_rush" else "+%d–%d COINS" % [125 + collection_bonus,175 + collection_bonus]
