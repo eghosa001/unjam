@@ -14,6 +14,12 @@ var _pending_game_launch: Dictionary = {}
 var _game_scene_art_ready := false
 var _game_scene_art_cache: Array[Texture2D] = []
 var _ready_game_scenes: Dictionary = {}
+var _game_scene_script_cache: Dictionary = {}
+const GAME_SCENE_SCRIPT_DEPENDENCIES := {
+	"res://scenes/Game.tscn":"res://scripts/game/rescue_rush_assisted.gd",
+	"res://scenes/WaterSort.tscn":"res://scripts/game/water_sort_10000.gd",
+	"res://scenes/BlockPuzzle.tscn":"res://scripts/game/block_puzzle_10000.gd",
+}
 const GAME_SCENE_ART_DEPENDENCIES := [
 	"res://assets/art/gameplay/water_screen_overlay.svg",
 	"res://assets/art/gameplay/rescue_screen_overlay.svg",
@@ -85,6 +91,14 @@ func _prime_game_scene(path: String) -> void:
 			if texture != null:
 				_game_scene_art_cache.append(texture)
 		_game_scene_art_ready = true
+	# Scene scripts and their inherited GDScript chain must be compiled on the
+	# UI thread before a background .tscn parse. Worker-side GDScript reload
+	# can orphan RefCounted resources when many loads are cancelled.
+	if not _game_scene_script_cache.has(path):
+		var script_path := String(GAME_SCENE_SCRIPT_DEPENDENCIES.get(path,""))
+		var compiled := load(script_path) as Script if not script_path.is_empty() else null
+		if compiled != null:
+			_game_scene_script_cache[path] = compiled
 	if ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
 		ResourceLoader.load_threaded_request(path)
 
