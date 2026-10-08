@@ -650,48 +650,7 @@ func force_back_from_game() -> void:
 		int(context.get("level_number", -1))
 	)
 
-func _submit_completed_daily_rank(game_id: String) -> void:
-	# Only completed daily puzzles, never exits or failed daily attempts, enter
-	# the competition. The server uses one entry per player/game/calendar day.
-	if not _daily_done(game_id) or active_game == null or not is_instance_valid(active_game):
-		return
-	if active_game.has_meta("unjam_daily_rank_submitted"):
-		return
-	var game := active_game
-	var metrics: Dictionary = {}
-	if game_id == "rescue_rush":
-		var moves := maxi(1, int(game.get("moves")))
-		var par := maxi(1, int(game.get("par_moves")))
-		var mistakes := maxi(0, int(game.get("mistakes_this_level")))
-		var hints := maxi(0, int(game.get("hints_used_this_level")))
-		var undos := maxi(0, int(game.get("undos_used_this_level")))
-		var penalty := mistakes + hints + undos
-		var stars := 1 if penalty > 1 or moves > par + 3 else (2 if penalty > 0 or moves > par else 3)
-		metrics = {"stars": stars, "moves": moves, "par": par, "mistakes": mistakes, "hints": hints, "undos": undos}
-	elif game_id == "water_sort":
-		var moves := maxi(1, int(game.get("moves")))
-		var par := maxi(1, int(game.get("par_moves")))
-		var colours := maxi(1, int(game.get("color_count")))
-		var stars := 3 if moves <= par else (2 if moves <= par + maxi(6, colours) else 1)
-		metrics = {"stars": stars, "moves": moves, "par": par}
-	elif game_id == "block_puzzle":
-		var placements := maxi(1, int(game.get("placements")))
-		var par := maxi(1, int(game.get("par_placements")))
-		var stars := 3 if placements <= par else (2 if placements <= par + 6 else 1)
-		metrics = {
-			"stars": stars, "placements": placements, "par": par,
-			"score": maxi(0, int(game.get("score"))),
-			"lines": maxi(0, int(game.get("lines_cleared")))
-		}
-	else:
-		return
-	game.set_meta("unjam_daily_rank_submitted", true)
-	CompetitionManager.submit_daily_result(game_id, metrics)
-
-
 func _on_rescue_finished(completed_level: int, was_daily: bool = false) -> void:
-	if was_daily:
-		_submit_completed_daily_rank("rescue_rush")
 	active_game = null
 	if was_daily:
 		_return_from_daily("rescue_rush")
@@ -713,8 +672,6 @@ func _on_rescue_quit(source_game: Control, was_daily: bool = false) -> void:
 	)
 
 func _on_multi_finished(completed_level: int, game_id: String, was_daily: bool = false) -> void:
-	if was_daily:
-		_submit_completed_daily_rank(game_id)
 	active_game = null
 	if was_daily:
 		_return_from_daily(game_id)
