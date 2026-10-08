@@ -129,8 +129,15 @@ func _run() -> void:
 		return _fail("Home Compete button is missing")
 	compete.pressed.emit()
 	await _frames(2)
-	if String(main.get("current_surface")) != "compete":
-		return _fail("Home Compete button did not open campaign rankings")
+	var rank_popup := main.get_node_or_null("PremiumLeaderboardPopup")
+	if String(main.get("current_surface")) != "home" or rank_popup == null:
+		return _fail("Home Rankings must open a modal without hiding Home")
+	if rank_popup.find_child("LeaderboardPeriod_week",true,false) == null:
+		return _fail("Home Rankings popup has no weekly leaderboard")
+	rank_popup.call("close")
+	await _frames(2)
+	if main.get_node_or_null("PremiumLeaderboardPopup") != null:
+		return _fail("Rankings popup cannot be dismissed")
 	main.call("build_home")
 	await _frames(2)
 	home = main.get_node_or_null("PremiumHome")
