@@ -460,8 +460,12 @@ func complete_level() -> void:
 	if completed: return
 	completed = true
 	var stars := 3 if moves <= par_moves else (2 if moves <= par_moves + maxi(6, color_count) else 1)
-	if daily_mode: MultiGameManager.complete_daily(GAME_ID, 100 + stars * 25)
-	else: MultiGameManager.complete_level(GAME_ID, level_number, stars, 25 + color_count * 2)
+	if daily_mode:
+		if MultiGameManager.complete_daily(GAME_ID, 100 + stars * 25):
+			MetaProgressionManager.record_daily_complete(GAME_ID, stars)
+			CompetitionManager.submit_daily_result(GAME_ID, {"stars":stars,"moves":maxi(1,moves),"par":maxi(1,par_moves)})
+	else:
+		MultiGameManager.complete_level(GAME_ID, level_number, stars, 25 + color_count * 2)
 	status_label.text = "LEVEL COMPLETE  •  %d ★" % stars
 	PremiumVisuals.burst(Vector2(540, 880), Color("5da9ff"), 24)
 	AnalyticsManager.track("water_sort_completed", {"level": level_number, "moves": moves, "stars": stars, "daily": daily_mode})

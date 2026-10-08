@@ -1,6 +1,7 @@
 extends Node
 
 signal snapshot_updated(snapshot: Dictionary)
+signal daily_snapshot_updated(snapshot: Dictionary)
 signal submission_finished(game_id: String, ok: bool, points: int)
 signal weekly_reward_claimed(coins: int, crowns: int)
 signal social_updated(snapshot: Dictionary)
@@ -11,8 +12,10 @@ const GAME_IDS := ["rescue_rush", "water_sort", "block_puzzle"]
 const REQUEST_TIMEOUT_SECONDS := 12.0
 
 var snapshot: Dictionary = {}
+var daily_snapshot: Dictionary = {}
 var social_snapshot: Dictionary = {}
 var _snapshot_in_flight := false
+var _daily_snapshot_in_flight := false
 var _social_in_flight := false
 var _social_game_id := "rescue_rush"
 
@@ -91,7 +94,7 @@ func game_weekly_stars(game_id: String) -> int:
 	return int(_game_player(game_id, "player_weekly").get("stars", 0))
 
 func daily_top() -> Array:
-	var value = snapshot.get("daily_top", [])
+	var value = daily_snapshot.get("daily_top", [])
 	return value if value is Array else []
 
 func weekly_top() -> Array:
@@ -99,7 +102,7 @@ func weekly_top() -> Array:
 	return value if value is Array else []
 
 func daily_rank() -> int:
-	var player = snapshot.get("player_daily", {})
+	var player = daily_snapshot.get("player_daily", {})
 	return int(player.get("rank", 0)) if player is Dictionary else 0
 
 func weekly_rank() -> int:
@@ -107,7 +110,7 @@ func weekly_rank() -> int:
 	return int(player.get("rank", 0)) if player is Dictionary else 0
 
 func daily_score() -> int:
-	var player = snapshot.get("player_daily", {})
+	var player = daily_snapshot.get("player_daily", {})
 	return int(player.get("score", 0)) if player is Dictionary else 0
 
 func weekly_score() -> int:
@@ -248,6 +251,32 @@ func refresh_snapshot() -> void:
 			snapshot_updated.emit(snapshot)
 	)
 
+func refresh_daily_snapshot() -> void:
+	# Daily challenge rankings are a separate server view from campaign progress.
+	# Never replace the campaign snapshot with daily score responses.
+	if OS.get_environment("UNJAM_FAST_VISUAL_AUDIT") == "1" or _daily_snapshot_in_flight:
+		return
+	var cloud_id := String(SaveManager.data.get("cloud_save_id", ""))
+	if cloud_id.length() != 64:
+		daily_snapshot_updated.emit({})
+		return
+	_daily_snapshot_in_flight = true
+	_request_json({
+		"action": "snapshot",
+		"cloud_save_id": cloud_id,
+		"display_name": display_name(),
+		"competition_day": DailyChallenge.date_key(),
+	}, func(ok: bool, _status: int, body: Dictionary) -> void:
+		_daily_snapshot_in_flight = false
+		if ok and bool(body.get("ok", false)):
+			daily_snapshot = body.duplicate(true)
+			daily_snapshot_updated.emit(daily_snapshot)
+		else:
+			# Empty payload explicitly signals network failure to the UI.
+			daily_snapshot_updated.emit({})
+	)
+
+
 func submit_campaign_progress(game_id: String, level_number: int, stars: int, first_clear: bool) -> void:
 	if game_id not in GAME_IDS:
 		return
@@ -293,8 +322,8 @@ func submit_daily_result(game_id: String, metrics: Dictionary) -> void:
 		var accepted := ok and bool(body.get("ok", false))
 		var points := int(body.get("score", 0)) if accepted else 0
 		if accepted and body.get("snapshot", {}) is Dictionary:
-			snapshot = (body.get("snapshot", {}) as Dictionary).duplicate(true)
-			snapshot_updated.emit(snapshot)
+			daily_snapshot = (body.get("snapshot", {}) as Dictionary).duplicate(true)
+			daily_snapshot_updated.emit(daily_snapshot)
 		submission_finished.emit(game_id, accepted, points)
 	)
 

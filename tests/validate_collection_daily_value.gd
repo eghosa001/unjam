@@ -58,9 +58,11 @@ func _run() -> void:
 	for token in ["submit_campaign_progress", "claim_weekly_reward", "game_all_time_top", "game_weekly_top", "already_claimed"]:
 		if not competition.contains(token):
 			failures.append("Campaign competition manager contract missing: %s" % token)
-	for source in [rescue, water, block]:
-		if source.contains("CompetitionManager.submit_daily_result"):
-			failures.append("Daily challenge still submits obsolete ranked Daily points")
+	for source in [rescue, water_base, block]:
+		if not source.contains("CompetitionManager.submit_daily_result"):
+			failures.append("Completed Daily game does not submit its score to the daily leaderboard")
+	if not competition.contains("daily_snapshot_updated") or not competition.contains('"action": "snapshot"'):
+		failures.append("Daily scores must load separately from weekly campaign progression")
 	if not multi.contains("CompetitionManager.submit_campaign_progress"):
 		failures.append("Campaign completion does not submit progression to rankings")
 	if not multi.contains('rewards["base_coins"] = safe_reward if bool(rewards.get("first_clear", false)) else 0'):
