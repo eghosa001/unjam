@@ -17,6 +17,8 @@ func _ready() -> void:
 	shade.color = Color(0.01, 0.02, 0.04, 0.83)
 	shade.mouse_filter = Control.MOUSE_FILTER_STOP
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	shade.position = Vector2.ZERO
+	shade.size = get_viewport().get_visible_rect().size
 	add_child(shade)
 	shade.gui_input.connect(func(event: InputEvent) -> void:
 		if event is InputEventMouseButton and event.pressed:
@@ -25,6 +27,8 @@ func _ready() -> void:
 	var center := CenterContainer.new()
 	center.name = "CloudRecoveryCenter"
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center.position = Vector2.ZERO
+	center.size = get_viewport().get_visible_rect().size
 	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(center)
 	var card := PanelContainer.new()
