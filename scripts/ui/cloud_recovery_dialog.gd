@@ -54,10 +54,12 @@ func _ready() -> void:
 	card.add_theme_stylebox_override("panel", UI.solid_box(Color("#1d2a3a"), 18, Color("#4c657e"), 2))
 	scroll.add_child(card)
 	var margins := MarginContainer.new()
+	margins.name = "CloudRecoveryMargins"
 	for side in ["left", "right", "top", "bottom"]:
 		margins.add_theme_constant_override("margin_" + side, 18)
 	card.add_child(margins)
 	var stack := VBoxContainer.new()
+	stack.name = "CloudRecoveryStack"
 	stack.add_theme_constant_override("separation", 9)
 	margins.add_child(stack)
 
