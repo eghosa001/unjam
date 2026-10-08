@@ -140,7 +140,7 @@ func _build() -> void:
 
 	_body = VBoxContainer.new()
 	_body.add_theme_constant_override("separation",11)
-	inset.add_child(_body)
+	_inset.add_child(_body)
 	var fg := Color("#f6f4fc") if _dark else Color("#253040")
 	var muted := Color("#b6c1d0") if _dark else Color("#52606f")
 
