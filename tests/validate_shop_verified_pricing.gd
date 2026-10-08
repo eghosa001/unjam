@@ -33,11 +33,18 @@ func _run() -> void:
 	if not _check(no_price.tooltip_text.contains("region"), "Unavailable SKU has no helpful explanation"):return
 	# The real Google Play async catalog signal must rebuild and enable only the
 	# product with an actual localized price.
+	var previous_overlay := overlay
+	var previous_button := no_price
 	store.set_localized_prices({id:"₦990.00"})
 	for _i in range(6):await process_frame
 	overlay = hub.get("overlay") as Control
+	if not _check(overlay == previous_overlay, "Catalog callback rebuilt the entire Shop overlay"):return
 	var priced := overlay.find_child("Buy_%s" % id,true,false) as Button
 	if not _check(priced != null and not priced.disabled and priced.text == "₦990.00", "Catalog update failed to activate the priced product"):return
+	if not _check(priced == previous_button and priced.pressed.get_connections().size() == 1, "In-place price refresh duplicated the Buy callback or replaced its button"):return
+	store.set_localized_prices({id:"₦1,090.00"})
+	for _i in range(3):await process_frame
+	if not _check(priced.text == "₦1,090.00" and priced.pressed.get_connections().size() == 1 and overlay == hub.get("overlay"), "Repeated catalog refresh caused a rebuild or duplicate callback"):return
 	var other := overlay.find_child("Buy_%s" % store.PRODUCT_COINS_LARGE,true,false) as Button
 	if not _check(other != null and other.disabled and other.text == "NO PRICE", "Unpriced neighboring SKU became buyable"):return
 	main.queue_free()
