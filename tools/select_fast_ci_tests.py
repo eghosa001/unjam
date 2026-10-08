@@ -246,6 +246,16 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
         explicit_tests.add("validate_frame_pacing_probe")
         return True
 
+    if p in {
+        "scripts/systems/store_manager.gd",
+        "scripts/ui/monetization_hub_3d.gd",
+    }:
+        add(groups, "monetization")
+        explicit_tests.add("validate_shop_verified_pricing")
+        if p == "scripts/ui/monetization_hub_3d.gd":
+            visual.add("shop")
+        return True
+
     progression_contracts = {
         "scripts/core/water_sort_progression.gd": "validate_water_constructive_solvability",
         "scripts/core/block_puzzle_progression.gd": "validate_block_progression_10000",

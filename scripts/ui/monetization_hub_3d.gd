@@ -215,6 +215,8 @@ func _add_product_exact(canvas: Control, product_id: String, rect: Rect2, displa
 		buy.mouse_default_cursor_shape = Control.CURSOR_ARROW
 		if buy_text == "UNAVAILABLE":
 			buy.tooltip_text = "Google Play purchases are not available right now"
+		elif buy_text == "NO PRICE":
+			buy.tooltip_text = "This product has no active regional Google Play price. Check Play availability or try again later."
 	canvas.add_child(buy)
 
 func _shop_product_visual_state(product_id: String, info: Dictionary) -> Dictionary:
@@ -245,6 +247,15 @@ func _shop_product_visual_state(product_id: String, info: Dictionary) -> Diction
 			"border":Color("#555d66") if _shop_dark() else Color("#b8bec5"),
 			"text_color":Color("#c7d0d9") if _shop_dark() else Color("#58636d"),
 			"font_size":12,
+		}
+	if price == "NO PRICE":
+		return {
+			"text":"NO PRICE",
+			"enabled":false,
+			"fill":Color("#463c32") if _shop_dark() else Color("#f1e9de"),
+			"border":Color("#957b5e"),
+			"text_color":Color("#f2d7b9") if _shop_dark() else Color("#78573b"),
+			"font_size":13,
 		}
 	return {
 		"text":price,
