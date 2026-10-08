@@ -1154,7 +1154,8 @@ func show_leaderboard_popup(period: String = "week") -> void:
 	# detour. Dismiss with Close/Android Back to return where you were.
 	var existing := get_node_or_null("PremiumLeaderboardPopup")
 	if existing != null and is_instance_valid(existing):
-		existing.queue_free()
+		existing.call("present_period",period)
+		return
 	var popup := LEADERBOARD_MODAL.new()
 	popup.name = "PremiumLeaderboardPopup"
 	popup.configure(self, _dark(), period, _ranking_game)
