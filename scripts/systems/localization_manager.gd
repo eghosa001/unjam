@@ -217,10 +217,38 @@ func _translate_control(node: Node) -> void:
 		return
 	if node is Label:
 		var label := node as Label
-		label.text = localize(label.text)
+		var translated := localize(label.text)
+		if translated != label.text:
+			label.text = translated
+			_fit_localized_single_line(label, translated)
 	elif node is Button:
 		var button := node as Button
-		button.text = localize(button.text)
+		var translated := localize(button.text)
+		if translated != button.text:
+			button.text = translated
+			_fit_localized_single_line(button, translated)
 	elif node is RichTextLabel:
 		var rich := node as RichTextLabel
 		rich.text = localize(rich.text)
+
+func _fit_localized_single_line(control: Control, translated: String) -> void:
+	# English Figma geometry is already fitted by the authoring helpers.
+	# Localized buttons are often longer; resize text *inside* the existing
+	# control instead of resizing hit zones over their neighbors.
+	if translated.contains("\n") or control.size.x < 24.0:
+		return
+	if control is Label and (control as Label).autowrap_mode != TextServer.AUTOWRAP_OFF:
+		return
+	var font := control.get_theme_font("font")
+	if font == null:
+		return
+	var current_size := control.get_theme_font_size("font_size")
+	var min_size := maxi(9, current_size - 4)
+	var available := maxf(18.0, control.size.x - (16.0 if control is Button else 4.0))
+	while current_size > min_size and font.get_string_size(translated, HORIZONTAL_ALIGNMENT_LEFT, -1, current_size).x > available:
+		current_size -= 1
+	control.add_theme_font_size_override("font_size", current_size)
+	if control is Label:
+		var label := control as Label
+		label.clip_text = true
+		label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
