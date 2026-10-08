@@ -264,6 +264,9 @@ func _fit_viewport() -> void:
 			_inset.add_theme_constant_override("margin_%s" % side,int(14.0 * _ui_scale))
 	if _scroll != null:
 		_scroll.custom_minimum_size.y = maxf(60.0,96.0*_ui_scale)
+	var close := _card.find_child("LeaderboardClose",true,false) as Button
+	if close != null:
+		close.custom_minimum_size.x = 94*_ui_scale
 	for button_id in ["LeaderboardClose","LeaderboardRetry","LeaderboardPlay"]:
 		var button := _card.find_child(button_id,true,false) as Button
 		if button != null:
