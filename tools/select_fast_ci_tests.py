@@ -208,6 +208,7 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
         explicit_tests.update({
             "validate_sidekick_progress_coaching",
             "validate_sidekick_checkpoint_coaching",
+            "validate_sidekick_legal_move_coaching",
         })
         return True
 
