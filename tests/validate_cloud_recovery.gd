@@ -1,11 +1,5 @@
 extends SceneTree
 
-class FakeCloudSave:
-	extends "res://scripts/systems/cloud_save_manager.gd"
-	var fixture: Dictionary = {}
-	func _request_json(_payload: Dictionary, callback: Callable) -> void:
-		callback.call(bool(fixture.get("ok", true)), int(fixture.get("status", 200)), fixture)
-
 func _initialize() -> void:
 	call_deferred("_run")
 
@@ -15,7 +9,12 @@ func _run() -> void:
 		_fail("SaveManager not available")
 		return
 	var old_data: Dictionary = save.data.duplicate(true)
-	var recovery := FakeCloudSave.new()
+	# Runtime load avoids parsing the inheritance tree before project autoloads.
+	var fake_script := load("res://tests/fake_cloud_save_manager.gd")
+	if fake_script == null:
+		_fail("Cloud recovery test fixture unavailable")
+		return
+	var recovery = fake_script.new()
 	recovery.set("_initial_reconciled", true)
 	var starting_id := recovery.recovery_code()
 	if starting_id.length() != 64:
