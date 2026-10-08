@@ -1549,10 +1549,32 @@ func _figma_collection_tip(canvas: Control) -> void:
 func _figma_collection_progress(canvas: Control, game_id: String, x: float) -> void:
 	var accent := Unjam3DTheme.game_accent(game_id)
 	_figma_card(canvas,"ProgressCard/%s" % game_id,Rect2(x,231,110,86),Color("#fffef7"),Color(accent,0.70),16)
-	_figma_text(canvas,_figma_short_game(game_id),Rect2(x+12,245,86,15),12,accent)
-	var level := _highest_level_for_game(game_id)
+	var game_title := _figma_text(canvas,_figma_short_game(game_id),Rect2(x+12,245,86,15),12,accent)
+	game_title.accessibility_name = MultiGameManager.display_name(game_id)
+	var level := MultiGameManager.highest_level(game_id)
 	var stars := MultiGameManager.total_stars(game_id)
-	_figma_text(canvas,"L%d • ★ %s" % [level,_compact_stat(stars)],Rect2(x+12,273,92,20),12,FIGMA_MUTED)
+	var complete := level > MultiGameManager.CAMPAIGN_LEVELS
+	var current_level := mini(level,MultiGameManager.CAMPAIGN_LEVELS)
+	var world := MultiGameManager.world_for_game_level(game_id,current_level)
+	var first := MultiGameManager.first_level_in_game_world(game_id,world)
+	var last := MultiGameManager.last_level_in_game_world(game_id,world)
+	var span := maxi(1,last-first+1)
+	var completed_in_world := span if complete else clampi(current_level-first,0,span)
+	var level_label := _figma_text(canvas,"L%d • ★ %s" % [current_level,_compact_stat(stars)],Rect2(x+12,273,92,20),12,FIGMA_MUTED)
+	level_label.accessibility_name = "%s: level %d; %d stars; world %d, %d of %d levels completed" % [MultiGameManager.display_name(game_id),current_level,stars,world,completed_in_world,span]
+	level_label.tooltip_text = level_label.accessibility_name
+	var bar := ProgressBar.new()
+	bar.name = "CollectionWorldProgress_%s" % game_id
+	bar.min_value = 0
+	bar.max_value = span
+	bar.value = completed_in_world
+	bar.show_percentage = false
+	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bar.add_theme_stylebox_override("background",FigmaReferenceCanvas.solid_box(Color("#cbd8d1") if not _dark() else Color("#465054"),4))
+	bar.add_theme_stylebox_override("fill",FigmaReferenceCanvas.solid_box(accent,4))
+	bar.tooltip_text = "%s world %d progress: %d of %d levels" % [MultiGameManager.display_name(game_id),world,completed_in_world,span]
+	FigmaReferenceCanvas.set_rect(bar,x+12,300,86,8)
+	canvas.add_child(bar)
 
 func _figma_short_game(game_id: String) -> String:
 	match game_id:
