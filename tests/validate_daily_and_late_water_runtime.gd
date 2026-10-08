@@ -80,7 +80,9 @@ func _run() -> void:
 	if bool(block_state.get("disabled", true)) or bool(rescue_state.get("disabled", true)):
 		return _fail(save_manager, original, "Completing Water Daily disabled another Daily game")
 	main.queue_free()
-	await process_frame
+	# Finish pending threaded scene callbacks and queued effect releases before
+	# the next standalone Water scene uses SceneTree.current_scene.
+	await _frames(12)
 
 	root.size = Vector2i(540, 960)
 	var packed := load("res://scenes/WaterSort.tscn") as PackedScene
@@ -117,10 +119,11 @@ func _run() -> void:
 	if board_rect.position.x < stage_rect.position.x - 1.0 or board_rect.end.x > stage_rect.end.x + 1.0:
 		return _fail(save_manager, original, "15-tube layout exceeds stage width: %s" % str(board_rect))
 
+	current_scene = null
 	water.queue_free()
 	save_manager.set("data", original)
 	save_manager.call("save")
-	await process_frame
+	await _frames(12)
 	print("DAILY_AND_LATE_WATER_RUNTIME_OK")
 	quit(0)
 
