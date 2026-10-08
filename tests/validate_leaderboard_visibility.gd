@@ -43,6 +43,23 @@ func _run() -> void:
 	var popup := main.get_node_or_null("PremiumLeaderboardPopup")
 	if not _check(popup != null,"Home rankings action did not open modal"):return
 	if not _check(_visible_controls(popup),"Modal missing close, period tabs, scroll area, retry or destination"):return
+	# A real production regression: the global touch enhancer previously
+	# inflated 48px modal tabs to 88px+, clipping the leaderboard on phones.
+	var enhancer := main.get_node_or_null("UiTouchEnhancer")
+	if not _check(enhancer != null,"Global UI enhancer missing"):return
+	enhancer.call("_apply_enhancements")
+	await _frames(3)
+	for name in ["LeaderboardClose","LeaderboardPeriod_today","LeaderboardPeriod_week","LeaderboardPeriod_all",
+		"LeaderboardGame_rescue_rush","LeaderboardGame_water_sort","LeaderboardGame_block_puzzle",
+		"LeaderboardRetry","LeaderboardPlay"]:
+		var action := popup.find_child(name,true,false) as Button
+		if not _check(action != null and action.size.y >= 44.0 and action.size.y < 70.0
+			and action.get_theme_font_size("font_size") <= 16
+			and action.focus_mode == Control.FOCUS_ALL
+			and not action.accessibility_name.is_empty(),
+			"Leaderboard touch, clipping or screen-reader regression: %s" % name):return
+		if not _check(action.action_mode == BaseButton.ACTION_MODE_BUTTON_RELEASE,
+			"Modal tab activates on press instead of release: %s" % name):return
 	var scroll := popup.find_child("LeaderboardPlayerScroll",true,false) as ScrollContainer
 	if not _check(scroll != null and scroll.get_v_scroll_bar().max_value > scroll.size.y,"20 players must scroll instead of clipping"):return
 	if not _check(popup.find_child("LeaderboardPlayer_20",true,false) != null,"20th player is missing"):return
@@ -67,7 +84,7 @@ func _run() -> void:
 	root.size = Vector2i(540,960)
 	await _frames(4)
 	var you := popup.find_child("LeaderboardOwnRank",true,false) as Label
-	if not _check(you != null and you.text.contains("#5"),"Weekly player rank is not visible"):return
+	if not _check(you != null and you.text.contains("#5") and you.accessibility_name.contains("5"),"Weekly player rank is not readable by screen readers"):return
 	# Rapid repeated taps must reuse, never stack two modal layers.
 	main.call("show_leaderboard_popup","week")
 	await _frames(1)
