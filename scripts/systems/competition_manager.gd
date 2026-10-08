@@ -10,18 +10,22 @@ signal social_action_finished(ok: bool, message: String)
 const FUNCTION_NAME := "unjam-competition"
 const GAME_IDS := ["rescue_rush", "water_sort", "block_puzzle"]
 const REQUEST_TIMEOUT_SECONDS := 12.0
+const DAILY_PENDING_KEY := "competition_pending_daily_results"
+const MAX_PENDING_DAILY_RESULTS := 9
 
 var snapshot: Dictionary = {}
 var daily_snapshot: Dictionary = {}
 var social_snapshot: Dictionary = {}
 var _snapshot_in_flight := false
 var _daily_snapshot_in_flight := false
+var _pending_daily_requests: Dictionary = {}
 var _social_in_flight := false
 var _social_game_id := "rescue_rush"
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	call_deferred("refresh_snapshot")
+	call_deferred("_flush_pending_daily_results")
 
 func display_name() -> String:
 	var custom := String(SaveManager.data.get("competition_display_name", "")).strip_edges()
@@ -237,6 +241,7 @@ func refresh_snapshot() -> void:
 	var cloud_id := String(SaveManager.data.get("cloud_save_id", ""))
 	if cloud_id.length() != 64:
 		return
+	_flush_pending_daily_results()
 	_snapshot_in_flight = true
 	_request_json({
 		"action": "progress_snapshot",
@@ -252,6 +257,8 @@ func refresh_snapshot() -> void:
 	)
 
 func refresh_daily_snapshot() -> void:
+	# A returning offline player must not lose yesterday's submitted result.
+	_flush_pending_daily_results()
 	# Daily challenge rankings are a separate server view from campaign progress.
 	# Never replace the campaign snapshot with daily score responses.
 	if OS.get_environment("UNJAM_FAST_VISUAL_AUDIT") == "1" or _daily_snapshot_in_flight:
@@ -307,25 +314,83 @@ func submit_campaign_progress(game_id: String, level_number: int, stars: int, fi
 func submit_daily_result(game_id: String, metrics: Dictionary) -> void:
 	if game_id not in GAME_IDS:
 		return
+	# Daily attempts are one-shot. Store the result before HTTP so temporary
+	# network loss, app suspension or force-close cannot silently erase a score.
+	# The server still validates the calendar day and deduplicates by player/game.
+	var key := "%s:%s" % [DailyChallenge.date_key(),game_id]
+	var pending := _pending_daily_results()
+	pending[key] = {
+		"day": DailyChallenge.date_key(),
+		"game_id": game_id,
+		"metrics": metrics.duplicate(true)
+	}
+	# Keep the queue bounded, even if a device is used without connectivity.
+	var keys: Array = pending.keys()
+	keys.sort()
+	while keys.size() > MAX_PENDING_DAILY_RESULTS:
+		pending.erase(keys.pop_front())
+	SaveManager.data[DAILY_PENDING_KEY] = pending
+	SaveManager.save()
+	_flush_pending_daily_results()
+
+func _pending_daily_results() -> Dictionary:
+	var raw = SaveManager.data.get(DAILY_PENDING_KEY,{})
+	return raw.duplicate(true) if raw is Dictionary else {}
+
+func _flush_pending_daily_results() -> void:
+	if OS.get_environment("UNJAM_FAST_VISUAL_AUDIT") == "1":
+		return
 	var cloud_id := String(SaveManager.data.get("cloud_save_id", ""))
 	if cloud_id.length() != 64:
-		submission_finished.emit(game_id, false, 0)
 		return
-	_request_json({
-		"action": "submit",
-		"cloud_save_id": cloud_id,
-		"display_name": display_name(),
-		"competition_day": DailyChallenge.date_key(),
-		"game_id": game_id,
-		"metrics": metrics.duplicate(true),
-	}, func(ok: bool, _status: int, body: Dictionary) -> void:
-		var accepted := ok and bool(body.get("ok", false))
-		var points := int(body.get("score", 0)) if accepted else 0
-		if accepted and body.get("snapshot", {}) is Dictionary:
-			daily_snapshot = (body.get("snapshot", {}) as Dictionary).duplicate(true)
-			daily_snapshot_updated.emit(daily_snapshot)
-		submission_finished.emit(game_id, accepted, points)
-	)
+	var pending := _pending_daily_results()
+	for key_value in pending.keys():
+		var key := String(key_value)
+		if _pending_daily_requests.has(key):
+			continue
+		var row = pending[key]
+		if not row is Dictionary:
+			continue
+		var day := String(row.get("day",""))
+		var game_id := String(row.get("game_id",""))
+		var metrics = row.get("metrics",{})
+		if game_id not in GAME_IDS or not metrics is Dictionary:
+			continue
+		# The server accepts only today's and adjacent UTC day, so do not
+		# repeatedly submit stale results after its 24-hour acceptance window.
+		var now_unix := Time.get_unix_time_from_datetime_string("%sT12:00:00" % DailyChallenge.date_key())
+		var day_unix := Time.get_unix_time_from_datetime_string("%sT12:00:00" % day)
+		if absf(now_unix - day_unix) > 86400.0:
+			pending.erase(key)
+			SaveManager.data[DAILY_PENDING_KEY] = pending
+			SaveManager.save()
+			continue
+		_pending_daily_requests[key] = true
+		_request_json({
+			"action": "submit",
+			"cloud_save_id": cloud_id,
+			"display_name": display_name(),
+			"competition_day": day,
+			"game_id": game_id,
+			"metrics": (metrics as Dictionary).duplicate(true),
+		}, func(ok: bool, _status: int, body: Dictionary) -> void:
+			_pending_daily_requests.erase(key)
+			var accepted := ok and bool(body.get("ok",false))
+			var points := int(body.get("score",0)) if accepted else 0
+			if accepted:
+				var latest := _pending_daily_results()
+				# Do not erase a newer result installed while this one was in flight.
+				if latest.has(key) and latest[key] == row:
+					latest.erase(key)
+					SaveManager.data[DAILY_PENDING_KEY] = latest
+					SaveManager.save()
+				if body.get("snapshot",{}) is Dictionary:
+					# A late response for yesterday must not replace today's list.
+					if day == DailyChallenge.date_key():
+						daily_snapshot = (body.get("snapshot",{}) as Dictionary).duplicate(true)
+						daily_snapshot_updated.emit(daily_snapshot)
+			submission_finished.emit(game_id, accepted, points)
+		)
 
 func claim_weekly_reward(game_id: String = "rescue_rush") -> void:
 	if game_id not in GAME_IDS:
