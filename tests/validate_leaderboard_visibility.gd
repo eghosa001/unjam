@@ -54,10 +54,15 @@ func _run() -> void:
 		var card := popup.find_child("LeaderboardModalCard",true,false) as Control
 		if not _check(card != null,"Leaderboard modal card disappeared during resize"):return
 		var bounds: Rect2 = card.get_global_rect()
+		# CanvasLayer coordinates use the actual visible logical viewport,
+		# which may differ from root.size under Godot canvas_items stretch.
+		var visible: Rect2 = popup.get_viewport().get_visible_rect()
 		if not _check(
-			bounds.position.x >= -1.0 and bounds.position.y >= -1.0
-			and bounds.end.x <= dimensions.x + 1.0 and bounds.end.y <= dimensions.y + 1.0,
-			"Leaderboard clips screen at %s: %s" % [str(dimensions),str(bounds)]
+			bounds.position.x >= visible.position.x - 1.0
+			and bounds.position.y >= visible.position.y - 1.0
+			and bounds.end.x <= visible.end.x + 1.0
+			and bounds.end.y <= visible.end.y + 1.0,
+			"Leaderboard clips logical viewport %s after %s request: %s" % [str(visible),str(dimensions),str(bounds)]
 		):return
 	root.size = Vector2i(540,960)
 	await _frames(4)
