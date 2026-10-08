@@ -514,6 +514,9 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 		# otherwise leave an otherwise visible launcher action unfocusable.
 		if not selected:
 			hit.focus_mode = Control.FOCUS_ALL
+			# The scene lifecycle can clear focus on freshly attached transparent
+			# touch targets. Restore it after deferred layout and visibility setup.
+			hit.set_deferred("focus_mode", Control.FOCUS_ALL)
 		hit.set_meta("unjam_authored_focus_mode", int(hit.focus_mode))
 
 func _add_pill(canvas: Control, rect: Rect2, fill: Color, text_value: String, font_size: int, text_color: Color, label_name: String = "") -> PanelContainer:
