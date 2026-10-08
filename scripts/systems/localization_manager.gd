@@ -158,9 +158,40 @@ func localize(text_value: String) -> String:
 		return String(table[text_value])
 	var result := text_value
 	for key in DYNAMIC_KEYS:
-		if table.has(key) and key in result:
-			result = result.replace(key, String(table[key]))
+		if table.has(key):
+			# Replace complete English tokens only. A plain substring replacement
+			# corrupts words such as INCOMPLETE -> IN<translated COMPLETE>.
+			result = _replace_whole_phrase(result, key, String(table[key]))
 	return result
+
+func _replace_whole_phrase(value: String, phrase: String, translation: String) -> String:
+	if phrase.is_empty() or phrase == translation:
+		return value
+	var output := ""
+	var cursor := 0
+	while cursor < value.length():
+		var found := value.find(phrase, cursor)
+		if found < 0:
+			output += value.substr(cursor)
+			break
+		var end := found + phrase.length()
+		var before := value.substr(found - 1, 1) if found > 0 else ""
+		var after := value.substr(end, 1) if end < value.length() else ""
+		var whole := (before.is_empty() or not _is_english_word_character(before)) and (after.is_empty() or not _is_english_word_character(after))
+		output += value.substr(cursor, found - cursor)
+		if whole:
+			output += translation
+			cursor = end
+		else:
+			output += value.substr(found, 1)
+			cursor = found + 1
+	return output
+
+func _is_english_word_character(character: String) -> bool:
+	if character.is_empty():
+		return false
+	var c := character.unicode_at(0)
+	return (c >= 65 and c <= 90) or (c >= 97 and c <= 122) or (c >= 48 and c <= 57) or c == 95
 
 func locale_badge() -> String:
 	return language_code.to_upper()
