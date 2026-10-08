@@ -362,7 +362,7 @@ func _handle_back() -> void:
 			hub.call("_close_shop")
 			return
 	var surface := _current_surface()
-	if surface == "game":
+	if surface in ["game", "game_loading"]:
 		if main.has_method("force_back_from_game"):
 			main.call("force_back_from_game")
 			return
