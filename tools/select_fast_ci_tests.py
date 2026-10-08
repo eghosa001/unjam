@@ -256,6 +256,18 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
             visual.add("shop")
         return True
 
+    if p == "scripts/ui/robust_main.gd":
+        # Navigation state changes are not purely cosmetic. Verify that a
+        # queued win/auto-advance cannot reopen a dismissed game, alongside
+        # normal Home, input and progression flows. Keep the batch bounded.
+        explicit_tests.update({
+            "validate_deferred_win_navigation",
+            "validate_home_return_atomic",
+            "validate_gameplay_interactions",
+            "validate_progression_transitions",
+        })
+        return True
+
     progression_contracts = {
         "scripts/core/water_sort_progression.gd": "validate_water_constructive_solvability",
         "scripts/core/block_puzzle_progression.gd": "validate_block_progression_10000",
