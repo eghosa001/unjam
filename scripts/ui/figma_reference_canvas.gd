@@ -509,12 +509,14 @@ static func premium_button(text_value: String, font_size: int, text_color: Color
 	var result := Button.new()
 	result.set_meta("unjam_figma_exact_geometry", true)
 	result.text = localized_text(text_value)
+	result.accessibility_name = result.text.strip_edges()
 	# Exact Figma buttons must never widen because of their text minimum.
 	# Long labels are fitted by the caller and clipped as a final safety net.
 	result.clip_text = true
 	result.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	result.custom_minimum_size = Vector2.ZERO
-	result.focus_mode = Control.FOCUS_NONE
+	# Keyboard/gamepad focus is required for assistive navigation.
+	result.focus_mode = Control.FOCUS_ALL
 	result.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	result.add_theme_font_override("font", Unjam3DTheme.strong_font())
 	result.add_theme_font_size_override("font_size", font_size)
@@ -538,7 +540,8 @@ static func premium_button(text_value: String, font_size: int, text_color: Color
 	result.add_theme_stylebox_override("normal", normal)
 	result.add_theme_stylebox_override("hover", hover)
 	result.add_theme_stylebox_override("pressed", pressed)
-	result.add_theme_stylebox_override("focus", normal)
+	# Visible focus ring instead of a focus state indistinguishable from normal.
+	result.add_theme_stylebox_override("focus", flat_gloss(fill.lightened(0.13), radius, Color(1.0, 0.91, 0.57, 0.95), 1.0, 0.18))
 	result.add_theme_stylebox_override("disabled", disabled)
 	result.add_theme_color_override("font_disabled_color", Color(resolved_text.r, resolved_text.g, resolved_text.b, 0.62))
 	result.button_down.connect(func() -> void:
@@ -572,7 +575,9 @@ static func label(text_value: String, font_size: int, color: Color, bold := fals
 static func button(text_value: String, font_size: int, text_color: Color, fill: Color, radius: float, border: Color = Color.TRANSPARENT, border_width: float = 0.0) -> Button:
 	var result := Button.new()
 	result.text = localized_text(text_value)
-	result.focus_mode = Control.FOCUS_NONE
+	result.accessibility_name = result.text.strip_edges()
+	# Keyboard/gamepad focus is required for assistive navigation.
+	result.focus_mode = Control.FOCUS_ALL
 	result.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	result.add_theme_font_override("font", Unjam3DTheme.strong_font())
 	result.add_theme_font_size_override("font_size", font_size)
