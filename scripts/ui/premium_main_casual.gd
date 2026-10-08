@@ -5,6 +5,7 @@ const GardenUpgradePreviewScene = preload("res://scripts/ui/garden_upgrade_previ
 const META_ART_SCRIPT = preload("res://scripts/ui/unjam_meta_art.gd")
 const GAME_ART_SCRIPT = preload("res://scripts/ui/unjam_2d_game_art.gd")
 const SIDEKICK_COACH = preload("res://scripts/systems/sidekick_coach.gd")
+const LEADERBOARD_MODAL = preload("res://scripts/ui/leaderboard_modal.gd")
 const UNJAM_WORDMARK: Texture2D = preload("res://assets/art/brand/unjam_wordmark.svg")
 const WIDE_META_ART := {
 	"collection": preload("res://assets/art/meta_wide/collection.svg"),
@@ -1148,6 +1149,18 @@ func _show_current_tutorial() -> void:
 	if shell != null and shell.has_method("show_tutorial"):
 		shell.call("show_tutorial", _settings_help_game)
 
+func show_leaderboard_popup(period: String = "week") -> void:
+	# A true modal above the current surface: no buried buttons or navigation
+	# detour. Dismiss with Close/Android Back to return where you were.
+	var existing := get_node_or_null("PremiumLeaderboardPopup")
+	if existing != null and is_instance_valid(existing):
+		existing.queue_free()
+	var popup := LEADERBOARD_MODAL.new()
+	popup.name = "PremiumLeaderboardPopup"
+	popup.configure(self, _dark(), period, _ranking_game)
+	add_child(popup)
+
+
 func build_daily_games() -> void:
 	current_surface = "daily"
 	_remove_active_game()
@@ -1164,6 +1177,12 @@ func build_daily_games() -> void:
 	_figma_daily_card(canvas, "block_puzzle", 363, bonus)
 	_figma_daily_progress(canvas)
 	_figma_daily_tip(canvas, bonus)
+	# Prominent one-tap leaderboard access, above the persistent bottom nav.
+	# Not hidden behind Goals, Friends or Settings; daily scores remain
+	# distinct from the campaign weekly/all-time rankings.
+	var board := _figma_button(canvas,"DailyLeaderboardOpen","★ VIEW LEADERBOARD",Rect2(31,692,328,48),Color("#7052d8"),Callable(self,"show_leaderboard_popup").bind("today"),Color.WHITE,13,14)
+	board.tooltip_text = "Open today's player rankings, switch to weekly or all-time"
+	board.accessibility_name = "View today's challenge leaderboard"
 	# Daily is a primary destination; campaign rankings remain a separate Compete flow.
 	_figma_bottom_nav(canvas, "daily")
 
@@ -1270,8 +1289,8 @@ func build_compete_leaderboard(refresh_remote: bool = true) -> void:
 	daily.tooltip_text = "Daily challenges, check-in and rewards"
 	var friends_rank := _figma_button(canvas,"CompetitionFriendsButton","FRIENDS",Rect2(140,598,103,44),Color("#7a57e0"),Callable(self,"build_friends"),Color.WHITE,12,11)
 	friends_rank.tooltip_text = "Compare campaign progress with friends"
-	var refresh := _figma_button(canvas,"CompetitionRefreshButton","REFRESH",Rect2(258,598,93,44),accent,Callable(self,"_refresh_competition_rankings"),Color.WHITE,12,10)
-	refresh.tooltip_text = "Refresh campaign rankings"
+	var refresh := _figma_button(canvas,"CompetitionRefreshButton","TOP 20",Rect2(258,598,93,44),accent,Callable(self,"show_leaderboard_popup").bind("week"),Color.WHITE,12,10)
+	refresh.tooltip_text = "Open the full scrollable leaderboard of up to 20 players"
 
 	var reward := CompetitionManager.previous_week_reward(_ranking_game)
 	if bool(reward.get("eligible", false)) and not bool(reward.get("claimed", false)):
