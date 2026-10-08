@@ -6,6 +6,7 @@ func _initialize() -> void:
 func _run() -> void:
 	OS.set_environment("UNJAM_FAST_VISUAL_AUDIT","1")
 	var save = root.get_node("SaveManager")
+	var today: String = String(root.get_node("DailyChallenge").call("date_key"))
 	var original_id: String = String(save.data.get("cloud_save_id",""))
 	var original_pending = save.data.get("competition_pending_daily_results",{})
 	save.data["cloud_save_id"] = "a".repeat(64)
@@ -19,7 +20,7 @@ func _run() -> void:
 	agent.call("submit_daily_result","rescue_rush",rescue)
 	var pending: Dictionary = save.data.get("competition_pending_daily_results",{})
 	if not _check(pending.size() == 1,"Daily score not saved before HTTP"):return
-	var key := "%s:rescue_rush" % DailyChallenge.date_key()
+	var key := "%s:rescue_rush" % today
 	if not _check(pending.has(key),"Daily submission key is not stable"):return
 	agent.call("submit_daily_result","rescue_rush",{"stars":2,"moves":8,"par":7})
 	pending = save.data.get("competition_pending_daily_results",{})
@@ -44,9 +45,9 @@ func _run() -> void:
 
 	var second: Dictionary = (agent.get("pending_requests") as Array)[1]
 	var second_payload: Dictionary = second["payload"]
-	(second["callback"] as Callable).call(true,200,{"ok":true,"score":980,"snapshot":{"ok":true,"day":DailyChallenge.date_key(),"daily_top":[]}})
+	(second["callback"] as Callable).call(true,200,{"ok":true,"score":980,"snapshot":{"ok":true,"day":today,"daily_top":[]}})
 	var retry: Dictionary = (agent.get("pending_requests") as Array)[2]
-	(retry["callback"] as Callable).call(true,200,{"ok":true,"score":960,"snapshot":{"ok":true,"day":DailyChallenge.date_key(),"daily_top":[]}})
+	(retry["callback"] as Callable).call(true,200,{"ok":true,"score":960,"snapshot":{"ok":true,"day":today,"daily_top":[]}})
 	if not _check((save.data.get("competition_pending_daily_results",{}) as Dictionary).is_empty(),"Successful server acknowledgements did not drain the queue"):return
 	if not _check((agent.get("daily_snapshot") as Dictionary).has("day"),"Leaderboard state did not refresh when offline results synced"):return
 
