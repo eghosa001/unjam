@@ -262,9 +262,17 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
         # normal Home, input and progression flows. Keep the batch bounded.
         explicit_tests.update({
             "validate_deferred_win_navigation",
+            "validate_async_game_scene_launch",
             "validate_home_return_atomic",
             "validate_gameplay_interactions",
             "validate_progression_transitions",
+        })
+        return True
+
+    if p == "scripts/ui/ux_shell_premium.gd":
+        explicit_tests.update({
+            "validate_async_game_scene_launch",
+            "validate_modal_back_priority",
         })
         return True
 

@@ -86,7 +86,9 @@ func load_level() -> void:
 	_begin_attempt()
 
 func _show_level_intro() -> void:
-	if daily_mode or premium_feedback == null or not is_instance_valid(premium_feedback):
+	# This callback is deferred during _ready. Rapid Back/Home can detach the
+	# scene before the callback executes; never access its viewport off-tree.
+	if not is_inside_tree() or daily_mode or premium_feedback == null or not is_instance_valid(premium_feedback) or not premium_feedback.is_inside_tree():
 		return
 	var milestone := String(level_profile.get("milestone", "normal"))
 	if milestone == "normal":

@@ -16,7 +16,9 @@ func _visual_scale() -> float:
 	return clampf(size.x / 540.0, 1.0, 2.5)
 
 func show_banner(text_value: String, accent: Color, center: Vector2, width: float = 214.0) -> void:
-	if text_value.is_empty():
+	# A queued game effect can outlive a rapidly dismissed scene. Creating UI
+	# nodes or requesting the viewport while detached emits engine errors.
+	if not is_inside_tree() or text_value.is_empty():
 		return
 	# Level-intro milestone banners use the compact 176px treatment. Keep those
 	# out of live puzzle cells: Block already carries milestone identity in its
@@ -173,5 +175,7 @@ func _spawn_spark_burst(center: Vector2, accent: Color, amount: int = 8) -> void
 		fade.finished.connect(spark.queue_free)
 
 func _reduced_motion() -> bool:
+	if not is_inside_tree():
+		return true
 	var motion := get_node_or_null("/root/MotionSystem")
 	return motion != null and bool(motion.call("reduced"))

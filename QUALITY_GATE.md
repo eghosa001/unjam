@@ -140,3 +140,17 @@ transition executes, the stale callback must do nothing. Test repeated
 completion, all three games, and switching screens within the same frame.
 Never count "all green CI" as evidence of this race unless
 `validate_deferred_win_navigation` ran successfully.
+
+## Main-thread scene loading and navigation resilience
+
+All three gameplay launches must never invoke `ResourceLoader.load_threaded_get`
+while `THREAD_LOAD_IN_PROGRESS`: it blocks the main thread and makes a
+rapid phone tap appear frozen. Cached scenes may open immediately; a cold
+scene must provide a visible, accessible progress/cancel state, use nonblocking
+per-frame polling and a bounded timeout with Retry. Android Back cancels the
+loading request. A canceled or superseded load must not instantiate a game
+when its resource finishes later. Restore Water/Block campaign checkpoints if
+a Daily loading attempt is abandoned before starting. Run
+`validate_async_game_scene_launch`, gameplay interaction checks and viewport
+checks for affected visual changes. Collect physical-device screen transition
+latency separately before certifying production smoothness.
