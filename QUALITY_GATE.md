@@ -49,8 +49,10 @@ necessary release check to make CI green.
 Changes to `scripts/systems/localization_manager.gd` must rerun the locale integrity
 and reversible Settings selector tests. Changes to `scripts/systems/sidekick_coach.gd`
 rerun deterministic advice tests. Changes to the shared Settings/Sidekick surface
-must run both checks plus normal secondary-screen viewport, touch-zone and
-visual-fit checks. A button added to the Figma reference canvas must not obscure
+must manually run the targeted language/Sidekick checks alongside the existing
+change-scoped secondary-screen viewport, touch-zone and visual-fit checks;
+keep the fast CI policy's six-test per-area budget. A button added to the Figma
+reference canvas must not obscure
 an adjacent label at any tested viewport, even if every function still responds.
 
 Test success only verifies the selected locales and sample states. Before a
