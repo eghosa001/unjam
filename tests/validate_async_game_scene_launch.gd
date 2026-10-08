@@ -48,7 +48,9 @@ func _run() -> void:
 	await _frames(10)
 	if not _check(main.get("active_game") == null and main.find_child("GameLoadingCard",true,false) == null, "Stale loader survived Home"):return
 	main.queue_free()
-	await process_frame
+	# Let queued-free gameplay effects, detached loaders and deferred intro
+	# callbacks settle before SceneTree teardown and leak accounting.
+	await _frames(12)
 	print("ASYNC_GAME_SCENE_LAUNCH_OK: loading cancellation, concurrent requests, route recovery and rapid navigation")
 	quit(0)
 
