@@ -16,7 +16,7 @@ be verified with its own evidence. Do not claim 9+ without a device/screenshot r
 | Audio and haptics | No crackle, clipping, unexpected volume spikes or feedback during muted/reduced-motion modes | Real Android speaker/headphone test |
 | Performance | 60fps target on supported representative Android phones; p95 gameplay frame <=16.7ms where hardware supports 60Hz; no sustained node growth after 100 navigations | On-device profiler capture |
 | Monetization | Play catalog live in enabled regions; all purchases, pending/cancel/restore/refund/repeat consumables; rewarded callbacks award once | License tester and Play console evidence |
-| Privacy | Test denied/accepted/required consent flows, fail-closed ads, and policy/Data Safety matching shipped SDKs | On-device consent test and listing audit |
+| Privacy | Require a current-device UMP/provider result before production ads, reject cached and cloud-imported consent; test required/obtained/not-required flows and listing/Data Safety compliance | Device-local consent CI contract, on-device UMP replay and listing audit |
 | Save and progression | No destructive remove-before-rename; recover valid main, pending or backup after crashes; preserve purchases and selected locale through resets; verify resume, offline saves and 10,000-level targets | Atomic save/failed-write and reset-language CI, progression tests, device recovery checklist |
 | Localization | All supported language locales have readable controls and translated key journeys; no accidental substring replacements; switching a saved language restores English correctly and keeps assistive labels in sync | Localization integrity + Settings language-switch runtime contract + locale screenshots |
 | Playmate Sidekick | For matching campaign checkpoints, validate Water transfers and Block tray fit before declaring no moves; show retry/undo recovery rather than irrelevant strategy, never guess a winning move | Sidekick progress and no-move checkpoint contracts, locale integrity, viewport and human gameplay review |
@@ -73,3 +73,15 @@ files, including an intentionally obstructed rename.
 User-selected locale belongs to preferences: reset progress and cloud backup
 must preserve it. Player coins and existing Play purchase ledgers must survive
 a gameplay reset, and local/cloud files must not become uploadable logs.
+
+## Consent does not transfer with game progress
+
+Consent state is installation/session-specific; cloud progress must never
+serialize, restore, or imply advertising permission from another device.
+Previously uploaded backups containing `privacy_consent_status` must be ignored
+on restore. Production ad requests remain blocked until a consent provider
+confirms `obtained` or `not_required` in the current running session; cached
+approval from a prior run cannot open the gate while a new check is pending.
+Local closed-test demo ad units remain covered by their separate explicit
+project setting and must be disabled in release builds. Verify real UMP flows
+on Android before advertising the app as production-compliant.
