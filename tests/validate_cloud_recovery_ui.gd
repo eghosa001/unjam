@@ -30,9 +30,16 @@ func _run() -> void:
 		if card == null:
 			_fail("Recovery card missing inside scroll window")
 			return
-		var area := Rect2(Vector2.ZERO, Vector2(size_value))
-		if not area.encloses(scroll.get_global_rect()):
-			_fail("Recovery scroll window escapes screen at %s: %s" % [str(size_value), str(scroll.get_global_rect())])
+		# CanvasLayer controls use the logical Godot viewport coordinate system.
+		# root.size is the requested stress size, not necessarily the logical
+		# viewport after project stretch scaling.
+		var area := Rect2(Vector2.ZERO, popup.get_viewport().get_visible_rect().size)
+		var fitted := Rect2(scroll.position, scroll.size * scroll.scale)
+		if not area.encloses(fitted):
+			_fail("Recovery window escapes logical viewport at %s: fitted=%s available=%s" % [str(size_value), str(fitted), str(area)])
+			return
+		if fitted.size.x < area.size.x * 0.68 or fitted.size.y < area.size.y * 0.45:
+			_fail("Recovery window too small for legible text at %s: fitted=%s available=%s" % [str(size_value), str(fitted), str(area)])
 			return
 		if popup.get_node_or_null("CloudRecoveryCenter/CloudRecoveryScroll/CloudRecoveryCard/MarginContainer/VBoxContainer/RecoveryCodeInput") == null:
 			_fail("Recovery code entry is missing")
