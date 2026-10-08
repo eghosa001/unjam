@@ -233,7 +233,7 @@ func _play_chime(notes: Array, duration: float, volume: float, brightness: float
 	target.stream = stream
 	target.play()
 
-static func _voice_headroom_db(active_voices: int) -> float:
+func _voice_headroom_db(active_voices: int) -> float:
 	return minf(MAX_VOICE_DUCK_DB, maxf(0.0, float(active_voices)) * ACTIVE_VOICE_DUCK_DB)
 
 func _next_available_sfx_player() -> AudioStreamPlayer:
