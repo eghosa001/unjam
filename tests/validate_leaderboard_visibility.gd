@@ -46,6 +46,21 @@ func _run() -> void:
 	var scroll := popup.find_child("LeaderboardPlayerScroll",true,false) as ScrollContainer
 	if not _check(scroll != null and scroll.get_v_scroll_bar().max_value > scroll.size.y,"20 players must scroll instead of clipping"):return
 	if not _check(popup.find_child("LeaderboardPlayer_20",true,false) != null,"20th player is missing"):return
+	# The foreground sheet must remain within the visible Android viewport:
+	# compact phones, landscape rotations, and tall tablet windows.
+	for dimensions in [Vector2i(432,936),Vector2i(960,540),Vector2i(1536,2048)]:
+		root.size = dimensions
+		await _frames(4)
+		var card := popup.find_child("LeaderboardModalCard",true,false) as Control
+		if not _check(card != null,"Leaderboard modal card disappeared during resize"):return
+		var bounds: Rect2 = card.get_global_rect()
+		if not _check(
+			bounds.position.x >= -1.0 and bounds.position.y >= -1.0
+			and bounds.end.x <= dimensions.x + 1.0 and bounds.end.y <= dimensions.y + 1.0,
+			"Leaderboard clips screen at %s: %s" % [str(dimensions),str(bounds)]
+		):return
+	root.size = Vector2i(540,960)
+	await _frames(4)
 	var you := popup.find_child("LeaderboardOwnRank",true,false) as Label
 	if not _check(you != null and you.text.contains("#5"),"Weekly player rank is not visible"):return
 	# Rapid repeated taps must reuse, never stack two modal layers.
