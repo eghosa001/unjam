@@ -16,7 +16,7 @@ func _run() -> void:
 		return
 	var recovery = fake_script.new()
 	recovery.set("_initial_reconciled", true)
-	var starting_id := recovery.recovery_code()
+	var starting_id: String = String(recovery.recovery_code())
 	if starting_id.length() != 64:
 		_revert(recovery, save, old_data)
 		_fail("Current recovery identity is missing")
@@ -50,7 +50,7 @@ func _run() -> void:
 	recovery.restore_from_recovery_code(remote_id, func(ok: bool, _message: String) -> void:
 		callbacks.append(ok)
 	)
-	var restored := callbacks == [true] and recovery.recovery_code() == remote_id and int(save.data.get("highest_level", 0)) == remote_level
+	var restored: bool = callbacks == [true] and recovery.recovery_code() == remote_id and int(save.data.get("highest_level", 0)) == remote_level
 	var kept_purchases := (save.data.get("purchased_products", []) as Array) == purchased
 	_revert(recovery, save, old_data)
 	if not restored or not kept_purchases:
