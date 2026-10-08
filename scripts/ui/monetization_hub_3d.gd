@@ -360,6 +360,51 @@ func _add_text(canvas: Control, text_value: String, rect: Rect2, font_size: int,
 	label.size = rect.size
 	return label
 
+func _on_catalog_changed() -> void:
+	# Billing returns localized prices asynchronously. Updating five tiny
+	# controls is cheaper and more stable than deleting/rebuilding the complete
+	# Shop canvas and CanvasLayer during price or region refresh.
+	if layer != null and is_instance_valid(layer):
+		call_deferred("_refresh_live_product_buttons")
+
+func _refresh_live_product_buttons() -> void:
+	if overlay == null or not is_instance_valid(overlay):
+		return
+	for raw_id in StoreManager.PRODUCTS.keys():
+		var product_id := String(raw_id)
+		var button := overlay.find_child("Buy_%s" % product_id,true,false) as Button
+		if button == null:
+			continue
+		var info: Dictionary = StoreManager.PRODUCTS[product_id]
+		var state := _shop_product_visual_state(product_id,info)
+		var label := String(state.get("text","UNAVAILABLE"))
+		var enabled := bool(state.get("enabled",false))
+		if button.text == label and button.disabled == not enabled:
+			continue
+		var fill: Color = state.get("fill",Color("#30343a"))
+		var border: Color = state.get("border",Color("#555d66"))
+		var ink: Color = state.get("text_color",Color("#c8d0d8"))
+		var readable := FigmaReferenceCanvas.accessible_text_color(ink,fill)
+		button.text = label
+		button.accessibility_name = "%s: %s" % [String(info.get("title",product_id)),label]
+		button.add_theme_font_size_override("font_size",int(state.get("font_size",13)))
+		button.add_theme_stylebox_override("normal",FigmaReferenceCanvas.flat_gloss(fill,23,border,1.0,0.20))
+		button.add_theme_stylebox_override("hover",FigmaReferenceCanvas.flat_gloss(fill.lightened(0.035),23,border,1.0,0.24))
+		button.add_theme_stylebox_override("pressed",FigmaReferenceCanvas.flat_gloss(fill.darkened(0.055),23,border,1.0,0.11))
+		button.add_theme_stylebox_override("disabled",FigmaReferenceCanvas.flat_gloss(fill,23,border,1.0,0.08))
+		for key in ["font_color","font_hover_color","font_pressed_color"]:
+			button.add_theme_color_override(key,readable)
+		button.add_theme_color_override("font_disabled_color",ink)
+		button.disabled = not enabled
+		button.tooltip_text = ""
+		if not enabled and label == "NO PRICE":
+			button.tooltip_text = "No active regional Google Play price for this product"
+		elif not enabled and label == "UNAVAILABLE":
+			button.tooltip_text = "Google Play purchases are not available right now"
+		var click := Callable(self,"_purchase").bind(product_id,button)
+		if enabled and not button.pressed.is_connected(click):
+			button.pressed.connect(click)
+
 func open_shop() -> void:
 	if _built_theme != _theme_mode():
 		if layer != null and is_instance_valid(layer):
