@@ -666,15 +666,15 @@ func build_goals() -> void:
 	_figma_text(canvas, "%d PTS • %d/%d TIERS" % [int(season.get("points",0)),int(season.get("completed",0)),int(season.get("tiers",0))], Rect2(31,587,210,20), 13, FIGMA_MUTED)
 	var next_target := int(season.get("next_target",0))
 	var journey_detail := "ALL TIERS COMPLETE" if next_target <= 0 else "NEXT REWARD AT %d PTS" % next_target
-	var journey_label := _figma_text(canvas, journey_detail, Rect2(31,613,202,18), 11, FIGMA_MUTED)
+	var journey_label := _figma_text(canvas, journey_detail, Rect2(31,613,202,20), 13, FIGMA_MUTED)
 	journey_label.name = "GoalsSeasonNextReward"
-	_fit_single_line_control_text(journey_label,198.0,11,9)
+	_fit_single_line_control_text(journey_label,198.0,13,12)
 	var season_ready := int(season.get("ready",0))
 	var season_button := _figma_button(canvas,"GoalsSeasonClaim","CLAIM %d" % season_ready if season_ready > 0 else "IN PROGRESS",Rect2(246,575,106,46),FIGMA_GREEN if season_ready > 0 else Color("#7d8a94"),Callable(),Color.WHITE,13,11)
 	season_button.disabled = season_ready <= 0
 	if season_ready > 0:
 		season_button.pressed.connect(_claim_next_season_reward)
-	_figma_text(canvas, "First clears +10 • Daily Cup +25 • Replays +3", Rect2(31,646,310,18), 11, FIGMA_MUTED)
+	_figma_text(canvas, "First clears +10 • Daily Cup +25 • Replays +3", Rect2(31,646,310,20), 12, FIGMA_MUTED)
 	_figma_bottom_nav(canvas,"home")
 
 func _figma_goal_row(canvas: Control, row: Dictionary, period: String, y: float) -> void:
@@ -683,16 +683,20 @@ func _figma_goal_row(canvas: Control, row: Dictionary, period: String, y: float)
 	var fill := Color("#f5f2ec") if not _dark() else Color("#27282b")
 	var border := Color(FIGMA_GREEN,0.34) if claimable else Color(FIGMA_GOLD,0.20)
 	_figma_card(canvas,"Goal/%s/%s" % [period,String(row.get("id",""))],Rect2(17,y,354,44),fill,border,13)
-	var goal_title := _figma_text(canvas,String(row.get("title","GOAL")),Rect2(30,y+4,172,18),13,FIGMA_INK)
+	var goal_title := _figma_text(canvas,String(row.get("title","GOAL")),Rect2(30,y+3,172,20),14,FIGMA_INK)
 	goal_title.name = "GoalTitle/%s/%s" % [period,String(row.get("id",""))]
-	_fit_single_line_control_text(goal_title,168.0,13,11)
+	goal_title.tooltip_text = String(row.get("title","GOAL"))
+	goal_title.accessibility_name = goal_title.tooltip_text
+	_fit_single_line_control_text(goal_title,168.0,14,12)
 	var crowns := int(row.get("crowns",0))
 	var reward_text := "+%d" % int(row.get("coins",0))
 	if crowns > 0:
 		reward_text += " • ♛%d" % crowns
-	var goal_progress := _figma_text(canvas,"%d/%d • %s" % [int(row.get("progress",0)),int(row.get("target",1)),reward_text],Rect2(30,y+24,190,16),11,FIGMA_MUTED)
+	var goal_progress := _figma_text(canvas,"%d/%d • %s" % [int(row.get("progress",0)),int(row.get("target",1)),reward_text],Rect2(30,y+23,190,19),13,FIGMA_MUTED)
 	goal_progress.name = "GoalProgress/%s/%s" % [period,String(row.get("id",""))]
-	_fit_single_line_control_text(goal_progress,186.0,11,10)
+	goal_progress.accessibility_name = "%s: %d of %d complete, %s" % [String(row.get("title","GOAL")),int(row.get("progress",0)),int(row.get("target",1)),reward_text]
+	goal_progress.tooltip_text = goal_progress.accessibility_name
+	_fit_single_line_control_text(goal_progress,186.0,13,12)
 	var action_text := "DONE" if claimed else ("CLAIM" if claimable else "GO")
 	var action_fill := Color("#7d8a94") if claimed else (FIGMA_GREEN if claimable else Color("#7a57e0"))
 	var action := _figma_button(canvas,"GoalAction/%s/%s" % [period,String(row.get("id",""))],action_text,Rect2(274,y,78,44),action_fill,Callable(),Color.WHITE,11,10)
