@@ -346,7 +346,8 @@ func render() -> void:
 		var move_text := ""
 		if campaign_move_limit > 0:
 			move_text = " • %d/%d MOVES" % [placements, campaign_move_limit]
-		goal_label.text = "GOAL %d PTS • %d LINES%s" % [target_score, target_lines, move_text]
+		goal_label.text = ("GOAL %d PTS • %d LINES\nMOVE %d/%d" % [target_score, target_lines, placements, campaign_move_limit]) if campaign_move_limit > 0 else ("GOAL %d PTS • %d LINES" % [target_score, target_lines])
+		goal_label.add_theme_font_size_override("font_size", 15)
 		_render_special_cells()
 		var special_text := _objective_status_text()
 		if campaign_failed:

@@ -1049,16 +1049,28 @@ func build_settings() -> void:
 
 	_figma_settings_card(canvas,"SettingsCard/Purchases",Rect2(17,607,354,98),card_fill,card_border,dark_mode)
 	_figma_text(canvas,"PURCHASES",Rect2(33,621,170,18),15,heading_color)
-	FigmaReferenceCanvas.add_shadow(canvas, Rect2(33,645,318,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
-	var purchases := FigmaReferenceCanvas.premium_button("SHOP & RESTORE",15,utility_text,utility_fill,16,utility_border,1.2)
+	FigmaReferenceCanvas.add_shadow(canvas, Rect2(33,645,153,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
+	var purchases := FigmaReferenceCanvas.premium_button("SHOP & RESTORE",13,utility_text,utility_fill,16,utility_border,1.2)
 	purchases.name = "SettingsPurchases"
 	purchases.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
-	FigmaReferenceCanvas.set_rect(purchases,33,645,318,46)
+	FigmaReferenceCanvas.set_rect(purchases,33,645,153,46)
 	purchases.tooltip_text = "Buy upgrades or restore previous Google Play purchases"
 	purchases.pressed.connect(_figma_open_shop)
 	canvas.add_child(purchases)
+	FigmaReferenceCanvas.add_shadow(canvas, Rect2(195,645,156,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
+	var recovery := FigmaReferenceCanvas.premium_button("CLOUD BACKUP",13,utility_text,utility_fill,16,utility_border,1.2)
+	recovery.name = "SettingsCloudBackup"
+	recovery.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+	FigmaReferenceCanvas.set_rect(recovery,195,645,156,46)
+	recovery.tooltip_text = "Copy your private recovery code or restore progress"
+	recovery.pressed.connect(_open_cloud_recovery)
+	canvas.add_child(recovery)
 
 	_figma_bottom_nav(canvas,"settings",dark_mode)
+
+func _open_cloud_recovery() -> void:
+	var popup := preload("res://scripts/ui/cloud_recovery_dialog.gd").new()
+	add_child(popup)
 
 func _figma_settings_card(canvas: Control, name_value: String, rect: Rect2, fill: Color, border: Color, dark_mode: bool) -> PanelContainer:
 	var card: PanelContainer
