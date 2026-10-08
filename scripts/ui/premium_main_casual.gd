@@ -2140,6 +2140,11 @@ func _sidekick_recommended_tip_index() -> int:
 	return int(_sidekick_checkpoint_insight().get("tip_index", 0))
 
 func _sidekick_tip() -> String:
+	var insight := _sidekick_checkpoint_insight()
+	# A verified deadlock needs a recovery instruction, not another generic
+	# strategy about conserving space that is no longer available.
+	if _sidekick_tip_index < 0 and not String(insight.get("recovery_tip", "")).is_empty():
+		return LocalizationManager.localize(String(insight["recovery_tip"]))
 	var tips: Array = SIDEKICK_TIPS.get(_sidekick_game, SIDEKICK_TIPS["rescue_rush"])
 	var tip_index := _sidekick_recommended_tip_index() if _sidekick_tip_index < 0 else _sidekick_tip_index
 	return LocalizationManager.localize(String(tips[tip_index % tips.size()]))

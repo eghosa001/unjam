@@ -4,6 +4,7 @@ const SUPPORTED_LANGUAGES := ["en", "es", "fr", "pt", "de", "it", "ha", "yo", "i
 
 const TRANSLATIONS := {
 	"es": {
+		"NO PIECE FITS":"NINGUNA PIEZA CABE","No legal pour remains. Undo, add a tube, or retry.":"No queda ningún vertido posible. Deshaz el último movimiento, añade un tubo o reintenta.","No tray piece fits. Retry and keep more space open.":"Ninguna pieza de la bandeja cabe. Reintenta y deja más espacio libre.",
 		"EMPTY TUBES":"TUBOS VACÍOS","MOVES":"MOVIMIENTOS","NO LEGAL POUR":"SIN VERTIDOS POSIBLES","FILLED CELLS":"CASILLAS OCUPADAS","BLOCKED TAPS":"TOQUES BLOQUEADOS",
 		"LANGUAGE":"IDIOMA","LAST LEVEL":"ÚLTIMO NIVEL",
 		"HOME":"INICIO","GAMES":"JUEGOS","DAILY":"DIARIO","COLLECT":"COLECCIÓN","COLLECTION":"COLECCIÓN","SETTINGS":"AJUSTES",
@@ -26,6 +27,7 @@ const TRANSLATIONS := {
 		"Before placing a piece, check all three tray pieces.":"Antes de colocar una pieza, revisa las tres piezas de la bandeja."
 	},
 	"fr": {
+		"NO PIECE FITS":"AUCUNE PIÈCE NE RENTRE","No legal pour remains. Undo, add a tube, or retry.":"Aucun versement possible. Annule un coup, ajoute un tube ou réessaie.","No tray piece fits. Retry and keep more space open.":"Aucune pièce disponible ne rentre. Recommence en gardant plus de place.",
 		"EMPTY TUBES":"TUBES VIDES","MOVES":"COUPS","NO LEGAL POUR":"AUCUN VERSEMENT POSSIBLE","FILLED CELLS":"CASES OCCUPÉES","BLOCKED TAPS":"TOUCHES BLOQUÉES",
 		"LANGUAGE":"LANGUE","LAST LEVEL":"DERNIER NIVEAU",
 		"HOME":"ACCUEIL","GAMES":"JEUX","DAILY":"QUOTIDIEN","COLLECT":"COLLECTION","COLLECTION":"COLLECTION","SETTINGS":"RÉGLAGES",
@@ -48,6 +50,7 @@ const TRANSLATIONS := {
 		"Before placing a piece, check all three tray pieces.":"Avant de placer une pièce, vérifie les trois pièces du plateau."
 	},
 	"pt": {
+		"NO PIECE FITS":"NENHUMA PEÇA CABE","No legal pour remains. Undo, add a tube, or retry.":"Não há mais movimentos de transferência. Desfaça, adicione um tubo ou tente novamente.","No tray piece fits. Retry and keep more space open.":"Nenhuma peça disponível cabe. Recomece deixando mais espaço livre.",
 		"EMPTY TUBES":"TUBOS VAZIOS","MOVES":"MOVIMENTOS","NO LEGAL POUR":"SEM VAZAMENTO POSSÍVEL","FILLED CELLS":"CASAS OCUPADAS","BLOCKED TAPS":"TOQUES BLOQUEADOS",
 		"LANGUAGE":"IDIOMA","LAST LEVEL":"ÚLTIMO NÍVEL",
 		"HOME":"INÍCIO","GAMES":"JOGOS","DAILY":"DIÁRIO","COLLECT":"COLEÇÃO","COLLECTION":"COLEÇÃO","SETTINGS":"DEFINIÇÕES",
@@ -70,6 +73,7 @@ const TRANSLATIONS := {
 		"Before placing a piece, check all three tray pieces.":"Antes de colocar uma peça, verifique as três peças da bandeja."
 	},
 	"de": {
+		"NO PIECE FITS":"KEIN STEIN PASST","No legal pour remains. Undo, add a tube, or retry.":"Kein gültiger Gießzug mehr. Mache einen Zug rückgängig, füge ein Röhrchen hinzu oder starte neu.","No tray piece fits. Retry and keep more space open.":"Keiner der Steine passt. Starte neu und halte mehr Platz frei.",
 		"EMPTY TUBES":"LEERE RÖHRCHEN","MOVES":"ZÜGE","NO LEGAL POUR":"KEIN GÜLTIGER ZUG","FILLED CELLS":"BELEGTE FELDER","BLOCKED TAPS":"BLOCKIERTE TIPPVERSUCHE",
 		"LANGUAGE":"SPRACHE","LAST LEVEL":"LETZTES LEVEL",
 		"HOME":"START","GAMES":"SPIELE","DAILY":"TÄGLICH","COLLECT":"SAMMLUNG","COLLECTION":"SAMMLUNG","SETTINGS":"EINSTELLUNGEN",
@@ -92,6 +96,7 @@ const TRANSLATIONS := {
 		"Before placing a piece, check all three tray pieces.":"Prüfe vor dem Platzieren alle drei Teile in der Ablage."
 	},
 	"it": {
+		"NO PIECE FITS":"NESSUN PEZZO ENTRA","No legal pour remains. Undo, add a tube, or retry.":"Non ci sono travasi possibili. Annulla, aggiungi un tubo o riprova.","No tray piece fits. Retry and keep more space open.":"Nessun pezzo del vassoio entra. Riprova lasciando più spazio libero.",
 		"EMPTY TUBES":"TUBI VUOTI","MOVES":"MOSSE","NO LEGAL POUR":"NESSUN TRAVASO POSSIBILE","FILLED CELLS":"CASELLE OCCUPATE","BLOCKED TAPS":"TOCCHI BLOCCATI",
 		"LANGUAGE":"LINGUA","LAST LEVEL":"ULTIMO LIVELLO",
 		"HOME":"HOME","GAMES":"GIOCHI","DAILY":"GIORNALIERO","COLLECT":"RACCOLTA","COLLECTION":"RACCOLTA","SETTINGS":"IMPOSTAZIONI",
@@ -114,6 +119,7 @@ const TRANSLATIONS := {
 		"Before placing a piece, check all three tray pieces.":"Prima di posizionare un pezzo, controlla tutti e tre i pezzi."
 	},
 	"ha": {
+		"NO PIECE FITS":"BABU ƘWALI DA ZAI SHIGA","No legal pour remains. Undo, add a tube, or retry.":"Babu sauran zubawa mai yiwuwa. Mayar da mataki, ƙara bututu ko sake gwadawa.","No tray piece fits. Retry and keep more space open.":"Babu ƙwallon da ya dace. Sake gwadawa ka bar sarari a buɗe.",
 		"EMPTY TUBES":"TUBUNA MARASA KOMAI","MOVES":"MATAKAI","NO LEGAL POUR":"BABU ZUBAWA MAI YIWUWA","FILLED CELLS":"GURABEN DA AKA CIKA","BLOCKED TAPS":"DANNAWAR DA AKA TOSHE",
 		"LANGUAGE":"HARSHE","LAST LEVEL":"MATAKIN ƘARSHE",
 		"HOME":"GIDA","GAMES":"WASANNI","DAILY":"KULLUM","COLLECT":"TARI","COLLECTION":"TARI","SETTINGS":"SAITUNA",
@@ -125,6 +131,7 @@ const TRANSLATIONS := {
 		"TIP":"SHAWARA","NEXT TIP":"SHAWARA TA GABA","PLAY THIS GAME":"YI WANNAN WASA","CHANGE GAME":"CANZA WASA"
 	},
 	"yo": {
+		"NO PIECE FITS":"KÒ SÍ Ẹ̀YÀ TÓ WỌ̀","No legal pour remains. Undo, add a tube, or retry.":"Kò sí ìdàsílẹ̀ tó ṣeé ṣe mọ́. Dá ìgbésẹ̀ padà, fi túúbù kún un tàbí tún gbìyànjú.","No tray piece fits. Retry and keep more space open.":"Kò sí ẹ̀yà tó lè wọ inú pátákó. Tún gbìyànjú kí o sì fi àyè sílẹ̀.",
 		"EMPTY TUBES":"ÀWỌN TÚÚBÙ ÒFÌFO","MOVES":"ÌGBÉSẸ̀","NO LEGAL POUR":"KÒ SÍ ÌDÀṢÀSÍ TÓ ṢEÉ ṢE","FILLED CELLS":"ÀWỌN ÀPÓ TÓ KÚN","BLOCKED TAPS":"FÍFỌ́N TÓ DÌ",
 		"LANGUAGE":"ÈDÈ","LAST LEVEL":"ÌPELE TÓ KẸ́YÌN",
 		"HOME":"ILÉ","GAMES":"ÀWỌN ERÉ","DAILY":"OJOOJUMỌ́","COLLECT":"ÀKÓJỌ","COLLECTION":"ÀKÓJỌ","SETTINGS":"ÈTÒ",
@@ -136,6 +143,7 @@ const TRANSLATIONS := {
 		"TIP":"ÌMỌ̀RÀN","NEXT TIP":"ÌMỌ̀RÀN TÓ KÀN","PLAY THIS GAME":"ṢERÉ ERÉ YÌÍ","CHANGE GAME":"YÍ ERÉ PADÀ"
 	},
 	"ig": {
+		"NO PIECE FITS":"Ọ DỊGHỊ IBERIBE DABARA","No legal pour remains. Undo, add a tube, or retry.":"Enweghịzi ịwụsa ga-ekwe omume. Weghachite nzọụkwụ, tinye tubu ma ọ bụ nwaa ọzọ.","No tray piece fits. Retry and keep more space open.":"Ọ dịghị ibe dị na tray ga-adaba. Nwaa ọzọ ma hapụkwuo oghere.",
 		"EMPTY TUBES":"TUBU EFU","MOVES":"NGAGHARỊ","NO LEGAL POUR":"ENWEGHỊ ỊWỤSA KWESỊRỊ","FILLED CELLS":"OGHERE JUPỤTARA","BLOCKED TAPS":"METỤRỤ A GBOCHIRI",
 		"LANGUAGE":"ASỤSỤ","LAST LEVEL":"ỌKWA IKPEAZỤ",
 		"HOME":"ỤLỌ","GAMES":"EGWUREGWU","DAILY":"KWA ỤBỌCHỊ","COLLECT":"NCHỊKỌTA","COLLECTION":"NCHỊKỌTA","SETTINGS":"NTỌALA",
@@ -148,7 +156,7 @@ const TRANSLATIONS := {
 	}
 }
 
-const DYNAMIC_KEYS := ["NO LEGAL POUR","EMPTY TUBES","BLOCKED TAPS","FILLED CELLS","MOVES","SHOP & RESTORE","HOW TO PLAY","CHOOSE GAME","PLAY THIS GAME","CHANGE GAME","NEXT TIP","SOUND EFFECTS","REDUCED MOTION","FAST ANIMATION","PLAYMATE SIDEKICK","LAST LEVEL","LANGUAGE","CONTINUE","LEVELS","LEVEL","WORLD","CURRENT","COMPLETE","DAILY","DONE","NEXT","PREV","BACK"]
+const DYNAMIC_KEYS := ["NO PIECE FITS","NO LEGAL POUR","EMPTY TUBES","BLOCKED TAPS","FILLED CELLS","MOVES","SHOP & RESTORE","HOW TO PLAY","CHOOSE GAME","PLAY THIS GAME","CHANGE GAME","NEXT TIP","SOUND EFFECTS","REDUCED MOTION","FAST ANIMATION","PLAYMATE SIDEKICK","LAST LEVEL","LANGUAGE","CONTINUE","LEVELS","LEVEL","WORLD","CURRENT","COMPLETE","DAILY","DONE","NEXT","PREV","BACK"]
 
 var language_code := "en"
 

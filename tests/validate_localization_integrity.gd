@@ -28,7 +28,7 @@ func _run() -> void:
 	for language in LocalizationScript.SUPPORTED_LANGUAGES:
 		manager.language_code = String(language)
 		if String(language) != "en":
-			for key in ["EMPTY TUBES","MOVES","NO LEGAL POUR","FILLED CELLS","BLOCKED TAPS"]:
+			for key in ["EMPTY TUBES","MOVES","NO LEGAL POUR","NO PIECE FITS","FILLED CELLS","BLOCKED TAPS", "No legal pour remains. Undo, add a tube, or retry.", "No tray piece fits. Retry and keep more space open."]:
 				if manager.localize(key) == key:
 					manager.free()
 					push_error("Missing contextual coaching status translation: %s in %s" % [key, language])

@@ -16,6 +16,10 @@ func _run() -> void:
 		"tubes":[[1,2,1,2],[2,1,2,1]]}
 	insight = Coach.checkpoint_guidance("water_sort",15,stuck,0)
 	if not _require(insight.active and String(insight.status).begins_with("NO LEGAL POUR"),"Stuck water board was not reported accurately"):return
+	if not _require(String(insight.get("recovery_tip","")).contains("Undo"),"Stuck water board needs actual recovery advice"):return
+	var sorted := {"game":"water_sort","level":15,"daily":false,"tubes":[[1,1,1,1],[2,2,2,2]]}
+	insight = Coach.checkpoint_guidance("water_sort",15,sorted,1)
+	if not _require(insight.active and String(insight.get("recovery_tip","")).is_empty(),"Solved board must not be called a deadlock"):return
 	var spacious := {"game":"water_sort","level":15,"daily":false,"moves":1,
 		"tubes":[[1,2,1,2],[2,1,2,1],[],[]]}
 	insight = Coach.checkpoint_guidance("water_sort",15,spacious,2)
@@ -26,6 +30,16 @@ func _run() -> void:
 	var crowded := _block_board(52)
 	insight = Coach.checkpoint_guidance("block_puzzle",11,{"game":"block_puzzle","level":11,"daily":false,"cells":crowded,"placements":9},2)
 	if not _require(insight.active and insight.tip_index == 1 and String(insight.status).contains("52/64"),"Crowded Block board should prioritize clearing"):return
+	var pair := [[Vector2i(0,0),Vector2i(1,0)]]
+	insight = Coach.checkpoint_guidance("block_puzzle",11,{"game":"block_puzzle","level":11,
+		"daily":false,"cells":_block_board(63),"pieces":pair,"placements":10},1)
+	if not _require(insight.active and String(insight.status).begins_with("NO PIECE FITS") and String(insight.get("recovery_tip","")).contains("Retry"),"Block deadlock was not detected"):return
+	insight = Coach.checkpoint_guidance("block_puzzle",11,{"game":"block_puzzle","level":11,
+		"daily":false,"cells":_block_board(0),"pieces":pair,"placements":1},1)
+	if not _require(insight.active and String(insight.get("recovery_tip","")).is_empty(),"Legal Block placements must not be reported as deadlock"):return
+	insight = Coach.checkpoint_guidance("block_puzzle",11,{"game":"block_puzzle","level":11,
+		"daily":false,"cells":_block_board(63),"pieces":[["garbled"]],"placements":1},1)
+	if not _require(insight.active and String(insight.get("recovery_tip","")).is_empty(),"Unknown piece representation must not become false deadlock"):return
 	var rescue := {"level":3,"daily":false,"pieces":[{"dir":"up"},{"dir":"down"}],"moves":6,"mistakes":2}
 	insight = Coach.checkpoint_guidance("rescue_rush",3,rescue,0)
 	if not _require(insight.active and insight.tip_index == 1 and String(insight.status).contains("2 BLOCKED TAPS"),"Rescue should respond to mistakes"):return
