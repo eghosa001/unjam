@@ -69,6 +69,37 @@ func _run() -> void:
 		if not source.contains("Undo is disabled in this Daily challenge."):
 			failures.append("Daily challenge assist restriction lost its clear player-facing explanation")
 
+	# Verify the actual Collection UI uses each campaign's authoritative
+	# world boundaries. Rescue worlds have 100 levels; Water and Block have 500.
+	# The completed 10,000-level case must show a full progress bar.
+	var progress: Dictionary = (save.data.get("game_progress", {}) as Dictionary).duplicate(true)
+	for pair in [["water_sort",511],["block_puzzle",10001]]:
+		var game_id := String(pair[0])
+		var section: Dictionary = (progress.get(game_id,{}) as Dictionary).duplicate(true)
+		section["highest_level"] = int(pair[1])
+		progress[game_id] = section
+	save.data["game_progress"] = progress
+	save.data["highest_level"] = 102
+	root.size = Vector2i(540,960)
+	var packed := load("res://scenes/Main.tscn") as PackedScene
+	if packed != null:
+		var app := packed.instantiate() as Control
+		root.add_child(app)
+		for _i in range(6): await process_frame
+		app.call("build_collection")
+		for _i in range(3): await process_frame
+		for expectation in [["rescue_rush",1,100],["water_sort",10,500],["block_puzzle",500,500]]:
+			var id := String(expectation[0])
+			var bar := app.find_child("CollectionWorldProgress_%s" % id,true,false) as ProgressBar
+			if bar == null or int(bar.value) != int(expectation[1]) or int(bar.max_value) != int(expectation[2]):
+				failures.append("Collection progress bar does not reflect actual %s chapter: %s" % [id,str(bar)])
+			elif not bar.tooltip_text.contains("world"):
+				failures.append("Collection progress has no accessible world description for %s" % id)
+		app.queue_free()
+		await process_frame
+	else:
+		failures.append("Collection main scene unavailable for chapter progress check")
+
 	save.data = original
 	save.save()
 
