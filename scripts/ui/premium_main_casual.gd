@@ -49,7 +49,7 @@ var _friends_status := ""
 const SETTINGS_HELP_GAMES := ["rescue_rush", "water_sort", "block_puzzle"]
 
 var _sidekick_game := "rescue_rush"
-var _sidekick_tip_index := 0
+var _sidekick_tip_index := -1
 const SIDEKICK_TIPS := {
 	"rescue_rush": [
 		"Tap blockers first when one arrow frees several paths.",
@@ -2007,11 +2007,14 @@ func _highest_level_for_game(game_id: String) -> int:
 func show_playmate_sidekick(game_id: String = "") -> void:
 	current_surface = "sidekick"
 	_remove_active_game()
+	var requested_game := _sidekick_game
 	if game_id in MultiGameManager.GAME_IDS:
-		_sidekick_game = game_id
+		requested_game = game_id
 	elif selected_game_id in MultiGameManager.GAME_IDS:
-		_sidekick_game = selected_game_id
-	_sidekick_tip_index = clampi(_sidekick_tip_index, 0, 2)
+		requested_game = selected_game_id
+	if requested_game != _sidekick_game:
+		_sidekick_tip_index = -1
+	_sidekick_game = requested_game
 	var accent := Unjam3DTheme.game_accent(_sidekick_game)
 	var canvas := _figma_surface("games", Color("#d9e8f4"))
 	_figma_header(
@@ -2041,7 +2044,7 @@ func show_playmate_sidekick(game_id: String = "") -> void:
 	_fit_single_line_control_text(level_badge, 82.0, 13, 10)
 
 	_figma_card(canvas, "SidekickTipCard", Rect2(17, 257, 354, 234), Color("#d8d4cc"), Color(accent, 0.42), 20)
-	_figma_text(canvas, "TIP", Rect2(35, 278, 80, 20), 14, FIGMA_GOLD)
+	_figma_text(canvas, "STRATEGY • LEVEL %d" % MultiGameManager.highest_level(_sidekick_game), Rect2(35, 278, 290, 20), 14, FIGMA_GOLD)
 	var tip := _figma_text(canvas, _sidekick_tip(), Rect2(35, 312, 300, 130), 15, _figma_theme_text(FIGMA_INK))
 	tip.name = "SidekickTip"
 	tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -2052,7 +2055,7 @@ func show_playmate_sidekick(game_id: String = "") -> void:
 	tip.position = Vector2(35, 312)
 	tip.size = Vector2(300, 130)
 	_fit_wrapped_text(tip, 296.0, 15, 12)
-	var identity := _figma_text(canvas, "BETA • OFFLINE COACH", Rect2(35, 449, 318, 24), 12, _figma_theme_text(FIGMA_MUTED), true)
+	var identity := _figma_text(canvas, "SUGGESTED FROM YOUR CAMPAIGN PROGRESS", Rect2(35, 449, 318, 24), 12, _figma_theme_text(FIGMA_MUTED), true)
 	identity.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	identity.clip_text = true
 	_fit_single_line_control_text(identity, 314.0, 12, 10)
@@ -2073,20 +2076,47 @@ func _sidekick_playmate_name() -> String:
 		return String((rescued as Array)[0]).capitalize()
 	return "UNJAM BUDDY"
 
+func _sidekick_recommended_tip_index() -> int:
+	# The first tip is chosen using the active campaign state, rather than
+	# always displaying the first generic instruction for every player.
+	var level := maxi(1, MultiGameManager.highest_level(_sidekick_game))
+	match _sidekick_game:
+		"rescue_rush":
+			if level <= 12:
+				return 1 # Learn the exit route before touching arrows.
+			if level % 100 >= 75:
+				return 2 # Conserve hints on difficult milestone boards.
+			return 0 # Unlock paths by freeing blockers.
+		"water_sort":
+			if level <= 20:
+				return 1 # Keep working space for initial lessons.
+			if level >= 100:
+				return 2 # Look for larger matching stacks.
+			return 0
+		"block_puzzle":
+			if level <= 20:
+				return 2 # Inspect the whole tray before placement.
+			if level >= 100:
+				return 0 # Protect board space on tougher levels.
+			return 1
+	return 0
+
 func _sidekick_tip() -> String:
 	var tips: Array = SIDEKICK_TIPS.get(_sidekick_game, SIDEKICK_TIPS["rescue_rush"])
-	return LocalizationManager.localize(String(tips[_sidekick_tip_index % tips.size()]))
+	var tip_index := _sidekick_recommended_tip_index() if _sidekick_tip_index < 0 else _sidekick_tip_index
+	return LocalizationManager.localize(String(tips[tip_index % tips.size()]))
 
 func _sidekick_next_tip() -> void:
 	var tips: Array = SIDEKICK_TIPS.get(_sidekick_game, SIDEKICK_TIPS["rescue_rush"])
-	_sidekick_tip_index = (_sidekick_tip_index + 1) % tips.size()
+	var previous := _sidekick_recommended_tip_index() if _sidekick_tip_index < 0 else _sidekick_tip_index
+	_sidekick_tip_index = (previous + 1) % tips.size()
 	FeedbackManager.tap()
 	show_playmate_sidekick(_sidekick_game)
 
 func _sidekick_change_game() -> void:
 	var index := MultiGameManager.GAME_IDS.find(_sidekick_game)
 	_sidekick_game = MultiGameManager.GAME_IDS[(index + 1) % MultiGameManager.GAME_IDS.size()]
-	_sidekick_tip_index = 0
+	_sidekick_tip_index = -1
 	FeedbackManager.tap()
 	show_playmate_sidekick(_sidekick_game)
 
