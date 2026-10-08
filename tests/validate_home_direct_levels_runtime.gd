@@ -1,228 +1,92 @@
 extends SceneTree
 
-const CAMPAIGN_LEVELS := 10000
-
-var _original_data: Dictionary = {}
-var _save: Node
-var _multi: Node
-
+# Focused functional Home regression: navigation is deliberate, no game
+# launches from an accidental touch-through or hidden three-game shortcut.
 func _initialize() -> void:
-	_save = root.get_node("SaveManager")
-	_multi = root.get_node("MultiGameManager")
-	var save_data := _save.get("data") as Dictionary
-	_original_data = save_data.duplicate(true)
 	call_deferred("_run")
 
 func _run() -> void:
-	_seed_distinct_progress()
-
-	var scene := load("res://scenes/Main.tscn") as PackedScene
-	if scene == null:
-		return _fail("Main scene failed to load")
-	var main := scene.instantiate()
+	OS.set_environment("UNJAM_FAST_VISUAL_AUDIT","1")
+	root.size = Vector2i(540,960)
+	var competition := root.get_node_or_null("CompetitionManager")
+	var old_snapshot: Dictionary = competition.snapshot.duplicate(true)
+	competition.snapshot = {
+		"ok":true,"game_rankings":{
+			"rescue_rush":{"player_weekly":{"rank":4,"levels_completed":23}},
+			"water_sort":{"player_weekly":{"rank":8,"levels_completed":7}},
+			"block_puzzle":{"player_weekly":{"rank":12,"levels_completed":2}},
+		}
+	}
+	var packed := load("res://scenes/Main.tscn") as PackedScene
+	if not _check(packed != null,"Main scene could not be loaded"):return
+	var main := packed.instantiate() as Control
 	root.add_child(main)
-	await _frames(3)
+	await _frames(8)
+	main.call("build_home")
+	await _frames(5)
+	var home := main.get_node_or_null("PremiumHome") as Control
+	if not _check(home != null,"Home missing"):return
+	var choose := home.find_child("HomePrimaryAction",true,false) as Button
+	var rank := home.find_child("HomeRankValue",true,false) as Label
+	var ranking := home.find_child("HomeDailyGamesButton",true,false) as Button
+	if not _check(choose != null and choose.text.contains("CHOOSE GAME"),"Choose Game is not the primary Home action"):return
+	if not _check(choose.action_mode == BaseButton.ACTION_MODE_BUTTON_RELEASE,"Choose Game must wait for touch release"):return
+	if not _check(rank != null and rank.text == "#4","Home weekly rank is not visible"):return
+	if not _check(ranking != null and ranking.text.contains("LEADERBOARD"),"Leaderboard is not visible on Home"):return
+	for game_id in ["rescue_rush","water_sort","block_puzzle"]:
+		if not _check(home.find_child("HomeDirect_%s" % game_id,true,false) == null,"Home still contains duplicate game-select cards for %s" % game_id):return
+	if not _check(home.find_child("HomeWorldProgress",true,false) == null,"Old progress dashboard still crowds Home"):return
+
+	choose.pressed.emit()
+	await _frames(4)
+	if not _check(String(main.get("current_surface")) == "live","Choose Game did not open the Games screen"):return
+	if not _check(main.get("active_game") == null,"Choose Game skipped selector and started gameplay"):return
 
 	main.call("build_home")
 	await _frames(4)
-	var home := main.get_node_or_null("PremiumHome")
-	if home == null:
-		return _fail("Premium Home is missing")
+	home = main.get_node_or_null("PremiumHome") as Control
+	ranking = home.find_child("HomeDailyGamesButton",true,false) as Button
+	ranking.pressed.emit()
+	await _frames(3)
+	var popup := main.get_node_or_null("PremiumLeaderboardPopup")
+	if not _check(popup != null and String(main.get("current_surface")) == "home","Rankings should open as a modal over Home"):return
+	popup.call("close")
+	await _frames(3)
 
-	var previous_world_value := ""
-	for game_id in ["rescue_rush","water_sort","block_puzzle"]:
-		var button := home.find_child("HomeDirect_%s" % game_id,true,false) as Button
-		if button == null:
-			return _fail("Home quick-switch button missing for %s" % game_id)
+	for entry in [
+		["HomeProfileButton","profile"],["HomeGoalsButton","goals"],
+		["HomeDailyChallengeButton","daily"],["HomeFriendsButton","friends"]
+	]:
+		main.call("build_home")
+		await _frames(3)
+		home = main.get_node_or_null("PremiumHome") as Control
+		var button := home.find_child(String(entry[0]),true,false) as Button
+		if not _check(button != null,"Home destination missing: %s" % String(entry[0])):return
 		button.pressed.emit()
 		await _frames(3)
-
-		if String(main.get("current_surface")) != "home":
-			return _fail("Home quick switch incorrectly navigated away from Home")
-		if String(main.get("selected_game_id")) != game_id:
-			return _fail("Home quick switch did not select %s" % game_id)
-
-		var expected := _expected_progress(game_id)
-		var hero_title := home.find_child("HomeHeroGameTitle",true,false) as Label
-		var hero_meta := home.find_child("HomeHeroGameMeta",true,false) as Label
-		var top_level := home.find_child("HomeSelectedGameLevel",true,false) as Label
-		var top_stars := home.find_child("HomeSelectedGameStars",true,false) as Label
-		var primary := home.find_child("HomePrimaryAction",true,false) as Button
-		var world_value := home.find_child("HomeWorldProgressValue",true,false) as Label
-		var progress := home.find_child("HomeWorldProgressBar",true,false) as ProgressBar
-		var hero_art := home.find_child("HomeHeroFlatGameLogo",true,false)
-		var world_art := home.find_child("HomeWorldFlatGameLogo",true,false)
-
-		if hero_title == null or hero_title.text != _expected_title(game_id):
-			return _fail("Home hero did not update for %s" % game_id)
-		if hero_meta == null or hero_meta.text != "LEVEL %d • WORLD %d" % [expected.level, expected.world]:
-			return _fail("Home hero level/world stayed stale for %s" % game_id)
-		if top_level == null or not top_level.text.begins_with("LV %d" % expected.level):
-			return _fail("Home top level badge stayed stale for %s" % game_id)
-		var expected_stars := int(_multi.call("total_stars", game_id))
-		if top_stars == null or top_stars.text.strip_edges() != str(expected_stars):
-			return _fail("Home top star badge stayed stale for %s" % game_id)
-		if primary == null or primary.text != "CONTINUE • LEVEL %d" % expected.level:
-			return _fail("Home Continue action stayed stale for %s" % game_id)
-		if world_value == null or world_value.text != expected.world_text:
-			return _fail("Home World Journey text stayed stale for %s" % game_id)
-		if progress == null or int(round(progress.max_value)) != expected.total or int(round(progress.value)) != expected.completed:
-			return _fail("Home World Journey progress bar stayed stale for %s" % game_id)
-		if hero_art == null or String(hero_art.get("game_id")) != game_id:
-			return _fail("Home hero flat game mark stayed stale for %s" % game_id)
-		if world_art == null or String(world_art.get("game_id")) != game_id:
-			return _fail("Home World Journey flat game mark stayed stale for %s" % game_id)
-		if not previous_world_value.is_empty() and world_value.text == previous_world_value:
-			return _fail("Home World Journey did not visibly change between games")
-		previous_world_value = world_value.text
-
-	# Test the exact Home control reported by the user, not only the bottom nav.
-	var choose := home.find_child("HomeChooseGameButton",true,false) as Button
-	if choose == null:
-		return _fail("Home Choose Game button is missing")
-	if choose.action_mode != BaseButton.ACTION_MODE_BUTTON_RELEASE:
-		return _fail("Home Choose Game must open on touch release to prevent selector touch-through")
-	choose.pressed.emit()
-	await _frames(3)
-	if String(main.get("current_surface")) != "live":
-		return _fail("Home Choose Game did not open the game selector")
-	if main.get("active_game") != null:
-		return _fail("Home Choose Game started a game instead of stopping on the selector")
+		if not _check(String(main.get("current_surface")) == String(entry[1]),"Wrong Home destination: %s" % String(entry[1])):return
 
 	main.call("build_home")
 	await _frames(3)
-	home = main.get_node_or_null("PremiumHome")
-	var profile := home.find_child("HomeProfileButton",true,false) as Button
-	var goals := home.find_child("HomeGoalsButton",true,false) as Button
-	var daily := home.find_child("HomeDailyChallengeButton",true,false) as Button
-	var friends := home.find_child("HomeFriendsButton",true,false) as Button
-	var daily_nav_label := home.find_child("HomeNavLabel_DAILY",true,false) as Label
-	if profile == null or goals == null or daily == null or friends == null:
-		return _fail("Home meta destinations are not all directly accessible")
-	if daily_nav_label == null or daily_nav_label.text != "DAILY":
-		return _fail("Home Daily navigation identity is incorrect")
-	profile.pressed.emit()
-	await _frames(2)
-	if String(main.get("current_surface")) != "profile":
-		return _fail("Home level badge did not open Profile")
-	main.call("build_home")
-	await _frames(2)
-	home = main.get_node_or_null("PremiumHome")
-	goals = home.find_child("HomeGoalsButton",true,false) as Button
-	goals.pressed.emit()
-	await _frames(2)
-	if String(main.get("current_surface")) != "goals":
-		return _fail("Home Goals button did not open Goals")
-	main.call("build_home")
-	await _frames(2)
-	home = main.get_node_or_null("PremiumHome")
-	daily = home.find_child("HomeDailyChallengeButton",true,false) as Button
-	daily.pressed.emit()
-	await _frames(2)
-	if String(main.get("current_surface")) != "daily":
-		return _fail("Home Daily button did not open Daily rewards/challenges")
-	main.call("build_home")
-	await _frames(2)
-	home = main.get_node_or_null("PremiumHome")
-	var compete := home.find_child("HomeDailyGamesButton",true,false) as Button
-	if compete == null:
-		return _fail("Home Compete button is missing")
-	compete.pressed.emit()
-	await _frames(2)
-	var rank_popup := main.get_node_or_null("PremiumLeaderboardPopup")
-	if String(main.get("current_surface")) != "home" or rank_popup == null:
-		return _fail("Home Rankings must open a modal without hiding Home")
-	if rank_popup.find_child("LeaderboardPeriod_week",true,false) == null:
-		return _fail("Home Rankings popup has no weekly leaderboard")
-	rank_popup.call("close")
-	await _frames(2)
-	if main.get_node_or_null("PremiumLeaderboardPopup") != null:
-		return _fail("Rankings popup cannot be dismissed")
-	main.call("build_home")
-	await _frames(2)
-	home = main.get_node_or_null("PremiumHome")
-	friends = home.find_child("HomeFriendsButton",true,false) as Button
-	friends.pressed.emit()
-	await _frames(2)
-	if String(main.get("current_surface")) != "friends":
-		return _fail("Home Friends button did not open Friends")
-
-	main.call("build_home")
-	await _frames(3)
-	home = main.get_node_or_null("PremiumHome")
+	home = main.get_node_or_null("PremiumHome") as Control
 	var games := home.find_child("HomeGamesNavButton",true,false) as Button
-	if games == null:
-		return _fail("Home Games navigation is missing")
+	if not _check(games != null,"Home bottom Games navigation missing"):return
 	games.pressed.emit()
 	await _frames(3)
-	if String(main.get("current_surface")) != "live":
-		return _fail("Games navigation did not open the game selector")
-	if main.get("active_game") != null:
-		return _fail("Games navigation started a game instead of stopping on the selector")
-
-	print("HOME_QUICK_SWITCH_PROGRESS_OK")
+	if not _check(String(main.get("current_surface")) == "live" and main.get("active_game") == null,"Bottom Games navigation must open the selector without launching"):return
 	main.queue_free()
 	await process_frame
-	_restore_save()
+	competition.snapshot = old_snapshot
+	print("HOME_CLEAN_LAUNCHER_AND_VISIBLE_RANK_OK")
 	quit(0)
-
-func _seed_distinct_progress() -> void:
-	# Distinct worlds make stale cross-game state observable instead of allowing a
-	# fresh all-Level-1 profile to pass accidentally.
-	var save_data := _save.get("data") as Dictionary
-	save_data["highest_level"] = 120
-	save_data["total_levels_completed"] = 119
-	save_data["stars"] = {"1": 3, "50": 2}
-
-	var all: Dictionary = save_data.get("game_progress", {}).duplicate(true)
-	all["water_sort"] = {
-		"highest_level": 650,
-		"levels_completed": 649,
-		"stars": {"1": 3, "500": 3, "649": 2},
-	}
-	all["block_puzzle"] = {
-		"highest_level": 1250,
-		"levels_completed": 1249,
-		"stars": {"1": 3, "500": 2, "1000": 3, "1249": 2},
-	}
-	save_data["game_progress"] = all
-	_save.set("data", save_data)
-	_multi.call("ensure_state")
-
-func _expected_progress(game_id: String) -> Dictionary:
-	var highest := int(_multi.call("highest_level", game_id))
-	var level := clampi(highest, 1, CAMPAIGN_LEVELS)
-	var completed_level := clampi(highest - 1, 0, CAMPAIGN_LEVELS)
-	var world := int(_multi.call("world_for_game_level", game_id, level))
-	var first := int(_multi.call("first_level_in_game_world", game_id, world))
-	var last := int(_multi.call("last_level_in_game_world", game_id, world))
-	var total := maxi(1, last - first + 1)
-	var completed := clampi(completed_level - first + 1, 0, total)
-	return {
-		"level": level,
-		"world": world,
-		"total": total,
-		"completed": completed,
-		"world_text": "LEVEL %d • %d/%d" % [level, completed, total],
-	}
-
-func _expected_title(game_id: String) -> String:
-	match game_id:
-		"water_sort": return "WATER SORT"
-		"block_puzzle": return "BLOCK PUZZLE"
-		_: return "RESCUE RUSH"
-
-func _restore_save() -> void:
-	if not _original_data.is_empty():
-		_save.set("data", _original_data.duplicate(true))
-		_save.call("save")
 
 func _frames(count: int) -> void:
 	for _i in range(count):
 		await process_frame
 
-func _fail(message: String) -> bool:
-	_restore_save()
+func _check(ok: bool, message: String) -> bool:
+	if ok:
+		return true
 	push_error(message)
 	quit(1)
 	return false
