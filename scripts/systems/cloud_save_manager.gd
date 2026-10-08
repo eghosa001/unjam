@@ -39,7 +39,7 @@ const CLOUD_KEYS := [
 	"hints_used",
 	"undos_used",
 	"rewarded_ads_watched",
-	"privacy_consent_status",
+	# Consent belongs to the device and current UMP session, never a cloud save.
 	"total_levels_completed",
 	"total_rescues",
 	"perfect_clears",
