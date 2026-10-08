@@ -16,7 +16,7 @@ be verified with its own evidence. Do not claim 9+ without a device/screenshot r
 | Block Puzzle | Preview follows finger, precisely snaps, 8x8 board and objectives remain readable | Block runtime/solvers + touch-device replay |
 | Audio and haptics | No crackle, clipping, unexpected volume spikes or feedback during muted/reduced-motion modes | Real Android speaker/headphone test |
 | Performance | Sample actual frame intervals on compact/mid/high-end Android phones, inspect p50/p95/p99 and >16.7ms/>33.3ms rates; profile rendering and memory separately; no sustained node growth after 100 navigations | Numeric debug QA frame snapshot, on-device profiler and long-session capture |
-| Monetization | Play catalog live in enabled regions; all purchases, pending/cancel/restore/refund/repeat consumables; rewarded callbacks award once | License tester and Play console evidence |
+| Monetization | Buy buttons remain disabled until Google Play returns a real regional price; no misleading default "PLAY STORE" price; all purchases, pending/cancel/restore/refund/repeat consumables and rewarded callbacks awarded once | Shop verified-price CI, license testers and Play Console active catalog evidence |
 | Privacy | Require a current-device UMP/provider result before production ads, reject cached and cloud-imported consent; test required/obtained/not-required flows and listing/Data Safety compliance | Device-local consent CI contract, on-device UMP replay and listing audit |
 | Save and progression | No destructive remove-before-rename; recover valid main, pending or backup after crashes; preserve purchases and selected locale through resets; verify resume, offline saves and 10,000-level targets | Atomic save/failed-write and reset-language CI, progression tests, device recovery checklist |
 | Localization | All supported language locales have readable controls and translated key journeys; no accidental substring replacements; switching a saved language restores English correctly and keeps assistive labels in sync | Localization integrity + Settings language-switch runtime contract + locale screenshots |
@@ -114,3 +114,13 @@ Keep tests change-scoped and reject regressions under
 record Android GPU/frame-render/memory traces too. This facility is LOCAL
 QA telemetry, not commercial analytics, crash reporting, or permission to
 claim device-verified 60fps without device evidence.
+
+## Shop availability truthfulness
+
+Connection to the Play Billing provider does not establish that a SKU is sold
+in the current user's region. A product cannot enable its Buy CTA without
+an actual localized price returned for that exact product ID. Products with
+missing prices show a quiet, disabled NO PRICE status, while disconnected
+providers show UNAVAILABLE. Catalog refresh may enable only newly priced SKUs;
+other products remain disabled. Neither state changes Play Console product
+activation, license-tester checkout, developer declarations or region pricing.
