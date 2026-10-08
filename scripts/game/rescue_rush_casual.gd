@@ -134,12 +134,12 @@ func _build_figma_rescue(canvas: Control) -> void:
 	RefCanvas.set_rect(title,115,15,184,25)
 	canvas.add_child(title)
 	var world := int(level_data.get("world", 1))
-	var subtitle := RefCanvas.label("LEVEL %d • WORLD %d" % [level_number,world],12,Color(0.92,0.98,1.0),true)
+	var subtitle := RefCanvas.label("LEVEL %d • WORLD %d" % [level_number,world],14,Color(0.92,0.98,1.0),true)
 	subtitle.name = "RescueGameplayMeta"
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle.clip_text = true
 	RefCanvas.set_rect(subtitle,115,47,184,16)
-	RefCanvas.fit_single_line_text(subtitle,180.0,12,10)
+	RefCanvas.fit_single_line_text(subtitle,180.0,14,12)
 	RefCanvas.set_rect(subtitle,115,47,184,16)
 	canvas.add_child(subtitle)
 
@@ -158,7 +158,7 @@ func _build_figma_rescue(canvas: Control) -> void:
 	RefCanvas.set_rect(status_row,27,81,334,48)
 	canvas.add_child(status_row)
 	for label in [moves_label,rescue_label,chain_label]:
-		label.add_theme_font_size_override("font_size",15)
+		label.add_theme_font_size_override("font_size",16)
 		label.add_theme_color_override("font_color",OFF_WHITE)
 		status_row.add_child(label)
 
@@ -169,7 +169,7 @@ func _build_figma_rescue(canvas: Control) -> void:
 	RefCanvas.set_rect(objective,17,137,354,34)
 	objective.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(objective)
-	var objective_label := RefCanvas.label(_compact_objective_instruction(),15,Color("#b9ffd0"),true)
+	var objective_label := RefCanvas.label(_compact_objective_instruction(),16,Color("#b9ffd0"),true)
 	objective_label.name = "RescueObjectiveLabel"
 	objective_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	RefCanvas.set_rect(objective_label,29,137,330,34)
