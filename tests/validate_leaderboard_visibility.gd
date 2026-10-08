@@ -81,6 +81,12 @@ func _run() -> void:
 			and bounds.end.y <= visible.end.y + 1.0,
 			"Leaderboard clips logical viewport %s after %s request: %s" % [str(visible),str(dimensions),str(bounds)]
 		):return
+		if visible.size.y > visible.size.x and visible.size.x >= 750:
+			if not _check(bounds.size.x >= visible.size.x*0.87 and bounds.size.y >= visible.size.y*0.89,
+				"Leaderboard must be a readable near-full-screen sheet on large Android layouts: %s vs %s" % [str(bounds.size),str(visible.size)]):return
+			var big_player := popup.find_child("LeaderboardPlayer_1",true,false)
+			if not _check(big_player != null and big_player.custom_minimum_size.y >= 70,
+				"Ranked player names are too small at high-density logical resolutions"):return
 	root.size = Vector2i(540,960)
 	await _frames(4)
 	var you := popup.find_child("LeaderboardOwnRank",true,false) as Label
