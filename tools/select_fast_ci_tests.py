@@ -78,6 +78,8 @@ GROUP_TESTS = {
     "audio": [
         "validate_soothing_audio_palette",
         "validate_feedback_manager_event_driven_music",
+        "validate_audio_transition_protection",
+        "validate_audio_mix_headroom",
     ],
     "branding": [
         "validate_launcher_icon_safe_zone",
