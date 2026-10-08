@@ -82,6 +82,8 @@ func _button(value: String, label: String, tint: Color, callback: Callable) -> B
 	node.name = value
 	node.text = label
 	node.clip_text = true
+	node.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
+	node.focus_mode = Control.FOCUS_ALL
 	node.custom_minimum_size = Vector2(0,48)
 	node.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	node.add_theme_font_size_override("font_size",14)
@@ -99,6 +101,9 @@ func _button(value: String, label: String, tint: Color, callback: Callable) -> B
 func _build() -> void:
 	var overlay := Control.new()
 	overlay.name = "LeaderboardModalOverlay"
+	# UiTouchEnhancer must not inflate our authored 48px tabs into 88px+
+	# gameplay buttons. Keep focus and touch geometry intact on compact phones.
+	overlay.set_meta("unjam_preserve_control_geometry", true)
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(overlay)
@@ -145,6 +150,7 @@ func _build() -> void:
 	close_button.custom_minimum_size = Vector2(94,48)
 	close_button.size_flags_horizontal = Control.SIZE_SHRINK_END
 	header.add_child(close_button)
+	close_button.grab_focus.call_deferred()
 
 	_summary = _label("Compete with real players",13,muted)
 	_summary.name = "LeaderboardModalDescription"
@@ -278,10 +284,12 @@ func _render() -> void:
 	for id in PERIODS:
 		var button := _period_buttons[id] as Button
 		var selected: bool = id == _period
+		button.accessibility_name = ("%s rankings, selected" if selected else "%s rankings") % button.text.capitalize()
 		button.add_theme_stylebox_override("normal",_style(Color("#7056cf") if selected else Color("#454a58"),Color("#9280da") if selected else Color("#606575"),12))
 	for id in GAME_IDS:
 		var button := _game_buttons[id] as Button
 		var accent: Color = ACCENTS[id]
+		button.accessibility_name = ("%s ranking, selected" if _game_id == id else "%s ranking") % button.text.capitalize()
 		button.add_theme_stylebox_override("normal",_style(accent.darkened(0.43) if _game_id == id else Color("#424955"),accent if _game_id == id else Color("#606575"),12))
 	var accent_color := Color("#f0c95d") if today else ACCENTS[_game_id] as Color
 	_summary.text = "Today's 3 Daily puzzles • combined scores" if today else ("New campaign levels this week" if _period == "week" else "Total campaign levels cleared")
@@ -300,6 +308,7 @@ func _render() -> void:
 		own_rank = CompetitionManager.game_weekly_rank(_game_id) if _period == "week" else CompetitionManager.game_all_time_rank(_game_id)
 		own_score = CompetitionManager.game_weekly_levels(_game_id) if _period == "week" else CompetitionManager.game_all_time_levels(_game_id)
 	_mine.text = "YOU  #%d   •   %d %s" % [own_rank,own_score,"PTS" if today else "LEVELS"] if own_rank > 0 else "YOU  —  PLAY TO ENTER"
+	_mine.accessibility_name = "Your rank is %d with %d %s" % [own_rank,own_score,"points" if today else "levels completed"] if own_rank > 0 else "You are currently unranked. Complete a challenge or campaign level to join."
 	for child in _rows.get_children():
 		_rows.remove_child(child)
 		child.queue_free()
@@ -334,6 +343,7 @@ func _render() -> void:
 		points.custom_minimum_size.x = 87
 		lane.add_child(points)
 		panel.accessibility_name = "Rank %d, %s, %d %s" % [i+1,name_text,score,suffix]
+		player.accessibility_name = panel.accessibility_name
 	if entries.is_empty():
 		var empty := _label("No scores yet. Be the first to play!" if today else "No campaign entries yet. Finish levels to join.",15,Color("#bdc8d7") if _dark else Color("#47556c"))
 		empty.name = "LeaderboardEmptyState"
