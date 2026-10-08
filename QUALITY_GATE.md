@@ -130,3 +130,13 @@ missing prices show a quiet, disabled NO PRICE status, while disconnected
 providers show UNAVAILABLE. Catalog refresh may enable only newly priced SKUs;
 other products remain disabled. Neither state changes Play Console product
 activation, license-tester checkout, developer declarations or region pricing.
+
+## Rapid-navigation completion safety
+
+A win animation's deferred "next level" transition must be bound to the
+current navigation generation. If the player presses Back, opens Home, visits
+another game, or a second completion callback fires before that deferred
+transition executes, the stale callback must do nothing. Test repeated
+completion, all three games, and switching screens within the same frame.
+Never count "all green CI" as evidence of this race unless
+`validate_deferred_win_navigation` ran successfully.
