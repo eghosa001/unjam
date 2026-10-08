@@ -43,7 +43,7 @@ jobs:
         shell: bash
         run: |
           set -euxo pipefail
-          godot --headless --path . --script res://tests/validate_android_brand_raster.gd
+          UNJAM_ANDROID_BRAND_RASTER_READY=1 godot --headless --path . --script res://tests/validate_android_brand_raster.gd
       - name: Upload generated previews
         uses: actions/upload-artifact@v4
         with:
