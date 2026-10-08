@@ -4,6 +4,7 @@ const FIGMA_LEVEL_PAGE_SIZE := 20
 const GardenUpgradePreviewScene = preload("res://scripts/ui/garden_upgrade_preview.gd")
 const META_ART_SCRIPT = preload("res://scripts/ui/unjam_meta_art.gd")
 const GAME_ART_SCRIPT = preload("res://scripts/ui/unjam_2d_game_art.gd")
+const SIDEKICK_COACH = preload("res://scripts/systems/sidekick_coach.gd")
 const UNJAM_WORDMARK: Texture2D = preload("res://assets/art/brand/unjam_wordmark.svg")
 const WIDE_META_ART := {
 	"collection": preload("res://assets/art/meta_wide/collection.svg"),
@@ -1017,7 +1018,16 @@ func build_settings() -> void:
 
 	_figma_settings_card(canvas,"SettingsCard/Appearance",Rect2(17,409,354,76),card_fill,card_border,dark_mode)
 	_figma_text(canvas,"APPEARANCE",Rect2(33,425,150,18),15,heading_color)
-	_figma_text(canvas,"THEME",Rect2(33,448,210,28),14,muted_color)
+	_figma_text(canvas,"THEME",Rect2(33,448,72,28),14,muted_color)
+	_figma_text(canvas,"LANGUAGE",Rect2(109,448,82,28),12,muted_color)
+	# Appearance header ends before this button; no 4px header collision.
+	# Both compact controls retain at least a 44px touch target.
+	var language_code := LocalizationManager.locale_badge()
+	var language_button := _figma_button(canvas,"SettingsLanguageToggle","%s ›" % language_code,
+		Rect2(195,439,71,44),Color("#3b4148") if dark_mode else Color("#e7e1d6"),
+		Callable(self,"_cycle_settings_language"),FIGMA_DARK_INK if dark_mode else FIGMA_NAVY,13,12)
+	language_button.tooltip_text = LocalizationManager.localize("LANGUAGE")
+	language_button.accessibility_name = "%s %s" % [LocalizationManager.localize("LANGUAGE"), language_code]
 	var theme_fill := FIGMA_GOLD
 	var theme_text := FIGMA_NAVY
 	var theme_button := _figma_button(canvas,"SettingsThemeToggle",theme_name,Rect2(279,439,72,44),theme_fill,Callable(),theme_text,19,15)
@@ -1074,6 +1084,13 @@ func build_settings() -> void:
 	canvas.add_child(recovery)
 
 	_figma_bottom_nav(canvas,"settings",dark_mode)
+
+func _cycle_settings_language() -> void:
+	LocalizationManager.cycle_language()
+	FeedbackManager.tap()
+	# Every Settings control is rebuilt from authored English. This also resets
+	# fitted font metrics rather than carrying a previous locale's small text.
+	build_settings()
 
 func _open_cloud_recovery() -> void:
 	var popup := preload("res://scripts/ui/cloud_recovery_dialog.gd").new()
@@ -2058,7 +2075,7 @@ func show_playmate_sidekick(game_id: String = "") -> void:
 	game_label.name = "SidekickGameName"
 	game_label.clip_text = true
 	_fit_single_line_control_text(game_label, 216.0, 15, 11)
-	var level := MultiGameManager.highest_level(_sidekick_game)
+	var level := mini(10000, MultiGameManager.highest_level(_sidekick_game))
 	var level_badge := _figma_text(canvas, "LEVEL %d" % level, Rect2(263, 151, 86, 30), 13, _figma_theme_text(FIGMA_INK), true)
 	level_badge.name = "SidekickLevel"
 	level_badge.clip_text = true
@@ -2076,7 +2093,10 @@ func show_playmate_sidekick(game_id: String = "") -> void:
 	tip.position = Vector2(35, 312)
 	tip.size = Vector2(300, 130)
 	_fit_wrapped_text(tip, 296.0, 15, 12)
-	var identity := _figma_text(canvas, "BETA • OFFLINE COACH", Rect2(35, 449, 318, 24), 12, _figma_theme_text(FIGMA_MUTED), true)
+	var last_level := mini(10000, MultiGameManager.highest_level(_sidekick_game) - 1)
+	var stars := MultiGameManager.get_stars(_sidekick_game, last_level) if last_level >= 1 else 0
+	var progress_note := "%s • ★ %d/3" % [LocalizationManager.localize("LAST LEVEL"), stars] if stars > 0 else "BETA • OFFLINE COACH"
+	var identity := _figma_text(canvas, progress_note, Rect2(35, 449, 318, 24), 12, _figma_theme_text(FIGMA_MUTED), true)
 	identity.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	identity.clip_text = true
 	_fit_single_line_control_text(identity, 314.0, 12, 10)
@@ -2098,29 +2118,12 @@ func _sidekick_playmate_name() -> String:
 	return "UNJAM BUDDY"
 
 func _sidekick_recommended_tip_index() -> int:
-	# The first tip is chosen using the active campaign state, rather than
-	# always displaying the first generic instruction for every player.
-	var level := maxi(1, MultiGameManager.highest_level(_sidekick_game))
-	match _sidekick_game:
-		"rescue_rush":
-			if level <= 12:
-				return 1 # Learn the exit route before touching arrows.
-			if level % 100 >= 75:
-				return 2 # Conserve hints on difficult milestone boards.
-			return 0 # Unlock paths by freeing blockers.
-		"water_sort":
-			if level <= 20:
-				return 1 # Keep working space for initial lessons.
-			if level >= 100:
-				return 2 # Look for larger matching stacks.
-			return 0
-		"block_puzzle":
-			if level <= 20:
-				return 2 # Inspect the whole tray before placement.
-			if level >= 100:
-				return 0 # Protect board space on tougher levels.
-			return 1
-	return 0
+	var level := mini(10000, maxi(1, MultiGameManager.highest_level(_sidekick_game)))
+	var last_level := level - 1
+	var last_stars := MultiGameManager.get_stars(_sidekick_game, last_level) if last_level > 0 else 0
+	var progress := MultiGameManager.progress_for(_sidekick_game)
+	var perfect_streak := int(progress.get("perfect_streak", 0))
+	return SIDEKICK_COACH.recommended_tip_index(_sidekick_game, level, last_stars, perfect_streak)
 
 func _sidekick_tip() -> String:
 	var tips: Array = SIDEKICK_TIPS.get(_sidekick_game, SIDEKICK_TIPS["rescue_rush"])
