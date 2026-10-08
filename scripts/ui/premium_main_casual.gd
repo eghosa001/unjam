@@ -1018,15 +1018,16 @@ func build_settings() -> void:
 
 	_figma_settings_card(canvas,"SettingsCard/Appearance",Rect2(17,409,354,76),card_fill,card_border,dark_mode)
 	_figma_text(canvas,"APPEARANCE",Rect2(33,425,150,18),15,heading_color)
-	_figma_text(canvas,"THEME",Rect2(33,448,78,28),14,muted_color)
-	# Compact language control shares the appearance row without enlarging or
-	# scrolling Settings beneath the fixed navigation tray.
+	_figma_text(canvas,"THEME",Rect2(33,448,72,28),14,muted_color)
+	_figma_text(canvas,"LANGUAGE",Rect2(109,448,82,28),12,muted_color)
+	# Appearance header ends before this button; no 4px header collision.
+	# Both compact controls retain at least a 44px touch target.
 	var language_code := LocalizationManager.locale_badge()
-	var language_button := _figma_button(canvas,"SettingsLanguageToggle","LANGUAGE %s ›" % language_code,
-		Rect2(113,439,153,44),Color("#3b4148") if dark_mode else Color("#e7e1d6"),
-		Callable(self,"_cycle_settings_language"),FIGMA_DARK_INK if dark_mode else FIGMA_NAVY,12,11)
+	var language_button := _figma_button(canvas,"SettingsLanguageToggle","%s ›" % language_code,
+		Rect2(195,439,71,44),Color("#3b4148") if dark_mode else Color("#e7e1d6"),
+		Callable(self,"_cycle_settings_language"),FIGMA_DARK_INK if dark_mode else FIGMA_NAVY,13,12)
 	language_button.tooltip_text = LocalizationManager.localize("LANGUAGE")
-	language_button.accessibility_name = language_button.text
+	language_button.accessibility_name = "%s %s" % [LocalizationManager.localize("LANGUAGE"), language_code]
 	var theme_fill := FIGMA_GOLD
 	var theme_text := FIGMA_NAVY
 	var theme_button := _figma_button(canvas,"SettingsThemeToggle",theme_name,Rect2(279,439,72,44),theme_fill,Callable(),theme_text,19,15)
