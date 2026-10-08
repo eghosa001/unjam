@@ -187,15 +187,15 @@ func _draw() -> void:
 	if not occupied and not preview:
 		# Quiet inset pads: empty cells are defined by fill/depth, not 64 bright
 		# outlines. Placed blocks therefore own the colour and contrast hierarchy.
-		var idle_fill := Color(0.29, 0.14, 0.48, 0.31 + hover_amount * 0.05)
-		_draw_box(inset, idle_fill, 7, Color.TRANSPARENT, 0)
+		var idle_fill := Color(0.49, 0.34, 0.68, 0.49 + hover_amount * 0.06)
+		_draw_box(inset, idle_fill, 7, Color(0.88, 0.76, 1.0, 0.24 + hover_amount * 0.12), 1)
 		var well := inset.grow(-3.0)
 		_draw_box(well, Color(0.085, 0.04, 0.17, 0.24), 5, Color.TRANSPARENT, 0)
 		var gloss_y := inset.position.y + 3.0
 		draw_line(
 			Vector2(inset.position.x + 6.0, gloss_y),
 			Vector2(inset.end.x - 6.0, gloss_y),
-			Color(0.94, 0.85, 1.0, 0.075 + hover_amount * 0.04),
+			Color(0.94, 0.85, 1.0, 0.15 + hover_amount * 0.05),
 			1.2,
 			true
 		)
