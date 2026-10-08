@@ -103,6 +103,11 @@ static func role_for_button(button: Button) -> String:
 	return "secondary"
 
 static func apply_button(button: Button, dark: bool, accent: Color, role: String = "auto", radius: int = 22) -> void:
+	# Never strip keyboard focus, replace accessible fonts, or recolour a
+	# deliberately authored popup/dialog button. These controls own their
+	# responsive geometry and 48px hit targets.
+	if button.has_meta("unjam_preserve_surface_style"):
+		return
 	if role == "auto":
 		role = role_for_button(button)
 	button.flat = false
