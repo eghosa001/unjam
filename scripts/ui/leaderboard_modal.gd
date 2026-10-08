@@ -80,6 +80,10 @@ func _label(value: String, font_size: int, tint: Color) -> Label:
 func _button(value: String, label: String, tint: Color, callback: Callable) -> Button:
 	var node := Button.new()
 	node.name = value
+	# Exact authored modal dimensions must survive every generic UI re-skin and
+	# touch-enhancer traversal, not only the initial node-added callback.
+	node.set_meta("unjam_figma_exact_geometry",true)
+	node.set_meta("unjam_preserve_surface_style",true)
 	node.text = label
 	node.clip_text = true
 	node.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
