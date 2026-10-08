@@ -510,6 +510,11 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 		else:
 			hit.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		canvas.add_child(hit)
+		# Apply focus after adding the hit target: theme/parent initialization may
+		# otherwise leave an otherwise visible launcher action unfocusable.
+		if not selected:
+			hit.focus_mode = Control.FOCUS_ALL
+		hit.set_meta("unjam_authored_focus_mode", int(hit.focus_mode))
 
 func _add_pill(canvas: Control, rect: Rect2, fill: Color, text_value: String, font_size: int, text_color: Color, label_name: String = "") -> PanelContainer:
 	var panel := PanelContainer.new()
