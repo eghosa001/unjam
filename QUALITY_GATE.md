@@ -17,7 +17,7 @@ be verified with its own evidence. Do not claim 9+ without a device/screenshot r
 | Performance | 60fps target on supported representative Android phones; p95 gameplay frame <=16.7ms where hardware supports 60Hz; no sustained node growth after 100 navigations | On-device profiler capture |
 | Monetization | Play catalog live in enabled regions; all purchases, pending/cancel/restore/refund/repeat consumables; rewarded callbacks award once | License tester and Play console evidence |
 | Privacy | Test denied/accepted/required consent flows, fail-closed ads, and policy/Data Safety matching shipped SDKs | On-device consent test and listing audit |
-| Save and progression | Resume, offline saves, reinstall/second-device recovery, daily rollover, and 10,000-level targets | Tests plus multi-device checklist |
+| Save and progression | No destructive remove-before-rename; recover valid main, pending or backup after crashes; preserve purchases and selected locale through resets; verify resume, offline saves and 10,000-level targets | Atomic save/failed-write and reset-language CI, progression tests, device recovery checklist |
 | Localization | All supported language locales have readable controls and translated key journeys; no accidental substring replacements; switching a saved language restores English correctly and keeps assistive labels in sync | Localization integrity + Settings language-switch runtime contract + locale screenshots |
 | Playmate Sidekick | For matching campaign checkpoints, validate Water transfers and Block tray fit before declaring no moves; show retry/undo recovery rather than irrelevant strategy, never guess a winning move | Sidekick progress and no-move checkpoint contracts, locale integrity, viewport and human gameplay review |
 | Accessibility | Contrast >=4.5:1 for normal text, usable touch targets, keyboard/screen-reader checks where supported, reduced motion | Accessibility audit |
@@ -59,3 +59,17 @@ Test success only verifies the selected locales and sample states. Before a
 release, independently inspect every supported language's phone/tablet layout,
 check native screen-reader output, and verify that Sidekick suggestions are
 useful in real late-campaign play.
+
+## Atomic save integrity
+
+The save writer must flush a temporary JSON file, protect the previous valid
+primary in a separately staged backup, and replace the primary without
+pre-deleting it. A failed rename must not truncate the committed primary or
+emit a successful save event. Startup restores in precedence order: valid main,
+valid pending temp, valid backup. An unreadable or partial JSON file is not a
+valid save. Tests must exercise these cases using isolated `user://` fixture
+files, including an intentionally obstructed rename.
+
+User-selected locale belongs to preferences: reset progress and cloud backup
+must preserve it. Player coins and existing Play purchase ledgers must survive
+a gameplay reset, and local/cloud files must not become uploadable logs.

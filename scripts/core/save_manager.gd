@@ -24,6 +24,7 @@ const RESET_PRESERVED_KEYS := [
 	"music",
 	"reduce_motion",
 	"fast_animation",
+	"language_code",
 	"privacy_consent_status",
 	# Monetization history and Play-owned state survive gameplay resets.
 	"rewarded_ads_watched",
@@ -64,6 +65,7 @@ const DEFAULT_DATA := {
 	"music": true,
 	"reduce_motion": false,
 	"fast_animation": false,
+	"language_code": "",
 	"decorations": [],
 	"collection_levels": {},
 	"crown_tokens": 0,

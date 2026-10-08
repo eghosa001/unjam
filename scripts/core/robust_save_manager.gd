@@ -1,5 +1,7 @@
 extends "res://scripts/core/save_manager.gd"
 
+const ATOMIC_IO = preload("res://scripts/core/atomic_save_io.gd")
+
 const ROBUST_SAVE_PATH := "user://unjam_save.json"
 const BACKUP_PATH := "user://unjam_save.backup.json"
 const TEMP_PATH := "user://unjam_save.tmp.json"
@@ -25,9 +27,7 @@ func _ready() -> void:
 
 func load_save() -> void:
 	data = DEFAULT_DATA.duplicate(true)
-	var loaded := _read_dictionary(ROBUST_SAVE_PATH)
-	if loaded.is_empty():
-		loaded = _read_dictionary(BACKUP_PATH)
+	var loaded := ATOMIC_IO.recover(ROBUST_SAVE_PATH, TEMP_PATH, BACKUP_PATH)
 	if not loaded.is_empty():
 		for key in loaded:
 			data[key] = loaded[key]
@@ -41,13 +41,7 @@ func load_save() -> void:
 		_last_saved_payload = payload
 
 func _read_dictionary(path: String) -> Dictionary:
-	if not FileAccess.file_exists(path):
-		return {}
-	var file := FileAccess.open(path, FileAccess.READ)
-	if file == null:
-		return {}
-	var parsed = JSON.parse_string(file.get_as_text())
-	return parsed if parsed is Dictionary else {}
+	return ATOMIC_IO.read_dictionary(path)
 
 func _migrate_robust() -> void:
 	var previous_version := int(data.get("save_version", 0))
@@ -121,6 +115,8 @@ func _sanitize() -> void:
 	data.garden_gifts_claimed = max(0, int(data.get("garden_gifts_claimed", 0)))
 	var consent := String(data.get("privacy_consent_status", "unknown"))
 	data.privacy_consent_status = consent if consent in ["unknown", "required", "obtained", "not_required"] else "unknown"
+	var language := String(data.get("language_code", "")).strip_edges().to_lower()
+	data["language_code"] = language if language in ["", "en", "es", "fr", "pt", "de", "it", "ha", "yo", "ig"] else ""
 	for key in ["sound", "vibration", "music", "reduce_motion", "fast_animation", "remove_ads", "starter_pack_purchased"]:
 		data[key] = bool(data.get(key, DEFAULT_DATA.get(key, false)))
 	if not data.get("stars", {}) is Dictionary:
@@ -243,45 +239,11 @@ func save() -> void:
 	var payload := JSON.stringify(data)
 	if payload == _last_saved_payload:
 		return
-
-	var current_text := ""
-	if FileAccess.file_exists(ROBUST_SAVE_PATH):
-		var current := FileAccess.open(ROBUST_SAVE_PATH, FileAccess.READ)
-		if current != null:
-			current_text = current.get_as_text()
-			if current_text == payload:
-				_last_saved_payload = payload
-				return
-
-	var temp := FileAccess.open(TEMP_PATH, FileAccess.WRITE)
-	if temp == null:
+	if not ATOMIC_IO.commit(ROBUST_SAVE_PATH, TEMP_PATH, BACKUP_PATH, payload):
+		push_warning("Progress could not be committed; the previous valid save was left intact.")
 		return
-	temp.store_string(payload)
-	temp.flush()
-	temp = null
-
-	# Preserve the last valid main save only when we are actually replacing it.
-	if not current_text.is_empty() and JSON.parse_string(current_text) is Dictionary:
-		var backup := FileAccess.open(BACKUP_PATH, FileAccess.WRITE)
-		if backup != null:
-			backup.store_string(current_text)
-			backup.flush()
-
-	var absolute_main := ProjectSettings.globalize_path(ROBUST_SAVE_PATH)
-	var absolute_temp := ProjectSettings.globalize_path(TEMP_PATH)
-	if FileAccess.file_exists(ROBUST_SAVE_PATH):
-		DirAccess.remove_absolute(absolute_main)
-	var rename_error := DirAccess.rename_absolute(absolute_temp, absolute_main)
-	if rename_error == OK:
-		_last_saved_payload = payload
-		save_committed.emit()
-		return
-	var fallback := FileAccess.open(ROBUST_SAVE_PATH, FileAccess.WRITE)
-	if fallback != null:
-		fallback.store_string(payload)
-		fallback.flush()
-		_last_saved_payload = payload
-		save_committed.emit()
+	_last_saved_payload = payload
+	save_committed.emit()
 
 func complete_level(level_number: int, stars: int, rescue_id: String, coin_reward: int = 25) -> Dictionary:
 	level_number = clampi(level_number, 1, 10000)

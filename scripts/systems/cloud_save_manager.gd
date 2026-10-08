@@ -19,6 +19,7 @@ const CLOUD_KEYS := [
 	"music",
 	"reduce_motion",
 	"fast_animation",
+	"language_code",
 	"decorations",
 	"collection_levels",
 	"crown_tokens",
