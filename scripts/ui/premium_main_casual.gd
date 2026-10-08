@@ -609,6 +609,10 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 		else:
 			hit.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		canvas.add_child(hit)
+		# Match Home navigation: Godot layout can reset focus on transparent
+		# bottom-bar hit buttons after they first enter the scene tree.
+		if not selected:
+			hit.set_deferred("focus_mode", Control.FOCUS_ALL)
 
 func _toggle_settings_theme() -> void:
 	if _settings_theme_toggle_pending:
