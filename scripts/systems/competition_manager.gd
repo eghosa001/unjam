@@ -110,7 +110,7 @@ func weekly_rank() -> int:
 	return int(player.get("rank", 0)) if player is Dictionary else 0
 
 func daily_score() -> int:
-	var player = snapshot.get("player_daily", {})
+	var player = daily_snapshot.get("player_daily", {})
 	return int(player.get("score", 0)) if player is Dictionary else 0
 
 func weekly_score() -> int:
