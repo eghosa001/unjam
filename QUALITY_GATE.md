@@ -18,7 +18,8 @@ be verified with its own evidence. Do not claim 9+ without a device/screenshot r
 | Monetization | Play catalog live in enabled regions; all purchases, pending/cancel/restore/refund/repeat consumables; rewarded callbacks award once | License tester and Play console evidence |
 | Privacy | Test denied/accepted/required consent flows, fail-closed ads, and policy/Data Safety matching shipped SDKs | On-device consent test and listing audit |
 | Save and progression | Resume, offline saves, reinstall/second-device recovery, daily rollover, and 10,000-level targets | Tests plus multi-device checklist |
-| Localization | All supported language locales have readable controls and translated key journeys; no accidental substring replacements | Localization integrity contract + locale screenshots |
+| Localization | All supported language locales have readable controls and translated key journeys; no accidental substring replacements; switching a saved language restores English correctly and keeps assistive labels in sync | Localization integrity + Settings language-switch runtime contract + locale screenshots |
+| Playmate Sidekick | Advice must use actual local campaign progress and remain within the game-specific safe strategy set; never claim to know an uninspected live puzzle solution | Sidekick progress-coaching runtime test plus human gameplay evaluation |
 | Accessibility | Contrast >=4.5:1 for normal text, usable touch targets, keyboard/screen-reader checks where supported, reduced motion | Accessibility audit |
 | Analytics / stability | Opt-in/privacy-compliant production telemetry and crash monitoring validated; no developer-only log counts used as retention proof | Dashboard and crash-free-session evidence |
 | Shipping | Signed, Play-accepted release AAB and listing compliance complete; no debug/test ads in production | CI + Google Play Internal Testing |
@@ -42,3 +43,17 @@ Use `tools/select_fast_ci_tests.py` and only tests relevant to the changed files
 normal development. Run the full production/readiness, catalog and Android pack gates
 before a release, or when broad shared-system changes warrant them. Never remove a
 necessary release check to make CI green.
+
+## Language and coaching regression guard
+
+Changes to `scripts/systems/localization_manager.gd` must rerun the locale integrity
+and reversible Settings selector tests. Changes to `scripts/systems/sidekick_coach.gd`
+rerun deterministic advice tests. Changes to the shared Settings/Sidekick surface
+must run both checks plus normal secondary-screen viewport, touch-zone and
+visual-fit checks. A button added to the Figma reference canvas must not obscure
+an adjacent label at any tested viewport, even if every function still responds.
+
+Test success only verifies the selected locales and sample states. Before a
+release, independently inspect every supported language's phone/tablet layout,
+check native screen-reader output, and verify that Sidekick suggestions are
+useful in real late-campaign play.
