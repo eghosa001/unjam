@@ -596,8 +596,11 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 		var hit := Button.new()
 		hit.name = "StdNavHit_%s" % String(key).to_upper()
 		hit.flat = true
-		hit.focus_mode = Control.FOCUS_NONE
-		hit.modulate.a = 0.001
+		hit.focus_mode = Control.FOCUS_NONE if selected else Control.FOCUS_ALL
+		hit.accessibility_name = String(names[key]).capitalize()
+		hit.tooltip_text = "Go to %s" % String(names[key]).capitalize()
+		# Keep the invisible hit target opaque so its focus ring remains visible.
+		hit.add_theme_stylebox_override("focus", FigmaReferenceCanvas.solid_box(Color.TRANSPARENT, 12, Color(FIGMA_GOLD, 0.94), 2))
 		hit.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 		FigmaReferenceCanvas.set_rect(hit, float(hit_x[key]),753,72,78)
 		if not selected:
