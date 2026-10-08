@@ -76,6 +76,7 @@ func _build_figma_water(canvas: Control) -> void:
 	var back := RefCanvas.premium_button("←", 22, NAVY, Color(0.96, 0.99, 1.0, 0.98), 16, Color(0.57, 0.84, 1.0, 0.52), 1.4)
 	back.name = "WaterBackAction"
 	back.tooltip_text = "Back to levels"
+	back.accessibility_name = "Back to level selection"
 	RefCanvas.set_rect(back, 15, 15, 54, 54)
 	back.pressed.connect(_quit)
 	canvas.add_child(back)
@@ -83,6 +84,7 @@ func _build_figma_water(canvas: Control) -> void:
 	var retry := RefCanvas.premium_button("↻", 23, NAVY, Color(0.96, 0.99, 1.0, 0.98), 16, Color(0.57, 0.84, 1.0, 0.52), 1.4)
 	retry.name = "WaterRetryAction"
 	retry.tooltip_text = "Restart level"
+	retry.accessibility_name = "Restart current puzzle"
 	RefCanvas.set_rect(retry, 319, 15, 54, 54)
 	retry.pressed.connect(restart_level)
 	canvas.add_child(retry)
