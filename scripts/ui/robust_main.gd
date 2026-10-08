@@ -4,10 +4,14 @@ signal surface_changed(surface: String)
 
 var _current_surface := "home"
 var _surface_emit_pending := false
+# Generation prevents a deferred win animation from reopening gameplay after
+# the player presses Back, changes game, or navigates to another surface.
+var _navigation_generation := 0
 var current_surface: String:
 	get:
 		return _current_surface
 	set(value):
+		_navigation_generation += 1
 		_current_surface = value
 		if has_method("_sync_persistent_surfaces_now"):
 			call("_sync_persistent_surfaces_now", value)
@@ -468,7 +472,7 @@ func _on_rescue_finished(completed_level: int, was_daily: bool = false) -> void:
 	elif completed_level < 0:
 		build_home()
 	elif LevelManager.has_level(completed_level + 1):
-		call_deferred("start_level", completed_level + 1)
+		call_deferred("_advance_if_still_in_game", "rescue_rush", completed_level + 1, _navigation_generation)
 	else:
 		build_home()
 
@@ -489,9 +493,27 @@ func _on_multi_finished(completed_level: int, game_id: String, was_daily: bool =
 	elif completed_level < 0:
 		build_home()
 	elif completed_level < MultiGameManager.CAMPAIGN_LEVELS:
-		call_deferred("start_multi_level", game_id, completed_level + 1, false)
+		call_deferred("_advance_if_still_in_game", game_id, completed_level + 1, _navigation_generation)
 	else:
 		build_home()
+
+func _advance_if_still_in_game(game_id: String, next_level: int, generation: int) -> void:
+	# Win callbacks may race with Back, a Home shortcut, or another game launch.
+	# No old deferred callback may open an unwanted scene or overwrite a newer
+	# daily/campaign checkpoint when navigation has already moved on.
+	if not is_inside_tree() or generation != _navigation_generation or current_surface != "game":
+		return
+	if active_game != null and is_instance_valid(active_game):
+		return
+	if selected_game_id != game_id:
+		return
+	if next_level < 1 or next_level > MultiGameManager.CAMPAIGN_LEVELS:
+		return
+	if game_id == "rescue_rush":
+		start_level(next_level)
+	elif game_id in ["water_sort", "block_puzzle"]:
+		start_multi_level(game_id, next_level, false)
+
 
 func _on_multi_quit(source_game: Control, game_id: String, was_daily: bool = false) -> void:
 	if active_game != null and is_instance_valid(active_game) and source_game != active_game:
