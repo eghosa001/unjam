@@ -41,7 +41,7 @@ static func recommended_tip_index(game_id: String, level: int, last_stars: int, 
 # Invalid, stale or truncated checkpoints are ignored, rather than shown as
 # if they described the current level.
 static func checkpoint_guidance(game_id: String, level: int, snapshot: Dictionary, fallback_tip: int) -> Dictionary:
-	var result := {"active": false, "tip_index": clampi(fallback_tip, 0, 2), "status": "", "recovery_tip": ""}
+	var result := {"active": false, "tip_index": clampi(fallback_tip, 0, 2), "status": "", "recovery_tip": "", "action": {}}
 	if snapshot.is_empty() or int(snapshot.get("level", -1)) != level:
 		return result
 	if bool(snapshot.get("daily", false)):
@@ -56,6 +56,9 @@ static func checkpoint_guidance(game_id: String, level: int, snapshot: Dictionar
 				return result
 			var empty_tubes := 0
 			var legal_pours := 0
+			var best_pour_score := -1
+			var best_from := -1
+			var best_to := -1
 			for tube in raw_tubes:
 				if not tube is Array or tube.size() > 4:
 					return result
@@ -76,9 +79,25 @@ static func checkpoint_guidance(game_id: String, level: int, snapshot: Dictionar
 						continue
 					if target.is_empty() or int(source.back()) == int(target.back()):
 						legal_pours += 1
+						# A verified colour merge is much safer to suggest than pouring
+						# into an empty tube merely because that move is mechanically legal.
+						if not target.is_empty():
+							var run := 0
+							for k in range(source.size() - 1, -1, -1):
+								if source[k] != source.back():
+									break
+								run += 1
+							var moved := mini(run, 4 - target.size())
+							var score := moved * 10 + (25 if target.size() + moved == 4 else 0)
+							if score > best_pour_score:
+								best_pour_score = score
+								best_from = from_idx + 1
+								best_to = to_idx + 1
 			result.active = true
 			result.tip_index = 1 if empty_tubes <= 1 else (2 if legal_pours >= 8 else 0)
 			result.status = "%d EMPTY TUBES • %d MOVES" % [empty_tubes, maxi(0, int(snapshot.get("moves", 0)))]
+			if best_from > 0:
+				result.action = {"kind": "water_pour", "source": best_from, "target": best_to}
 			if legal_pours == 0:
 				# A completed sorted board is handled by the game, not as a deadlock.
 				var solved := true
@@ -118,7 +137,11 @@ static func checkpoint_guidance(game_id: String, level: int, snapshot: Dictionar
 				var has_shape := false
 				var all_decoded := true
 				var has_fit := false
-				for raw_shape in shapes:
+				var best_fit := {}
+				var best_fit_score := -1
+				var specials: Dictionary = snapshot.get("campaign_special_cells", {}) if snapshot.get("campaign_special_cells", {}) is Dictionary else {}
+				for shape_index in range(shapes.size()):
+					var raw_shape = shapes[shape_index]
 					if not raw_shape is Array or raw_shape.size() > 16:
 						all_decoded = false
 						break
@@ -143,13 +166,32 @@ static func checkpoint_guidance(game_id: String, level: int, snapshot: Dictionar
 								if px >= 8 or py >= 8 or bool(raw_cells[py][px]):
 									fits = false
 									break
+								var restriction: Dictionary = specials.get(str(py * 8 + px), {})
+								if String(restriction.get("kind", "")) == "preserve" and int(restriction.get("layers", 0)) > 0:
+									fits = false
+									break
 							if fits:
 								has_fit = true
-								break
-						if has_fit:
-							break
-					if has_fit:
-						break
+								# Prefer a placement that immediately completes rows/cols.
+								var completed_lines := 0
+								for line in range(8):
+									var full_row := true
+									var full_col := true
+									for p in range(8):
+										if not bool(raw_cells[line][p]) and Vector2i(p-line*0,line) not in _translated_points(points,x,y):
+											full_row = false
+										if not bool(raw_cells[p][line]) and Vector2i(line,p) not in _translated_points(points,x,y):
+											full_col = false
+									if full_row:
+										completed_lines += 1
+									if full_col:
+										completed_lines += 1
+								var score := completed_lines * 100 + points.size()
+								if score > best_fit_score:
+									best_fit_score = score
+									best_fit = {"kind":"block_place","piece":shape_index+1,"row":y+1,"col":x+1}
+				if all_decoded and has_fit:
+					result.action = best_fit
 				if all_decoded and has_shape and not has_fit:
 					result.status = "NO PIECE FITS • %d MOVES" % maxi(0, int(snapshot.get("placements", 0)))
 					result.recovery_tip = "No tray piece fits. Retry and keep more space open."
@@ -186,3 +228,9 @@ static func _checked_block_point(raw: Variant) -> Vector2i:
 			if px.is_valid_int() and py.is_valid_int():
 				return Vector2i(int(px), int(py))
 	return Vector2i(-1, -1)
+
+static func _translated_points(points: Array[Vector2i], x: int, y: int) -> Array[Vector2i]:
+	var result: Array[Vector2i] = []
+	for point in points:
+		result.append(Vector2i(x + point.x, y + point.y))
+	return result
