@@ -99,13 +99,16 @@ func set_localized_prices(prices: Dictionary) -> void:
 	catalog_changed.emit()
 
 func price_text(product_id: String) -> String:
-	if localized_prices.has(product_id):
-		return String(localized_prices[product_id])
-	if provider_ready() and verifier_ready():
-		return "PLAY STORE"
+	if not PRODUCTS.has(product_id):
+		return "UNAVAILABLE"
+	# Desktop-only QA keeps its explicit test catalog. A connected billing
+	# plugin without a valid regional price is NOT a sellable product.
 	if bool(ProjectSettings.get_setting("monetization/test_mode", false)) and OS.get_name() != "Android":
 		return "TEST PURCHASE"
-	return "UNAVAILABLE"
+	if not provider_ready() or not verifier_ready():
+		return "UNAVAILABLE"
+	var price := String(localized_prices.get(product_id, "")).strip_edges()
+	return price if not price.is_empty() else "NO PRICE"
 
 func is_purchase_pending(product_id: String) -> bool:
 	return bool(pending_products.get(product_id, false))
