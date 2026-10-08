@@ -38,7 +38,10 @@ func _run() -> void:
 		if not area.encloses(fitted):
 			_fail("Recovery window escapes logical viewport at %s: fitted=%s available=%s" % [str(size_value), str(fitted), str(area)])
 			return
-		if fitted.size.x < area.size.x * 0.68 or fitted.size.y < area.size.y * 0.45:
+		# A tablet dialog may deliberately use a comfortable narrower column.
+		# Demand a larger fraction on phones, without making tall tablets fail.
+		var width_floor := 0.60 if area.size.x >= 900.0 else 0.68
+		if fitted.size.x < area.size.x * width_floor or fitted.size.y < area.size.y * 0.45:
 			_fail("Recovery window too small for legible text at %s: fitted=%s available=%s" % [str(size_value), str(fitted), str(area)])
 			return
 		if popup.get_node_or_null("CloudRecoveryCenter/CloudRecoveryScroll/CloudRecoveryCard/CloudRecoveryMargins/CloudRecoveryStack/RecoveryCodeInput") == null:
