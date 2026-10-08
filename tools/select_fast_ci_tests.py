@@ -236,6 +236,15 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
         })
         return True
 
+    if p in {
+        "scripts/systems/analytics_manager.gd",
+        "scripts/systems/frame_pacing_probe.gd",
+    }:
+        # Performance sampling must not pull the full game/visual suites into
+        # every telemetry edit, but its bounded, privacy-safe contract is vital.
+        explicit_tests.add("validate_frame_pacing_probe")
+        return True
+
     progression_contracts = {
         "scripts/core/water_sort_progression.gd": "validate_water_constructive_solvability",
         "scripts/core/block_puzzle_progression.gd": "validate_block_progression_10000",
