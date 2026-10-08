@@ -6,6 +6,9 @@ signal privacy_options_completed(status: String)
 
 const VALID := ["unknown", "required", "obtained", "not_required"]
 var provider: Node
+# Cached consent is not authorization for ads on a new app session/device.
+# UMP (or a provider's equivalent callback) must confirm the current state.
+var _session_consent_verified := false
 
 func _ready() -> void:
 	var status := String(SaveManager.data.get("privacy_consent_status", "unknown"))
@@ -18,6 +21,9 @@ func register_provider(value: Node) -> void:
 	refresh_consent()
 
 func refresh_consent() -> void:
+	# Rechecking after resume/provider change temporarily closes the ad gate.
+	# This avoids using stale cached approval while consent is unresolved.
+	_session_consent_verified = false
 	if provider != null and is_instance_valid(provider) and provider.has_method("request_consent"):
 		provider.call("request_consent", Callable(self, "_set_status"))
 	elif OS.get_name() != "Android":
@@ -28,6 +34,7 @@ func refresh_consent() -> void:
 func _set_status(status: String) -> void:
 	if status not in VALID:
 		status = "required"
+	_session_consent_verified = status in ["obtained", "not_required"]
 	SaveManager.data.privacy_consent_status = status
 	SaveManager.save()
 	consent_state_changed.emit(status)
@@ -38,7 +45,7 @@ func may_request_ads() -> bool:
 	# keep the strict consent gate because admob_test_mode is disabled there.
 	if bool(ProjectSettings.get_setting("monetization/admob_test_mode", false)):
 		return true
-	return String(SaveManager.data.get("privacy_consent_status", "unknown")) in ["obtained", "not_required"]
+	return _session_consent_verified and String(SaveManager.data.get("privacy_consent_status", "unknown")) in ["obtained", "not_required"]
 
 func show_privacy_options() -> void:
 	privacy_options_requested.emit()
