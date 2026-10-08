@@ -54,6 +54,11 @@ func _input(event: InputEvent) -> void:
 func close() -> void:
 	queue_free()
 
+func present_period(period: String) -> void:
+	if period in PERIODS:
+		_set_period(period)
+
+
 func _style(fill: Color, outline: Color, radius: int = 18) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = fill
