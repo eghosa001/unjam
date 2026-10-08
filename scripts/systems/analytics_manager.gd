@@ -29,6 +29,12 @@ func _process(delta: float) -> void:
 func quality_snapshot() -> Dictionary:
 	return _frame_probe.snapshot()
 
+func _notification(what: int) -> void:
+	# Android QA builds can capture this numeric-only summary with adb logcat on
+	# pause/close. No production telemetry, account data or disk retention.
+	if OS.is_debug_build() and what in [NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_WM_CLOSE_REQUEST]:
+		print("[unjam-frame-quality] %s" % JSON.stringify(quality_snapshot()))
+
 func track(event_name: String, properties: Dictionary = {}) -> void:
 	if not enabled or not _safe_name(event_name) or (not _session_counts.has(event_name) and _session_counts.size() >= MAX_EVENT_KINDS):
 		return
