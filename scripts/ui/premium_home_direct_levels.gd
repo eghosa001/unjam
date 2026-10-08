@@ -498,11 +498,13 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 		var hit := Button.new()
 		hit.name = item[5]
 		hit.flat = true
-		hit.focus_mode = Control.FOCUS_NONE
-		hit.modulate.a = 0.001
+		hit.accessibility_name = String(item[0]).capitalize()
+		hit.tooltip_text = "Open %s" % String(item[0]).capitalize()
+		var cb: Callable = item[4]
+		hit.focus_mode = Control.FOCUS_ALL if cb.is_valid() else Control.FOCUS_NONE
+		hit.add_theme_stylebox_override("focus", RefCanvas.solid_box(Color.TRANSPARENT, 12, Color(GOLD, 0.94), 2))
 		hit.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 		RefCanvas.set_rect(hit, float(item[3]), 753, 72, 78)
-		var cb: Callable = item[4]
 		if cb.is_valid():
 			hit.pressed.connect(cb)
 		else:
