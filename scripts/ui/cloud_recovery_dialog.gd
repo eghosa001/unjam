@@ -24,7 +24,7 @@ func _ready() -> void:
 		if event is InputEventMouseButton and event.pressed:
 			queue_free()
 	)
-	var center := CenterContainer.new()
+	var center := Control.new()
 	center.name = "CloudRecoveryCenter"
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	center.position = Vector2.ZERO
@@ -36,14 +36,20 @@ func _ready() -> void:
 	var visible_size := get_viewport().get_visible_rect().size
 	var scroll := ScrollContainer.new()
 	scroll.name = "CloudRecoveryScroll"
-	scroll.custom_minimum_size = Vector2(minf(350.0, visible_size.x - 24.0), minf(710.0, visible_size.y - 32.0))
+	# Match the 390x844 reference scaling of the rest of UNJAM.
+	var reference_size := Vector2(350.0, 710.0)
+	var factor := minf(visible_size.x / 390.0, visible_size.y / 844.0)
+	scroll.custom_minimum_size = reference_size
+	scroll.size = reference_size
+	scroll.scale = Vector2.ONE * factor
+	scroll.position = (visible_size - reference_size * factor) * 0.5
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	scroll.mouse_filter = Control.MOUSE_FILTER_STOP
 	center.add_child(scroll)
 	var card := PanelContainer.new()
 	card.name = "CloudRecoveryCard"
-	card.custom_minimum_size.x = minf(350.0, visible_size.x - 24.0)
+	card.custom_minimum_size.x = 350.0
 	card.mouse_filter = Control.MOUSE_FILTER_STOP
 	card.add_theme_stylebox_override("panel", UI.solid_box(Color("#1d2a3a"), 18, Color("#4c657e"), 2))
 	scroll.add_child(card)
