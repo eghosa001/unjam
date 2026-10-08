@@ -498,16 +498,26 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 		var hit := Button.new()
 		hit.name = item[5]
 		hit.flat = true
-		hit.focus_mode = Control.FOCUS_NONE
-		hit.modulate.a = 0.001
+		hit.accessibility_name = String(item[0]).capitalize()
+		hit.tooltip_text = "Open %s" % String(item[0]).capitalize()
+		var cb: Callable = item[4]
+		hit.focus_mode = Control.FOCUS_NONE if selected else Control.FOCUS_ALL
+		hit.add_theme_stylebox_override("focus", RefCanvas.solid_box(Color.TRANSPARENT, 12, Color(GOLD, 0.94), 2))
 		hit.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 		RefCanvas.set_rect(hit, float(item[3]), 753, 72, 78)
-		var cb: Callable = item[4]
 		if cb.is_valid():
 			hit.pressed.connect(cb)
 		else:
 			hit.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		canvas.add_child(hit)
+		# Apply focus after adding the hit target: theme/parent initialization may
+		# otherwise leave an otherwise visible launcher action unfocusable.
+		if not selected:
+			hit.focus_mode = Control.FOCUS_ALL
+			# The scene lifecycle can clear focus on freshly attached transparent
+			# touch targets. Restore it after deferred layout and visibility setup.
+			hit.set_deferred("focus_mode", Control.FOCUS_ALL)
+		hit.set_meta("unjam_authored_focus_mode", int(hit.focus_mode))
 
 func _add_pill(canvas: Control, rect: Rect2, fill: Color, text_value: String, font_size: int, text_color: Color, label_name: String = "") -> PanelContainer:
 	var panel := PanelContainer.new()
