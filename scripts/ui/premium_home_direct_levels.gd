@@ -309,14 +309,14 @@ func _add_rank_summary(canvas: Control) -> void:
 		20, Color("#8b78d8"), 1, 0.12))
 	RefCanvas.set_rect(panel,21,365,346,162)
 	canvas.add_child(panel)
-	var title := _add_text(canvas,"YOUR WEEKLY RANK",Rect2(36,380,250,22),15,OFF_WHITE if dark else NAVY,true)
+	var title := _add_text(canvas,"YOUR WEEKLY RANK",Rect2(36,374,250,22),15,OFF_WHITE if dark else NAVY,true)
 	title.name = "HomeRankTitle"
-	var game_name := _add_text(canvas,_short_game_name(selected_game),Rect2(36,409,240,18),12,MUTED,false)
+	var game_name := _add_text(canvas,_short_game_name(selected_game),Rect2(36,401,240,18),12,MUTED,false)
 	game_name.name = "HomeRankGameName"
-	var rank := _add_text(canvas,"—",Rect2(36,419,132,49),40,GOLD,true)
+	var rank := _add_text(canvas,"—",Rect2(36,424,132,46),36,GOLD,true)
 	rank.name = "HomeRankValue"
 	rank.accessibility_name = "Weekly rank loading"
-	var progress := _add_text(canvas,"Refreshing rankings…",Rect2(165,435,183,27),12,MUTED,false)
+	var progress := _add_text(canvas,"Refreshing rankings…",Rect2(177,436,175,27),12,MUTED,false)
 	progress.name = "HomeRankProgress"
 	progress.clip_text = true
 	var open := _add_action(canvas,Rect2(36,476,316,44),Color("#7659d4") if dark else Color("#6b52cb"),"★  VIEW LEADERBOARD",13,OFF_WHITE,Callable(self,"_open_compete"),14)
@@ -352,10 +352,10 @@ func _add_daily_feature(canvas: Control) -> void:
 		18,Color("#6fc69b"),1,0.08))
 	RefCanvas.set_rect(daily_panel,21,548,346,116)
 	canvas.add_child(daily_panel)
-	var title := _add_text(canvas,"DAILY CHALLENGE",Rect2(36,561,270,24),16,OFF_WHITE if dark else NAVY,true)
+	var title := _add_text(canvas,"DAILY CHALLENGE",Rect2(36,565,300,22),16,OFF_WHITE if dark else NAVY,true)
 	title.name = "HomeDailyFeatureTitle"
-	_add_text(canvas,"New puzzles every day",Rect2(36,592,193,22),12,MUTED,false)
-	var daily := _add_action(canvas,Rect2(221,583,131,51),Color("#368c65"),"PLAY DAILY",12,OFF_WHITE,Callable(self,"_open_daily_games"),14)
+	_add_text(canvas,"New puzzles every day",Rect2(36,606,165,24),12,MUTED,false)
+	var daily := _add_action(canvas,Rect2(221,598,131,51),Color("#368c65"),"PLAY DAILY",12,OFF_WHITE,Callable(self,"_open_daily_games"),14)
 	daily.name = "HomeDailyChallengeButton"
 	daily.tooltip_text = "Play today's puzzles and enter the Daily leaderboard"
 
