@@ -182,7 +182,7 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
         "supabase/functions/unjam-competition/index.ts",
         "supabase/migrations/20261007_create_social_friends.sql",
     }:
-        explicit_tests.add("validate_friends_social")
+        explicit_tests.update({"validate_friends_social", "validate_leaderboard_visibility"})
         if p == "scripts/systems/competition_manager.gd":
             add(groups, "daily")
         return True
@@ -256,12 +256,20 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
             visual.add("shop")
         return True
 
+    if p == "scripts/ui/leaderboard_modal.gd":
+        explicit_tests.add("validate_leaderboard_visibility")
+        # The popup needs a real runtime/UI regression, not only an import check.
+        add(groups, "navigation_shell")
+        visual.add("daily")
+        return True
+
     if p == "scripts/ui/robust_main.gd":
         # Navigation state changes are not purely cosmetic. Verify that a
         # queued win/auto-advance cannot reopen a dismissed game, alongside
         # normal Home, input and progression flows. Keep the batch bounded.
         explicit_tests.update({
             "validate_deferred_win_navigation",
+            "validate_leaderboard_visibility",
             "validate_async_game_scene_launch",
             "validate_home_return_atomic",
             "validate_gameplay_interactions",
