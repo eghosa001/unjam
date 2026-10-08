@@ -1,5 +1,7 @@
 extends Node
 
+const FramePacingProbe = preload("res://scripts/systems/frame_pacing_probe.gd")
+
 # Privacy-first in-process QA counters. This is deliberately NOT a production
 # analytics backend: it sends no network requests, saves no identifiers and is
 # bounded to one play session.
@@ -17,6 +19,15 @@ const SAFE_ENUM_FIELDS := ["game", "game_id", "outcome", "mode", "placement"]
 var enabled := true
 var _session_counts: Dictionary = {}
 var _session_recent: Array[Dictionary] = []
+var _frame_probe := FramePacingProbe.new()
+
+func _process(delta: float) -> void:
+	# One constant-time ring write per frame. No disk/network calls, sorting,
+	# allocation-heavy payloads or performance metrics in gameplay callbacks.
+	_frame_probe.record_frame(delta)
+
+func quality_snapshot() -> Dictionary:
+	return _frame_probe.snapshot()
 
 func track(event_name: String, properties: Dictionary = {}) -> void:
 	if not enabled or not _safe_name(event_name) or (not _session_counts.has(event_name) and _session_counts.size() >= MAX_EVENT_KINDS):
@@ -33,7 +44,7 @@ func track(event_name: String, properties: Dictionary = {}) -> void:
 		print("[analytics] %s %s" % [event_name, JSON.stringify(filtered)])
 
 func session_snapshot() -> Dictionary:
-	return {"counts": _session_counts.duplicate(), "recent": _session_recent.duplicate(true)}
+	return {"counts": _session_counts.duplicate(), "recent": _session_recent.duplicate(true), "quality": quality_snapshot()}
 
 func _safe_properties(properties: Dictionary) -> Dictionary:
 	var output := {}
