@@ -13,6 +13,7 @@ var _pending_game_launch: Dictionary = {}
 # otherwise cold worker compilation can fail to resolve those textures.
 var _game_scene_art_ready := false
 var _game_scene_art_cache: Array[Texture2D] = []
+var _ready_game_scenes: Dictionary = {}
 const GAME_SCENE_ART_DEPENDENCIES := [
 	"res://assets/art/gameplay/water_screen_overlay.svg",
 	"res://assets/art/gameplay/rescue_screen_overlay.svg",
@@ -90,6 +91,9 @@ func _prime_game_scene(path: String) -> void:
 func _game_scene_resource(path: String) -> PackedScene:
 	# Important: load_threaded_get() BLOCKS the caller until completion when
 	# called during THREAD_LOAD_IN_PROGRESS. Never invoke that on the UI thread.
+	var ready := _ready_game_scenes.get(path,null) as PackedScene
+	if ready != null:
+		return ready
 	var cached := ResourceLoader.get_cached_ref(path) as PackedScene
 	if cached != null:
 		return cached
@@ -334,6 +338,7 @@ func _begin_game_scene_launch(path: String, config: Dictionary) -> void:
 	_remove_active_game()
 	var packed := _game_scene_resource(path)
 	if packed != null:
+		_ready_game_scenes[path] = packed
 		_pending_game_launch.clear()
 		_instantiate_game_scene(packed,config)
 		return
@@ -412,30 +417,57 @@ func _retry_game_loading() -> void:
 
 func _await_game_scene(path: String, config: Dictionary, generation: int) -> void:
 	var deadline := Time.get_ticks_msec() + 20000
-	while is_inside_tree() and generation == _navigation_generation and current_surface == "game_loading":
+	while is_inside_tree():
+		var stale := generation != _navigation_generation or current_surface != "game_loading"
+		# Another request may have drained the same ResourceLoader token. Hold
+		# that parsed PackedScene in app memory to satisfy the newest request.
+		var retained := _ready_game_scenes.get(path,null) as PackedScene
+		if retained != null:
+			if not stale:
+				_pending_game_launch.clear()
+				_instantiate_game_scene(retained,config)
+			return
 		var progress: Array = []
 		var status := ResourceLoader.load_threaded_get_status(path,progress)
 		if status == ResourceLoader.THREAD_LOAD_LOADED:
+			# Even a cancelled launch must consume the completed background result.
+			# Returning early would strand the ResourceLoader load token and leak
+			# imported SVG/game resources after repeated Back/Home navigation.
 			var packed := ResourceLoader.load_threaded_get(path) as PackedScene
+			if packed != null:
+				_ready_game_scenes[path] = packed
+			if stale:
+				return
 			if packed != null:
 				_pending_game_launch.clear()
 				_instantiate_game_scene(packed,config)
-				return
-			_show_game_loading_error("Could not open this game. Try again or go back.")
+			else:
+				_show_game_loading_error("Could not open this game. Try again or go back.")
 			return
 		if status == ResourceLoader.THREAD_LOAD_FAILED:
-			_show_game_loading_error("Game data could not be loaded. Retry or go back.")
+			if not stale:
+				_show_game_loading_error("Game data could not be loaded. Retry or go back.")
 			return
 		if status == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
+			if stale:
+				return
+			var cached := ResourceLoader.get_cached_ref(path) as PackedScene
+			if cached != null:
+				_ready_game_scenes[path] = cached
+				_pending_game_launch.clear()
+				_instantiate_game_scene(cached,config)
+				return
 			if ResourceLoader.load_threaded_request(path) != OK:
 				_show_game_loading_error("Game data is unavailable. Retry or go back.")
 				return
-		var bar := content.find_child("GameLoadingProgress",true,false) as ProgressBar if content != null else null
-		if bar != null and not progress.is_empty():
-			bar.value = clampf(float(progress[0]),0.0,1.0)
-		if Time.get_ticks_msec() > deadline:
-			_show_game_loading_error("Loading is taking too long. Retry or go back.")
-			return
+		if not stale:
+			var bar := content.find_child("GameLoadingProgress",true,false) as ProgressBar if content != null else null
+			if bar != null and not progress.is_empty():
+				bar.value = clampf(float(progress[0]),0.0,1.0)
+			if Time.get_ticks_msec() > deadline:
+				_show_game_loading_error("Loading is taking too long. Retry or go back.")
+				# Keep draining in the background: a timed-out request is still owned
+				# by ResourceLoader until it completes and the result is collected.
 		await get_tree().process_frame
 
 func _show_game_loading_error(message: String) -> void:
