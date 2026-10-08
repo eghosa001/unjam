@@ -2100,6 +2100,7 @@ func show_playmate_sidekick(game_id: String = "") -> void:
 	if bool(insight.get("active", false)):
 		progress_note = LocalizationManager.localize(String(insight.get("status", "")))
 	var identity := _figma_text(canvas, progress_note, Rect2(35, 449, 318, 24), 12, _figma_theme_text(FIGMA_MUTED), true)
+	identity.name = "SidekickTipStatus"
 	identity.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	identity.clip_text = true
 	_fit_single_line_control_text(identity, 314.0, 12, 10)
