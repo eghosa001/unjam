@@ -1025,8 +1025,8 @@ func build_settings() -> void:
 	var language_button := _figma_button(canvas,"SettingsLanguageToggle","LANGUAGE %s ›" % language_code,
 		Rect2(113,439,153,44),Color("#3b4148") if dark_mode else Color("#e7e1d6"),
 		Callable(self,"_cycle_settings_language"),FIGMA_DARK_INK if dark_mode else FIGMA_NAVY,12,11)
-	language_button.tooltip_text = "Tap to change language"
-	language_button.accessibility_name = "LANGUAGE %s, change language" % language_code
+	language_button.tooltip_text = LocalizationManager.localize("LANGUAGE")
+	language_button.accessibility_name = language_button.text
 	var theme_fill := FIGMA_GOLD
 	var theme_text := FIGMA_NAVY
 	var theme_button := _figma_button(canvas,"SettingsThemeToggle",theme_name,Rect2(279,439,72,44),theme_fill,Callable(),theme_text,19,15)
