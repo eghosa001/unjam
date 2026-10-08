@@ -21,6 +21,9 @@ var _pending_reward_placement := ""
 var _pending_reward_callback := Callable()
 var _pending_reward_failed_callback := Callable()
 var rewarded_in_progress := false
+var _rewarded_request_serial := 0
+var _interstitial_request_serial := 0
+var _interstitial_in_progress := false
 
 func _ready() -> void:
 	ads_enabled = not bool(SaveManager.data.get("remove_ads", false))
@@ -56,10 +59,12 @@ func show_rewarded(placement: String, on_reward: Callable = Callable(), on_faile
 	AnalyticsManager.track("rewarded_requested", {"placement": placement, "provider": is_provider_ready()})
 	if is_provider_ready() and provider.has_method("show_rewarded"):
 		rewarded_in_progress = true
+		_rewarded_request_serial += 1
+		var request_serial := _rewarded_request_serial
 		_pending_reward_placement = placement
 		_pending_reward_callback = on_reward
 		_pending_reward_failed_callback = on_failed
-		var accepted = provider.call("show_rewarded", placement, Callable(self, "_provider_rewarded_completed"), Callable(self, "_provider_rewarded_failed"))
+		var accepted = provider.call("show_rewarded", placement, Callable(self, "_provider_rewarded_completed").bind(request_serial), Callable(self, "_provider_rewarded_failed").bind(request_serial))
 		if accepted == false and rewarded_in_progress:
 			rewarded_in_progress = false
 			_pending_reward_placement = ""
@@ -81,14 +86,24 @@ func show_rewarded(placement: String, on_reward: Callable = Callable(), on_faile
 	AnalyticsManager.track("rewarded_unavailable", {"placement": placement})
 	return false
 
-func _provider_rewarded_completed() -> void:
+func _provider_rewarded_completed(request_serial: int = -1) -> void:
+	# A native SDK can deliver a duplicate or stale callback. A completion is
+	# allowed to grant value only for its single outstanding request.
+	if not rewarded_in_progress or (request_serial >= 0 and request_serial != _rewarded_request_serial):
+		return
+	var placement := _pending_reward_placement
+	var callback := _pending_reward_callback
+	_rewarded_request_serial += 1
 	rewarded_in_progress = false
-	_grant_reward(_pending_reward_placement, _pending_reward_callback)
 	_pending_reward_placement = ""
 	_pending_reward_callback = Callable()
 	_pending_reward_failed_callback = Callable()
+	_grant_reward(placement, callback)
 
-func _provider_rewarded_failed(reason: String = "Rewarded ad failed") -> void:
+func _provider_rewarded_failed(reason: String = "Rewarded ad failed", request_serial: int = -1) -> void:
+	if not rewarded_in_progress or (request_serial >= 0 and request_serial != _rewarded_request_serial):
+		return
+	_rewarded_request_serial += 1
 	rewarded_in_progress = false
 	var placement := _pending_reward_placement
 	var failed_callback := _pending_reward_failed_callback
@@ -136,26 +151,43 @@ func should_show_interstitial() -> bool:
 	return int(Time.get_unix_time_from_system()) - last_interstitial_unix >= INTERSTITIAL_COOLDOWN_SECONDS
 
 func show_interstitial() -> bool:
+	if _interstitial_in_progress:
+		return false
 	if not should_show_interstitial():
 		interstitial_closed.emit()
 		return false
 	if is_provider_ready() and provider.has_method("show_interstitial"):
-		var accepted = provider.call("show_interstitial", Callable(self, "_provider_interstitial_closed"), Callable(self, "_provider_interstitial_failed"))
+		_interstitial_request_serial += 1
+		var request_serial := _interstitial_request_serial
+		_interstitial_in_progress = true
+		var accepted = provider.call("show_interstitial", Callable(self, "_provider_interstitial_closed").bind(request_serial), Callable(self, "_provider_interstitial_failed").bind(request_serial))
+		if accepted == false and _interstitial_in_progress and request_serial == _interstitial_request_serial:
+			_interstitial_in_progress = false
+			interstitial_failed.emit("Interstitial provider rejected the request")
 		return accepted != false
 	if is_test_mode() and OS.get_name() != "Android":
+		_interstitial_in_progress = true
 		_provider_interstitial_closed()
 		return true
 	interstitial_failed.emit("Ad provider unavailable")
 	return false
 
-func _provider_interstitial_closed() -> void:
+func _provider_interstitial_closed(request_serial: int = -1) -> void:
+	if not _interstitial_in_progress or (request_serial >= 0 and request_serial != _interstitial_request_serial):
+		return
+	_interstitial_in_progress = false
+	_interstitial_request_serial += 1
 	completed_since_interstitial = 0
 	interstitials_this_session += 1
 	last_interstitial_unix = int(Time.get_unix_time_from_system())
 	interstitial_closed.emit()
 	AnalyticsManager.track("interstitial_closed", {"session_count": interstitials_this_session})
 
-func _provider_interstitial_failed(reason: String = "Interstitial failed") -> void:
+func _provider_interstitial_failed(reason: String = "Interstitial failed", request_serial: int = -1) -> void:
+	if not _interstitial_in_progress or (request_serial >= 0 and request_serial != _interstitial_request_serial):
+		return
+	_interstitial_in_progress = false
+	_interstitial_request_serial += 1
 	interstitial_failed.emit(reason)
 	AnalyticsManager.track("interstitial_failed", {"reason": reason})
 
