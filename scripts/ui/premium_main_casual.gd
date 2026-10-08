@@ -315,7 +315,9 @@ func _figma_surface_accent(active: String) -> Color:
 			return Color("#6b8498")
 
 func _figma_text(canvas: Control, text_value: String, rect: Rect2, font_size: int, color: Color = FIGMA_INK, center := false) -> Label:
-	var label := FigmaReferenceCanvas.label(text_value, font_size, _figma_theme_text(color), true)
+	# Small secondary labels use the readable weight; the heavyweight display
+	# face muddies glyphs after 390x844 reference scaling on compact Android.
+	var label := FigmaReferenceCanvas.label(text_value, font_size, _figma_theme_text(color), font_size >= 15)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER if center else HORIZONTAL_ALIGNMENT_LEFT
 	label.clip_text = true
 	label.set_meta("unjam_authored_rect", rect)
