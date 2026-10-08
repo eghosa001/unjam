@@ -10,7 +10,7 @@ ERROR_RE='SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Inva
 mkdir -p "$LOG_DIR"
 echo "===== START $TEST_NAME ====="
 set +e
-timeout "${TIMEOUT_SECONDS}s" godot --headless --path . --script "res://tests/${TEST_NAME}.gd" 2>&1 | tee "$LOG_FILE"
+timeout "${TIMEOUT_SECONDS}s" godot --verbose --headless --path . --script "res://tests/${TEST_NAME}.gd" 2>&1 | tee "$LOG_FILE"
 STATUS=${PIPESTATUS[0]}
 set -e
 
