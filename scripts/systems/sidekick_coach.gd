@@ -88,7 +88,17 @@ static func checkpoint_guidance(game_id: String, level: int, snapshot: Dictionar
 									break
 								run += 1
 							var moved := mini(run, 4 - target.size())
-							var score := moved * 10 + (25 if target.size() + moved == 4 else 0)
+							var target_uniform := true
+							for layer in target:
+								if layer != target[0]:
+									target_uniform = false
+							var source_mixed := false
+							for layer in source:
+								if layer != source[0]:
+									source_mixed = true
+							# Consolidating into an already pure tube is more useful
+							# than dismantling one. Still only promise a legal action.
+							var score := moved * 10 + (25 if target.size() + moved == 4 else 0) + (20 if target_uniform else 0) + (20 if source_mixed else 0)
 							if score > best_pour_score:
 								best_pour_score = score
 								best_from = from_idx + 1
