@@ -41,7 +41,7 @@ func _run() -> void:
 		if fitted.size.x < area.size.x * 0.68 or fitted.size.y < area.size.y * 0.45:
 			_fail("Recovery window too small for legible text at %s: fitted=%s available=%s" % [str(size_value), str(fitted), str(area)])
 			return
-		if popup.get_node_or_null("CloudRecoveryCenter/CloudRecoveryScroll/CloudRecoveryCard/MarginContainer/VBoxContainer/RecoveryCodeInput") == null:
+		if popup.get_node_or_null("CloudRecoveryCenter/CloudRecoveryScroll/CloudRecoveryCard/CloudRecoveryMargins/CloudRecoveryStack/RecoveryCodeInput") == null:
 			_fail("Recovery code entry is missing")
 			return
 		popup.queue_free()
