@@ -92,6 +92,54 @@ func _is_hex(value: String) -> bool:
 			return false
 	return true
 
+# The cloud identifier is a secret recovery credential. It is revealed only
+# from the explicit Backup screen, never included in analytics or error logs.
+func recovery_code() -> String:
+	var value := String(SaveManager.data.get("cloud_save_id", "")).strip_edges().to_lower()
+	return value if value.length() == 64 and _is_hex(value) else ""
+
+func restore_from_recovery_code(raw_code: String, callback: Callable) -> void:
+	# A restore is deliberately read-first. Never replace the working install ID
+	# or player progress until the remote backup is confirmed to exist.
+	var code := raw_code.strip_edges().replace(" ", "").replace("-", "").to_lower()
+	if code.length() != 64 or not _is_hex(code):
+		_recovery_finished(callback, false, "Enter a valid 64-character recovery code.")
+		return
+	if code == recovery_code():
+		_recovery_finished(callback, true, "This is already your active backup.")
+		return
+	if not _initial_reconciled or _request_in_flight:
+		_recovery_finished(callback, false, "Cloud sync is busy. Try again shortly.")
+		return
+	_request_in_flight = true
+	_request_json({"action":"pull", "cloud_save_id":code}, func(ok: bool, _status: int, body: Dictionary) -> void:
+		_request_in_flight = false
+		if not ok or not bool(body.get("exists", false)):
+			_recovery_finished(callback, false, "Backup unavailable. Check the code and your connection.")
+			return
+		var backup: Variant = body.get("save", {})
+		if not (backup is Dictionary) or (backup as Dictionary).is_empty():
+			_recovery_finished(callback, false, "Backup is incomplete; your current progress was kept.")
+			return
+		var revision := maxi(0, int(body.get("revision", 0)))
+		if _sync_timer != null:
+			_sync_timer.stop()
+		_pending_push = false
+		_initial_reconciled = true
+		# Switch identity before applying the validated snapshot. Purchase
+		# ownership is intentionally excluded from CLOUD_KEYS.
+		_suppress_save_event = true
+		SaveManager.data.cloud_save_id = code
+		SaveManager.data.cloud_save_revision = revision
+		_suppress_save_event = false
+		_apply_remote(backup as Dictionary, revision)
+		_recovery_finished(callback, true, "Cloud progress recovered. Restart UNJAM to refresh every screen.")
+	)
+
+func _recovery_finished(callback: Callable, success: bool, message: String) -> void:
+	if callback.is_valid():
+		callback.call(success, message)
+
 func _on_save_committed() -> void:
 	if _suppress_save_event or not _initial_reconciled:
 		return
