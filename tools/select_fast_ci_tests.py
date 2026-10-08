@@ -78,6 +78,8 @@ GROUP_TESTS = {
     "audio": [
         "validate_soothing_audio_palette",
         "validate_feedback_manager_event_driven_music",
+        "validate_audio_transition_protection",
+        "validate_audio_mix_headroom",
     ],
     "branding": [
         "validate_launcher_icon_safe_zone",
@@ -182,7 +184,7 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
         "supabase/functions/unjam-competition/index.ts",
         "supabase/migrations/20261007_create_social_friends.sql",
     }:
-        explicit_tests.update({"validate_friends_social", "validate_leaderboard_visibility"})
+        explicit_tests.update({"validate_friends_social", "validate_leaderboard_visibility", "validate_daily_submission_reliability"})
         if p == "scripts/systems/competition_manager.gd":
             add(groups, "daily")
         return True
@@ -254,6 +256,12 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
         explicit_tests.add("validate_shop_verified_pricing")
         if p == "scripts/ui/monetization_hub_3d.gd":
             visual.add("shop")
+        return True
+
+    if p == "scripts/ui/ui_touch_enhancer.gd":
+        explicit_tests.add("validate_leaderboard_visibility")
+        add(groups, "secondary_ui")
+        visual.add("daily")
         return True
 
     if p == "scripts/ui/leaderboard_modal.gd":

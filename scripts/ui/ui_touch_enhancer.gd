@@ -29,7 +29,7 @@ func _on_node_added(node: Node) -> void:
 func _inside_authored_figma(node: Node) -> bool:
 	var cursor := node.get_parent()
 	while cursor != null and cursor != host:
-		if cursor is FigmaReferenceCanvas or cursor.has_meta("unjam_figma_reference_root"):
+		if cursor is FigmaReferenceCanvas or cursor.has_meta("unjam_figma_reference_root") or cursor.has_meta("unjam_preserve_control_geometry"):
 			return true
 		cursor = cursor.get_parent()
 	return false
@@ -64,7 +64,7 @@ func _apply_enhancements() -> void:
 			hint.custom_minimum_size = Vector2(0, 44)
 
 func _enlarge_buttons(node: Node) -> void:
-	if node != host and node.has_meta("unjam_figma_reference_root"):
+	if node != host and (node.has_meta("unjam_figma_reference_root") or node.has_meta("unjam_preserve_control_geometry")):
 		return
 	# A nested surface with its own enhancer owns all sizing below that root.
 	# This keeps Main from re-sizing an active game scene a second time.
