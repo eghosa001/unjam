@@ -13,6 +13,10 @@ const SFX_GAIN_MULTIPLIER := 1.18
 const MUSIC_VOLUME_DB := -7.0
 const MUSIC_START_DB := -48.0
 const MUSIC_FADE_IN_SECONDS := 0.90
+# Each additional simultaneous chime is attenuated, reducing clipping risk
+# when rapid touches, clears and celebration sounds coincide on phone speakers.
+const ACTIVE_VOICE_DUCK_DB := 2.3
+const MAX_VOICE_DUCK_DB := 9.0
 
 var player: AudioStreamPlayer
 var sfx_players: Array[AudioStreamPlayer] = []
@@ -218,11 +222,19 @@ func _play_chime(notes: Array, duration: float, volume: float, brightness: float
 		# overlap is far less noticeable than the click caused by truncating an
 		# active channel at a non-zero sample.
 		return
-	# A modest global lift matches the clearer feedback-to-music balance common
-	# in polished casual puzzle games while the per-sound envelopes retain headroom.
+	# The mixing bus sums simultaneous 16-bit chimes. Attenuate new voices
+	# as concurrency grows; do not cut off voices already fading out.
+	var active_voices := 0
+	for voice in sfx_players:
+		if voice != null and is_instance_valid(voice) and voice.playing:
+			active_voices += 1
+	target.volume_db = SFX_VOLUME_DB - _voice_headroom_db(active_voices)
 	var stream := _chime_stream(notes, duration, volume * SFX_GAIN_MULTIPLIER, brightness)
 	target.stream = stream
 	target.play()
+
+static func _voice_headroom_db(active_voices: int) -> float:
+	return minf(MAX_VOICE_DUCK_DB, maxf(0.0, float(active_voices)) * ACTIVE_VOICE_DUCK_DB)
 
 func _next_available_sfx_player() -> AudioStreamPlayer:
 	if sfx_players.is_empty():
