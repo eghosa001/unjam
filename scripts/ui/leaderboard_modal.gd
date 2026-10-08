@@ -225,6 +225,20 @@ func _build() -> void:
 	get_viewport().size_changed.connect(_fit_viewport)
 	_fit_viewport()
 	_render()
+	# Other legacy surface skinning runs while nodes enter the tree; reassert
+	# keyboard/TalkBack focus only after all authored controls are mounted.
+	_restore_accessible_button_focus()
+	call_deferred("_restore_accessible_button_focus")
+
+func _restore_accessible_button_focus() -> void:
+	var overlay := get_node_or_null("LeaderboardModalOverlay")
+	if overlay == null:
+		return
+	for node in overlay.find_children("*","Button",true,false):
+		if node is Button:
+			var button := node as Button
+			button.focus_mode = Control.FOCUS_ALL
+			button.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 
 func _fit_viewport() -> void:
 	if _card == null or not is_instance_valid(_card):
