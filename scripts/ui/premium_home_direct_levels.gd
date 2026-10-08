@@ -313,13 +313,13 @@ func _add_rank_summary(canvas: Control) -> void:
 	title.name = "HomeRankTitle"
 	var game_name := _add_text(canvas,_short_game_name(selected_game),Rect2(36,409,240,18),12,MUTED,false)
 	game_name.name = "HomeRankGameName"
-	var rank := _add_text(canvas,"—",Rect2(36,430,132,61),44,GOLD,true)
+	var rank := _add_text(canvas,"—",Rect2(36,419,132,49),40,GOLD,true)
 	rank.name = "HomeRankValue"
 	rank.accessibility_name = "Weekly rank loading"
-	var progress := _add_text(canvas,"Refreshing rankings…",Rect2(165,449,183,25),12,MUTED,false)
+	var progress := _add_text(canvas,"Refreshing rankings…",Rect2(165,435,183,27),12,MUTED,false)
 	progress.name = "HomeRankProgress"
 	progress.clip_text = true
-	var open := _add_action(canvas,Rect2(36,491,316,44),Color("#7659d4") if dark else Color("#6b52cb"),"★  VIEW LEADERBOARD",13,OFF_WHITE,Callable(self,"_open_compete"),14)
+	var open := _add_action(canvas,Rect2(36,476,316,44),Color("#7659d4") if dark else Color("#6b52cb"),"★  VIEW LEADERBOARD",13,OFF_WHITE,Callable(self,"_open_compete"),14)
 	open.name = "HomeDailyGamesButton"
 	open.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 	open.tooltip_text = "Expand real player rankings • today, weekly, all-time"
