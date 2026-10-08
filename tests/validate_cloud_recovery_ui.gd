@@ -22,15 +22,19 @@ func _run() -> void:
 		main.add_child(popup)
 		for _i in range(4):
 			await process_frame
-		var card := popup.get_node_or_null("CloudRecoveryCenter/CloudRecoveryCard") as Control
+		var scroll := popup.get_node_or_null("CloudRecoveryCenter/CloudRecoveryScroll") as ScrollContainer
+		if scroll == null:
+			_fail("Scrollable recovery window did not render")
+			return
+		var card := scroll.get_node_or_null("CloudRecoveryCard") as Control
 		if card == null:
-			_fail("Recovery card did not render")
+			_fail("Recovery card missing inside scroll window")
 			return
 		var area := Rect2(Vector2.ZERO, Vector2(size_value))
-		if not area.encloses(card.get_global_rect()):
-			_fail("Recovery card escapes screen at %s" % str(size_value))
+		if not area.encloses(scroll.get_global_rect()):
+			_fail("Recovery scroll window escapes screen at %s: %s" % [str(size_value), str(scroll.get_global_rect())])
 			return
-		if popup.get_node_or_null("CloudRecoveryCenter/CloudRecoveryCard/MarginContainer/VBoxContainer/RecoveryCodeInput") == null:
+		if popup.get_node_or_null("CloudRecoveryCenter/CloudRecoveryScroll/CloudRecoveryCard/MarginContainer/VBoxContainer/RecoveryCodeInput") == null:
 			_fail("Recovery code entry is missing")
 			return
 		popup.queue_free()
