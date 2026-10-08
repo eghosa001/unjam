@@ -43,7 +43,7 @@ func _initialize() -> void:
 			failures.append("Standalone Boot behavior missing: %s" % token)
 
 	for token in [
-		'path="res://assets/unjam_startup_logo.png"',
+		'path="res://assets/icon_user_adaptive_432.png"',
 		'custom_minimum_size = Vector2(560, 560)',
 		'color = Color(0.062745, 0.152941, 0.415686, 1)',
 	]:
@@ -63,16 +63,21 @@ func _initialize() -> void:
 		'const SOURCE := "res://store_assets/unjam_google_play_icon_512.png"',
 		'const ADAPTIVE_OUT := "res://assets/icon_launcher_adaptive_432.png"',
 		'const SYSTEM_SPLASH_OUT := "res://assets/splash_emblem_safe_432.png"',
-		"const LEGACY_CONTENT := 512",
-		"const ADAPTIVE_CONTENT := 280",
-		"const SYSTEM_SPLASH_CONTENT := 280",
+		'const MARK_SOURCE := "res://assets/boot_mark.svg"',
+		"const ADAPTIVE_CONTENT := 270",
+		"const SYSTEM_SPLASH_CONTENT := 260",
+		"func _write_contained(",
+		"source.get_used_rect()",
+		"cropped.resize(width,height,Image.INTERPOLATE_LANCZOS)",
 		"Image.INTERPOLATE_LANCZOS",
 	]:
 		if not prep.contains(token):
 			failures.append("Android branding pipeline missing: %s" % token)
 
 	_check_size("res://store_assets/unjam_google_play_icon_512.png", Vector2i(512, 512), "Canonical launcher artwork", failures)
-	_check_generated_safe_margin("res://store_assets/unjam_google_play_icon_512.png", 432, 280, 70, "Adaptive launcher foreground", failures)
+	# Visual inset is enforced by content size against Samsung's central circle.
+	if not prep.contains("const ADAPTIVE_CONTENT := 270") or not prep.contains("Vector2i((canvas_size-width)/2,(canvas_size-height)/2)"):
+		failures.append("Adaptive mark is not safely centered within the Samsung mask")
 	_check_size("res://assets/unjam_startup_logo.png", Vector2i(320, 320), "Exported full startup logo", failures)
 	_check_loadable("res://assets/splash_emblem_safe_432.png", "Safe system splash emblem", failures)
 
@@ -81,7 +86,7 @@ func _initialize() -> void:
 			push_error(failure)
 		quit(1)
 		return
-	print("STANDALONE_BOOT_AND_SAMSUNG_SPLASH_OK")
+	print("BRAND_ICON_SAFE_AND_ASPECT_PRESERVING_BOOT_OK")
 	quit(0)
 
 func _check_size(path: String, expected: Vector2i, label: String, failures: Array[String]) -> void:
