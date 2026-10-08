@@ -10,7 +10,10 @@ static func read_dictionary(path: String) -> Dictionary:
 	var source := FileAccess.open(path, FileAccess.READ)
 	if source == null:
 		return {}
-	var parsed = JSON.parse_string(source.get_as_text())
+	var parser := JSON.new()
+	if parser.parse(source.get_as_text()) != OK:
+		return {}
+	var parsed = parser.data
 	return parsed if parsed is Dictionary and not parsed.is_empty() else {}
 
 static func recover(primary: String, pending: String, backup: String) -> Dictionary:
@@ -33,7 +36,8 @@ static func _write_text(path: String, value: String) -> bool:
 	return true
 
 static func commit(primary: String, pending: String, backup: String, payload: String) -> bool:
-	if not JSON.parse_string(payload) is Dictionary:
+	var parser := JSON.new()
+	if parser.parse(payload) != OK or not parser.data is Dictionary:
 		return false
 	# Stage the new save first, without touching a committed primary or backup.
 	if not _write_text(pending, payload):
