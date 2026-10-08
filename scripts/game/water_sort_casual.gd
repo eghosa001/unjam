@@ -241,7 +241,7 @@ func _add_water_drop_icon(canvas: Control) -> void:
 		Vector2(4,7), Vector2(0,9), Vector2(-4,7),
 		Vector2(-6,3), Vector2(-5,-1)
 	])
-	drop.position = Vector2(74,144)
+	drop.position = Vector2(39,144)
 	canvas.add_child(drop)
 
 func _add_water_bulb_icon(button: Button) -> void:
