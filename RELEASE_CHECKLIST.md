@@ -4,7 +4,7 @@ The repository is hardened to fail closed until production services are configur
 
 ## Fresh Google Play app reset
 
-This repository is now prepared to start the replacement Play listing at **versionName 1.0.0 / versionCode 1** with a **new upload key**.
+Current Android export and release workflow defaults are **versionName 1.0.10 / versionCode 10**. The fresh Google Play listing and new upload-key configuration remain account-side release prerequisites; do not interpret a successful unsigned v10 fallback as a signed, Play-accepted build.
 
 - [ ] Create the replacement app in Play Console.
 - [ ] Use the production package `com.eghosa.unjamgam` consistently in Google Play, AdMob, billing verification, and release builds.
@@ -14,7 +14,7 @@ This repository is now prepared to start the replacement Play listing at **versi
 - [ ] Add the new upload certificate SHA-1 to GitHub Actions secret `UNJAM_ANDROID_UPLOAD_SHA1`.
 - [x] Bind the selected Supabase project URL and publishable key in `project.godot` (public client configuration).
 - [x] Bind the production developer website in `project.godot` to `https://unjam-site-prod-production.up.railway.app`; `UNJAM_DEVELOPER_WEBSITE_URL` remains an optional CI override. Production release checks the crawler hostname root for `app-ads.txt`.
-- [ ] Run the `Android Production Release` workflow with `version_name=1.0.0` and `version_code=1`; download the verified release AAB and upload that AAB to the new Play listing.
+- [ ] Run the `Android Production Release` workflow with `version_name=1.0.10` and `version_code=10`; download the verified release AAB and upload that AAB to the new Play listing.
 - [ ] After the first accepted Play upload, every subsequent upload must use a higher `versionCode`.
 
 Do not reuse the deleted app's old private upload key merely because it still exists. The replacement release workflow validates the new certificate fingerprint supplied through `UNJAM_ANDROID_UPLOAD_SHA1` and will reject a keystore whose SHA-1 does not match that secret.
