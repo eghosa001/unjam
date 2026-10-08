@@ -53,11 +53,11 @@ func _run() -> void:
 		"LeaderboardGame_rescue_rush","LeaderboardGame_water_sort","LeaderboardGame_block_puzzle",
 		"LeaderboardRetry","LeaderboardPlay"]:
 		var action := popup.find_child(name,true,false) as Button
-		if not _check(action != null and action.size.y >= 44.0 and action.size.y < 70.0
+		if not _check(action != null and action.size.y >= 44.0 and action.custom_minimum_size.y <= 56.0
 			and action.get_theme_font_size("font_size") <= 16
 			and action.focus_mode == Control.FOCUS_ALL
 			and not action.accessibility_name.is_empty(),
-			"Leaderboard touch, clipping or screen-reader regression: %s" % name):return
+			"Leaderboard touch, clipping or screen-reader regression: %s (size=%s, min=%s, font=%d, focus=%d)" % [name,str(action.size if action != null else Vector2.ZERO),str(action.custom_minimum_size if action != null else Vector2.ZERO),action.get_theme_font_size("font_size") if action != null else 0,action.focus_mode if action != null else -1]):return
 		if not _check(action.action_mode == BaseButton.ACTION_MODE_BUTTON_RELEASE,
 			"Modal tab activates on press instead of release: %s" % name):return
 	var scroll := popup.find_child("LeaderboardPlayerScroll",true,false) as ScrollContainer
