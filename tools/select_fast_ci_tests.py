@@ -226,6 +226,13 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
         explicit_tests.update({
             "validate_cloud_recovery",
             "validate_reset_language_preference",
+            "validate_device_local_ad_consent",
+        })
+        return True
+    if p == "scripts/systems/privacy_manager.gd":
+        explicit_tests.update({
+            "validate_device_local_ad_consent",
+            "validate_monetization",
         })
         return True
 
