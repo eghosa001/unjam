@@ -43,7 +43,7 @@ func _assert_button(button: Button, name: String) -> bool:
 	if button == null:
 		return _fail("Missing navigation action " + name)
 	if button.focus_mode != Control.FOCUS_ALL:
-		return _fail("Nav action cannot be reached by keyboard: %s, focus=%d, path=%s, visible=%s" % [name, int(button.focus_mode), String(button.get_path()), str(button.is_visible_in_tree())])
+		return _fail("Nav action cannot be reached by keyboard: %s, focus=%d, authored=%d, path=%s, visible=%s" % [name, int(button.focus_mode), int(button.get_meta("unjam_authored_focus_mode", -1)), String(button.get_path()), str(button.is_visible_in_tree())])
 	if button.accessibility_name.strip_edges().is_empty():
 		return _fail("Nav action has no screen reader label: " + name)
 	if button.get_theme_stylebox("focus") == null:
