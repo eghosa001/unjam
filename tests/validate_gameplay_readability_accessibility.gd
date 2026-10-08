@@ -43,7 +43,7 @@ func _run() -> void:
 	var progress_count := 0
 	for child in main.find_children("*", "Label", true, false):
 		var label := child as Label
-		if label.name.begins_with("GoalProgress/"):
+		if String(label.name).begins_with("GoalProgress"):
 			progress_count += 1
 			if not _check(label.get_theme_font_size("font_size") >= 12 and label.accessibility_name.contains("complete"), "Mission progress unreadable or not accessible"): return
 	if not _check(progress_count > 0, "Goal screen has no mission progress labels"): return
