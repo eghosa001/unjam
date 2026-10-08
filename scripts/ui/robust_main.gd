@@ -8,6 +8,16 @@ var _surface_emit_pending := false
 # the player presses Back, changes game, or navigates to another surface.
 var _navigation_generation := 0
 var _pending_game_launch: Dictionary = {}
+# The active scenes have GDScript preloads of SVG art. Register their imported
+# textures on the main thread once before dispatching a threaded scene load;
+# otherwise cold worker compilation can fail to resolve those textures.
+var _game_scene_art_ready := false
+var _game_scene_art_cache: Array[Texture2D] = []
+const GAME_SCENE_ART_DEPENDENCIES := [
+	"res://assets/art/gameplay/water_screen_overlay.svg",
+	"res://assets/art/gameplay/rescue_screen_overlay.svg",
+	"res://assets/art/fx/spark.svg",
+]
 var current_surface: String:
 	get:
 		return _current_surface
@@ -68,6 +78,12 @@ func _refresh_day_sensitive_surface(today_key: String) -> void:
 
 
 func _prime_game_scene(path: String) -> void:
+	if not _game_scene_art_ready:
+		for asset_path in GAME_SCENE_ART_DEPENDENCIES:
+			var texture := load(asset_path) as Texture2D
+			if texture != null:
+				_game_scene_art_cache.append(texture)
+		_game_scene_art_ready = true
 	if ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
 		ResourceLoader.load_threaded_request(path)
 
