@@ -27,6 +27,18 @@ func _run() -> void:
 			return
 	for language in LocalizationScript.SUPPORTED_LANGUAGES:
 		manager.language_code = String(language)
+		if String(language) != "en":
+			for key in ["EMPTY TUBES","MOVES","NO LEGAL POUR","FILLED CELLS","BLOCKED TAPS"]:
+				if manager.localize(key) == key:
+					manager.free()
+					push_error("Missing contextual coaching status translation: %s in %s" % [key, language])
+					quit(1)
+					return
+			if manager.localize("2 EMPTY TUBES • 5 MOVES").contains("EMPTY TUBES"):
+				manager.free()
+				push_error("Dynamic coaching status cannot be localized: " + String(language))
+				quit(1)
+				return
 		if manager.localize("INCOMPLETE") != "INCOMPLETE" or manager.localize("LEVELSHIFT") != "LEVELSHIFT":
 			manager.free()
 			push_error("A token was replaced inside another word in language: " + String(language))

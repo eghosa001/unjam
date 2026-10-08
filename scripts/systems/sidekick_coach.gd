@@ -35,3 +35,77 @@ static func recommended_tip_index(game_id: String, level: int, last_stars: int, 
 				return 0 # Maintain placement space for bigger shapes.
 			return 1
 	return 0
+
+# Sidekick only inspects saved, *campaign* puzzle positions. It cannot see
+# a currently moving/animating board and never guesses a specific winning move.
+# Invalid, stale or truncated checkpoints are ignored, rather than shown as
+# if they described the current level.
+static func checkpoint_guidance(game_id: String, level: int, snapshot: Dictionary, fallback_tip: int) -> Dictionary:
+	var result := {"active": false, "tip_index": clampi(fallback_tip, 0, 2), "status": ""}
+	if snapshot.is_empty() or int(snapshot.get("level", -1)) != level:
+		return result
+	if bool(snapshot.get("daily", false)):
+		return result
+	var checkpoint_game := String(snapshot.get("game", game_id))
+	if checkpoint_game != game_id:
+		return result
+	match game_id:
+		"water_sort":
+			var raw_tubes = snapshot.get("tubes", null)
+			if not raw_tubes is Array or raw_tubes.size() < 2 or raw_tubes.size() > 20:
+				return result
+			var empty_tubes := 0
+			var legal_pours := 0
+			for tube in raw_tubes:
+				if not tube is Array or tube.size() > 4:
+					return result
+				for color in tube:
+					if not color is int and not color is float:
+						return result
+				if tube.is_empty():
+					empty_tubes += 1
+			for from_idx in range(raw_tubes.size()):
+				var source: Array = raw_tubes[from_idx]
+				if source.is_empty():
+					continue
+				for to_idx in range(raw_tubes.size()):
+					if from_idx == to_idx:
+						continue
+					var target: Array = raw_tubes[to_idx]
+					if target.size() >= 4:
+						continue
+					if target.is_empty() or int(source.back()) == int(target.back()):
+						legal_pours += 1
+			result.active = true
+			result.tip_index = 1 if empty_tubes <= 1 else (2 if legal_pours >= 8 else 0)
+			result.status = "%d EMPTY TUBES • %d MOVES" % [empty_tubes, maxi(0, int(snapshot.get("moves", 0)))]
+			if legal_pours == 0:
+				result.status = "NO LEGAL POUR • %d MOVES" % maxi(0, int(snapshot.get("moves", 0)))
+		"block_puzzle":
+			var raw_cells = snapshot.get("cells", null)
+			if not raw_cells is Array or raw_cells.size() != 8:
+				return result
+			var occupied := 0
+			for row in raw_cells:
+				if not row is Array or row.size() != 8:
+					return result
+				for cell in row:
+					if not cell is bool:
+						return result
+					if cell:
+						occupied += 1
+			result.active = true
+			result.tip_index = 1 if occupied >= 40 else (0 if occupied >= 24 else 2)
+			result.status = "%d/64 FILLED CELLS • %d MOVES" % [occupied, maxi(0, int(snapshot.get("placements", 0)))]
+		"rescue_rush":
+			var raw_pieces = snapshot.get("pieces", null)
+			if not raw_pieces is Array or raw_pieces.is_empty():
+				return result
+			for piece in raw_pieces:
+				if not piece is Dictionary:
+					return result
+			var misses := maxi(0, int(snapshot.get("mistakes", 0)))
+			result.active = true
+			result.tip_index = 1 if misses > 0 else fallback_tip
+			result.status = "%d MOVES • %d BLOCKED TAPS" % [maxi(0, int(snapshot.get("moves", 0))), misses]
+	return result

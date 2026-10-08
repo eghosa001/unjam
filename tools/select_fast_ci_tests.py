@@ -205,7 +205,10 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
         visual.add("settings")
         return True
     if p == "scripts/systems/sidekick_coach.gd":
-        explicit_tests.add("validate_sidekick_progress_coaching")
+        explicit_tests.update({
+            "validate_sidekick_progress_coaching",
+            "validate_sidekick_checkpoint_coaching",
+        })
         return True
 
     progression_contracts = {

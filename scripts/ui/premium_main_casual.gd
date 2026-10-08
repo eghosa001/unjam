@@ -2095,8 +2095,12 @@ func show_playmate_sidekick(game_id: String = "") -> void:
 	_fit_wrapped_text(tip, 296.0, 15, 12)
 	var last_level := mini(10000, MultiGameManager.highest_level(_sidekick_game) - 1)
 	var stars := MultiGameManager.get_stars(_sidekick_game, last_level) if last_level >= 1 else 0
+	var insight := _sidekick_checkpoint_insight()
 	var progress_note := "%s • ★ %d/3" % [LocalizationManager.localize("LAST LEVEL"), stars] if stars > 0 else "BETA • OFFLINE COACH"
+	if bool(insight.get("active", false)):
+		progress_note = LocalizationManager.localize(String(insight.get("status", "")))
 	var identity := _figma_text(canvas, progress_note, Rect2(35, 449, 318, 24), 12, _figma_theme_text(FIGMA_MUTED), true)
+	identity.name = "SidekickTipStatus"
 	identity.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	identity.clip_text = true
 	_fit_single_line_control_text(identity, 314.0, 12, 10)
@@ -2117,13 +2121,23 @@ func _sidekick_playmate_name() -> String:
 		return String((rescued as Array)[0]).capitalize()
 	return "UNJAM BUDDY"
 
-func _sidekick_recommended_tip_index() -> int:
+func _sidekick_checkpoint_insight() -> Dictionary:
 	var level := mini(10000, maxi(1, MultiGameManager.highest_level(_sidekick_game)))
-	var last_level := level - 1
-	var last_stars := MultiGameManager.get_stars(_sidekick_game, last_level) if last_level > 0 else 0
+	var last_level := maxi(0, level - 1)
+	var stars := MultiGameManager.get_stars(_sidekick_game, last_level) if last_level > 0 else 0
 	var progress := MultiGameManager.progress_for(_sidekick_game)
-	var perfect_streak := int(progress.get("perfect_streak", 0))
-	return SIDEKICK_COACH.recommended_tip_index(_sidekick_game, level, last_stars, perfect_streak)
+	var base_tip := SIDEKICK_COACH.recommended_tip_index(_sidekick_game, level, stars, int(progress.get("perfect_streak", 0)))
+	var snapshot: Dictionary = {}
+	if _sidekick_game == "rescue_rush":
+		var raw = SaveManager.data.get("active_run", {})
+		if raw is Dictionary:
+			snapshot = raw
+	else:
+		snapshot = MultiGameManager.checkpoint(_sidekick_game)
+	return SIDEKICK_COACH.checkpoint_guidance(_sidekick_game, level, snapshot, base_tip)
+
+func _sidekick_recommended_tip_index() -> int:
+	return int(_sidekick_checkpoint_insight().get("tip_index", 0))
 
 func _sidekick_tip() -> String:
 	var tips: Array = SIDEKICK_TIPS.get(_sidekick_game, SIDEKICK_TIPS["rescue_rush"])
