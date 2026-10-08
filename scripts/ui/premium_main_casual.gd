@@ -2149,6 +2149,15 @@ func _sidekick_tip() -> String:
 	# strategy about conserving space that is no longer available.
 	if _sidekick_tip_index < 0 and not String(insight.get("recovery_tip", "")).is_empty():
 		return LocalizationManager.localize(String(insight["recovery_tip"]))
+	if _sidekick_tip_index < 0:
+		var action: Dictionary = insight.get("action", {})
+		# This is a legal move from a saved position, not a claim of optimality.
+		# Always disclose that distinction before suggesting it to a player.
+		match String(action.get("kind", "")):
+			"water_pour":
+				return "%s %d → %s %d. %s." % [LocalizationManager.localize("TUBE"),int(action.get("source", 0)),LocalizationManager.localize("TUBE"),int(action.get("target", 0)),LocalizationManager.localize("LEGAL MOVE, NOT A SOLUTION")]
+			"block_place":
+				return "%s %d • %s %d • %s %d. %s." % [LocalizationManager.localize("PIECE"),int(action.get("piece", 0)),LocalizationManager.localize("ROW"),int(action.get("row", 0)),LocalizationManager.localize("COL"),int(action.get("col", 0)),LocalizationManager.localize("LEGAL MOVE, NOT A SOLUTION")]
 	var tips: Array = SIDEKICK_TIPS.get(_sidekick_game, SIDEKICK_TIPS["rescue_rush"])
 	var tip_index := _sidekick_recommended_tip_index() if _sidekick_tip_index < 0 else _sidekick_tip_index
 	return LocalizationManager.localize(String(tips[tip_index % tips.size()]))
