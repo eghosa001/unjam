@@ -9,12 +9,17 @@ func _initialize() -> void:
 			'RefCanvas.label(_compact_objective_instruction(),16,'
 		],
 		"res://scripts/game/water_sort_casual.gd": [
-			'_make_label("WIN • ONE COLOUR PER FULL TUBE", 17,'
+			'_make_label("WIN • ONE COLOUR PER FULL TUBE", 17,',
+			'drop.position = Vector2(39,144)'
 		],
 		"res://scripts/game/block_puzzle_3d.gd": [
 			'goal_label = FigmaReferenceCanvas.label("", 17,',
 			'status_label = FigmaReferenceCanvas.label("", 16,',
 			'hint_label = FigmaReferenceCanvas.label("", 16,'
+		],
+		"res://scripts/ui/block_cell_button.gd": [
+			'var idle_fill := Color(0.49, 0.34, 0.68, 0.49',
+			'_draw_box(inset, idle_fill, 7, Color(0.88, 0.76, 1.0, 0.24'
 		]
 	}
 	for path in checks:
