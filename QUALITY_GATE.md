@@ -19,7 +19,7 @@ be verified with its own evidence. Do not claim 9+ without a device/screenshot r
 | Privacy | Test denied/accepted/required consent flows, fail-closed ads, and policy/Data Safety matching shipped SDKs | On-device consent test and listing audit |
 | Save and progression | Resume, offline saves, reinstall/second-device recovery, daily rollover, and 10,000-level targets | Tests plus multi-device checklist |
 | Localization | All supported language locales have readable controls and translated key journeys; no accidental substring replacements; switching a saved language restores English correctly and keeps assistive labels in sync | Localization integrity + Settings language-switch runtime contract + locale screenshots |
-| Playmate Sidekick | Advice must use actual local campaign progress and remain within the game-specific safe strategy set; never claim to know an uninspected live puzzle solution | Sidekick progress-coaching runtime test plus human gameplay evaluation |
+| Playmate Sidekick | Advice must use actual local campaign progress and, for matching campaign checkpoints, validated Water tubes, Block cells and Rescue moves; never claim an exact puzzle solution | Sidekick progress and checkpoint runtime tests, UI viewport tests and human gameplay evaluation |
 | Accessibility | Contrast >=4.5:1 for normal text, usable touch targets, keyboard/screen-reader checks where supported, reduced motion | Accessibility audit |
 | Analytics / stability | Opt-in/privacy-compliant production telemetry and crash monitoring validated; no developer-only log counts used as retention proof | Dashboard and crash-free-session evidence |
 | Shipping | Signed, Play-accepted release AAB and listing compliance complete; no debug/test ads in production | CI + Google Play Internal Testing |
@@ -48,7 +48,7 @@ necessary release check to make CI green.
 
 Changes to `scripts/systems/localization_manager.gd` must rerun the locale integrity
 and reversible Settings selector tests. Changes to `scripts/systems/sidekick_coach.gd`
-rerun deterministic advice tests. Changes to the shared Settings/Sidekick surface
+rerun deterministic advice and checkpoint-context tests. Changes to the shared Settings/Sidekick surface
 must manually run the targeted language/Sidekick checks alongside the existing
 change-scoped secondary-screen viewport, touch-zone and visual-fit checks;
 keep the fast CI policy's six-test per-area budget. A button added to the Figma
