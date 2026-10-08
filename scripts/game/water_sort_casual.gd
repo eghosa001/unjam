@@ -42,7 +42,8 @@ func _fit_water_level_meta() -> void:
 	# Late campaign labels can reach five digits. Fit the live value after any
 	# loader writes it so level 10,000 still preserves the move/star lanes.
 	if meta_label != null and is_instance_valid(meta_label):
-		RefCanvas.fit_single_line_text(meta_label,151.0,14,10)
+		# Keep the label legible instead of shrinking level 10,000 to 10px.
+		RefCanvas.fit_single_line_text(meta_label,151.0,14,12)
 		RefCanvas.set_rect(meta_label,37,91,155,20)
 
 func _build_figma_water(canvas: Control) -> void:
@@ -284,6 +285,25 @@ func render_board() -> void:
 	# controls into the audited Figma stage instead of the old oversized fitter.
 	super.render_board()
 	_apply_tube_layout()
+	# Keep the actual puzzle usable with Android screen readers. Colour alone
+	# is never sufficient to describe a move, especially in a dense 12-colour
+	# level. Describe stacks from bottom to top and identify empty tubes.
+	if board != null:
+		for index in range(mini(tubes.size(),board.get_child_count())):
+			var tube_button := board.get_child(index) as Button
+			if tube_button == null:
+				continue
+			var layers: Array = tubes[index]
+			var spoken := "Tube %d, empty" % (index + 1)
+			if not layers.is_empty():
+				var names: PackedStringArray = []
+				for color in layers:
+					names.append("colour %d" % (int(color) + 1))
+				spoken = "Tube %d, %d of %d layers, bottom to top: %s" % [index + 1,layers.size(),CAPACITY,", ".join(names)]
+			if index == selected:
+				spoken += ", selected"
+			tube_button.accessibility_name = spoken
+			tube_button.tooltip_text = spoken
 	if move_label != null:
 		move_label.text = "MOVES %d" % moves
 	if star_target_label != null:
