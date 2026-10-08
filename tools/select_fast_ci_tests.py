@@ -211,6 +211,24 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
         })
         return True
 
+    if p in {
+        "scripts/core/atomic_save_io.gd",
+        "scripts/core/robust_save_manager.gd",
+        "scripts/core/save_manager.gd",
+    }:
+        add(groups, "progression")
+        explicit_tests.update({
+            "validate_atomic_save_recovery",
+            "validate_reset_language_preference",
+        })
+        return True
+    if p == "scripts/systems/cloud_save_manager.gd":
+        explicit_tests.update({
+            "validate_cloud_recovery",
+            "validate_reset_language_preference",
+        })
+        return True
+
     progression_contracts = {
         "scripts/core/water_sort_progression.gd": "validate_water_constructive_solvability",
         "scripts/core/block_puzzle_progression.gd": "validate_block_progression_10000",
