@@ -242,7 +242,9 @@ func _on_node_added(node: Node) -> void:
 		call_deferred("_translate_control", node)
 
 func _translate_existing_tree() -> void:
-	if language_code == "en":
+	# Even English must traverse previously translated controls to restore their
+	# authored source when the player switches back from another language.
+	if get_tree() == null:
 		return
 	_translate_branch(get_tree().root)
 
