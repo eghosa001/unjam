@@ -13,8 +13,8 @@ const SPLASH_OUT := "res://assets/icon_user_adaptive_432.png"
 const SYSTEM_SPLASH_OUT := "res://assets/splash_emblem_safe_432.png"
 const LEGACY_CANVAS := 512
 const ADAPTIVE_CANVAS := 432
-const ADAPTIVE_CONTENT := 326
-const SYSTEM_SPLASH_CONTENT := 290
+const ADAPTIVE_CONTENT := 270
+const SYSTEM_SPLASH_CONTENT := 260
 const SPLASH_SIZE := 432
 
 func _initialize() -> void:
