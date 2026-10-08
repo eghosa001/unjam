@@ -15,7 +15,7 @@ func _run() -> void:
 	test_state["privacy_consent_status"] = "required"
 	save.data = test_state
 	save.reset_progress()
-	var preserved := save.data.get("language_code","") == "yo" and int(save.data.get("coins",0)) == 421
+	var preserved: bool = String(save.data.get("language_code","")) == "yo" and int(save.data.get("coins",0)) == 421
 	preserved = preserved and save.data.get("purchased_products",[]) == ["fixture-permanent-upgrade"]
 	preserved = preserved and save.data.get("privacy_consent_status","") == "required"
 	var reset := int(save.data.get("highest_level",0)) == 1
