@@ -18,6 +18,7 @@ var _heading: Label
 var _mine: Label
 var _summary: Label
 var _rows: VBoxContainer
+var _scroll: ScrollContainer
 var _status: Label
 var _footer: Button
 var _card: PanelContainer
@@ -175,7 +176,8 @@ func _build() -> void:
 	_mine.accessibility_name = "Your current leaderboard rank"
 	_body.add_child(_mine)
 
-	var scroll := ScrollContainer.new()
+	_scroll = ScrollContainer.new()
+	var scroll := _scroll
 	scroll.name = "LeaderboardPlayerScroll"
 	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -218,6 +220,10 @@ func _fit_viewport() -> void:
 	if _card == null or not is_instance_valid(_card):
 		return
 	var size := get_viewport().get_visible_rect().size
+	var short_screen := size.y < 620.0
+	_body.add_theme_constant_override("separation",6 if short_screen else 11)
+	if _scroll != null:
+		_scroll.custom_minimum_size.y = 75 if short_screen else 145
 	_card.custom_minimum_size = Vector2(minf(540.0,maxf(240.0,size.x-28.0)),minf(790.0,maxf(290.0,size.y-32.0)))
 
 func _set_period(period: String) -> void:
@@ -271,7 +277,7 @@ func _render() -> void:
 	_game_bar.visible = not today
 	for id in PERIODS:
 		var button := _period_buttons[id] as Button
-		var selected := id == _period
+		var selected: bool = id == _period
 		button.add_theme_stylebox_override("normal",_style(Color("#7056cf") if selected else Color("#454a58"),Color("#9280da") if selected else Color("#606575"),12))
 	for id in GAME_IDS:
 		var button := _game_buttons[id] as Button
