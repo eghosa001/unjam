@@ -174,6 +174,11 @@ func _build_figma_rescue(canvas: Control) -> void:
 	var objective_label := RefCanvas.label(_compact_objective_instruction(),16,Color("#b9ffd0"),true)
 	objective_label.name = "RescueObjectiveLabel"
 	objective_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	objective_label.accessibility_name = objective_instruction()
+	objective_label.tooltip_text = objective_instruction()
+	objective_label.clip_text = true
+	RefCanvas.set_rect(objective_label,29,137,330,34)
+	RefCanvas.fit_single_line_text(objective_label,320.0,16,13)
 	RefCanvas.set_rect(objective_label,29,137,330,34)
 	canvas.add_child(objective_label)
 
@@ -452,21 +457,32 @@ func show_hint() -> void:
 func render_board() -> void:
 	super.render_board()
 	if moves_label != null:
-		var lives_text: String = "∞" if mistake_limit <= 0 else str(maxi(0, mistake_limit - mistakes_this_level))
-		var chain_suffix: String = ""
-		if chain_count > 1:
-			chain_suffix = "   •   CHAIN ×%d" % chain_count
+		var lives_text := "∞" if mistake_limit <= 0 else str(maxi(0, mistake_limit - mistakes_this_level))
+		# Keep the actual survival state legible on an 8×8 board. Previously a
+		# combo string was appended to the same narrow 334px HUD line, making
+		# long late-game progress unreadable.
 		moves_label.visible = true
 		if objective_type == "perfect_rescue":
-			moves_label.text = "MOVES %d/%d   •   LIVES %s%s" % [moves, action_budget, lives_text, chain_suffix]
+			moves_label.text = "MOVES %d/%d   •   LIVES %s" % [moves, action_budget, lives_text]
 		else:
-			moves_label.text = "MOVES %d   •   3★≤%d   •   LIVES %s%s" % [moves, par_moves, lives_text, chain_suffix]
+			moves_label.text = "MOVES %d   •   LIVES %s" % [moves, lives_text]
+		moves_label.tooltip_text = "Moves %d, 3 stars at %d moves, remaining lives %s" % [moves, par_moves, lives_text]
+		moves_label.accessibility_name = moves_label.tooltip_text
 		moves_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		moves_label.add_theme_font_size_override("font_size",15)
+		moves_label.add_theme_font_size_override("font_size",16)
 	if rescue_label != null:
 		rescue_label.visible = false
 	if chain_label != null:
-		chain_label.visible = false
+		chain_label.visible = chain_count > 1
+		if chain_count > 1:
+			chain_label.text = "COMBO ×%d" % chain_count
+			chain_label.tooltip_text = "Current combo chain %d" % chain_count
+			chain_label.accessibility_name = chain_label.tooltip_text
+			chain_label.add_theme_font_size_override("font_size",15)
+	var objective_label := find_child("RescueObjectiveLabel",true,false) as Label
+	if objective_label != null:
+		objective_label.accessibility_name = objective_instruction()
+		objective_label.tooltip_text = objective_instruction()
 
 func _shell_dark_mode() -> bool:
 	var main := get_tree().current_scene

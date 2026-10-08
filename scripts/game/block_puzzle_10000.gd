@@ -346,8 +346,12 @@ func render() -> void:
 		var move_text := ""
 		if campaign_move_limit > 0:
 			move_text = " • %d/%d MOVES" % [placements, campaign_move_limit]
-		goal_label.text = ("GOAL %d PTS • %d LINES\nMOVE %d/%d" % [target_score, target_lines, placements, campaign_move_limit]) if campaign_move_limit > 0 else ("GOAL %d PTS • %d LINES" % [target_score, target_lines])
-		goal_label.add_theme_font_size_override("font_size", 15)
+		# Show live progress, not just the original goal: dense level-10,000
+		# boards demand instant readable feedback about what remains.
+		goal_label.text = ("PTS %d/%d • LINES %d/%d\nMOVES %d/%d" % [score, target_score, lines_cleared, target_lines, placements, campaign_move_limit]) if campaign_move_limit > 0 else ("PTS %d/%d • LINES %d/%d" % [score, target_score, lines_cleared, target_lines])
+		goal_label.add_theme_font_size_override("font_size", 17)
+		goal_label.accessibility_name = "Score %d of %d, lines cleared %d of %d, moves %d%s" % [score, target_score, lines_cleared, target_lines, placements, (" of %d" % campaign_move_limit) if campaign_move_limit > 0 else ""]
+		goal_label.tooltip_text = goal_label.accessibility_name
 		_render_special_cells()
 		var special_text := _objective_status_text()
 		if campaign_failed:
@@ -362,6 +366,13 @@ func render() -> void:
 			# Keep the gameplay surface quiet. Difficulty/planning metadata belongs
 			# in level selection; this row is reserved for actionable hint/error text.
 			hint_label.text = ""
+	if hint_label != null and is_instance_valid(hint_label):
+		hint_label.accessibility_name = hint_label.text
+		hint_label.tooltip_text = hint_label.text
+	if campaign_profile.is_empty() or play_mode in ["endless", "zen"] or daily_mode:
+		if goal_label != null:
+			goal_label.accessibility_name = goal_label.text.replace("•", ", ")
+			goal_label.tooltip_text = goal_label.accessibility_name
 	_refresh_booster_buttons()
 
 func can_place(shape: Array, origin: Vector2i) -> bool:

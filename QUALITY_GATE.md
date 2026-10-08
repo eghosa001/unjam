@@ -10,6 +10,7 @@ be verified with its own evidence. Do not claim 9+ without a device/screenshot r
 | Home / selector / nav | Every visible button opens the intended destination on first press; never resumes a game from CHOOSE GAME | Navigation runtime test and device replay |
 | All secondary screens | No clipped text, overlapping controls or unreachable content in light/dark mode | Viewport-fit and screenshots on compact phone, tall phone, tablet |
 | Text readability | Minimum practical secondary text ~14 physical px at 1x reference and ideally >=16 for actions; never shrink below legibility just to fit | Screenshot inspection at 100% display scale |
+| Late-game objective readability | Rescue HUD keeps lives/moves distinct from combo; Water tubes expose order and selection without relying on colour; Block shows current goal progress; mission reward labels do not shrink below 12px reference | Active gameplay accessibility runtime test and late-game screenshot review |
 | Rescue Rush | Exits, grid, hit zones, win timing, dense 10K boards legible | Campaign + Rescue runtime and Android playtest |
 | Water Sort | Visible bottle mouth, no crooked pours, valid animated transfers and no stuck idle redraw | Water motion/solver tests + Android playtest |
 | Block Puzzle | Preview follows finger, precisely snaps, 8x8 board and objectives remain readable | Block runtime/solvers + touch-device replay |
@@ -85,3 +86,18 @@ approval from a prior run cannot open the gate while a new check is pending.
 Local closed-test demo ad units remain covered by their separate explicit
 project setting and must be disabled in release builds. Verify real UMP flows
 on Android before advertising the app as production-compliant.
+
+## Comprehensive quality coverage
+
+The release gate applies equally to Home, selector, gameplay for all three games,
+Daily, Collection, Goals, Profile, Friends, competition, Shop, tutorials,
+results, Settings and accessibility. No section can be declared 9+/10 based on
+other sections passing. Changes to Rescue, Water, Block and Goals status copy
+must retain the active-scene gameplay readability contract. The source of truth
+is what the player sees in the active scene, not an inherited base-class HUD.
+
+Unverified external work must remain red: physical Android frame-pacing and
+memory traces, TalkBack exploration, speaker/headphone listening, production
+analytics and crash collection, native UMP consent, Google Play license-tester
+purchase cycles, item activation and Play-accepted signed AAB. Screenshots and
+headless geometry tests do not certify those conditions.
