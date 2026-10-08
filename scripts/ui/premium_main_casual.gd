@@ -49,7 +49,7 @@ var _friends_status := ""
 const SETTINGS_HELP_GAMES := ["rescue_rush", "water_sort", "block_puzzle"]
 
 var _sidekick_game := "rescue_rush"
-var _sidekick_tip_index := 0
+var _sidekick_tip_index := -1
 const SIDEKICK_TIPS := {
 	"rescue_rush": [
 		"Tap blockers first when one arrow frees several paths.",
@@ -315,7 +315,9 @@ func _figma_surface_accent(active: String) -> Color:
 			return Color("#6b8498")
 
 func _figma_text(canvas: Control, text_value: String, rect: Rect2, font_size: int, color: Color = FIGMA_INK, center := false) -> Label:
-	var label := FigmaReferenceCanvas.label(text_value, font_size, _figma_theme_text(color), true)
+	# Small secondary labels use the readable weight; the heavyweight display
+	# face muddies glyphs after 390x844 reference scaling on compact Android.
+	var label := FigmaReferenceCanvas.label(text_value, font_size, _figma_theme_text(color), font_size >= 15)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER if center else HORIZONTAL_ALIGNMENT_LEFT
 	label.clip_text = true
 	label.set_meta("unjam_authored_rect", rect)
@@ -673,16 +675,16 @@ func _figma_goal_row(canvas: Control, row: Dictionary, period: String, y: float)
 	var fill := Color("#f5f2ec") if not _dark() else Color("#27282b")
 	var border := Color(FIGMA_GREEN,0.34) if claimable else Color(FIGMA_GOLD,0.20)
 	_figma_card(canvas,"Goal/%s/%s" % [period,String(row.get("id",""))],Rect2(17,y,354,44),fill,border,13)
-	var goal_title := _figma_text(canvas,String(row.get("title","GOAL")),Rect2(30,y+5,168,15),11,FIGMA_INK)
+	var goal_title := _figma_text(canvas,String(row.get("title","GOAL")),Rect2(30,y+4,172,18),13,FIGMA_INK)
 	goal_title.name = "GoalTitle/%s/%s" % [period,String(row.get("id",""))]
-	_fit_single_line_control_text(goal_title,164.0,11,9)
+	_fit_single_line_control_text(goal_title,168.0,13,11)
 	var crowns := int(row.get("crowns",0))
 	var reward_text := "+%d" % int(row.get("coins",0))
 	if crowns > 0:
 		reward_text += " • ♛%d" % crowns
-	var goal_progress := _figma_text(canvas,"%d/%d • %s" % [int(row.get("progress",0)),int(row.get("target",1)),reward_text],Rect2(30,y+25,190,13),9,FIGMA_MUTED)
+	var goal_progress := _figma_text(canvas,"%d/%d • %s" % [int(row.get("progress",0)),int(row.get("target",1)),reward_text],Rect2(30,y+24,190,16),11,FIGMA_MUTED)
 	goal_progress.name = "GoalProgress/%s/%s" % [period,String(row.get("id",""))]
-	_fit_single_line_control_text(goal_progress,186.0,9,8)
+	_fit_single_line_control_text(goal_progress,186.0,11,10)
 	var action_text := "DONE" if claimed else ("CLAIM" if claimable else "GO")
 	var action_fill := Color("#7d8a94") if claimed else (FIGMA_GREEN if claimable else Color("#7a57e0"))
 	var action := _figma_button(canvas,"GoalAction/%s/%s" % [period,String(row.get("id",""))],action_text,Rect2(274,y,78,44),action_fill,Callable(),Color.WHITE,11,10)
@@ -1440,7 +1442,7 @@ func build_collection() -> void:
 	var rescued: Array = SaveManager.data.get("rescued",[])
 	_figma_card(canvas,"Garden",Rect2(17,429,354,96),Color("#fffef8"),Color(0.55,0.86,0.71,0.32),18)
 	_figma_text(canvas,"RESCUE GARDEN",Rect2(33,443,230,22),17,FIGMA_GOLD)
-	_figma_text(canvas,"%d friends • %d / %d upgrade levels" % [rescued.size(),EconomyManager.collection_total_levels(),EconomyManager.collection_max_total_levels()],Rect2(33,474,300,22),14,FIGMA_MUTED)
+	_figma_text(canvas,"%d friends • %d/%d upgrades" % [rescued.size(),EconomyManager.collection_total_levels(),EconomyManager.collection_max_total_levels()],Rect2(33,474,300,22),14,FIGMA_MUTED)
 	_figma_text(canvas,"+%d DAILY • +%d GIFT • ♛ %d" % [EconomyManager.collection_daily_bonus(),EconomyManager.garden_gift_amount(),int(SaveManager.data.get("crown_tokens",0))],Rect2(33,499,310,22),13,FIGMA_MUTED)
 
 	# Figma state transition: swipe upward through the Garden/Boost region to
@@ -1493,14 +1495,14 @@ func _figma_collection_tip(canvas: Control) -> void:
 	title.name = "CollectionTipTitle"
 	var current_value := _figma_text(canvas, "+%d DAILY  •  +%d GIFT" % [daily_bonus, gift_amount], Rect2(63, 639, 288, 20), 13, FIGMA_GOLD)
 	current_value.name = "CollectionTipValue"
-	var detail := _figma_text(canvas, "5 levels each • permanent effect per upgrade", Rect2(63, 664, 288, 20), 11, FIGMA_MUTED)
+	var detail := _figma_text(canvas, "PERMANENT BOOSTS • 5 LEVELS EACH", Rect2(63, 663, 288, 21), 12, FIGMA_MUTED)
 	detail.name = "CollectionTipDetail"
 	detail.clip_text = true
 	# Label minimum metrics are computed before font fitting. Reset the minimum
 	# and restore the authored card box afterwards so compact viewports cannot
 	# expand this line beyond the Collection card.
 	detail.custom_minimum_size = Vector2.ZERO
-	_fit_single_line_control_text(detail, 284.0, 11, 9)
+	_fit_single_line_control_text(detail, 284.0, 12, 11)
 	detail.position = Vector2(63,664)
 	detail.size = Vector2(288,20)
 
@@ -2007,11 +2009,14 @@ func _highest_level_for_game(game_id: String) -> int:
 func show_playmate_sidekick(game_id: String = "") -> void:
 	current_surface = "sidekick"
 	_remove_active_game()
+	var requested_game := _sidekick_game
 	if game_id in MultiGameManager.GAME_IDS:
-		_sidekick_game = game_id
+		requested_game = game_id
 	elif selected_game_id in MultiGameManager.GAME_IDS:
-		_sidekick_game = selected_game_id
-	_sidekick_tip_index = clampi(_sidekick_tip_index, 0, 2)
+		requested_game = selected_game_id
+	if requested_game != _sidekick_game:
+		_sidekick_tip_index = -1
+	_sidekick_game = requested_game
 	var accent := Unjam3DTheme.game_accent(_sidekick_game)
 	var canvas := _figma_surface("games", Color("#d9e8f4"))
 	_figma_header(
@@ -2041,7 +2046,7 @@ func show_playmate_sidekick(game_id: String = "") -> void:
 	_fit_single_line_control_text(level_badge, 82.0, 13, 10)
 
 	_figma_card(canvas, "SidekickTipCard", Rect2(17, 257, 354, 234), Color("#d8d4cc"), Color(accent, 0.42), 20)
-	_figma_text(canvas, "TIP", Rect2(35, 278, 80, 20), 14, FIGMA_GOLD)
+	_figma_text(canvas, "LEVEL %d • %s" % [MultiGameManager.highest_level(_sidekick_game), LocalizationManager.localize("TIP")], Rect2(35, 278, 290, 20), 14, FIGMA_GOLD)
 	var tip := _figma_text(canvas, _sidekick_tip(), Rect2(35, 312, 300, 130), 15, _figma_theme_text(FIGMA_INK))
 	tip.name = "SidekickTip"
 	tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -2073,20 +2078,47 @@ func _sidekick_playmate_name() -> String:
 		return String((rescued as Array)[0]).capitalize()
 	return "UNJAM BUDDY"
 
+func _sidekick_recommended_tip_index() -> int:
+	# The first tip is chosen using the active campaign state, rather than
+	# always displaying the first generic instruction for every player.
+	var level := maxi(1, MultiGameManager.highest_level(_sidekick_game))
+	match _sidekick_game:
+		"rescue_rush":
+			if level <= 12:
+				return 1 # Learn the exit route before touching arrows.
+			if level % 100 >= 75:
+				return 2 # Conserve hints on difficult milestone boards.
+			return 0 # Unlock paths by freeing blockers.
+		"water_sort":
+			if level <= 20:
+				return 1 # Keep working space for initial lessons.
+			if level >= 100:
+				return 2 # Look for larger matching stacks.
+			return 0
+		"block_puzzle":
+			if level <= 20:
+				return 2 # Inspect the whole tray before placement.
+			if level >= 100:
+				return 0 # Protect board space on tougher levels.
+			return 1
+	return 0
+
 func _sidekick_tip() -> String:
 	var tips: Array = SIDEKICK_TIPS.get(_sidekick_game, SIDEKICK_TIPS["rescue_rush"])
-	return LocalizationManager.localize(String(tips[_sidekick_tip_index % tips.size()]))
+	var tip_index := _sidekick_recommended_tip_index() if _sidekick_tip_index < 0 else _sidekick_tip_index
+	return LocalizationManager.localize(String(tips[tip_index % tips.size()]))
 
 func _sidekick_next_tip() -> void:
 	var tips: Array = SIDEKICK_TIPS.get(_sidekick_game, SIDEKICK_TIPS["rescue_rush"])
-	_sidekick_tip_index = (_sidekick_tip_index + 1) % tips.size()
+	var previous := _sidekick_recommended_tip_index() if _sidekick_tip_index < 0 else _sidekick_tip_index
+	_sidekick_tip_index = (previous + 1) % tips.size()
 	FeedbackManager.tap()
 	show_playmate_sidekick(_sidekick_game)
 
 func _sidekick_change_game() -> void:
 	var index := MultiGameManager.GAME_IDS.find(_sidekick_game)
 	_sidekick_game = MultiGameManager.GAME_IDS[(index + 1) % MultiGameManager.GAME_IDS.size()]
-	_sidekick_tip_index = 0
+	_sidekick_tip_index = -1
 	FeedbackManager.tap()
 	show_playmate_sidekick(_sidekick_game)
 

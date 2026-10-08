@@ -158,9 +158,40 @@ func localize(text_value: String) -> String:
 		return String(table[text_value])
 	var result := text_value
 	for key in DYNAMIC_KEYS:
-		if table.has(key) and key in result:
-			result = result.replace(key, String(table[key]))
+		if table.has(key):
+			# Replace complete English tokens only. A plain substring replacement
+			# corrupts words such as INCOMPLETE -> IN<translated COMPLETE>.
+			result = _replace_whole_phrase(result, key, String(table[key]))
 	return result
+
+func _replace_whole_phrase(value: String, phrase: String, translation: String) -> String:
+	if phrase.is_empty() or phrase == translation:
+		return value
+	var output := ""
+	var cursor := 0
+	while cursor < value.length():
+		var found := value.find(phrase, cursor)
+		if found < 0:
+			output += value.substr(cursor)
+			break
+		var end := found + phrase.length()
+		var before := value.substr(found - 1, 1) if found > 0 else ""
+		var after := value.substr(end, 1) if end < value.length() else ""
+		var whole := (before.is_empty() or not _is_english_word_character(before)) and (after.is_empty() or not _is_english_word_character(after))
+		output += value.substr(cursor, found - cursor)
+		if whole:
+			output += translation
+			cursor = end
+		else:
+			output += value.substr(found, 1)
+			cursor = found + 1
+	return output
+
+func _is_english_word_character(character: String) -> bool:
+	if character.is_empty():
+		return false
+	var c := character.unicode_at(0)
+	return (c >= 65 and c <= 90) or (c >= 97 and c <= 122) or (c >= 48 and c <= 57) or c == 95
 
 func locale_badge() -> String:
 	return language_code.to_upper()
@@ -186,10 +217,38 @@ func _translate_control(node: Node) -> void:
 		return
 	if node is Label:
 		var label := node as Label
-		label.text = localize(label.text)
+		var translated := localize(label.text)
+		if translated != label.text:
+			label.text = translated
+			_fit_localized_single_line(label, translated)
 	elif node is Button:
 		var button := node as Button
-		button.text = localize(button.text)
+		var translated := localize(button.text)
+		if translated != button.text:
+			button.text = translated
+			_fit_localized_single_line(button, translated)
 	elif node is RichTextLabel:
 		var rich := node as RichTextLabel
 		rich.text = localize(rich.text)
+
+func _fit_localized_single_line(control: Control, translated: String) -> void:
+	# English Figma geometry is already fitted by the authoring helpers.
+	# Localized buttons are often longer; resize text *inside* the existing
+	# control instead of resizing hit zones over their neighbors.
+	if translated.contains("\n") or control.size.x < 24.0:
+		return
+	if control is Label and (control as Label).autowrap_mode != TextServer.AUTOWRAP_OFF:
+		return
+	var font := control.get_theme_font("font")
+	if font == null:
+		return
+	var current_size := control.get_theme_font_size("font_size")
+	var min_size := maxi(9, current_size - 4)
+	var available := maxf(18.0, control.size.x - (16.0 if control is Button else 4.0))
+	while current_size > min_size and font.get_string_size(translated, HORIZONTAL_ALIGNMENT_LEFT, -1, current_size).x > available:
+		current_size -= 1
+	control.add_theme_font_size_override("font_size", current_size)
+	if control is Label:
+		var label := control as Label
+		label.clip_text = true
+		label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
