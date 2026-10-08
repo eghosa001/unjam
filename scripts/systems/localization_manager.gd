@@ -170,7 +170,8 @@ func set_language(code: String, persist: bool = true) -> bool:
 	if persist:
 		var save_manager := get_node_or_null("/root/SaveManager")
 		if save_manager != null and save_manager.get("data") is Dictionary:
-			(save_manager.get("data") as Dictionary)["language_code"] = requested
+			var save_data: Dictionary = save_manager.get("data")
+			save_data["language_code"] = requested
 			save_manager.call("save")
 	_translate_existing_tree()
 	return true
