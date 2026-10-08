@@ -40,8 +40,7 @@ func _run() -> void:
 	# must return to the Daily hub, never the campaign level browser, and must not
 	# change eligibility for the other two games.
 	main.call("start_game_daily", "water_sort")
-	await _frames(5)
-	var active_water = main.get("active_game")
+	var active_water = await _wait_for_game(main)
 	if active_water == null or not bool(active_water.get("daily_mode")):
 		return _fail(save_manager, original, "Water Daily did not launch as a Daily game")
 	active_water.emit_signal("quit_requested")
@@ -50,8 +49,7 @@ func _run() -> void:
 		return _fail(save_manager, original, "Quitting Water Daily did not return to Daily Games")
 
 	main.call("start_game_daily", "block_puzzle")
-	await _frames(5)
-	var active_block = main.get("active_game")
+	var active_block = await _wait_for_game(main)
 	if active_block == null or not bool(active_block.get("daily_mode")):
 		return _fail(save_manager, original, "Block Daily did not launch as a Daily game")
 	active_block.emit_signal("finished", -1)
@@ -60,8 +58,7 @@ func _run() -> void:
 		return _fail(save_manager, original, "Finishing Block Daily did not return to Daily Games")
 
 	main.call("start_game_daily", "rescue_rush")
-	await _frames(5)
-	var active_rescue = main.get("active_game")
+	var active_rescue = await _wait_for_game(main)
 	if active_rescue == null or not bool(active_rescue.get("daily_mode")):
 		return _fail(save_manager, original, "Rescue Daily did not launch as a Daily game")
 	main.call("force_back_from_game")
@@ -126,6 +123,16 @@ func _run() -> void:
 	await process_frame
 	print("DAILY_AND_LATE_WATER_RUNTIME_OK")
 	quit(0)
+
+func _wait_for_game(main: Control, max_frames: int = 240) -> Control:
+	# Cold launches may be loaded asynchronously from disk. A test must wait
+	# for the real scene-ready state, not assume five headless render frames.
+	for _i in range(max_frames):
+		var candidate = main.get("active_game")
+		if candidate != null and is_instance_valid(candidate):
+			return candidate as Control
+		await process_frame
+	return null
 
 func _frames(count: int) -> void:
 	for _i in range(count):
