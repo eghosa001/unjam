@@ -174,13 +174,14 @@ static func checkpoint_guidance(game_id: String, level: int, snapshot: Dictionar
 								has_fit = true
 								# Prefer a placement that immediately completes rows/cols.
 								var completed_lines := 0
+								var translated_points := _translated_points(points,x,y)
 								for line in range(8):
 									var full_row := true
 									var full_col := true
 									for p in range(8):
-										if not bool(raw_cells[line][p]) and Vector2i(p-line*0,line) not in _translated_points(points,x,y):
+										if not bool(raw_cells[line][p]) and Vector2i(p,line) not in translated_points:
 											full_row = false
-										if not bool(raw_cells[p][line]) and Vector2i(line,p) not in _translated_points(points,x,y):
+										if not bool(raw_cells[p][line]) and Vector2i(line,p) not in translated_points:
 											full_col = false
 									if full_row:
 										completed_lines += 1
