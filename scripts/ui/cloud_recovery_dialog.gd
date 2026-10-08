@@ -31,12 +31,22 @@ func _ready() -> void:
 	center.size = get_viewport().get_visible_rect().size
 	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(center)
+	# The restore panel contains multiple readable fields and can grow beyond
+	# the small-phone viewport. Bound the *scroll window*, not its contents.
+	var visible_size := get_viewport().get_visible_rect().size
+	var scroll := ScrollContainer.new()
+	scroll.name = "CloudRecoveryScroll"
+	scroll.custom_minimum_size = Vector2(minf(350.0, visible_size.x - 24.0), minf(710.0, visible_size.y - 32.0))
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	scroll.mouse_filter = Control.MOUSE_FILTER_STOP
+	center.add_child(scroll)
 	var card := PanelContainer.new()
 	card.name = "CloudRecoveryCard"
-	card.custom_minimum_size.x = minf(350.0, get_viewport().get_visible_rect().size.x - 24.0)
+	card.custom_minimum_size.x = minf(350.0, visible_size.x - 24.0)
 	card.mouse_filter = Control.MOUSE_FILTER_STOP
 	card.add_theme_stylebox_override("panel", UI.solid_box(Color("#1d2a3a"), 18, Color("#4c657e"), 2))
-	center.add_child(card)
+	scroll.add_child(card)
 	var margins := MarginContainer.new()
 	for side in ["left", "right", "top", "bottom"]:
 		margins.add_theme_constant_override("margin_" + side, 18)
