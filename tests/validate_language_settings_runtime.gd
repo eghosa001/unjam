@@ -31,7 +31,7 @@ func _run() -> void:
 	if not _assert(label.text == "NIVEAU 25" and button.text == "AUTRE CONSEIL", "Second language switch kept the first language"):
 		return
 	localization_manager.set_language("en", false)
-	if not _assert(label.text == "LEVEL 25" and button.text == "NEXT TIP", "Switching back to English did not restore originals"):
+	if not _assert(label.text == "LEVEL 25" and button.text == "NEXT TIP", "Switching back to English did not restore originals: label=%s button=%s label_source=%s button_source=%s" % [label.text, button.text, str(label.get_meta("unjam_l10n_source","?")), str(button.get_meta("unjam_l10n_source","?"))]):
 		return
 	if not _assert(button.accessibility_name == "NEXT TIP" and label.get_theme_font_size("font_size") == 16, "Language switch left stale accessibility or font size"):
 		return
