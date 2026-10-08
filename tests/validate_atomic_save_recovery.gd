@@ -13,7 +13,7 @@ func _run() -> void:
 	var first := {"highest_level":11, "coins":100, "language_code":"fr"}
 	var second := {"highest_level":20, "coins":135, "language_code":"yo"}
 	if not _assert(IO.commit(main_path,pending_path,backup_path,JSON.stringify(first)),"Initial atomic commit failed"):return
-	if not _assert(IO.recover(main_path,pending_path,backup_path)==first,"Freshly committed save could not be loaded"):return
+	if not _assert(IO.recover(main_path,pending_path,backup_path)==first,"Freshly committed save could not be loaded: %s vs %s" % [str(IO.recover(main_path,pending_path,backup_path)),str(first)]):return
 	if not _assert(IO.commit(main_path,pending_path,backup_path,JSON.stringify(second)),"Overwrite of existing save failed"):return
 	if not _assert(IO.read_dictionary(main_path)==second,"New commit not written to primary"):return
 	if not _assert(IO.read_dictionary(backup_path)==first,"Previous valid save not retained as rollback"):return
