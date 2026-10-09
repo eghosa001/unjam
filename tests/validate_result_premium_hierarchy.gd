@@ -136,7 +136,8 @@ func _run() -> void:
 	# enter the spring/burst/flash presentation.
 	var save := root.get_node_or_null("SaveManager")
 	var motion := root.get_node_or_null("MotionSystem")
-	if not _check(save != null and motion != null, "Reduced-motion preferences unavailable"):return
+	if save == null or motion == null:
+		return _fail("Reduced-motion preferences unavailable")
 	var previous_motion: bool = bool(save.data.get("reduce_motion", false))
 	save.data["reduce_motion"] = true
 	motion.call("refresh_preferences")
