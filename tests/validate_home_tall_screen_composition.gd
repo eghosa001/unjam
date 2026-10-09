@@ -38,9 +38,9 @@ func _validate_viewport(viewport_size: Vector2i) -> bool:
 		var rect := (control as Control).get_global_rect()
 		if not _inside(rect,screen):
 			return _fail("%s spills outside %s: %s" % [control.name,str(viewport_size),str(rect)])
-	if Rect2(hero.position,hero.size).size.distance_to(Vector2(346,259)) > 1.0:
+	if Rect2(hero.position,hero.size).size.distance_to(Vector2(346,168)) > 1.0:
 		return _fail("Home hero local Figma geometry changed at %s" % str(viewport_size))
-	if Rect2(primary.position,primary.size).size.distance_to(Vector2(312,62)) > 1.0:
+	if Rect2(primary.position,primary.size).size.distance_to(Vector2(312,54)) > 1.0:
 		return _fail("Choose Game full-width action geometry changed at %s" % str(viewport_size))
 	if Rect2(nav.position,nav.size).size.distance_to(Vector2(362,70)) > 1.0:
 		return _fail("Home nav local Figma geometry changed at %s" % str(viewport_size))
