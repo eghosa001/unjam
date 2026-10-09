@@ -59,7 +59,7 @@ func _run() -> void:
 			return _fail("Game showcase cards have grown into a second Games grid")
 		if not bool(art.get("compact")) or art.is_processing():
 			return _fail("Home explainer art must be static and battery efficient for %s" % game_id)
-		if name.text.is_empty() or tagline.text.is_empty() or not tagline.autowrap_mode == TextServer.AUTOWRAP_WORD_SMART:
+		if name.text.is_empty() or tagline.text.is_empty() or tagline.autowrap_mode != TextServer.AUTOWRAP_OFF:
 			return _fail("Showcase does not explain %s" % game_id)
 		if card.mouse_filter != Control.MOUSE_FILTER_IGNORE or art.mouse_filter != Control.MOUSE_FILTER_IGNORE:
 			return _fail("Game showcase must not launch directly on a tap")
