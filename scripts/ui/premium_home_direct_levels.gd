@@ -225,9 +225,9 @@ func _add_game_showcase(canvas: Control) -> void:
 	note.name = "HomeShowcaseEyebrow"
 	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var games := [
-		{"id":"rescue_rush","name":"RESCUE RUSH","description":"Clear the route","accent":Color("#43d7a0"),"x":21.0},
-		{"id":"water_sort","name":"WATER SORT","description":"Sort every drop","accent":Color("#4cbefa"),"x":139.0},
-		{"id":"block_puzzle","name":"BLOCK PUZZLE","description":"Make every fit count","accent":Color("#be88ff"),"x":257.0},
+		{"id":"rescue_rush","name":"RESCUE RUSH","description":"Free the pieces","accent":Color("#43d7a0"),"x":21.0},
+		{"id":"water_sort","name":"WATER SORT","description":"Sort the colors","accent":Color("#4cbefa"),"x":139.0},
+		{"id":"block_puzzle","name":"BLOCK PUZZLE","description":"Clear the rows","accent":Color("#be88ff"),"x":257.0},
 	]
 	for game in games:
 		var id := String(game["id"])
@@ -261,7 +261,9 @@ func _add_game_showcase(canvas: Control) -> void:
 		tagline.name = "HomeShowcaseTagline_%s" % id
 		tagline.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		tagline.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		tagline.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		# Single-line descriptions avoid truncation on compact, scaled phones.
+		tagline.autowrap_mode = TextServer.AUTOWRAP_OFF
+		RefCanvas.fit_single_line_text(tagline,94.0,10,8)
 		tagline.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		tagline.custom_minimum_size = Vector2.ZERO
 		tagline.size = Vector2(96,28)
