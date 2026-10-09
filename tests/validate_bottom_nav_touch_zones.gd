@@ -16,21 +16,99 @@ func _run() -> void:
 	await _frames(3)
 	if not _check_named(main, ["HomeNavButton","HomeGamesNavButton","HomeDailyNavButton","HomeCollectionNavButton","HomeSettingsNavButton"], "Home"):
 		return
+	if not _check_visual_and_action_parity(main, "HomeNav", ["HOME","GAMES","DAILY","COLLECT","SETTINGS"], true, "HOME"):
+		return
 
 	main.call("_open_games_surface")
 	await _frames(3)
 	if not _check_named(main, ["SelectorNavHit_HOME","SelectorNavHit_GAMES","SelectorNavHit_DAILY","SelectorNavHit_COLLECT","SelectorNavHit_SETTINGS"], "Games"):
+		return
+	if not _check_visual_and_action_parity(main, "SelectorNav", ["HOME","GAMES","DAILY","COLLECT","SETTINGS"], false, "GAMES"):
 		return
 
 	main.call("build_daily_games")
 	await _frames(3)
 	if not _check_named(main, ["StdNavHit_HOME","StdNavHit_GAMES","StdNavHit_DAILY","StdNavHit_COLLECTION","StdNavHit_SETTINGS"], "Shared"):
 		return
+	if not _check_visual_and_action_parity(main, "StdNav", ["home","games","daily","collection","settings"], false, "daily"):
+		return
+	# Settings, Collection and secondary screens share exactly the same nav
+	# component. Confirm their active-state semantics and geometry never drift.
+	for scene in [
+		["build_settings", "settings", true],
+		["build_collection", "collection", true],
+		["build_goals", "", false],
+		["build_profile", "", false],
+		["build_friends", "", false],
+		["build_compete_leaderboard", "", false],
+	]:
+		var method := String(scene[0])
+		if method in ["build_friends","build_compete_leaderboard"]:
+			main.call(method,false)
+		else:
+			main.call(method)
+		await _frames(3)
+		if not _check_visual_and_action_parity(main, "StdNav", ["home","games","daily","collection","settings"],false,String(scene[1])):
+			return
+	# Rendering both themes is essential to confirm the same labels, glyphs,
+	# touch positions and selected-state contrast regardless of active palette.
+	var shell := main.get_node_or_null("UXShell")
+	if shell != null:
+		var former := String(shell.get("theme_mode"))
+		shell.set("theme_mode","dark" if former == "light" else "light")
+		main.call("build_settings")
+		await _frames(4)
+		if not _check_visual_and_action_parity(main,"StdNav",["home","games","daily","collection","settings"],false,"settings"):
+			return
+		shell.set("theme_mode",former)
 
 	main.queue_free()
 	await process_frame
 	print("Bottom navigation touch zones are non-overlapping.")
 	quit(0)
+
+func _check_visual_and_action_parity(owner: Node, prefix: String, keys: Array[String], home: bool, selected: String) -> bool:
+	var controls: Array[Control] = []
+	var nav_label_y := -1.0
+	for key in keys:
+		var k := String(key)
+		var id := k.to_upper()
+		var hit_name := ("HomeNavButton" if k == "HOME" else "Home%sNavButton" % k.capitalize()) if home else ("%sHit_%s" % [prefix, id])
+		# Home historically calls the collection control HomeCollectionNavButton.
+		if home and k == "COLLECT":
+			hit_name = "HomeCollectionNavButton"
+		var hit := owner.find_child(hit_name, true, false) as Button
+		var label := owner.find_child("%sLabel_%s" % [prefix,k],true,false) as Label
+		var glyph := owner.find_child("%sGlyph_%s" % [prefix,k],true,false) as Label
+		if hit == null or label == null or glyph == null:
+			return _fail("Navigation %s lacks hit/label/glyph for %s" % [prefix,k])
+		if label.text != ("COLLECT" if k in ["COLLECT","collection"] else k.to_upper()):
+			return _fail("%s has inconsistent tab label for %s" % [prefix,k])
+		if hit.action_mode != BaseButton.ACTION_MODE_BUTTON_RELEASE:
+			return _fail("%s triggers %s on touch-down (risk of accidental navigation on swipe)" % [prefix,k])
+		var current := k.to_lower() == selected.to_lower()
+		if current:
+			if not hit.accessibility_name.to_lower().contains("current tab"):
+				return _fail("%s does not narrate selected tab %s" % [prefix,k])
+		else:
+			if not hit.accessibility_name.to_lower().contains("open "):
+				return _fail("%s lacks discoverable %s tab navigation" % [prefix,k])
+			if hit.focus_mode != Control.FOCUS_ALL:
+				return _fail("%s has no keyboard or accessibility focus on %s" % [prefix,k])
+			if not hit.pressed.has_connections():
+				return _fail("%s %s tab does not activate any page" % [prefix,k])
+		if nav_label_y < 0.0:
+			nav_label_y = label.position.y
+		elif absf(label.position.y-nav_label_y) > 0.5:
+			return _fail("%s bottom labels are not aligned" % prefix)
+		if absf(label.position.y - 803.0) > 1.0:
+			return _fail("%s tab %s is not at the canonical baseline" % [prefix,k])
+		if label.get_theme_font_size("font_size") > 13:
+			return _fail("%s tab %s uses a different text size" % [prefix,k])
+		if k.to_lower() == "daily" and glyph.text != "★":
+			return _fail("%s Daily tab has a different icon from other surfaces" % prefix)
+		controls.append(hit)
+	return _check_controls(controls,prefix)
 
 func _check_named(root_node: Node, names: Array[String], label: String) -> bool:
 	var controls: Array[Control] = []
