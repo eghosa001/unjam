@@ -22,6 +22,12 @@ var _primary_committed := false
 var _secondary_pending := false
 var _canvas: FigmaReferenceCanvas
 
+func _motion_reduced() -> bool:
+	# Use runtime lookup rather than a global symbol so standalone component
+	# checks can preload this class before project autoloads are compiled.
+	var motion := get_node_or_null("/root/MotionSystem")
+	return motion != null and motion.has_method("reduced") and bool(motion.call("reduced"))
+
 func _dark_theme() -> bool:
 	var main := get_tree().current_scene
 	var shell := main.get_node_or_null("UXShell") if main != null else null
@@ -227,13 +233,19 @@ func _build() -> void:
 	_secondary_button.pressed.connect(_on_secondary_pressed)
 	_canvas.add_child(_secondary_button)
 
-	card.modulate.a = 0.0
-	card.scale = Vector2(0.94, 0.94)
 	card.pivot_offset = card_rect.size * 0.5
-	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(card, "modulate:a", 1.0, 0.10)
-	tween.parallel().tween_property(card, "scale", Vector2(1.015, 1.015), 0.18)
-	tween.tween_property(card, "scale", Vector2.ONE, 0.08)
+	if _motion_reduced():
+		# Don't hide a newly won result behind a transition or animate a large
+		# central panel for players who opted out of motion.
+		card.modulate.a = 1.0
+		card.scale = Vector2.ONE
+	else:
+		card.modulate.a = 0.0
+		card.scale = Vector2(0.94, 0.94)
+		var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tween.tween_property(card, "modulate:a", 1.0, 0.10)
+		tween.parallel().tween_property(card, "scale", Vector2(1.015, 1.015), 0.18)
+		tween.tween_property(card, "scale", Vector2.ONE, 0.08)
 
 func _on_continue_pressed() -> void:
 	# Do not emit two level-advance signals if a button is tapped twice while
@@ -336,7 +348,9 @@ func _add_identity(game_id: String) -> void:
 		_canvas.add_child(spark)
 
 func _celebrate() -> void:
-	if not is_inside_tree():
+	if not is_inside_tree() or _motion_reduced():
+		# The earned stars and readable result remain visible; skip all bursts,
+		# flashes and sequential entrance animations in Reduced Motion mode.
 		return
 	var visuals := get_tree().root.get_node_or_null("PremiumVisuals")
 	if visuals == null:

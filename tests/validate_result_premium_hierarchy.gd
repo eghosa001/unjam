@@ -130,7 +130,34 @@ func _run() -> void:
 
 	block_result.queue_free()
 	await process_frame
-	print("Result hierarchy validated without collisions or empty action slots.")
+
+	# The same shared result layout serves all three games. When Reduce Motion
+	# is enabled the card should be fully readable in the first frame and never
+	# enter the spring/burst/flash presentation.
+	var save := root.get_node_or_null("SaveManager")
+	var motion := root.get_node_or_null("MotionSystem")
+	if save == null or motion == null:
+		return _fail("Reduced-motion preferences unavailable")
+	var previous_motion: bool = bool(save.data.get("reduce_motion", false))
+	save.data["reduce_motion"] = true
+	motion.call("refresh_preferences")
+	for game_title in ["RESCUE COMPLETE", "WATER SORT COMPLETE", "BLOCK PUZZLE COMPLETE"]:
+		var static_result := PremiumResultOverlay.new()
+		static_result.configure(game_title, "Success without motion", "3 STARS", 3, Color("3bd5b1"), "CONTINUE")
+		root.add_child(static_result)
+		var static_card := static_result.find_child("ResultCard3D", true, false) as Control
+		if static_card == null or not bool(static_result.call("_motion_reduced")):
+			return _fail("Reduced Motion unavailable for " + game_title)
+		if static_card.modulate.a < 0.999 or static_card.scale.distance_to(Vector2.ONE) > 0.001:
+			return _fail(game_title + " enters an animated/transparent result with Reduce Motion enabled")
+		await _frames(2)
+		if static_card.modulate.a < 0.999 or static_card.scale.distance_to(Vector2.ONE) > 0.001:
+			return _fail(game_title + " result animates despite Reduce Motion")
+		static_result.queue_free()
+		await _frames(2)
+	save.data["reduce_motion"] = previous_motion
+	motion.call("refresh_preferences")
+	print("Result hierarchy, single-flight actions and all-three-game reduced motion validated.")
 	quit(0)
 
 func _rect_eq(actual: Rect2, expected: Rect2) -> bool:
