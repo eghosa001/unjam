@@ -135,7 +135,7 @@ func _build_wide_home_stage(stage: Control, available: Vector2) -> void:
 	var total := card_width*3+gap*2
 	var first := available.x*0.68-total*0.5
 	var card_top := available.y*0.295
-	var card_height := minf(660,available.y*0.45)
+	var card_height := minf(550,available.y*0.36)
 	var colors := [Color("#3fd69c"),Color("#43bfff"),Color("#bc8aff")]
 	var items := [
 		["rescue_rush","RESCUE RUSH","Free the pieces"],
