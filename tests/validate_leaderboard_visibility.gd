@@ -67,7 +67,7 @@ func _run() -> void:
 	if not _check(popup.find_child("LeaderboardPlayer_20",true,false) != null,"20th player is missing"):return
 	# The foreground sheet must remain within the visible Android viewport:
 	# compact phones, landscape rotations, and tall tablet windows.
-	for dimensions in [Vector2i(432,936),Vector2i(960,540),Vector2i(1536,2048)]:
+	for dimensions in [Vector2i(432,936),Vector2i(540,960),Vector2i(960,540),Vector2i(1536,2048)]:
 		root.size = dimensions
 		await _frames(4)
 		var card := popup.find_child("LeaderboardModalCard",true,false) as Control
@@ -83,12 +83,16 @@ func _run() -> void:
 			and bounds.end.y <= visible.end.y + 1.0,
 			"Leaderboard clips logical viewport %s after %s request: %s" % [str(visible),str(dimensions),str(bounds)]
 		):return
-		if visible.size.y > visible.size.x and visible.size.x >= 750:
-			if not _check(bounds.size.x >= visible.size.x*0.87 and bounds.size.y >= visible.size.y*0.89,
-				"Leaderboard must be a readable near-full-screen sheet on large Android layouts: %s vs %s" % [str(bounds.size),str(visible.size)]):return
-			var big_player := popup.find_child("LeaderboardPlayer_1",true,false)
-			if not _check(big_player != null and big_player.custom_minimum_size.y >= 70,
-				"Ranked player names are too small at high-density logical resolutions"):return
+		# The previous build passed without this strict assertion and still
+		# showed a tiny box on phones. Verify real coverage at ALL densities.
+		var coverage_x := bounds.size.x / maxf(1.0,visible.size.x)
+		var coverage_y := bounds.size.y / maxf(1.0,visible.size.y)
+		if not _check(coverage_x >= 0.93 and coverage_y >= 0.93,
+			"Player rankings use only %.1f%% width and %.1f%% height at %s (wanted >=93%% each)" % [coverage_x*100.0,coverage_y*100.0,str(dimensions)]):return
+		if not _check(coverage_x*coverage_y >= 0.87,"Leaderboard sheet covers less than 87% of viewport area"):return
+		var player_one := popup.find_child("LeaderboardPlayer_1",true,false) as Control
+		if not _check(player_one != null and player_one.custom_minimum_size.y >= 45.0,
+			"Player names are not readable inside the enlarged leaderboard"):return
 	root.size = Vector2i(540,960)
 	await _frames(4)
 	var you := popup.find_child("LeaderboardOwnRank",true,false) as Label
