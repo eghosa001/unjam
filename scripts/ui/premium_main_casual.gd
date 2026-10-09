@@ -1403,7 +1403,7 @@ func _figma_daily_card(canvas: Control, game_id: String, y: float, collection_bo
 	var title_fill := accent.lightened(0.22) if _dark() else accent.darkened(0.30)
 	var title_outline := Color("#151619") if _dark() else Color("#ffffff")
 	FigmaReferenceCanvas.style_display_title(daily_title, title_fill, title_outline, 2)
-	var detail := "CLEAR THE ROUTE" if game_id == "rescue_rush" else ("SORT THE COLOURS" if game_id == "water_sort" else "CLEAR THE BOARD")
+	var detail := "CLEAR THE ROUTE" if game_id == "rescue_rush" else ("SORT THE COLOURS" if game_id == "water_sort" else "CLEAR LINES & SCORE")
 	_figma_text(canvas, detail, Rect2(33,y+47,182,18), 13, FIGMA_MUTED)
 	var reward := "+%d COINS" % (100 + collection_bonus) if game_id == "rescue_rush" else "+%d–%d COINS" % [125 + collection_bonus,175 + collection_bonus]
 	_figma_text(canvas, reward, Rect2(33,y+70,150,19), 14, FIGMA_GOLD if _dark() else Color("#8a642e"))
@@ -1423,7 +1423,8 @@ func _figma_daily_card(canvas: Control, game_id: String, y: float, collection_bo
 	)
 	button.disabled = bool(daily_state.get("disabled", false))
 	if not button.disabled:
-		button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+		button.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
+		button.accessibility_name = "Play today's %s challenge" % MultiGameManager.display_name(game_id)
 		button.pressed.connect(start_game_daily.bind(game_id))
 
 func _claim_collection_gift() -> void:
@@ -2014,6 +2015,14 @@ func _style_figma_level_card(button: Button, accent: Color, border: Color, unloc
 		button.add_theme_stylebox_override("pressed",FigmaReferenceCanvas.rounded_gradient3(Color("#f7f7f4"),Color("#f4f4f1"),Color("#e2e2df"),15,border,1.4,0.52))
 
 func _add_figma_block_modes(canvas: Control) -> void:
+	# Keep all modes accessible without implying that every mode is a
+	# beginner requirement. Each mode has a genuine objective description.
+	var descriptions := {
+		"campaign": "Campaign: choose a level below and complete its goals.",
+		"endless": "Endless: score until no remaining piece fits.",
+		"zen": "Zen: relaxed play without a loss condition.",
+		"extreme": "Extreme: expert campaign goals with a move limit."
+	}
 	var specs := [
 		["campaign","CAMPAIGN",17.0,Color("#c73dff")],
 		["endless","ENDLESS",105.0,FIGMA_BLUE],
@@ -2025,10 +2034,12 @@ func _add_figma_block_modes(canvas: Control) -> void:
 		var fill: Color = spec[3] as Color
 		var button := _figma_button(canvas,"BlockMode/%s" % mode,String(spec[1]),Rect2(float(spec[2]),197,82,44),fill,Callable(),FIGMA_OFF_WHITE,13,13)
 		_style_figma_page_button(button,fill,fill,false)
+		button.tooltip_text = String(descriptions.get(mode, mode))
+		button.accessibility_name = button.tooltip_text
 		if mode == "campaign":
 			button.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		else:
-			button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+			button.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 			button.pressed.connect(start_block_mode.bind(mode))
 
 func _figma_switch_level_game(game_id: String) -> void:
