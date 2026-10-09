@@ -688,6 +688,9 @@ func complete_level() -> void:
 	_spawn_score_popup("SPECTACULAR!", Color("ff665e"), 0.0, true)
 	AnalyticsManager.track("block_puzzle_completed", {"level": level_number, "score": score, "lines": lines_cleared, "placements": placements, "stars": stars, "daily": daily_mode})
 	await get_tree().create_timer(0.28).timeout
+	# Do not resurrect a result after Back/Home or a quick game switch.
+	if not is_inside_tree() or is_queued_for_deletion():
+		return
 	var displayed_reward := base_reward + (EconomyManager.collection_daily_bonus() if daily_mode else int(completion_rewards.get("bonus_coins", 0)))
 	var result := PremiumResultOverlay.new()
 	result.configure(
