@@ -242,7 +242,7 @@ func refresh_snapshot() -> void:
 	if cloud_id.length() != 64:
 		# Without an enrolled player identity a real leaderboard request cannot
 		# start; tell waiting panels immediately instead of showing 14s loading.
-		snapshot_updated.emit({})
+		call_deferred("_notify_campaign_snapshot_unavailable")
 		return
 	_flush_pending_daily_results()
 	_snapshot_in_flight = true
@@ -258,10 +258,13 @@ func refresh_snapshot() -> void:
 			snapshot = body.duplicate(true)
 			snapshot_updated.emit(snapshot)
 		else:
-			# Preserve the last known good rankings but distinguish a failed
-			# refresh from a genuinely empty leaderboard.
-			snapshot_updated.emit({})
+			# Preserve the last good snapshot and report outage on the next frame.
+			# The current screen may still be building its UI in this call stack.
+			call_deferred("_notify_campaign_snapshot_unavailable")
 	)
+
+func _notify_campaign_snapshot_unavailable() -> void:
+	snapshot_updated.emit({})
 
 func refresh_daily_snapshot() -> void:
 	# A returning offline player must not lose yesterday's submitted result.
