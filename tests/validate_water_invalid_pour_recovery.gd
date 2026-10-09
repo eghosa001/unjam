@@ -68,7 +68,7 @@ func _run() -> void:
 	if absf(target_button.rotation) > 0.015:
 		return _fail("Repeated invalid-tap wobble did not settle to zero rotation")
 	var motion_source := FileAccess.get_file_as_string("res://scripts/ui/water_tube_reference_button.gd")
-	if not motion_source.contains("if MotionSystem.reduced():"):
+	if not motion_source.contains('motion.call("reduced")'):
 		return _fail("Rejected pour does not honor Reduce Motion")
 	game.call("select_tube",from_idx)
 	await process_frame
