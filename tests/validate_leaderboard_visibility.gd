@@ -116,6 +116,17 @@ func _run() -> void:
 	await _frames(2)
 	if not _check(you.text.contains("#12"),"All-time rank not presented"):return
 
+	# An API outage must not be disguised as fresh live rankings; keep last
+	# good data visible with honest error messaging and a retry action.
+	popup.call("_on_campaign_updated",{})
+	await _frames(2)
+	var status := popup.find_child("LeaderboardModalStatus",true,false) as Label
+	if not _check(status != null and status.text.contains("Connection unavailable"),"Failed refresh was labelled as live data"):return
+	if not _check(popup.find_child("LeaderboardPlayer_20",true,false) != null,"Network error erased cached rankings"):return
+	popup.call("_on_campaign_updated",competition.snapshot)
+	await _frames(2)
+	if not _check(status.text.contains("Live rankings"),"Successful refresh did not clear failure state"):return
+
 	popup.call("close")
 	await _frames(2)
 	if not _check(main.get_node_or_null("PremiumLeaderboardPopup") == null,"Close did not remove modal"):return
