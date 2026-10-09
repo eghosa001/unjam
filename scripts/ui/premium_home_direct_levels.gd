@@ -150,6 +150,7 @@ func _build_reference_home(canvas: Control) -> void:
 	RefCanvas.add_collectible_gem(canvas,Vector2(256,86),8.0,"HomeCurrencyGem3D")
 
 	_add_hero(canvas)
+	_add_game_showcase(canvas)
 	_add_rank_summary(canvas)
 	_add_daily_feature(canvas)
 	_add_bottom_nav_reference(canvas)
@@ -182,36 +183,91 @@ func _add_hero(canvas: Control) -> void:
 	var dark := _home_dark()
 	var hero := PanelContainer.new()
 	hero.name = "FigmaHomeHero"
-	var fill := Color("#272c36") if dark else Color("#f6f3ed")
+	var fill := Color("#282d37") if dark else Color("#f7f4ee")
 	hero.add_theme_stylebox_override("panel",RefCanvas.rounded_gradient3(
-		fill.lightened(0.055),fill,fill.darkened(0.075),24,Color("#bba77c",0.35),1,0.13))
-	RefCanvas.set_rect(hero,21,139,346,259)
+		fill.lightened(0.07),fill,fill.darkened(0.08),24,
+		Color("#ad94eb",0.33) if dark else Color("#bba77c",0.35),1,0.17))
+	RefCanvas.set_rect(hero,21,126,346,168)
 	hero.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(hero)
-
-	var title := _add_text(canvas,"READY TO PLAY?",Rect2(40,167,286,44),28,DARK_INK if dark else NAVY,true)
+	var title := _add_text(canvas,"PLAY YOUR WAY.",Rect2(40,143,233,38),25,DARK_INK if dark else NAVY,true)
 	title.name = "HomeWelcomeTitle"
-	var tagline := _add_text(canvas,"One tap to explore all your puzzles.",Rect2(40,216,294,32),14,DARK_MUTED if dark else MUTED,false)
-	tagline.name = "HomeWelcomeSubtitle"
-
-	# The only hero artwork is the UNJAM brand. No game name, per-game art,
-	# level, featured puzzle, or Continue action appears on the Home surface.
+	var subtitle := _add_text(canvas,"Three puzzles. Endless little wins.",Rect2(40,188,291,25),13,DARK_MUTED if dark else MUTED,false)
+	subtitle.name = "HomeWelcomeSubtitle"
+	# Compact neutral brand mark: Home is NOT a selected game's landing page.
 	var mark := TextureRect.new()
 	mark.name = "HomeBrandEmblem"
 	mark.texture = preload("res://assets/boot_mark.svg")
 	mark.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	mark.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	RefCanvas.set_rect(mark,238,239,85,65)
+	RefCanvas.set_rect(mark,282,139,58,53)
 	canvas.add_child(mark)
-	var caption := _add_text(canvas,"PLAY YOUR WAY",Rect2(40,273,174,25),12,GOLD if dark else Color("#7a5f15"),true)
-	caption.name = "HomePlayCaption"
-	var choose := _add_action(canvas,Rect2(39,318,312,62),Color("#346ec7") if dark else Color("#2765b3"),"▦  CHOOSE GAME",18,OFF_WHITE,Callable(self,"_open_game_selector"),18)
+	var choose := _add_action(canvas,Rect2(39,227,312,54),
+		Color("#4775e7") if dark else Color("#286ac0"),
+		"▦  CHOOSE GAME",17,OFF_WHITE,Callable(self,"_open_game_selector"),17)
 	choose.name = "HomePrimaryAction"
 	choose.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
-	choose.accessibility_name = "Choose a game, then select the puzzle you want to play"
-	choose.tooltip_text = "Open the Games screen to choose Rescue Rush, Water Sort or Block Puzzle"
+	choose.accessibility_name = "Choose Game. Open the games screen to pick your puzzle."
+	choose.tooltip_text = "Browse and choose Rescue Rush, Water Sort or Block Puzzle"
 	primary_button = choose
+
+func _add_game_showcase(canvas: Control) -> void:
+	# Showcase, not a second launcher: no hit targets and no selected-game
+	# spotlight. Authored static puzzle art explains each game at a glance.
+	# Compact illustrations disable animation at 20 FPS, conserving battery.
+	var dark := _home_dark()
+	var header := _add_text(canvas,"THREE GAMES. ONE APP.",Rect2(22,310,246,24),
+		15,DARK_INK if dark else NAVY,true)
+	header.name = "HomeShowcaseTitle"
+	var note := _add_text(canvas,"EXPLORE ALL",Rect2(281,314,85,18),
+		10,DARK_MUTED if dark else MUTED,true)
+	note.name = "HomeShowcaseEyebrow"
+	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	var games := [
+		{"id":"rescue_rush","name":"RESCUE RUSH","description":"Free the pieces","accent":Color("#43d7a0"),"x":21.0},
+		{"id":"water_sort","name":"WATER SORT","description":"Sort the colors","accent":Color("#4cbefa"),"x":139.0},
+		{"id":"block_puzzle","name":"BLOCK PUZZLE","description":"Clear the rows","accent":Color("#be88ff"),"x":257.0},
+	]
+	for game in games:
+		var id := String(game["id"])
+		var left := float(game["x"])
+		var accent := game["accent"] as Color
+		var panel := PanelContainer.new()
+		panel.name = "HomeShowcaseCard_%s" % id
+		var neutral := Color("#272d38") if dark else Color("#f8f7f4")
+		var tint := neutral.lerp(accent.darkened(0.66) if dark else accent.lightened(0.67),0.22)
+		panel.add_theme_stylebox_override("panel",RefCanvas.rounded_gradient3(
+			tint.lightened(0.07),tint,tint.darkened(0.06),16,Color(accent,0.37),1,0.20))
+		RefCanvas.set_rect(panel,left,344,110,112)
+		panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		panel.accessibility_name = "%s: %s" % [String(game["name"]),String(game["description"])]
+		canvas.add_child(panel)
+		# Small game-art pictures are intentionally stationary, never interactive.
+		# The only way to start a game is the prominent Choose Game CTA.
+		var art := GAME_ART_SCRIPT.new()
+		art.name = "HomeShowcaseArt_%s" % id
+		art.configure(id,true,dark)
+		art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		RefCanvas.set_rect(art,left+14,350,82,46)
+		canvas.add_child(art)
+		var label := _add_text(canvas,String(game["name"]),Rect2(left+3,400,104,19),
+			11,accent if dark else accent.darkened(0.48),true)
+		label.name = "HomeShowcaseName_%s" % id
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		RefCanvas.fit_single_line_text(label,101.0,11,10)
+		var tagline := _add_text(canvas,String(game["description"]),Rect2(left+7,423,96,28),
+			10,DARK_MUTED if dark else MUTED,false)
+		tagline.name = "HomeShowcaseTagline_%s" % id
+		tagline.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		tagline.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		# Single-line descriptions avoid truncation on compact, scaled phones.
+		tagline.autowrap_mode = TextServer.AUTOWRAP_OFF
+		RefCanvas.fit_single_line_text(tagline,94.0,10,8)
+		tagline.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		tagline.custom_minimum_size = Vector2.ZERO
+		tagline.size = Vector2(96,28)
+		tagline.clip_text = true
 
 func _hero_cue(game_id: String) -> String:
 	match game_id:
@@ -251,20 +307,26 @@ func _add_rank_summary(canvas: Control) -> void:
 		Color("#292b39") if dark else Color("#eeeaf6"),
 		Color("#242637") if dark else Color("#e6e0f1"),
 		Color("#212331") if dark else Color("#ddd7eb"),
-		20,Color("#9f91d8",0.38),1,0.10))
-	RefCanvas.set_rect(panel,21,420,346,169)
+		19,Color("#9f91d8",0.38),1,0.10))
+	RefCanvas.set_rect(panel,21,472,346,145)
 	canvas.add_child(panel)
-	var heading := _add_text(canvas,"YOUR RANKINGS",Rect2(37,433,280,22),16,DARK_INK if dark else NAVY,true)
+	var heading := _add_text(canvas,"YOUR RANKINGS",Rect2(37,481,280,22),
+		15,DARK_INK if dark else NAVY,true)
 	heading.name = "HomeRankTitle"
-	var daily_tag := _add_text(canvas,"TODAY",Rect2(38,466,140,20),12,DARK_MUTED if dark else MUTED,true)
+	var daily_tag := _add_text(canvas,"TODAY",Rect2(38,507,140,20),
+		11,DARK_MUTED if dark else MUTED,true)
 	daily_tag.name = "HomeRankDailyLabel"
-	var daily_rank := _add_text(canvas,"—",Rect2(38,497,135,35),28,GOLD if dark else Color("#7f5a16"),true)
+	var daily_rank := _add_text(canvas,"—",Rect2(38,533,135,34),
+		27,GOLD if dark else Color("#7f5a16"),true)
 	daily_rank.name = "HomeRankDailyValue"
-	var weekly_tag := _add_text(canvas,"BEST WEEKLY",Rect2(200,466,145,20),12,DARK_MUTED if dark else MUTED,true)
+	var weekly_tag := _add_text(canvas,"BEST WEEKLY",Rect2(200,507,145,20),
+		11,DARK_MUTED if dark else MUTED,true)
 	weekly_tag.name = "HomeRankWeeklyLabel"
-	var weekly_rank := _add_text(canvas,"—",Rect2(200,497,135,35),28,GOLD if dark else Color("#7f5a16"),true)
+	var weekly_rank := _add_text(canvas,"—",Rect2(200,533,135,34),
+		27,GOLD if dark else Color("#7f5a16"),true)
 	weekly_rank.name = "HomeRankValue"
-	var open := _add_action(canvas,Rect2(38,538,314,44),Color("#6952bd"),"★  VIEW FULL LEADERBOARD",13,OFF_WHITE,Callable(self,"_open_compete"),14)
+	var open := _add_action(canvas,Rect2(38,570,314,44),Color("#6952bd"),
+		"★  VIEW FULL LEADERBOARD",13,OFF_WHITE,Callable(self,"_open_compete"),14)
 	open.name = "HomeDailyGamesButton"
 	open.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 	open.tooltip_text = "Open full-screen Today, Weekly and All-Time player rankings"
@@ -299,13 +361,16 @@ func _add_daily_feature(canvas: Control) -> void:
 		Color("#223129") if dark else Color("#d9efe1"),
 		Color("#1b2820") if dark else Color("#cae7d4"),
 		18,Color("#6ab894",0.40),1,0.08))
-	RefCanvas.set_rect(panel,21,609,346,101)
+	RefCanvas.set_rect(panel,21,634,346,88)
 	canvas.add_child(panel)
-	var title := _add_text(canvas,"DAILY CHALLENGE",Rect2(36,625,178,26),16,DARK_INK if dark else NAVY,true)
+	var title := _add_text(canvas,"DAILY CHALLENGE",Rect2(36,644,178,27),
+		16,DARK_INK if dark else NAVY,true)
 	title.name = "HomeDailyFeatureTitle"
-	var subtitle := _add_text(canvas,"New puzzles today",Rect2(36,662,160,22),11,DARK_MUTED if dark else MUTED,false)
+	var subtitle := _add_text(canvas,"A fresh puzzle each day",Rect2(36,684,171,23),
+		11,DARK_MUTED if dark else MUTED,false)
 	subtitle.name = "HomeDailyFeatureSubtitle"
-	var daily := _add_action(canvas,Rect2(225,643,126,52),Color("#31885d"),"PLAY DAILY",12,OFF_WHITE,Callable(self,"_open_daily_games"),14)
+	var daily := _add_action(canvas,Rect2(225,653,126,52),Color("#31885d"),
+		"PLAY DAILY",12,OFF_WHITE,Callable(self,"_open_daily_games"),14)
 	daily.name = "HomeDailyChallengeButton"
 	daily.accessibility_name = "Play today's Daily challenges"
 
