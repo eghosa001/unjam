@@ -14,6 +14,19 @@ func _initialize() -> void:
 			_fail("Audio concurrency reduction is not monotonic or bounded")
 			return
 		previous = attenuation
+	# First-time combo effects are generated from a finite, bounded WAV cache.
+	# An indefinitely growing cache would accumulate PCM memory on long runs.
+	var cache_limit := int(feedback.MAX_CACHED_CHIMES)
+	var newest = null
+	for n in range(cache_limit + 12):
+		newest = feedback.call("_chime_stream",[330.0 + float(n)],0.048,0.065,0.33)
+		if newest == null or newest.data.is_empty():
+			return _fail("Audio waveform generation failed while warming unique tones")
+	if (feedback.get("_stream_cache") as Dictionary).size() > cache_limit:
+		return _fail("Audio waveform cache grew past its bounded capacity")
+	var reused = feedback.call("_chime_stream",[330.0 + float(cache_limit + 11)],0.048,0.065,0.33)
+	if newest != reused:
+		return _fail("Cached waveforms are regenerated during repeated sound effects")
 	feedback.free()
 	if previous < 8.0:
 		_fail("Dense sound effects do not reserve sufficient mix headroom")

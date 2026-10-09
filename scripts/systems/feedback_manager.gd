@@ -8,6 +8,9 @@ extends Node
 const HAPPY_LULLABY_PATH := "res://assets/audio/unjam_happy_lullaby.ogg"
 const SAMPLE_RATE := 32000
 const SFX_POOL_SIZE := 8
+# Only a finite set of authored notes is required. Bound the cache so an
+# unusually long session never accumulates new synthesized WAV allocations.
+const MAX_CACHED_CHIMES := 56
 const SFX_VOLUME_DB := 1.0
 const SFX_GAIN_MULTIPLIER := 1.18
 const MUSIC_VOLUME_DB := -7.0
@@ -243,10 +246,26 @@ func _prewarm_common_sfx() -> void:
 		[[349.23, 440.0], 0.135, 0.080, 0.26],
 		[[440.0, 523.25, 659.25], 0.180, 0.092, 0.40],
 	]
+	# Also warm the *first* win/line clear/combo/blocked sound. Otherwise the
+	# first satisfying moment of a run synthesizes a waveform on the game frame.
+	# One preparation per frame bounds startup pressure on midrange Android.
+	common.append([[392.0, 329.63], 0.180, 0.070, 0.16]) # blocked
+	common.append([[523.25, 659.25, 783.99], 0.260, 0.085, 0.58]) # effect
+	common.append([[349.23, 440.0, 523.25, 659.25], 0.62, 0.105, 0.62]) # rescue win
+	common.append([[392.0, 493.88, 587.33, 783.99], 0.56, 0.100, 0.60]) # level win
+	for tier in range(1, 5):
+		var root := float([523.25, 587.33, 659.25, 698.46][tier - 1])
+		common.append([[root, root * 1.25, root * 1.5], 0.22 + float(tier) * 0.035, 0.085 + float(tier) * 0.008, 0.56])
+	for tier in range(1, 9):
+		var combo_root := float([392.0, 440.0, 523.25, 587.33, 659.25, 783.99, 880.0, 1046.5][tier - 1])
+		common.append([[combo_root, combo_root * 1.5], 0.16 + minf(0.08, float(tier) * 0.01), 0.075, 0.52])
+		var escape_root := float([392.0, 440.0, 493.88, 523.25, 587.33, 659.25, 698.46, 783.99][tier - 1])
+		common.append([[escape_root, escape_root * 1.5], 0.165, 0.075, 0.45])
 	for spec in common:
+		if not is_inside_tree():
+			return
 		_chime_stream(spec[0], float(spec[1]), float(spec[2]) * SFX_GAIN_MULTIPLIER, float(spec[3]))
-		if is_inside_tree():
-			await get_tree().process_frame
+		await get_tree().process_frame
 
 func _play_chime(notes: Array, duration: float, volume: float, brightness: float) -> void:
 	if sfx_players.is_empty() or not bool(SaveManager.data.get("sound", true)):
@@ -321,6 +340,11 @@ func _chime_stream(notes: Array, duration: float, volume: float, brightness: flo
 	stream.mix_rate = SAMPLE_RATE
 	stream.stereo = true
 	stream.data = bytes
+	# Cached stream references are safe to drop even if a voice is playing;
+	# AudioStreamPlayer retains the currently playing resource.
+	if _stream_cache.size() >= MAX_CACHED_CHIMES:
+		var oldest_key: Variant = _stream_cache.keys()[0]
+		_stream_cache.erase(oldest_key)
 	_stream_cache[key] = stream
 	return stream
 

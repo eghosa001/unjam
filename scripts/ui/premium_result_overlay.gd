@@ -17,6 +17,9 @@ var secondary_text := ""
 var secondary_enabled := false
 var _secondary_button: Button
 var _secondary_shadow: Control
+var _primary_button: Button
+var _primary_committed := false
+var _secondary_pending := false
 var _canvas: FigmaReferenceCanvas
 
 func _dark_theme() -> bool:
@@ -36,6 +39,8 @@ func configure(title_value: String, subtitle_value: String, stats_value: String,
 func configure_secondary(text_value: String, enabled: bool = true) -> void:
 	secondary_text = text_value
 	secondary_enabled = enabled
+	if enabled:
+		_secondary_pending = false
 	if _secondary_button != null and is_instance_valid(_secondary_button):
 		_secondary_button.text = secondary_text
 		_secondary_button.disabled = not secondary_enabled
@@ -46,6 +51,9 @@ func configure_secondary(text_value: String, enabled: bool = true) -> void:
 func set_secondary_state(text_value: String, enabled: bool, tooltip: String = "") -> void:
 	secondary_text = text_value
 	secondary_enabled = enabled
+	if enabled:
+		# Explicit failure / retry is the only way to re-arm an ad action.
+		_secondary_pending = false
 	if _secondary_button != null and is_instance_valid(_secondary_button):
 		_secondary_button.text = text_value
 		_secondary_button.disabled = not enabled
@@ -203,7 +211,8 @@ func _build() -> void:
 	var primary := FigmaReferenceCanvas.premium_button(button_text, 16, Color.WHITE, accent, 17, accent.lightened(0.26), 1.3)
 	primary.name = "PrimaryAction"
 	FigmaReferenceCanvas.set_rect(primary, 47, 498, 294, 58)
-	primary.pressed.connect(func(): continue_requested.emit())
+	_primary_button = primary
+	primary.pressed.connect(_on_continue_pressed)
 	_canvas.add_child(primary)
 
 	_secondary_shadow = FigmaReferenceCanvas.add_shadow(_canvas, Rect2(47,568,294,48), 16, Color(0.03,0.10,0.20,0.22), 4, Vector2(0,4))
@@ -215,7 +224,7 @@ func _build() -> void:
 	FigmaReferenceCanvas.set_rect(_secondary_button, 47, 568, 294, 48)
 	_secondary_button.visible = has_secondary
 	_secondary_button.disabled = not secondary_enabled
-	_secondary_button.pressed.connect(func(): secondary_requested.emit())
+	_secondary_button.pressed.connect(_on_secondary_pressed)
 	_canvas.add_child(_secondary_button)
 
 	card.modulate.a = 0.0
@@ -225,6 +234,26 @@ func _build() -> void:
 	tween.tween_property(card, "modulate:a", 1.0, 0.10)
 	tween.parallel().tween_property(card, "scale", Vector2(1.015, 1.015), 0.18)
 	tween.tween_property(card, "scale", Vector2.ONE, 0.08)
+
+func _on_continue_pressed() -> void:
+	# Do not emit two level-advance signals if a button is tapped twice while
+	# the result overlay is still queued for removal.
+	if _primary_committed:
+		return
+	_primary_committed = true
+	if _primary_button != null and is_instance_valid(_primary_button):
+		_primary_button.disabled = true
+	if _secondary_button != null and is_instance_valid(_secondary_button):
+		_secondary_button.disabled = true
+	continue_requested.emit()
+
+func _on_secondary_pressed() -> void:
+	if _primary_committed or _secondary_pending or not secondary_enabled:
+		return
+	_secondary_pending = true
+	if _secondary_button != null and is_instance_valid(_secondary_button):
+		_secondary_button.disabled = true
+	secondary_requested.emit()
 
 func _result_display_title() -> String:
 	match _result_game_id():

@@ -72,6 +72,29 @@ func _run() -> void:
 		return _fail("Three-star result lost its earned-star glow hierarchy")
 	if stats.text.is_empty():
 		return _fail("Result stats are missing")
+	# Premium result actions must not run twice from rapid double taps.
+	# A paid/rewarded secondary action only re-arms on explicit retry.
+	var emitted := {"primary":0, "secondary":0}
+	overlay.continue_requested.connect(func(): emitted["primary"] += 1)
+	overlay.secondary_requested.connect(func(): emitted["secondary"] += 1)
+	secondary.pressed.emit()
+	secondary.pressed.emit()
+	if int(emitted["secondary"]) != 1 or not secondary.disabled:
+		return _fail("Rewarded-result action started more than one concurrent ad")
+	overlay.set_secondary_state("DOUBLE BASE REWARD",true,"Try again")
+	if secondary.disabled:
+		return _fail("Explicit rewarded-ad retry could not re-enable the button")
+	secondary.pressed.emit()
+	secondary.pressed.emit()
+	if int(emitted["secondary"]) != 2 or not secondary.disabled:
+		return _fail("Ad retry did not remain single-flight")
+	primary.pressed.emit()
+	primary.pressed.emit()
+	secondary.pressed.emit()
+	if int(emitted["primary"]) != 1 or int(emitted["secondary"]) != 2:
+		return _fail("Double-tapping Continue/Reward caused duplicate win/navigation signals")
+	if not primary.disabled:
+		return _fail("Result Continue remained tappable after winning transition")
 
 	overlay.queue_free()
 	await _frames(2)
