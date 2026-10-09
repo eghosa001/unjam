@@ -516,10 +516,10 @@ func _instantiate_game_scene(packed: PackedScene, config: Dictionary) -> void:
 	game_scene.set_meta("unjam_daily_mode",daily)
 	if game_id == "rescue_rush":
 		# Bind the exact scene: old queued win callbacks cannot navigate a newer game.
-		game_scene.finished.connect(_on_rescue_finished.bind(daily,game_scene))
+		game_scene.finished.connect(_on_rescue_finished.bind(daily,game_scene.get_instance_id()))
 		game_scene.quit_requested.connect(_on_rescue_quit.bind(game_scene,daily))
 	else:
-		game_scene.finished.connect(_on_multi_finished.bind(game_id,daily,game_scene))
+		game_scene.finished.connect(_on_multi_finished.bind(game_id,daily,game_scene.get_instance_id()))
 		game_scene.quit_requested.connect(_on_multi_quit.bind(game_scene,game_id,daily))
 	current_surface = "game"
 	if content != null and is_instance_valid(content):
@@ -655,8 +655,8 @@ func force_back_from_game() -> void:
 		int(context.get("level_number", -1))
 	)
 
-func _on_rescue_finished(completed_level: int, was_daily: bool = false, source_game: Control = null) -> void:
-	if source_game != null and (not is_instance_valid(source_game) or source_game != active_game or current_surface != "game"):
+func _on_rescue_finished(completed_level: int, was_daily: bool = false, source_id: int = 0) -> void:
+	if source_id != 0 and (active_game == null or not is_instance_valid(active_game) or active_game.get_instance_id() != source_id or current_surface != "game"):
 		return
 	active_game = null
 	if was_daily:
@@ -680,8 +680,8 @@ func _on_rescue_quit(source_game: Control, was_daily: bool = false) -> void:
 		int(context.get("level_number", -1))
 	)
 
-func _on_multi_finished(completed_level: int, game_id: String, was_daily: bool = false, source_game: Control = null) -> void:
-	if source_game != null and (not is_instance_valid(source_game) or source_game != active_game or current_surface != "game"):
+func _on_multi_finished(completed_level: int, game_id: String, was_daily: bool = false, source_id: int = 0) -> void:
+	if source_id != 0 and (active_game == null or not is_instance_valid(active_game) or active_game.get_instance_id() != source_id or current_surface != "game"):
 		return
 	active_game = null
 	if was_daily:
