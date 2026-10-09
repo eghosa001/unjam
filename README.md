@@ -1,5 +1,7 @@
 # UNJAM
 
+**Competitive quality benchmark:** [Premium 9+ comparison standard](docs/COMPETITIVE_QUALITY_STANDARD.md). Quality scores remain provisional until verified on real devices and, where applicable, with live Play/analytics evidence.
+
 UNJAM is a portrait-first Android puzzle collection built in Godot 4.7.2 with three equal game modes:
 
 - **Rescue Rush** — directional escape and chain-reaction rescue puzzles.
