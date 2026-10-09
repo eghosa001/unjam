@@ -240,6 +240,9 @@ func refresh_snapshot() -> void:
 		return
 	var cloud_id := String(SaveManager.data.get("cloud_save_id", ""))
 	if cloud_id.length() != 64:
+		# Without an enrolled player identity a real leaderboard request cannot
+		# start; tell waiting panels immediately instead of showing 14s loading.
+		snapshot_updated.emit({})
 		return
 	_flush_pending_daily_results()
 	_snapshot_in_flight = true
@@ -254,6 +257,10 @@ func refresh_snapshot() -> void:
 		if ok and bool(body.get("ok", false)):
 			snapshot = body.duplicate(true)
 			snapshot_updated.emit(snapshot)
+		else:
+			# Preserve the last known good rankings but distinguish a failed
+			# refresh from a genuinely empty leaderboard.
+			snapshot_updated.emit({})
 	)
 
 func refresh_daily_snapshot() -> void:
