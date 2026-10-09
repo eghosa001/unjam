@@ -118,9 +118,12 @@ func _run() -> void:
 func _check_keyboard_arrow_grid(grid: GridContainer, context: String) -> bool:
 	var playable := 0
 	for child in grid.get_children():
-		if not child is RescuePiece3DButton:
+		if not child is Button:
 			continue
-		var arrow := child as RescuePiece3DButton
+		var script := child.get_script() as Script
+		if script == null or not String(script.resource_path).ends_with("rescue_piece_3d_button.gd"):
+			continue
+		var arrow := child as Button
 		var narration := arrow.accessibility_name.to_lower()
 		if narration.is_empty() or not narration.contains("row ") or not narration.contains("column "):
 			return _fail("%s Rescue piece does not announce its grid position" % context)
