@@ -57,6 +57,10 @@ func render_board() -> void:
 func select_tube(index: int) -> void:
 	if completed or pending_completion:
 		return
+	# Gameplay buttons normally bind valid indices, but rapid relayout,
+	# accessibility input and stale queued taps must never index a missing tube.
+	if index < 0 or index >= tubes.size():
+		return
 	if active_source_tubes.has(index) or active_target_tubes.has(index):
 		return
 	hint_label.text = ""
@@ -78,13 +82,13 @@ func select_tube(index: int) -> void:
 		render_board()
 		return
 	if not can_pour(selected, index):
-		status_label.text = "That pour is blocked"
+		# Keep the chosen source highlighted so a mistaken destination tap is
+		# just one recoverable tap, not another two-tap selection sequence.
+		# No history entry, coins or move is consumed by an invalid pour.
+		status_label.text = "Can't pour there — choose another tube"
 		FeedbackManager.invalid()
 		_play_invalid(index)
-		_play_invalid(selected)
-		selected = -1
 		render_board()
-		_save_checkpoint()
 		return
 
 	var from_idx := selected
