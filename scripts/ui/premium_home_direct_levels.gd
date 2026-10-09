@@ -196,6 +196,10 @@ func _build_wide_home_stage(stage: Control, available: Vector2) -> void:
 		RefCanvas.set_rect(shortcut,x,card_top,card_width,card_height)
 		shortcut.pressed.connect(_open_game_levels.bind(id))
 		stage.add_child(shortcut)
+		# Surface initialization can reset action_mode on dynamically mounted
+		# buttons. Reassert release-only so a tap cannot fall through to gameplay.
+		shortcut.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
+		shortcut.set_deferred("action_mode",BaseButton.ACTION_MODE_BUTTON_RELEASE)
 		shortcut.focus_mode = Control.FOCUS_ALL
 		shortcut.set_deferred("focus_mode",Control.FOCUS_ALL)
 		shortcut.set_meta("unjam_authored_focus_mode",int(Control.FOCUS_ALL))
