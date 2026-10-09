@@ -65,7 +65,10 @@ func play_invalid() -> void:
 	if _invalid_wobble != null and _invalid_wobble.is_valid():
 		_invalid_wobble.kill()
 	rotation = 0.0
-	if MotionSystem.reduced():
+	# Resolve the optional autoload at runtime: palette-only test scripts also
+	# preload this base class before editor autoload symbols are registered.
+	var motion := get_node_or_null("/root/MotionSystem")
+	if motion != null and motion.has_method("reduced") and bool(motion.call("reduced")):
 		queue_redraw()
 		return
 	_invalid_wobble = create_tween().set_trans(Tween.TRANS_SINE)
