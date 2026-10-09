@@ -446,6 +446,33 @@ func _run_fast_visual_audit(main: Node, shell: Node) -> void:
 	root.size = Vector2i(540, 960)
 	await _settle(4)
 
+	if _fast_visual_enabled("home"):
+		# Use clearly labelled synthetic QA players only in screenshots. Never
+		# invent live leaderboard players on a real device or backend.
+		var competition := root.get_node("CompetitionManager")
+		var saved_week: Dictionary = competition.get("snapshot").duplicate(true)
+		var saved_daily: Dictionary = competition.get("daily_snapshot").duplicate(true)
+		var sample_rows: Array = []
+		var daily_rows: Array = []
+		for i in range(20):
+			sample_rows.append({"name":"TEST PLAYER %02d" % (i+1),"levels_completed":120-i*3})
+			daily_rows.append({"name":"TEST PLAYER %02d" % (i+1),"score":2300-i*40})
+		competition.set("snapshot",{"ok":true,"game_rankings":{"rescue_rush":{"weekly_top":sample_rows,"all_time_top":sample_rows,"player_weekly":{"rank":4,"levels_completed":74},"player_all_time":{"rank":10,"levels_completed":180}}}})
+		competition.set("daily_snapshot",{"ok":true,"daily_top":daily_rows,"player_daily":{"rank":3,"score":1950}})
+		main.call("build_home")
+		await _settle(4)
+		main.call("show_leaderboard_popup","week")
+		await _settle(7)
+		await _capture("01f-leaderboard-weekly-540x960-dark")
+		var modal := main.get_node_or_null("PremiumLeaderboardPopup")
+		if modal != null:
+			modal.call("_set_period","today")
+			await _capture("01g-leaderboard-daily-540x960-dark")
+			modal.call("close")
+			await _settle(3)
+		competition.set("snapshot",saved_week)
+		competition.set("daily_snapshot",saved_daily)
+
 	if _fast_visual_enabled("games"):
 		main.set("current_surface", "live")
 		if main.has_signal("surface_changed"):

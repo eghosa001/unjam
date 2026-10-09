@@ -28,13 +28,16 @@ func _run() -> void:
 	if not _check(home != null,"Home missing"):return
 	var choose := home.find_child("HomePrimaryAction",true,false) as Button
 	var rank := home.find_child("HomeRankValue",true,false) as Label
+	var rank_daily := home.find_child("HomeRankDailyValue",true,false) as Label
 	var ranking := home.find_child("HomeDailyGamesButton",true,false) as Button
 	if not _check(choose != null and choose.text.contains("CHOOSE GAME"),"Choose Game is not the primary Home action"):return
 	if not _check(choose.action_mode == BaseButton.ACTION_MODE_BUTTON_RELEASE,"Choose Game must wait for touch release"):return
-	if not _check(rank != null and rank.text == "#4","Home weekly rank is not visible"):return
+	if not _check(rank != null and rank.text == "#4","Home best weekly rank is not visible"):return
+	if not _check(rank_daily != null and rank_daily.text == "—","Today's rank must not be faked before the daily snapshot"):return
 	if not _check(ranking != null and ranking.text.contains("LEADERBOARD"),"Leaderboard is not visible on Home"):return
 	for game_id in ["rescue_rush","water_sort","block_puzzle"]:
 		if not _check(home.find_child("HomeDirect_%s" % game_id,true,false) == null,"Home still contains duplicate game-select cards for %s" % game_id):return
+	if not _check(home.find_child("HomeHeroFlatGameLogo",true,false) == null and home.find_child("HomeHeroGameTitle",true,false) == null,"Home still prominently displays selected game artwork/title"):return
 	if not _check(home.find_child("HomeWorldProgress",true,false) == null,"Old progress dashboard still crowds Home"):return
 
 	choose.pressed.emit()
@@ -54,8 +57,7 @@ func _run() -> void:
 	await _frames(3)
 
 	for entry in [
-		["HomeProfileButton","profile"],["HomeGoalsButton","goals"],
-		["HomeDailyChallengeButton","daily"],["HomeFriendsButton","friends"]
+		["HomeProfileButton","profile"],["HomeDailyChallengeButton","daily"]
 	]:
 		main.call("build_home")
 		await _frames(3)
