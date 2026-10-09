@@ -361,8 +361,16 @@ func _handle_back() -> void:
 		if is_instance_valid(overlay) and overlay.visible:
 			hub.call("_close_shop")
 			return
+	# Full-screen rankings must close in place; Android Back should not
+	# discard the Home/Daily/Competition journey underneath the popup.
+	var leaderboard := main.get_node_or_null("PremiumLeaderboardPopup")
+	if leaderboard != null and is_instance_valid(leaderboard):
+		leaderboard.call("close")
+		return
 	var surface := _current_surface()
-	if surface in ["game", "game_loading"]:
+	if surface == "levels" and main.has_method("_open_games_surface"):
+		main.call("_open_games_surface")
+	elif surface in ["game", "game_loading"]:
 		if main.has_method("force_back_from_game"):
 			main.call("force_back_from_game")
 			return

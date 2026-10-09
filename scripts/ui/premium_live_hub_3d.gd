@@ -143,7 +143,7 @@ func _build_reference_selector(canvas: Control) -> void:
 	back.name = "SelectorBackButton"
 	back.tooltip_text = "Back home"
 	RefCanvas.set_rect(back, 17, 19, 52, 52)
-	back.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+	back.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 	back.pressed.connect(_go_home)
 	canvas.add_child(back)
 
@@ -155,9 +155,13 @@ func _build_reference_selector(canvas: Control) -> void:
 	settings.name = "SelectorSettingsButton"
 	settings.tooltip_text = "Settings"
 	RefCanvas.set_rect(settings, 317, 21, 52, 46)
-	settings.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+	settings.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 	settings.pressed.connect(func(): get_parent().call("build_settings"))
 	canvas.add_child(settings)
+
+	var guide := _add_text(canvas, "TAP CARD FOR LEVELS  •  PLAY TO RESUME", Rect2(25, 78, 340, 22), 12, DARK_MUTED if _selector_dark() else MUTED, false)
+	guide.name = "SelectorActionGuide"
+	guide.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 	_add_game_card(canvas, "rescue_rush", Rect2(17, 111, 354, 160), Color("#21c763"), Color("#49d17f"), "RESCUE RUSH", "Tap arrows. Clear paths.")
 	_add_game_card(canvas, "water_sort", Rect2(17, 285, 354, 160), Color("#1aa8ff"), Color("#43b8ff"), "WATER SORT", "Sort colours by tube.")
@@ -211,19 +215,30 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 	var tap := Button.new()
 	tap.name = "SelectorCardHit_%s" % game_id
 	tap.flat = true
-	tap.focus_mode = Control.FOCUS_NONE
-	tap.modulate.a = 0.001
+	tap.focus_mode = Control.FOCUS_ALL
+	tap.add_theme_stylebox_override("normal", RefCanvas.solid_box(Color.TRANSPARENT, 18))
+	tap.add_theme_stylebox_override("hover", RefCanvas.solid_box(Color(accent, 0.08), 18))
+	tap.add_theme_stylebox_override("pressed", RefCanvas.solid_box(Color(accent, 0.14), 18))
+	tap.add_theme_stylebox_override("focus", RefCanvas.solid_box(Color.TRANSPARENT, 18, accent, 2))
+	tap.accessibility_name = "Browse %s levels" % title.capitalize()
+	tap.tooltip_text = "Browse %s levels" % title.capitalize()
 	RefCanvas.set_rect(tap, rect.position.x - 2, rect.position.y - 3, rect.size.x + 4, rect.size.y + 6)
-	tap.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
-	tap.pressed.connect(_play.bind(game_id))
+	tap.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
+	tap.pressed.connect(_browse_levels.bind(game_id))
 	canvas.add_child(tap)
+	# Native surface setup may clear focus/action modes while controls mount.
+	# Restore them after the tree has finished configuring the selector.
+	tap.set_deferred("focus_mode", Control.FOCUS_ALL)
+	tap.set_deferred("action_mode", BaseButton.ACTION_MODE_BUTTON_RELEASE)
+	tap.set_meta("unjam_authored_focus_mode", int(Control.FOCUS_ALL))
 
 	var play := RefCanvas.premium_button("PLAY", 14, OFF_WHITE, accent.darkened(0.18), 13, Color(accent.r, accent.g, accent.b, 0.54), 1)
 	play.name = "SelectorPlay_%s" % game_id
 	play.tooltip_text = "Play %s" % title.capitalize()
 	RefCanvas.set_rect(play, 151, rect.position.y + 99, 76, 44)
 	RefCanvas.fit_single_line_text(play, 64.0, 14, 10)
-	play.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+	play.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
+	play.accessibility_name = "Play or resume %s" % title.capitalize()
 	play.pressed.connect(_play.bind(game_id))
 	canvas.add_child(play)
 

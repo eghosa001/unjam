@@ -126,6 +126,16 @@ func _total_stars() -> int:
 func _go_home() -> void:
 	get_parent().call("build_home")
 
+func _browse_levels(game_id: String) -> void:
+	# Selecting an illustrated card browses that game's levels; only the
+	# separately labelled PLAY action may intentionally resume live gameplay.
+	if game_id not in MultiGameManager.GAME_IDS:
+		return
+	var main := get_parent()
+	if main != null and main.has_method("open_game_campaign"):
+		FeedbackManager.tap()
+		main.call("open_game_campaign", game_id)
+
 func _play(game_id: String) -> void:
 	# The Games screen is the chooser. Once the player deliberately taps a game,
 	# resume its unfinished campaign run when one exists; otherwise open that
