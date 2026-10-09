@@ -561,7 +561,7 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 		var icon_color := accent if selected else idle_text
 		if selected:
 			var plate_fill := Color(accent.r, accent.g, accent.b, 0.12 if use_dark else 0.15)
-			var plate_border := Color(accent.r, accent.g, accent.b, 0.38 if use_dark else 0.44)
+			var plate_border := Color(accent.r, accent.g, accent.b, 0.34)
 			_figma_solid_card(
 				canvas,
 				"StdNavActivePlate_%s" % String(key),
