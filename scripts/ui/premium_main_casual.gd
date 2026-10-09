@@ -1051,21 +1051,21 @@ func build_settings() -> void:
 	FigmaReferenceCanvas.add_shadow(canvas, Rect2(33,582,126,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
 	var how_to := FigmaReferenceCanvas.premium_button("HOW TO PLAY",15,utility_text,utility_fill,16,utility_border,1.2)
 	how_to.name = "SettingsHowToPlay"
-	FigmaReferenceCanvas.set_rect(how_to,33,541,126,46)
+	FigmaReferenceCanvas.set_rect(how_to,33,582,126,46)
 	how_to.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	how_to.pressed.connect(_show_current_tutorial)
 	canvas.add_child(how_to)
 	FigmaReferenceCanvas.add_shadow(canvas, Rect2(167,582,90,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
 	var help_game := FigmaReferenceCanvas.premium_button(_settings_help_game_label(),12,utility_text,utility_fill,16,utility_border,1.2)
 	help_game.name = "SettingsHowToPlayGame"
-	FigmaReferenceCanvas.set_rect(help_game,167,541,90,46)
+	FigmaReferenceCanvas.set_rect(help_game,167,582,90,46)
 	help_game.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	help_game.pressed.connect(_cycle_settings_help_game.bind(help_game))
 	canvas.add_child(help_game)
 	FigmaReferenceCanvas.add_shadow(canvas, Rect2(265,582,86,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
 	var privacy := FigmaReferenceCanvas.premium_button("PRIVACY",15,utility_text,utility_fill,16,utility_border,1.2)
 	privacy.name = "SettingsPrivacy"
-	FigmaReferenceCanvas.set_rect(privacy,265,541,86,46)
+	FigmaReferenceCanvas.set_rect(privacy,265,582,86,46)
 	privacy.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	privacy.pressed.connect(PrivacyManager.show_privacy_options)
 	canvas.add_child(privacy)
@@ -1076,7 +1076,7 @@ func build_settings() -> void:
 	var purchases := FigmaReferenceCanvas.premium_button("SHOP & RESTORE",13,utility_text,utility_fill,16,utility_border,1.2)
 	purchases.name = "SettingsPurchases"
 	purchases.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
-	FigmaReferenceCanvas.set_rect(purchases,33,645,153,46)
+	FigmaReferenceCanvas.set_rect(purchases,33,686,153,46)
 	purchases.tooltip_text = "Buy upgrades or restore previous Google Play purchases"
 	purchases.pressed.connect(_figma_open_shop)
 	canvas.add_child(purchases)
@@ -1084,7 +1084,7 @@ func build_settings() -> void:
 	var recovery := FigmaReferenceCanvas.premium_button("CLOUD BACKUP",13,utility_text,utility_fill,16,utility_border,1.2)
 	recovery.name = "SettingsCloudBackup"
 	recovery.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
-	FigmaReferenceCanvas.set_rect(recovery,195,645,156,46)
+	FigmaReferenceCanvas.set_rect(recovery,195,686,156,46)
 	recovery.tooltip_text = "Copy your private recovery code or restore progress"
 	recovery.pressed.connect(_open_cloud_recovery)
 	canvas.add_child(recovery)
