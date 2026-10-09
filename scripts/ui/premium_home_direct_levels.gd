@@ -305,7 +305,7 @@ func _add_daily_feature(canvas: Control) -> void:
 	title.name = "HomeDailyFeatureTitle"
 	var subtitle := _add_text(canvas,"New puzzles today",Rect2(36,662,160,22),11,DARK_MUTED if dark else MUTED,false)
 	subtitle.name = "HomeDailyFeatureSubtitle"
-	var daily := _add_action(canvas,Rect2(230,643,121,52),Color("#31885d"),"PLAY DAILY",12,OFF_WHITE,Callable(self,"_open_daily_games"),14)
+	var daily := _add_action(canvas,Rect2(225,643,126,52),Color("#31885d"),"PLAY DAILY",12,OFF_WHITE,Callable(self,"_open_daily_games"),14)
 	daily.name = "HomeDailyChallengeButton"
 	daily.accessibility_name = "Play today's Daily challenges"
 
