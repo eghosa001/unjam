@@ -118,6 +118,11 @@ func _update_touch_preview_position(screen_position: Vector2) -> void:
 	if game != null:
 		var origin := _best_origin(game, screen_position)
 		valid = origin.x >= 0 and bool(game.call("can_place", shape, origin))
+		if valid:
+			# Match the ghost to the *actual* legal cells highlighted beneath it.
+			# The same centroid calculation is used on pointer release; no
+			# unexpected teleport occurs between hover and committed placement.
+			desired = _preview_position_for_origin(game, origin)
 	if touch_preview.has_method("set_drag_target"):
 		touch_preview.call("set_drag_target", desired, valid)
 	else:
