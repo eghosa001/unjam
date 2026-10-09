@@ -84,9 +84,34 @@ func _run() -> void:
 	if selector_collection.get_global_rect().end.x >= selector_settings.get_global_rect().position.x:
 		return _fail("Games selector Collection label overlaps Settings")
 
+	# Main illustrated card browses levels; only explicit PLAY resumes gameplay.
+	# Both must activate on release, including keyboard/TalkBack card focus.
+	for game_id in ["rescue_rush", "water_sort", "block_puzzle"]:
+		main.call("_open_games_surface")
+		await _frames(4)
+		var card_hit := _find(main, "SelectorCardHit_%s" % game_id) as Button
+		var play_action := _find(main, "SelectorPlay_%s" % game_id) as Button
+		var guide := _find(main, "SelectorActionGuide") as Label
+		if card_hit == null or play_action == null or guide == null:
+			return _fail("Selector is missing distinct browse/play controls for %s" % game_id)
+		if not guide.text.contains("LEVELS") or not guide.text.contains("RESUME"):
+			return _fail("Selector action hint is unclear")
+		if card_hit.action_mode != BaseButton.ACTION_MODE_BUTTON_RELEASE or play_action.action_mode != BaseButton.ACTION_MODE_BUTTON_RELEASE:
+			return _fail("Selector actions must activate on finger release: %s" % game_id)
+		if card_hit.focus_mode != Control.FOCUS_ALL or not card_hit.accessibility_name.contains("levels"):
+			return _fail("Selector browse card cannot be used accessibly: %s" % game_id)
+		if play_action.accessibility_name.is_empty() or not play_action.accessibility_name.contains("resume"):
+			return _fail("Selector PLAY action does not explain resume: %s" % game_id)
+		card_hit.pressed.emit()
+		await _frames(4)
+		if String(main.get("current_surface")) != "levels" or String(main.get("selected_game_id")) != game_id:
+			return _fail("Selector card did not open matching level browser: %s" % game_id)
+		if main.get("active_game") != null:
+			return _fail("Selector card unexpectedly started live gameplay: %s" % game_id)
+
 	main.queue_free()
 	await process_frame
-	print("Selector navigation validated.")
+	print("Selector navigation and distinct browse/play contracts validated.")
 	quit(0)
 
 func _find(node: Node, wanted: String) -> Node:
