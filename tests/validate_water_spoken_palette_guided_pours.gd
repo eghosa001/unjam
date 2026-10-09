@@ -30,9 +30,11 @@ func _run() -> void:
 	await _frames(3)
 	board = game.get("board") as GridContainer
 	if not _check(board.get_child_count() == 14,"Dense Water board did not expose all bottles"):return
-	var names: Array = game.get("ACCESSIBLE_COLOR_NAMES") # const may not appear via get()
-	if names.size() != 12:
-		return _fail("Water narration must cover every palette colour")
+	var names := [
+		"deep red", "royal blue", "golden yellow", "emerald green",
+		"violet", "orange", "cyan blue", "magenta pink",
+		"charcoal grey", "lime green", "brown", "pale mint"
+	]
 	for i in range(12):
 		var bottle := board.get_child(i) as Button
 		var label := bottle.accessibility_name
