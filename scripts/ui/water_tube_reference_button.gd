@@ -38,6 +38,13 @@ func configure(values: Array, selected: bool, index: int) -> void:
 	if is_inside_tree():
 		_sync_reference_processing()
 
+func _exit_tree() -> void:
+	# A queued scene replacement must never retain a cancelled wobble tween or
+	# its target after the last audit/gameplay frame.
+	if _invalid_wobble != null and _invalid_wobble.is_valid():
+		_invalid_wobble.kill()
+	_invalid_wobble = null
+
 func _ready() -> void:
 	resized.connect(func() -> void: pivot_offset = size * 0.5)
 	button_down.connect(_press)
