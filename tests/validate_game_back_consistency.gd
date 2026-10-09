@@ -23,6 +23,9 @@ func _run() -> void:
 	main.call("start_level", 3)
 	await _frames(5)
 	var exited_rescue := main.get("active_game") as Control
+	if exited_rescue == null:
+		return _fail("Rescue scene not yet active for route ownership regression")
+	var exited_rescue_id := exited_rescue.get_instance_id()
 	main.set("selected_game_id", "water_sort")
 	main.call("force_back_from_game")
 	await _frames(4)
@@ -40,7 +43,7 @@ func _run() -> void:
 	# Simulate late Rescue signals AFTER the Block page appears. None may
 	# redirect, close, launch a level or change the selected-game identity.
 	main.call("_on_rescue_quit",exited_rescue,false)
-	main.call("_on_rescue_finished",3,false,exited_rescue)
+	main.call("_on_rescue_finished",3,false,exited_rescue_id)
 	if String(main.get("selected_game_id")) != "block_puzzle" or String(main.get("current_surface")) != "levels":
 		return _fail("Stale Rescue exit/win stole Block Puzzle's level screen")
 	main.call("start_multi_level","block_puzzle",1,false)
@@ -51,7 +54,7 @@ func _run() -> void:
 	if String(main.get("selected_game_id")) != "block_puzzle":
 		return _fail("Old level tab redirected a running Block game into Rescue")
 	main.call("_on_rescue_quit",exited_rescue,false)
-	main.call("_on_rescue_finished",3,false,exited_rescue)
+	main.call("_on_rescue_finished",3,false,exited_rescue_id)
 	if String(main.get("selected_game_id")) != "block_puzzle":
 		return _fail("Stale Rescue callback changed the active Block game")
 	main.call("force_back_from_game")
