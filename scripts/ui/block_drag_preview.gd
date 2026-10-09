@@ -19,8 +19,8 @@ func configure(value: Array, color := Color("8b7cf6"), cell_size_override: float
 	custom_minimum_size = Vector2(360, 360)
 	size = Vector2(360, 360)
 	pivot_offset = size * 0.5
-	scale = Vector2(0.78, 0.78)
-	target_scale = Vector2(1.16, 1.16)
+	scale = Vector2(0.92, 0.92)
+	target_scale = Vector2.ONE
 	queue_redraw()
 
 func _ready() -> void:
@@ -41,9 +41,9 @@ func set_drag_target(value: Vector2, valid := true) -> void:
 			var feedback := get_node_or_null("/root/FeedbackManager")
 			if feedback != null and feedback.has_method("snap"):
 				feedback.call("snap")
-			target_scale = Vector2(1.20, 1.20)
+			target_scale = Vector2(1.04, 1.04)
 			var settle := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-			settle.tween_method(func(v: float) -> void: target_scale = Vector2.ONE * v, 1.20, 1.16, 0.09)
+			settle.tween_method(func(v: float) -> void: target_scale = Vector2.ONE * v, 1.04, 1.0, 0.09)
 	queue_redraw()
 
 func set_drag_scale(value: Vector2) -> void:
@@ -105,12 +105,16 @@ func _draw() -> void:
 		max_y = maxi(max_y, point.y)
 	if points.is_empty():
 		return
-	var cell := minf(88.0, minf(292.0 / float(max_x + 1), 292.0 / float(max_y + 1)))
+	# The drawn cells and the placement centroid must share precisely the
+	# same live-board cell size. Previously the centroid used ~35px while the
+	# ghost rendered up to 88px tiles: a visibly oversized, misaligned piece.
+	var cell := _display_cell_size(max_x, max_y)
 	var total := Vector2(float(max_x + 1) * cell, float(max_y + 1) * cell)
 	var origin := (size - total) * 0.5
 	var pulse := 0.72 + 0.28 * sin(phase * 7.5)
 	for point in points:
-		var rect := Rect2(origin + Vector2(point) * cell + Vector2(4, 4), Vector2(cell - 8, cell - 8))
+		var inset := clampf(cell * 0.055, 1.0, 4.0)
+		var rect := Rect2(origin + Vector2(point) * cell + Vector2(inset, inset), Vector2(cell - 2.0 * inset, cell - 2.0 * inset))
 		_draw_block(rect, accent, pulse)
 
 func _draw_block(rect: Rect2, color: Color, pulse: float) -> void:

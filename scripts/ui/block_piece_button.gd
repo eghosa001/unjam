@@ -35,8 +35,22 @@ func configure(value: Array, is_selected: bool, color := Color("4f7cff"), index:
 	accent = color
 	piece_index = index
 	text = ""
-	focus_mode = Control.FOCUS_NONE
+	# The piece contains only painted blocks and no text. Without an accessible
+	# name or keyboard focus a screen reader cannot discover the tray shape.
+	focus_mode = Control.FOCUS_ALL
 	disabled = used
+	if not used:
+		var width := 0
+		var height := 0
+		for raw in shape:
+			var point := _as_point(raw)
+			width = maxi(width, point.x + 1)
+			height = maxi(height, point.y + 1)
+		accessibility_name = "Block piece %d, %d tiles, %d columns by %d rows. Tap to select or drag to place." % [maxi(1, piece_index + 1), shape.size(), width, height]
+		tooltip_text = accessibility_name
+	else:
+		accessibility_name = "Empty block tray slot %d" % maxi(1, piece_index + 1)
+		tooltip_text = accessibility_name
 	flat = true
 	clip_contents = false
 	mouse_default_cursor_shape = Control.CURSOR_DRAG if not used else Control.CURSOR_ARROW
