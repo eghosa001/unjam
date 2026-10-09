@@ -265,7 +265,7 @@ func _add_bottom_nav(canvas: Control) -> void:
 	shell.name = "SelectorBottomNav"
 	var nav_fill := Color("#252629") if _selector_dark() else Color("#f0ede6")
 	var nav_border := Color("#3a3d42") if _selector_dark() else Color("#cbc6bc")
-	shell.add_theme_stylebox_override("panel", RefCanvas.flat_gloss(nav_fill, 18, nav_border, 1, 0.12))
+	shell.add_theme_stylebox_override("panel", RefCanvas.flat_gloss(nav_fill, 18, nav_border, 1, 0.10))
 	RefCanvas.set_rect(shell, 13, 757, 362, 70)
 	shell.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(shell)
@@ -307,23 +307,28 @@ func _add_bottom_nav(canvas: Control) -> void:
 		glyph.name = "SelectorNavGlyph_%s" % String(item[0])
 		glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		var display_name := String(item[0])
-		var label_width := 70.0 if String(item[0]) in ["COLLECT", "SETTINGS"] else 58.0
+		var label_width := 66.0 if String(item[0]) in ["COLLECT", "SETTINGS"] else 58.0
 		var label_x := float(item[3]) + (72.0 - label_width) * 0.5
-		var label := _add_text(canvas, display_name, Rect2(label_x, 799, label_width, 18), 13, label_color, selected)
+		var label := _add_text(canvas, display_name, Rect2(label_x, 803, label_width, 18), 13, label_color, selected)
 		label.name = "SelectorNavLabel_%s" % String(item[0])
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		label.clip_text = true
 		label.custom_minimum_size = Vector2.ZERO
-		label.position = Vector2(label_x, 799)
+		label.position = Vector2(label_x, 803)
 		label.size = Vector2(label_width, 18)
 		RefCanvas.fit_single_line_text(label, label_width - 2.0, 13, 11)
 		var hit := Button.new()
 		hit.name = "SelectorNavHit_%s" % String(item[0])
 		hit.flat = true
-		hit.focus_mode = Control.FOCUS_NONE
-		hit.modulate.a = 0.001
-		hit.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+		hit.accessibility_name = "%s, current tab" % String(item[0]).capitalize() if selected else "Open %s tab" % String(item[0]).capitalize()
+		hit.tooltip_text = "Current: %s" % String(item[0]).capitalize() if selected else "Open %s" % String(item[0]).capitalize()
+		hit.focus_mode = Control.FOCUS_NONE if selected else Control.FOCUS_ALL
+		# Keep overlay transparent without nearly-zero alpha: an invisible
+		# hit control needs a visible high-contrast keyboard focus ring.
+		hit.add_theme_stylebox_override("normal", RefCanvas.solid_box(Color.TRANSPARENT,12))
+		hit.add_theme_stylebox_override("focus", RefCanvas.solid_box(Color.TRANSPARENT,12,Color(accent,0.94),2))
+		hit.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 		RefCanvas.set_rect(hit, float(item[3]), 753, 72, 78)
 		var callback: Callable = item[4]
 		if callback.is_valid():
@@ -331,6 +336,9 @@ func _add_bottom_nav(canvas: Control) -> void:
 		else:
 			hit.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		canvas.add_child(hit)
+		if not selected:
+			# Parent/theme init can reset focus on invisible navigation controls.
+			hit.set_deferred("focus_mode",Control.FOCUS_ALL)
 
 func _add_text(canvas: Control, text_value: String, rect: Rect2, font_size: int, color: Color, bold: bool) -> Label:
 	var label := _make_label(text_value, font_size, color, bold)
