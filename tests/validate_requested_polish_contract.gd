@@ -3,8 +3,8 @@ extends SceneTree
 func _init() -> void:
 	var errors: Array[String] = []
 	_require("res://project.godot", ["theme/default_font_multichannel_signed_distance_field=false"], errors)
-	_require("res://scripts/ui/premium_home_direct_levels.gd", ["RESCUE RUSH", "WATER SORT", "BLOCK PUZZLE", "HomeDailyChallengeButton", "Callable(self, \"_open_compete\")", "HomeHeroFlatGameLogo", "HomeWorldFlatGameLogo", "#e4dfd5", "#1f1f1f"], errors)
-	_require("res://scripts/ui/premium_home_direct_levels.gd", ["HomeNavActivePlate", "HomeNavGlyph_", "HomeGamesNavButton", "\"GAMES\", \"▦\"", "\"DAILY\", \"✦\"", "\"COLLECT\", \"◆\"", "Rect2(261, 15, 108, 44)", "HomePlaymateSidekickBeta"], errors)
+	_require("res://scripts/ui/premium_home_direct_levels.gd", ["HomeWelcomeTitle", "HomeBrandEmblem", "HomePrimaryAction", "HomeRankDailyValue", "HomeRankValue", "HomeDailyGamesButton", "HomeDailyChallengeButton", "Callable(self, \"_open_compete\")", "Callable(self,\"_open_game_selector\")"], errors)
+	_require("res://scripts/ui/premium_home_direct_levels.gd", ["HomeNavActivePlate", "HomeNavGlyph_", "HomeGamesNavButton", "\"GAMES\", \"▦\"", "\"DAILY\", \"✦\"", "\"COLLECT\", \"◆\"", "HomeRankSummaryCard", "HomeDailyFeatureCard"], errors)
 	_require("res://scripts/ui/premium_home_overhaul.gd", ["Progress, stars, wallet", "_sync()"], errors)
 	_require("res://scripts/ui/premium_home_casual.gd", ["HomeCoinShopButton", "HomeGamesNavButton", "HomeDailyNavButton", "HomeCollectionNavButton", "HomeSettingsNavButton", "GAMES", "DAILY", "COLLECT"], errors)
 	_require("res://scripts/ui/premium_main_casual.gd", ["COMPLETED", "\"PLAY\"", "DailyAccent/", "CLEAR THE ROUTE", "SORT THE COLOURS", "CLEAR THE BOARD", "FigmaSurfaceBackground", "META_ART_SCRIPT", "_figma_surface_accent", "\"SETTINGS\", \"\", \"\""], errors)
@@ -17,7 +17,7 @@ func _init() -> void:
 	_require("res://scripts/ui/unjam_3d_backdrop.gd", ["Fewer, larger foliage clusters"], errors)
 	_require("res://scripts/ui/premium_main_casual.gd", ["FigmaSurfaceBackground", "#1c2027", "#eef1ee", "resolved_fill = Color(\"#2a2b2e\")"], errors)
 	_require("res://scripts/ui/premium_main_casual.gd", ["StdNavTopGloss", "StdNavActivePlate_", "StdNavGlyph_", "\"games\":\"▦\"", "\"daily\":\"★\"", "\"collection\":\"◆\"", "\"settings\":\"⚙\""], errors)
-	_require("res://scripts/ui/premium_home_direct_levels.gd", ["HomeCurrencyGem3D", "HomeCurrencyStar3D", "HomePlaymateSidekickBeta", "FigmaHomeBackground", "GAME_ART_SCRIPT", "HomeAccentGlow"], errors)
+	_require("res://scripts/ui/premium_home_direct_levels.gd", ["HomeCurrencyGem3D", "HomeCoinShopButton", "FigmaHomeBackground", "HomeBrandWordmark", "HomeWideBrandMark"], errors)
 	_require("res://scripts/ui/premium_result_overlay.gd", ["ResultKeyLight", "ResultStar3D", "ResultGameArt2D", "ResultVictoryHalo", "ResultVictoryRay_", "screen_flash", "ffd85a", "unjam_2d_game_art.gd", "add_collectible_star"], errors)
 	_require("res://scripts/ui/ux_shell_casual.gd", ["TutorialKeyLight", "TutorialAuthoredWorldArt", "GAME_ART_SCRIPT", "add_scene_backdrop_layers"], errors)
 	_require("res://scripts/ui/ux_shell_casual.gd", ["FigmaReferenceCanvas.label(\"EXIT\",12", "TutorialDemoExitLabel", "FigmaReferenceCanvas.set_rect(exit_label,160,34,46,17)"], errors)
@@ -25,7 +25,7 @@ func _init() -> void:
 	_require("res://scripts/ui/premium_live_hub_3d.gd", ["SelectorAuthoredGameArt_", "SelectorCardShadow_", "#202124", "#e6e3dc", "\"CHOOSE A GAME\", Rect2(78, 26, 196, 34), 22", "art.configure(game_id, true, _selector_dark())", "SelectorGamePreviewFrame_"], errors)
 	_require("res://scripts/ui/unjam_3d_game_art.gd", ["PROJECTION_ORTHOGONAL", "camera.size = 9.15", "camera.fov = 39.0", "flat_selector_mode", "Vector2i(416, 448) if flat_selector_mode else Vector2i(576, 432)", "unjam_flat_3d_preview", "Game-specific card-scale composition", "display_root.scale = Vector3.ONE * 1.05", "Vector3(-0.14, 0.05, 0.08)"], errors)
 	_require("res://scripts/ui/monetization_hub_3d.gd", ["add_scene_backdrop_layers", "ShopKeyLight", "ShopCurrencyGem3D", "add_collectible_gem", "style_display_title", "_shop_product_visual_state", "price == \"UNAVAILABLE\"", "\"enabled\":false", "quiet status chips", "Google Play purchases are not available right now"], errors)
-	_require("res://scripts/ui/premium_home_direct_levels.gd", ["RefCanvas.rounded_gradient3(", "RefCanvas.flat_gloss(nav_fill, 18, nav_border, 1", "GAME_ART_SCRIPT"], errors)
+	_require("res://scripts/ui/premium_home_direct_levels.gd", ["RefCanvas.rounded_gradient3(", "RefCanvas.flat_gloss(nav_fill, 18, nav_border, 1", "HomePrimaryAction"], errors)
 	_require("res://scripts/ui/premium_live_hub_3d.gd", ["RefCanvas.flat_gloss(bg_fill, 34, bg_border, 1", "RefCanvas.flat_gloss(neutral, 18", "SelectorGamePreviewFrame_"], errors)
 	_require("res://scripts/ui/insufficient_coins_prompt.gd", ["card_mid", "rounded_gradient3"], errors)
 	_require("res://scripts/game/rescue_rush_casual.gd", ["rounded_gradient3"], errors)
@@ -47,7 +47,7 @@ func _init() -> void:
 	_reject("res://scripts/ui/premium_home_direct_levels.gd", ["HomeLevelsNavButton", "HomeShopNavButton", "HomeNavSelectedDot", "HomeNavSelectedUnderline"], errors)
 	_reject("res://scripts/ui/premium_home_casual.gd", ["HomeLevelsNavButton", "HomeShopNavButton"], errors)
 	_reject("res://scripts/ui/premium_main_casual.gd", ["Daily level %d", "Three fresh challenges every day", "TODAY: %s", "One challenge per game today", "Sound, motion & theme", "game-tinted lacquer", "Each Daily is independent • play in any order", "ACHIEVEMENT CABINET"], errors)
-	_reject("res://scripts/ui/premium_home_direct_levels.gd", ["NEXT • LEVEL %d", "QUICK SWITCH"], errors)
+	_reject("res://scripts/ui/premium_home_direct_levels.gd", ["NEXT • LEVEL %d", "QUICK SWITCH", "\t_add_quick_switch(canvas)", "\t_add_world_progress(canvas)", "\t_add_quick_actions(canvas)", "\t_add_hero_preview(canvas, selected_game)"], errors)
 	_reject("res://scripts/game/block_puzzle_3d.gd", ["BlockCampaignSubtitle", "\"CAMPAIGN\""], errors)
 	if not errors.is_empty():
 		for error in errors:
