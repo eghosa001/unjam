@@ -26,6 +26,10 @@ func _run() -> void:
 	if exited_rescue == null:
 		return _fail("Rescue scene not yet active for route ownership regression")
 	var exited_rescue_id := exited_rescue.get_instance_id()
+	# Keep a live but non-owning stand-in for stale quit events. Passing a
+	# freed Control through Godot call() fails typed argument validation before
+	# the production routing guard can even evaluate it.
+	var stale_rescue := Control.new()
 	main.set("selected_game_id", "water_sort")
 	main.call("force_back_from_game")
 	await _frames(4)
@@ -42,7 +46,7 @@ func _run() -> void:
 		return _fail("Explicit Rescue -> Block tab navigation did not target Block levels")
 	# Simulate late Rescue signals AFTER the Block page appears. None may
 	# redirect, close, launch a level or change the selected-game identity.
-	main.call("_on_rescue_quit",exited_rescue,false)
+	main.call("_on_rescue_quit",stale_rescue,false)
 	main.call("_on_rescue_finished",3,false,exited_rescue_id)
 	if String(main.get("selected_game_id")) != "block_puzzle" or String(main.get("current_surface")) != "levels":
 		return _fail("Stale Rescue exit/win stole Block Puzzle's level screen")
@@ -53,7 +57,7 @@ func _run() -> void:
 	main.call("_figma_switch_level_game","rescue_rush")
 	if String(main.get("selected_game_id")) != "block_puzzle":
 		return _fail("Old level tab redirected a running Block game into Rescue")
-	main.call("_on_rescue_quit",exited_rescue,false)
+	main.call("_on_rescue_quit",stale_rescue,false)
 	main.call("_on_rescue_finished",3,false,exited_rescue_id)
 	if String(main.get("selected_game_id")) != "block_puzzle":
 		return _fail("Stale Rescue callback changed the active Block game")
@@ -61,6 +65,8 @@ func _run() -> void:
 	await _frames(3)
 	if String(main.get("selected_game_id")) != "block_puzzle" or String(main.get("current_surface")) != "levels":
 		return _fail("Leaving Block game routed back into the wrong campaign")
+
+	stale_rescue.free()
 
 	var block_source := _read("res://scripts/game/block_puzzle.gd")
 	var water_source := _read("res://scripts/game/water_sort_casual.gd")
