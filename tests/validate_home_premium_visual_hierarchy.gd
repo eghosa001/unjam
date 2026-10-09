@@ -109,10 +109,23 @@ func _run() -> void:
 	await _frames(8)
 	var wide_stage := home.find_child("HomeWideStage",true,false) as Control
 	var wide_mark := home.find_child("HomeWideBrandMark",true,false) as TextureRect
-	if wide_stage == null or not wide_stage.visible or wide_mark == null or wide_mark.size.x < 700:
-		return _fail("Tablet branding is missing from neutral landscape Home")
+	if wide_stage == null or not wide_stage.visible or wide_mark == null or wide_mark.size.x < 230 or wide_mark.size.x > 270:
+		return _fail("Landscape Home should keep approved raster small enough to stay sharp")
 	if wide_mark.get_global_rect().position.x <= canvas.get_global_rect().end.x+40:
 		return _fail("Tablet branding overlaps the launcher")
+	# User-facing tablet art must be authored SVG, not a blown-up launcher PNG.
+	for game_id in ["rescue_rush","water_sort","block_puzzle"]:
+		var card := home.find_child("HomeWideShowcase_%s" % game_id,true,false) as Control
+		var art := home.find_child("HomeWideShowcaseArt_%s" % game_id,true,false) as Control
+		var button := home.find_child("HomeWideOpenLevels_%s" % game_id,true,false) as Button
+		if card == null or art == null or button == null:
+			return _fail("Landscape Home lacks %s illustrated level shortcut" % game_id)
+		if not button.get_global_rect().encloses(art.get_global_rect()) or not _same(card,Rect2(button.position,button.size)):
+			return _fail("Landscape %s tile image is not fully tappable" % game_id)
+		if button.action_mode != BaseButton.ACTION_MODE_BUTTON_RELEASE or not button.accessibility_name.contains("level selection"):
+			return _fail("Landscape game card must be accessible and open levels on release")
+		if button.get_global_rect().end.x > root.get_visible_rect().size.x or button.get_global_rect().end.y > root.get_visible_rect().size.y:
+			return _fail("Landscape game shortcut escapes the tablet screen")
 	main.queue_free()
 	await _frames(2)
 	print("HOME_CLEAR_ART_AND_ACCESSIBLE_GAME_SHORTCUTS_OK")
