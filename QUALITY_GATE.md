@@ -1,5 +1,10 @@
 # UNJAM: release quality bar (9+/10 in every category)
 
+The owner-approved comparison and category scoring contract is
+[docs/COMPETITIVE_QUALITY_STANDARD.md](docs/COMPETITIVE_QUALITY_STANDARD.md).
+Every area must individually earn >=9 with device/live evidence where required;
+CI cannot manufacture a rating. The fast-production policy remains authoritative.
+
 An automated PASS is not itself a 9+/10 visual or product rating. Each dimension must
 be verified with its own evidence. Do not claim 9+ without a device/screenshot review.
 
