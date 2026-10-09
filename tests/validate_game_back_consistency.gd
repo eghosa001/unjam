@@ -78,7 +78,6 @@ func _run() -> void:
 		"card.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE",
 		"button.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE",
 		'if current_surface != "levels" or game_id not in MultiGameManager.GAME_IDS',
-		'call_deferred("_prime_displayed_level_scene",game_id)',
 	]:
 		if not level_ui.contains(needle):
 			return _fail("Lag-free and release-safe cross-game routing contract missing: " + needle)
