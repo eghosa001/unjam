@@ -121,17 +121,16 @@ func _build() -> void:
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	overlay.add_child(shade)
 
-	var center := CenterContainer.new()
-	center.name = "LeaderboardModalCenter"
-	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	center.mouse_filter = Control.MOUSE_FILTER_PASS
-	overlay.add_child(center)
-
+	# The CenterContainer plus custom-minimum-size implementation rendered as
+	# a small floating box on real Android devices despite correct test sizes.
+	# Make the leaderboard a true viewport-anchored foreground sheet instead.
 	_card = PanelContainer.new()
 	_card.name = "LeaderboardModalCard"
+	_card.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_card.mouse_filter = Control.MOUSE_FILTER_STOP
 	var card_color := Color("#202630") if _dark else Color("#fbf8f1")
 	_card.add_theme_stylebox_override("panel",_style(card_color,Color("#7861ac") if _dark else Color("#ad91e0"),22))
-	center.add_child(_card)
+	overlay.add_child(_card)
 
 	_inset = MarginContainer.new()
 	for side in ["left","right","top","bottom"]:
@@ -226,6 +225,7 @@ func _build() -> void:
 	add_child(_deadline)
 	get_viewport().size_changed.connect(_fit_viewport)
 	_fit_viewport()
+	call_deferred("_fit_viewport")
 	_render()
 	# Other legacy surface skinning runs while nodes enter the tree; reassert
 	# keyboard/TalkBack focus only after all authored controls are mounted.
@@ -242,28 +242,44 @@ func _restore_accessible_button_focus() -> void:
 			button.focus_mode = Control.FOCUS_ALL
 			button.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 
+
 func _fit_viewport() -> void:
 	if _card == null or not is_instance_valid(_card):
 		return
-	var size := get_viewport().get_visible_rect().size
-	var portrait := size.y >= size.x
-	var short_screen := size.y < 620.0
-	# The old 540x790 cap made rankings appear as a tiny card on 1080px
-	# Android layouts. Occupy almost the entire portrait viewport while keeping
-	# real safe margins and a compact centered panel on wide tablets.
-	var width := minf(size.x - 24.0, size.x * 0.95)
-	var height := minf(size.y - 24.0, size.y * 0.94)
-	if not portrait:
-		width = minf(width, size.y * 1.08)
-	_ui_scale = clampf(minf(width / 510.0, height / 880.0), 0.85, 2.0)
-	_card.custom_minimum_size = Vector2(maxf(220.0,width),maxf(250.0,height))
-	_body.add_theme_constant_override("separation",int(9.0 * _ui_scale) if not short_screen else 5)
-	_game_bar.add_theme_constant_override("separation",int(7.0 * _ui_scale))
+	var viewport_size := get_viewport().get_visible_rect().size
+	if viewport_size.x < 100.0 or viewport_size.y < 100.0:
+		return
+	var overlay := get_node_or_null("LeaderboardModalOverlay") as Control
+	if overlay == null:
+		return
+	# CanvasLayer renders above the UI and uses viewport coordinates. Setting
+	# both the overlay size and panel anchors removes any dependency on a
+	# CenterContainer's inferred minimum size or deferred layout order.
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.size = viewport_size
+	_card.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_card.custom_minimum_size = Vector2.ZERO
+	var portrait := viewport_size.y >= viewport_size.x
+	var pad_x := clampf(viewport_size.x*0.015,6.0,20.0)
+	var pad_y := clampf(viewport_size.y*0.012,6.0,22.0)
+	_card.offset_left = pad_x
+	_card.offset_right = -pad_x
+	_card.offset_top = pad_y
+	_card.offset_bottom = -pad_y
+	_card.queue_redraw()
+	# More than 93% of each dimension in portrait, with a true scrollable
+	# leaderboard body. There is no 540px/790px maximum card size.
+	var available_width := viewport_size.x-2.0*pad_x
+	var available_height := viewport_size.y-2.0*pad_y
+	_ui_scale = clampf(minf(available_width/510.0,available_height/900.0),0.80,2.20)
+	var compact := viewport_size.y < 650.0
+	_body.add_theme_constant_override("separation",int(7*_ui_scale) if not compact else 4)
+	_game_bar.add_theme_constant_override("separation",int(6*_ui_scale))
 	if _inset != null:
 		for side in ["left","right","top","bottom"]:
-			_inset.add_theme_constant_override("margin_%s" % side,int(14.0 * _ui_scale))
+			_inset.add_theme_constant_override("margin_%s" % side,int(12*_ui_scale))
 	if _scroll != null:
-		_scroll.custom_minimum_size.y = maxf(60.0,96.0*_ui_scale)
+		_scroll.custom_minimum_size.y = maxf(65.0,90.0*_ui_scale)
 	var close := _card.find_child("LeaderboardClose",true,false) as Button
 	if close != null:
 		close.custom_minimum_size.x = 94*_ui_scale
