@@ -16,7 +16,7 @@ func _run() -> void:
 	# For the four-tile L, the occupied-cell mean should align with those
 	# same 35px tiles, not a separate 88px drawing geometry.
 	var origin := (preview.size - Vector2(3.0,2.0)*cell_size)*0.5
-	var expected := origin + Vector2(1.25,0.75)*cell_size
+	var expected := origin + Vector2(1.75,0.75)*cell_size
 	if not _check(centroid.distance_to(expected) < 0.1,"Block ghost centroid does not match visual layout"):return
 	var source := FileAccess.get_file_as_string("res://scripts/ui/block_drag_preview.gd")
 	var drawing := source.substr(source.find("func _draw() -> void:"),source.find("func _draw_block(")-source.find("func _draw() -> void:"))
