@@ -18,7 +18,7 @@ func _initialize() -> void:
 	var in_app := _image("res://assets/icon_user_adaptive_432.png",Vector2i(432,432),errors)
 	var original := _image("res://store_assets/unjam_approved_logo_transparent.png",Vector2i.ZERO,errors)
 	if foreground != null:
-		_check_alpha_bounds(foreground,70,"Adaptive icon",errors)
+		_check_alpha_bounds(foreground,86,"Samsung-safe adaptive foreground",errors)
 	if system_splash != null:
 		_check_alpha_bounds(system_splash,76,"Android 12 system splash",errors)
 	# The previous U-only launch icon passed margin tests. Reject that
