@@ -706,9 +706,17 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 			var plate := PanelContainer.new()
 			plate.name = "HomeNavActivePlate"
 			plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			plate.add_theme_stylebox_override("panel", RefCanvas.flat_gloss(Color(accent.r, accent.g, accent.b, 0.12 if _home_dark() else 0.15), 12, Color(accent.r, accent.g, accent.b, 0.40), 1, 0.16))
-			RefCanvas.set_rect(plate, float(item[3]) + 8.0, 761, 56, 58)
+			# Shared selection geometry/material: same x inset, radius and tiny
+			# marker as Choose Game and all shared Figma pages.
+			plate.add_theme_stylebox_override("panel", RefCanvas.flat_gloss(Color(accent.r, accent.g, accent.b, 0.12 if _home_dark() else 0.15), 14, Color(accent.r, accent.g, accent.b, 0.34), 1, 0.10))
+			RefCanvas.set_rect(plate, float(item[3]) + 7.0, 761, 58, 58)
 			canvas.add_child(plate)
+			var shine := PanelContainer.new()
+			shine.name = "HomeNavActiveShine"
+			shine.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			shine.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color(accent.r, accent.g, accent.b, 0.82), 1))
+			RefCanvas.set_rect(shine, float(item[3]) + 24.0, 763, 24, 2)
+			canvas.add_child(shine)
 		var glyph := _add_text(canvas, item[1], Rect2(float(item[2]) - 1.0, 761, 58, 24), 18, icon_color, true)
 		glyph.name = "HomeNavGlyph_%s" % String(item[0])
 		glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
