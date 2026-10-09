@@ -33,7 +33,11 @@ func _run() -> void:
 	if not _check(choose != null and choose.text.contains("CHOOSE GAME"),"Choose Game is not the primary Home action"):return
 	if not _check(choose.action_mode == BaseButton.ACTION_MODE_BUTTON_RELEASE,"Choose Game must wait for touch release"):return
 	if not _check(rank != null and rank.text == "#4","Home best weekly rank is not visible"):return
+	var rank_hint := home.find_child("HomeRankWeeklyHint",true,false) as Label
+	if not _check(rank_hint != null and rank_hint.text == "ON THE BOARD","Home rank must confirm placement when genuinely ranked"):return
 	if not _check(rank_daily != null and rank_daily.text == "—","Today's rank must not be faked before the daily snapshot"):return
+	var today_hint := home.find_child("HomeRankDailyHint",true,false) as Label
+	if not _check(today_hint != null and today_hint.text == "PLAY TO JOIN","Home must explain its empty Daily ranking"):return
 	if not _check(ranking != null and ranking.text.contains("LEADERBOARD"),"Leaderboard is not visible on Home"):return
 	for game_id in ["rescue_rush","water_sort","block_puzzle"]:
 		if not _check(home.find_child("HomeDirect_%s" % game_id,true,false) == null,"Home still contains duplicate game-select cards for %s" % game_id):return
