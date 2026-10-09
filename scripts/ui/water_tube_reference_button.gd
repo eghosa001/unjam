@@ -14,6 +14,7 @@ var tube_index := 0
 var pulse := 0.0
 var invalid_flash := 0.0
 var success_flash := 0.0
+var _invalid_wobble: Tween
 var _redraw_accumulator := 0.0
 
 const ACTIVE_REDRAW_FPS := 30.0
@@ -37,6 +38,13 @@ func configure(values: Array, selected: bool, index: int) -> void:
 	if is_inside_tree():
 		_sync_reference_processing()
 
+func _exit_tree() -> void:
+	# A queued scene replacement must never retain a cancelled wobble tween or
+	# its target after the last audit/gameplay frame.
+	if _invalid_wobble != null and _invalid_wobble.is_valid():
+		_invalid_wobble.kill()
+	_invalid_wobble = null
+
 func _ready() -> void:
 	resized.connect(func() -> void: pivot_offset = size * 0.5)
 	button_down.connect(_press)
@@ -57,10 +65,22 @@ func _release() -> void:
 func play_invalid() -> void:
 	invalid_flash = 1.0
 	set_process(true)
-	var original := position
-	var t := create_tween()
-	for dx in [7.0, -7.0, 5.0, -5.0, 0.0]:
-		t.tween_property(self, "position", original + Vector2(dx, 0), 0.04)
+	# Rapid invalid taps used to stack 0.2-second position tweens on the bottle,
+	# fighting the GridContainer and leaving a bottle displaced from its cell.
+	# Keep the layout entirely still; a bounded local rotation communicates the
+	# rejected pour without making the glass or its hitbox wander.
+	if _invalid_wobble != null and _invalid_wobble.is_valid():
+		_invalid_wobble.kill()
+	rotation = 0.0
+	# Resolve the optional autoload at runtime: palette-only test scripts also
+	# preload this base class before editor autoload symbols are registered.
+	var motion := get_node_or_null("/root/MotionSystem")
+	if motion != null and motion.has_method("reduced") and bool(motion.call("reduced")):
+		queue_redraw()
+		return
+	_invalid_wobble = create_tween().set_trans(Tween.TRANS_SINE)
+	for degrees in [-4.0, 3.0, -2.5, 1.5, 0.0]:
+		_invalid_wobble.tween_property(self, "rotation", deg_to_rad(degrees), 0.035)
 
 func play_success() -> void:
 	success_flash = 1.0

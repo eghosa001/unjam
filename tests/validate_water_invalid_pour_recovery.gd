@@ -53,6 +53,23 @@ func _run() -> void:
 	var status := game.get("status_label") as Label
 	if status == null or not status.text.contains("choose another tube"):
 		return _fail("Invalid pour does not explain how to recover")
+	var target_button := (game.get("board") as GridContainer).get_child(invalid_idx) as Control
+	var cell_position := target_button.position
+	# Fast repeat taps may overlap multiple rejection animations. The source
+	# remains selected, while the target glass must stay in its grid cell.
+	for _i in range(6):
+		game.call("select_tube", invalid_idx)
+		await process_frame
+		if target_button.position.distance_to(cell_position) > 0.75:
+			return _fail("Rejected pour shifted a bottle away from its grid slot")
+	await create_timer(0.23).timeout
+	if target_button.position.distance_to(cell_position) > 0.75:
+		return _fail("Rejected pour did not restore original bottle layout")
+	if absf(target_button.rotation) > 0.015:
+		return _fail("Repeated invalid-tap wobble did not settle to zero rotation")
+	var motion_source := FileAccess.get_file_as_string("res://scripts/ui/water_tube_reference_button.gd")
+	if not motion_source.contains('motion.call("reduced")'):
+		return _fail("Rejected pour does not honor Reduce Motion")
 	game.call("select_tube",from_idx)
 	await process_frame
 	if int(game.get("selected")) != -1:
