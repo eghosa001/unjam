@@ -108,7 +108,27 @@ func _check_visual_and_action_parity(owner: Node, prefix: String, keys: Array[St
 		if k.to_lower() == "daily" and glyph.text != "★":
 			return _fail("%s Daily tab has a different icon from other surfaces" % prefix)
 		controls.append(hit)
-	return _check_controls(controls,prefix)
+	if not _check_controls(controls,prefix):
+		return false
+	if selected.is_empty():
+		# Ancillary pages such as Goals/Friends/Compete must not pretend a
+		# primary bottom tab is selected.
+		return owner.find_child("%sActivePlate_*" % prefix,true,false) == null
+	var hit_x := {"home":14.0,"games":86.0,"daily":158.0,"collection":230.0,"settings":302.0}
+	var plate_name := "HomeNavActivePlate" if home else "%sActivePlate_%s" % [prefix,selected.to_upper() if prefix == "SelectorNav" else selected.to_lower()]
+	var shine_name := "HomeNavActiveShine" if home else "%sActiveShine_%s" % [prefix,selected.to_upper() if prefix == "SelectorNav" else selected.to_lower()]
+	var plate := owner.find_child(plate_name,true,false) as Control
+	var shine := owner.find_child(shine_name,true,false) as Control
+	if plate == null or shine == null:
+		return _fail("%s lacks the common selected-state plate/quiet highlight for %s" % [prefix,selected])
+	var expected_x := float(hit_x[selected.to_lower()])
+	var pr := Rect2(plate.position,plate.size)
+	var sr := Rect2(shine.position,shine.size)
+	if pr.position.distance_to(Vector2(expected_x+7.0,761.0)) > 0.5 or pr.size.distance_to(Vector2(58.0,58.0)) > 0.5:
+		return _fail("%s selected-state plate has inconsistent spacing or size" % prefix)
+	if sr.position.distance_to(Vector2(expected_x+24.0,763.0)) > 0.5 or sr.size.distance_to(Vector2(24.0,2.0)) > 0.5:
+		return _fail("%s selected-state marker differs from other screens" % prefix)
+	return true
 
 func _check_named(root_node: Node, names: Array[String], label: String) -> bool:
 	var controls: Array[Control] = []
