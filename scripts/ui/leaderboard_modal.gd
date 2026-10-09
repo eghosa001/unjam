@@ -337,7 +337,9 @@ func _on_campaign_updated(_snapshot: Dictionary) -> void:
 	if _period == "today":
 		return
 	_loading = false
-	_failed = false
+	# Empty payload means refresh failed; a previously cached snapshot may
+	# still contain legitimate scores. Never display "Live" on stale data.
+	_failed = _snapshot.is_empty()
 	_deadline.stop()
 	_render()
 
