@@ -25,7 +25,7 @@ func _initialize() -> void:
 	if (feedback.get("_stream_cache") as Dictionary).size() > cache_limit:
 		return _fail("Audio waveform cache grew past its bounded capacity")
 	var reused = feedback.call("_chime_stream",[330.0 + float(cache_limit + 11)],0.048,0.065,0.33)
-	if not is_same(newest,reused):
+	if newest != reused:
 		return _fail("Cached waveforms are regenerated during repeated sound effects")
 	feedback.free()
 	if previous < 8.0:
