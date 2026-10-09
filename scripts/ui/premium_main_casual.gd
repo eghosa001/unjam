@@ -426,6 +426,22 @@ func _figma_button(canvas: Control, name_value: String, text_value: String, rect
 	var button := FigmaReferenceCanvas.premium_button(text_value, font_size, resolved_text, resolved_fill, radius, Color(resolved_fill.r, resolved_fill.g, resolved_fill.b, 0.38), 1)
 	button.name = name_value
 	button.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
+	# Show an immediate finger-down response without triggering a new page
+	# until the finger is released on the intended control. This keeps fast
+	# touch feedback and still prevents a held touch being transferred to the
+	# next screen's Block/Water tabs.
+	button.button_down.connect(func() -> void:
+		if is_instance_valid(button):
+			button.self_modulate = Color(0.89,0.89,0.89,1.0)
+	)
+	button.button_up.connect(func() -> void:
+		if is_instance_valid(button):
+			button.self_modulate = Color.WHITE
+	)
+	button.mouse_exited.connect(func() -> void:
+		if is_instance_valid(button):
+			button.self_modulate = Color.WHITE
+	)
 	button.set_meta("unjam_authored_rect", rect)
 	FigmaReferenceCanvas.set_rect(button, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	_fit_single_line_control_text(button, maxf(24.0, rect.size.x - 18.0), font_size, 10)
@@ -1864,17 +1880,17 @@ func _build_figma_level_browser(game_id: String) -> void:
 	prev.disabled = selected_multi_world <= 1 and selected_multi_page <= 1
 	_style_figma_page_button(prev,prev_fill,accent,prev.disabled,true)
 	if not prev.disabled:
-		prev.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+		prev.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 		prev.pressed.connect(_change_multi_page.bind(-1))
 	var current := _figma_button(canvas,"LevelCurrent","CURRENT",Rect2(125,page_y - 3.0,118,44),accent,Callable(self,"_jump_multi_current"),FIGMA_OFF_WHITE,14,14)
-	current.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+	current.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 	_style_figma_page_button(current,accent,accent,false)
 	var next_disabled := selected_multi_world >= world_count and selected_multi_page >= _multi_page_count(game_id,selected_multi_world)
 	var next := _figma_button(canvas,"LevelNext","NEXT ▶",Rect2(251,page_y - 3.0,120,44),Color("#fcfeff"),Callable(),FIGMA_MUTED,14,14)
 	next.disabled = next_disabled
 	_style_figma_page_button(next,Color("#fcfeff"),accent,next_disabled,true)
 	if not next.disabled:
-		next.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+		next.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 		next.pressed.connect(_change_multi_page.bind(1))
 
 	var current_level := _highest_level_for_game(game_id)
@@ -1908,7 +1924,7 @@ func _build_figma_level_browser(game_id: String) -> void:
 		card.disabled = not unlocked
 		_style_figma_level_card(card,accent,border,unlocked,is_current)
 		if unlocked:
-			card.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+			card.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 			if game_id == "rescue_rush":
 				card.pressed.connect(start_level.bind(level_number))
 			else:
@@ -1925,6 +1941,15 @@ func _build_figma_level_browser(game_id: String) -> void:
 		status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_fit_single_line_control_text(status_label,62.0,11,9)
 		index += 1
+	# Do cold scene preparation after this frame's level-browser presentation;
+	# never make the button wait for SVG/GDScript imports before responding.
+	call_deferred("_prime_displayed_level_scene",game_id)
+
+func _prime_displayed_level_scene(game_id: String) -> void:
+	if not is_inside_tree() or current_surface != "levels" or selected_game_id != game_id:
+		return
+	var path := RESCUE_GAME_SCENE_PATH if game_id == "rescue_rush" else (WATER_GAME_SCENE_PATH if game_id == "water_sort" else BLOCK_GAME_SCENE_PATH)
+	_prime_game_scene(path)
 
 func _figma_level_tabs(canvas: Control, active_game_id: String) -> void:
 	var active_accent := Unjam3DTheme.game_accent(active_game_id)
@@ -1943,7 +1968,7 @@ func _figma_level_tabs(canvas: Control, active_game_id: String) -> void:
 		if active:
 			button.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		else:
-			button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+			button.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 			button.pressed.connect(_figma_switch_level_game.bind(game_id))
 
 func _style_figma_level_header(canvas: Control, accent: Color) -> void:
@@ -2055,6 +2080,13 @@ func _add_figma_block_modes(canvas: Control) -> void:
 			button.pressed.connect(start_block_mode.bind(mode))
 
 func _figma_switch_level_game(game_id: String) -> void:
+	# The level tab is the only owner of a cross-game selection. A queued
+	# button signal from a recently closed Rescue screen is not permitted to
+	# redirect the next surface to Block Puzzle.
+	if current_surface != "levels" or game_id not in MultiGameManager.GAME_IDS or selected_game_id == game_id:
+		return
+	if active_game != null and is_instance_valid(active_game):
+		return
 	selected_game_id = game_id
 	selected_multi_world = MultiGameManager.highest_unlocked_game_world(game_id)
 	selected_multi_page = _multi_page_for_level(game_id,_highest_level_for_game(game_id))
