@@ -288,6 +288,11 @@ func _add_game_showcase(canvas: Control) -> void:
 		RefCanvas.set_rect(shortcut,left,344,110,112)
 		shortcut.pressed.connect(_open_game_levels.bind(id))
 		canvas.add_child(shortcut)
+		# Some parent/surface setup steps reset Button focus when mounted.
+		# Reassert actual keyboard/TalkBack focus after entering the tree.
+		shortcut.focus_mode = Control.FOCUS_ALL
+		shortcut.set_deferred("focus_mode",Control.FOCUS_ALL)
+		shortcut.set_meta("unjam_authored_focus_mode",int(Control.FOCUS_ALL))
 
 func _hero_cue(game_id: String) -> String:
 	match game_id:
