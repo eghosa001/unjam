@@ -1,7 +1,7 @@
 extends SceneTree
 
-# Focused functional Home regression: navigation is deliberate, no game
-# launches from an accidental touch-through or hidden three-game shortcut.
+# Focused functional Home navigation: the full game tiles open each game's
+# campaign level browser. No direct gameplay or touch-through is permitted.
 func _initialize() -> void:
 	call_deferred("_run")
 
@@ -40,6 +40,30 @@ func _run() -> void:
 	if not _check(home.find_child("HomeHeroFlatGameLogo",true,false) == null and home.find_child("HomeHeroGameTitle",true,false) == null,"Home still prominently displays selected game artwork/title"):return
 	if not _check(home.find_child("HomeWorldProgress",true,false) == null,"Old progress dashboard still crowds Home"):return
 
+	# All three illustrated tiles must open the matching campaign LEVEL browser
+	# in one tap, not a static picture, not game selector, and not gameplay.
+	for game_id in ["rescue_rush","water_sort","block_puzzle"]:
+		main.call("build_home")
+		await _frames(3)
+		home = main.get_node_or_null("PremiumHome") as Control
+		var shortcut := home.find_child("HomeShowcaseOpenLevels_%s" % game_id,true,false) as Button
+		var art := home.find_child("HomeShowcaseArt_%s" % game_id,true,false) as Control
+		if not _check(shortcut != null and art != null,"Home game preview is not actionable: %s" % game_id):return
+		if not _check(shortcut.action_mode == BaseButton.ACTION_MODE_BUTTON_RELEASE,"Game preview must respond on touch release: %s" % game_id):return
+		var image_bounds := art.get_global_rect()
+		var touch_bounds := shortcut.get_global_rect()
+		if not _check(touch_bounds.encloses(image_bounds),"Tappable area does not cover game image for %s" % game_id):return
+		shortcut.pressed.emit()
+		await _frames(4)
+		if not _check(String(main.get("current_surface")) == "levels","Tapping %s did not open level selection" % game_id):return
+		if not _check(String(main.get("selected_game_id")) == game_id,"Tapping image opened incorrect game levels: %s" % game_id):return
+		if not _check(main.get("active_game") == null,"Tapping %s started gameplay instead of showing levels" % game_id):return
+
+	main.call("build_home")
+	await _frames(4)
+	home = main.get_node_or_null("PremiumHome") as Control
+	choose = home.find_child("HomePrimaryAction",true,false) as Button
+	if not _check(choose != null,"Choose Game vanished after returning from game levels"):return
 	choose.pressed.emit()
 	await _frames(4)
 	if not _check(String(main.get("current_surface")) == "live","Choose Game did not open the Games screen"):return
