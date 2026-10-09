@@ -32,9 +32,9 @@ func _run() -> void:
 	await _frames(8)
 	main.call("build_settings")
 	await _frames(3)
-	var gentle := main.find_child("SettingToggle*Gentle_effects",true,false) as Button
-	var fast := main.find_child("SettingToggle*Fast_animation",true,false) as Button
-	var motion := main.find_child("SettingToggle*Reduce_motion",true,false) as Button
+	var gentle := main.find_child("SettingToggle*Gentle*",true,false) as Button
+	var fast := main.find_child("SettingToggle*Fast*",true,false) as Button
+	var motion := main.find_child("SettingToggle*Reduce*",true,false) as Button
 	var purchases := main.find_child("SettingsPurchases",true,false) as Button
 	if not _assert(gentle != null and fast != null and motion != null and purchases != null, "All three Comfort controls and purchases must remain present"):return
 	if not _assert(gentle.text == "ON" and gentle.size.y >= 44.0, "Default Gentle Effects toggle is not visible and comfortably tappable"):return
@@ -44,7 +44,7 @@ func _run() -> void:
 	gentle.pressed.emit()
 	await _frames(3)
 	if not _assert(not bool(save.data.get("gentle_effects",true)), "Gentle toggle does not actually persist an OFF preference"):return
-	var gentle_off := main.find_child("SettingToggle*Gentle_effects",true,false) as Button
+	var gentle_off := main.find_child("SettingToggle*Gentle*",true,false) as Button
 	if not _assert(gentle_off != null and gentle_off.text == "OFF", "Gentle setting does not visibly update on toggle"):return
 	var count_before := overlay.get_child_count()
 	premium.call("screen_flash",Color("ffbb22"),0.18)
