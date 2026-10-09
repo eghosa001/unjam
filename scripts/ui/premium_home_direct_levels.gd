@@ -351,22 +351,22 @@ func _add_rank_summary(canvas: Control) -> void:
 	var daily_tag := _add_text(canvas,"TODAY",Rect2(38,505,140,21),
 		12,DARK_MUTED if dark else Color("#424a59"),true)
 	daily_tag.name = "HomeRankDailyLabel"
-	var daily_rank := _add_text(canvas,"—",Rect2(38,532,135,34),
-		27,GOLD if dark else Color("#714e12"),true)
+	var daily_rank := _add_text(canvas,"—",Rect2(38,530,135,34),
+		24,GOLD if dark else Color("#714e12"),true)
 	daily_rank.name = "HomeRankDailyValue"
-	var daily_hint := _add_text(canvas,"PLAY TO JOIN",Rect2(38,568,140,18),
+	var daily_hint := _add_text(canvas,"PLAY TO JOIN",Rect2(38,567,140,18),
 		11,DARK_MUTED if dark else Color("#424a59"),false)
 	daily_hint.name = "HomeRankDailyHint"
 	var weekly_tag := _add_text(canvas,"BEST WEEKLY",Rect2(200,505,145,21),
 		12,DARK_MUTED if dark else Color("#424a59"),true)
 	weekly_tag.name = "HomeRankWeeklyLabel"
-	var weekly_rank := _add_text(canvas,"—",Rect2(200,532,135,34),
-		27,GOLD if dark else Color("#714e12"),true)
+	var weekly_rank := _add_text(canvas,"—",Rect2(200,530,135,34),
+		24,GOLD if dark else Color("#714e12"),true)
 	weekly_rank.name = "HomeRankValue"
-	var weekly_hint := _add_text(canvas,"PLAY TO JOIN",Rect2(200,568,144,18),
+	var weekly_hint := _add_text(canvas,"PLAY TO JOIN",Rect2(200,567,144,18),
 		11,DARK_MUTED if dark else Color("#424a59"),false)
 	weekly_hint.name = "HomeRankWeeklyHint"
-	var open := _add_action(canvas,Rect2(38,590,314,44),Color("#7757cf"),
+	var open := _add_action(canvas,Rect2(38,591,314,44),Color("#7757cf"),
 		"★  VIEW FULL LEADERBOARD",14,OFF_WHITE,Callable(self,"_open_compete"),14)
 	open.name = "HomeDailyGamesButton"
 	open.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
