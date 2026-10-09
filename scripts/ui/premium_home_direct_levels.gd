@@ -180,6 +180,9 @@ func _build_wide_home_stage(stage: Control, available: Vector2) -> void:
 		stage.add_child(description)
 		var shortcut := Button.new()
 		shortcut.name = "HomeWideOpenLevels_%s" % id
+		shortcut.set_meta("unjam_figma_exact_geometry",true)
+		shortcut.set_meta("unjam_preserve_control_geometry",true)
+		shortcut.set_meta("unjam_preserve_surface_style",true)
 		shortcut.flat = false
 		shortcut.focus_mode = Control.FOCUS_ALL
 		shortcut.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
@@ -195,6 +198,7 @@ func _build_wide_home_stage(stage: Control, available: Vector2) -> void:
 		stage.add_child(shortcut)
 		shortcut.focus_mode = Control.FOCUS_ALL
 		shortcut.set_deferred("focus_mode",Control.FOCUS_ALL)
+		shortcut.set_meta("unjam_authored_focus_mode",int(Control.FOCUS_ALL))
 
 	var footer := RefCanvas.label("PLAY • SOLVE • CLIMB THE LEADERBOARD",
 		int(clampf(available.y*0.022,23,32)),GOLD if dark else Color("#755b18"),true)
