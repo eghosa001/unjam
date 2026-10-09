@@ -444,9 +444,15 @@ func show_hint() -> void:
 	FeedbackManager.escape(chain_count)
 	escape_piece(index, true)
 	await get_tree().create_timer(0.06).timeout
+	# A Back/Home command can detach this scene during the assisted escape.
+	# Never continue cascading or mutating a stale board after suspension.
+	if not is_inside_tree() or is_queued_for_deletion():
+		return
 	await _resolve_cascades(legal_before)
+	if not is_inside_tree() or is_queued_for_deletion():
+		return
 	await resolve_rescue()
-	if not is_inside_tree():
+	if not is_inside_tree() or is_queued_for_deletion():
 		return
 	if not rescued:
 		render_board()
