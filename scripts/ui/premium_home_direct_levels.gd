@@ -684,7 +684,7 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 	shell.name = "HomeBottomNav3D"
 	var nav_fill := Color("#252629") if _home_dark() else Color("#f0ede6")
 	var nav_border := Color("#3a3d42") if _home_dark() else Color("#cbc6bc")
-	shell.add_theme_stylebox_override("panel", RefCanvas.flat_gloss(nav_fill, 18, nav_border, 1, 0.12))
+	shell.add_theme_stylebox_override("panel", RefCanvas.flat_gloss(nav_fill, 18, nav_border, 1, 0.10))
 	RefCanvas.set_rect(shell, 13, 757, 362, 70)
 	shell.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(shell)
@@ -692,7 +692,7 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 	var items := [
 		["HOME", "⌂", 22.0, 14.0, Callable(), "HomeNavButton", true, GOLD],
 		["GAMES", "▦", 94.0, 86.0, Callable(self, "_open_game_selector"), "HomeGamesNavButton", false, GOLD],
-		["DAILY", "✦", 166.0, 158.0, Callable(self, "_open_daily_games"), "HomeDailyNavButton", false, GOLD],
+		["DAILY", "★", 166.0, 158.0, Callable(self, "_open_daily_games"), "HomeDailyNavButton", false, GOLD],
 		["COLLECT", "◆", 238.0, 230.0, func(): get_parent().call("build_collection"), "HomeCollectionNavButton", false, GOLD],
 		["SETTINGS", "⚙", 310.0, 302.0, func(): get_parent().call("build_settings"), "HomeSettingsNavButton", false, GOLD],
 	]
@@ -715,11 +715,11 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 		var display_name := String(item[0])
 		var label_width := 66.0 if String(item[0]) in ["COLLECT", "SETTINGS"] else 58.0
 		var label_x := float(item[3]) + (72.0 - label_width) * 0.5
-		var label := _add_text(canvas, display_name, Rect2(label_x, 799, label_width, 18), 14, nav_color, selected)
+		var label := _add_text(canvas, display_name, Rect2(label_x, 803, label_width, 18), 13, nav_color, selected)
 		label.name = "HomeNavLabel_%s" % String(item[0])
 		label.custom_minimum_size = Vector2.ZERO
-		RefCanvas.fit_single_line_text(label, label_width - 2.0, 14, 12)
-		label.position = Vector2(label_x, 799)
+		RefCanvas.fit_single_line_text(label, label_width - 2.0, 13, 11)
+		label.position = Vector2(label_x, 803)
 		label.size = Vector2(label_width, 18)
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -727,12 +727,12 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 		var hit := Button.new()
 		hit.name = item[5]
 		hit.flat = true
-		hit.accessibility_name = String(item[0]).capitalize()
-		hit.tooltip_text = "Open %s" % String(item[0]).capitalize()
+		hit.accessibility_name = "%s, current tab" % String(item[0]).capitalize() if selected else "Open %s tab" % String(item[0]).capitalize()
+		hit.tooltip_text = "Current: %s" % String(item[0]).capitalize() if selected else "Open %s" % String(item[0]).capitalize()
 		var cb: Callable = item[4]
 		hit.focus_mode = Control.FOCUS_NONE if selected else Control.FOCUS_ALL
 		hit.add_theme_stylebox_override("focus", RefCanvas.solid_box(Color.TRANSPARENT, 12, Color(GOLD, 0.94), 2))
-		hit.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+		hit.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 		RefCanvas.set_rect(hit, float(item[3]), 753, 72, 78)
 		if cb.is_valid():
 			hit.pressed.connect(cb)
@@ -767,7 +767,7 @@ func _add_pill(canvas: Control, rect: Rect2, fill: Color, text_value: String, fo
 func _add_action(canvas: Control, rect: Rect2, fill: Color, text_value: String, font_size: int, text_color: Color, callback: Callable, radius: float) -> Button:
 	var resolved_text := text_color if fill.get_luminance() > 0.58 else _home_text_color(text_color)
 	var button := RefCanvas.premium_button(text_value, font_size, resolved_text, fill, radius, Color(fill.r, fill.g, fill.b, 0.34), 1)
-	button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+	button.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 	RefCanvas.set_rect(button, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	RefCanvas.fit_single_line_text(button, maxf(24.0, rect.size.x - 16.0), font_size, 10)
 	if callback.is_valid():
