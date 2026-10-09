@@ -28,7 +28,9 @@ func configure(values: Array, selected: bool, index: int) -> void:
 	tube_index = index
 	text = ""
 	flat = true
-	focus_mode = Control.FOCUS_NONE
+	# Every tube is a gameplay action, even an empty destination bottle.
+	# Do not hide it from keyboard navigation or Android TalkBack.
+	focus_mode = Control.FOCUS_ALL
 	mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	if liquid_changed or selection_changed:
 		queue_redraw()

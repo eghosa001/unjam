@@ -280,28 +280,62 @@ func _action_button(text_value: String, _fill: Color) -> Button:
 func _make_label(text_value: String, font_size: int, color: Color, bold: bool) -> Label:
 	return RefCanvas.label(text_value, font_size, color, bold)
 
+# Spoken colours follow LIQUID_PALETTE / WaterTubeReferenceButton.PALETTE
+# exactly. Numeric colour IDs by themselves are not usable to people who
+# cannot reliably distinguish twelve differently shaded liquids.
+const ACCESSIBLE_COLOR_NAMES := [
+	"deep red", "royal blue", "golden yellow", "emerald green",
+	"violet", "orange", "cyan blue", "magenta pink",
+	"charcoal grey", "lime green", "brown", "pale mint"
+]
+
+func _spoken_liquid_name(index: int) -> String:
+	if index >= 0 and index < ACCESSIBLE_COLOR_NAMES.size():
+		return String(ACCESSIBLE_COLOR_NAMES[index])
+	return "colour %d" % (index + 1)
+
+func _tube_accessibility_description(index: int) -> String:
+	if index < 0 or index >= tubes.size():
+		return ""
+	var layers: Array = tubes[index]
+	var spoken := "Tube %d, empty" % (index + 1)
+	if not layers.is_empty():
+		var names: PackedStringArray = []
+		for color in layers:
+			names.append(_spoken_liquid_name(int(color)))
+		spoken = "Tube %d, %d of %d layers, bottom to top: %s" % [index + 1, layers.size(), CAPACITY, ", ".join(names)]
+		var same_colour := layers.size() == CAPACITY
+		for colour in layers:
+			if int(colour) != int(layers[0]):
+				same_colour = false
+				break
+		if same_colour:
+			spoken += ", complete"
+	if active_source_tubes.has(index) or active_target_tubes.has(index):
+		spoken += ". Pour in progress"
+	elif index == selected:
+		spoken += ". Selected source. Tap again to cancel"
+	elif selected >= 0 and selected < tubes.size():
+		spoken += ". %s" % ("Valid destination. Tap to pour" if can_pour(selected, index) else "Blocked destination")
+	elif layers.is_empty():
+		spoken += ". Choose a filled source tube first"
+	else:
+		spoken += ". Tap to select as source"
+	return spoken
+
 func render_board() -> void:
 	# Keep the authoritative motion/pour renderer, then remap its real tube
 	# controls into the audited Figma stage instead of the old oversized fitter.
 	super.render_board()
 	_apply_tube_layout()
-	# Keep the actual puzzle usable with Android screen readers. Colour alone
-	# is never sufficient to describe a move, especially in a dense 12-colour
-	# level. Describe stacks from bottom to top and identify empty tubes.
+	# The visual bottle art remains uncluttered. Touch, keyboard, accessibility
+	# and pointer hover receive accurate *current* colours and legal destinations.
 	if board != null:
-		for index in range(mini(tubes.size(),board.get_child_count())):
+		for index in range(mini(tubes.size(), board.get_child_count())):
 			var tube_button := board.get_child(index) as Button
 			if tube_button == null:
 				continue
-			var layers: Array = tubes[index]
-			var spoken := "Tube %d, empty" % (index + 1)
-			if not layers.is_empty():
-				var names: PackedStringArray = []
-				for color in layers:
-					names.append("colour %d" % (int(color) + 1))
-				spoken = "Tube %d, %d of %d layers, bottom to top: %s" % [index + 1,layers.size(),CAPACITY,", ".join(names)]
-			if index == selected:
-				spoken += ", selected"
+			var spoken := _tube_accessibility_description(index)
 			tube_button.accessibility_name = spoken
 			tube_button.tooltip_text = spoken
 	if move_label != null:
