@@ -53,6 +53,8 @@ func _run() -> void:
 	var tap_hint := home.find_child("HomeShowcaseEyebrow",true,false) as Label
 	if subtitle == null or subtitle.get_theme_font_size("font_size") < 13 or tap_hint == null or not tap_hint.text.contains("LEVELS"):
 		return _fail("Home needs legible introduction and a clear tap-to-levels affordance")
+	if tap_hint.get_theme_font_size("font_size") < 12 or daily_hint.get_theme_font_size("font_size") < 13 or week_hint.get_theme_font_size("font_size") < 13:
+		return _fail("Home microcopy is too small for a premium launcher")
 	var showcase_end := 0.0
 	for game_id in ["rescue_rush","water_sort","block_puzzle"]:
 		var card := home.find_child("HomeShowcaseCard_%s" % game_id,true,false) as PanelContainer
@@ -69,7 +71,7 @@ func _run() -> void:
 			return _fail("Home explainer art must be static and battery efficient for %s" % game_id)
 		if name.text.is_empty() or tagline.text.is_empty() or tagline.autowrap_mode != TextServer.AUTOWRAP_OFF:
 			return _fail("Showcase does not explain %s" % game_id)
-		if name.get_theme_font_size("font_size") < 10 or tagline.get_theme_font_size("font_size") < 9:
+		if name.get_theme_font_size("font_size") < 12 or tagline.get_theme_font_size("font_size") < 11:
 			return _fail("Showcase caption size has degraded below mobile readability limits")
 		if card.mouse_filter != Control.MOUSE_FILTER_IGNORE or art.mouse_filter != Control.MOUSE_FILTER_IGNORE:
 			return _fail("Game illustration intercepts taps intended for the shortcut")
