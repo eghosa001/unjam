@@ -78,7 +78,7 @@ func _run() -> void:
 	if light_bg == null:
 		return _fail("Light Home background is missing")
 	if light_bg.color.get_luminance() < 0.35 or light_bg.color.get_luminance() > 0.70:
-		return _fail("Light theme is outside the premium warm-neutral luminance range")
+		return _fail("Light theme luminance %.3f, actual %s, shell=%s, home last=%s" % [light_bg.color.get_luminance(), str(light_bg.color), String(shell.get("theme_mode")), String(main.get_node_or_null("PremiumHome").get("last_theme"))])
 	if absf(light_bg.color.r - light_bg.color.g) > 0.10 or absf(light_bg.color.g - light_bg.color.b) > 0.10:
 		return _fail("Light theme drifted away from the approved warm-neutral family")
 	# Minimal Version 8 intentionally removes glass horizons/key lights.

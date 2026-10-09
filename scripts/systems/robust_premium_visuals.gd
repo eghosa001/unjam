@@ -70,7 +70,8 @@ func _set_quality(value: float) -> void:
 	high_fps_samples = 0
 
 func _ambient_count() -> int:
-	return _materials.particle_budget(14, quality_scale, _reduced_motion())
+	var budget := _materials.particle_budget(14, quality_scale, _reduced_motion())
+	return mini(budget, 6) if _gentle_effects() else budget
 
 func set_accent(color: Color) -> void:
 	if accent.is_equal_approx(color) and not _ambient_nodes.is_empty():
@@ -100,9 +101,10 @@ func ambient_sparkles(count: int = 12) -> void:
 		return
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 44321
+	var gentle := _gentle_effects()
 	for _i in range(scaled_count):
-		var radius := rng.randf_range(1.7, 4.2)
-		var dot := _diamond(radius, Color(accent.lightened(0.18), rng.randf_range(0.045, 0.14)))
+		var radius := rng.randf_range(1.6, 3.2) if gentle else rng.randf_range(1.7, 4.2)
+		var dot := _diamond(radius, Color(accent.lightened(0.10 if gentle else 0.18), rng.randf_range(0.03, 0.075) if gentle else rng.randf_range(0.045, 0.14)))
 		dot.position = Vector2(rng.randf_range(20.0, 1060.0), rng.randf_range(40.0, 1880.0))
 		dot.rotation = rng.randf_range(0.0, TAU)
 		dot.set_meta("ambient", true)

@@ -1016,74 +1016,75 @@ func build_settings() -> void:
 	_figma_setting_row(canvas,"music","MUSIC",178,190,true,false,dark_mode)
 	_figma_setting_row(canvas,"vibration","HAPTICS",226,238,true,false,dark_mode)
 
-	_figma_settings_card(canvas,"SettingsCard/Comfort",Rect2(17,275,354,120),card_fill,card_border,dark_mode)
+	_figma_settings_card(canvas,"SettingsCard/Comfort",Rect2(17,275,354,169),card_fill,card_border,dark_mode)
 	_figma_text(canvas,"COMFORT",Rect2(33,291,130,18),15,heading_color)
 	_figma_setting_row(canvas,"reduce_motion","REDUCED MOTION",314,326,false,true,dark_mode)
 	_figma_setting_row(canvas,"fast_animation","FAST ANIMATION",358,370,false,false,dark_mode)
+	_figma_setting_row(canvas,"gentle_effects","GENTLE EFFECTS",403,415,true,false,dark_mode)
 
-	_figma_settings_card(canvas,"SettingsCard/Appearance",Rect2(17,409,354,76),card_fill,card_border,dark_mode)
-	_figma_text(canvas,"APPEARANCE",Rect2(33,425,150,18),15,heading_color)
-	_figma_text(canvas,"THEME",Rect2(33,448,72,28),14,muted_color)
-	_figma_text(canvas,"LANGUAGE",Rect2(109,448,82,28),12,muted_color)
+	_figma_settings_card(canvas,"SettingsCard/Appearance",Rect2(17,450,354,76),card_fill,card_border,dark_mode)
+	_figma_text(canvas,"APPEARANCE",Rect2(33,466,150,18),15,heading_color)
+	_figma_text(canvas,"THEME",Rect2(33,489,72,28),14,muted_color)
+	_figma_text(canvas,"LANGUAGE",Rect2(109,489,82,28),12,muted_color)
 	# Appearance header ends before this button; no 4px header collision.
 	# Both compact controls retain at least a 44px touch target.
 	var language_code := LocalizationManager.locale_badge()
 	var language_button := _figma_button(canvas,"SettingsLanguageToggle","%s ›" % language_code,
-		Rect2(195,439,71,44),Color("#3b4148") if dark_mode else Color("#e7e1d6"),
+		Rect2(195,480,71,44),Color("#3b4148") if dark_mode else Color("#e7e1d6"),
 		Callable(self,"_cycle_settings_language"),FIGMA_DARK_INK if dark_mode else FIGMA_NAVY,13,12)
 	language_button.tooltip_text = LocalizationManager.localize("LANGUAGE")
 	language_button.accessibility_name = "%s %s" % [LocalizationManager.localize("LANGUAGE"), language_code]
 	var theme_fill := FIGMA_GOLD
 	var theme_text := FIGMA_NAVY
-	var theme_button := _figma_button(canvas,"SettingsThemeToggle",theme_name,Rect2(279,439,72,44),theme_fill,Callable(),theme_text,19,15)
+	var theme_button := _figma_button(canvas,"SettingsThemeToggle",theme_name,Rect2(279,480,72,44),theme_fill,Callable(),theme_text,19,15)
 	theme_button.pressed.connect(_toggle_settings_theme)
 
 	var help_card: PanelContainer
 	if dark_mode:
-		help_card = _figma_solid_card(canvas,"HelpPrivacy",Rect2(17,499,354,94),card_fill,card_border,18)
+		help_card = _figma_solid_card(canvas,"HelpPrivacy",Rect2(17,540,354,94),card_fill,card_border,18)
 	else:
-		help_card = _figma_solid_card(canvas,"HelpPrivacy",Rect2(17,499,354,94),Color("#f5f2ec"),Color("#cbc6bc"),18)
-	_figma_text(canvas,"SUPPORT",Rect2(33,515,170,18),15,heading_color)
+		help_card = _figma_solid_card(canvas,"HelpPrivacy",Rect2(17,540,354,94),Color("#f5f2ec"),Color("#cbc6bc"),18)
+	_figma_text(canvas,"SUPPORT",Rect2(33,556,170,18),15,heading_color)
 	var utility_fill := Color("#2d2e31") if dark_mode else Color("#ebe7df")
 	var utility_border := Color("#44474c") if dark_mode else Color("#cbc6bc")
 	var utility_text := FIGMA_DARK_INK if dark_mode else FIGMA_NAVY
-	FigmaReferenceCanvas.add_shadow(canvas, Rect2(33,541,126,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
+	FigmaReferenceCanvas.add_shadow(canvas, Rect2(33,582,126,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
 	var how_to := FigmaReferenceCanvas.premium_button("HOW TO PLAY",15,utility_text,utility_fill,16,utility_border,1.2)
 	how_to.name = "SettingsHowToPlay"
-	FigmaReferenceCanvas.set_rect(how_to,33,541,126,46)
+	FigmaReferenceCanvas.set_rect(how_to,33,582,126,46)
 	how_to.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	how_to.pressed.connect(_show_current_tutorial)
 	canvas.add_child(how_to)
-	FigmaReferenceCanvas.add_shadow(canvas, Rect2(167,541,90,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
+	FigmaReferenceCanvas.add_shadow(canvas, Rect2(167,582,90,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
 	var help_game := FigmaReferenceCanvas.premium_button(_settings_help_game_label(),12,utility_text,utility_fill,16,utility_border,1.2)
 	help_game.name = "SettingsHowToPlayGame"
-	FigmaReferenceCanvas.set_rect(help_game,167,541,90,46)
+	FigmaReferenceCanvas.set_rect(help_game,167,582,90,46)
 	help_game.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	help_game.pressed.connect(_cycle_settings_help_game.bind(help_game))
 	canvas.add_child(help_game)
-	FigmaReferenceCanvas.add_shadow(canvas, Rect2(265,541,86,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
+	FigmaReferenceCanvas.add_shadow(canvas, Rect2(265,582,86,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
 	var privacy := FigmaReferenceCanvas.premium_button("PRIVACY",15,utility_text,utility_fill,16,utility_border,1.2)
 	privacy.name = "SettingsPrivacy"
-	FigmaReferenceCanvas.set_rect(privacy,265,541,86,46)
+	FigmaReferenceCanvas.set_rect(privacy,265,582,86,46)
 	privacy.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	privacy.pressed.connect(PrivacyManager.show_privacy_options)
 	canvas.add_child(privacy)
 
-	_figma_settings_card(canvas,"SettingsCard/Purchases",Rect2(17,607,354,98),card_fill,card_border,dark_mode)
-	_figma_text(canvas,"PURCHASES",Rect2(33,621,170,18),15,heading_color)
-	FigmaReferenceCanvas.add_shadow(canvas, Rect2(33,645,153,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
+	_figma_settings_card(canvas,"SettingsCard/Purchases",Rect2(17,648,354,98),card_fill,card_border,dark_mode)
+	_figma_text(canvas,"PURCHASES",Rect2(33,662,170,18),15,heading_color)
+	FigmaReferenceCanvas.add_shadow(canvas, Rect2(33,686,153,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
 	var purchases := FigmaReferenceCanvas.premium_button("SHOP & RESTORE",13,utility_text,utility_fill,16,utility_border,1.2)
 	purchases.name = "SettingsPurchases"
 	purchases.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
-	FigmaReferenceCanvas.set_rect(purchases,33,645,153,46)
+	FigmaReferenceCanvas.set_rect(purchases,33,686,153,46)
 	purchases.tooltip_text = "Buy upgrades or restore previous Google Play purchases"
 	purchases.pressed.connect(_figma_open_shop)
 	canvas.add_child(purchases)
-	FigmaReferenceCanvas.add_shadow(canvas, Rect2(195,645,156,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
+	FigmaReferenceCanvas.add_shadow(canvas, Rect2(195,686,156,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
 	var recovery := FigmaReferenceCanvas.premium_button("CLOUD BACKUP",13,utility_text,utility_fill,16,utility_border,1.2)
 	recovery.name = "SettingsCloudBackup"
 	recovery.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
-	FigmaReferenceCanvas.set_rect(recovery,195,645,156,46)
+	FigmaReferenceCanvas.set_rect(recovery,195,686,156,46)
 	recovery.tooltip_text = "Copy your private recovery code or restore progress"
 	recovery.pressed.connect(_open_cloud_recovery)
 	canvas.add_child(recovery)
@@ -1117,10 +1118,21 @@ func _figma_setting_row(canvas: Control, key: String, label_text: String, toggle
 	var button_text_color := FIGMA_OFF_WHITE if enabled else FIGMA_NAVY
 	var state := "ON" if enabled else "OFF"
 	var button := _figma_button(canvas,"SettingToggle/%s" % key.capitalize(),state,Rect2(279,toggle_y-3.0,72,44),fill,Callable(),button_text_color,19,15)
-	if reduced_motion:
+	button.accessibility_name = "%s, %s" % [label_text.capitalize(), state.to_lower()]
+	if key == "gentle_effects":
+		button.tooltip_text = "Gentle Effects reduces decorative glow, sparkles and flashes. Device brightness and reflections are controlled separately."
+		button.pressed.connect(_toggle_gentle_effects)
+	elif reduced_motion:
 		button.pressed.connect(_toggle_reduced_motion)
 	else:
 		button.pressed.connect(_toggle_setting.bind(key))
+
+func _toggle_gentle_effects() -> void:
+	SaveManager.data["gentle_effects"] = not bool(SaveManager.data.get("gentle_effects", true))
+	SaveManager.save()
+	PremiumVisuals.refresh_effect_intensity()
+	FeedbackManager.tap()
+	build_settings()
 
 func _toggle_reduced_motion() -> void:
 	var enabled := not bool(SaveManager.data.get("reduce_motion", false))
