@@ -123,7 +123,7 @@ func _run() -> void:
 		if not button.get_global_rect().encloses(art.get_global_rect()) or not _same(card,Rect2(button.position,button.size)):
 			return _fail("Landscape %s tile image is not fully tappable" % game_id)
 		if button.action_mode != BaseButton.ACTION_MODE_BUTTON_RELEASE or not button.accessibility_name.contains("level selection"):
-			return _fail("Landscape game card must be accessible and open levels on release")
+			return _fail("Landscape %s shortcut: action_mode=%d focus=%d accessibility='%s'" % [game_id,int(button.action_mode),int(button.focus_mode),button.accessibility_name])
 		if button.get_global_rect().end.x > root.get_visible_rect().size.x or button.get_global_rect().end.y > root.get_visible_rect().size.y:
 			return _fail("Landscape game shortcut escapes the tablet screen")
 	main.queue_free()
