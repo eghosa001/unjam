@@ -278,11 +278,11 @@ func _add_bottom_nav(canvas: Control) -> void:
 	canvas.add_child(top_gloss)
 
 	var items := [
-		["HOME", "⌂", 22.0, 14.0, Callable(self, "_go_home"), false, Color("#ffd54f")],
-		["GAMES", "▦", 94.0, 86.0, Callable(), true, Color("#ffd54f")],
-		["DAILY", "★", 166.0, 158.0, func(): get_parent().call("build_daily_games"), false, Color("#ffd54f")],
-		["COLLECT", "◆", 238.0, 230.0, func(): get_parent().call("build_collection"), false, Color("#ffd54f")],
-		["SETTINGS", "⚙", 310.0, 302.0, func(): get_parent().call("build_settings"), false, Color("#ffd54f")],
+		["HOME", "⌂", 22.0, 14.0, Callable(self, "_go_home"), false, Color(1.0, 0.84, 0.24)],
+		["GAMES", "▦", 94.0, 86.0, Callable(), true, Color(1.0, 0.84, 0.24)],
+		["DAILY", "★", 166.0, 158.0, func(): get_parent().call("build_daily_games"), false, Color(1.0, 0.84, 0.24)],
+		["COLLECT", "◆", 238.0, 230.0, func(): get_parent().call("build_collection"), false, Color(1.0, 0.84, 0.24)],
+		["SETTINGS", "⚙", 310.0, 302.0, func(): get_parent().call("build_settings"), false, Color(1.0, 0.84, 0.24)],
 	]
 	for item in items:
 		var selected: bool = bool(item[5])
@@ -293,7 +293,7 @@ func _add_bottom_nav(canvas: Control) -> void:
 		if selected:
 			var plate := PanelContainer.new()
 			plate.name = "SelectorNavActivePlate_%s" % String(item[0])
-			plate.add_theme_stylebox_override("panel", RefCanvas.flat_gloss(Color(accent.r,accent.g,accent.b,0.12 if _selector_dark() else 0.15), 14, Color(accent.r,accent.g,accent.b,0.40), 1, 0.16))
+			plate.add_theme_stylebox_override("panel", RefCanvas.flat_gloss(Color(accent.r,accent.g,accent.b,0.12 if _selector_dark() else 0.15), 14, Color(accent.r,accent.g,accent.b,0.34), 1, 0.10))
 			RefCanvas.set_rect(plate, float(item[3]) + 7.0, 761, 58, 58)
 			plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			canvas.add_child(plate)
