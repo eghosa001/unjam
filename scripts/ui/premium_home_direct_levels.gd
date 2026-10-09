@@ -220,7 +220,7 @@ func _add_game_showcase(canvas: Control) -> void:
 	var header := _add_text(canvas,"THREE GAMES. ONE APP.",Rect2(22,310,246,24),
 		15,DARK_INK if dark else NAVY,true)
 	header.name = "HomeShowcaseTitle"
-	var note := _add_text(canvas,"EXPLORE ALL",Rect2(281,314,85,18),
+	var note := _add_text(canvas,"TAP A GAME ›",Rect2(281,314,85,18),
 		10,DARK_MUTED if dark else MUTED,true)
 	note.name = "HomeShowcaseEyebrow"
 	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -275,7 +275,12 @@ func _add_game_showcase(canvas: Control) -> void:
 		# caption; touch RELEASE avoids opening gameplay via touch-through.
 		var shortcut := Button.new()
 		shortcut.name = "HomeShowcaseOpenLevels_%s" % id
-		shortcut.flat = true
+		# Visually subtle hover/press feedback while keeping the original
+		# illustration fully visible in the resting state.
+		shortcut.flat = false
+		shortcut.add_theme_stylebox_override("normal",RefCanvas.solid_box(Color.TRANSPARENT,16))
+		shortcut.add_theme_stylebox_override("hover",RefCanvas.solid_box(Color(accent,0.10),16,Color(accent,0.44),1))
+		shortcut.add_theme_stylebox_override("pressed",RefCanvas.solid_box(Color(accent,0.19),16,accent,2))
 		shortcut.mouse_filter = Control.MOUSE_FILTER_STOP
 		shortcut.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 		shortcut.focus_mode = Control.FOCUS_ALL
