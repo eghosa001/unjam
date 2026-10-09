@@ -307,8 +307,8 @@ func _add_game_showcase(canvas: Control) -> void:
 		16,DARK_INK if dark else NAVY,true)
 	header.name = "HomeShowcaseTitle"
 	var note := _add_text(canvas,"LEVELS ›",Rect2(281,314,85,20),
-		11,DARK_MUTED if dark else MUTED,true)
-	RefCanvas.fit_single_line_text(note,82.0,11,10)
+		13,DARK_MUTED if dark else MUTED,true)
+	RefCanvas.fit_single_line_text(note,82.0,13,12)
 	note.custom_minimum_size = Vector2.ZERO
 	note.size = Vector2(85,20)
 	note.clip_text = true
@@ -343,19 +343,19 @@ func _add_game_showcase(canvas: Control) -> void:
 		RefCanvas.set_rect(art,left+12,346,86,70)
 		canvas.add_child(art)
 		var label := _add_text(canvas,String(game["name"]),Rect2(left+3,417,104,18),
-			12,accent.lightened(0.16) if dark else accent.darkened(0.56),true)
+			13,accent.lightened(0.16) if dark else accent.darkened(0.56),true)
 		label.name = "HomeShowcaseName_%s" % id
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		RefCanvas.fit_single_line_text(label,102.0,12,10)
+		RefCanvas.fit_single_line_text(label,102.0,13,12)
 		label.custom_minimum_size = Vector2.ZERO
 		label.size = Vector2(104,18)
 		var tagline := _add_text(canvas,String(game["description"]),Rect2(left+6,436,98,17),
-			11,DARK_INK if dark else Color("#484c59"),false)
+			12,DARK_INK if dark else Color("#484c59"),false)
 		tagline.name = "HomeShowcaseTagline_%s" % id
 		tagline.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		tagline.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		tagline.autowrap_mode = TextServer.AUTOWRAP_OFF
-		RefCanvas.fit_single_line_text(tagline,97.0,11,9)
+		RefCanvas.fit_single_line_text(tagline,97.0,12,11)
 		tagline.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		tagline.custom_minimum_size = Vector2.ZERO
 		tagline.size = Vector2(98,17)
@@ -440,7 +440,7 @@ func _add_rank_summary(canvas: Control) -> void:
 		24,GOLD if dark else Color("#714e12"),true)
 	daily_rank.name = "HomeRankDailyValue"
 	var daily_hint := _add_text(canvas,"PLAY TO JOIN",Rect2(38,567,140,18),
-		11,DARK_MUTED if dark else Color("#424a59"),false)
+		13,DARK_MUTED if dark else Color("#424a59"),false)
 	daily_hint.name = "HomeRankDailyHint"
 	var weekly_tag := _add_text(canvas,"BEST WEEKLY",Rect2(200,505,145,21),
 		12,DARK_MUTED if dark else Color("#424a59"),true)
@@ -449,7 +449,7 @@ func _add_rank_summary(canvas: Control) -> void:
 		24,GOLD if dark else Color("#714e12"),true)
 	weekly_rank.name = "HomeRankValue"
 	var weekly_hint := _add_text(canvas,"PLAY TO JOIN",Rect2(200,567,144,18),
-		11,DARK_MUTED if dark else Color("#424a59"),false)
+		13,DARK_MUTED if dark else Color("#424a59"),false)
 	weekly_hint.name = "HomeRankWeeklyHint"
 	var open := _add_action(canvas,Rect2(38,591,314,44),Color("#7757cf"),
 		"★  VIEW FULL LEADERBOARD",14,OFF_WHITE,Callable(self,"_open_compete"),14)
@@ -500,7 +500,7 @@ func _add_daily_feature(canvas: Control) -> void:
 		16,DARK_INK if dark else NAVY,true)
 	title.name = "HomeDailyFeatureTitle"
 	var subtitle := _add_text(canvas,"A new challenge daily",Rect2(36,699,171,24),
-		12,DARK_MUTED if dark else Color("#3b624c"),false)
+		13,DARK_MUTED if dark else Color("#3b624c"),false)
 	subtitle.name = "HomeDailyFeatureSubtitle"
 	var daily := _add_action(canvas,Rect2(225,668,126,52),Color("#257e55"),
 		"PLAY DAILY",13,OFF_WHITE,Callable(self,"_open_daily_games"),14)
@@ -715,10 +715,10 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 		var display_name := String(item[0])
 		var label_width := 66.0 if String(item[0]) in ["COLLECT", "SETTINGS"] else 58.0
 		var label_x := float(item[3]) + (72.0 - label_width) * 0.5
-		var label := _add_text(canvas, display_name, Rect2(label_x, 799, label_width, 18), 13, nav_color, selected)
+		var label := _add_text(canvas, display_name, Rect2(label_x, 799, label_width, 18), 14, nav_color, selected)
 		label.name = "HomeNavLabel_%s" % String(item[0])
 		label.custom_minimum_size = Vector2.ZERO
-		RefCanvas.fit_single_line_text(label, label_width - 2.0, 13, 10)
+		RefCanvas.fit_single_line_text(label, label_width - 2.0, 14, 12)
 		label.position = Vector2(label_x, 799)
 		label.size = Vector2(label_width, 18)
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
