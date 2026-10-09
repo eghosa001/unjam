@@ -24,6 +24,28 @@ func _initialize() -> void:
 		quit(1)
 		return
 
+	# Navigation, retry, adverts and monetization must activate on release:
+	# tapping down and then scrolling away must not trigger an irreversible action.
+	var fast_script := load("res://scripts/ui/ui_touch_enhancer_casual.gd") as Script
+	if fast_script == null:
+		push_error("Casual touch enhancer is missing")
+		quit(1)
+		return
+	var enhancer = fast_script.new()
+	for title in ["BACK","RETRY","BUY COINS","RESTORE PURCHASES","WATCH AD","NEXT LEVEL"]:
+		var action := Button.new()
+		action.text = title
+		action.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+		enhancer.call("_apply_fast_action_mode", action)
+		if action.action_mode != BaseButton.ACTION_MODE_BUTTON_RELEASE:
+			push_error("Touch-down prematurely activates %s" % title)
+			action.free()
+			enhancer.free()
+			quit(1)
+			return
+		action.free()
+	enhancer.free()
+
 	print("TOUCH_ENHANCER_FIGMA_HITBOX_GUARD_OK")
 	quit(0)
 
