@@ -262,6 +262,9 @@ func _add_game_showcase(canvas: Control) -> void:
 		tagline.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		tagline.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		tagline.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		tagline.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		tagline.custom_minimum_size = Vector2.ZERO
+		tagline.size = Vector2(96,28)
 		tagline.clip_text = true
 
 func _hero_cue(game_id: String) -> String:
