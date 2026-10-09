@@ -65,7 +65,7 @@ func build_home_launcher() -> void:
 	# The viewport fallback stays neutral for letterboxing; the visible 390x844 scene itself carries the neutral premium depth treatment.
 	# Match the authored Home material when letterboxed on wide screens;
 	# an unrelated black/grey surround previously made tablet Home feel split.
-	viewport_bg.color = Color("#1d2330") if _home_dark() else Color("#eaeaf0")
+	viewport_bg.color = Color("#1d2330") if _home_dark() else Color("#c7c3b9")
 	viewport_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(viewport_bg)
 
@@ -257,7 +257,7 @@ func _add_frame_background(canvas: Control) -> void:
 	var dark := _home_dark()
 	var bg := PanelContainer.new()
 	bg.name = "FigmaHomeBackground"
-	var fill := Color("#1d2330") if dark else Color("#eaeaf0")
+	var fill := Color("#1d2330") if dark else Color("#c7c3b9")
 	bg.add_theme_stylebox_override("panel",RefCanvas.rounded_gradient3(
 		fill.lightened(0.065),fill,fill.darkened(0.075),32,Color("#71768a",0.11),1,0.08))
 	RefCanvas.set_rect(bg,0,0,390,844)
