@@ -113,6 +113,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # Check the generated raster inputs, not stale committed PNGs. This
+          # rejects any regression to the old generic U-only launcher icon.
+          UNJAM_ANDROID_BRAND_RASTER_READY=1 timeout 60s godot --headless --path . --script res://tests/validate_android_brand_raster.gd
           for t in validate_launcher_icon_safe_zone validate_touch_enhancer_scope validate_bottom_nav_touch_zones validate_navigation_state_and_text_fit_v8 validate_soothing_audio_palette validate_feedback_manager_event_driven_music validate_runtime_efficiency validate_gameplay_interactions validate_monetization validate_restore_purchase_flow validate_admob_production validate_billing_production; do
             timeout 60s godot --headless --path . --script "res://tests/$t.gd"
           done
