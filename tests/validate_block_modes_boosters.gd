@@ -185,7 +185,11 @@ func _validate_launcher() -> bool:
 	main.call("open_game_campaign","block_puzzle")
 	await _frames(3)
 	for mode in ["endless","zen","extreme"]:
-		var action := main.find_child("BlockMode/%s" % mode,true,false) as Button
+		var action: Button = null
+		for candidate in main.find_children("*","Button",true,false):
+			if String((candidate as Button).text).strip_edges() == mode.to_upper():
+				action = candidate as Button
+				break
 		if action == null or action.action_mode != BaseButton.ACTION_MODE_BUTTON_RELEASE:
 			main.queue_free()
 			return _fail("Block mode %s must be a deliberate release-confirmed action" % mode)
