@@ -65,7 +65,15 @@ func _draw_authored(texture: Texture2D, opacity: float) -> void:
 	var bob := 0.0
 	if not compact:
 		bob = sin(phase * 1.65) * minf(size.x, size.y) * 0.006
-	var rect := Rect2(Vector2(0, bob), size)
+	# Art assets are hand-authored square SVGs. The previous draw call
+	# stretched them into rectangular mini frames, blurring/distorting the
+	# characters, tubes and blocks. Aspect-contain at the source resolution.
+	var source_size := texture.get_size()
+	var fit := minf(size.x/maxf(1.0,source_size.x),size.y/maxf(1.0,source_size.y))
+	var draw_size := source_size*fit
+	var position_value := (size-draw_size)*0.5
+	position_value.y += bob
+	var rect := Rect2(position_value,draw_size)
 	draw_texture_rect(texture, rect, false, Color(1, 1, 1, opacity))
 	# Tiny live glint: motion supports the illustration instead of replacing it.
 	if not compact:
