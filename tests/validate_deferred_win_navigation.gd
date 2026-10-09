@@ -55,6 +55,20 @@ func _run() -> void:
 	await _frames(4)
 	if not _check(main.get("active_game") == null and main.get("current_surface") == "home", "Finished game was not released on Home"):return
 
+	# Every asynchronous level-completion animation must check that the scene
+	# still owns a live tree before attaching its result or moving the board.
+	for path in ["res://scripts/game/water_sort_10000.gd","res://scripts/game/block_puzzle.gd"]:
+		var source := FileAccess.get_file_as_string(path)
+		var animation := source.find("await get_tree().create_timer(0.28).timeout")
+		var guard := source.find("if not is_inside_tree() or is_queued_for_deletion():",animation)
+		var result := source.find("var result := PremiumResultOverlay.new()",animation)
+		if not _check(animation >= 0 and guard > animation and result > guard, "Detached async %s may open a stale victory result" % path):return
+	var rescue_hint := FileAccess.get_file_as_string("res://scripts/game/rescue_rush_casual.gd")
+	var hint_await := rescue_hint.find("await get_tree().create_timer(0.06).timeout")
+	var hint_guard := rescue_hint.find("if not is_inside_tree() or is_queued_for_deletion():",hint_await)
+	var hint_cascade := rescue_hint.find("await _resolve_cascades(legal_before)",hint_await)
+	if not _check(hint_await >= 0 and hint_guard > hint_await and hint_cascade > hint_guard,"Assisted rescue may resume after scene is detached"):return
+
 	main.queue_free()
 	await process_frame
 	save.data = previous
