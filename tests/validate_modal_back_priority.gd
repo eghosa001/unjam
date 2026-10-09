@@ -12,11 +12,15 @@ func _initialize() -> void:
 	var block := source.substr(start, finish - start)
 	var coin := block.find("InsufficientCoinsPrompt")
 	var shop := block.find("MonetizationHub")
+	var rankings := block.find("PremiumLeaderboardPopup")
 	var surface := block.find("var surface :=")
-	if coin < 0 or shop < 0 or surface < 0:
-		return _fail("Back handler does not cover every remaining transient overlay")
-	if not (coin < shop and shop < surface):
-		return _fail("Back handler does not dismiss overlays before surface navigation")
+	var levels := block.find("surface == \"levels\"")
+	if coin < 0 or shop < 0 or rankings < 0 or surface < 0:
+		return _fail("Back handler must cover coin, shop and rankings overlays")
+	if not (coin < shop and shop < rankings and rankings < surface):
+		return _fail("Back handler must dismiss overlays before navigating")
+	if levels < surface or not block.contains("main.call(\"_open_games_surface\")"):
+		return _fail("Android Back from level browser must return to the Games selector")
 	print("Modal Back priority validated.")
 	quit(0)
 
