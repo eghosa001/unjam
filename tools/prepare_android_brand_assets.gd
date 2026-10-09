@@ -16,7 +16,11 @@ const LEGACY_CONTENT := 415
 const ADAPTIVE_CANVAS := 432
 # The adaptive 432x432 mask guarantees a 72px central safety margin. Full
 # "UNJAM" lettering and the three-game emblem are kept together.
-const ADAPTIVE_CONTENT := 280
+# Samsung One UI uses smaller rounded/squircle masks and sometimes applies
+# additional launcher scaling. Keep the complete U + UNJAM wordmark comfortably
+# inside the actual adaptive foreground, with >= 92px margin on each edge.
+# Previously 280px left only 76px margin and made the symbol feel zoomed.
+const ADAPTIVE_CONTENT := 248
 const SYSTEM_SPLASH_CONTENT := 260
 const SPLASH_SIZE := 432
 const IN_APP_CONTENT := 354

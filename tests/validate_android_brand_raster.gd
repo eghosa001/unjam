@@ -18,7 +18,8 @@ func _initialize() -> void:
 	var in_app := _image("res://assets/icon_user_adaptive_432.png",Vector2i(432,432),errors)
 	var original := _image("res://store_assets/unjam_approved_logo_transparent.png",Vector2i.ZERO,errors)
 	if foreground != null:
-		_check_alpha_bounds(foreground,70,"Adaptive icon",errors)
+		_check_alpha_bounds(foreground,90,"Samsung-safe adaptive foreground",errors)
+		_check_one_ui_circle_mask(foreground,errors)
 	if system_splash != null:
 		_check_alpha_bounds(system_splash,76,"Android 12 system splash",errors)
 	# The previous U-only launch icon passed margin tests. Reject that
@@ -61,6 +62,17 @@ func _image(path: String, size: Vector2i, errors: Array[String]) -> Image:
 		errors.append("%s is %s instead of %s" % [path,str(value.get_size()),str(size)])
 		return null
 	return value
+
+func _check_one_ui_circle_mask(image: Image, errors: Array[String]) -> void:
+	# Android's guaranteed visible adaptive-icon region is a 66.7% diameter
+	# circle. A square-inset check can still miss diagonal wordmark clipping.
+	var mid := Vector2(image.get_width() * 0.5, image.get_height() * 0.5)
+	var safe_radius := float(image.get_width()) / 3.0 - 0.5
+	for y in range(image.get_height()):
+		for x in range(image.get_width()):
+			if Vector2(float(x) + 0.5,float(y) + 0.5).distance_to(mid) > safe_radius and image.get_pixel(x,y).a > 0.10:
+				errors.append("Samsung/Android circular launcher mask clips the approved icon artwork at %d,%d" % [x,y])
+				return
 
 func _check_alpha_bounds(image: Image, margin: int, label: String, errors: Array[String]) -> void:
 	var bounds := image.get_used_rect()
