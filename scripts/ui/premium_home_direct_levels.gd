@@ -258,11 +258,11 @@ func _add_rank_summary(canvas: Control) -> void:
 	heading.name = "HomeRankTitle"
 	var daily_tag := _add_text(canvas,"TODAY",Rect2(38,466,140,20),12,DARK_MUTED if dark else MUTED,true)
 	daily_tag.name = "HomeRankDailyLabel"
-	var daily_rank := _add_text(canvas,"—",Rect2(38,488,135,38),30,GOLD if dark else Color("#7f5a16"),true)
+	var daily_rank := _add_text(canvas,"—",Rect2(38,497,135,35),28,GOLD if dark else Color("#7f5a16"),true)
 	daily_rank.name = "HomeRankDailyValue"
 	var weekly_tag := _add_text(canvas,"BEST WEEKLY",Rect2(200,466,145,20),12,DARK_MUTED if dark else MUTED,true)
 	weekly_tag.name = "HomeRankWeeklyLabel"
-	var weekly_rank := _add_text(canvas,"—",Rect2(200,488,135,38),30,GOLD if dark else Color("#7f5a16"),true)
+	var weekly_rank := _add_text(canvas,"—",Rect2(200,497,135,35),28,GOLD if dark else Color("#7f5a16"),true)
 	weekly_rank.name = "HomeRankValue"
 	var open := _add_action(canvas,Rect2(38,538,314,44),Color("#6952bd"),"★  VIEW FULL LEADERBOARD",13,OFF_WHITE,Callable(self,"_open_compete"),14)
 	open.name = "HomeDailyGamesButton"
@@ -301,11 +301,11 @@ func _add_daily_feature(canvas: Control) -> void:
 		18,Color("#6ab894",0.40),1,0.08))
 	RefCanvas.set_rect(panel,21,609,346,101)
 	canvas.add_child(panel)
-	var title := _add_text(canvas,"DAILY CHALLENGE",Rect2(36,627,195,26),17,DARK_INK if dark else NAVY,true)
+	var title := _add_text(canvas,"DAILY CHALLENGE",Rect2(36,625,178,26),16,DARK_INK if dark else NAVY,true)
 	title.name = "HomeDailyFeatureTitle"
-	var subtitle := _add_text(canvas,"A fresh challenge every day",Rect2(36,660,180,22),11,DARK_MUTED if dark else MUTED,false)
+	var subtitle := _add_text(canvas,"New puzzles today",Rect2(36,662,160,22),11,DARK_MUTED if dark else MUTED,false)
 	subtitle.name = "HomeDailyFeatureSubtitle"
-	var daily := _add_action(canvas,Rect2(225,642,126,52),Color("#31885d"),"PLAY DAILY",12,OFF_WHITE,Callable(self,"_open_daily_games"),14)
+	var daily := _add_action(canvas,Rect2(230,643,121,52),Color("#31885d"),"PLAY DAILY",12,OFF_WHITE,Callable(self,"_open_daily_games"),14)
 	daily.name = "HomeDailyChallengeButton"
 	daily.accessibility_name = "Play today's Daily challenges"
 
