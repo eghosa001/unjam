@@ -226,6 +226,11 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 	tap.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 	tap.pressed.connect(_browse_levels.bind(game_id))
 	canvas.add_child(tap)
+	# Native surface setup may clear focus/action modes while controls mount.
+	# Restore them after the tree has finished configuring the selector.
+	tap.set_deferred("focus_mode", Control.FOCUS_ALL)
+	tap.set_deferred("action_mode", BaseButton.ACTION_MODE_BUTTON_RELEASE)
+	tap.set_meta("unjam_authored_focus_mode", int(Control.FOCUS_ALL))
 
 	var play := RefCanvas.premium_button("PLAY", 14, OFF_WHITE, accent.darkened(0.18), 13, Color(accent.r, accent.g, accent.b, 0.54), 1)
 	play.name = "SelectorPlay_%s" % game_id
