@@ -1,7 +1,7 @@
 extends SceneTree
 
-# Production contract: Home is a minimalist UNJAM launcher with no individual
-# puzzle or Continue foreground feature. Three actions, large breathing room.
+# Production contract: Home remains a minimalist UNJAM launcher with three
+# attractive illustrated shortcuts to the corresponding campaign level screens.
 func _initialize() -> void:
 	call_deferred("_run")
 
@@ -62,9 +62,16 @@ func _run() -> void:
 		if name.text.is_empty() or tagline.text.is_empty() or tagline.autowrap_mode != TextServer.AUTOWRAP_OFF:
 			return _fail("Showcase does not explain %s" % game_id)
 		if card.mouse_filter != Control.MOUSE_FILTER_IGNORE or art.mouse_filter != Control.MOUSE_FILTER_IGNORE:
-			return _fail("Game showcase must not launch directly on a tap")
+			return _fail("Game illustration intercepts taps intended for the shortcut")
+		var hit := home.find_child("HomeShowcaseOpenLevels_%s" % game_id,true,false) as Button
+		if hit == null or not _same(hit,Rect2(card.position,card.size)):
+			return _fail("Entire illustrated game card must be tappable to open levels for %s" % game_id)
+		if hit.action_mode != BaseButton.ACTION_MODE_BUTTON_RELEASE or hit.focus_mode != Control.FOCUS_ALL or not hit.accessibility_name.contains("level selection"):
+			return _fail("Illustrated game shortcut must be release-triggered, keyboard accessible and descriptive")
+		if art.size.y < 60.0 or art.size.x < 75.0:
+			return _fail("Game artwork must be clearly readable, not squeezed into a thin strip")
 		if home.find_child("HomeDirect_%s" % game_id,true,false) != null:
-			return _fail("Game showcase accidentally re-added individual game launch buttons")
+			return _fail("Home re-added obsolete individual game launch controls")
 		showcase_end = maxf(showcase_end,card.position.y+card.size.y)
 	if hero.position.y+hero.size.y+12.0 >= 310.0 or showcase_end+12.0 >= rank_panel.position.y or rank_panel.position.y+rank_panel.size.y+12.0 >= daily_panel.position.y or daily_panel.position.y+daily_panel.size.y+12.0 >= nav.position.y:
 		return _fail("Home hero, showcase, ranks, Daily or bottom navigation overlap")
@@ -98,7 +105,7 @@ func _run() -> void:
 		return _fail("Tablet branding overlaps the launcher")
 	main.queue_free()
 	await _frames(2)
-	print("HOME_NEUTRAL_MINIMAL_HIERARCHY_OK")
+	print("HOME_CLEAR_ART_AND_ACCESSIBLE_GAME_SHORTCUTS_OK")
 	quit(0)
 
 func _same(node: Control, expected: Rect2) -> bool:
