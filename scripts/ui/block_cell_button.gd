@@ -125,12 +125,17 @@ func _finish_clear_visual() -> void:
 	queue_redraw()
 
 func set_drag_footprint(active: bool, valid: bool = false, color: Color = Color("8b7cf6")) -> void:
+	# Mobile drag updates touch all 64 board cells every event. Without this
+	# equality gate every inactive tile was woken and redrawn unnecessarily,
+	# causing a visible frame-time spike while the player moved a block.
+	if footprint_active == active and (not active or (footprint_valid == valid and footprint_color.is_equal_approx(color))):
+		return
 	footprint_active = active
 	footprint_valid = valid
 	footprint_color = color
 	if active:
 		footprint_phase = 1.0
-	_wake_animation()
+		_wake_animation()
 	queue_redraw()
 
 func _game() -> Node:
