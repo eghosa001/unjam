@@ -1,21 +1,15 @@
 extends "res://scripts/ui/ui_touch_enhancer.gd"
 
 func _apply_fast_action_mode(button: Button) -> void:
-	# Gameplay board pieces own gesture semantics. Purchase/reward/restore actions
-	# stay release-confirmed to avoid accidental paid/ad actions on touch-down.
-	if _is_block_cell_button(button) or _is_water_tube_widget(button) or _is_rescue_piece_button(button):
+	# Only actual gameplay tiles/bottles own down/up gesture semantics.
+	# Touch-down activation on menus caused accidental navigation, retry,
+	# purchase, ad and checkpoint actions during swipes or scrolls.
+	if _is_block_cell_button(button) or _is_water_tube_widget(button) or _is_rescue_piece_button(button) or _is_block_piece_button(button):
 		return
-	var label := button.text.strip_edges().to_upper()
-	var node_name := String(button.name)
-	var confirmation_action := (
-		node_name.begins_with("Buy_")
-		or "REWARDED" in node_name.to_upper()
-		or "RESTORE" in node_name.to_upper()
-		or "WATCH" in label
-		or "RESTORE PURCHASES" in label
-	)
-	if not confirmation_action:
-		button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+	# Release-confirmed clicks remain immediate to a player but can be
+	# cancelled by dragging a finger away. This also makes non-Figma screens
+	# consistent with the premium Home, Games selector and result modals.
+	button.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 
 func _apply_button_size(button: Button) -> void:
 	_apply_fast_action_mode(button)
