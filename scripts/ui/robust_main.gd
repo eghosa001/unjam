@@ -515,10 +515,11 @@ func _instantiate_game_scene(packed: PackedScene, config: Dictionary) -> void:
 	game_scene.set_meta("unjam_level_number",level_number)
 	game_scene.set_meta("unjam_daily_mode",daily)
 	if game_id == "rescue_rush":
-		game_scene.finished.connect(_on_rescue_finished.bind(daily))
+		# Bind the exact scene: old queued win callbacks cannot navigate a newer game.
+		game_scene.finished.connect(_on_rescue_finished.bind(daily,game_scene))
 		game_scene.quit_requested.connect(_on_rescue_quit.bind(game_scene,daily))
 	else:
-		game_scene.finished.connect(_on_multi_finished.bind(game_id,daily))
+		game_scene.finished.connect(_on_multi_finished.bind(game_id,daily,game_scene))
 		game_scene.quit_requested.connect(_on_multi_quit.bind(game_scene,game_id,daily))
 	current_surface = "game"
 	if content != null and is_instance_valid(content):
@@ -641,6 +642,10 @@ func force_back_from_game() -> void:
 	if current_surface == "game_loading":
 		_cancel_game_loading()
 		return
+	# Repeat Back/late touch events arriving after we already returned to levels
+	# must not navigate a second time or follow a newly selected game.
+	if current_surface != "game":
+		return
 	# System Back and every in-game Back control resolve from the game that is
 	# actually open, never from a selector value that may have changed behind it.
 	var context := _active_game_context()
@@ -650,7 +655,9 @@ func force_back_from_game() -> void:
 		int(context.get("level_number", -1))
 	)
 
-func _on_rescue_finished(completed_level: int, was_daily: bool = false) -> void:
+func _on_rescue_finished(completed_level: int, was_daily: bool = false, source_game: Control = null) -> void:
+	if source_game != null and (not is_instance_valid(source_game) or source_game != active_game or current_surface != "game"):
+		return
 	active_game = null
 	if was_daily:
 		_return_from_daily("rescue_rush")
@@ -662,7 +669,9 @@ func _on_rescue_finished(completed_level: int, was_daily: bool = false) -> void:
 		build_home()
 
 func _on_rescue_quit(source_game: Control, was_daily: bool = false) -> void:
-	if active_game != null and is_instance_valid(active_game) and source_game != active_game:
+	# Queued game scenes can emit quit_requested after an already successful
+	# return; never let a dead Rescue button redirect the new Block/Water page.
+	if current_surface != "game" or source_game == null or not is_instance_valid(source_game) or source_game != active_game:
 		return
 	var context := _game_context(source_game, "rescue_rush", was_daily)
 	_return_from_game(
@@ -671,7 +680,9 @@ func _on_rescue_quit(source_game: Control, was_daily: bool = false) -> void:
 		int(context.get("level_number", -1))
 	)
 
-func _on_multi_finished(completed_level: int, game_id: String, was_daily: bool = false) -> void:
+func _on_multi_finished(completed_level: int, game_id: String, was_daily: bool = false, source_game: Control = null) -> void:
+	if source_game != null and (not is_instance_valid(source_game) or source_game != active_game or current_surface != "game"):
+		return
 	active_game = null
 	if was_daily:
 		_return_from_daily(game_id)
@@ -701,7 +712,7 @@ func _advance_if_still_in_game(game_id: String, next_level: int, generation: int
 
 
 func _on_multi_quit(source_game: Control, game_id: String, was_daily: bool = false) -> void:
-	if active_game != null and is_instance_valid(active_game) and source_game != active_game:
+	if current_surface != "game" or source_game == null or not is_instance_valid(source_game) or source_game != active_game:
 		return
 	var context := _game_context(source_game, game_id, was_daily)
 	_return_from_game(
