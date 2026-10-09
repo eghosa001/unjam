@@ -63,7 +63,9 @@ func build_home_launcher() -> void:
 	viewport_bg.name = "FigmaHomeViewportBackground"
 	viewport_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	# The viewport fallback stays neutral for letterboxing; the visible 390x844 scene itself carries the neutral premium depth treatment.
-	viewport_bg.color = DARK_BOTTOM if _home_dark() else BG_BOTTOM
+	# Match the authored Home material when letterboxed on wide screens;
+	# an unrelated black/grey surround previously made tablet Home feel split.
+	viewport_bg.color = Color("#1d2330") if _home_dark() else Color("#eaeaf0")
 	viewport_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(viewport_bg)
 
