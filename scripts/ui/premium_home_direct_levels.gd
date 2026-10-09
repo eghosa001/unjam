@@ -201,7 +201,7 @@ func _add_hero(canvas: Control) -> void:
 	mark.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	mark.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	RefCanvas.set_rect(mark,282,139,58,53)
+	RefCanvas.set_rect(mark,266,137,80,75)
 	canvas.add_child(mark)
 	var choose := _add_action(canvas,Rect2(39,227,312,54),
 		Color("#4775e7") if dark else Color("#286ac0"),
@@ -213,9 +213,9 @@ func _add_hero(canvas: Control) -> void:
 	primary_button = choose
 
 func _add_game_showcase(canvas: Control) -> void:
-	# Showcase, not a second launcher: no hit targets and no selected-game
-	# spotlight. Authored static puzzle art explains each game at a glance.
-	# Compact illustrations disable animation at 20 FPS, conserving battery.
+	# Each compact game image is a one-tap shortcut to THAT game's LEVEL
+	# SELECT screen, never straight to gameplay. Retain the large Choose Game
+	# button as the primary launcher and the quiet low-cost illustrated strip.
 	var dark := _home_dark()
 	var header := _add_text(canvas,"THREE GAMES. ONE APP.",Rect2(22,310,246,24),
 		15,DARK_INK if dark else NAVY,true)
@@ -243,31 +243,51 @@ func _add_game_showcase(canvas: Control) -> void:
 		panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		panel.accessibility_name = "%s: %s" % [String(game["name"]),String(game["description"])]
 		canvas.add_child(panel)
-		# Small game-art pictures are intentionally stationary, never interactive.
-		# The only way to start a game is the prominent Choose Game CTA.
+		# Square original artwork retains its aspect ratio and uses the largest
+		# practical area of each compact card. This fixes the previous 82x46
+		# squashing that made all three game pictures look indistinct.
 		var art := GAME_ART_SCRIPT.new()
 		art.name = "HomeShowcaseArt_%s" % id
 		art.configure(id,true,dark)
 		art.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		RefCanvas.set_rect(art,left+14,350,82,46)
+		RefCanvas.set_rect(art,left+14,346,82,67)
 		canvas.add_child(art)
-		var label := _add_text(canvas,String(game["name"]),Rect2(left+3,400,104,19),
+		var label := _add_text(canvas,String(game["name"]),Rect2(left+3,414,104,17),
 			11,accent if dark else accent.darkened(0.48),true)
 		label.name = "HomeShowcaseName_%s" % id
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		RefCanvas.fit_single_line_text(label,101.0,11,10)
-		var tagline := _add_text(canvas,String(game["description"]),Rect2(left+7,423,96,28),
+		label.custom_minimum_size = Vector2.ZERO
+		label.size = Vector2(104,17)
+		var tagline := _add_text(canvas,String(game["description"]),Rect2(left+7,433,96,19),
 			10,DARK_MUTED if dark else MUTED,false)
 		tagline.name = "HomeShowcaseTagline_%s" % id
 		tagline.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		tagline.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		# Single-line descriptions avoid truncation on compact, scaled phones.
 		tagline.autowrap_mode = TextServer.AUTOWRAP_OFF
 		RefCanvas.fit_single_line_text(tagline,94.0,10,8)
 		tagline.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		tagline.custom_minimum_size = Vector2.ZERO
-		tagline.size = Vector2(96,28)
+		tagline.size = Vector2(96,19)
 		tagline.clip_text = true
+
+		# Topmost transparent touch layer covers the entire image, name and
+		# caption; touch RELEASE avoids opening gameplay via touch-through.
+		var shortcut := Button.new()
+		shortcut.name = "HomeShowcaseOpenLevels_%s" % id
+		shortcut.flat = true
+		shortcut.mouse_filter = Control.MOUSE_FILTER_STOP
+		shortcut.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
+		shortcut.focus_mode = Control.FOCUS_ALL
+		shortcut.set_meta("unjam_figma_exact_geometry",true)
+		shortcut.set_meta("unjam_preserve_surface_style",true)
+		shortcut.set_meta("unjam_preserve_control_geometry",true)
+		shortcut.add_theme_stylebox_override("focus",RefCanvas.solid_box(Color.TRANSPARENT,16,accent,2))
+		shortcut.accessibility_name = "Open %s level selection" % String(game["name"]).capitalize()
+		shortcut.tooltip_text = "Choose a %s level" % String(game["name"]).capitalize()
+		RefCanvas.set_rect(shortcut,left,344,110,112)
+		shortcut.pressed.connect(_open_game_levels.bind(id))
+		canvas.add_child(shortcut)
 
 func _hero_cue(game_id: String) -> String:
 	match game_id:
@@ -673,6 +693,17 @@ func _continue_selected_game() -> void:
 		main.call("start_level", level)
 	else:
 		main.call("start_multi_level", selected_game, level, false)
+
+func _open_game_levels(game_id: String) -> void:
+	# Jump directly to the campaign level browser for the tapped puzzle.
+	# open_game_campaign applies the correct Rescue/Water/Block routing,
+	# restores Daily-suspended progress, and does not start a live game.
+	if game_id not in ["rescue_rush","water_sort","block_puzzle"]:
+		return
+	var main := get_parent()
+	if main != null and main.has_method("open_game_campaign"):
+		FeedbackManager.tap()
+		main.call("open_game_campaign",game_id)
 
 func _open_game_selector() -> void:
 	var main := get_parent()
