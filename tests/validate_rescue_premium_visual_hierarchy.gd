@@ -47,6 +47,8 @@ func _run() -> void:
 		return _fail("Rescue board backdrop does not expose every coordinate")
 	if board_grid.get_theme_constant("h_separation") != 5 or board_grid.get_theme_constant("v_separation") != 5:
 		return _fail("Rescue grid gaps are still too large")
+	if not _check_keyboard_arrow_grid(board_grid, "opening"):
+		return
 	if backdrop_grid.get_theme_constant("h_separation") != 5 or backdrop_grid.get_theme_constant("v_separation") != 5:
 		return _fail("Rescue backdrop grid is not aligned with the playable lattice")
 	var minimum_cell := 40.0
@@ -101,6 +103,8 @@ func _run() -> void:
 		return _fail("Dense Rescue finale spacing did not gain the compact 3px rendering gap")
 	if late_backdrop.get_child_count() != int(late_game.get("width")) * int(late_game.get("height")):
 		return _fail("Dense Rescue finale backdrop grid lost board coordinates")
+	if not _check_keyboard_arrow_grid(late_grid, "late 10,000"):
+		return
 	late_game.queue_free()
 	await process_frame
 
@@ -110,6 +114,31 @@ func _run() -> void:
 
 	print("Rescue Rush normal and dense rendering hierarchy validated.")
 	quit(0)
+
+func _check_keyboard_arrow_grid(grid: GridContainer, context: String) -> bool:
+	var playable := 0
+	for child in grid.get_children():
+		if not child is Button:
+			continue
+		var script := child.get_script() as Script
+		if script == null or not String(script.resource_path).ends_with("rescue_piece_3d_button.gd"):
+			continue
+		var arrow := child as Button
+		var narration := arrow.accessibility_name.to_lower()
+		if narration.is_empty() or not narration.contains("row ") or not narration.contains("column "):
+			return _fail("%s Rescue piece does not announce its grid position" % context)
+		if arrow.disabled:
+			if arrow.focus_mode != Control.FOCUS_NONE:
+				return _fail("%s blocker or gate takes focus from playable arrows" % context)
+		else:
+			playable += 1
+			if arrow.focus_mode != Control.FOCUS_ALL or not narration.contains("arrow ") or not narration.contains("path "):
+				return _fail("%s playable arrow lacks keyboard focus or readable direction and legality" % context)
+			if arrow.tooltip_text != arrow.accessibility_name:
+				return _fail("%s pointer and screen reader describe different arrow states" % context)
+	if playable <= 0:
+		return _fail("%s Rescue board has no accessible playable arrows" % context)
+	return true
 
 func _read(path: String) -> String:
 	var file := FileAccess.open(path, FileAccess.READ)
