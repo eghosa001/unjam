@@ -21,6 +21,15 @@ func _initialize() -> void:
 		_check_alpha_bounds(foreground,70,"Adaptive icon",errors)
 	if system_splash != null:
 		_check_alpha_bounds(system_splash,76,"Android 12 system splash",errors)
+	# The previous U-only launch icon passed margin tests. Reject that
+	# regression by comparing each generated mask to the actual approved
+	# coloured logo image (including the lettered UNJAM wordmark).
+	if original != null:
+		for pair in [[foreground,"Adaptive launcher"],[system_splash,"System splash"],[in_app,"In-app boot"]]:
+			if pair[0] != null:
+				_check_matches_official(pair[0] as Image, original, String(pair[1]),errors)
+		if legacy != null:
+			_check_multicolour_legacy(legacy,errors)
 	if in_app != null and original != null:
 		var source := original.get_used_rect()
 		var actual := in_app.get_used_rect()
@@ -40,7 +49,7 @@ func _initialize() -> void:
 			push_error(reason)
 		quit(1)
 		return
-	print("ANDROID_BRAND_RASTERS_OK: Samsung masks, consistent U, undistorted in-app logo")
+	print("ANDROID_APPROVED_LOGO_ALL_LAUNCH_SURFACES_OK")
 	quit(0)
 
 func _image(path: String, size: Vector2i, errors: Array[String]) -> Image:
@@ -65,3 +74,42 @@ func _check_centered(bounds: Rect2i, canvas: Vector2i, label: String, errors: Ar
 	var center := Vector2(bounds.position)+Vector2(bounds.size)*0.5
 	if center.distance_to(Vector2(canvas)*0.5) > 9.0:
 		errors.append("%s is off-center by %.1f pixels" % [label,center.distance_to(Vector2(canvas)*0.5)])
+
+# Compare the artwork itself, not its filename, dimensions or margin alone.
+func _check_matches_official(image: Image, source: Image, label: String, errors: Array[String]) -> void:
+	var source_bounds := source.get_used_rect()
+	var generated_bounds := image.get_used_rect()
+	if source_bounds.size.x < 1 or generated_bounds.size.x < 1:
+		errors.append("%s does not contain source artwork" % label)
+		return
+	var original_ratio := float(source_bounds.size.x)/float(source_bounds.size.y)
+	var generated_ratio := float(generated_bounds.size.x)/float(generated_bounds.size.y)
+	if absf(original_ratio-generated_ratio) > 0.03:
+		errors.append("%s artwork stretched or cropped (ratio %.2f, expected %.2f)" % [label,generated_ratio,original_ratio])
+		return
+	var src := source.get_region(source_bounds)
+	var dst := image.get_region(generated_bounds)
+	src.resize(64,64,Image.INTERPOLATE_LANCZOS)
+	dst.resize(64,64,Image.INTERPOLATE_LANCZOS)
+	var mismatch := 0.0
+	for y in range(64):
+		for x in range(64):
+			var p := src.get_pixel(x,y)
+			var q := dst.get_pixel(x,y)
+			mismatch += (absf(p.r-q.r)+absf(p.g-q.g)+absf(p.b-q.b)+absf(p.a-q.a))*0.25
+	var mean_error := mismatch/4096.0
+	if mean_error > 0.09:
+		errors.append("%s differs from approved launch logo (mean error %.3f)" % [label,mean_error])
+
+func _check_multicolour_legacy(image: Image, errors: Array[String]) -> void:
+	var red_count := 0
+	var green_count := 0
+	for y in range(0,image.get_height(),4):
+		for x in range(0,image.get_width(),4):
+			var p := image.get_pixel(x,y)
+			if p.r > 0.68 and p.g < 0.44 and p.b < 0.62:
+				red_count += 1
+			if p.g > 0.53 and p.r < 0.45 and p.b < 0.64:
+				green_count += 1
+	if red_count < 4 or green_count < 4:
+		errors.append("Legacy icon is still the generic yellow U, not the approved full-colour logo")
