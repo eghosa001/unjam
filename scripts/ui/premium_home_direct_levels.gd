@@ -108,7 +108,7 @@ func _build_wide_home_stage(stage: Control, available: Vector2) -> void:
 	var art_side := minf(available.y*0.58,available.x*0.38)
 	var mark := TextureRect.new()
 	mark.name = "HomeWideBrandMark"
-	mark.texture = preload("res://assets/boot_mark.svg")
+	mark.texture = preload("res://assets/icon_user_adaptive_432.png")
 	mark.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	mark.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -197,7 +197,7 @@ func _add_hero(canvas: Control) -> void:
 	# Compact neutral brand mark: Home is NOT a selected game's landing page.
 	var mark := TextureRect.new()
 	mark.name = "HomeBrandEmblem"
-	mark.texture = preload("res://assets/boot_mark.svg")
+	mark.texture = preload("res://assets/icon_user_adaptive_432.png")
 	mark.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	mark.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
