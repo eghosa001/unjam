@@ -1941,16 +1941,6 @@ func _build_figma_level_browser(game_id: String) -> void:
 		status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_fit_single_line_control_text(status_label,62.0,11,9)
 		index += 1
-	# Do cold scene preparation after this frame's level-browser presentation;
-	# never make the button wait for SVG/GDScript imports before responding.
-	call_deferred("_prime_displayed_level_scene",game_id)
-
-func _prime_displayed_level_scene(game_id: String) -> void:
-	if not is_inside_tree() or current_surface != "levels" or selected_game_id != game_id:
-		return
-	var path := RESCUE_GAME_SCENE_PATH if game_id == "rescue_rush" else (WATER_GAME_SCENE_PATH if game_id == "water_sort" else BLOCK_GAME_SCENE_PATH)
-	_prime_game_scene(path)
-
 func _figma_level_tabs(canvas: Control, active_game_id: String) -> void:
 	var active_accent := Unjam3DTheme.game_accent(active_game_id)
 	var specs := [
