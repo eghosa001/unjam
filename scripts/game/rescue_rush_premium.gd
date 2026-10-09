@@ -381,8 +381,24 @@ func render_board() -> void:
 				button.tooltip_text = String(piece.get("type", "normal")).capitalize()
 				button.configure(String(piece.get("type", "normal")), String(piece.get("direction", "right")), _piece_visual_color(piece))
 				button.disabled = String(piece.get("type", "normal")) in ["gate", "blocker"]
-				if not button.disabled:
+				var piece_kind := String(piece.get("type", "normal"))
+				var piece_direction := String(piece.get("direction", "right")).to_lower()
+				if button.disabled:
+					# An inactive gate or blocker must not take keyboard focus from
+					# playable arrows. It remains visibly present on the grid.
+					button.focus_mode = Control.FOCUS_NONE
+					button.accessibility_name = "%s at row %d column %d, not directly movable" % [piece_kind.capitalize(), y + 1, x + 1]
+				else:
+					button.focus_mode = Control.FOCUS_ALL
+					var path_clear := is_path_clear(piece_index)
+					button.accessibility_name = "%s arrow %s, row %d column %d. %s" % [
+						piece_kind.capitalize(),
+						piece_direction,
+						y + 1, x + 1,
+						"Path clear, activate to move" if path_clear else "Path blocked, clear other arrows first"
+					]
 					button.pressed.connect(try_move.bind(piece_index))
+				button.tooltip_text = button.accessibility_name
 				board_grid.add_child(button)
 				_animate_cell(button, x, y)
 			else:
