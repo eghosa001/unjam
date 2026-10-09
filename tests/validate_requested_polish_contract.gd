@@ -4,7 +4,7 @@ func _init() -> void:
 	var errors: Array[String] = []
 	_require("res://project.godot", ["theme/default_font_multichannel_signed_distance_field=false"], errors)
 	_require("res://scripts/ui/premium_home_direct_levels.gd", ["HomeWelcomeTitle", "HomeBrandEmblem", "HomePrimaryAction", "HomeRankDailyValue", "HomeRankValue", "HomeDailyGamesButton", "HomeDailyChallengeButton", "Callable(self, \"_open_compete\")", "Callable(self,\"_open_game_selector\")"], errors)
-	_require("res://scripts/ui/premium_home_direct_levels.gd", ["HomeNavActivePlate", "HomeNavGlyph_", "HomeGamesNavButton", "\"GAMES\", \"▦\"", "\"DAILY\", \"✦\"", "\"COLLECT\", \"◆\"", "HomeRankSummaryCard", "HomeDailyFeatureCard"], errors)
+	_require("res://scripts/ui/premium_home_direct_levels.gd", ["HomeNavActivePlate", "HomeNavGlyph_", "HomeGamesNavButton", "\"GAMES\", \"▦\"", "\"DAILY\", \"★\"", "\"COLLECT\", \"◆\"", "HomeRankSummaryCard", "HomeDailyFeatureCard"], errors)
 	_require("res://scripts/ui/premium_home_overhaul.gd", ["Progress, stars, wallet", "_sync()"], errors)
 	_require("res://scripts/ui/premium_home_casual.gd", ["HomeCoinShopButton", "HomeGamesNavButton", "HomeDailyNavButton", "HomeCollectionNavButton", "HomeSettingsNavButton", "GAMES", "DAILY", "COLLECT"], errors)
 	_require("res://scripts/ui/premium_main_casual.gd", ["COMPLETED", "\"PLAY\"", "DailyAccent/", "CLEAR THE ROUTE", "SORT THE COLOURS", "CLEAR LINES & SCORE", "FigmaSurfaceBackground", "META_ART_SCRIPT", "_figma_surface_accent", "\"SETTINGS\", \"\", \"\""], errors)

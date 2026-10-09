@@ -425,7 +425,7 @@ func _figma_button(canvas: Control, name_value: String, text_value: String, rect
 		resolved_text = FIGMA_DARK_INK
 	var button := FigmaReferenceCanvas.premium_button(text_value, font_size, resolved_text, resolved_fill, radius, Color(resolved_fill.r, resolved_fill.g, resolved_fill.b, 0.38), 1)
 	button.name = name_value
-	button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+	button.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 	button.set_meta("unjam_authored_rect", rect)
 	FigmaReferenceCanvas.set_rect(button, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	_fit_single_line_control_text(button, maxf(24.0, rect.size.x - 18.0), font_size, 10)
@@ -599,11 +599,11 @@ func _figma_bottom_nav(canvas: Control, active: String, dark_mode: bool = false)
 		hit.name = "StdNavHit_%s" % String(key).to_upper()
 		hit.flat = true
 		hit.focus_mode = Control.FOCUS_NONE if selected else Control.FOCUS_ALL
-		hit.accessibility_name = String(names[key]).capitalize()
-		hit.tooltip_text = "Go to %s" % String(names[key]).capitalize()
+		hit.accessibility_name = "%s, current tab" % String(names[key]).capitalize() if selected else "Open %s tab" % String(names[key]).capitalize()
+		hit.tooltip_text = "Current: %s" % String(names[key]).capitalize() if selected else "Go to %s" % String(names[key]).capitalize()
 		# Keep the invisible hit target opaque so its focus ring remains visible.
 		hit.add_theme_stylebox_override("focus", FigmaReferenceCanvas.solid_box(Color.TRANSPARENT, 12, Color(FIGMA_GOLD, 0.94), 2))
-		hit.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+		hit.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 		FigmaReferenceCanvas.set_rect(hit, float(hit_x[key]),753,72,78)
 		if not selected:
 			var cb: Callable = callbacks[key]
@@ -676,7 +676,7 @@ func build_goals() -> void:
 	if season_ready > 0:
 		season_button.pressed.connect(_claim_next_season_reward)
 	_figma_text(canvas, "First clears +10 • Daily Cup +25 • Replays +3", Rect2(31,646,310,20), 12, FIGMA_MUTED)
-	_figma_bottom_nav(canvas,"home")
+	_figma_bottom_nav(canvas,"")
 
 func _figma_goal_row(canvas: Control, row: Dictionary, period: String, y: float) -> void:
 	var claimable := bool(row.get("claimable",false))
@@ -767,7 +767,7 @@ func build_profile() -> void:
 	var defs := MultiGameManager.achievement_definitions(_profile_game)
 	for i in range(defs.size()):
 		_figma_achievement_row(canvas,defs[i] as Dictionary,370.0+float(i)*60.0)
-	_figma_bottom_nav(canvas,"home")
+	_figma_bottom_nav(canvas,"")
 
 func _figma_profile_game_tabs(canvas: Control) -> void:
 	var ids: Array[String] = ["rescue_rush","water_sort","block_puzzle"]
@@ -890,7 +890,7 @@ func build_friends(refresh_remote: bool = true) -> void:
 	privacy_note.custom_minimum_size = Vector2.ZERO
 	privacy_note.position = Vector2(31,663)
 	privacy_note.size = Vector2(328,36)
-	_figma_bottom_nav(canvas,"home")
+	_figma_bottom_nav(canvas,"")
 
 func _figma_friend_period_tabs(canvas: Control) -> void:
 	var specs := [
@@ -1052,21 +1052,21 @@ func build_settings() -> void:
 	var how_to := FigmaReferenceCanvas.premium_button("HOW TO PLAY",15,utility_text,utility_fill,16,utility_border,1.2)
 	how_to.name = "SettingsHowToPlay"
 	FigmaReferenceCanvas.set_rect(how_to,33,582,126,46)
-	how_to.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+	how_to.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 	how_to.pressed.connect(_show_current_tutorial)
 	canvas.add_child(how_to)
 	FigmaReferenceCanvas.add_shadow(canvas, Rect2(167,582,90,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
 	var help_game := FigmaReferenceCanvas.premium_button(_settings_help_game_label(),12,utility_text,utility_fill,16,utility_border,1.2)
 	help_game.name = "SettingsHowToPlayGame"
 	FigmaReferenceCanvas.set_rect(help_game,167,582,90,46)
-	help_game.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+	help_game.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 	help_game.pressed.connect(_cycle_settings_help_game.bind(help_game))
 	canvas.add_child(help_game)
 	FigmaReferenceCanvas.add_shadow(canvas, Rect2(265,582,86,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
 	var privacy := FigmaReferenceCanvas.premium_button("PRIVACY",15,utility_text,utility_fill,16,utility_border,1.2)
 	privacy.name = "SettingsPrivacy"
 	FigmaReferenceCanvas.set_rect(privacy,265,582,86,46)
-	privacy.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+	privacy.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 	privacy.pressed.connect(PrivacyManager.show_privacy_options)
 	canvas.add_child(privacy)
 
@@ -1075,7 +1075,7 @@ func build_settings() -> void:
 	FigmaReferenceCanvas.add_shadow(canvas, Rect2(33,686,153,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
 	var purchases := FigmaReferenceCanvas.premium_button("SHOP & RESTORE",13,utility_text,utility_fill,16,utility_border,1.2)
 	purchases.name = "SettingsPurchases"
-	purchases.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+	purchases.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 	FigmaReferenceCanvas.set_rect(purchases,33,686,153,46)
 	purchases.tooltip_text = "Buy upgrades or restore previous Google Play purchases"
 	purchases.pressed.connect(_figma_open_shop)
@@ -1083,7 +1083,7 @@ func build_settings() -> void:
 	FigmaReferenceCanvas.add_shadow(canvas, Rect2(195,686,156,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
 	var recovery := FigmaReferenceCanvas.premium_button("CLOUD BACKUP",13,utility_text,utility_fill,16,utility_border,1.2)
 	recovery.name = "SettingsCloudBackup"
-	recovery.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+	recovery.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 	FigmaReferenceCanvas.set_rect(recovery,195,686,156,46)
 	recovery.tooltip_text = "Copy your private recovery code or restore progress"
 	recovery.pressed.connect(_open_cloud_recovery)
@@ -2182,7 +2182,7 @@ func show_playmate_sidekick(game_id: String = "") -> void:
 	play.tooltip_text = LocalizationManager.localize("PLAY THIS GAME")
 	var locale_note := _figma_text(canvas, "Auto • %s" % LocalizationManager.locale_badge(), Rect2(17, 674, 354, 24), 12, _figma_theme_text(FIGMA_MUTED), true)
 	locale_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_figma_bottom_nav(canvas, "home")
+	_figma_bottom_nav(canvas, "")
 
 func _sidekick_playmate_name() -> String:
 	var rescued = SaveManager.data.get("rescued", [])
