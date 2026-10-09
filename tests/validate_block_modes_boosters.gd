@@ -182,6 +182,20 @@ func _validate_launcher() -> bool:
 	var main := (load("res://scenes/Main.tscn") as PackedScene).instantiate()
 	root.add_child(main)
 	await _frames(3)
+	main.call("open_game_campaign","block_puzzle")
+	await _frames(3)
+	for mode in ["endless","zen","extreme"]:
+		var action: Button = null
+		for candidate in main.find_children("*","Button",true,false):
+			if String((candidate as Button).text).strip_edges() == mode.to_upper():
+				action = candidate as Button
+				break
+		if action == null or action.action_mode != BaseButton.ACTION_MODE_BUTTON_RELEASE:
+			main.queue_free()
+			return _fail("Block mode %s must be a deliberate release-confirmed action" % mode)
+		if action.tooltip_text.is_empty() or action.accessibility_name.is_empty():
+			main.queue_free()
+			return _fail("Block mode %s has no plain-language explanation" % mode)
 	main.call("start_block_mode", "zen")
 	await _frames(3)
 	var game = main.get("active_game")

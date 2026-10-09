@@ -66,6 +66,10 @@ func _spawn_chain_popup(center: Vector2, combo: int) -> void:
 func try_move(index: int) -> void:
 	var legal := index >= 0 and index < pieces.size() and is_path_clear(index)
 	await super.try_move(index)
+	# A finished move may await a chain animation; do not present blocked-path
+	# feedback after another surface has taken ownership of the foreground.
+	if not is_inside_tree() or is_queued_for_deletion():
+		return
 	if not legal and premium_feedback != null and is_instance_valid(premium_feedback) and board_panel != null:
 		var inverse := get_global_transform_with_canvas().affine_inverse()
 		var global_rect := board_panel.get_global_rect()

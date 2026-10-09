@@ -68,9 +68,19 @@ func _sync_shell(surface: String) -> void:
 	if surface == "game":
 		var game_id := _current_game()
 		if not bool(tutorial_seen.get(game_id, false)) and not bool(seen_this_session.get(game_id, false)):
-			seen_this_session[game_id] = true
-			call_deferred("show_tutorial", game_id)
+			call_deferred("_show_first_play_tutorial", game_id)
 	_after_shell_sync()
+
+func _show_first_play_tutorial(game_id: String) -> void:
+	# Navigation and resource loading can complete before the deferred tutorial.
+	# Only show onboarding while the same game still owns the foreground.
+	# Do not mark it as seen when the player has already navigated away.
+	if _current_surface() != "game" or _current_game() != game_id:
+		return
+	if bool(tutorial_seen.get(game_id, false)) or bool(seen_this_session.get(game_id, false)):
+		return
+	seen_this_session[game_id] = true
+	show_tutorial(game_id)
 
 func _after_shell_sync() -> void:
 	pass

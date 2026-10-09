@@ -76,9 +76,36 @@ func _run() -> void:
 		shell.call("hide_tutorial")
 		await _frames(2)
 
+	# A game may be abandoned in the same frame that first-use onboarding
+	# was deferred. It must not appear over Home or incorrectly count as seen.
+	main.call("build_home")
+	await _frames(3)
+	var tutorial_canvas := shell.find_child("FigmaTutorial390x844",true,false) as Control
+	var seen_before: Dictionary = shell.get("seen_this_session").duplicate(true)
+	var saved_before: Dictionary = shell.get("tutorial_seen").duplicate(true)
+	var seen_temp: Dictionary = shell.get("seen_this_session")
+	seen_temp.erase("water_sort")
+	shell.set("seen_this_session",seen_temp)
+	var tutorials_temp: Dictionary = shell.get("tutorial_seen")
+	tutorials_temp["water_sort"] = false
+	shell.set("tutorial_seen",tutorials_temp)
+	shell.call("_show_first_play_tutorial","water_sort")
+	await _frames(2)
+	if tutorial_canvas == null or tutorial_canvas.visible:
+		return _fail("Deferred onboarding appeared over Home after an interrupted launch")
+	if bool((shell.get("seen_this_session") as Dictionary).get("water_sort",false)):
+		return _fail("Cancelled onboarding incorrectly marked Water Sort as seen")
+	# Explicit Help is still allowed on a non-game surface.
+	shell.call("show_tutorial","water_sort")
+	await _frames(2)
+	if not tutorial_canvas.visible:
+		return _fail("Manual Help became inaccessible outside a game")
+	shell.call("hide_tutorial")
+	shell.set("seen_this_session",seen_before)
+	shell.set("tutorial_seen",saved_before)
 	main.queue_free()
 	await process_frame
-	print("Figma tutorial flow validated.")
+	print("Figma tutorial and interrupted-launch onboarding validated.")
 	quit(0)
 
 func _rect_eq(actual: Rect2, expected: Rect2) -> bool:

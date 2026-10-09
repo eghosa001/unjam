@@ -625,6 +625,10 @@ func complete_level() -> void:
 		"generator_version": int(level_profile.get("generator_version", 1))
 	})
 	await get_tree().create_timer(0.28).timeout
+	# Players can leave during the victory animation. A stale coroutine must
+	# never attach a result overlay to a detached/queued game scene.
+	if not is_inside_tree() or is_queued_for_deletion():
+		return
 	var result := PremiumResultOverlay.new()
 	result.configure(
 		"WATER SORT COMPLETE",
