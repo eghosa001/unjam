@@ -5,6 +5,12 @@ const SPARK_TEXTURE: Texture2D = preload("res://assets/art/fx/spark.svg")
 
 var _active_banner: Control
 
+func _gentle_effects() -> bool:
+	var save := get_node_or_null("/root/SaveManager")
+	if save != null and save.get("data") is Dictionary:
+		return bool((save.get("data") as Dictionary).get("gentle_effects", true))
+	return true
+
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -39,7 +45,7 @@ func show_banner(text_value: String, accent: Color, center: Vector2, width: floa
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(accent.darkened(0.52), 0.94)
-	style.border_color = Color(accent.lightened(0.30), 0.92)
+	style.border_color = Color(accent.lightened(0.16 if _gentle_effects() else 0.30), 0.65 if _gentle_effects() else 0.92)
 	style.border_width_left = maxi(2, int(round(2.0 * visual_scale)))
 	style.border_width_right = maxi(2, int(round(2.0 * visual_scale)))
 	style.border_width_top = maxi(2, int(round(2.0 * visual_scale)))
@@ -98,7 +104,7 @@ func show_ring(center: Vector2, diameter: float, accent: Color) -> void:
 	ring.pivot_offset = ring.size * 0.5
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color.TRANSPARENT
-	style.border_color = Color(accent.lightened(0.28), 0.82)
+	style.border_color = Color(accent.lightened(0.16 if _gentle_effects() else 0.28), 0.50 if _gentle_effects() else 0.82)
 	style.border_width_left = maxi(4, int(round(4.0 * visual_scale)))
 	style.border_width_right = maxi(4, int(round(4.0 * visual_scale)))
 	style.border_width_top = maxi(4, int(round(4.0 * visual_scale)))
@@ -127,7 +133,7 @@ func show_sweep(rect: Rect2, accent: Color) -> void:
 	var sweep := ColorRect.new()
 	sweep.name = "PremiumGameplaySweep"
 	sweep.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	sweep.color = Color(accent.lightened(0.34), 0.24)
+	sweep.color = Color(accent.lightened(0.12 if _gentle_effects() else 0.34), 0.10 if _gentle_effects() else 0.24)
 	sweep.position = Vector2(rect.position.x - 20.0, rect.position.y)
 	sweep.size = Vector2(maxf(20.0, rect.size.x * 0.16), rect.size.y)
 	add_child(sweep)
@@ -143,8 +149,9 @@ func show_sweep(rect: Rect2, accent: Color) -> void:
 func _spawn_spark_burst(center: Vector2, accent: Color, amount: int = 8) -> void:
 	if _reduced_motion():
 		return
+	var gentle := _gentle_effects()
 	var visual_scale := _visual_scale()
-	var count := clampi(amount, 4, 12)
+	var count := mini(amount, 3) if gentle else clampi(amount, 4, 12)
 	for i in range(count):
 		var spark := TextureRect.new()
 		spark.name = "PremiumSpark"
@@ -152,11 +159,11 @@ func _spawn_spark_burst(center: Vector2, accent: Color, amount: int = 8) -> void
 		spark.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		spark.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		spark.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var side := (17.0 + float(i % 3) * 4.0) * visual_scale
+		var side := (17.0 + float(i % 3) * 4.0) * visual_scale * (0.65 if gentle else 1.0)
 		spark.size = Vector2(side, side)
 		spark.pivot_offset = spark.size * 0.5
 		spark.position = center - spark.size * 0.5
-		spark.modulate = accent.lightened(0.30)
+		spark.modulate = accent.lightened(0.10 if gentle else 0.30)
 		spark.modulate.a = 0.0
 		spark.scale = Vector2(0.36, 0.36)
 		spark.rotation = float(i) * 0.42
@@ -168,7 +175,7 @@ func _spawn_spark_burst(center: Vector2, accent: Color, amount: int = 8) -> void
 		tween.tween_property(spark, "position", target, 0.30)
 		tween.tween_property(spark, "scale", Vector2(0.90, 0.90), 0.16)
 		tween.tween_property(spark, "rotation", spark.rotation + 0.75, 0.30)
-		tween.tween_property(spark, "modulate:a", 0.90, 0.07)
+		tween.tween_property(spark, "modulate:a", 0.40 if gentle else 0.90, 0.07)
 		var fade := spark.create_tween()
 		fade.tween_interval(0.15)
 		fade.tween_property(spark, "modulate:a", 0.0, 0.17)
