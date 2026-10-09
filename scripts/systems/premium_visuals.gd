@@ -34,6 +34,19 @@ func _ready() -> void:
 func _reduced_motion() -> bool:
 	return _motion_reduced
 
+func _gentle_effects() -> bool:
+	# Safe visual intensity is the default, including for existing save files
+	# which don't have the new preference yet. It never changes system brightness
+	# or game colour/contrast; only the decorative effects budget.
+	var save := get_node_or_null("/root/SaveManager")
+	if save != null and save.get("data") is Dictionary:
+		return bool((save.get("data") as Dictionary).get("gentle_effects", true))
+	return true
+
+func refresh_effect_intensity() -> void:
+	if is_instance_valid(overlay):
+		ambient_sparkles(6 if _gentle_effects() else 12)
+
 func apply_motion_preference() -> void:
 	_motion_reduced = MotionSystem.reduced()
 	_ambient_accumulator = 0.0
@@ -111,9 +124,10 @@ func ambient_sparkles(count: int = 12) -> void:
 	var max_x := maxf(min_x, viewport_rect.end.x - 20.0)
 	var min_y := viewport_rect.position.y + 40.0
 	var max_y := maxf(min_y, viewport_rect.end.y - 40.0)
-	for _i in range(count):
-		var radius := rng.randf_range(1.8, 4.5)
-		var dot := _diamond(radius, Color(accent.lightened(0.20), rng.randf_range(0.05, 0.16)))
+	var limit := mini(count, 6) if _gentle_effects() else count
+	for _i in range(limit):
+		var radius := rng.randf_range(1.6, 3.3) if _gentle_effects() else rng.randf_range(1.8, 4.5)
+		var dot := _diamond(radius, Color(accent.lightened(0.10 if _gentle_effects() else 0.20), rng.randf_range(0.03, 0.075) if _gentle_effects() else rng.randf_range(0.05, 0.16)))
 		dot.position = Vector2(rng.randf_range(min_x, max_x), rng.randf_range(min_y, max_y))
 		dot.rotation = rng.randf_range(0.0, TAU)
 		dot.set_meta("ambient", true)
@@ -134,9 +148,13 @@ func burst(global_pos: Vector2, color: Color = Color("2dd4b6"), count: int = 18)
 	if _reduced_motion() or not is_instance_valid(overlay):
 		return
 	var rng := RandomNumberGenerator.new()
-	for _i in range(count):
-		var radius := rng.randf_range(3.0, 8.0)
-		var particle := _diamond(radius, Color(color.lightened(rng.randf_range(0.0, 0.28)), 0.92))
+	# Limit luminous particles in the default Gentle Effects mode. Don't
+	# remove the win signal or change any underlying gameplay rewards.
+	var gentle := _gentle_effects()
+	var count_limit := mini(count, 8) if gentle else count
+	for _i in range(count_limit):
+		var radius := rng.randf_range(2.5, 5.5) if gentle else rng.randf_range(3.0, 8.0)
+		var particle := _diamond(radius, Color(color.lightened(rng.randf_range(0.0, 0.12 if gentle else 0.28)), 0.48 if gentle else 0.92))
 		particle.position = global_pos
 		particle.rotation = rng.randf_range(0.0, TAU)
 		overlay.add_child(particle)
@@ -154,7 +172,9 @@ func burst(global_pos: Vector2, color: Color = Color("2dd4b6"), count: int = 18)
 		tween.chain().tween_callback(particle.queue_free)
 
 func screen_flash(color: Color = Color("2dd4b6"), strength: float = 0.18) -> void:
-	if _reduced_motion() or not is_instance_valid(overlay):
+	# Gentle Effects ON by default: no screen luminance pulse, even the
+	# previously edge-safe centred one. Keep ordinary-mode pulse bounded.
+	if _reduced_motion() or _gentle_effects() or not is_instance_valid(overlay):
 		return
 	# Keep celebration energy away from the display edges. A centered radial
 	# pulse reads as impact without producing the harsh full-screen flash that
