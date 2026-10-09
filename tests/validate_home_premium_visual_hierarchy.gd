@@ -26,11 +26,13 @@ func _run() -> void:
 	var rank_panel := home.find_child("HomeRankSummaryCard",true,false) as Control
 	var daily_rank := home.find_child("HomeRankDailyValue",true,false) as Label
 	var week_rank := home.find_child("HomeRankValue",true,false) as Label
+	var daily_hint := home.find_child("HomeRankDailyHint",true,false) as Label
+	var week_hint := home.find_child("HomeRankWeeklyHint",true,false) as Label
 	var ranks := home.find_child("HomeDailyGamesButton",true,false) as Button
 	var daily_panel := home.find_child("HomeDailyFeatureCard",true,false) as Control
 	var daily := home.find_child("HomeDailyChallengeButton",true,false) as Button
 	var nav := home.find_child("HomeBottomNav3D",true,false) as Control
-	if canvas == null or hero == null or choose == null or emblem == null or rank_panel == null or daily_rank == null or week_rank == null or ranks == null or daily_panel == null or daily == null or nav == null:
+	if canvas == null or hero == null or choose == null or emblem == null or rank_panel == null or daily_rank == null or week_rank == null or daily_hint == null or week_hint == null or ranks == null or daily_panel == null or daily == null or nav == null:
 		return _fail("Minimalist Home is missing required actions or rankings")
 	if not _same(hero,Rect2(21,126,346,168)):
 		return _fail("Welcome hero layout drifted")
@@ -39,12 +41,18 @@ func _run() -> void:
 	var showcase_heading := home.find_child("HomeShowcaseTitle",true,false) as Label
 	if showcase_heading == null or showcase_heading.text != "THREE GAMES. ONE APP.":
 		return _fail("Concise game showcase introduction is missing")
-	if not _same(rank_panel,Rect2(21,472,346,145)):
+	if not _same(rank_panel,Rect2(21,472,346,164)):
 		return _fail("Today/weekly rank card layout drifted")
-	if not _same(daily_panel,Rect2(21,634,346,88)):
+	if not _same(daily_panel,Rect2(21,652,346,84)):
 		return _fail("Daily feature layout drifted")
 	if not _same(nav,Rect2(13,757,362,70)):
 		return _fail("Bottom navigation is not stable")
+	if daily_hint.text != "PLAY TO JOIN" or week_hint.text != "PLAY TO JOIN":
+		return _fail("Unranked Home must explain how to earn a rank, never imply rank zero")
+	var subtitle := home.find_child("HomeWelcomeSubtitle",true,false) as Label
+	var tap_hint := home.find_child("HomeShowcaseEyebrow",true,false) as Label
+	if subtitle == null or subtitle.get_theme_font_size("font_size") < 13 or tap_hint == null or not tap_hint.text.contains("LEVELS"):
+		return _fail("Home needs legible introduction and a clear tap-to-levels affordance")
 	var showcase_end := 0.0
 	for game_id in ["rescue_rush","water_sort","block_puzzle"]:
 		var card := home.find_child("HomeShowcaseCard_%s" % game_id,true,false) as PanelContainer
@@ -61,6 +69,8 @@ func _run() -> void:
 			return _fail("Home explainer art must be static and battery efficient for %s" % game_id)
 		if name.text.is_empty() or tagline.text.is_empty() or tagline.autowrap_mode != TextServer.AUTOWRAP_OFF:
 			return _fail("Showcase does not explain %s" % game_id)
+		if name.get_theme_font_size("font_size") < 10 or tagline.get_theme_font_size("font_size") < 9:
+			return _fail("Showcase caption size has degraded below mobile readability limits")
 		if card.mouse_filter != Control.MOUSE_FILTER_IGNORE or art.mouse_filter != Control.MOUSE_FILTER_IGNORE:
 			return _fail("Game illustration intercepts taps intended for the shortcut")
 		var hit := home.find_child("HomeShowcaseOpenLevels_%s" % game_id,true,false) as Button
@@ -99,10 +109,23 @@ func _run() -> void:
 	await _frames(8)
 	var wide_stage := home.find_child("HomeWideStage",true,false) as Control
 	var wide_mark := home.find_child("HomeWideBrandMark",true,false) as TextureRect
-	if wide_stage == null or not wide_stage.visible or wide_mark == null or wide_mark.size.x < 700:
-		return _fail("Tablet branding is missing from neutral landscape Home")
+	if wide_stage == null or not wide_stage.visible or wide_mark == null or wide_mark.size.x < 230 or wide_mark.size.x > 270:
+		return _fail("Landscape Home should keep approved raster small enough to stay sharp")
 	if wide_mark.get_global_rect().position.x <= canvas.get_global_rect().end.x+40:
 		return _fail("Tablet branding overlaps the launcher")
+	# User-facing tablet art must be authored SVG, not a blown-up launcher PNG.
+	for game_id in ["rescue_rush","water_sort","block_puzzle"]:
+		var card := home.find_child("HomeWideShowcase_%s" % game_id,true,false) as Control
+		var art := home.find_child("HomeWideShowcaseArt_%s" % game_id,true,false) as Control
+		var button := home.find_child("HomeWideOpenLevels_%s" % game_id,true,false) as Button
+		if card == null or art == null or button == null:
+			return _fail("Landscape Home lacks %s illustrated level shortcut" % game_id)
+		if not button.get_global_rect().encloses(art.get_global_rect()) or not _same(card,Rect2(button.position,button.size)):
+			return _fail("Landscape %s tile image is not fully tappable" % game_id)
+		if button.action_mode != BaseButton.ACTION_MODE_BUTTON_RELEASE or not button.accessibility_name.contains("level selection"):
+			return _fail("Landscape %s shortcut: action_mode=%d focus=%d accessibility='%s'" % [game_id,int(button.action_mode),int(button.focus_mode),button.accessibility_name])
+		if button.get_global_rect().end.x > root.get_visible_rect().size.x or button.get_global_rect().end.y > root.get_visible_rect().size.y:
+			return _fail("Landscape game shortcut escapes the tablet screen")
 	main.queue_free()
 	await _frames(2)
 	print("HOME_CLEAR_ART_AND_ACCESSIBLE_GAME_SHORTCUTS_OK")

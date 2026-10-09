@@ -63,7 +63,9 @@ func build_home_launcher() -> void:
 	viewport_bg.name = "FigmaHomeViewportBackground"
 	viewport_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	# The viewport fallback stays neutral for letterboxing; the visible 390x844 scene itself carries the neutral premium depth treatment.
-	viewport_bg.color = DARK_BOTTOM if _home_dark() else BG_BOTTOM
+	# Match the authored Home material when letterboxed on wide screens;
+	# an unrelated black/grey surround previously made tablet Home feel split.
+	viewport_bg.color = Color("#1d2330") if _home_dark() else Color("#eaeaf0")
 	viewport_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(viewport_bg)
 
@@ -101,33 +103,116 @@ func _sync_wide_home_stage() -> void:
 	_build_wide_home_stage(wide_stage, available)
 
 func _build_wide_home_stage(stage: Control, available: Vector2) -> void:
-	# Home is an app-wide launcher, NOT a selected game's level screen.
-	# Wide screens use the UNJAM identity rather than prominently featuring a
-	# specific puzzle or adding another Continue action.
+	# Large screens should not stretch a 432px Android launcher raster to
+	# 900+px. Use vector-authored game art at a comfortable image size, and
+	# give the extra screen area a purpose: direct LEVEL selection shortcuts.
 	var dark := _home_dark()
-	var art_side := minf(available.y*0.58,available.x*0.38)
-	var mark := TextureRect.new()
-	mark.name = "HomeWideBrandMark"
-	mark.texture = preload("res://assets/icon_user_adaptive_432.png")
-	mark.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	mark.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	mark.position = Vector2(available.x*0.58,available.y*0.13)
-	mark.size = Vector2(art_side,art_side)
-	stage.add_child(mark)
-	var title := RefCanvas.label("ONE HOME. ALL YOUR PUZZLES.",int(clampf(available.y*0.028,32.0,54.0)),DARK_INK if dark else NAVY,true)
-	title.name = "HomeWideBrandTitle"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	title.position = Vector2(available.x*0.51,available.y*0.74)
-	title.size = Vector2(available.x*0.46,available.y*0.11)
-	stage.add_child(title)
-	var hint := RefCanvas.label("Choose Game  •  Daily Challenge  •  Your Rankings",int(clampf(available.y*0.017,19.0,27.0)),DARK_MUTED if dark else MUTED,false)
-	hint.name = "HomeWideBrandSubtitle"
-	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint.position = Vector2(available.x*0.52,available.y*0.87)
-	hint.size = Vector2(available.x*0.44,available.y*0.055)
-	stage.add_child(hint)
+	var ink := DARK_INK if dark else NAVY
+	var muted := DARK_MUTED if dark else MUTED
+	var logo := TextureRect.new()
+	logo.name = "HomeWideBrandMark"
+	logo.texture = preload("res://assets/icon_user_adaptive_432.png")
+	logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	logo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	logo.size = Vector2(250,250)
+	logo.position = Vector2(available.x*0.875,available.y*0.085)
+	stage.add_child(logo)
+
+	var stage_left := available.x*0.41
+	var stage_width := available.x*0.53
+	var heading := RefCanvas.label("THREE GAMES. ONE HOME.",int(clampf(available.y*0.035,34,52)),ink,true)
+	heading.name = "HomeWideBrandTitle"
+	heading.position = Vector2(stage_left,available.y*0.13)
+	heading.size = Vector2(stage_width-260,78)
+	stage.add_child(heading)
+	var subtitle := RefCanvas.label("Choose your puzzle. Jump straight to its levels.",int(clampf(available.y*0.019,21,29)),muted,false)
+	subtitle.name = "HomeWideBrandSubtitle"
+	subtitle.position = Vector2(stage_left,available.y*0.20)
+	subtitle.size = Vector2(stage_width,60)
+	stage.add_child(subtitle)
+
+	var card_width := minf(360,available.x*0.18)
+	var gap := clampf(available.x*0.016,22,50)
+	var total := card_width*3+gap*2
+	var first := available.x*0.68-total*0.5
+	var card_top := available.y*0.295
+	var card_height := minf(550,available.y*0.36)
+	var colors := [Color("#3fd69c"),Color("#43bfff"),Color("#bc8aff")]
+	var items := [
+		["rescue_rush","RESCUE RUSH","Free the pieces"],
+		["water_sort","WATER SORT","Sort the colors"],
+		["block_puzzle","BLOCK PUZZLE","Clear the rows"],
+	]
+	for i in range(items.size()):
+		var item: Array = items[i]
+		var id := String(item[0])
+		var x := first+float(i)*(card_width+gap)
+		var accent: Color = colors[i]
+		var panel := PanelContainer.new()
+		panel.name = "HomeWideShowcase_%s" % id
+		panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var background := Color("#293243") if dark else Color("#f3f2f5")
+		panel.add_theme_stylebox_override("panel",RefCanvas.rounded_gradient3(
+			background.lightened(0.07),background,background.darkened(0.06),
+			25,Color(accent,0.55),1,0.17))
+		RefCanvas.set_rect(panel,x,card_top,card_width,card_height)
+		stage.add_child(panel)
+
+		var illustration := GAME_ART_SCRIPT.new()
+		illustration.name = "HomeWideShowcaseArt_%s" % id
+		illustration.configure(id,true,dark)
+		illustration.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var art_side := minf(card_width-44,card_height*0.64)
+		RefCanvas.set_rect(illustration,x+(card_width-art_side)*0.5,card_top+28,art_side,art_side)
+		stage.add_child(illustration)
+
+		var title := RefCanvas.label(String(item[1]),int(clampf(card_width*0.081,23,30)),
+			accent.lightened(0.20) if dark else accent.darkened(0.56),true)
+		title.name = "HomeWideShowcaseTitle_%s" % id
+		title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		title.position = Vector2(x+12,card_top+art_side+44)
+		title.size = Vector2(card_width-24,47)
+		stage.add_child(title)
+		var description := RefCanvas.label(String(item[2]),int(clampf(card_width*0.058,18,22)),muted,false)
+		description.name = "HomeWideShowcaseCaption_%s" % id
+		description.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		description.position = Vector2(x+14,card_top+art_side+100)
+		description.size = Vector2(card_width-28,42)
+		stage.add_child(description)
+		var shortcut := Button.new()
+		shortcut.name = "HomeWideOpenLevels_%s" % id
+		shortcut.set_meta("unjam_figma_exact_geometry",true)
+		shortcut.set_meta("unjam_preserve_control_geometry",true)
+		shortcut.set_meta("unjam_preserve_surface_style",true)
+		shortcut.flat = false
+		shortcut.focus_mode = Control.FOCUS_ALL
+		shortcut.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
+		shortcut.mouse_filter = Control.MOUSE_FILTER_STOP
+		shortcut.accessibility_name = "Open %s level selection" % String(item[1]).capitalize()
+		shortcut.tooltip_text = "Choose a %s level" % String(item[1]).capitalize()
+		shortcut.add_theme_stylebox_override("normal",RefCanvas.solid_box(Color.TRANSPARENT,25))
+		shortcut.add_theme_stylebox_override("hover",RefCanvas.solid_box(Color(accent,0.10),25,Color(accent,0.5),1))
+		shortcut.add_theme_stylebox_override("pressed",RefCanvas.solid_box(Color(accent,0.18),25,accent,2))
+		shortcut.add_theme_stylebox_override("focus",RefCanvas.solid_box(Color.TRANSPARENT,25,accent,3))
+		RefCanvas.set_rect(shortcut,x,card_top,card_width,card_height)
+		shortcut.pressed.connect(_open_game_levels.bind(id))
+		stage.add_child(shortcut)
+		# Surface initialization can reset action_mode on dynamically mounted
+		# buttons. Reassert release-only so a tap cannot fall through to gameplay.
+		shortcut.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
+		shortcut.set_deferred("action_mode",BaseButton.ACTION_MODE_BUTTON_RELEASE)
+		shortcut.focus_mode = Control.FOCUS_ALL
+		shortcut.set_deferred("focus_mode",Control.FOCUS_ALL)
+		shortcut.set_meta("unjam_authored_focus_mode",int(Control.FOCUS_ALL))
+
+	var footer := RefCanvas.label("PLAY • SOLVE • CLIMB THE LEADERBOARD",
+		int(clampf(available.y*0.022,23,32)),GOLD if dark else Color("#755b18"),true)
+	footer.name = "HomeWideShowcaseFooter"
+	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	footer.position = Vector2(stage_left,card_top+card_height+60)
+	footer.size = Vector2(stage_width,60)
+	stage.add_child(footer)
 
 func _build_reference_home(canvas: Control) -> void:
 	_add_frame_background(canvas)
@@ -172,9 +257,9 @@ func _add_frame_background(canvas: Control) -> void:
 	var dark := _home_dark()
 	var bg := PanelContainer.new()
 	bg.name = "FigmaHomeBackground"
-	var fill := Color("#202329") if dark else Color("#eae7e1")
+	var fill := Color("#1d2330") if dark else Color("#eaeaf0")
 	bg.add_theme_stylebox_override("panel",RefCanvas.rounded_gradient3(
-		fill.lightened(0.05),fill,fill.darkened(0.055),32,Color("#71768a",0.10),1,0.08))
+		fill.lightened(0.065),fill,fill.darkened(0.075),32,Color("#71768a",0.11),1,0.08))
 	RefCanvas.set_rect(bg,0,0,390,844)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(bg)
@@ -183,16 +268,17 @@ func _add_hero(canvas: Control) -> void:
 	var dark := _home_dark()
 	var hero := PanelContainer.new()
 	hero.name = "FigmaHomeHero"
-	var fill := Color("#282d37") if dark else Color("#f7f4ee")
+	var fill := Color("#2c3242") if dark else Color("#faf8f2")
 	hero.add_theme_stylebox_override("panel",RefCanvas.rounded_gradient3(
 		fill.lightened(0.07),fill,fill.darkened(0.08),24,
-		Color("#ad94eb",0.33) if dark else Color("#bba77c",0.35),1,0.17))
+		Color("#789dff",0.45) if dark else Color("#a7a5bd",0.44),1,0.17))
 	RefCanvas.set_rect(hero,21,126,346,168)
 	hero.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(hero)
-	var title := _add_text(canvas,"PLAY YOUR WAY.",Rect2(40,143,233,38),25,DARK_INK if dark else NAVY,true)
+	var title := _add_text(canvas,"PLAY YOUR WAY.",Rect2(40,145,221,38),25,DARK_INK if dark else NAVY,true)
 	title.name = "HomeWelcomeTitle"
-	var subtitle := _add_text(canvas,"Three puzzles. Endless little wins.",Rect2(40,188,291,25),13,DARK_MUTED if dark else MUTED,false)
+	RefCanvas.fit_single_line_text(title,219.0,25,21)
+	var subtitle := _add_text(canvas,"Puzzle. Compete. Repeat.",Rect2(40,190,226,24),14,DARK_MUTED if dark else MUTED,false)
 	subtitle.name = "HomeWelcomeSubtitle"
 	# Compact neutral brand mark: Home is NOT a selected game's landing page.
 	var mark := TextureRect.new()
@@ -217,11 +303,15 @@ func _add_game_showcase(canvas: Control) -> void:
 	# SELECT screen, never straight to gameplay. Retain the large Choose Game
 	# button as the primary launcher and the quiet low-cost illustrated strip.
 	var dark := _home_dark()
-	var header := _add_text(canvas,"THREE GAMES. ONE APP.",Rect2(22,310,246,24),
-		15,DARK_INK if dark else NAVY,true)
+	var header := _add_text(canvas,"THREE GAMES. ONE APP.",Rect2(22,310,236,24),
+		16,DARK_INK if dark else NAVY,true)
 	header.name = "HomeShowcaseTitle"
-	var note := _add_text(canvas,"TAP A GAME ›",Rect2(281,314,85,18),
-		10,DARK_MUTED if dark else MUTED,true)
+	var note := _add_text(canvas,"LEVELS ›",Rect2(281,314,85,20),
+		11,DARK_MUTED if dark else MUTED,true)
+	RefCanvas.fit_single_line_text(note,82.0,11,10)
+	note.custom_minimum_size = Vector2.ZERO
+	note.size = Vector2(85,20)
+	note.clip_text = true
 	note.name = "HomeShowcaseEyebrow"
 	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var games := [
@@ -236,9 +326,9 @@ func _add_game_showcase(canvas: Control) -> void:
 		var panel := PanelContainer.new()
 		panel.name = "HomeShowcaseCard_%s" % id
 		var neutral := Color("#272d38") if dark else Color("#f8f7f4")
-		var tint := neutral.lerp(accent.darkened(0.66) if dark else accent.lightened(0.67),0.22)
+		var tint := neutral.lerp(accent.darkened(0.58) if dark else accent.lightened(0.65),0.29)
 		panel.add_theme_stylebox_override("panel",RefCanvas.rounded_gradient3(
-			tint.lightened(0.07),tint,tint.darkened(0.06),16,Color(accent,0.37),1,0.20))
+			tint.lightened(0.08),tint,tint.darkened(0.08),16,Color(accent,0.56),1,0.22))
 		RefCanvas.set_rect(panel,left,344,110,112)
 		panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		panel.accessibility_name = "%s: %s" % [String(game["name"]),String(game["description"])]
@@ -250,25 +340,25 @@ func _add_game_showcase(canvas: Control) -> void:
 		art.name = "HomeShowcaseArt_%s" % id
 		art.configure(id,true,dark)
 		art.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		RefCanvas.set_rect(art,left+14,346,82,67)
+		RefCanvas.set_rect(art,left+12,346,86,70)
 		canvas.add_child(art)
-		var label := _add_text(canvas,String(game["name"]),Rect2(left+3,414,104,17),
-			11,accent if dark else accent.darkened(0.48),true)
+		var label := _add_text(canvas,String(game["name"]),Rect2(left+3,417,104,18),
+			12,accent.lightened(0.16) if dark else accent.darkened(0.56),true)
 		label.name = "HomeShowcaseName_%s" % id
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		RefCanvas.fit_single_line_text(label,101.0,11,10)
+		RefCanvas.fit_single_line_text(label,102.0,12,10)
 		label.custom_minimum_size = Vector2.ZERO
-		label.size = Vector2(104,17)
-		var tagline := _add_text(canvas,String(game["description"]),Rect2(left+7,433,96,19),
-			10,DARK_MUTED if dark else MUTED,false)
+		label.size = Vector2(104,18)
+		var tagline := _add_text(canvas,String(game["description"]),Rect2(left+6,436,98,17),
+			11,DARK_INK if dark else Color("#484c59"),false)
 		tagline.name = "HomeShowcaseTagline_%s" % id
 		tagline.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		tagline.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		tagline.autowrap_mode = TextServer.AUTOWRAP_OFF
-		RefCanvas.fit_single_line_text(tagline,94.0,10,8)
+		RefCanvas.fit_single_line_text(tagline,97.0,11,9)
 		tagline.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		tagline.custom_minimum_size = Vector2.ZERO
-		tagline.size = Vector2(96,19)
+		tagline.size = Vector2(98,17)
 		tagline.clip_text = true
 
 		# Topmost transparent touch layer covers the entire image, name and
@@ -334,31 +424,38 @@ func _add_rank_summary(canvas: Control) -> void:
 	panel.name = "HomeRankSummaryCard"
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.add_theme_stylebox_override("panel",RefCanvas.rounded_gradient3(
-		Color("#292b39") if dark else Color("#eeeaf6"),
-		Color("#242637") if dark else Color("#e6e0f1"),
-		Color("#212331") if dark else Color("#ddd7eb"),
-		19,Color("#9f91d8",0.38),1,0.10))
-	RefCanvas.set_rect(panel,21,472,346,145)
+		Color("#323447") if dark else Color("#f1edfa"),
+		Color("#282d43") if dark else Color("#e7e2f4"),
+		Color("#22273b") if dark else Color("#ddd9ed"),
+		19,Color("#ad96ef",0.55),1,0.14))
+	RefCanvas.set_rect(panel,21,472,346,164)
 	canvas.add_child(panel)
-	var heading := _add_text(canvas,"YOUR RANKINGS",Rect2(37,481,280,22),
-		15,DARK_INK if dark else NAVY,true)
+	var heading := _add_text(canvas,"YOUR RANKINGS",Rect2(37,480,280,22),
+		16,DARK_INK if dark else NAVY,true)
 	heading.name = "HomeRankTitle"
-	var daily_tag := _add_text(canvas,"TODAY",Rect2(38,507,140,20),
-		11,DARK_MUTED if dark else MUTED,true)
+	var daily_tag := _add_text(canvas,"TODAY",Rect2(38,505,140,21),
+		12,DARK_MUTED if dark else Color("#424a59"),true)
 	daily_tag.name = "HomeRankDailyLabel"
-	var daily_rank := _add_text(canvas,"—",Rect2(38,533,135,34),
-		27,GOLD if dark else Color("#7f5a16"),true)
+	var daily_rank := _add_text(canvas,"—",Rect2(38,530,135,34),
+		24,GOLD if dark else Color("#714e12"),true)
 	daily_rank.name = "HomeRankDailyValue"
-	var weekly_tag := _add_text(canvas,"BEST WEEKLY",Rect2(200,507,145,20),
-		11,DARK_MUTED if dark else MUTED,true)
+	var daily_hint := _add_text(canvas,"PLAY TO JOIN",Rect2(38,567,140,18),
+		11,DARK_MUTED if dark else Color("#424a59"),false)
+	daily_hint.name = "HomeRankDailyHint"
+	var weekly_tag := _add_text(canvas,"BEST WEEKLY",Rect2(200,505,145,21),
+		12,DARK_MUTED if dark else Color("#424a59"),true)
 	weekly_tag.name = "HomeRankWeeklyLabel"
-	var weekly_rank := _add_text(canvas,"—",Rect2(200,533,135,34),
-		27,GOLD if dark else Color("#7f5a16"),true)
+	var weekly_rank := _add_text(canvas,"—",Rect2(200,530,135,34),
+		24,GOLD if dark else Color("#714e12"),true)
 	weekly_rank.name = "HomeRankValue"
-	var open := _add_action(canvas,Rect2(38,570,314,44),Color("#6952bd"),
-		"★  VIEW FULL LEADERBOARD",13,OFF_WHITE,Callable(self,"_open_compete"),14)
+	var weekly_hint := _add_text(canvas,"PLAY TO JOIN",Rect2(200,567,144,18),
+		11,DARK_MUTED if dark else Color("#424a59"),false)
+	weekly_hint.name = "HomeRankWeeklyHint"
+	var open := _add_action(canvas,Rect2(38,591,314,44),Color("#7757cf"),
+		"★  VIEW FULL LEADERBOARD",14,OFF_WHITE,Callable(self,"_open_compete"),14)
 	open.name = "HomeDailyGamesButton"
 	open.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
+	open.accessibility_name = "Open full-screen Today, Weekly and All-Time leaderboards"
 	open.tooltip_text = "Open full-screen Today, Weekly and All-Time player rankings"
 
 func _on_home_ranking_updated(_data: Dictionary) -> void:
@@ -380,6 +477,12 @@ func _on_home_ranking_updated(_data: Dictionary) -> void:
 			best = position
 	weekly.text = "#%d" % best if best > 0 else "—"
 	weekly.accessibility_name = "Best weekly game leaderboard rank: %d" % best if best > 0 else "No weekly rank yet"
+	var daily_hint := figma_canvas.get_node_or_null("HomeRankDailyHint") as Label
+	if daily_hint != null:
+		daily_hint.text = "ON THE BOARD" if today_rank > 0 else "PLAY TO JOIN"
+	var weekly_hint := figma_canvas.get_node_or_null("HomeRankWeeklyHint") as Label
+	if weekly_hint != null:
+		weekly_hint.text = "ON THE BOARD" if best > 0 else "PLAY TO JOIN"
 
 func _add_daily_feature(canvas: Control) -> void:
 	var dark := _home_dark()
@@ -387,20 +490,20 @@ func _add_daily_feature(canvas: Control) -> void:
 	panel.name = "HomeDailyFeatureCard"
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.add_theme_stylebox_override("panel",RefCanvas.rounded_gradient3(
-		Color("#28382f") if dark else Color("#e4f5ea"),
-		Color("#223129") if dark else Color("#d9efe1"),
-		Color("#1b2820") if dark else Color("#cae7d4"),
+		Color("#294536") if dark else Color("#e3f9e9"),
+		Color("#263c30") if dark else Color("#d9f2e1"),
+		Color("#22342a") if dark else Color("#cbead7"),
 		18,Color("#6ab894",0.40),1,0.08))
-	RefCanvas.set_rect(panel,21,634,346,88)
+	RefCanvas.set_rect(panel,21,652,346,84)
 	canvas.add_child(panel)
-	var title := _add_text(canvas,"DAILY CHALLENGE",Rect2(36,644,178,27),
+	var title := _add_text(canvas,"DAILY CHALLENGE",Rect2(36,662,178,27),
 		16,DARK_INK if dark else NAVY,true)
 	title.name = "HomeDailyFeatureTitle"
-	var subtitle := _add_text(canvas,"A fresh puzzle each day",Rect2(36,684,171,23),
-		11,DARK_MUTED if dark else MUTED,false)
+	var subtitle := _add_text(canvas,"A new challenge daily",Rect2(36,699,171,24),
+		12,DARK_MUTED if dark else Color("#3b624c"),false)
 	subtitle.name = "HomeDailyFeatureSubtitle"
-	var daily := _add_action(canvas,Rect2(225,653,126,52),Color("#31885d"),
-		"PLAY DAILY",12,OFF_WHITE,Callable(self,"_open_daily_games"),14)
+	var daily := _add_action(canvas,Rect2(225,668,126,52),Color("#257e55"),
+		"PLAY DAILY",13,OFF_WHITE,Callable(self,"_open_daily_games"),14)
 	daily.name = "HomeDailyChallengeButton"
 	daily.accessibility_name = "Play today's Daily challenges"
 
