@@ -12,7 +12,7 @@ func _run() -> void:
 	if not _assert(save != null and premium != null, "Game settings/FX autoloads missing"): return
 	var defaults := FileAccess.get_file_as_string("res://scripts/core/save_manager.gd")
 	if not _assert(defaults.contains('"gentle_effects": true') and defaults.contains('"gentle_effects",'), "Gentle Effects must start enabled and survive a gameplay reset"): return
-	var had_setting := save.data.has("gentle_effects")
+	var had_setting: bool = bool(save.data.has("gentle_effects"))
 	var old_setting := bool(save.data.get("gentle_effects",true))
 	save.data["gentle_effects"] = true
 	premium.call("refresh_effect_intensity")
