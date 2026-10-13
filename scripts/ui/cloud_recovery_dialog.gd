@@ -9,6 +9,12 @@ var _confirm_code := ""
 var _restore_input: LineEdit
 var _restore_button: Button
 var _status: Label
+var _cloud_sync_status: Label
+
+func _on_cloud_status_changed(message: String) -> void:
+	if _cloud_sync_status != null and is_instance_valid(_cloud_sync_status):
+		_cloud_sync_status.text = message
+		_cloud_sync_status.accessibility_name = message
 
 func _ready() -> void:
 	layer = 105
@@ -61,6 +67,10 @@ func _ready() -> void:
 
 	_add_label(stack, "CLOUD BACKUP", 23, INK, false)
 	_add_label(stack, "Your private code restores gameplay progress after reinstalling. It is not a Google Play purchase receipt.", 13, MUTED, true)
+	_cloud_sync_status = _add_label(stack, CloudSaveManager.backup_status(), 12, MUTED, true)
+	_cloud_sync_status.name = "CloudBackupSyncStatus"
+	_cloud_sync_status.accessibility_name = _cloud_sync_status.text
+	CloudSaveManager.cloud_status_changed.connect(_on_cloud_status_changed)
 	_add_label(stack, "YOUR PRIVATE RECOVERY CODE", 14, ACCENT, false)
 	var code := CloudSaveManager.recovery_code()
 	for i in range(4):

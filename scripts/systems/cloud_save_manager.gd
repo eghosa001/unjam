@@ -1,8 +1,12 @@
 extends Node
 
+signal cloud_status_changed(message: String)
+
 const FUNCTION_NAME := "unjam-cloud-save"
 const REQUEST_TIMEOUT_SECONDS := 15.0
 const SYNC_DEBOUNCE_SECONDS := 2.5
+const SYNC_RETRY_START_SECONDS := 20.0
+const SYNC_RETRY_MAX_SECONDS := 300.0
 const CLOUD_ID_BYTES := 32
 # Three complete 10,000-level campaigns can exceed the legacy 96 KiB cap.
 # This limit is shared with the Edge Function; verify before sending.
@@ -64,6 +68,23 @@ var _initial_reconciled := false
 var _request_in_flight := false
 var _pending_push := false
 var _suppress_save_event := false
+var _sync_retry_delay := SYNC_RETRY_START_SECONDS
+var _cloud_status := "Checking cloud backup..."
+
+func backup_status() -> String:
+	return _cloud_status
+
+func _set_cloud_status(message: String) -> void:
+	if _cloud_status == message:
+		return
+	_cloud_status = message
+	cloud_status_changed.emit(message)
+
+func _schedule_failed_cloud_retry() -> void:
+	# In particular, an offline cold start must retry WITHOUT a new local save.
+	_schedule_push(_sync_retry_delay)
+	_sync_retry_delay = minf(SYNC_RETRY_MAX_SECONDS, _sync_retry_delay * 2.0)
+
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -160,11 +181,12 @@ func _schedule_push(delay: float = SYNC_DEBOUNCE_SECONDS) -> void:
 	_sync_timer.start()
 
 func _initial_reconcile() -> void:
+	_set_cloud_status("Checking cloud backup...")
 	var cloud_id := String(SaveManager.data.get("cloud_save_id", ""))
 	_request_json({
 		"action": "pull",
 		"cloud_save_id": cloud_id,
-	}, func(ok: bool, status: int, body: Dictionary) -> void:
+	}, func(ok: bool, _status: int, body: Dictionary) -> void:
 		var local_revision := maxi(0, int(SaveManager.data.get("cloud_save_revision", 0)))
 		if ok and bool(body.get("exists", false)):
 			var remote_revision := maxi(0, int(body.get("revision", 0)))
@@ -174,21 +196,27 @@ func _initial_reconcile() -> void:
 				_apply_remote(combined, remote_revision)
 				if combined != remote_value:
 					_initial_reconciled = true
+					_set_cloud_status("Syncing offline progress to cloud...")
 					_schedule_push(0.4)
 					return
 			elif remote_value is Dictionary and remote_value != _snapshot():
-				# Same/older server revision with different local data means this
-				# install changed after its last successful upload.
+				# Local progress changed after the last successful upload.
 				_initial_reconciled = true
+				_set_cloud_status("Uploading newer phone progress...")
 				_schedule_push(0.4)
 				return
 		_initial_reconciled = true
-		if ok and not bool(body.get("exists", false)):
-			_schedule_push(0.2)
-		elif not ok:
-			# Never block gameplay on networking. A later local save will retry,
-			# and server-side revision checks prevent stale overwrite.
+		if ok:
+			_sync_retry_delay = SYNC_RETRY_START_SECONDS
+			if not bool(body.get("exists", false)):
+				_set_cloud_status("Creating your cloud backup...")
+				_schedule_push(0.2)
+			else:
+				_set_cloud_status("Cloud backup synced.")
+		else:
 			_pending_push = true
+			_set_cloud_status("Cloud is offline. Progress is saved locally; sync will retry.")
+			_schedule_failed_cloud_retry()
 	)
 
 # Only merge monotonic gameplay achievements on cloud revision conflicts.
@@ -310,6 +338,7 @@ func _push_now() -> void:
 		# A huge backup is safer kept locally than retried every five seconds.
 		# An eventual smaller save will schedule another push normally.
 		_request_in_flight = false
+		_set_cloud_status("Cloud backup is too large. Your progress is saved on this phone.")
 		return
 	var payload := {
 		"action": "push",
@@ -320,6 +349,10 @@ func _push_now() -> void:
 	_request_json(payload, func(ok: bool, status: int, body: Dictionary) -> void:
 		_request_in_flight = false
 		if ok:
+			_sync_retry_delay = SYNC_RETRY_START_SECONDS
+			if _sync_timer != null:
+				_sync_timer.stop()
+			_set_cloud_status("Cloud backup synced.")
 			var new_revision := maxi(0, int(body.get("revision", SaveManager.data.get("cloud_save_revision", 0))))
 			if new_revision != int(SaveManager.data.get("cloud_save_revision", 0)):
 				_suppress_save_event = true
@@ -327,6 +360,7 @@ func _push_now() -> void:
 				SaveManager.save()
 				_suppress_save_event = false
 		elif status == 409:
+			_set_cloud_status("Cloud changed on another device. Reconciling saved levels...")
 			var remote_value: Variant = body.get("save", {})
 			var remote_revision := maxi(0, int(body.get("revision", 0)))
 			if remote_value is Dictionary and remote_revision > int(SaveManager.data.get("cloud_save_revision", 0)):
@@ -338,9 +372,10 @@ func _push_now() -> void:
 				_pending_push = true
 		else:
 			_pending_push = true
+			_set_cloud_status("Cloud is offline. Progress is saved locally; sync will retry.")
 		if _pending_push:
 			_pending_push = false
-			_schedule_push(5.0)
+			_schedule_failed_cloud_retry()
 	)
 
 func _notification(what: int) -> void:
