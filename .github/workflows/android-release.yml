@@ -6,15 +6,11 @@ on:
       version_name:
         description: Human-readable version (for example 1.0.0)
         required: true
-        default: 1.0.10
+        default: 1.0.11
       version_code:
         description: Monotonically increasing Google Play version code
         required: true
-        default: 10
-  push:
-    branches: [main]
-    paths:
-      - ".github/workflows/android-release.yml"
+        default: 11
 
 permissions:
   contents: read
