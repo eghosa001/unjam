@@ -1714,7 +1714,7 @@ func build_collection_upgrades() -> void:
 		upgrade_title.custom_minimum_size = Vector2.ZERO
 		_fit_single_line_control_text(upgrade_title, 150.0, 15, 12)
 		var effect_full := EconomyManager.collection_effect_text(id,level)
-		var effect_text := _figma_text(canvas,effect_full,Rect2(37,y+29,154,20),12,Color("#d9e2f0") if _dark() else Color("#526678"))
+		var effect_text := _figma_text(canvas,effect_full,Rect2(37,y+28,154,18),12,Color("#d9e2f0") if _dark() else Color("#526678"))
 		effect_text.name = "CollectionUpgradeEffect/%s" % id
 		effect_text.tooltip_text = effect_full
 		effect_text.accessibility_name = effect_full
@@ -1730,7 +1730,7 @@ func build_collection_upgrades() -> void:
 		var state_text_color := Color("#4d7a59") if maxed else Color.WHITE
 		var state := _figma_button(canvas, "CollectionUpgrade/%s" % id, state_text, Rect2(251,y+13,96,44), pill_fill, Callable(), state_text_color, 12, 12)
 		state.accessibility_name = "%s, level %d of %d. %s" % [display_name,level,EconomyManager.COLLECTION_MAX_LEVEL,state_text]
-		var level_badge := _figma_text(canvas,"LEVEL %d/%d" % [level,EconomyManager.COLLECTION_MAX_LEVEL],Rect2(37,y+51,156,17),12,Color("#f6d481") if _dark() else Color("#536474"),false)
+		var level_badge := _figma_text(canvas,"LEVEL %d/%d" % [level,EconomyManager.COLLECTION_MAX_LEVEL],Rect2(37,y+48,156,18),12,Color("#f6d481") if _dark() else Color("#536474"),false)
 		level_badge.name = "CollectionUpgradeLevel/%s" % id
 		level_badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		state.disabled = maxed
