@@ -72,6 +72,7 @@ const DEFAULT_DATA := {
 	"collection_levels": {},
 	"crown_tokens": 0,
 	"competition_claimed_periods": [],
+	"competition_pending_campaign_results": [],
 	"competition_display_name": "",
 	"reward_double_claims": [],
 	"meta_progression": {},
