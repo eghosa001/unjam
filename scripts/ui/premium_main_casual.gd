@@ -753,14 +753,32 @@ func _figma_goal_row(canvas: Control, row: Dictionary, period: String, y: float)
 	goal_progress.accessibility_name = "%s: %d of %d complete, %s" % [String(row.get("title","GOAL")),int(row.get("progress",0)),int(row.get("target",1)),reward_text]
 	goal_progress.tooltip_text = goal_progress.accessibility_name
 	_fit_single_line_control_text(goal_progress,186.0,13,12)
-	var action_text := "DONE" if claimed else ("CLAIM" if claimable else "GO")
+	var goal_id := String(row.get("id",""))
+	var goal_title_text := String(row.get("title","GOAL"))
+	var action_text := "DONE" if claimed else ("CLAIM" if claimable else "PLAY")
 	var action_fill := Color("#7d8a94") if claimed else (FIGMA_GREEN if claimable else Color("#7a57e0"))
-	var action := _figma_button(canvas,"GoalAction/%s/%s" % [period,String(row.get("id",""))],action_text,Rect2(274,y,78,44),action_fill,Callable(),Color.WHITE,11,10)
+	var action := _figma_button(canvas,"GoalAction/%s/%s" % [period,goal_id],action_text,Rect2(274,y,78,44),action_fill,Callable(),Color.WHITE,11,12)
 	action.disabled = claimed
-	if claimable:
-		action.pressed.connect(_claim_goal.bind(period,String(row.get("id",""))))
-	elif not claimed:
-		action.pressed.connect(build_home)
+	if claimed:
+		var done_fill := Color("#315945") if _dark() else Color("#d8e9de")
+		action.add_theme_stylebox_override("disabled",FigmaReferenceCanvas.solid_box(done_fill,12,Color(FIGMA_GREEN,0.30),1))
+		action.add_theme_color_override("font_disabled_color",Color("#e9fff1") if _dark() else Color("#235337"))
+		action.accessibility_name = "%s: reward already claimed" % goal_title_text
+	elif claimable:
+		action.accessibility_name = "Claim %s mission reward" % goal_title_text
+		action.pressed.connect(_claim_goal.bind(period,goal_id))
+	else:
+		action.accessibility_name = "Play towards %s" % goal_title_text
+		action.pressed.connect(_open_goal_progress.bind(goal_id))
+	action.tooltip_text = action.accessibility_name
+
+func _open_goal_progress(goal_id: String) -> void:
+	# A Daily mission should take the player directly to the Daily hub.
+	# Ordinary level/star goals open Choose Game; Home adds an unnecessary tap.
+	if goal_id in ["daily1","daily5"]:
+		build_daily_games()
+	else:
+		_open_games_surface()
 
 func _claim_daily_login() -> void:
 	if MetaProgressionManager.claim_daily_login() > 0:
@@ -1427,9 +1445,9 @@ func build_compete_leaderboard(refresh_remote: bool = true) -> void:
 		# and had no clear hierarchy on compact 540x960 screens. Give the weekly
 		# settlement explanation a quiet, opaque home below the actions.
 		_figma_card(canvas,"CompetitionPrizeTimingCard",Rect2(31,651,328,58),Color("#fffaf2"),Color(accent,0.26),14)
-		var notice_title := _figma_text(canvas,"WEEKLY PRIZES",Rect2(44,658,300,17),13,accent)
+		var notice_title := _figma_text(canvas,"WEEKLY PRIZES",Rect2(44,655,300,17),13,accent)
 		notice_title.name = "CompetitionPrizeTimingHeading"
-		var note := _figma_text(canvas,"Finalized Tuesday (UTC), after late results sync.",Rect2(44,678,300,23),12,FIGMA_MUTED,true)
+		var note := _figma_text(canvas,"Finalized Tuesday (UTC), after late results sync.",Rect2(44,685,300,22),12,FIGMA_MUTED,true)
 		note.name = "CompetitionPrizeTimingNote"
 		_fit_wrapped_text(note,292.0,12,11)
 		note.accessibility_name = "Weekly rewards finalize Tuesday UTC after all Sunday results have had Monday to sync."
