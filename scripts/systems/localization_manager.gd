@@ -297,9 +297,16 @@ func _translate_control(node: Node) -> void:
 		return
 	if node is Label:
 		var label := node as Label
-		var source := _translation_source(label, label.text)
+		var displayed := label.text
+		var source := _translation_source(label, displayed)
 		var translated := localize(source)
 		label.set_meta("unjam_l10n_display", translated)
+		# Screen readers and long-press hints must track the visible language,
+		# even when the label has to be ellipsized in the authored layout.
+		if label.accessibility_name.is_empty() or label.accessibility_name == displayed or label.accessibility_name == source:
+			label.accessibility_name = translated
+		if label.tooltip_text.is_empty() or label.tooltip_text == displayed or label.tooltip_text == source:
+			label.tooltip_text = translated
 		if translated != label.text:
 			label.text = translated
 			_fit_localized_single_line(label, translated)
@@ -313,6 +320,8 @@ func _translate_control(node: Node) -> void:
 		# previous language spoken when accessibility_name mirrored button text.
 		if button.accessibility_name.is_empty() or button.accessibility_name == displayed or button.accessibility_name == source:
 			button.accessibility_name = translated
+		if button.tooltip_text.is_empty() or button.tooltip_text == displayed or button.tooltip_text == source:
+			button.tooltip_text = translated
 		if translated != displayed:
 			button.text = translated
 			_fit_localized_single_line(button, translated)
@@ -338,7 +347,9 @@ func _fit_localized_single_line(control: Control, translated: String) -> void:
 	if not control.has_meta("unjam_l10n_font_size"):
 		control.set_meta("unjam_l10n_font_size", control.get_theme_font_size("font_size"))
 	var current_size := int(control.get_meta("unjam_l10n_font_size"))
-	var min_size := maxi(9, current_size - 4)
+	# Earlier fallback allowed 9px translations, illegible at phone scale.
+	# Preserve a 12px floor for all labels authored at or above that size.
+	var min_size := mini(current_size, maxi(12, current_size - 4))
 	var available := maxf(18.0, control.size.x - (16.0 if control is Button else 4.0))
 	while current_size > min_size and font.get_string_size(translated, HORIZONTAL_ALIGNMENT_LEFT, -1, current_size).x > available:
 		current_size -= 1
@@ -347,3 +358,5 @@ func _fit_localized_single_line(control: Control, translated: String) -> void:
 		var label := control as Label
 		label.clip_text = true
 		label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	elif control is Button:
+		(control as Button).clip_text = true
