@@ -1,5 +1,7 @@
 extends Node
 
+const SCREEN_LABELS = preload("res://scripts/systems/localization_screen_copy.gd")
+
 const SUPPORTED_LANGUAGES := ["en", "es", "fr", "pt", "de", "it", "ha", "yo", "ig"]
 
 const TRANSLATIONS := {
@@ -219,6 +221,9 @@ func localize(text_value: String) -> String:
 	var table: Dictionary = TRANSLATIONS.get(language_code, {})
 	if table.has(text_value):
 		return String(table[text_value])
+	var screens: Dictionary = SCREEN_LABELS.SCREEN_COPY.get(language_code, {})
+	if screens.has(text_value):
+		return String(screens[text_value])
 	var result := text_value
 	for key in DYNAMIC_KEYS:
 		if table.has(key):
