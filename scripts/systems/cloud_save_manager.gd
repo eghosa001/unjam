@@ -4,6 +4,9 @@ const FUNCTION_NAME := "unjam-cloud-save"
 const REQUEST_TIMEOUT_SECONDS := 15.0
 const SYNC_DEBOUNCE_SECONDS := 2.5
 const CLOUD_ID_BYTES := 32
+# Three complete 10,000-level campaigns can exceed the legacy 96 KiB cap.
+# This limit is shared with the Edge Function; verify before sending.
+const MAX_CLOUD_PAYLOAD_BYTES := 512 * 1024
 
 # Paid-entitlement/transaction fields are intentionally absent. Google Play and
 # the purchase ledger remain authoritative for Remove Ads, Starter Pack and
@@ -19,7 +22,11 @@ const CLOUD_KEYS := [
 	"music",
 	"reduce_motion",
 	"fast_animation",
+	"gentle_effects",
 	"language_code",
+	# Keep all three campaigns and resumable Water/Block runs in a backup.
+	"game_progress",
+	"multi_active_runs",
 	"decorations",
 	"collection_levels",
 	"crown_tokens",
@@ -188,6 +195,10 @@ func _apply_remote(remote: Dictionary, revision: int) -> void:
 	SaveManager.data.cloud_save_revision = max(0, revision)
 	if SaveManager.has_method("_sanitize"):
 		SaveManager.call("_sanitize")
+	# MultiGameManager caches stars; replacing cloud progression must invalidate
+	# those values, otherwise the UI displays old scores after restore.
+	if MultiGameManager.has_method("invalidate_cloud_progress_cache"):
+		MultiGameManager.invalidate_cloud_progress_cache()
 	SaveManager.save()
 	_suppress_save_event = false
 
@@ -206,11 +217,17 @@ func _push_now() -> void:
 		return
 	_request_in_flight = true
 	_pending_push = false
+	var save_snapshot := _snapshot()
+	if JSON.stringify(save_snapshot).to_utf8_buffer().size() > MAX_CLOUD_PAYLOAD_BYTES:
+		# A huge backup is safer kept locally than retried every five seconds.
+		# An eventual smaller save will schedule another push normally.
+		_request_in_flight = false
+		return
 	var payload := {
 		"action": "push",
 		"cloud_save_id": String(SaveManager.data.get("cloud_save_id", "")),
 		"base_revision": maxi(0, int(SaveManager.data.get("cloud_save_revision", 0))),
-		"save": _snapshot(),
+		"save": save_snapshot,
 	}
 	_request_json(payload, func(ok: bool, status: int, body: Dictionary) -> void:
 		_request_in_flight = false

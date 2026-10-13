@@ -11,6 +11,10 @@ const ALLOWED_KEYS = new Set([
   "music",
   "reduce_motion",
   "fast_animation",
+  "gentle_effects",
+  "language_code",
+  "game_progress",
+  "multi_active_runs",
   "decorations",
   "collection_levels",
   "crown_tokens",
@@ -30,7 +34,7 @@ const ALLOWED_KEYS = new Set([
   "hints_used",
   "undos_used",
   "rewarded_ads_watched",
-  "privacy_consent_status",
+  // Consent is local to the device; the backup must not propagate UMP state.
   "total_levels_completed",
   "total_rescues",
   "perfect_clears",
@@ -43,7 +47,10 @@ const ALLOWED_KEYS = new Set([
   "achievement_points",
 ]);
 
-const MAX_PAYLOAD_BYTES = 96 * 1024;
+// Three completed campaigns contain up to 30k level-star entries. Keep the
+// cap bounded, but do not silently reject legitimate late-game backups.
+const MAX_PAYLOAD_BYTES = 512 * 1024;
+const OBJECT_KEYS = ["game_progress", "multi_active_runs", "stars", "collection_levels", "meta_progression"];
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -75,6 +82,17 @@ function sanitizeSave(value: unknown): Record<string, unknown> | null {
     if (Object.prototype.hasOwnProperty.call(input, key)) {
       clean[key] = input[key];
     }
+  }
+  // Reject malformed state containers rather than overwriting a usable
+  // stored backup with corrupt JSON that cannot be loaded by Godot.
+  for (const key of OBJECT_KEYS) {
+    if (key in clean && (!clean[key] || typeof clean[key] !== "object" || Array.isArray(clean[key]))) {
+      return null;
+    }
+  }
+  if ("language_code" in clean && (typeof clean.language_code !== "string"
+      || !["", "en", "es", "fr", "pt", "de", "it", "ha", "yo", "ig"].includes(clean.language_code))) {
+    return null;
   }
   const encoded = JSON.stringify(clean);
   if (new TextEncoder().encode(encoded).byteLength > MAX_PAYLOAD_BYTES) return null;
