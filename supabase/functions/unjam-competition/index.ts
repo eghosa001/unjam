@@ -308,117 +308,6 @@ function cleanGameId(value: unknown): string {
   return GAME_IDS.has(gameId) ? gameId : "rescue_rush";
 }
 
-function progressRankScore(levelsCompleted: number, stars: number): number {
-  return clamp(levelsCompleted, 0, 10000) * 100000 + clamp(stars, 0, 30000);
-}
-
-function cleanProgress(value: unknown): { levels_completed: number; highest_level: number; stars: number } {
-  const raw = value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
-  const levels = metric(raw, "levels_completed", 0, 10000, 0);
-  const highest = metric(raw, "highest_level", 0, 10000, levels);
-  const stars = metric(raw, "stars", 0, Math.max(0, levels * 3), 0);
-  return { levels_completed: levels, highest_level: Math.max(levels, highest), stars };
-}
-
-async function upsertAllTimeProgress(
-  sb: any,
-  playerHash: string,
-  displayName: string,
-  gameId: string,
-  rawProgress: unknown,
-) {
-  const incoming = cleanProgress(rawProgress);
-  const { data: existing, error: readError } = await sb.from("progression_rankings")
-    .select("levels_completed,highest_level,stars")
-    .eq("scope_type", "all_time").eq("period_key", ALL_TIME_KEY)
-    .eq("game_id", gameId).eq("player_hash", playerHash).maybeSingle();
-  if (readError) throw readError;
-
-  const levelsCompleted = Math.max(incoming.levels_completed, Number(existing?.levels_completed ?? 0));
-  const highestLevel = Math.max(incoming.highest_level, Number(existing?.highest_level ?? 0), levelsCompleted);
-  const stars = Math.min(levelsCompleted * 3, Math.max(incoming.stars, Number(existing?.stars ?? 0)));
-  const rankScore = progressRankScore(levelsCompleted, stars);
-  const { error } = await sb.from("progression_rankings").upsert({
-    scope_type: "all_time",
-    period_key: ALL_TIME_KEY,
-    game_id: gameId,
-    player_hash: playerHash,
-    display_name: displayName,
-    levels_completed: levelsCompleted,
-    highest_level: highestLevel,
-    stars,
-    rank_score: rankScore,
-    updated_at: new Date().toISOString(),
-  }, { onConflict: "scope_type,period_key,game_id,player_hash" });
-  if (error) throw error;
-  return { levels_completed: levelsCompleted, highest_level: highestLevel, stars, rank_score: rankScore };
-}
-
-async function recordProgressEvent(
-  sb: any,
-  playerHash: string,
-  gameId: string,
-  levelNumber: number,
-  stars: number,
-  weekKey: string,
-  allowNew = false,
-): Promise<boolean> {
-  const { data: existing, error: readError } = await sb.from("progression_level_events")
-    .select("best_stars,first_clear_week")
-    .eq("player_hash", playerHash).eq("game_id", gameId).eq("level_number", levelNumber).maybeSingle();
-  if (readError) throw readError;
-  if (existing) {
-    const bestStars = Math.max(clamp(stars, 1, 3), Number(existing.best_stars ?? 1));
-    if (bestStars !== Number(existing.best_stars ?? 1)) {
-      const { error } = await sb.from("progression_level_events")
-        .update({ best_stars: bestStars, updated_at: new Date().toISOString() })
-        .eq("player_hash", playerHash).eq("game_id", gameId).eq("level_number", levelNumber);
-      if (error) throw error;
-    }
-    return false;
-  }
-  if (!allowNew) return false;
-  const { error } = await sb.from("progression_level_events").insert({
-    player_hash: playerHash,
-    game_id: gameId,
-    level_number: levelNumber,
-    best_stars: clamp(stars, 1, 3),
-    first_clear_week: weekKey,
-    updated_at: new Date().toISOString(),
-  });
-  if (error && error.code !== "23505") throw error;
-  return !error;
-}
-
-async function refreshWeeklyProgress(sb: any, playerHash: string, displayName: string, gameId: string, weekKey: string) {
-  const { data: events, error } = await sb.from("progression_level_events")
-    .select("level_number,best_stars")
-    .eq("player_hash", playerHash).eq("game_id", gameId).eq("first_clear_week", weekKey);
-  if (error) throw error;
-  const levelsCompleted = (events ?? []).length;
-  if (levelsCompleted <= 0) {
-    await sb.from("progression_rankings")
-      .delete().eq("scope_type", "weekly").eq("period_key", weekKey)
-      .eq("game_id", gameId).eq("player_hash", playerHash);
-    return;
-  }
-  const stars = (events ?? []).reduce((sum: number, row: any) => sum + clamp(Number(row.best_stars ?? 1), 1, 3), 0);
-  const highestLevel = (events ?? []).reduce((value: number, row: any) => Math.max(value, Number(row.level_number ?? 0)), 0);
-  const { error: upsertError } = await sb.from("progression_rankings").upsert({
-    scope_type: "weekly",
-    period_key: weekKey,
-    game_id: gameId,
-    player_hash: playerHash,
-    display_name: displayName,
-    levels_completed: levelsCompleted,
-    highest_level: highestLevel,
-    stars,
-    rank_score: progressRankScore(levelsCompleted, stars),
-    updated_at: new Date().toISOString(),
-  }, { onConflict: "scope_type,period_key,game_id,player_hash" });
-  if (upsertError) throw upsertError;
-}
-
 function publicProgressRows(rows: any[] | null | undefined) {
   return (rows ?? []).map((row) => ({
     name: String(row.display_name ?? "PLAYER").slice(0, 20),
@@ -600,49 +489,37 @@ Deno.serve(async (req: Request) => {
   if (action === "submit_progress") {
     const gameId = String(body.game_id ?? "");
     if (!GAME_IDS.has(gameId)) return json({ ok: false, reason: "Invalid game" }, 400);
-    const levelNumber = metric(body, "level_number", 1, 10000, 1);
-    const stars = metric(body, "stars", 1, 3, 1);
+    if (typeof body.level_number !== "number" || !Number.isInteger(body.level_number)
+      || body.level_number < 1 || body.level_number > 10000
+      || typeof body.stars !== "number" || !Number.isInteger(body.stars)
+      || body.stars < 1 || body.stars > 3) {
+      return json({ ok: false, reason: "Invalid level or stars" }, 400);
+    }
+    const levelNumber = body.level_number, stars = body.stars;
     const firstClear = body.first_clear === true;
     const weekKey = isoDay(weekStart(day));
     try {
-      // Public install keys identify the application, not an authenticated
-      // player. Never accept an arbitrary progress snapshot as a league score.
-      // This bounded path mitigates jumps and replay abuse; genuine
-      // anti-cheat still requires authenticated Play Integrity evidence.
-      const previous = await progressRankFor(sb, "all_time", ALL_TIME_KEY, gameId, hash);
-      // One accepted new completion can increase the public total by at most
-      // one, regardless of local save level or offline progression gaps.
-      // Returning offline players keep their local level; new ranked clears
-      // count from the time they reconnect. Replay never increases totals.
-      if (!firstClear && levelNumber > previous.highest_level) {
-        return json({ ok: false, reason: "Only first clears advance rankings" }, 409);
+      // Serialize first-clears, best-star upgrades, rate enforcement and both
+      // ranking periods in one SQL transaction. Old multi-request flow could
+      // lose counts when two HTTP results landed at nearly the same instant.
+      const { data: update, error } = await sb.rpc("unjam_record_progress", {
+        p_player_hash: hash, p_display_name: name, p_game_id: gameId,
+        p_level_number: levelNumber, p_stars: stars,
+        p_first_clear: firstClear, p_week: weekKey,
+      });
+      if (error) throw error;
+      if (!update || update.ok !== true) {
+        const requestedStatus = Number(update?.status ?? 503);
+        const status = [400, 409, 429].includes(requestedStatus) ? requestedStatus : 503;
+        return json({ ok: false, reason: String(update?.reason ?? "Rankings unavailable") }, status);
       }
-      if (firstClear && levelNumber > previous.highest_level) {
-        const since = new Date(Date.now() - 3_600_000).toISOString();
-        const { count, error: rateError } = await sb.from("progression_level_events")
-          .select("*", { count: "exact", head: true })
-          .eq("player_hash", hash).eq("game_id", gameId).gte("created_at", since);
-        if (rateError) throw rateError;
-        if (Number(count ?? 0) >= 180) {
-          return json({ ok: false, reason: "Too many ranked completions; retry later" }, 429);
-        }
-        const inserted = await recordProgressEvent(sb, hash, gameId, levelNumber, stars, weekKey, true);
-        if (inserted) {
-          const verifiedCount = Math.min(10000, previous.levels_completed + 1);
-          await upsertAllTimeProgress(sb, hash, name, gameId, {
-            levels_completed: verifiedCount, highest_level: levelNumber,
-            stars: Math.min(verifiedCount * 3, previous.stars + stars),
-          });
-        }
-      } else if (levelNumber <= previous.highest_level) {
-        // Previously known levels may improve their best-star record, but
-        // cannot be counted as a newly completed level.
-        await recordProgressEvent(sb, hash, gameId, levelNumber, stars, weekKey);
-      }
-      await refreshWeeklyProgress(sb, hash, name, gameId, weekKey);
-      return json({ ok: true, game_id: gameId, snapshot: await progressionSnapshotFor(sb, hash, name, day, body.all_progress) });
+      return json({
+        ok: true, game_id: gameId, new_clear: Boolean(update.new_clear),
+        stars_upgraded: Boolean(update.stars_upgraded),
+        snapshot: await progressionSnapshotFor(sb, hash, name, day, body.all_progress),
+      });
     } catch (error) {
-      console.error("submit progress failed", { error: String(error) });
+      console.error("submit progress transaction failed", { error: String(error) });
       return json({ ok: false, reason: "Rankings unavailable" }, 503);
     }
   }
