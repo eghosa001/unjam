@@ -31,7 +31,11 @@ func date_key() -> String:
 	return "%04d-%02d-%02d" % [d.year, d.month, d.day]
 
 func build_today() -> Dictionary:
-	var key := date_key()
+	return _build_for_key(date_key())
+
+# A date-scoped entrypoint keeps the live RobustDailyChallenge autoload and
+# our focused calendar test on the same deterministic generation path.
+func _build_for_key(key: String) -> Dictionary:
 	var seed_value := int(key.replace("-", ""))
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
