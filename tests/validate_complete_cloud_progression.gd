@@ -30,7 +30,7 @@ func _run() -> void:
 	if not _check(int(saved["game_progress"]["water_sort"]["highest_level"]) == 103
 		and int(saved["game_progress"]["block_puzzle"]["highest_level"]) == 204,
 		"Game snapshots did not include both campaign states"):return
-	var expected_water := games.total_stars("water_sort")
+	var expected_water: int = games.total_stars("water_sort")
 	if not _check(expected_water == 8, "Pre-restore star total fixture invalid"):return
 
 	# Force a local cached score to be different so restore must invalidate
