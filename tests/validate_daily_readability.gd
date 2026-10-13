@@ -25,6 +25,39 @@ func _run() -> void:
 			return _fail("Daily primary action is too small for %s" % game_id)
 		if status == null or status.get_theme_font_size("font_size") < 12:
 			return _fail("Daily progress status is too small for %s" % game_id)
+		if status.accessibility_name.is_empty() or status.text.contains("GO"):
+			return _fail("Daily pill is misleading or inaccessible for %s" % game_id)
+		var art := main.find_child("DailyGameArt_%s" % game_id, true, false) as Unjam2DGameArt
+		if art == null or not art.compact or art.is_processing():
+			return _fail("Daily %s is missing static game identity art" % game_id)
+		if play.accessibility_name.is_empty():
+			return _fail("Daily play action is inaccessible for %s" % game_id)
+
+	var daily_progress := main.find_child("DailyProgressBar", true, false) as ProgressBar
+	if daily_progress == null or not daily_progress.accessibility_name.contains("3 daily challenges"):
+		return _fail("Daily progress does not announce the current completion count")
+
+	# A completed Daily should visibly say DONE without making other games
+	# unplayable. Exercise the actual saved multi-game daily state.
+	var save := root.get_node("SaveManager")
+	var original: Dictionary = save.data.duplicate(true)
+	var games := root.get_node("MultiGameManager")
+	games.call("complete_daily","water_sort",0)
+	main.call("build_daily_games")
+	await _frames(2)
+	var completed_water := main.find_child("DailyPlay_water_sort",true,false) as Button
+	var ready_rescue := main.find_child("DailyPlay_rescue_rush",true,false) as Button
+	var ready_block := main.find_child("DailyPlay_block_puzzle",true,false) as Button
+	if completed_water == null or not completed_water.disabled or completed_water.text != "✓ DONE":
+		return _fail("Completed Water Daily is not visibly distinguished")
+	if not completed_water.accessibility_name.contains("completed"):
+		return _fail("Completed Water Daily does not have an accessible description")
+	if (ready_rescue != null and ready_rescue.disabled) or (ready_block != null and ready_block.disabled):
+		return _fail("Completed Water Daily disabled another game's challenge")
+	save.data = original
+	save.save()
+	main.call("build_daily_games")
+	await _frames(2)
 
 	var tip_title := main.find_child("DailyTipTitle", true, false) as Label
 	var tip_detail := main.find_child("DailyTipDetail", true, false) as Label
