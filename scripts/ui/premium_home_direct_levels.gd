@@ -478,7 +478,7 @@ func _on_home_ranking_updated(_data: Dictionary) -> void:
 			best = position
 			best_game = game_id
 	weekly.text = "#%d" % best if best > 0 else "—"
-	var game_name := _short_game_name(best_game).to_upper() if best > 0 else ""
+	var game_name := LocalizationManager.localize(_short_game_name(best_game).to_upper()) if best > 0 else ""
 	weekly.accessibility_name = "Weekly %s leaderboard rank: %d" % [game_name, best] if best > 0 else "No weekly rank yet"
 	var daily_hint := figma_canvas.get_node_or_null("HomeRankDailyHint") as Label
 	if daily_hint != null:
