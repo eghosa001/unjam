@@ -1649,10 +1649,19 @@ func build_collection() -> void:
 	var can_claim := EconomyManager.can_claim_garden_gift()
 	var gift_text := "CLAIM GARDEN GIFT • +%d" % EconomyManager.garden_gift_amount()
 	if not can_claim:
-		gift_text = "GIFT CLAIMED" if EconomyManager.garden_gift_claimed_today() else "UNLOCK WITH UPGRADE"
-	var gift_fill := FIGMA_GREEN if can_claim else Color(0.54,0.64,0.72)
-	var gift := _figma_button(canvas,"CollectionGardenGift",gift_text,Rect2(33,548,200,44),gift_fill,Callable(),FIGMA_OFF_WHITE,16,13)
+		gift_text = "CLAIMED TODAY" if EconomyManager.garden_gift_claimed_today() else "GIFT LOCKED"
+	var gift_fill := FIGMA_GREEN if can_claim else (Color("#45525a") if _dark() else Color("#e1e8e5"))
+	var gift_text_color := FIGMA_OFF_WHITE if can_claim or _dark() else FIGMA_INK
+	var gift := _figma_button(canvas,"CollectionGardenGift",gift_text,Rect2(33,548,200,44),gift_fill,Callable(),gift_text_color,16,13)
 	gift.disabled = not can_claim
+	gift.tooltip_text = ("Claim your daily Garden gift" if can_claim else
+		("Already claimed today's Garden gift" if EconomyManager.garden_gift_claimed_today() else "Unlock daily gifts by buying any Garden upgrade"))
+	gift.accessibility_name = gift.tooltip_text
+	if not can_claim:
+		# A locked status is information, not an invisible disabled action.
+		# Ensure the disabled face and label remain readable in both themes.
+		gift.add_theme_color_override("font_disabled_color",Color("#f4f7fa") if _dark() else FIGMA_INK)
+		gift.add_theme_stylebox_override("disabled",FigmaReferenceCanvas.solid_box(gift_fill,16,Color(FIGMA_GREEN,0.32),1))
 	if can_claim:
 		gift.pressed.connect(_claim_collection_gift)
 
@@ -1674,29 +1683,42 @@ func build_collection() -> void:
 	_figma_bottom_nav(canvas,"collection")
 
 func _figma_collection_tip(canvas: Control) -> void:
-	# Explain the Collection's permanent reward value instead of repeating the
-	# wallet balance already exposed in the header.
-	var daily_bonus := EconomyManager.collection_daily_bonus()
-	var gift_amount := EconomyManager.garden_gift_amount()
+	# The Garden card above already lists Daily/Gift values. This final card
+	# teaches what the next upgrade unlocks, rather than repeating balances or
+	# showing a competition rank unrelated to Collection progression.
+	var garden_levels := EconomyManager.collection_total_levels()
+	var title_text := "BUILD YOUR RESCUE GARDEN"
+	var value_text := "FIRST TREE: +5 DAILY COINS"
+	var detail_text := "ANY UPGRADE UNLOCKS DAILY GIFTS"
+	if garden_levels >= EconomyManager.collection_max_total_levels():
+		title_text = "YOUR GARDEN IS COMPLETE"
+		value_text = "ALL 30 UPGRADE LEVELS UNLOCKED"
+		detail_text = "PERMANENT REWARDS NOW ACTIVE"
+	elif garden_levels > 0:
+		title_text = "YOUR NEXT GARDEN BOOST"
+		if EconomyManager.collection_item_level("tree") < 5:
+			value_text = "TREE: +5 DAILY COINS / LEVEL"
+		elif EconomyManager.collection_item_level("fountain") < 5:
+			value_text = "FOUNTAIN: +3% CAMPAIGN COINS"
+		elif EconomyManager.collection_item_level("bench") < 5:
+			value_text = "BENCH: 6% CHEAPER HINTS / LEVEL"
+		else:
+			value_text = "KEEP BUILDING FOR BETTER REWARDS"
+		detail_text = "EVERY UPGRADE RAISES YOUR GARDEN GIFT"
 	var tip_fill := Color("#27282b") if _dark() else Color("#f5f2ec")
 	var tip_border := Color(FIGMA_GREEN, 0.22 if _dark() else 0.18)
 	_figma_card(canvas, "CollectionTip", Rect2(17, 606, 354, 82), tip_fill, tip_border, 16)
 	var icon := _figma_text(canvas, "◆", Rect2(33, 622, 24, 24), 17, FIGMA_GREEN, true)
 	icon.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	var title := _figma_text(canvas, EconomyManager.competition_prestige_title(), Rect2(63, 615, 288, 22), 15, FIGMA_INK)
+	var title := _figma_text(canvas, title_text, Rect2(63, 615, 288, 22), 15, FIGMA_INK)
 	title.name = "CollectionTipTitle"
-	var current_value := _figma_text(canvas, "+%d DAILY  •  +%d GIFT" % [daily_bonus, gift_amount], Rect2(63, 639, 288, 20), 13, FIGMA_GOLD)
+	_fit_single_line_control_text(title, 284.0, 15, 12)
+	var current_value := _figma_text(canvas, value_text, Rect2(63, 639, 288, 20), 13, FIGMA_GOLD)
 	current_value.name = "CollectionTipValue"
-	var detail := _figma_text(canvas, "PERMANENT BOOSTS • 5 LEVELS EACH", Rect2(63, 663, 288, 21), 12, FIGMA_MUTED)
+	_fit_single_line_control_text(current_value, 284.0, 13, 12)
+	var detail := _figma_text(canvas, detail_text, Rect2(63, 663, 288, 21), 12, FIGMA_MUTED)
 	detail.name = "CollectionTipDetail"
-	detail.clip_text = true
-	# Label minimum metrics are computed before font fitting. Reset the minimum
-	# and restore the authored card box afterwards so compact viewports cannot
-	# expand this line beyond the Collection card.
-	detail.custom_minimum_size = Vector2.ZERO
 	_fit_single_line_control_text(detail, 284.0, 12, 11)
-	detail.position = Vector2(63,664)
-	detail.size = Vector2(288,20)
 
 func _figma_collection_progress(canvas: Control, game_id: String, x: float) -> void:
 	var accent := Unjam3DTheme.game_accent(game_id)
