@@ -58,7 +58,7 @@ This repository is reset for a **fresh Google Play app listing**. `export_preset
 
 - package id: `com.eghosa.unjamgam`
 - package name: `UNJAM`
-- version: `1.0.10` / version code `10`
+- version: `1.0.11` / version code `11`
 - minimum SDK: 24
 - target SDK: 36
 - ARM64 (`arm64-v8a`)
