@@ -1537,7 +1537,7 @@ func _daily_ui_state(game_id: String, accent: Color) -> Dictionary:
 	# Each Daily card is independent. Completing, abandoning or failing one game
 	# must never disable either of the other two.
 	if _daily_done(game_id):
-		return {"text":"✓ DONE", "fill":Color("#25644a") if _dark() else Color("#d4e7d9"), "disabled":true, "done":true}
+		return {"text":"COMPLETED", "fill":Color("#25644a") if _dark() else Color("#d4e7d9"), "disabled":true, "done":true}
 	return {"text":"PLAY", "fill":accent, "disabled":false, "done":false}
 
 func _figma_daily_card(canvas: Control, game_id: String, y: float, collection_bonus: int) -> void:
