@@ -22,8 +22,8 @@ func _ready() -> void:
 	card.name = "PrivacySettingsCard"
 	card.anchor_left = 0.06
 	card.anchor_right = 0.94
-	card.anchor_top = 0.17
-	card.anchor_bottom = 0.83
+	card.anchor_top = 0.04
+	card.anchor_bottom = 0.96
 	card.mouse_filter = Control.MOUSE_FILTER_STOP
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color("#262d3b")
@@ -33,10 +33,17 @@ func _ready() -> void:
 	card.add_theme_stylebox_override("panel", style)
 	overlay.add_child(card)
 
+	var scroll := ScrollContainer.new()
+	scroll.name = "PrivacySettingsScroll"
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	card.add_child(scroll)
 	var padding := MarginContainer.new()
 	for edge in ["left", "top", "right", "bottom"]:
 		padding.add_theme_constant_override("margin_%s" % edge, 14)
-	card.add_child(padding)
+	padding.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(padding)
 	var stack := VBoxContainer.new()
 	stack.add_theme_constant_override("separation", 10)
 	padding.add_child(stack)
@@ -51,7 +58,7 @@ func _ready() -> void:
 	_button(stack, "AD PRIVACY OPTIONS", _open_ad_options)
 	_button(stack, "VIEW PRIVACY POLICY", _open_policy)
 	var close := _button(stack, "CLOSE", close_sheet)
-	close.grab_focus.call_deferred()
+	_analytics_button.grab_focus.call_deferred()
 
 func _label(parent: VBoxContainer, value: String, size: int, tint: Color, wrap: bool) -> Label:
 	var label := Label.new()
