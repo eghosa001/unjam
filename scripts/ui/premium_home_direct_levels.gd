@@ -766,7 +766,7 @@ func _add_pill(canvas: Control, rect: Rect2, fill: Color, text_value: String, fo
 	RefCanvas.set_rect(panel, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(panel)
-	var resolved_text := text_color if fill.get_luminance() > 0.58 else _home_text_color(text_color)
+	var resolved_text := RefCanvas.accessible_text_color(text_color, fill, 4.5)
 	var label := RefCanvas.label(text_value, font_size, resolved_text, true)
 	if not label_name.is_empty():
 		label.name = label_name
@@ -777,11 +777,12 @@ func _add_pill(canvas: Control, rect: Rect2, fill: Color, text_value: String, fo
 	return panel
 
 func _add_action(canvas: Control, rect: Rect2, fill: Color, text_value: String, font_size: int, text_color: Color, callback: Callable, radius: float) -> Button:
-	var resolved_text := text_color if fill.get_luminance() > 0.58 else _home_text_color(text_color)
-	var button := RefCanvas.premium_button(text_value, font_size, resolved_text, fill, radius, Color(fill.r, fill.g, fill.b, 0.34), 1)
+	var resolved_text := RefCanvas.accessible_text_color(text_color, fill, 4.5)
+	var readable_size := maxi(font_size, 12) if not text_value.is_empty() else font_size
+	var button := RefCanvas.premium_button(text_value, readable_size, resolved_text, fill, radius, Color(fill.r, fill.g, fill.b, 0.34), 1)
 	button.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 	RefCanvas.set_rect(button, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
-	RefCanvas.fit_single_line_text(button, maxf(24.0, rect.size.x - 16.0), font_size, mini(font_size, 12))
+	RefCanvas.fit_single_line_text(button, maxf(24.0, rect.size.x - 16.0), readable_size, mini(readable_size, 12))
 	if callback.is_valid():
 		button.pressed.connect(callback)
 	canvas.add_child(button)

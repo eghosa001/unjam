@@ -172,26 +172,33 @@ func _validate_primary_visual_occupancy() -> bool:
 	if canvas == null or hero == null or primary == null:
 		main.queue_free(); await process_frame
 		return _fail("Figma Home primary visual hierarchy is incomplete")
-	if hero.size.distance_to(Vector2(346,224)) > 1.0:
+	# The approved minimalist Home now has a 168px neutral welcome hero,
+	# not the retired 224px selected-game preview. Validate the current
+	# reference composition without reinstating its obsolete crowded layout.
+	if hero.size.distance_to(Vector2(346,168)) > 1.0:
 		main.queue_free(); await process_frame
-		return _fail("Figma Home hero drifted from audited 346x224 geometry")
-	if hero.get_global_rect().size.x < 760.0 or hero.get_global_rect().size.y < 480.0:
+		return _fail("Minimalist Home hero drifted from audited 346x168 geometry")
+	# DeviceFit and letterboxing intentionally vary physical scale. Check
+	# share of the actual visible Figma canvas, not an old fixed pixel size.
+	var visual_hero := hero.get_global_rect()
+	var visual_canvas := canvas.get_global_rect()
+	if visual_hero.size.x < visual_canvas.size.x * 0.82 or visual_hero.size.y < visual_canvas.size.y * 0.18:
 		main.queue_free(); await process_frame
-		return _fail("Figma Home hero no longer has dominant physical presence on 1080x1920")
-	# In the audited Figma composition the primary CTA is intentionally embedded
-	# inside the hero card (x41..219, y285..333) rather than sitting below it.
-	# Guard containment instead of applying the retired non-overlap rule.
+		return _fail("Minimalist Home hero lost its visible canvas presence")
 	if not hero.get_global_rect().encloses(primary.get_global_rect()):
 		main.queue_free(); await process_frame
-		return _fail("Figma Home primary action escapes its hero card")
-	var hero_title := home.find_child("HomeHeroGameTitle", true, false) as Control
-	var hero_preview := home.find_child("FigmaHomeHeroPreview", true, false) as Control
-	if hero_title == null or hero_preview == null:
+		return _fail("Home Choose Game action escaped its hero card")
+	var hero_title := home.find_child("HomeWelcomeTitle", true, false) as Control
+	var hero_emblem := home.find_child("HomeBrandEmblem", true, false) as Control
+	if hero_title == null or hero_emblem == null:
 		main.queue_free(); await process_frame
-		return _fail("Figma Home title/preview diagnostics are incomplete")
-	if hero_title.get_global_rect().intersects(hero_preview.get_global_rect()):
+		return _fail("Neutral Home headline or brand artwork missing")
+	if hero_title.get_global_rect().intersects(hero_emblem.get_global_rect()):
 		main.queue_free(); await process_frame
-		return _fail("Figma Home game title overlaps its hero preview")
+		return _fail("Neutral welcome heading overlaps brand artwork")
+	if home.find_child("HomeHeroGameTitle", true, false) != null:
+		main.queue_free(); await process_frame
+		return _fail("Retired selected-game hero returned to minimalist Home")
 
 	main.call("start_multi_level", "water_sort", 1, false)
 	await _frames(10)
@@ -367,7 +374,7 @@ func _validate_dead_code_cleanup() -> bool:
 		"res://scripts/game/block_puzzle_premium_layout.gd": ["const PREMIUM_CELL_MIN"],
 		"res://scripts/ui/premium_main_casual.gd": ["const FIGMA_BG_MID", "const FIGMA_DARK_MID", "const FIGMA_PURPLE", "func _setting_button(", "func _daily_game_card(", "func _add_secondary_nav(", "func _journey_metric(", "func _collection_game_card(", "func _inject_block_modes(", "func _inject_journey_summary(", "func _continue_campaign("],
 		"res://scripts/ui/premium_home_casual.gd": ["func _make_tagline(", "func _make_sign_stack("],
-		"res://scripts/ui/premium_home_direct_levels.gd": ["func _open_game_levels(", "func _select_and_open_game("],
+		"res://scripts/ui/premium_home_direct_levels.gd": ["func _select_and_open_game("],
 		"res://scripts/ui/ux_shell_casual.gd": ["func _layout_tutorial_panel(", "func _layout_help_button(", "func _restyle_3d_shell("],
 		"res://scripts/ui/robust_main.gd": ["func _add_journey_card("],
 		"res://scripts/game/water_sort_reference_motion.gd": ["func _transfer_amount("],
@@ -380,6 +387,10 @@ func _validate_dead_code_cleanup() -> bool:
 		for token in retired[dead_path]:
 			if source.contains(String(token)):
 				return _fail("Verified dead source returned: %s in %s" % [token, dead_path])
+	# The old selected-game Home preview was intentionally removed, but
+	# the NEW neutral Home uses _open_game_levels for its illustrated cards.
+	if not _source("res://scripts/ui/premium_home_direct_levels.gd").contains("func _open_game_levels("):
+		return _fail("Home showcase shortcuts no longer open the chosen game's level browser")
 	var tutorial := _source("res://scripts/ui/ux_shell_casual.gd")
 	if not tutorial.contains("TUTORIAL_DARK_NEUTRAL_FALLBACK.lerp"):
 		return _fail("Tutorial compatibility fallback became dead instead of serving the dark-scene contract")
