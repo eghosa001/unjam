@@ -730,7 +730,7 @@ func _add_bottom_nav_reference(canvas: Control) -> void:
 		var label := _add_text(canvas, display_name, Rect2(label_x, 803, label_width, 18), 13, nav_color, selected)
 		label.name = "HomeNavLabel_%s" % String(item[0])
 		label.custom_minimum_size = Vector2.ZERO
-		RefCanvas.fit_single_line_text(label, label_width - 2.0, 13, 11)
+		RefCanvas.fit_single_line_text(label, label_width - 2.0, 13, 12)
 		label.position = Vector2(label_x, 803)
 		label.size = Vector2(label_width, 18)
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -772,7 +772,7 @@ func _add_pill(canvas: Control, rect: Rect2, fill: Color, text_value: String, fo
 		label.name = label_name
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	RefCanvas.set_rect(label, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
-	RefCanvas.fit_single_line_text(label, maxf(18.0, rect.size.x - 10.0), font_size, 10)
+	RefCanvas.fit_single_line_text(label, maxf(18.0, rect.size.x - 10.0), font_size, mini(font_size, 12))
 	canvas.add_child(label)
 	return panel
 
@@ -781,7 +781,7 @@ func _add_action(canvas: Control, rect: Rect2, fill: Color, text_value: String, 
 	var button := RefCanvas.premium_button(text_value, font_size, resolved_text, fill, radius, Color(fill.r, fill.g, fill.b, 0.34), 1)
 	button.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 	RefCanvas.set_rect(button, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
-	RefCanvas.fit_single_line_text(button, maxf(24.0, rect.size.x - 16.0), font_size, 10)
+	RefCanvas.fit_single_line_text(button, maxf(24.0, rect.size.x - 16.0), font_size, mini(font_size, 12))
 	if callback.is_valid():
 		button.pressed.connect(callback)
 	canvas.add_child(button)
