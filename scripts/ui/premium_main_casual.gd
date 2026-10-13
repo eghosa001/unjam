@@ -823,18 +823,46 @@ func _figma_profile_game_tabs(canvas: Control) -> void:
 func _figma_achievement_row(canvas: Control, achievement: Dictionary, y: float) -> void:
 	var id := String(achievement.get("id",""))
 	var need := maxi(1,int(achievement.get("need",1)))
-	var progress := MultiGameManager.achievement_progress(_profile_game,id)
+	var progress := maxi(0,MultiGameManager.achievement_progress(_profile_game,id))
 	var done := progress >= need
 	var accent := FIGMA_GREEN if done else Unjam3DTheme.game_accent(_profile_game)
-	_figma_card(canvas,"ProfileAchievement/%s/%s" % [_profile_game,id],Rect2(17,y,354,52),Color("#27282b") if _dark() else Color("#fffef8"),Color(accent,0.28),14)
-	var achievement_title := _figma_text(canvas,String(achievement.get("title","Achievement")),Rect2(31,y+6,210,15),12,FIGMA_INK)
+	_figma_card(canvas,"ProfileAchievement/%s/%s" % [_profile_game,id],Rect2(17,y,354,52),Color("#27282b") if _dark() else Color("#fffef8"),Color(accent,0.38 if done else 0.26),14)
+	# Put the long achievement name first; the old 210px/12px title
+	# truncated even when the rest of the achievement row was empty.
+	var achievement_title := _figma_text(canvas,String(achievement.get("title","Achievement")),Rect2(31,y+4,263,20),14,FIGMA_INK)
 	achievement_title.name = "ProfileAchievementTitle/%s" % id
-	_fit_single_line_control_text(achievement_title,206.0,12,9)
-	var achievement_progress := _figma_text(canvas,"%d / %d" % [mini(progress,need),need],Rect2(31,y+29,150,18),12,FIGMA_MUTED)
+	_fit_single_line_control_text(achievement_title,260.0,14,12)
+	var achievement_progress := _figma_text(canvas,"%d / %d" % [mini(progress,need),need],Rect2(31,y+25,150,18),12,FIGMA_MUTED)
 	achievement_progress.name = "ProfileAchievementProgress/%s" % id
 	_fit_single_line_control_text(achievement_progress,146.0,12,12)
-	var status := _figma_text(canvas,"✓" if done else "•",Rect2(315,y+13,28,28),18,accent,true)
+	# A real progress meter makes locked badges feel attainable, and it costs
+	# no idle frames; its data is the actual game's achievement progress.
+	var meter := ProgressBar.new()
+	meter.name = "ProfileAchievementMeter_%s" % id
+	meter.min_value = 0
+	meter.max_value = need
+	meter.value = mini(progress,need)
+	meter.show_percentage = false
+	meter.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	meter.add_theme_stylebox_override("background",FigmaReferenceCanvas.solid_box(Color("#4d565d") if _dark() else Color("#d9e1e4"),3))
+	meter.add_theme_stylebox_override("fill",FigmaReferenceCanvas.solid_box(accent,3))
+	meter.accessibility_name = "%s: %d of %d, %s" % [achievement_title.text,mini(progress,need),need,"unlocked" if done else "in progress"]
+	meter.tooltip_text = meter.accessibility_name
+	FigmaReferenceCanvas.set_rect(meter,31,y+44,258,5)
+	canvas.add_child(meter)
+	# Distinguish earned badges from pending ones with a small medallion,
+	# not an unanchored checkmark or dot.
+	var medal_color := FIGMA_GREEN if done else (Color("#b9c4cb") if _dark() else Color("#778690"))
+	var medal := PanelContainer.new()
+	medal.name = "ProfileAchievementBadge_%s" % id
+	medal.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	medal.add_theme_stylebox_override("panel",FigmaReferenceCanvas.solid_box(Color(medal_color,0.20 if done else 0.08),16,Color(medal_color,0.76 if done else 0.40),1))
+	FigmaReferenceCanvas.set_rect(medal,307,y+10,34,34)
+	canvas.add_child(medal)
+	var status := _figma_text(canvas,"✓" if done else "•",Rect2(310,y+14,28,24),18,medal_color,true)
+	status.name = "ProfileAchievementStatus_%s" % id
 	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	status.accessibility_name = "Unlocked" if done else "In progress"
 
 func _set_profile_game(game_id: String) -> void:
 	if game_id in MultiGameManager.GAME_IDS:
