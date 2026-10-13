@@ -538,7 +538,7 @@ Deno.serve(async (req: Request) => {
     // Old app versions claim last week exactly as before. New clients can
     // recover an ALREADY STORED receipt up to 52 weeks after a lost reply.
     if (requestedPeriod !== undefined && (typeof requestedPeriod !== "string"
-      || !/^\\d{4}-\\d{2}-\\d{2}$/.test(requestedPeriod))) {
+      || !/^\d{4}-\d{2}-\d{2}$/.test(requestedPeriod))) {
       return json({ ok: false, reason: "Invalid claim period" }, 400);
     }
     const periodKey = requestedPeriod === undefined ? defaultPeriodKey : requestedPeriod;
