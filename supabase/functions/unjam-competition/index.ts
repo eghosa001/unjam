@@ -532,7 +532,23 @@ Deno.serve(async (req: Request) => {
   if (action === "claim_progress_weekly") {
     const gameId = String(body.game_id ?? "");
     if (!GAME_IDS.has(gameId)) return json({ ok: false, reason: "Invalid game" }, 400);
-    const periodKey = isoDay(new Date(weekStart(day).getTime() - 7 * DAY_MS));
+    const currentWeek = weekStart(day);
+    const defaultPeriodKey = isoDay(new Date(currentWeek.getTime() - 7 * DAY_MS));
+    const requestedPeriod = body.claim_period_key;
+    // Old app versions claim last week exactly as before. New clients can
+    // recover an ALREADY STORED receipt up to 52 weeks after a lost reply.
+    if (requestedPeriod !== undefined && (typeof requestedPeriod !== "string"
+      || !/^\\d{4}-\\d{2}-\\d{2}$/.test(requestedPeriod))) {
+      return json({ ok: false, reason: "Invalid claim period" }, 400);
+    }
+    const periodKey = requestedPeriod === undefined ? defaultPeriodKey : requestedPeriod;
+    const periodDate = new Date(`${periodKey}T00:00:00.000Z`);
+    const ageWeeks = (currentWeek.getTime() - periodDate.getTime()) / (7 * DAY_MS);
+    if (!Number.isFinite(ageWeeks) || !Number.isInteger(ageWeeks)
+      || ageWeeks < 1 || ageWeeks > 52 || isoDay(periodDate) !== periodKey
+      || periodDate.getUTCDay() !== 1) {
+      return json({ ok: false, reason: "Invalid claim period" }, 400);
+    }
     // A new client persists a random token before the HTTP claim. Only the
     // SAME receipt can reconcile a lost response; a second installation or
     // conflicting request must not be allowed to credit it again.
@@ -558,6 +574,10 @@ Deno.serve(async (req: Request) => {
           coins: Number(prior.coins), crowns: Number(prior.crowns),
         });
       }
+      // A brand-new reward must be claimed within eight weeks. Older dates
+      // are only available for SAME-receipt recovery of previously stored
+      // claims, preventing arbitrary backdated reward minting.
+      if (ageWeeks > 8) return json({ ok: false, reason: "Claim period expired" }, 410);
       const rank = await progressRankFor(sb, "weekly", periodKey, gameId, hash);
       if (rank.rank <= 0 || rank.levels_completed <= 0) return json({ ok: false, reason: "No completed weekly league" }, 404);
       const reward = progressionRewardForRank(rank.rank);
