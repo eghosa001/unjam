@@ -471,18 +471,22 @@ func _on_home_ranking_updated(_data: Dictionary) -> void:
 	# The backend has independent rankings per game. Show the best weekly
 	# placement across them; never suggest an invented overall leaderboard.
 	var best := 0
+	var best_game := ""
 	for game_id in ["rescue_rush","water_sort","block_puzzle"]:
 		var position := CompetitionManager.game_weekly_rank(game_id)
 		if position > 0 and (best == 0 or position < best):
 			best = position
+			best_game = game_id
 	weekly.text = "#%d" % best if best > 0 else "—"
-	weekly.accessibility_name = "Best weekly game leaderboard rank: %d" % best if best > 0 else "No weekly rank yet"
+	var game_name := _short_game_name(best_game).to_upper() if best > 0 else ""
+	weekly.accessibility_name = "Weekly %s leaderboard rank: %d" % [game_name, best] if best > 0 else "No weekly rank yet"
 	var daily_hint := figma_canvas.get_node_or_null("HomeRankDailyHint") as Label
 	if daily_hint != null:
 		daily_hint.text = "ON THE BOARD" if today_rank > 0 else "PLAY TO JOIN"
 	var weekly_hint := figma_canvas.get_node_or_null("HomeRankWeeklyHint") as Label
 	if weekly_hint != null:
-		weekly_hint.text = "ON THE BOARD" if best > 0 else "PLAY TO JOIN"
+		weekly_hint.text = game_name if best > 0 else "PLAY TO JOIN"
+		weekly_hint.accessibility_name = "Best weekly ranking is in %s" % game_name if best > 0 else "No weekly game ranking yet"
 
 func _add_daily_feature(canvas: Control) -> void:
 	var dark := _home_dark()
