@@ -260,6 +260,13 @@ function authoritativeWeekStart(): Date {
   nowUtc.setUTCHours(0, 0, 0, 0);
   return weekStart(nowUtc);
 }
+// Late Sunday results are accepted throughout Monday UTC. Prize awards must
+// wait until Tuesday UTC, after that cross-week grace day has closed. Existing
+// already-stored claims can always be replayed with their original receipt.
+function settlementReferenceWeekStart(): Date {
+  const monday = authoritativeWeekStart();
+  return new Date(monday.getTime() - (new Date().getUTCDay() === 1 ? 7 * DAY_MS : 0));
+}
 // Conventional competition rank: two equal scores both display #1, and the
 // next lower score is #3. Align row labels, personal rank and weekly rewards.
 function rankTies<T extends Record<string, any>>(rows: T[], key: "score" | "rank_score"): (T & { rank: number })[] {
@@ -307,7 +314,7 @@ async function snapshotFor(sb: any, hash: string, day: Date) {
   const [{ data: daily }, { data: weekly }, playerDaily, playerWeekly, reward] = await Promise.all([
     sb.from("competition_totals").select("display_name,score,games_count").eq("period_type", "daily").eq("period_key", dayKey).order("score", { ascending: false }).order("updated_at", { ascending: true }).limit(20),
     sb.from("competition_totals").select("display_name,score,games_count").eq("period_type", "weekly").eq("period_key", weekKey).order("score", { ascending: false }).order("updated_at", { ascending: true }).limit(20),
-    rankFor(sb, "daily", dayKey, hash), rankFor(sb, "weekly", weekKey, hash), previousReward(sb, hash, authoritativeWeekStart()),
+    rankFor(sb, "daily", dayKey, hash), rankFor(sb, "weekly", weekKey, hash), previousReward(sb, hash, settlementReferenceWeekStart()),
   ]);
   return { ok: true, day: dayKey, week_start: weekKey, daily_top: publicRows(daily), weekly_top: publicRows(weekly), player_daily: playerDaily, player_weekly: playerWeekly, previous_week_reward: reward };
 }
@@ -396,7 +403,7 @@ async function progressionSnapshotFor(sb: any, playerHash: string, displayName: 
       progressTop(sb, "weekly", weekKey, gameId),
       progressRankFor(sb, "all_time", ALL_TIME_KEY, gameId, playerHash),
       progressRankFor(sb, "weekly", weekKey, gameId, playerHash),
-      previousProgressReward(sb, playerHash, gameId, authoritativeWeekStart()),
+      previousProgressReward(sb, playerHash, gameId, settlementReferenceWeekStart()),
     ]);
     gameRankings[gameId] = {
       all_time_top: allTimeTop,
@@ -544,7 +551,8 @@ Deno.serve(async (req: Request) => {
     const gameId = String(body.game_id ?? "");
     if (!GAME_IDS.has(gameId)) return json({ ok: false, reason: "Invalid game" }, 400);
     const currentWeek = authoritativeWeekStart();
-    const defaultPeriodKey = isoDay(new Date(currentWeek.getTime() - 7 * DAY_MS));
+    const settledReferenceWeek = settlementReferenceWeekStart();
+    const defaultPeriodKey = isoDay(new Date(settledReferenceWeek.getTime() - 7 * DAY_MS));
     const requestedPeriod = body.claim_period_key;
     // Old app versions claim last week exactly as before. New clients can
     // recover an ALREADY STORED receipt up to 52 weeks after a lost reply.
@@ -584,6 +592,12 @@ Deno.serve(async (req: Request) => {
           rank: Number(prior.rank), levels_completed: Number(prior.levels_completed),
           coins: Number(prior.coins), crowns: Number(prior.crowns),
         });
+      }
+      // On Monday, Sunday's results can still arrive with yesterday's
+      // permitted competition_day. A fresh claim is not final until Tuesday.
+      // Same-receipt recovery above remains possible for historic claims.
+      if (periodDate.getTime() >= settledReferenceWeek.getTime()) {
+        return json({ ok: false, reason: "Weekly results are still settling" }, 425);
       }
       // A brand-new reward must be claimed within eight weeks. Older dates
       // are only available for SAME-receipt recovery of previously stored
@@ -693,7 +707,7 @@ Deno.serve(async (req: Request) => {
     }
   }
   if (action === "claim_weekly") {
-    const periodKey = isoDay(new Date(authoritativeWeekStart().getTime() - 7 * DAY_MS));
+    const periodKey = isoDay(new Date(settlementReferenceWeekStart().getTime() - 7 * DAY_MS));
     const rank = await rankFor(sb, "weekly", periodKey, hash);
     if (rank.rank <= 0 || rank.score <= 0) return json({ ok: false, reason: "No completed weekly competition" }, 404);
     const reward = rewardForRank(rank.rank), claim = { player_hash: hash, period_key: periodKey, rank: rank.rank, score: rank.score, coins: reward.coins, crowns: reward.crowns };
