@@ -432,7 +432,7 @@ func _restore_board_keyboard_focus(previous_index: int) -> void:
 	var count := board_grid.get_child_count()
 	for distance in range(count):
 		for sign in [1, -1]:
-			var index := (previous_index + distance * sign + count) % count
+			var index: int = (previous_index + distance * int(sign) + count) % count
 			var control := board_grid.get_child(index) as BaseButton
 			if control != null and not control.disabled and control.focus_mode == Control.FOCUS_ALL:
 				control.grab_focus()
