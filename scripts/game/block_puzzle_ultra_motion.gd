@@ -103,14 +103,10 @@ func _invalid_bump() -> void:
 	tween.tween_property(board_shell, "position:x", base_x, beat * 0.50)
 
 func _spawn_clear_feedback(indices: Array[int], line_count: int) -> void:
-	# Preserve the proven clear/debris rendering while standardizing its semantic
-	# audio/haptic beat and local board impact through the shared motion system.
-	FeedbackManager.line_clear(line_count)
-	if line_count >= 2:
-		FeedbackManager.combo(line_count)
+	# The inherited 3D board layer already owns the single line-clear sound,
+	# multi-line combo/haptic beat, particle sweep and board punch. Calling them
+	# again here layered duplicate sounds and competing scale tweens on Android.
 	super._spawn_clear_feedback(indices, line_count)
-	if board_shell != null:
-		MotionSystem.local_punch(board_shell, clampf(float(line_count), 1.0, 2.4))
 
 func complete_level() -> void:
 	if completed:

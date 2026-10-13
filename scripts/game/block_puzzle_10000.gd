@@ -59,11 +59,9 @@ func _spawn_clear_feedback(indices: Array[int], line_count: int) -> void:
 	# Keep it local and bounded so repeated combos never become a screen flash.
 	if spectacle_level >= 2:
 		premium_feedback.show_ring(center, minf(local_rect.size.x, local_rect.size.y) * (0.54 + 0.08 * float(spectacle_level)), Color("#ffd166") if _clear_streak >= 2 else Color("#ff7a66"))
-		MotionSystem.local_punch(board_shell, 0.82 + float(spectacle_level) * 0.10)
-		# The parent already owns combo audio/haptics for single-line streaks.
-		# Trigger here only for true multi-line clears to avoid double-firing sound.
-		if line_count >= 2:
-			FeedbackManager.combo(spectacle_level)
+		# Gameplay's board layer already handles one local punch and the
+		# multi-line combo beat. This layer is visual only: a ring, never a
+		# duplicate sound or a second tween fighting the board scale.
 	if line_count >= 2:
 		premium_feedback.show_banner("%d-LINE BLAST" % line_count, Color("#ff7a66"), Vector2(center.x, maxf(170.0, local_rect.position.y - 18.0)), 196.0)
 	elif _clear_streak >= 2:
