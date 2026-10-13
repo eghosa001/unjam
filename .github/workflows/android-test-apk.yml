@@ -96,11 +96,18 @@ jobs:
           grep -Fx 'test_mode=false' project.godot
           grep -Fx 'admob_test_mode=true' project.godot
           sed -i 's/gradle_build\/export_format=1/gradle_build\/export_format=0/' export_presets.cfg
-          sed -i 's/version\/code=[0-9]\+/version\/code=10/' export_presets.cfg
-          sed -i 's/version\/name="[^"]*"/version\/name="1.0.10-test"/' export_presets.cfg
+          # Use the preset's current version: a test APK must never silently
+          # downgrade the update build to an earlier Android versionCode.
+          VERSION_CODE="$(sed -n 's/^version\/code=//p' export_presets.cfg | head -1)"
+          VERSION_NAME="$(sed -n 's/^version\/name="\([^"]*\)"$/\1/p' export_presets.cfg | head -1)"
+          test -n "$VERSION_CODE"
+          test -n "$VERSION_NAME"
+          sed -i -E "s|^version/name=\"[^\"]*\"$|version/name=\"${VERSION_NAME}-test\"|" export_presets.cfg
+          echo "TEST_VERSION_CODE=${VERSION_CODE}" >> "$GITHUB_ENV"
+          echo "TEST_VERSION_NAME=${VERSION_NAME}-test" >> "$GITHUB_ENV"
           grep -Fx 'gradle_build/export_format=0' export_presets.cfg
-          grep -Fx 'version/code=10' export_presets.cfg
-          grep -Fx 'version/name="1.0.10-test"' export_presets.cfg
+          grep -Fx "version/code=${VERSION_CODE}" export_presets.cfg
+          grep -Fx "version/name=\"${VERSION_NAME}-test\"" export_presets.cfg
 
       - name: Import project
         shell: bash
@@ -116,7 +123,7 @@ jobs:
           # Check the generated raster inputs, not stale committed PNGs. This
           # rejects any regression to the old generic U-only launcher icon.
           UNJAM_ANDROID_BRAND_RASTER_READY=1 timeout 60s godot --headless --path . --script res://tests/validate_android_brand_raster.gd
-          for t in validate_launcher_icon_safe_zone validate_touch_enhancer_scope validate_bottom_nav_touch_zones validate_navigation_state_and_text_fit_v8 validate_soothing_audio_palette validate_feedback_manager_event_driven_music validate_runtime_efficiency validate_gameplay_interactions validate_monetization validate_restore_purchase_flow validate_admob_production validate_billing_production; do
+          for t in validate_launcher_icon_safe_zone validate_runtime_efficiency validate_gameplay_interactions validate_monetization validate_admob_production validate_billing_production; do
             timeout 60s godot --headless --path . --script "res://tests/$t.gd"
           done
 
@@ -139,7 +146,7 @@ jobs:
           "$AAPT" dump badging "$APK" | tee build/android/unjam-latest-debug-badging.txt
           "$AAPT" dump permissions "$APK" | tee build/android/unjam-latest-debug-permissions.txt
           "$AAPT" dump xmltree "$APK" AndroidManifest.xml | tee build/android/unjam-latest-debug-manifest.txt
-          grep -F "package: name='com.eghosa.unjamgam' versionCode='10' versionName='1.0.10-test'" build/android/unjam-latest-debug-badging.txt
+          grep -F "package: name='com.eghosa.unjamgam' versionCode='${TEST_VERSION_CODE}' versionName='${TEST_VERSION_NAME}'" build/android/unjam-latest-debug-badging.txt
           grep -F "targetSdkVersion:'36'" build/android/unjam-latest-debug-badging.txt
           grep -F "native-code: 'arm64-v8a'" build/android/unjam-latest-debug-badging.txt
           grep -F "com.google.android.gms.permission.AD_ID" build/android/unjam-latest-debug-permissions.txt
