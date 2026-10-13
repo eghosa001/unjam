@@ -255,7 +255,11 @@ function weekStart(d: Date) { const x = new Date(d); x.setUTCDate(x.getUTCDate()
 // Competition-day date may be yesterday or tomorrow to accommodate local
 // timezones, but it must NEVER advance the payout clock. Only a completed
 // UTC server week can become claimable.
-function authoritativeWeekStart() { return weekStart(new Date()); }
+function authoritativeWeekStart(): Date {
+  const nowUtc = new Date();
+  nowUtc.setUTCHours(0, 0, 0, 0);
+  return weekStart(nowUtc);
+}
 // Conventional competition rank: two equal scores both display #1, and the
 // next lower score is #3. Align row labels, personal rank and weekly rewards.
 function rankTies<T extends Record<string, any>>(rows: T[], key: "score" | "rank_score"): (T & { rank: number })[] {
