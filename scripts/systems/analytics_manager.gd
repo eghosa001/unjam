@@ -24,7 +24,7 @@ var enabled := true
 var _session_counts: Dictionary = {}
 var _session_recent: Array[Dictionary] = []
 var _frame_probe := FramePacingProbe.new()
-var _telemetry_events: Array[Dictionary] = []
+var _telemetry_events: Array = []
 var _telemetry_timer: Timer
 var _telemetry_in_flight := false
 
