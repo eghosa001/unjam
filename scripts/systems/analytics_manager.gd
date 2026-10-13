@@ -34,6 +34,8 @@ func _ready() -> void:
 	_telemetry_timer.autostart = true
 	_telemetry_timer.timeout.connect(_flush_opt_in_telemetry)
 	add_child(_telemetry_timer)
+	if analytics_opted_in():
+		_queue_telemetry("session_start", {})
 
 func analytics_opted_in() -> bool:
 	return bool(SaveManager.data.get("analytics_opt_in", false))
