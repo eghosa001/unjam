@@ -954,7 +954,7 @@ func _figma_friend_rank_row(canvas: Control, row: Dictionary, index: int, y: flo
 	if not is_you and _dark() and _ranking_game == "block_puzzle":
 		accent = Color("#db80ff")
 	var rank := int(row.get("rank",index+1))
-	_figma_text(canvas,"YOU" if is_you else str(rank),Rect2(30,y+6,38,24),13,accent,true)
+	_figma_text(canvas,"YOU" if is_you else ("—" if rank <= 0 else str(rank)),Rect2(30,y+6,38,24),13,accent,true)
 	var friend_full_name := String(row.get("name","PLAYER"))
 	var friend_name_label := _figma_text(canvas,friend_full_name.left(15),Rect2(75,y+6,130,24),13,FIGMA_INK)
 	friend_name_label.tooltip_text = friend_full_name
@@ -962,7 +962,8 @@ func _figma_friend_rank_row(canvas: Control, row: Dictionary, index: int, y: flo
 	var stars := maxi(0,int(row.get("stars",0)))
 	var progress := _figma_text(canvas,"L%d • ★%d" % [levels,stars],Rect2(205,y+6,96,24),12,FIGMA_MUTED,true)
 	progress.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	friend_name_label.accessibility_name = "Rank %d, %s, %d levels, %d stars" % [rank,friend_full_name,levels,stars]
+	friend_name_label.accessibility_name = ("Unranked, %s, %d levels, %d stars" % [friend_full_name,levels,stars]
+		if rank <= 0 else "Rank %d, %s, %d levels, %d stars" % [rank,friend_full_name,levels,stars])
 	progress.accessibility_name = "Completed %d levels with %d stars" % [levels,stars]
 	if not is_you:
 		var code := String(row.get("friend_code",""))
@@ -1442,8 +1443,8 @@ func _figma_progress_leaderboard_panel(canvas: Control, title_text: String, entr
 		if not row is Dictionary:
 			continue
 		var row_y := y+42.0+float(i)*33.0
-		var place := maxi(1,int(row.get("rank",i+1)))
-		_figma_text(canvas,"★" if place == 1 else str(place),Rect2(34,row_y,28,24),13,readable_accent,true)
+		var place := int(row.get("rank",i+1))
+		_figma_text(canvas,"—" if place <= 0 else ("★" if place == 1 else str(place)),Rect2(34,row_y,28,24),13,readable_accent,true)
 		var full_player_name := String(row.get("name","PLAYER"))
 		var player_label := _figma_text(canvas,full_player_name.left(15),Rect2(70,row_y,135,24),13,FIGMA_INK)
 		player_label.tooltip_text = full_player_name
@@ -1451,7 +1452,8 @@ func _figma_progress_leaderboard_panel(canvas: Control, title_text: String, entr
 		var stars := maxi(0,int(row.get("stars",0)))
 		var progress := _figma_text(canvas,"L%d • ★%d" % [levels,stars],Rect2(210,row_y,130,24),12,FIGMA_MUTED,true)
 		progress.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		player_label.accessibility_name = "Rank %d, %s, %d levels, %d stars" % [place,full_player_name,levels,stars]
+		player_label.accessibility_name = ("Unranked, %s, %d levels, %d stars" % [full_player_name,levels,stars]
+			if place <= 0 else "Rank %d, %s, %d levels, %d stars" % [place,full_player_name,levels,stars])
 		progress.accessibility_name = "Completed %d levels with %d stars" % [levels,stars]
 
 func _figma_today_label() -> String:

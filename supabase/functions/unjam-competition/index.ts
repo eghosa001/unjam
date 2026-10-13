@@ -259,6 +259,8 @@ function rankTies<T extends Record<string, any>>(rows: T[], key: "score" | "rank
   let place = 0;
   return rows.map((row, index) => {
     const score = Number(row[key] ?? 0);
+    // Zero-score friends have no ranked result yet, not shared first place.
+    if (!Number.isFinite(score) || score <= 0) return { ...row, rank: 0 };
     if (index === 0 || score !== previousScore) place = index + 1;
     previousScore = score;
     return { ...row, rank: place };
@@ -443,7 +445,7 @@ async function socialProgressSnapshot(
   const mapRows = (rows: any[]) => {
     const byHash = new Map<string, any>();
     for (const row of rows ?? []) byHash.set(String(row.player_hash), row);
-    return allHashes.map((hash) => {
+    const sorted = allHashes.map((hash) => {
       const profile = profileByHash.get(hash) ?? {};
       const row = byHash.get(hash) ?? {};
       return {
@@ -455,8 +457,9 @@ async function socialProgressSnapshot(
         friend_code: String(profile.friend_code ?? ""),
         you: hash === playerHash,
       };
-    }).sort((a, b) => b.rank_score - a.rank_score || a.name.localeCompare(b.name))
-      .map((row, index) => ({ ...row, rank: index + 1 }));
+    }).sort((a, b) => b.rank_score - a.rank_score || a.name.localeCompare(b.name));
+    // Shared earned scores share a place; an absent receipt stays unranked.
+    return rankTies(sorted, "rank_score");
   };
 
   return {
