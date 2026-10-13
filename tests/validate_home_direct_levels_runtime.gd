@@ -34,7 +34,7 @@ func _run() -> void:
 	if not _check(choose.action_mode == BaseButton.ACTION_MODE_BUTTON_RELEASE,"Choose Game must wait for touch release"):return
 	if not _check(rank != null and rank.text == "#4","Home best weekly rank is not visible"):return
 	var rank_hint := home.find_child("HomeRankWeeklyHint",true,false) as Label
-	if not _check(rank_hint != null and rank_hint.text == "ON THE BOARD","Home rank must confirm placement when genuinely ranked"):return
+	if not _check(rank_hint != null and rank_hint.text == "RESCUE RUSH" and rank_hint.accessibility_name.contains("RESCUE RUSH"),"Home weekly placement must name its actual game, never suggest a combined rank"):return
 	if not _check(rank_daily != null and rank_daily.text == "—","Today's rank must not be faked before the daily snapshot"):return
 	var today_hint := home.find_child("HomeRankDailyHint",true,false) as Label
 	if not _check(today_hint != null and today_hint.text == "PLAY TO JOIN","Home must explain its empty Daily ranking"):return
