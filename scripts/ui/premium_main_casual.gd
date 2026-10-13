@@ -498,7 +498,7 @@ func _figma_solid_card(canvas: Control, name_value: String, rect: Rect2, tint: C
 
 func _figma_header(canvas: Control, title_text: String, subtitle_text: String, pill_text: String, pill_fill: Color, back_callback: Callable = Callable(self, "build_home"), pill_callback: Callable = Callable(), dark_mode: bool = false) -> void:
 	var use_dark := dark_mode or _dark()
-	var heading_color := FIGMA_OFF_WHITE if not use_dark else FIGMA_DARK_INK
+	var heading_color := FIGMA_INK if not use_dark else FIGMA_DARK_INK
 	var muted_color := FIGMA_MUTED if not use_dark else FIGMA_DARK_MUTED
 	var back_color := FIGMA_DARK_INK if use_dark else FIGMA_NAVY
 	var back_fill := Color("#cbc4b8") if not use_dark else Color("#2c2c2c")
@@ -510,7 +510,11 @@ func _figma_header(canvas: Control, title_text: String, subtitle_text: String, p
 	header_title.clip_text = true
 	# Apply the display font before fitting so its actual metrics cannot expand
 	# back into the subtitle band after compact-screen layout.
-	FigmaReferenceCanvas.style_display_title(header_title, pill_fill.lightened(0.20), Color("#071d55"), 1)
+	# Bright accent-on-cream text depended on a 1px outline for legibility.
+	# Keep the display typography, but put a true high-contrast ink in front;
+	# the colored badge and surrounding art still carry the game's identity.
+	FigmaReferenceCanvas.style_display_title(header_title, heading_color,
+		Color("#fff2cc") if not use_dark else Color("#071d55"), 1)
 	_fit_single_line_control_text(header_title, 182.0, 23, 14)
 	if not subtitle_text.strip_edges().is_empty():
 		var subtitle := _figma_text(canvas, subtitle_text, Rect2(83,55,186,18), 13, muted_color)
@@ -1290,7 +1294,8 @@ func _figma_daily_progress(canvas: Control) -> void:
 			"%s %s" % [String(spec[1]), "✓" if done else "GO"],
 			Rect2(float(spec[2])+4,555,88,20),
 			12,
-			accent.lightened(0.25) if _dark() else accent.darkened(0.24),
+			FigmaReferenceCanvas.accessible_text_color(
+				accent.lightened(0.25) if _dark() else accent.darkened(0.24), fill, 4.5),
 			true
 		)
 		label.name = "DailyProgressLabel_%s" % game_id
@@ -1311,7 +1316,9 @@ func _figma_daily_tip(canvas: Control, collection_bonus: int) -> void:
 	var tip_fill := Color("#282a2e") if _dark() else Color("#fffaf2")
 	var tip_border := Color(FIGMA_ORANGE,0.34)
 	_figma_card(canvas, "DailyCheckIn", Rect2(17,598,354,80), tip_fill, tip_border, 16)
-	var title := _figma_text(canvas,"DAILY CHECK-IN • DAY %d/7" % int(login.get("day",1)),Rect2(33,609,205,20),15,FIGMA_ORANGE)
+	var checkin_title_ink := FigmaReferenceCanvas.accessible_text_color(
+		FIGMA_ORANGE if _dark() else FIGMA_ORANGE.darkened(0.50), tip_fill, 4.5)
+	var title := _figma_text(canvas,"DAILY CHECK-IN • DAY %d/7" % int(login.get("day",1)),Rect2(33,609,205,20),15,checkin_title_ink)
 	title.name = "DailyTipTitle"
 	var bonus_text := " • +%d COLLECTION" % collection_bonus if collection_bonus > 0 else ""
 	var detail := _figma_text(canvas,"+%d COINS%s" % [reward,bonus_text],Rect2(33,636,205,20),12,FIGMA_MUTED)
