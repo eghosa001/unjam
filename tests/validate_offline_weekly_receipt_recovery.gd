@@ -7,7 +7,12 @@ func _run() -> void:
 	OS.set_environment("UNJAM_FAST_VISUAL_AUDIT", "1")
 	var save = root.get_node("SaveManager")
 	var original: Dictionary = save.data.duplicate(true)
-	var period := "2026-09-28" # Older than previous week for 13 Oct 2026.
+	# Use an actual Monday two weeks before this test's current week.
+	# A hardcoded 2026 date would make the release test fail next year.
+	var current_unix := int(Time.get_unix_time_from_datetime_string("%sT12:00:00" % root.get_node("DailyChallenge").date_key()))
+	var weekday := int(Time.get_datetime_dict_from_unix_time(current_unix).get("weekday", 1))
+	var past_monday_unix := current_unix - (posmod(weekday - 1, 7) + 14) * 86400
+	var period := Time.get_date_string_from_unix_time(past_monday_unix)
 	var ticket := "cd".repeat(16)
 	var key := "%s:block_puzzle" % period
 	save.data["cloud_save_id"] = "b".repeat(64)
@@ -19,7 +24,7 @@ func _run() -> void:
 	root.add_child(fake)
 	await process_frame
 	fake.snapshot = {"game_rankings":{
-		"block_puzzle":{"previous_week_reward":{"eligible":true,"claimed":false,"period_key":"2026-10-05"}}
+		"block_puzzle":{"previous_week_reward":{"eligible":true,"claimed":false,"period_key":Time.get_date_string_from_unix_time(past_monday_unix + 7 * 86400)}}
 	}}
 	fake.call("_retry_pending_weekly_claims")
 	await process_frame
