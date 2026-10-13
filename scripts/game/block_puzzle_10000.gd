@@ -81,6 +81,10 @@ func _add_booster_bar() -> void:
 	var bar := HBoxContainer.new()
 	bar.name = "CampaignBoosters"
 	bar.alignment = BoxContainer.ALIGNMENT_CENTER
+	# A beginner should learn to place blocks before deciphering a four-item
+	# paid booster shop. Show one reversible action for three starter puzzles.
+	var starter := not daily_mode and play_mode == "campaign" and level_number <= 3
+	bar.visible = not daily_mode
 	bar.add_theme_constant_override("separation", 4)
 	FigmaReferenceCanvas.set_rect(bar, 25, 726, 333, 64)
 	for spec in [
@@ -103,6 +107,7 @@ func _add_booster_bar() -> void:
 		button.tooltip_text = "%s booster • %d coins" % [key.capitalize(), int(BOOSTER_COSTS[key])]
 		button.custom_minimum_size = Vector2(80, 58)
 		button.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		button.visible = not starter or key == "undo"
 		button.pressed.connect(_use_booster.bind(key))
 		bar.add_child(button)
 		booster_buttons[key] = button
@@ -510,6 +515,7 @@ func _use_booster(kind: String) -> void:
 		return
 	if completed or _clear_transition_active:
 		return
+	var actual_price := _booster_price(kind)
 	match kind:
 		"undo":
 			if history.is_empty():
@@ -554,12 +560,12 @@ func _use_booster(kind: String) -> void:
 	AnalyticsManager.track("block_puzzle_booster_used", {
 		"level": level_number,
 		"booster": kind,
-		"cost": int(BOOSTER_COSTS.get(kind, 0)),
+		"cost": actual_price,
 		"uses": int(booster_uses.get(kind, 0))
 	})
 
 func _spend_booster(kind: String) -> bool:
-	var cost := int(BOOSTER_COSTS.get(kind, 0))
+	var cost := _booster_price(kind)
 	if cost <= 0:
 		return true
 	if EconomyManager.spend(cost, "block_puzzle_booster_%s" % kind, {"level": level_number}):
@@ -689,6 +695,13 @@ func _current_legal_fit_count(cap: int) -> int:
 						return fits
 	return fits
 
+func _booster_price(kind: String) -> int:
+	# One free, fully functional Undo for early campaign lessons. Never give
+	# ranked Daily mode any booster advantage.
+	if kind == "undo" and not daily_mode and play_mode == "campaign" and level_number <= 3 and int(booster_uses.get("undo", 0)) == 0:
+		return 0
+	return int(BOOSTER_COSTS.get(kind, 0))
+
 func _refresh_booster_buttons() -> void:
 	if booster_buttons.is_empty():
 		return
@@ -697,6 +710,11 @@ func _refresh_booster_buttons() -> void:
 		if button == null or not is_instance_valid(button):
 			continue
 		button.disabled = completed or _clear_transition_active or daily_mode
+		if String(key) == "undo" and not daily_mode:
+			var price := _booster_price("undo")
+			button.text = "UNDO\nFREE" if price == 0 else "UNDO\n◈ %d" % price
+			button.tooltip_text = "Undo the last placement for free" if price == 0 else "Undo the last placement for %d coins" % price
+			button.accessibility_name = button.tooltip_text
 		if daily_mode:
 			button.tooltip_text = "Boosters are disabled in ranked Daily competition."
 	var undo_button = booster_buttons.get("undo") as Button
