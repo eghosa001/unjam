@@ -1424,7 +1424,7 @@ func _on_weekly_competition_reward(_coins: int, _crowns: int) -> void:
 
 func _figma_progress_leaderboard_panel(canvas: Control, title_text: String, entries: Array, y: float, own_rank: int, own_levels: int, own_stars: int, accent: Color) -> void:
 	_figma_card(canvas,"Leaderboard/%s" % title_text,Rect2(17,y,354,180),Color("#fffaf2"),Color(accent,0.36),18)
-	var readable_accent := accent.darkened(0.55)
+	var readable_accent := accent if _dark() else accent.darkened(0.55)
 	_figma_text(canvas,title_text,Rect2(33,y+12,120,20),15,readable_accent)
 	var own_text := "YOU —" if own_rank <= 0 else "YOU #%d • L%d" % [own_rank,own_levels]
 	var own := _figma_text(canvas,own_text,Rect2(185,y+12,166,20),13,FIGMA_INK,true)
