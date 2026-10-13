@@ -48,7 +48,7 @@ func _run() -> void:
 	var completed_water := main.find_child("DailyPlay_water_sort",true,false) as Button
 	var ready_rescue := main.find_child("DailyPlay_rescue_rush",true,false) as Button
 	var ready_block := main.find_child("DailyPlay_block_puzzle",true,false) as Button
-	if completed_water == null or not completed_water.disabled or completed_water.text != "✓ DONE":
+	if completed_water == null or not completed_water.disabled or completed_water.text != "COMPLETED":
 		return _fail("Completed Water Daily is not visibly distinguished")
 	if not completed_water.accessibility_name.contains("completed"):
 		return _fail("Completed Water Daily does not have an accessible description")
