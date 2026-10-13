@@ -29,10 +29,33 @@ func _run() -> void:
 		if not _check(not signature.is_empty() and not board_signatures.has(signature), "Daily sample has repeated board structure: %d" % level):return
 		board_signatures[signature] = true
 
+	# Exercise the LIVE autoload implementation (robust_daily_challenge.gd),
+	# not only the base class that previously went unused in production.
+	var save := root.get_node("SaveManager")
+	var previous_level: Variant = save.data.get("highest_level", 1)
+	for day in ["2026-10-14", "2026-12-01", "2027-10-13"]:
+		var expected_level := int(daily.call("_daily_source_level", day, rng))
+		var expected_signature := ""
+		for account_level in [1, 9999]:
+			save.data["highest_level"] = account_level
+			var produced: Dictionary = daily.call("_build_for_key", day)
+			if not _check(bool(produced.get("daily", false)) and String(produced.get("daily_key", "")) == day,
+					"Live Daily generator lost date/mode metadata"):return
+			if not _check(int(produced.get("daily_source_level", 0)) == expected_level,
+					"High-progression players receive a different Daily challenge"):return
+			var signature := String(produced.get("structural_signature", ""))
+			if not _check(bool(produced.get("solver_verified", false)) and not signature.is_empty(),
+					"Live Daily board was not solver-verified"):return
+			if expected_signature.is_empty():
+				expected_signature = signature
+			if not _check(signature == expected_signature,
+					"Daily level depends on player progression rather than calendar date"):return
+	save.data["highest_level"] = previous_level
+
 	rng.seed = 20261013
 	var old_level := int(daily.call("_daily_source_level", "2026-10-13", rng))
 	if not _check(old_level >= 51 and old_level <= 60, "Mid-day upgrades change the previous Daily puzzle"):return
-	print("DAILY_ROTATION_DIVERSITY_OK: 432 unique boss-free calendar days and sampled solver-proven boards")
+	print("DAILY_ROTATION_DIVERSITY_OK: 432 days, solver-proven boards and equal Daily competition for every player")
 	quit(0)
 
 func _check(ok: bool, detail: String) -> bool:
