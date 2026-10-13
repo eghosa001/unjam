@@ -252,6 +252,10 @@ function parseDay(value: unknown): Date | null {
 }
 function isoDay(d: Date) { return d.toISOString().slice(0, 10); }
 function weekStart(d: Date) { const x = new Date(d); x.setUTCDate(x.getUTCDate() - ((x.getUTCDay() + 6) % 7)); return x; }
+// Competition-day date may be yesterday or tomorrow to accommodate local
+// timezones, but it must NEVER advance the payout clock. Only a completed
+// UTC server week can become claimable.
+function authoritativeWeekStart() { return weekStart(new Date()); }
 // Conventional competition rank: two equal scores both display #1, and the
 // next lower score is #3. Align row labels, personal rank and weekly rewards.
 function rankTies<T extends Record<string, any>>(rows: T[], key: "score" | "rank_score"): (T & { rank: number })[] {
@@ -299,7 +303,7 @@ async function snapshotFor(sb: any, hash: string, day: Date) {
   const [{ data: daily }, { data: weekly }, playerDaily, playerWeekly, reward] = await Promise.all([
     sb.from("competition_totals").select("display_name,score,games_count").eq("period_type", "daily").eq("period_key", dayKey).order("score", { ascending: false }).order("updated_at", { ascending: true }).limit(20),
     sb.from("competition_totals").select("display_name,score,games_count").eq("period_type", "weekly").eq("period_key", weekKey).order("score", { ascending: false }).order("updated_at", { ascending: true }).limit(20),
-    rankFor(sb, "daily", dayKey, hash), rankFor(sb, "weekly", weekKey, hash), previousReward(sb, hash, weekStart(day)),
+    rankFor(sb, "daily", dayKey, hash), rankFor(sb, "weekly", weekKey, hash), previousReward(sb, hash, authoritativeWeekStart()),
   ]);
   return { ok: true, day: dayKey, week_start: weekKey, daily_top: publicRows(daily), weekly_top: publicRows(weekly), player_daily: playerDaily, player_weekly: playerWeekly, previous_week_reward: reward };
 }
@@ -388,7 +392,7 @@ async function progressionSnapshotFor(sb: any, playerHash: string, displayName: 
       progressTop(sb, "weekly", weekKey, gameId),
       progressRankFor(sb, "all_time", ALL_TIME_KEY, gameId, playerHash),
       progressRankFor(sb, "weekly", weekKey, gameId, playerHash),
-      previousProgressReward(sb, playerHash, gameId, weekStart(day)),
+      previousProgressReward(sb, playerHash, gameId, authoritativeWeekStart()),
     ]);
     gameRankings[gameId] = {
       all_time_top: allTimeTop,
@@ -535,7 +539,7 @@ Deno.serve(async (req: Request) => {
   if (action === "claim_progress_weekly") {
     const gameId = String(body.game_id ?? "");
     if (!GAME_IDS.has(gameId)) return json({ ok: false, reason: "Invalid game" }, 400);
-    const currentWeek = weekStart(day);
+    const currentWeek = authoritativeWeekStart();
     const defaultPeriodKey = isoDay(new Date(currentWeek.getTime() - 7 * DAY_MS));
     const requestedPeriod = body.claim_period_key;
     // Old app versions claim last week exactly as before. New clients can
@@ -685,7 +689,7 @@ Deno.serve(async (req: Request) => {
     }
   }
   if (action === "claim_weekly") {
-    const periodKey = isoDay(new Date(weekStart(day).getTime() - 7 * DAY_MS));
+    const periodKey = isoDay(new Date(authoritativeWeekStart().getTime() - 7 * DAY_MS));
     const rank = await rankFor(sb, "weekly", periodKey, hash);
     if (rank.rank <= 0 || rank.score <= 0) return json({ ok: false, reason: "No completed weekly competition" }, 404);
     const reward = rewardForRank(rank.rank), claim = { player_hash: hash, period_key: periodKey, rank: rank.rank, score: rank.score, coins: reward.coins, crowns: reward.crowns };
