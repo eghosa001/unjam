@@ -50,9 +50,41 @@ func pending_telemetry_for_test() -> Array:
 	return _telemetry_events.duplicate(true)
 
 func _queue_telemetry(event_name: String, props: Dictionary) -> void:
-	if not analytics_opted_in() or event_name not in TELEMETRY_EVENTS:
+	if not analytics_opted_in():
 		return
+	# The three games use distinct local QA names. Normalize only the
+	# whitelisted gameplay milestones, never upload arbitrary QA properties.
+	var canonical := event_name
 	var game := String(props.get("game_id", props.get("game", "all")))
+	match event_name:
+		"water_sort_attempt_started":
+			canonical = "level_start"
+			game = "water_sort"
+		"water_sort_completed":
+			canonical = "level_complete"
+			game = "water_sort"
+		"water_sort_attempt_stuck":
+			canonical = "level_fail"
+			game = "water_sort"
+		"water_sort_attempt_finished":
+			if String(props.get("outcome", "")) != "restart":
+				return
+			canonical = "level_restart"
+			game = "water_sort"
+		"block_puzzle_level_started":
+			canonical = "level_start"
+			game = "block_puzzle"
+		"block_puzzle_completed":
+			canonical = "level_complete"
+			game = "block_puzzle"
+		"block_puzzle_level_restarted":
+			canonical = "level_restart"
+			game = "block_puzzle"
+		"rescue_attempt_failed":
+			canonical = "level_fail"
+			game = "rescue_rush"
+	if canonical not in TELEMETRY_EVENTS:
+		return
 	if game not in TELEMETRY_GAMES:
 		game = "all"
 	var level := clampi(int(props.get("level", 0)), 0, 10000)
@@ -61,7 +93,7 @@ func _queue_telemetry(event_name: String, props: Dictionary) -> void:
 		for candidate in TELEMETRY_LEVEL_BANDS:
 			if level >= candidate:
 				band = candidate
-	var event := {"name": event_name, "game": game, "level_band": band}
+	var event := {"name": canonical, "game": game, "level_band": band}
 	_telemetry_events.append(event)
 	while _telemetry_events.size() > MAX_TELEMETRY_BATCH:
 		_telemetry_events.pop_front()
@@ -157,16 +189,16 @@ func _safe_name(value: String) -> bool:
 	return true
 
 func level_started(level_number: int) -> void:
-	track("level_start", {"level": level_number})
+	track("level_start", {"level": level_number, "game_id": "rescue_rush"})
 
 func level_completed(level_number: int, moves: int, stars: int) -> void:
-	track("level_complete", {"level": level_number, "moves": moves, "stars": stars})
+	track("level_complete", {"level": level_number, "moves": moves, "stars": stars, "game_id": "rescue_rush"})
 
 func level_restarted(level_number: int) -> void:
-	track("level_restart", {"level": level_number})
+	track("level_restart", {"level": level_number, "game_id": "rescue_rush"})
 
 func hint_used(level_number: int) -> void:
-	track("hint_used", {"level": level_number})
+	track("hint_used", {"level": level_number, "game_id": "rescue_rush"})
 
 func undo_used(level_number: int) -> void:
-	track("undo_used", {"level": level_number})
+	track("undo_used", {"level": level_number, "game_id": "rescue_rush"})
