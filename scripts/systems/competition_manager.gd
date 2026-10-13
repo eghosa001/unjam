@@ -310,6 +310,7 @@ func refresh_snapshot() -> void:
 		if ok and bool(body.get("ok", false)):
 			snapshot = body.duplicate(true)
 			snapshot_updated.emit(snapshot)
+			_retry_pending_weekly_claims()
 		else:
 			# Preserve the last good snapshot and report outage on the next frame.
 			# The current screen may still be building its UI in this call stack.
@@ -531,6 +532,21 @@ func _flush_pending_daily_results() -> void:
 			else:
 				_schedule_sync_retry()
 		)
+
+# Recover a server-accepted reward automatically the next time a live
+# league snapshot loads. Do not invent a claim or send a new token: only
+# retry the exact ticket saved before its first HTTP request.
+func _retry_pending_weekly_claims() -> void:
+	var pending = SaveManager.data.get(WEEKLY_RECEIPTS_KEY, {})
+	if not pending is Dictionary or pending.is_empty():
+		return
+	for game_id in GAME_IDS:
+		var reward := previous_week_reward(game_id)
+		var period_key := String(reward.get("period_key", ""))
+		if period_key.length() != 10 or not bool(reward.get("eligible", false)):
+			continue
+		if pending.has("%s:%s" % [period_key, game_id]):
+			call_deferred("claim_weekly_reward", game_id)
 
 func pending_weekly_receipts_for_test() -> Dictionary:
 	var pending = SaveManager.data.get(WEEKLY_RECEIPTS_KEY, {})
