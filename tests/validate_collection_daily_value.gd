@@ -40,6 +40,16 @@ func _run() -> void:
 	if economy.claim_reward_double("qa:double", 50) or int(save.data.get("coins", 0)) != doubled_balance:
 		failures.append("Reward-double claim must be idempotent")
 
+	var preview = load("res://scripts/ui/garden_upgrade_preview.gd").new()
+	preview.size = Vector2(38, 50)
+	root.add_child(preview)
+	for tier in range(6):
+		preview.call("configure", "tree", tier)
+		if int(preview.get("upgrade_level")) != tier or bool(preview.get("owned")) != (tier > 0):
+			failures.append("Garden tier preview mismatch at level %d" % tier)
+	await process_frame
+	preview.queue_free()
+	await process_frame
 	var home := _read("res://scripts/ui/premium_home_casual.gd")
 	var main := _read("res://scripts/ui/premium_main_casual.gd")
 	var competition := _read("res://scripts/systems/competition_manager.gd")
