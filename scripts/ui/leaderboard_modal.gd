@@ -399,6 +399,7 @@ func _render() -> void:
 		var row = entries[i]
 		if not row is Dictionary:
 			continue
+		var place := maxi(1, int(row.get("rank", i + 1)))
 		var name_text := String(row.get("name","PLAYER")).left(30)
 		var score := maxi(0,int(row.get("score",0))) if today else maxi(0,int(row.get("levels_completed",0)))
 		var suffix := "PTS" if today else "LVL"
@@ -414,9 +415,9 @@ func _render() -> void:
 		var lane := HBoxContainer.new()
 		lane.add_theme_constant_override("separation",int(10*_ui_scale))
 		row_margin.add_child(lane)
-		var place := _label("#%d" % (i+1),int(16*_ui_scale),accent_color)
-		place.custom_minimum_size.x = 43*_ui_scale
-		lane.add_child(place)
+		var place_label := _label("#%d" % place,int(16*_ui_scale),accent_color)
+		place_label.custom_minimum_size.x = 43*_ui_scale
+		lane.add_child(place_label)
 		var player := _label(name_text,int(16*_ui_scale),Color("#f6f4fc") if _dark else Color("#253040"))
 		player.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		lane.add_child(player)
@@ -424,7 +425,7 @@ func _render() -> void:
 		points.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		points.custom_minimum_size.x = 93*_ui_scale
 		lane.add_child(points)
-		panel.accessibility_name = "Rank %d, %s, %d %s" % [i+1,name_text,score,suffix]
+		panel.accessibility_name = "Rank %d, %s, %d %s" % [place,name_text,score,suffix]
 		player.accessibility_name = panel.accessibility_name
 	if entries.is_empty():
 		var empty := _label("No scores yet. Be the first to play!" if today else "No campaign entries yet. Finish levels to join.",int(15*_ui_scale),Color("#bdc8d7") if _dark else Color("#47556c"))
