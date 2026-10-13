@@ -33,7 +33,7 @@ func _run() -> void:
 	for node in ui.find_children("*", "Button", true, false):
 		var button := node as Button
 		action_count += 1
-		if not _check(button.custom_minimum_size.y >= 44.0 and button.focus_mode == Control.FOCUS_ALL, "Privacy touch or focus target too small"):return
+		if not _check(button.custom_minimum_size.y >= 44.0 and button.focus_mode == Control.FOCUS_ALL, "Privacy touch/focus regression on %s: min=%s focus=%d" % [button.name, str(button.custom_minimum_size), button.focus_mode]):return
 	if not _check(action_count >= 4, "Privacy sheet is missing analytics, ads, policy or close actions"):return
 	ui.queue_free()
 	await process_frame
