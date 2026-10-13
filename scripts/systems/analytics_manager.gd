@@ -10,6 +10,8 @@ signal event_recorded(event_name: String, safe_properties: Dictionary)
 const MAX_EVENT_KINDS := 96
 const MAX_RECENT_EVENTS := 24
 const MAX_TELEMETRY_BATCH := 24
+const TELEMETRY_RETRY_START_MS := 25000
+const TELEMETRY_RETRY_MAX_MS := 300000
 const TELEMETRY_EVENTS := ["session_start", "level_start", "level_complete", "level_restart", "hint_used", "undo_used", "level_fail"]
 const TELEMETRY_GAMES := ["rescue_rush", "water_sort", "block_puzzle"]
 const TELEMETRY_LEVEL_BANDS := [1, 10, 50, 100, 500, 1000, 5000, 10000]
@@ -33,6 +35,8 @@ var _telemetry_retry_batch: Array = []
 var _telemetry_retry_id := ""
 var _telemetry_request: HTTPRequest
 var _telemetry_consent_epoch := 0
+var _telemetry_retry_after_ms := 0
+var _telemetry_retry_delay_ms := TELEMETRY_RETRY_START_MS
 
 func _ready() -> void:
 	_telemetry_timer = Timer.new()
@@ -60,6 +64,8 @@ func set_analytics_opt_in(allowed: bool) -> void:
 		_telemetry_events.clear()
 		_telemetry_retry_batch.clear()
 		_telemetry_retry_id = ""
+		_telemetry_retry_after_ms = 0
+		_telemetry_retry_delay_ms = TELEMETRY_RETRY_START_MS
 		_telemetry_in_flight = false
 		if _telemetry_request != null and is_instance_valid(_telemetry_request):
 			_telemetry_request.cancel_request()
