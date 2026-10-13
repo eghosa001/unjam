@@ -53,11 +53,23 @@ func _ready() -> void:
 	set_process(false)
 	_sync_reference_processing()
 
+func _reduced_motion() -> bool:
+	# Runtime lookup also works when this texture class is preloaded by a
+	# stand-alone Godot script before singleton names are registered.
+	var motion := get_node_or_null("/root/MotionSystem")
+	return motion != null and bool(motion.call("reduced"))
+
 func _press() -> void:
+	if _reduced_motion():
+		scale = Vector2.ONE
+		return
 	var t := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	t.tween_property(self, "scale", Vector2(0.95, 0.95), 0.06)
 
 func _release() -> void:
+	if _reduced_motion():
+		scale = Vector2.ONE
+		return
 	var t := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	t.tween_property(self, "scale", Vector2(1.04, 1.04), 0.08)
 	t.tween_property(self, "scale", Vector2.ONE, 0.13)
@@ -76,6 +88,8 @@ func play_invalid() -> void:
 	# preload this base class before editor autoload symbols are registered.
 	var motion := get_node_or_null("/root/MotionSystem")
 	if motion != null and motion.has_method("reduced") and bool(motion.call("reduced")):
+		invalid_flash = 0.0
+		_sync_reference_processing()
 		queue_redraw()
 		return
 	_invalid_wobble = create_tween().set_trans(Tween.TRANS_SINE)
@@ -83,6 +97,12 @@ func play_invalid() -> void:
 		_invalid_wobble.tween_property(self, "rotation", deg_to_rad(degrees), 0.035)
 
 func play_success() -> void:
+	if _reduced_motion():
+		success_flash = 0.0
+		scale = Vector2.ONE
+		_sync_reference_processing()
+		queue_redraw()
+		return
 	success_flash = 1.0
 	set_process(true)
 	var t := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
@@ -90,7 +110,7 @@ func play_success() -> void:
 	t.tween_property(self, "scale", Vector2.ONE, 0.14)
 
 func _sync_reference_processing() -> void:
-	set_process(is_selected or invalid_flash > 0.001 or success_flash > 0.001)
+	set_process((is_selected and not _reduced_motion()) or invalid_flash > 0.001 or success_flash > 0.001)
 	if not is_selected:
 		_redraw_accumulator = 0.0
 
