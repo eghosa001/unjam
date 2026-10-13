@@ -106,6 +106,15 @@ func _draw() -> void:
 			draw_style_box(style, r)
 		else:
 			draw_rect(r, lower_color, true)
+		# Cheap cylindrical edge shading: coloured liquid now reads as a volume,
+		# rather than a stack of solid rectangles. The bands share each run's
+		# colour and never cover the exposed surface/meniscus.
+		var side_band := clampf(r.size.x * 0.12, 2.0, 6.0)
+		draw_rect(Rect2(r.position, Vector2(side_band, r.size.y)), Color(liquid.darkened(0.38), 0.23), true)
+		draw_rect(Rect2(Vector2(r.end.x - side_band, r.position.y), Vector2(side_band, r.size.y)), Color(liquid.darkened(0.32), 0.17), true)
+		if r.size.y >= 9.0:
+			var soft_center := Rect2(Vector2(r.position.x + r.size.x * 0.40, r.position.y + 2.0), Vector2(r.size.x * 0.16, r.size.y - 4.0))
+			draw_rect(soft_center, Color(1, 1, 1, 0.055), true)
 		# Only the exposed liquid surface owns a highlight/meniscus line. Equal
 		# adjacent colours are one body of liquid, not stacked solid layers.
 		var next_fill := _slot_fill(slot + 1) if slot + 1 < CAPACITY else 0.0
@@ -118,10 +127,18 @@ func _draw() -> void:
 			draw_line(Vector2(r.position.x + 2, r.position.y + 2), Vector2(r.end.x - 2, r.position.y + 2 - wave * 0.3), upper_color.lightened(0.10), 2.0, true)
 	var lip_y := body.position.y + 3.0
 	draw_line(Vector2(body.position.x - 4, lip_y), Vector2(body.end.x + 4, lip_y), outline, 5.0, true)
+	# Break the reflection into short rim-side glints. A continuous white line
+	# over the full bottle looks like plastic, especially across dark liquids.
+	# Outer-edge glints keep colour runs unobstructed on narrow Android slots.
 	var specular_alpha := 0.28
-	var specular_shift := 0.0 if MotionSystem.reduced() else sin(pulse * 0.85) * 2.0
-	draw_line(Vector2(body.position.x + 8 + specular_shift, body.position.y + 18), Vector2(body.position.x + 8 + specular_shift, body.end.y - 24), _materials.glass_highlight(Color.WHITE, specular_alpha + 0.08), 4.0, true)
-	draw_line(Vector2(body.end.x - 7, body.position.y + 23), Vector2(body.end.x - 7, body.size.y * 0.38 + body.position.y), Color(1, 1, 1, 0.13), 2.0, true)
+	var specular_shift := 0.0 if MotionSystem.reduced() else sin(pulse * 0.85) * 1.0
+	var crystal_glint := _materials.glass_highlight(Color.WHITE, specular_alpha + 0.08)
+	var left_edge := body.position.x + clampf(body.size.x * 0.055, 2.0, 4.0) + specular_shift
+	draw_line(Vector2(left_edge, body.position.y + radius * 1.05), Vector2(left_edge, body.position.y + body.size.y * 0.32), crystal_glint, 2.6, true)
+	draw_line(Vector2(left_edge + 1.5, body.end.y - radius * 1.50), Vector2(left_edge + 1.5, body.end.y - radius * 0.85), Color(1, 1, 1, 0.18), 1.8, true)
+	var right_edge := body.end.x - clampf(body.size.x * 0.055, 2.0, 4.0)
+	draw_line(Vector2(right_edge, body.position.y + radius * 1.20), Vector2(right_edge, body.position.y + body.size.y * 0.23), Color(1, 1, 1, 0.20), 1.7, true)
+	draw_arc(Vector2(body.get_center().x, body.end.y - radius * 0.66), body.size.x * 0.33, 0.14, PI - 0.14, 20, Color(0.85, 0.97, 1.0, 0.22), 2.0, true)
 	# Authored glass silhouette/highlight pass sits above dynamic liquid.
 	draw_texture_rect(AUTHORED_GLASS_OVERLAY, body.grow(5.0), false, Color.WHITE)
 	if is_selected and pour_mode == 0:
