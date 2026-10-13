@@ -16,6 +16,13 @@ const CHECKPOINT_HISTORY_LIMIT := 24
 var _state_initialized := false
 var _total_stars_cache: Dictionary = {}
 
+func invalidate_cloud_progress_cache() -> void:
+	# Cloud restore changes saved star dictionaries without normal level
+	# completion callbacks. Drop cached totals and rerun state migration.
+	_total_stars_cache.clear()
+	_state_initialized = false
+	ensure_state()
+
 func _ready()->void: ensure_state()
 
 func _state_containers_present()->bool:
