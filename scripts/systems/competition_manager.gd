@@ -13,6 +13,7 @@ const REQUEST_TIMEOUT_SECONDS := 12.0
 const DAILY_PENDING_KEY := "competition_pending_daily_results"
 const MAX_PENDING_DAILY_RESULTS := 9
 const CAMPAIGN_PENDING_KEY := "competition_pending_campaign_results"
+const WEEKLY_RECEIPTS_KEY := "competition_pending_weekly_receipts"
 const MAX_PENDING_CAMPAIGN_RESULTS := 240
 const RETRY_START_SECONDS := 20.0
 const RETRY_MAX_SECONDS := 300.0
@@ -23,6 +24,7 @@ var social_snapshot: Dictionary = {}
 var _snapshot_in_flight := false
 var _daily_snapshot_in_flight := false
 var _pending_daily_requests: Dictionary = {}
+var _weekly_claim_in_flight: Dictionary = {}
 var _campaign_submission_in_flight := false
 var _retry_timer: Timer
 var _next_retry_seconds := RETRY_START_SECONDS
@@ -270,7 +272,16 @@ func previous_week_reward(game_id: String = "rescue_rush") -> Dictionary:
 
 func can_claim_weekly_reward(game_id: String = "rescue_rush") -> bool:
 	var reward := previous_week_reward(game_id)
-	return bool(reward.get("eligible", false)) and not bool(reward.get("claimed", false))
+	if not bool(reward.get("eligible", false)):
+		return false
+	var period_key := String(reward.get("period_key", ""))
+	var claim_key := "%s:%s" % [period_key, game_id]
+	if period_key.length() != 10 or claim_key in SaveManager.data.get("competition_claimed_periods", []):
+		return false
+	# A new request cannot reclaim a reward from another device. But the
+	# original phone must be able to retry after its acknowledgement was lost.
+	var pending := SaveManager.data.get(WEEKLY_RECEIPTS_KEY, {})
+	return not bool(reward.get("claimed", false)) or (pending is Dictionary and pending.has(claim_key))
 
 func refresh_snapshot() -> void:
 	# Deterministic screenshot/visual-audit runs should never leave live HTTP
@@ -521,52 +532,78 @@ func _flush_pending_daily_results() -> void:
 				_schedule_sync_retry()
 		)
 
+func pending_weekly_receipts_for_test() -> Dictionary:
+	var pending := SaveManager.data.get(WEEKLY_RECEIPTS_KEY, {})
+	return (pending as Dictionary).duplicate() if pending is Dictionary else {}
+
 func claim_weekly_reward(game_id: String = "rescue_rush") -> void:
-	if game_id not in GAME_IDS:
+	if game_id not in GAME_IDS or not can_claim_weekly_reward(game_id):
 		return
 	var cloud_id := String(SaveManager.data.get("cloud_save_id", ""))
 	if cloud_id.length() != 64:
 		return
+	var reward := previous_week_reward(game_id)
+	var period_key := String(reward.get("period_key", ""))
+	var claim_key := "%s:%s" % [period_key, game_id]
+	if _weekly_claim_in_flight.has(claim_key):
+		return
+	var pending = SaveManager.data.get(WEEKLY_RECEIPTS_KEY, {})
+	if not pending is Dictionary:
+		pending = {}
+	if not pending.has(claim_key):
+		# Save the random per-claim receipt BEFORE sending. Server stores its
+		# SHA-256 hash only. A later retry with this SAME receipt may recover a
+		# reward even if the first HTTP response never reached the phone.
+		pending[claim_key] = Crypto.new().generate_random_bytes(16).hex_encode()
+		var keys := pending.keys()
+		keys.sort()
+		while keys.size() > 24:
+			var oldest: String = String(keys.pop_front())
+			pending.erase(oldest)
+		SaveManager.data[WEEKLY_RECEIPTS_KEY] = pending
+		SaveManager.save()
+	var receipt := String(pending.get(claim_key, ""))
+	_weekly_claim_in_flight[claim_key] = true
 	_request_json({
 		"action": "claim_progress_weekly",
 		"cloud_save_id": cloud_id,
 		"display_name": display_name(),
 		"competition_day": DailyChallenge.date_key(),
 		"game_id": game_id,
+		"claim_receipt": receipt,
 	}, func(ok: bool, _status: int, body: Dictionary) -> void:
+		_weekly_claim_in_flight.erase(claim_key)
 		if not ok or not bool(body.get("ok", false)):
+			# Preserve the saved receipt for the next explicit retry.
 			return
-		var period_key := String(body.get("period_key", ""))
-		var claim_key := "%s:%s" % [period_key, game_id]
-		var already_claimed := bool(body.get("already_claimed", false))
-		var local_claims = SaveManager.data.get("competition_claimed_periods", [])
-		if not local_claims is Array:
-			local_claims = []
-		if already_claimed:
-			if not claim_key.is_empty() and claim_key not in local_claims:
-				local_claims.append(claim_key)
-				SaveManager.data["competition_claimed_periods"] = local_claims
-				SaveManager.save()
+		if String(body.get("period_key", "")) != period_key or String(body.get("game_id", "")) != game_id:
+			return
+		var matches := bool(body.get("receipt_matches", false))
+		if not matches:
+			# Claimed previously by another install/legacy client; do NOT award
+			# this device a duplicate balance. No recovery without a match.
+			var old_claims = SaveManager.data.get("competition_claimed_periods", [])
+			if not old_claims is Array:
+				old_claims = []
+			if claim_key not in old_claims:
+				old_claims.append(claim_key)
+				SaveManager.data["competition_claimed_periods"] = old_claims
+			var saved_pending = SaveManager.data.get(WEEKLY_RECEIPTS_KEY, {})
+			if saved_pending is Dictionary:
+				saved_pending.erase(claim_key)
+				SaveManager.data[WEEKLY_RECEIPTS_KEY] = saved_pending
+			SaveManager.save()
 			refresh_snapshot()
 			return
-		if not period_key.is_empty() and claim_key not in local_claims:
-			var coins := maxi(0, int(body.get("coins", 0)))
-			var base_crowns := maxi(0, int(body.get("crowns", 0)))
-			var crowns := EconomyManager.competition_crown_reward(base_crowns)
-			if coins > 0:
-				EconomyManager.grant(coins, "weekly_progression_reward", {
-					"period": period_key,
-					"game": game_id,
-					"rank": int(body.get("rank", 0)),
-				})
-			if crowns > 0:
-				SaveManager.data["crown_tokens"] = maxi(0, int(SaveManager.data.get("crown_tokens", 0))) + crowns
-			local_claims.append(claim_key)
-			if local_claims.size() > 312:
-				local_claims = local_claims.slice(local_claims.size() - 312)
-			SaveManager.data["competition_claimed_periods"] = local_claims
-			SaveManager.save()
-			weekly_reward_claimed.emit(coins, crowns)
+		var outcome: Dictionary = EconomyManager.credit_weekly_progression_once(
+			period_key,
+			game_id,
+			int(body.get("rank", 0)),
+			int(body.get("coins", 0)),
+			int(body.get("crowns", 0))
+		)
+		if bool(outcome.get("credited", false)):
+			weekly_reward_claimed.emit(int(outcome.get("coins", 0)), int(outcome.get("crowns", 0)))
 		refresh_snapshot()
 	)
 
