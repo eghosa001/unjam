@@ -295,6 +295,12 @@ func render_board() -> void:
 				_animate_cell(empty, x, y)
 
 func _animate_cell(cell: Control, x: int, y: int) -> void:
+	# A rebuilt board can contain dozens of controls. Reduce Motion means
+	# no staggered entrance tweens and no tile zoom, including on level retry.
+	if MotionSystem.reduced():
+		cell.modulate.a = 1.0
+		cell.scale = Vector2.ONE
+		return
 	cell.modulate.a = 0.0
 	cell.scale = Vector2(0.92, 0.92)
 	cell.pivot_offset = cell.custom_minimum_size / 2.0
