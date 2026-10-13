@@ -533,7 +533,31 @@ Deno.serve(async (req: Request) => {
     const gameId = String(body.game_id ?? "");
     if (!GAME_IDS.has(gameId)) return json({ ok: false, reason: "Invalid game" }, 400);
     const periodKey = isoDay(new Date(weekStart(day).getTime() - 7 * DAY_MS));
+    // A new client persists a random token before the HTTP claim. Only the
+    // SAME receipt can reconcile a lost response; a second installation or
+    // conflicting request must not be allowed to credit it again.
+    const claimReceipt = body.claim_receipt;
+    if (claimReceipt !== undefined && (typeof claimReceipt !== "string"
+      || !/^[0-9a-f]{32}$/.test(claimReceipt))) {
+      return json({ ok: false, reason: "Invalid claim receipt" }, 400);
+    }
+    const receiptHash = typeof claimReceipt === "string" ? await sha256Hex(claimReceipt) : null;
     try {
+      // A stored receipt must remain redeemable after an earlier league score
+      // was reclassified. Existing claims are historical settlement records;
+      // recomputing today's rank first could strand a legitimate paid claim.
+      const { data: prior, error: priorError } = await sb.from("progression_reward_claims")
+        .select("rank,levels_completed,coins,crowns,claim_receipt_hash")
+        .eq("player_hash", hash).eq("period_key", periodKey).eq("game_id", gameId).maybeSingle();
+      if (priorError) throw priorError;
+      if (prior) {
+        return json({
+          ok: true, period_key: periodKey, game_id: gameId, already_claimed: true,
+          receipt_matches: Boolean(receiptHash && prior.claim_receipt_hash === receiptHash),
+          rank: Number(prior.rank), levels_completed: Number(prior.levels_completed),
+          coins: Number(prior.coins), crowns: Number(prior.crowns),
+        });
+      }
       const rank = await progressRankFor(sb, "weekly", periodKey, gameId, hash);
       if (rank.rank <= 0 || rank.levels_completed <= 0) return json({ ok: false, reason: "No completed weekly league" }, 404);
       const reward = progressionRewardForRank(rank.rank);
@@ -541,16 +565,30 @@ Deno.serve(async (req: Request) => {
         player_hash: hash, period_key: periodKey, game_id: gameId,
         rank: rank.rank, levels_completed: rank.levels_completed,
         coins: reward.coins, crowns: reward.crowns,
+        claim_receipt_hash: receiptHash,
       };
       const { error } = await sb.from("progression_reward_claims").insert(claim);
       if (error && error.code !== "23505") return json({ ok: false, reason: "Reward service unavailable" }, 503);
       if (error?.code === "23505") {
         const { data: existing } = await sb.from("progression_reward_claims")
-          .select("rank,levels_completed,coins,crowns")
+          .select("rank,levels_completed,coins,crowns,claim_receipt_hash")
           .eq("player_hash", hash).eq("period_key", periodKey).eq("game_id", gameId).maybeSingle();
-        return json({ ok: true, period_key: periodKey, game_id: gameId, already_claimed: true, ...(existing ?? claim) });
+        // Do not send the stored hash or any raw receipt back in responses.
+        const receiptMatches = Boolean(receiptHash && existing?.claim_receipt_hash === receiptHash);
+        return json({
+          ok: true, period_key: periodKey, game_id: gameId, already_claimed: true,
+          receipt_matches: receiptMatches,
+          rank: Number(existing?.rank ?? 0),
+          levels_completed: Number(existing?.levels_completed ?? 0),
+          coins: Number(existing?.coins ?? 0), crowns: Number(existing?.crowns ?? 0),
+        });
       }
-      return json({ ok: true, period_key: periodKey, game_id: gameId, already_claimed: false, ...claim });
+      return json({
+        ok: true, period_key: periodKey, game_id: gameId, already_claimed: false,
+        receipt_matches: Boolean(receiptHash),
+        rank: claim.rank, levels_completed: claim.levels_completed,
+        coins: claim.coins, crowns: claim.crowns,
+      });
     } catch (error) {
       console.error("claim progression reward failed", { error: String(error) });
       return json({ ok: false, reason: "Reward service unavailable" }, 503);

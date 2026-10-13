@@ -65,7 +65,7 @@ func _run() -> void:
 	for token in ["daily\":\"DAILY", "build_daily_games", "build_compete_leaderboard", "CAMPAIGN RANKINGS", "collection_item_level", "LEVEL %d/%d"]:
 		if not main.contains(token):
 			failures.append("Compete/Collection UI contract missing: %s" % token)
-	for token in ["submit_campaign_progress", "claim_weekly_reward", "game_all_time_top", "game_weekly_top", "already_claimed"]:
+	for token in ["submit_campaign_progress", "claim_weekly_reward", "game_all_time_top", "game_weekly_top", "receipt_matches"]:
 		if not competition.contains(token):
 			failures.append("Campaign competition manager contract missing: %s" % token)
 	for source in [rescue, water_base, block]:
