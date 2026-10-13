@@ -86,8 +86,14 @@ func _wake_animation() -> void:
 	if not is_processing():
 		set_process(true)
 
+func _reduced_motion() -> bool:
+	# This class_name control also loads in isolated headless tests before the
+	# autoload global identifiers are registered. Resolve the service safely.
+	var motion := get_node_or_null("/root/MotionSystem")
+	return motion != null and bool(motion.call("reduced"))
+
 func _hover(value: bool) -> void:
-	if MotionSystem.reduced():
+	if _reduced_motion():
 		hover_amount = 0.0
 		queue_redraw()
 		return
@@ -96,13 +102,13 @@ func _hover(value: bool) -> void:
 	tw.tween_property(self, "hover_amount", 1.0 if value else 0.0, 0.08)
 
 func _press() -> void:
-	if MotionSystem.reduced():
+	if _reduced_motion():
 		return
 	var tw := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tw.tween_property(self, "scale", Vector2(0.965, 0.965), 0.045)
 
 func _release() -> void:
-	if MotionSystem.reduced():
+	if _reduced_motion():
 		scale = Vector2.ONE
 		return
 	var tw := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
@@ -110,7 +116,7 @@ func _release() -> void:
 	tw.tween_property(self, "scale", Vector2.ONE, 0.11)
 
 func _play_land() -> void:
-	if MotionSystem.reduced():
+	if _reduced_motion():
 		impact = 0.0
 		scale = Vector2.ONE
 		queue_redraw()
@@ -134,7 +140,7 @@ func play_clear(delay: float = 0.0) -> void:
 	_play_clear()
 
 func _play_clear() -> void:
-	if MotionSystem.reduced():
+	if _reduced_motion():
 		clear_echo = 0.0
 		clear_phase = 0.0
 		scale = Vector2.ONE
