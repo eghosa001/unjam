@@ -39,6 +39,17 @@ func _run() -> void:
 	if not _check(float(fake.get("_sync_retry_delay")) == 80.0,
 		"Repeated failures do not use bounded exponential backoff"):return
 
+	# A 409 means another device saved a newer revision. If all this
+	# phone's levels are already included, there is nothing to upload.
+	var matching_remote: Dictionary = fake.call("_merge_progress_on_conflict", fake.call("_snapshot"))
+	fake.fixture = {"ok":false,"status":409,"revision":5,"save":matching_remote}
+	fake.call("_push_now")
+	if not _check(String(fake.call("backup_status")).contains("synced"),
+		"Resolved 409 is incorrectly presented as an endless sync conflict"):return
+	if not _check(timer.is_stopped()
+		and float(fake.get("_sync_retry_delay")) == 20.0,
+		"Resolved 409 still has a needless retry scheduled"):return
+
 	fake.queue_free()
 	await process_frame
 	save.data = original
