@@ -1670,21 +1670,21 @@ func build_collection_upgrades() -> void:
 	scroll_to_summary.gui_input.connect(_collection_upgrades_scroll_input.bind(scroll_to_summary))
 	canvas.add_child(scroll_to_summary)
 
-	_figma_text(canvas,"GARDEN UPGRADES",Rect2(23,99,342,28),22,Color("#1c8552"))
-	_figma_text(canvas,"Permanent progression • %d / %d levels" % [EconomyManager.collection_total_levels(),EconomyManager.collection_max_total_levels()],Rect2(23,131,342,18),14,Color("#597a8f"))
-	_figma_solid_card(canvas,"CollectionScroll/Boost",Rect2(23,163,342,60),Color("#f0fff5"),Color(0.30,0.78,0.48,0.42),16,false)
+	_figma_text(canvas,"GARDEN UPGRADES",Rect2(23,99,342,28),22,Color("#80f2b9") if _dark() else Color("#1c8552"))
+	_figma_text(canvas,"Permanent progression • %d / %d levels" % [EconomyManager.collection_total_levels(),EconomyManager.collection_max_total_levels()],Rect2(23,131,342,18),14,Color("#c7d5e1") if _dark() else Color("#597a8f"))
+	_figma_solid_card(canvas,"CollectionScroll/Boost",Rect2(23,163,342,60),Color("#24342f") if _dark() else Color("#f0fff5"),Color(0.30,0.78,0.48,0.58),16,false)
 	var boost_text := _figma_text(
 		canvas,
 		"DAILY +%d  •  GIFT +%d  •  CAMPAIGN +%d%%" % [EconomyManager.collection_daily_bonus(),EconomyManager.garden_gift_amount(),EconomyManager.collection_campaign_reward_bonus_pct()],
 		Rect2(33,184,322,18),
 		13,
-		Color("#1f8a52"),
+		Color("#adf6ca") if _dark() else Color("#1f8a52"),
 		true
 	)
 	boost_text.name = "CollectionUpgradeBoostSummary"
 	boost_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	boost_text.custom_minimum_size = Vector2.ZERO
-	_fit_single_line_control_text(boost_text, 318.0, 13, 9)
+	_fit_single_line_control_text(boost_text, 318.0, 13, 11)
 
 	var upgrades := [
 		["tree","CANOPY TREE","SHADE",100],
@@ -1703,18 +1703,18 @@ func build_collection_upgrades() -> void:
 		var maxed := level >= EconomyManager.COLLECTION_MAX_LEVEL
 		var cost := EconomyManager.collection_level_cost(id,base_cost)
 		var y := 235.0 + float(i)*78.0
-		var card_fill := Color("#f0fff5") if level > 0 else Color("#fcfaff")
-		var card_border := Color(0.32,0.78,0.49,0.46) if level > 0 else Color(0.72,0.58,0.90,0.46)
-		var title_color := Color("#1f854f") if level > 0 else Color("#4d3373")
+		var card_fill := (Color("#283a35") if level > 0 else Color("#302c3a")) if _dark() else (Color("#f0fff5") if level > 0 else Color("#fcfaff"))
+		var card_border := Color(0.50,0.90,0.70,0.65) if level > 0 else Color(0.75,0.68,0.95,0.65)
+		var title_color := (Color("#b9f6d4") if level > 0 else Color("#e8d5ff")) if _dark() else (Color("#1f854f") if level > 0 else Color("#4d3373"))
 		_figma_solid_card(canvas, "CollectionScroll/Upgrade/%d" % i, Rect2(23,y,342,70), card_fill, card_border, 16, false)
-		var upgrade_title := _figma_text(canvas,display_name,Rect2(37,y+8,154,20),14,title_color)
+		var upgrade_title := _figma_text(canvas,display_name,Rect2(37,y+6,154,20),15,title_color)
 		upgrade_title.name = "CollectionUpgradeTitle/%s" % id
 		upgrade_title.tooltip_text = "%s, level %d of %d" % [display_name,level,EconomyManager.COLLECTION_MAX_LEVEL]
 		upgrade_title.accessibility_name = upgrade_title.tooltip_text
 		upgrade_title.custom_minimum_size = Vector2.ZERO
-		_fit_single_line_control_text(upgrade_title, 150.0, 14, 12)
+		_fit_single_line_control_text(upgrade_title, 150.0, 15, 12)
 		var effect_full := EconomyManager.collection_effect_text(id,level)
-		var effect_text := _figma_text(canvas,effect_full,Rect2(37,y+34,154,24),12,Color("#6b8091"))
+		var effect_text := _figma_text(canvas,effect_full,Rect2(37,y+29,154,20),12,Color("#d9e2f0") if _dark() else Color("#526678"))
 		effect_text.name = "CollectionUpgradeEffect/%s" % id
 		effect_text.tooltip_text = effect_full
 		effect_text.accessibility_name = effect_full
@@ -1728,11 +1728,11 @@ func build_collection_upgrades() -> void:
 		var state_text := "MAX" if maxed else "%d COINS" % cost
 		var pill_fill := Color("#e0f2e5") if maxed else Color("#7a57e0")
 		var state_text_color := Color("#4d7a59") if maxed else Color.WHITE
-		var state := _figma_button(canvas, "CollectionUpgrade/%s" % id, state_text, Rect2(251,y+7,96,44), pill_fill, Callable(), state_text_color, 12, 12)
+		var state := _figma_button(canvas, "CollectionUpgrade/%s" % id, state_text, Rect2(251,y+13,96,44), pill_fill, Callable(), state_text_color, 12, 12)
 		state.accessibility_name = "%s, level %d of %d. %s" % [display_name,level,EconomyManager.COLLECTION_MAX_LEVEL,state_text]
-		var level_badge := _figma_text(canvas,"LEVEL %d/%d" % [level,EconomyManager.COLLECTION_MAX_LEVEL],Rect2(251,y+53,96,15),12,title_color,true)
+		var level_badge := _figma_text(canvas,"LEVEL %d/%d" % [level,EconomyManager.COLLECTION_MAX_LEVEL],Rect2(37,y+51,156,17),12,Color("#f6d481") if _dark() else Color("#536474"),false)
 		level_badge.name = "CollectionUpgradeLevel/%s" % id
-		level_badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		level_badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		state.disabled = maxed
 		if maxed:
 			var owned_style := FigmaReferenceCanvas.solid_box(Color("#e0f2e5"),12,Color.TRANSPARENT,0)
