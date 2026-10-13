@@ -30,7 +30,7 @@ func _run() -> void:
 				return _fail("%s %s meter shows the wrong achievement progress" % [game_id,id])
 			if bar.accessibility_name.is_empty() or status.accessibility_name.is_empty():
 				return _fail("%s %s badge status not announced to assistive technology" % [game_id,id])
-			if status.text != ("✓" if actual >= need else "○"):
+			if status.text != ("✓" if actual >= need else "•"):
 				return _fail("%s %s badge symbol contradicts its progression" % [game_id,id])
 	app.queue_free()
 	await process_frame

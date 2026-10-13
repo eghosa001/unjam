@@ -848,17 +848,18 @@ func _figma_achievement_row(canvas: Control, achievement: Dictionary, y: float) 
 	meter.add_theme_stylebox_override("fill",FigmaReferenceCanvas.solid_box(accent,3))
 	meter.accessibility_name = "%s: %d of %d, %s" % [achievement_title.text,mini(progress,need),need,"unlocked" if done else "in progress"]
 	meter.tooltip_text = meter.accessibility_name
-	FigmaReferenceCanvas.set_rect(meter,31,y+45,258,4)
+	FigmaReferenceCanvas.set_rect(meter,31,y+44,258,5)
 	canvas.add_child(meter)
 	# Distinguish earned badges from pending ones with a small medallion,
 	# not an unanchored checkmark or dot.
+	var medal_color := FIGMA_GREEN if done else (Color("#b9c4cb") if _dark() else Color("#778690"))
 	var medal := PanelContainer.new()
 	medal.name = "ProfileAchievementBadge_%s" % id
 	medal.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	medal.add_theme_stylebox_override("panel",FigmaReferenceCanvas.solid_box(Color(accent,0.20 if done else 0.10),16,Color(accent,0.76 if done else 0.34),1))
+	medal.add_theme_stylebox_override("panel",FigmaReferenceCanvas.solid_box(Color(medal_color,0.20 if done else 0.08),16,Color(medal_color,0.76 if done else 0.40),1))
 	FigmaReferenceCanvas.set_rect(medal,307,y+10,34,34)
 	canvas.add_child(medal)
-	var status := _figma_text(canvas,"✓" if done else "○",Rect2(310,y+14,28,24),18,accent,true)
+	var status := _figma_text(canvas,"✓" if done else "•",Rect2(310,y+14,28,24),18,medal_color,true)
 	status.name = "ProfileAchievementStatus_%s" % id
 	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status.accessibility_name = "Unlocked" if done else "In progress"
