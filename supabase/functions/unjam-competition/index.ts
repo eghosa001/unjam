@@ -338,6 +338,7 @@ async function recordProgressEvent(
   levelNumber: number,
   stars: number,
   weekKey: string,
+  allowNew = false,
 ): Promise<boolean> {
   const { data: existing, error: readError } = await sb.from("progression_level_events")
     .select("best_stars,first_clear_week")
@@ -353,6 +354,7 @@ async function recordProgressEvent(
     }
     return false;
   }
+  if (!allowNew) return false;
   const { error } = await sb.from("progression_level_events").insert({
     player_hash: playerHash,
     game_id: gameId,
@@ -601,7 +603,7 @@ Deno.serve(async (req: Request) => {
         if (Number(count ?? 0) >= 180) {
           return json({ ok: false, reason: "Too many ranked completions; retry later" }, 429);
         }
-        const inserted = await recordProgressEvent(sb, hash, gameId, levelNumber, stars, weekKey);
+        const inserted = await recordProgressEvent(sb, hash, gameId, levelNumber, stars, weekKey, true);
         if (inserted) {
           const verifiedCount = Math.min(10000, previous.levels_completed + 1);
           await upsertAllTimeProgress(sb, hash, name, gameId, {
