@@ -36,6 +36,9 @@ func _initialize() -> void:
 		failures.append("No random per-batch receipt")
 	if not client.contains("cancel_request()"):
 		failures.append("Opt-out fails to cancel pending upload")
+	for term in ["_schedule_telemetry_retry()", "Time.get_ticks_msec() < _telemetry_retry_after_ms", "TELEMETRY_RETRY_MAX_MS", "_telemetry_retry_delay_ms = TELEMETRY_RETRY_START_MS"]:
+		if not client.contains(term):
+			failures.append("Telemetry retry backoff missing: %s" % term)
 	if not failures.is_empty():
 		for item in failures:
 			push_error(item)
