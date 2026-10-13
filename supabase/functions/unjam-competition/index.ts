@@ -320,6 +320,7 @@ function publicProgressRows(rows: any[] | null | undefined) {
 async function progressRankFor(sb: any, scopeType: string, periodKey: string, gameId: string, playerHash: string) {
   const { data: mine, error } = await sb.from("progression_rankings")
     .select("rank_score,levels_completed,highest_level,stars")
+    .eq("ledger_backed", true)
     .eq("scope_type", scopeType).eq("period_key", periodKey)
     .eq("game_id", gameId).eq("player_hash", playerHash).maybeSingle();
   if (error) throw error;
@@ -328,6 +329,7 @@ async function progressRankFor(sb: any, scopeType: string, periodKey: string, ga
   }
   const { count, error: countError } = await sb.from("progression_rankings")
     .select("*", { count: "exact", head: true })
+    .eq("ledger_backed", true)
     .eq("scope_type", scopeType).eq("period_key", periodKey).eq("game_id", gameId)
     .gt("rank_score", Number(mine.rank_score ?? 0));
   if (countError) throw countError;
@@ -342,6 +344,7 @@ async function progressRankFor(sb: any, scopeType: string, periodKey: string, ga
 async function progressTop(sb: any, scopeType: string, periodKey: string, gameId: string) {
   const { data, error } = await sb.from("progression_rankings")
     .select("display_name,levels_completed,highest_level,stars,rank_score")
+    .eq("ledger_backed", true)
     .eq("scope_type", scopeType).eq("period_key", periodKey).eq("game_id", gameId)
     .gt("levels_completed", 0)
     .order("rank_score", { ascending: false }).order("updated_at", { ascending: true }).limit(20);
@@ -415,10 +418,12 @@ async function socialProgressSnapshot(
   const [allTimeResult, weeklyResult] = await Promise.all([
     sb.from("progression_rankings")
       .select("player_hash,display_name,levels_completed,highest_level,stars,rank_score")
+      .eq("ledger_backed", true)
       .eq("scope_type", "all_time").eq("period_key", ALL_TIME_KEY).eq("game_id", gameId)
       .in("player_hash", allHashes),
     sb.from("progression_rankings")
       .select("player_hash,display_name,levels_completed,highest_level,stars,rank_score")
+      .eq("ledger_backed", true)
       .eq("scope_type", "weekly").eq("period_key", weekKey).eq("game_id", gameId)
       .in("player_hash", allHashes),
   ]);

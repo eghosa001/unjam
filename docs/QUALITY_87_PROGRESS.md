@@ -36,6 +36,14 @@
 | Analytics / crash insight | 4.5 | Aggregate event pipeline and Supabase Edge Function added | Production opt-in funnel, external crash monitoring, real dashboards |
 | Store readiness | 5.5 | Correct stale logo-release validator | Signed AAB accepted by Play Internal Test; active SKUs |
 
+## October 13 second audit: targeted high-risk hardening
+
+- Legacy all-time/weekly progression snapshots lacked per-level receipts. A live read-only audit found 1,482 stored all-time ranking rows but only 54 recorded completion receipts; these are not interchangeable with genuine player counts. The new `ledger_backed` rank filter leaves legacy rows intact for audit, removes their unsupported scores from public standings, and reconstructs credited completions from contiguous receipt chains. A first ranked completion at an advanced local level is worth **one** level, not a retroactively claimed backlog.
+- The transaction rejects later gaps and applies receipt-backed counts to both weekly/all-time standings. The backend filters public, personal, reward and friend progression reads. **This is anti-abuse hardening, not cryptographic proof of human gameplay**: a modified client can still forge sequential completions or fabricated daily results. Authenticated attestation/authoritative puzzle verification remains a required release safeguard for high-stakes ranked rewards.
+- Small text-fitting paths now stop shrinking standard 12px+ authored labels under 12px and retain full accessibility/tooltip text when an ellipsis is needed. Native-phone rendering and translation length checks remain prerequisites for a verified typography score.
+- Release workflow defaults have been advanced to version 1.0.11/code 11, consistent with Android export presets. This does not complete Play Console or signed-build requirements.
+- Focused regression checks are `validate_ledger_backed_rankings` and `validate_readable_meta_text`. The backend migration and Edge Function must be deployed together; only their live verification can qualify the feature as operational.
+
 ## Implemented security / telemetry changes
 
 - Existing score snapshots **no longer advance public rankings on read**. New completion reports advance ranked totals **at most once per newly recorded level**, irrespective of local save jumps. There is an additional **180 new submissions per hour/game** guard, but this is *not proof against all client forgery*.

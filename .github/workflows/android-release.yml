@@ -31,8 +31,8 @@ jobs:
       EXPECTED_PACKAGE: com.eghosa.unjamgam
       EXPECTED_UPLOAD_SHA1: ${{ secrets.UNJAM_ANDROID_UPLOAD_SHA1 }}
       EXPECTED_BLOCK_REVIEW_SHA256: ${{ secrets.UNJAM_BLOCK_CAMPAIGN_REVIEW_SHA256 }}
-      RELEASE_VERSION_NAME: ${{ inputs.version_name || '1.0.10' }}
-      RELEASE_VERSION_CODE: ${{ inputs.version_code || '10' }}
+      RELEASE_VERSION_NAME: ${{ inputs.version_name || '1.0.11' }}
+      RELEASE_VERSION_CODE: ${{ inputs.version_code || '11' }}
       WATER_FULL_AUDIT: "1"
     steps:
       - uses: actions/checkout@v4
@@ -332,7 +332,7 @@ jobs:
       - name: Upload release AAB and verification records
         uses: actions/upload-artifact@v4
         with:
-          name: unjam-release-aab-production-v10
+          name: unjam-release-aab-production-v11
           path: |
             build/android/unjam-release.aab
             build/android/unjam-release.aab.sha256

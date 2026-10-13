@@ -352,7 +352,11 @@ func _fit_single_line_control_text(control: Control, max_width: float, start_siz
 	else:
 		return
 	var size := start_size
-	while size > min_size and font.get_string_size(text_value, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x > max_width:
+	# Preserve readable authored type instead of shrinking 13-16px labels to 8px.
+	# If text is still too long, ellipsize visually and expose its full meaning
+	# to accessibility rather than silently rendering near-microscopic copy.
+	var readable_floor := mini(start_size, maxi(12, min_size))
+	while size > readable_floor and font.get_string_size(text_value, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x > max_width:
 		size -= 1
 	control.add_theme_font_size_override("font_size", size)
 	control.custom_minimum_size = Vector2.ZERO
@@ -363,6 +367,10 @@ func _fit_single_line_control_text(control: Control, max_width: float, start_siz
 		fitted_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 		fitted_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		fitted_label.clip_text = true
+		if fitted_label.accessibility_name.is_empty():
+			fitted_label.accessibility_name = text_value
+		if fitted_label.tooltip_text.is_empty():
+			fitted_label.tooltip_text = text_value
 		fitted_label.custom_minimum_size = Vector2.ZERO
 		fitted_label.position = authored_position
 		fitted_label.size = authored_size
@@ -380,9 +388,12 @@ func _fit_wrapped_text(label: Label, max_width: float, start_size: int, min_size
 		authored_size = authored_rect.size
 	var raw_text := label.text.strip_edges()
 	var words := raw_text.split(" ", false)
+		# The fallback is a readable minimum; long words must wrap/clip rather
+	# than forcing body copy down to unreadably small authored pixels.
+	var readable_floor := mini(start_size, maxi(12, min_size))
 	var size := start_size
 	# First guarantee that even the longest token can fit inside the card.
-	while size > min_size:
+	while size > readable_floor:
 		var token_too_wide := false
 		for word in words:
 			if font.get_string_size(String(word), HORIZONTAL_ALIGNMENT_LEFT, -1, size).x > max_width:
@@ -409,6 +420,10 @@ func _fit_wrapped_text(label: Label, max_width: float, start_size: int, min_size
 			current = word_text
 	if not current.is_empty():
 		wrapped.append(current)
+	if label.accessibility_name.is_empty():
+		label.accessibility_name = raw_text
+	if label.tooltip_text.is_empty():
+		label.tooltip_text = raw_text
 	label.text = "\n".join(wrapped)
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.clip_text = true
