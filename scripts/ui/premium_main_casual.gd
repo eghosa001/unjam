@@ -1521,15 +1521,22 @@ func build_collection() -> void:
 	_figma_card(canvas,"Achievements",Rect2(17,339,354,76),Color("#fffef8"),Color(0.55,0.86,0.71,0.32),18)
 	_figma_text(canvas,"ACHIEVEMENTS",Rect2(33,353,220,21),16,FIGMA_GOLD)
 	var achievement_parts: Array[String] = []
+	var unlocked_total := 0
+	var available_total := 0
 	for game_id in MultiGameManager.GAME_IDS:
 		var unlocked := MultiGameManager.unlocked_achievements(game_id).size()
 		var total := MultiGameManager.achievement_definitions(game_id).size()
+		unlocked_total += unlocked
+		available_total += total
 		achievement_parts.append("%s %d/%d" % [_figma_short_game(game_id),unlocked,total])
-	var achievement_summary := _figma_text(canvas," • ".join(achievement_parts),Rect2(33,394,310,18),13,FIGMA_MUTED)
+	# Show a large, readable total here; per-game details live in Profile.
+	var achievement_summary := _figma_text(canvas,"%d / %d BADGES UNLOCKED" % [unlocked_total,available_total],Rect2(33,394,310,18),13,FIGMA_MUTED)
+	achievement_summary.tooltip_text = " • ".join(achievement_parts)
+	achievement_summary.accessibility_name = achievement_summary.tooltip_text
 	achievement_summary.name = "CollectionAchievementSummary"
 	achievement_summary.clip_text = true
 	achievement_summary.custom_minimum_size = Vector2.ZERO
-	_fit_single_line_control_text(achievement_summary,306.0,13,10)
+	_fit_single_line_control_text(achievement_summary,306.0,13,12)
 	achievement_summary.position = Vector2(33,394)
 	achievement_summary.size = Vector2(310,18)
 	var achievements_view := _figma_button(canvas,"CollectionAchievementsView","VIEW",Rect2(286,347,65,44),Color("#7a57e0"),Callable(self,"build_profile"),Color.WHITE,11,10)
@@ -1698,14 +1705,19 @@ func build_collection_upgrades() -> void:
 		var card_border := Color(0.32,0.78,0.49,0.46) if level > 0 else Color(0.72,0.58,0.90,0.46)
 		var title_color := Color("#1f854f") if level > 0 else Color("#4d3373")
 		_figma_solid_card(canvas, "CollectionScroll/Upgrade/%d" % i, Rect2(23,y,342,70), card_fill, card_border, 16, false)
-		var upgrade_title := _figma_text(canvas,"%s  •  L%d/%d" % [display_name,level,EconomyManager.COLLECTION_MAX_LEVEL],Rect2(37,y+8,154,20),14,title_color)
+		var upgrade_title := _figma_text(canvas,display_name,Rect2(37,y+8,154,20),14,title_color)
 		upgrade_title.name = "CollectionUpgradeTitle/%s" % id
+		upgrade_title.tooltip_text = "%s, level %d of %d" % [display_name,level,EconomyManager.COLLECTION_MAX_LEVEL]
+		upgrade_title.accessibility_name = upgrade_title.tooltip_text
 		upgrade_title.custom_minimum_size = Vector2.ZERO
-		_fit_single_line_control_text(upgrade_title, 150.0, 14, 9)
-		var effect_text := _figma_text(canvas,EconomyManager.collection_effect_text(id,level),Rect2(37,y+34,154,24),11,Color("#6b8091"))
+		_fit_single_line_control_text(upgrade_title, 150.0, 14, 12)
+		var effect_full := EconomyManager.collection_effect_text(id,level)
+		var effect_text := _figma_text(canvas,effect_full,Rect2(37,y+34,154,24),12,Color("#6b8091"))
 		effect_text.name = "CollectionUpgradeEffect/%s" % id
+		effect_text.tooltip_text = effect_full
+		effect_text.accessibility_name = effect_full
 		effect_text.custom_minimum_size = Vector2.ZERO
-		_fit_single_line_control_text(effect_text, 150.0, 11, 8)
+		_fit_single_line_control_text(effect_text, 150.0, 12, 11)
 		var preview := GardenUpgradePreviewScene.new() as GardenUpgradePreview
 		preview.name = "CollectionUpgradePreview/%s" % id
 		preview.configure(id,level > 0)
@@ -1714,7 +1726,11 @@ func build_collection_upgrades() -> void:
 		var state_text := "MAX" if maxed else "%d COINS" % cost
 		var pill_fill := Color("#e0f2e5") if maxed else Color("#7a57e0")
 		var state_text_color := Color("#4d7a59") if maxed else Color.WHITE
-		var state := _figma_button(canvas, "CollectionUpgrade/%s" % id, state_text, Rect2(251,y+13,96,44), pill_fill, Callable(), state_text_color, 12, 13)
+		var state := _figma_button(canvas, "CollectionUpgrade/%s" % id, state_text, Rect2(251,y+7,96,44), pill_fill, Callable(), state_text_color, 12, 12)
+		state.accessibility_name = "%s, level %d of %d. %s" % [display_name,level,EconomyManager.COLLECTION_MAX_LEVEL,state_text]
+		var level_badge := _figma_text(canvas,"LEVEL %d/%d" % [level,EconomyManager.COLLECTION_MAX_LEVEL],Rect2(251,y+53,96,15),12,title_color,true)
+		level_badge.name = "CollectionUpgradeLevel/%s" % id
+		level_badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		state.disabled = maxed
 		if maxed:
 			var owned_style := FigmaReferenceCanvas.solid_box(Color("#e0f2e5"),12,Color.TRANSPARENT,0)
