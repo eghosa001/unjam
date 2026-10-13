@@ -951,6 +951,8 @@ func _figma_friend_rank_row(canvas: Control, row: Dictionary, index: int, y: flo
 	var accent := (FIGMA_CYAN if _dark() else Color("#116080")) if is_you else (
 		Unjam3DTheme.game_accent(_ranking_game) if _dark() else Unjam3DTheme.game_accent(_ranking_game).darkened(0.55)
 	)
+	if not is_you and _dark() and _ranking_game == "block_puzzle":
+		accent = Color("#db80ff")
 	var rank := int(row.get("rank",index+1))
 	_figma_text(canvas,"YOU" if is_you else str(rank),Rect2(30,y+6,38,24),13,accent,true)
 	var friend_full_name := String(row.get("name","PLAYER"))
@@ -1424,7 +1426,7 @@ func _on_weekly_competition_reward(_coins: int, _crowns: int) -> void:
 
 func _figma_progress_leaderboard_panel(canvas: Control, title_text: String, entries: Array, y: float, own_rank: int, own_levels: int, own_stars: int, accent: Color) -> void:
 	_figma_card(canvas,"Leaderboard/%s" % title_text,Rect2(17,y,354,180),Color("#fffaf2"),Color(accent,0.36),18)
-	var readable_accent := accent if _dark() else accent.darkened(0.55)
+	var readable_accent := (Color("#db80ff") if _ranking_game == "block_puzzle" else accent) if _dark() else accent.darkened(0.55)
 	_figma_text(canvas,title_text,Rect2(33,y+12,120,20),15,readable_accent)
 	var own_text := "YOU —" if own_rank <= 0 else "YOU #%d • L%d" % [own_rank,own_levels]
 	var own := _figma_text(canvas,own_text,Rect2(185,y+12,166,20),13,FIGMA_INK,true)
