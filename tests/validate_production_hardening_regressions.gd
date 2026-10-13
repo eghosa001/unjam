@@ -178,9 +178,13 @@ func _validate_primary_visual_occupancy() -> bool:
 	if hero.size.distance_to(Vector2(346,168)) > 1.0:
 		main.queue_free(); await process_frame
 		return _fail("Minimalist Home hero drifted from audited 346x168 geometry")
-	if hero.get_global_rect().size.x < 760.0 or hero.get_global_rect().size.y < 430.0:
+	# DeviceFit and letterboxing intentionally vary physical scale. Check
+	# share of the actual visible Figma canvas, not an old fixed pixel size.
+	var visual_hero := hero.get_global_rect()
+	var visual_canvas := canvas.get_global_rect()
+	if visual_hero.size.x < visual_canvas.size.x * 0.82 or visual_hero.size.y < visual_canvas.size.y * 0.18:
 		main.queue_free(); await process_frame
-		return _fail("Minimalist Home hero is too small on 1080x1920")
+		return _fail("Minimalist Home hero lost its visible canvas presence")
 	if not hero.get_global_rect().encloses(primary.get_global_rect()):
 		main.queue_free(); await process_frame
 		return _fail("Home Choose Game action escaped its hero card")
