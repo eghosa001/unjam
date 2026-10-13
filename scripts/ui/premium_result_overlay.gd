@@ -33,6 +33,24 @@ func _dark_theme() -> bool:
 	var shell := main.get_node_or_null("UXShell") if main != null else null
 	return shell != null and shell.get("theme_mode") != null and String(shell.get("theme_mode")) == "dark"
 
+func _gentle_effects() -> bool:
+	var save := get_node_or_null("/root/SaveManager")
+	if save != null and save.get("data") is Dictionary:
+		return bool((save.get("data") as Dictionary).get("gentle_effects", true))
+	return true
+
+func _celebration_budget() -> Dictionary:
+	# Respect BOTH accessibility preferences; reward art/stars stay visible
+	# even if the entire animated celebration is disabled.
+	if _motion_reduced():
+		return {"flash": false, "accent": 0, "gold": 0}
+	var gentle := _gentle_effects()
+	return {
+		"flash": not gentle,
+		"accent": 7 if gentle else 22,
+		"gold": 3 if gentle else 12
+	}
+
 func configure(title_value: String, subtitle_value: String, stats_value: String, star_count: int, color: Color, action_text: String = "CONTINUE", badge_value: String = "PUZZLE CLEARED") -> void:
 	title_text = title_value
 	subtitle_text = subtitle_value
@@ -136,6 +154,12 @@ func _build() -> void:
 	badge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	badge_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	badge_label.clip_text = true
+	# Long badges can truncate on phone fonts; preserve the complete value
+	# for screen readers and hover rather than silently losing meaning.
+	badge_label.accessibility_name = badge_text
+	badge_label.tooltip_text = badge_text
+	FigmaReferenceCanvas.set_rect(badge_label, 115, 88, 158, 24)
+	FigmaReferenceCanvas.fit_single_line_text(badge_label, 156.0, 13, 11)
 	FigmaReferenceCanvas.set_rect(badge_label, 115, 88, 158, 24)
 	_canvas.add_child(badge_label)
 
@@ -155,6 +179,8 @@ func _build() -> void:
 		star_card.name = "StarCard"
 		star_card.set_meta("result_star_index", i)
 		var earned := i < stars
+		star_card.accessibility_name = "Star %d of 3: %s" % [i + 1, "earned" if earned else "not earned"]
+		star_card.tooltip_text = star_card.accessibility_name
 		var star_rect := Rect2(x, 306, 74, 70)
 		FigmaReferenceCanvas.add_shadow(_canvas, star_rect, 30, Color(0.02,0.08,0.16,0.18), 4, Vector2(0,3))
 		var earned_mid := Color("#3b3211") if dark else Color("#fff5c9")
@@ -356,14 +382,17 @@ func _celebrate() -> void:
 	if visuals == null:
 		return
 	var center := get_viewport_rect().size * 0.5
-	if visuals.has_method("screen_flash"):
+	var budget := _celebration_budget()
+	# Gentle Effects defaults on; never fire the full-screen flash in that
+	# mode. Limit particles as well, retaining a lively win without glare.
+	if bool(budget.get("flash", false)) and visuals.has_method("screen_flash"):
 		visuals.call("screen_flash", accent, 0.10)
 	if visuals.has_method("burst"):
-		visuals.call("burst", center + Vector2(0, -118), accent, 22)
-		visuals.call("burst", center + Vector2(0, -72), Color("#ffd85a"), 12)
+		visuals.call("burst", center + Vector2(0, -118), accent, int(budget.get("accent", 0)))
+		visuals.call("burst", center + Vector2(0, -72), Color("#ffd85a"), int(budget.get("gold", 0)))
 	if visuals.has_method("entrance"):
 		var star_cards := _canvas.find_children("StarCard", "PanelContainer", true, false)
-		for i in range(star_cards.size()):
+		for i in range(mini(stars, star_cards.size())):
 			var card := star_cards[i] as Control
 			if card != null:
 				visuals.call("entrance", card, 0.07 * float(i))
