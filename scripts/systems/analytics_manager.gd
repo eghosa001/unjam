@@ -27,6 +27,12 @@ var _frame_probe := FramePacingProbe.new()
 var _telemetry_events: Array = []
 var _telemetry_timer: Timer
 var _telemetry_in_flight := false
+# A retry preserves both the original anonymous batch and its one-use random
+# receipt ID, preventing duplicate daily counts after an ambiguous HTTP timeout.
+var _telemetry_retry_batch: Array = []
+var _telemetry_retry_id := ""
+var _telemetry_request: HTTPRequest
+var _telemetry_consent_epoch := 0
 
 func _ready() -> void:
 	_telemetry_timer = Timer.new()
@@ -41,12 +47,24 @@ func analytics_opted_in() -> bool:
 	return bool(SaveManager.data.get("analytics_opt_in", false))
 
 func set_analytics_opt_in(allowed: bool) -> void:
+	if analytics_opted_in() == allowed:
+		return
+	# Cancel pending work when consent is revoked; in-flight HTTP already
+	# accepted by the service cannot be retroactively removed from aggregates.
+	_telemetry_consent_epoch += 1
 	SaveManager.data["analytics_opt_in"] = allowed
 	SaveManager.save()
 	if allowed:
 		_queue_telemetry("session_start", {})
 	else:
 		_telemetry_events.clear()
+		_telemetry_retry_batch.clear()
+		_telemetry_retry_id = ""
+		_telemetry_in_flight = false
+		if _telemetry_request != null and is_instance_valid(_telemetry_request):
+			_telemetry_request.cancel_request()
+			_telemetry_request.queue_free()
+			_telemetry_request = null
 
 func pending_telemetry_for_test() -> Array:
 	return _telemetry_events.duplicate(true)
@@ -102,8 +120,15 @@ func _queue_telemetry(event_name: String, props: Dictionary) -> void:
 	if _telemetry_events.size() >= MAX_TELEMETRY_BATCH:
 		_flush_opt_in_telemetry()
 
+func _new_telemetry_batch_id() -> String:
+	# One random identifier PER batch, never per installation or player.
+	# It is held in memory only and is never used to link gameplay sessions.
+	return Crypto.new().generate_random_bytes(16).hex_encode()
+
 func _flush_opt_in_telemetry() -> void:
-	if not analytics_opted_in() or _telemetry_in_flight or _telemetry_events.is_empty():
+	if not analytics_opted_in() or _telemetry_in_flight:
+		return
+	if _telemetry_retry_batch.is_empty() and _telemetry_events.is_empty():
 		return
 	if OS.get_environment("UNJAM_FAST_VISUAL_AUDIT") == "1":
 		return
@@ -111,28 +136,42 @@ func _flush_opt_in_telemetry() -> void:
 	var key := String(ProjectSettings.get_setting("monetization/supabase_publishable_key", "")).strip_edges()
 	if not base.begins_with("https://") or key.is_empty():
 		return
+	if _telemetry_retry_batch.is_empty():
+		_telemetry_retry_batch = _telemetry_events.duplicate(true)
+		_telemetry_retry_id = _new_telemetry_batch_id()
+		_telemetry_events.clear()
+	var batch := _telemetry_retry_batch.duplicate(true)
+	var batch_id := _telemetry_retry_id
+	var consent_epoch := _telemetry_consent_epoch
 	var request := HTTPRequest.new()
 	request.timeout = 8.0
 	request.max_redirects = 0
 	add_child(request)
+	_telemetry_request = request
 	_telemetry_in_flight = true
-	var batch := _telemetry_events.duplicate(true)
-	_telemetry_events.clear()
 	request.request_completed.connect(func(result: int, status: int, _headers: PackedStringArray, _body: PackedByteArray) -> void:
+		if consent_epoch != _telemetry_consent_epoch:
+			request.queue_free()
+			return
 		_telemetry_in_flight = false
-		if analytics_opted_in() and (result != HTTPRequest.RESULT_SUCCESS or status < 200 or status >= 300):
-			_telemetry_events = batch + _telemetry_events
-			if _telemetry_events.size() > MAX_TELEMETRY_BATCH:
-				_telemetry_events = _telemetry_events.slice(0, MAX_TELEMETRY_BATCH)
+		_telemetry_request = null
+		if result == HTTPRequest.RESULT_SUCCESS and status >= 200 and status < 300:
+			_telemetry_retry_batch.clear()
+			_telemetry_retry_id = ""
+			if not _telemetry_events.is_empty():
+				call_deferred("_flush_opt_in_telemetry")
+		# On failure retain the SAME random batch ID and data. An eventual
+		# replay after a committed-but-timed-out response remains idempotent.
 		request.queue_free()
 	)
 	var headers := PackedStringArray(["Content-Type: application/json", "apikey: %s" % key])
-	var error := request.request("%s/functions/v1/unjam-telemetry" % base, headers, HTTPClient.METHOD_POST, JSON.stringify({"consent": true, "events": batch}))
+	var payload := JSON.stringify({"consent": true, "batch_id": batch_id, "events": batch})
+	var error := request.request("%s/functions/v1/unjam-telemetry" % base, headers, HTTPClient.METHOD_POST, payload)
 	if error != OK:
 		_telemetry_in_flight = false
-		if analytics_opted_in():
-			_telemetry_events = batch + _telemetry_events
+		_telemetry_request = null
 		request.queue_free()
+		# The batch and receipt remain pending for the next timer attempt.
 
 func _process(delta: float) -> void:
 	# One constant-time ring write per frame. No disk/network calls, sorting,

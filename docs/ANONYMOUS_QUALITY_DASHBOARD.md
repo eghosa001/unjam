@@ -8,7 +8,7 @@ The only retained records are summed daily event counters by game and broad leve
 
 The telemetry endpoint and database summary are for operational insights, not authenticated players; public app keys are not spam protection and the totals must not be described as independently verified human counts. Session-start events are *session events*, not unique players (DAU). The funnel ratio is completed-level events divided by started-level events in that day. It may be greater than 100% due to continued sessions or level replay; it is **not** a real win rate, retention or D1/D7 cohort metric. A real retention report requires a separate appropriately consented identity/cohort methodology.
 
-Batch ingestion calls one bounded 24-row transactional SQL RPC rather than multiple independent writes. This prevents half-written batches when the database rejects a row, but cannot perfectly deduplicate a client retry after the server commits and the response is lost.
+Batch ingestion calls one bounded transactional SQL RPC rather than multiple independent writes. New clients add one fresh random receipt per batch (not per device or account). The service stores only that short-lived receipt and the aggregate counters, and replays of the same batch no longer increase totals a second time. Old clients remain supported without receipt de-duplication. Receipts are retained for no more than approximately seven days, with opportunistic pruning; they are not a player/session ID. Revoking analytics consent cancels pending requests and clears unsent batches, although an earlier request already accepted by the server cannot be withdrawn from anonymous daily aggregates.
 
 ## Read the dashboard
 

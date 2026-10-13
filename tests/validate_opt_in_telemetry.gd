@@ -12,6 +12,11 @@ func _run() -> void:
 	if not _check((analytics.call("pending_telemetry_for_test") as Array).is_empty(), "Telemetry ran without user opt-in"):return
 
 	analytics.call("set_analytics_opt_in", true)
+	var first_receipt := String(analytics.call("_new_telemetry_batch_id"))
+	var second_receipt := String(analytics.call("_new_telemetry_batch_id"))
+	if not _check(first_receipt.length() == 32 and second_receipt.length() == 32 and first_receipt != second_receipt, "Telemetry batch receipt not random/valid"):return
+	analytics.call("set_analytics_opt_in", true)
+	if not _check((analytics.call("pending_telemetry_for_test") as Array).size() == 1, "Repeated opt-in generated duplicate session event"):return
 	analytics.call("track", "level_complete", {"level": 230, "game_id": "water_sort", "player_id": "secret", "purchase_token": "private"})
 	var events: Array = analytics.call("pending_telemetry_for_test")
 	if not _check(events.size() == 2, "Expected one session and one whitelisted event"):return
@@ -29,8 +34,13 @@ func _run() -> void:
 		analytics.call("track", "hint_used", {"level": i + 1})
 	events = analytics.call("pending_telemetry_for_test")
 	if not _check(events.size() <= 24, "Telemetry buffering exceeds 24-event privacy bound"):return
+	# Simulate a failed-but-not-yet-acknowledged batch. Revocation must
+	# clear the retry receipt and never re-upload prior opt-in data.
+	analytics.set("_telemetry_retry_batch", [{"name":"level_complete","game":"water_sort","level_band":100}])
+	analytics.set("_telemetry_retry_id", first_receipt)
 	analytics.call("set_analytics_opt_in", false)
 	if not _check((analytics.call("pending_telemetry_for_test") as Array).is_empty(), "Opt-out did not discard pending events"):return
+	if not _check((analytics.get("_telemetry_retry_batch") as Array).is_empty() and String(analytics.get("_telemetry_retry_id")).is_empty(), "Opt-out kept unsent in-flight receipt"):return
 
 	var ui = load("res://scripts/ui/privacy_analytics_sheet.gd").new()
 	root.add_child(ui)
