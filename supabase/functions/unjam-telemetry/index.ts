@@ -3,7 +3,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 
 // Only anonymous aggregates. No installation/player IDs, IPs, user-agent,
 // purchase data, device IDs, free-form properties or raw per-player records.
-const NAMES = new Set(["session_start", "level_start", "level_complete", "level_restart", "hint_used", "undo_used", "level_fail"]);
+const NAMES = new Set(["session_start", "session_interrupted", "level_start", "level_complete", "level_restart", "hint_used", "undo_used", "level_fail"]);
 const GAMES = new Set(["all", "rescue_rush", "water_sort", "block_puzzle"]);
 const BANDS = new Set([0, 1, 10, 50, 100, 500, 1000, 5000, 10000]);
 function output(data: unknown, status = 200) {
@@ -47,6 +47,7 @@ Deno.serve(async (req: Request) => {
     const game_id = String(entry.game ?? "all");
     const level_band = Number(entry.level_band ?? 0);
     if (!NAMES.has(event_name) || !GAMES.has(game_id) || !BANDS.has(level_band)) return output({ ok: false }, 400);
+    if (event_name === "session_interrupted" && (game_id !== "all" || level_band !== 0)) return output({ ok: false }, 400);
     const k = [event_name, game_id, level_band].join("|");
     const old = counts.get(k);
     if (old) old.n++;

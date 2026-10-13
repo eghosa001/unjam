@@ -3,16 +3,17 @@ extends Node
 const FramePacingProbe = preload("res://scripts/systems/frame_pacing_probe.gd")
 
 # In-process QA counters always remain device-local. Production telemetry is
-# OPTIONAL, OFF by default, and sends only seven whitelisted event types in
+# OPTIONAL, OFF by default, and sends only eight whitelisted event types in
 # anonymous aggregate form. No save identity, device ID or raw event properties.
 signal event_recorded(event_name: String, safe_properties: Dictionary)
 
 const MAX_EVENT_KINDS := 96
 const MAX_RECENT_EVENTS := 24
 const MAX_TELEMETRY_BATCH := 24
+const TELEMETRY_FOREGROUND_KEY := "telemetry_foreground_active"
 const TELEMETRY_RETRY_START_MS := 25000
 const TELEMETRY_RETRY_MAX_MS := 300000
-const TELEMETRY_EVENTS := ["session_start", "level_start", "level_complete", "level_restart", "hint_used", "undo_used", "level_fail"]
+const TELEMETRY_EVENTS := ["session_start", "session_interrupted", "level_start", "level_complete", "level_restart", "hint_used", "undo_used", "level_fail"]
 const TELEMETRY_GAMES := ["rescue_rush", "water_sort", "block_puzzle"]
 const TELEMETRY_LEVEL_BANDS := [1, 10, 50, 100, 500, 1000, 5000, 10000]
 const SAFE_NUMBER_FIELDS := [
@@ -45,6 +46,7 @@ func _ready() -> void:
 	_telemetry_timer.timeout.connect(_flush_opt_in_telemetry)
 	add_child(_telemetry_timer)
 	if analytics_opted_in():
+		_begin_foreground_telemetry_session()
 		_queue_telemetry("session_start", {})
 
 func analytics_opted_in() -> bool:
@@ -57,6 +59,11 @@ func set_analytics_opt_in(allowed: bool) -> void:
 	# accepted by the service cannot be retroactively removed from aggregates.
 	_telemetry_consent_epoch += 1
 	SaveManager.data["analytics_opt_in"] = allowed
+	if allowed:
+		# Never classify enabling analytics as a prior interruption.
+		SaveManager.data[TELEMETRY_FOREGROUND_KEY] = true
+	else:
+		SaveManager.data.erase(TELEMETRY_FOREGROUND_KEY)
 	SaveManager.save()
 	if allowed:
 		_queue_telemetry("session_start", {})
@@ -71,6 +78,32 @@ func set_analytics_opt_in(allowed: bool) -> void:
 			_telemetry_request.cancel_request()
 			_telemetry_request.queue_free()
 			_telemetry_request = null
+
+# This is NOT a native crash reporter. It counts foreground sessions that
+# remained marked active across a subsequent cold start. OS force-stop,
+# process termination and some ungraceful shutdowns are indistinguishable.
+# It is optional, anonymous, and stores one Boolean in the local save only.
+func _begin_foreground_telemetry_session() -> void:
+	if not analytics_opted_in():
+		return
+	if bool(SaveManager.data.get(TELEMETRY_FOREGROUND_KEY, false)):
+		_queue_telemetry("session_interrupted", {})
+	SaveManager.data[TELEMETRY_FOREGROUND_KEY] = true
+	SaveManager.save()
+
+func _close_foreground_telemetry_session() -> void:
+	if not analytics_opted_in():
+		return
+	if bool(SaveManager.data.get(TELEMETRY_FOREGROUND_KEY, false)):
+		SaveManager.data[TELEMETRY_FOREGROUND_KEY] = false
+		SaveManager.save()
+
+func _resume_foreground_telemetry_session() -> void:
+	if not analytics_opted_in():
+		return
+	if not bool(SaveManager.data.get(TELEMETRY_FOREGROUND_KEY, false)):
+		SaveManager.data[TELEMETRY_FOREGROUND_KEY] = true
+		SaveManager.save()
 
 func pending_telemetry_for_test() -> Array:
 	return _telemetry_events.duplicate(true)
@@ -199,8 +232,12 @@ func quality_snapshot() -> Dictionary:
 	return _frame_probe.snapshot()
 
 func _notification(what: int) -> void:
-	# Android QA builds can capture this numeric-only summary with adb logcat on
-	# pause/close. No production telemetry, account data or disk retention.
+	# Backgrounding is a normal Android action, never evidence of a crash.
+	if what in [NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_WM_CLOSE_REQUEST]:
+		_close_foreground_telemetry_session()
+	elif what == NOTIFICATION_APPLICATION_RESUMED:
+		_resume_foreground_telemetry_session()
+	# Device-local debug frame numbers are never sent to the backend.
 	if OS.is_debug_build() and what in [NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_WM_CLOSE_REQUEST]:
 		print("[unjam-frame-quality] %s" % JSON.stringify(quality_snapshot()))
 
