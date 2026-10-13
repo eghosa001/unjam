@@ -35,6 +35,15 @@ func _run() -> void:
 	if not _check(rank != null and rank.text == "#4","Home best weekly rank is not visible"):return
 	var rank_hint := home.find_child("HomeRankWeeklyHint",true,false) as Label
 	if not _check(rank_hint != null and rank_hint.text == "RESCUE RUSH" and rank_hint.accessibility_name.contains("RESCUE RUSH"),"Home weekly placement must name its actual game, never suggest a combined rank"):return
+	# Snapshot updates happen after construction. Localize those dynamic rank
+	# labels too, rather than keeping an English game name in other languages.
+	var localization := root.get_node("LocalizationManager")
+	var prior_locale := String(localization.language_code)
+	localization.call("set_language","es",false)
+	home.call("_on_home_ranking_updated",{})
+	if not _check(rank_hint.text == "RESCATE RÁPIDO" and rank_hint.accessibility_name.contains("RESCATE RÁPIDO"),"Dynamic Home weekly game name is stuck in English in Spanish mode"):return
+	localization.call("set_language",prior_locale,false)
+	home.call("_on_home_ranking_updated",{})
 	if not _check(rank_daily != null and rank_daily.text == "—","Today's rank must not be faked before the daily snapshot"):return
 	var today_hint := home.find_child("HomeRankDailyHint",true,false) as Label
 	if not _check(today_hint != null and today_hint.text == "PLAY TO JOIN","Home must explain its empty Daily ranking"):return
