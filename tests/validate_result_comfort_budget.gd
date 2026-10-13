@@ -6,7 +6,7 @@ func _initialize() -> void:
 func _run() -> void:
 	var save := root.get_node("SaveManager")
 	var motion := root.get_node("MotionSystem")
-	var had_gentle := save.data.has("gentle_effects")
+	var had_gentle: bool = bool(save.data.has("gentle_effects"))
 	var old_gentle: Variant = save.data.get("gentle_effects",true)
 	var old_reduced: Variant = save.data.get("reduce_motion",false)
 	var overlay := PremiumResultOverlay.new()
