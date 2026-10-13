@@ -1445,9 +1445,9 @@ func build_compete_leaderboard(refresh_remote: bool = true) -> void:
 		# and had no clear hierarchy on compact 540x960 screens. Give the weekly
 		# settlement explanation a quiet, opaque home below the actions.
 		_figma_card(canvas,"CompetitionPrizeTimingCard",Rect2(31,651,328,58),Color("#fffaf2"),Color(accent,0.26),14)
-		var notice_title := _figma_text(canvas,"WEEKLY PRIZES",Rect2(44,658,300,17),13,accent)
+		var notice_title := _figma_text(canvas,"WEEKLY PRIZES",Rect2(44,655,300,17),13,accent)
 		notice_title.name = "CompetitionPrizeTimingHeading"
-		var note := _figma_text(canvas,"Finalized Tuesday (UTC), after late results sync.",Rect2(44,678,300,23),12,FIGMA_MUTED,true)
+		var note := _figma_text(canvas,"Finalized Tuesday (UTC), after late results sync.",Rect2(44,685,300,22),12,FIGMA_MUTED,true)
 		note.name = "CompetitionPrizeTimingNote"
 		_fit_wrapped_text(note,292.0,12,11)
 		note.accessibility_name = "Weekly rewards finalize Tuesday UTC after all Sunday results have had Monday to sync."
