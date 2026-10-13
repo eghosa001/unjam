@@ -27,8 +27,24 @@ func _run() -> void:
 	localization_manager.set_language("es", false)
 	if not _assert(label.text == "NIVEL 25" and button.text == "OTRO CONSEJO", "Spanish switch failed"):
 		return
-	if not _assert(button.accessibility_name == "OTRO CONSEJO", "Accessibility name still speaks English"):
+	if not _assert(button.accessibility_name == "OTRO CONSEJO" and label.accessibility_name == "NIVEL 25", "Accessibility label still speaks English"):
 		return
+	if not _assert(label.tooltip_text == "NIVEL 25" and button.tooltip_text == "OTRO CONSEJO", "Text fallback still shows English or loses full meaning"):
+		return
+	# Translations longer than a compact button must truncate instead of
+	# shrinking important phone controls to an unreadable 9px.
+	var narrow := Button.new()
+	narrow.text = "NEXT TIP"
+	narrow.size = Vector2(65, 44)
+	narrow.custom_minimum_size = Vector2.ZERO
+	narrow.add_theme_font_size_override("font_size", 16)
+	root.add_child(narrow)
+	await process_frame
+	localization_manager.call("_translate_control", narrow)
+	if not _assert(narrow.get_theme_font_size("font_size") >= 12 and narrow.clip_text, "Long translation shrunk below readable floor or overlapped neighbors"):
+		return
+	narrow.queue_free()
+	await process_frame
 	localization_manager.set_language("fr", false)
 	if not _assert(label.text == "NIVEAU 25" and button.text == "AUTRE CONSEIL", "Second language switch kept the first language"):
 		return
