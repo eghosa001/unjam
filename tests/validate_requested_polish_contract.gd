@@ -36,9 +36,11 @@ func _init() -> void:
 	_require("res://scripts/game/water_sort_10000.gd", ["if tubes.size() > 10:", "meta_label.text = \"DAILY CHALLENGE\" if daily_mode else \"LEVEL %d • WORLD %d\"", "premium_feedback.show_banner"], errors)
 	_require("res://scripts/ui/water_tube_3d_motion.gd", ["extends \"res://scripts/ui/water_tube_reference_motion.gd\"", "_arrival_impulse", "Tiny bubbles/ripples on landing", "func begin_pour_in", "func set_pour_progress", "and not MotionSystem.reduced()"], errors)
 	_require("res://scripts/game/water_sort_10000.gd", ["STUCK • NO LEGAL POUR", "func _has_any_legal_pour", "UNDO, ADD A TUBE, OR RETRY • NO PENALTY"], errors)
-	_require("res://scripts/game/block_puzzle_10000.gd", ["func _failure_presentation", "OUT OF MOVES", "NO MOVES LEFT", "func _handle_no_legal_moves", "BlockFailureResult", "func _level_intro_banner_center()", "board_top_local.y - 27.0", "spectacle_level", "show_ring(center", "FeedbackManager.combo(spectacle_level)"], errors)
+	_require("res://scripts/game/block_puzzle_10000.gd", ["func _failure_presentation", "OUT OF MOVES", "NO MOVES LEFT", "func _handle_no_legal_moves", "BlockFailureResult", "func _level_intro_banner_center()", "board_top_local.y - 27.0", "spectacle_level", "show_ring(center"], errors)
 	_require("res://scripts/game/rescue_rush_assisted.gd", ["func _level_intro_banner_center()", "board_bottom_local.y + 54.0"], errors)
 	_reject("res://scripts/game/block_puzzle_10000.gd", ["view.y * 0.22"], errors)
+	# PR #266 deliberately removed triple-fired combo audio from this subclass.
+	_reject("res://scripts/game/block_puzzle_10000.gd", ["FeedbackManager.combo(spectacle_level)"], errors)
 	_reject("res://scripts/game/rescue_rush_assisted.gd", ["view.y * 0.22"], errors)
 	_require("res://scripts/game/game.gd", ["RESCUE FAILED", "func _has_any_legal_move", "var failed: bool = false"], errors)
 	_reject("res://scripts/ui/water_tube_button.gd", ["draw_line(body.position + Vector2(31, 43)", "glass_shine", "draw_rect(glass_shine", "var shine: Rect2", "draw_rect(shine", "draw_line(body.position + Vector2(9, 25)", "draw_line(Vector2(body.end.x - 9", "_draw_round_rect(cavity, Color(0.025, 0.075, 0.14"], errors)
