@@ -1316,6 +1316,9 @@ func _figma_daily_progress(canvas: Control) -> void:
 	progress.min_value = 0
 	progress.max_value = 3
 	progress.value = done_count
+	progress.accessibility_name = "%d of 3 daily challenges completed" % done_count
+	progress.tooltip_text = progress.accessibility_name
+	progress.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	progress.add_theme_stylebox_override("background", FigmaReferenceCanvas.solid_box(Color("#d8cdb7"), 6))
 	progress.add_theme_stylebox_override("fill", FigmaReferenceCanvas.flat_gloss(FIGMA_GOLD, 6, Color("#fff4b3"), 1, 0.22))
 	FigmaReferenceCanvas.set_rect(progress, 33, 530, 318, 9)
@@ -1330,12 +1333,12 @@ func _figma_daily_progress(canvas: Control) -> void:
 		var game_id := String(spec[0])
 		var accent := Unjam3DTheme.game_accent(game_id)
 		var done := _daily_done(game_id)
-		var fill := accent.darkened(0.68) if _dark() else accent.lightened(0.82)
+		var fill := (accent.darkened(0.50) if done else accent.darkened(0.78)) if _dark() else (accent.lightened(0.74) if done else Color("#e8ebe6"))
 		var border := accent.lightened(0.14 if _dark() else 0.02)
 		_figma_solid_card(canvas, "DailyProgress/%s" % game_id, Rect2(float(spec[2]),550,96,32), fill, border, 12, false)
 		var label := _figma_text(
 			canvas,
-			"%s %s" % [String(spec[1]), "✓" if done else "GO"],
+			"%s %s" % [String(spec[1]), "✓" if done else "–"],
 			Rect2(float(spec[2])+4,555,88,20),
 			12,
 			FigmaReferenceCanvas.accessible_text_color(
@@ -1343,6 +1346,8 @@ func _figma_daily_progress(canvas: Control) -> void:
 			true
 		)
 		label.name = "DailyProgressLabel_%s" % game_id
+		label.accessibility_name = "%s daily challenge: %s" % [MultiGameManager.display_name(game_id), "completed" if done else "not yet completed"]
+		label.tooltip_text = label.accessibility_name
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		label.clip_text = true
@@ -1524,7 +1529,7 @@ func _daily_ui_state(game_id: String, accent: Color) -> Dictionary:
 	# Each Daily card is independent. Completing, abandoning or failing one game
 	# must never disable either of the other two.
 	if _daily_done(game_id):
-		return {"text":"COMPLETED", "fill":Color("#4a4c50") if _dark() else Color("#d8d4cc"), "disabled":true, "done":true}
+		return {"text":"✓ DONE", "fill":Color("#25644a") if _dark() else Color("#d4e7d9"), "disabled":true, "done":true}
 	return {"text":"PLAY", "fill":accent, "disabled":false, "done":false}
 
 func _figma_daily_card(canvas: Control, game_id: String, y: float, collection_bonus: int) -> void:
@@ -1543,6 +1548,14 @@ func _figma_daily_card(canvas: Control, game_id: String, y: float, collection_bo
 	var title_fill := accent.lightened(0.22) if _dark() else accent.darkened(0.30)
 	var title_outline := Color("#151619") if _dark() else Color("#ffffff")
 	FigmaReferenceCanvas.style_display_title(daily_title, title_fill, title_outline, 2)
+	# Static authored illustrations distinguish the three challenges at a
+	# glance. Compact art explicitly disables idle processing (no frame work).
+	var game_art := GAME_ART_SCRIPT.new()
+	game_art.name = "DailyGameArt_%s" % game_id
+	game_art.configure(game_id, true, _dark())
+	FigmaReferenceCanvas.set_rect(game_art, 293, y + 7, 43, 32)
+	game_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(game_art)
 	var detail := "CLEAR THE ROUTE" if game_id == "rescue_rush" else ("SORT THE COLOURS" if game_id == "water_sort" else "CLEAR LINES & SCORE")
 	_figma_text(canvas, detail, Rect2(33,y+47,182,18), 13, FIGMA_MUTED)
 	var reward := "+%d COINS" % (100 + collection_bonus) if game_id == "rescue_rush" else "+%d–%d COINS" % [125 + collection_bonus,175 + collection_bonus]
@@ -1562,9 +1575,19 @@ func _figma_daily_card(canvas: Control, game_id: String, y: float, collection_bo
 		15
 	)
 	button.disabled = bool(daily_state.get("disabled", false))
-	if not button.disabled:
+	if button.disabled:
+		# Godot's generic disabled theme can wash out the most important
+		# feedback. Keep a readable, clearly finished state in both themes.
+		var completed_fill := Color("#25644a") if _dark() else Color("#d4e7d9")
+		var completed_ink := Color("#f4fff7") if _dark() else Color("#17462f")
+		button.add_theme_stylebox_override("disabled",FigmaReferenceCanvas.solid_box(completed_fill,14,Color(FIGMA_GREEN,0.42),1))
+		button.add_theme_color_override("font_disabled_color",completed_ink)
+		button.accessibility_name = "Today's %s challenge completed" % MultiGameManager.display_name(game_id)
+		button.tooltip_text = button.accessibility_name
+	else:
 		button.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 		button.accessibility_name = "Play today's %s challenge" % MultiGameManager.display_name(game_id)
+		button.tooltip_text = button.accessibility_name
 		button.pressed.connect(start_game_daily.bind(game_id))
 
 func _claim_collection_gift() -> void:
