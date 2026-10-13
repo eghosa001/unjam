@@ -540,28 +540,51 @@ func _retry_pending_weekly_claims() -> void:
 	var pending = SaveManager.data.get(WEEKLY_RECEIPTS_KEY, {})
 	if not pending is Dictionary or pending.is_empty():
 		return
-	for game_id in GAME_IDS:
-		var reward := previous_week_reward(game_id)
-		var period_key := String(reward.get("period_key", ""))
-		if period_key.length() != 10 or not bool(reward.get("eligible", false)):
+	# Iterate existing per-week tickets, not only LAST week's snapshot.
+	# A phone which was offline for weeks must not lose a server-committed
+	# payout just because a newer Monday began meanwhile.
+	var now_day := DailyChallenge.date_key()
+	var now_unix := Time.get_unix_time_from_datetime_string("%sT12:00:00" % now_day)
+	var tickets: Array = pending.keys()
+	tickets.sort()
+	for entry in tickets:
+		var key := String(entry)
+		var parts := key.split(":")
+		if parts.size() != 2:
 			continue
-		if pending.has("%s:%s" % [period_key, game_id]):
-			call_deferred("claim_weekly_reward", game_id)
+		var period_key := String(parts[0])
+		var game_id := String(parts[1])
+		if period_key.length() != 10 or game_id not in GAME_IDS:
+			continue
+		var age_seconds := now_unix - Time.get_unix_time_from_datetime_string("%sT12:00:00" % period_key)
+		if age_seconds < 0 or age_seconds > 365 * 86400:
+			continue
+		if key not in SaveManager.data.get("competition_claimed_periods", []):
+			call_deferred("claim_weekly_reward", game_id, period_key)
 
 func pending_weekly_receipts_for_test() -> Dictionary:
 	var pending = SaveManager.data.get(WEEKLY_RECEIPTS_KEY, {})
 	return (pending as Dictionary).duplicate() if pending is Dictionary else {}
 
-func claim_weekly_reward(game_id: String = "rescue_rush") -> void:
-	if game_id not in GAME_IDS or not can_claim_weekly_reward(game_id):
+func claim_weekly_reward(game_id: String = "rescue_rush", historical_period: String = "") -> void:
+	if game_id not in GAME_IDS:
+		return
+	if historical_period.is_empty() and not can_claim_weekly_reward(game_id):
 		return
 	var cloud_id := String(SaveManager.data.get("cloud_save_id", ""))
 	if cloud_id.length() != 64:
 		return
 	var reward := previous_week_reward(game_id)
-	var period_key := String(reward.get("period_key", ""))
+	var period_key := historical_period if not historical_period.is_empty() else String(reward.get("period_key", ""))
+	if period_key.length() != 10:
+		return
 	var claim_key := "%s:%s" % [period_key, game_id]
-	if _weekly_claim_in_flight.has(claim_key):
+	var stored_receipts = SaveManager.data.get(WEEKLY_RECEIPTS_KEY, {})
+	# A historical request is *only* allowed for an existing saved ticket:
+	# this client must never invent fresh awards from older league periods.
+	if not historical_period.is_empty() and (not stored_receipts is Dictionary or not stored_receipts.has(claim_key)):
+		return
+	if claim_key in SaveManager.data.get("competition_claimed_periods", []) or _weekly_claim_in_flight.has(claim_key):
 		return
 	var pending = SaveManager.data.get(WEEKLY_RECEIPTS_KEY, {})
 	if not pending is Dictionary:
@@ -587,6 +610,7 @@ func claim_weekly_reward(game_id: String = "rescue_rush") -> void:
 		"competition_day": DailyChallenge.date_key(),
 		"game_id": game_id,
 		"claim_receipt": receipt,
+		"claim_period_key": period_key,
 	}, func(ok: bool, _status: int, body: Dictionary) -> void:
 		_weekly_claim_in_flight.erase(claim_key)
 		if not ok or not bool(body.get("ok", false)):
