@@ -66,6 +66,7 @@ const DEFAULT_DATA := {
 	"music": true,
 	"reduce_motion": false,
 	"gentle_effects": true,
+	"analytics_opt_in": false,
 	"fast_animation": false,
 	"language_code": "",
 	"decorations": [],
