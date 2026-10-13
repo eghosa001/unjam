@@ -17,6 +17,14 @@ func _run() -> void:
 	if not _check(events.size() == 2, "Expected one session and one whitelisted event"):return
 	var item: Dictionary = events[1]
 	if not _check(item.size() == 3 and item["name"] == "level_complete" and item["game"] == "water_sort" and item["level_band"] == 100, "Telemetry payload includes extra data or incorrect broad level band"):return
+	analytics.call("track", "water_sort_completed", {"level": 77})
+	analytics.call("track", "block_puzzle_completed", {"level": 912})
+	analytics.call("track", "rescue_attempt_failed", {"level": 12})
+	events = analytics.call("pending_telemetry_for_test")
+	if not _check(events.size() == 5, "Game-specific milestone events were not normalized"):return
+	if not _check(events[2]["name"] == "level_complete" and events[2]["game"] == "water_sort" and events[2]["level_band"] == 50, "Water completion lacks a clean game/level band"):return
+	if not _check(events[3]["name"] == "level_complete" and events[3]["game"] == "block_puzzle" and events[3]["level_band"] == 500, "Block completion lacks a clean game/level band"):return
+	if not _check(events[4]["name"] == "level_fail" and events[4]["game"] == "rescue_rush", "Rescue failure lacks a clean game ID"):return
 	for i in range(45):
 		analytics.call("track", "hint_used", {"level": i + 1})
 	events = analytics.call("pending_telemetry_for_test")
@@ -28,6 +36,16 @@ func _run() -> void:
 	root.add_child(ui)
 	await process_frame
 	var toggle := ui.find_child("PrivacySettingsCard", true, false) as PanelContainer
+	var scroll := ui.find_child("PrivacySettingsScroll", true, false) as ScrollContainer
+	if not _check(scroll != null and scroll.horizontal_scroll_mode == ScrollContainer.SCROLL_MODE_DISABLED, "Privacy disclosure cannot scroll safely on landscape phones"):return
+	var l10n := root.get_node("LocalizationManager")
+	var old_locale := String(l10n.language_code)
+	for code in ["en", "es", "fr", "pt", "de", "it", "ha", "yo", "ig"]:
+		l10n.call("set_language", code, false)
+		var title := String(ui.call("_copy", "heading"))
+		var disclosure := String(ui.call("_copy", "disclosure"))
+		if not _check(title.length() > 5 and disclosure.length() > 65, "Missing privacy disclosure for %s" % code):return
+	l10n.call("set_language", old_locale, false)
 	if not _check(toggle != null, "Privacy controls are missing"):return
 	var action_count := 0
 	for node in ui.find_children("*", "Button", true, false):
