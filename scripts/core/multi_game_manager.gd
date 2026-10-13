@@ -237,8 +237,40 @@ func claim_daily_game(id:String)->bool:
  SaveManager.save()
  return true
 
-func daily_level(id:String)->int:
- var d:=Time.get_date_dict_from_system();return posmod(int(d.year)*372+int(d.month)*31+int(d.day)+GAME_IDS.find(id)*997,CAMPAIGN_LEVELS)+1
+const DAILY_CASUAL_START := "2026-10-14"
+const DAILY_CASUAL_FIRST := 51
+const DAILY_CASUAL_LAST := 500
+const DAILY_CASUAL_DAYS := 432
+
+func _daily_level_for_date(id: String, key: String) -> int:
+	if id not in GAME_IDS or key.length() != 10:
+		return 1
+	var parts := key.split("-")
+	if parts.size() != 3:
+		return 1
+	# Keep existing Daily choices for already-running October 13 challenges.
+	var legacy := posmod(int(parts[0]) * 372 + int(parts[1]) * 31
+		+ int(parts[2]) + GAME_IDS.find(id) * 997, CAMPAIGN_LEVELS) + 1
+	if key < DAILY_CASUAL_START or id == "rescue_rush":
+		return legacy
+	# The former all-campaign modulus could select level 5,000-10,000 for
+	# someone's FIRST Water/Block Daily. Use the same approachable authored
+	# range as Rescue Daily, with separate deterministic game rotations.
+	# 432 eligible levels; the multiplier 73 is coprime with 432.
+	var day_number := int(Time.get_unix_time_from_datetime_string("%sT12:00:00" % key) / 86400.0)
+	var game_offset := 29 if id == "water_sort" else 178
+	var slot := posmod(day_number * 73 + game_offset, DAILY_CASUAL_DAYS)
+	var available_index := 0
+	for level_number in range(DAILY_CASUAL_FIRST, DAILY_CASUAL_LAST + 1):
+		if level_number % 25 == 0:
+			continue
+		if available_index == slot:
+			return level_number
+		available_index += 1
+	return DAILY_CASUAL_FIRST
+
+func daily_level(id: String) -> int:
+	return _daily_level_for_date(id, date_key())
 func is_daily_completed(id:String)->bool:
  if id=="rescue_rush":return DailyChallenge.is_completed_today()
  return date_key() in _progress_ref(id).get("daily_completed",[])
