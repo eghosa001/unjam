@@ -1749,7 +1749,7 @@ func build_collection_upgrades() -> void:
 		_fit_single_line_control_text(effect_text, 150.0, 12, 11)
 		var preview := GardenUpgradePreviewScene.new() as GardenUpgradePreview
 		preview.name = "CollectionUpgradePreview/%s" % id
-		preview.configure(id,level > 0)
+		preview.configure(id,level)
 		FigmaReferenceCanvas.set_rect(preview,197,y+9,38,50)
 		canvas.add_child(preview)
 		var state_text := "MAX" if maxed else "%d COINS" % cost
