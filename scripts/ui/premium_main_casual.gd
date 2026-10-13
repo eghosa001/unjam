@@ -438,7 +438,11 @@ func _figma_button(canvas: Control, name_value: String, text_value: String, rect
 	if _dark() and fill.get_luminance() > 0.82:
 		resolved_fill = Color("#2a2b2e")
 		resolved_text = FIGMA_DARK_INK
-	var button := FigmaReferenceCanvas.premium_button(text_value, font_size, resolved_text, resolved_fill, radius, Color(resolved_fill.r, resolved_fill.g, resolved_fill.b, 0.38), 1)
+	# White labels over bright green/orange/cyan look washed out on phones.
+	# Pick the highest-contrast brand ink rather than recolouring the button.
+	resolved_text = FigmaReferenceCanvas.accessible_text_color(resolved_text, resolved_fill, 4.5)
+	var readable_size := maxi(12, font_size)
+	var button := FigmaReferenceCanvas.premium_button(text_value, readable_size, resolved_text, resolved_fill, radius, Color(resolved_fill.r, resolved_fill.g, resolved_fill.b, 0.38), 1)
 	button.name = name_value
 	button.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 	# Show an immediate finger-down response without triggering a new page
@@ -459,7 +463,7 @@ func _figma_button(canvas: Control, name_value: String, text_value: String, rect
 	)
 	button.set_meta("unjam_authored_rect", rect)
 	FigmaReferenceCanvas.set_rect(button, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
-	_fit_single_line_control_text(button, maxf(24.0, rect.size.x - 18.0), font_size, 10)
+	_fit_single_line_control_text(button, maxf(24.0, rect.size.x - 18.0), readable_size, 12)
 	if callback.is_valid():
 		button.pressed.connect(callback)
 	canvas.add_child(button)
