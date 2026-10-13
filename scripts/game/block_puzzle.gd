@@ -125,7 +125,7 @@ func build_ui() -> void:
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(background)
-	for i in range(20):
+	for i in range(8 if bool(SaveManager.data.get("gentle_effects", true)) and not MotionSystem.reduced() else 0):
 		var shard := ColorRect.new()
 		shard.color = Color(1, 1, 1, 0.10 + float(i % 3) * 0.03)
 		shard.size = Vector2(4 + (i % 3) * 2, 8 + (i % 4) * 3)
@@ -152,6 +152,7 @@ func build_ui() -> void:
 	root.add_child(header)
 	var back := Button.new()
 	back.text = "←"
+	back.accessibility_name = "Back to game selection"
 	back.custom_minimum_size = Vector2(74, 62)
 	style_small_button(back)
 	back.pressed.connect(_quit)
@@ -165,6 +166,7 @@ func build_ui() -> void:
 	header.add_child(title_label)
 	var retry := Button.new()
 	retry.text = "↻"
+	retry.accessibility_name = "Restart current Block Puzzle level"
 	retry.custom_minimum_size = Vector2(74, 62)
 	style_small_button(retry)
 	retry.pressed.connect(restart_level)

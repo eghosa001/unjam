@@ -42,7 +42,10 @@ func configure(value: bool, preview_value: bool = false, color: Color = Color("4
 	cell_index = index
 	text = ""
 	flat = true
-	focus_mode = Control.FOCUS_NONE
+	focus_mode = Control.FOCUS_ALL
+	var coordinate := "Row %d, column %d" % [int(cell_index / 8) + 1, cell_index % 8 + 1]
+	accessibility_name = "%s: %s. Activate to place the selected block." % [coordinate, "occupied" if occupied else "empty"]
+	tooltip_text = accessibility_name
 	mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	if is_inside_tree():
 		if not old and occupied:
@@ -68,6 +71,12 @@ func _ready() -> void:
 	button_down.connect(_press)
 	button_up.connect(_release)
 	resized.connect(_update_pivot)
+	var focus_ring := StyleBoxFlat.new()
+	focus_ring.bg_color = Color.TRANSPARENT
+	focus_ring.border_color = Color("#ffe38c")
+	focus_ring.set_border_width_all(3)
+	focus_ring.set_corner_radius_all(8)
+	add_theme_stylebox_override("focus", focus_ring)
 	_update_pivot()
 
 func _update_pivot() -> void:
@@ -77,21 +86,41 @@ func _wake_animation() -> void:
 	if not is_processing():
 		set_process(true)
 
+func _reduced_motion() -> bool:
+	# This class_name control also loads in isolated headless tests before the
+	# autoload global identifiers are registered. Resolve the service safely.
+	var motion := get_node_or_null("/root/MotionSystem")
+	return motion != null and bool(motion.call("reduced"))
+
 func _hover(value: bool) -> void:
+	if _reduced_motion():
+		hover_amount = 0.0
+		queue_redraw()
+		return
 	_wake_animation()
 	var tw := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tw.tween_property(self, "hover_amount", 1.0 if value else 0.0, 0.08)
 
 func _press() -> void:
+	if _reduced_motion():
+		return
 	var tw := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tw.tween_property(self, "scale", Vector2(0.965, 0.965), 0.045)
 
 func _release() -> void:
+	if _reduced_motion():
+		scale = Vector2.ONE
+		return
 	var tw := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tw.tween_property(self, "scale", Vector2(1.045, 1.045), 0.055)
 	tw.tween_property(self, "scale", Vector2.ONE, 0.11)
 
 func _play_land() -> void:
+	if _reduced_motion():
+		impact = 0.0
+		scale = Vector2.ONE
+		queue_redraw()
+		return
 	_wake_animation()
 	impact = 1.0
 	scale = Vector2(0.66, 0.66)
@@ -111,6 +140,12 @@ func play_clear(delay: float = 0.0) -> void:
 	_play_clear()
 
 func _play_clear() -> void:
+	if _reduced_motion():
+		clear_echo = 0.0
+		clear_phase = 0.0
+		scale = Vector2.ONE
+		queue_redraw()
+		return
 	_wake_animation()
 	clear_echo = 1.0
 	clear_phase = 1.0
@@ -135,7 +170,8 @@ func set_drag_footprint(active: bool, valid: bool = false, color: Color = Color(
 	footprint_color = color
 	if active:
 		footprint_phase = 1.0
-		_wake_animation()
+	# Drag highlighting is state-driven: pulsing all cells at 60fps while
+	# dragging adds GPU work without improving snap precision.
 	queue_redraw()
 
 func _game() -> Node:
@@ -175,9 +211,7 @@ func _process(delta: float) -> void:
 	impact = maxf(0.0, impact - delta * 5.5)
 	clear_echo = maxf(0.0, clear_echo - delta * 3.8)
 	clear_phase = maxf(0.0, clear_phase - delta * 3.2)
-	if footprint_active:
-		footprint_phase += delta * 6.0
-	var animating := impact > 0.001 or clear_echo > 0.001 or clear_phase > 0.001 or footprint_active or hover_amount > 0.001
+	var animating := impact > 0.001 or clear_echo > 0.001 or clear_phase > 0.001 or hover_amount > 0.001
 	if animating:
 		queue_redraw()
 	else:
