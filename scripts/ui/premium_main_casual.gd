@@ -1742,15 +1742,17 @@ func build_collection_upgrades() -> void:
 		else:
 			state.pressed.connect(_buy_collection_upgrade.bind(id,base_cost))
 
-	var return_hint := _figma_text(canvas,"SWIPE DOWN • COLLECTION SUMMARY",Rect2(37,710,314,18),12,Color("#6e8596"),true)
-	return_hint.name = "CollectionUpgradeReturnHint"
-	return_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	return_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	return_hint.clip_text = true
-	return_hint.custom_minimum_size = Vector2.ZERO
-	_fit_single_line_control_text(return_hint,310.0,12,10)
-	return_hint.position = Vector2(37,710)
-	return_hint.size = Vector2(314,18)
+	# A visible back action is easier to discover than the previously dim
+	# swipe-only footer and remains usable by touch and TalkBack.
+	var return_button := _figma_button(
+		canvas, "CollectionBackToSummary", "BACK TO GARDEN",
+		Rect2(100,701,188,44),
+		Color("#40556e") if _dark() else Color("#e0e9e6"),
+		Callable(self,"build_collection"),
+		FIGMA_DARK_INK if _dark() else FIGMA_NAVY, 14, 12
+	)
+	return_button.accessibility_name = "Return to Collection summary"
+	return_button.tooltip_text = "Return to Collection summary"
 	_figma_bottom_nav(canvas,"collection")
 
 func _collection_summary_scroll_input(event: InputEvent, owner: Control) -> void:
