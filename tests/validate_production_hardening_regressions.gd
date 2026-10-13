@@ -374,7 +374,7 @@ func _validate_dead_code_cleanup() -> bool:
 		"res://scripts/game/block_puzzle_premium_layout.gd": ["const PREMIUM_CELL_MIN"],
 		"res://scripts/ui/premium_main_casual.gd": ["const FIGMA_BG_MID", "const FIGMA_DARK_MID", "const FIGMA_PURPLE", "func _setting_button(", "func _daily_game_card(", "func _add_secondary_nav(", "func _journey_metric(", "func _collection_game_card(", "func _inject_block_modes(", "func _inject_journey_summary(", "func _continue_campaign("],
 		"res://scripts/ui/premium_home_casual.gd": ["func _make_tagline(", "func _make_sign_stack("],
-		"res://scripts/ui/premium_home_direct_levels.gd": ["func _open_game_levels(", "func _select_and_open_game("],
+		"res://scripts/ui/premium_home_direct_levels.gd": ["func _select_and_open_game("],
 		"res://scripts/ui/ux_shell_casual.gd": ["func _layout_tutorial_panel(", "func _layout_help_button(", "func _restyle_3d_shell("],
 		"res://scripts/ui/robust_main.gd": ["func _add_journey_card("],
 		"res://scripts/game/water_sort_reference_motion.gd": ["func _transfer_amount("],
@@ -387,6 +387,10 @@ func _validate_dead_code_cleanup() -> bool:
 		for token in retired[dead_path]:
 			if source.contains(String(token)):
 				return _fail("Verified dead source returned: %s in %s" % [token, dead_path])
+	# The old selected-game Home preview was intentionally removed, but
+	# the NEW neutral Home uses _open_game_levels for its illustrated cards.
+	if not _source("res://scripts/ui/premium_home_direct_levels.gd").contains("func _open_game_levels("):
+		return _fail("Home showcase shortcuts no longer open the chosen game's level browser")
 	var tutorial := _source("res://scripts/ui/ux_shell_casual.gd")
 	if not tutorial.contains("TUTORIAL_DARK_NEUTRAL_FALLBACK.lerp"):
 		return _fail("Tutorial compatibility fallback became dead instead of serving the dark-scene contract")
