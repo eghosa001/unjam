@@ -18,6 +18,7 @@ const MUSIC_START_DB := -48.0
 const MUSIC_FADE_IN_SECONDS := 0.90
 const MUSIC_FADE_OUT_SECONDS := 0.18
 const NAV_TAP_MIN_INTERVAL_MS := 35
+const SOFT_HAPTIC_COOLDOWN_MS := 130
 # Each additional simultaneous chime is attenuated, reducing clipping risk
 # when rapid touches, clears and celebration sounds coincide on phone speakers.
 const ACTIVE_VOICE_DUCK_DB := 2.3
@@ -31,6 +32,7 @@ var last_music_enabled := false
 var _sfx_cursor := 0
 var _music_fade: Tween
 var _last_nav_tap_ms := -1000
+var _last_soft_haptic_ms := -10000
 var _stream_cache: Dictionary = {}
 
 func _ready() -> void:
@@ -224,9 +226,20 @@ func effect() -> void:
 func rescue() -> void:
 	complete("rescue")
 
+func _accept_soft_haptic(now_ms: int) -> bool:
+	# Do not turn a stream of failed placement/pour taps into an unpleasant
+	# continuous motor buzz. Distinct completion haptics remain unthrottled.
+	if now_ms - _last_soft_haptic_ms < SOFT_HAPTIC_COOLDOWN_MS:
+		return false
+	_last_soft_haptic_ms = now_ms
+	return true
+
 func _vibrate(ms: int) -> void:
-	if bool(SaveManager.data.get("vibration", true)):
-		Input.vibrate_handheld(ms)
+	if not bool(SaveManager.data.get("vibration", true)):
+		return
+	if ms <= 10 and not _accept_soft_haptic(Time.get_ticks_msec()):
+		return
+	Input.vibrate_handheld(ms)
 
 # ---------------------------------------------------------------------------
 # Warm mallet/chime synthesis
