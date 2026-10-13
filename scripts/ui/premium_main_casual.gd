@@ -1313,8 +1313,10 @@ func build_compete_leaderboard(refresh_remote: bool = true) -> void:
 	_figma_card(canvas,"CompetitionPlayerProgress",Rect2(17,145,354,60),Color("#282a2e") if _dark() else Color("#fffaf2"),Color(accent,0.38),16)
 	var ranking_game_title := _figma_text(canvas,MultiGameManager.display_name(_ranking_game).to_upper(),Rect2(31,154,160,15),12,accent)
 	_fit_single_line_control_text(ranking_game_title,156.0,12,10)
-	var ranking_progress := _figma_text(canvas,"%d LEVELS • ★%d" % [CompetitionManager.game_all_time_levels(_ranking_game),CompetitionManager.game_all_time_stars(_ranking_game)],Rect2(31,178,190,14),10,FIGMA_INK)
-	_fit_single_line_control_text(ranking_progress,186.0,10,9)
+	var ranking_progress := _figma_text(canvas,"RANKED %d • ★%d" % [CompetitionManager.game_all_time_levels(_ranking_game),CompetitionManager.game_all_time_stars(_ranking_game)],Rect2(31,176,190,20),12,FIGMA_INK)
+	ranking_progress.tooltip_text = "Ranked completions count only after a server-recorded finish. Offline campaign levels stay saved even when league sync is unavailable."
+	ranking_progress.accessibility_name = ranking_progress.tooltip_text
+	_fit_single_line_control_text(ranking_progress,186.0,12,11)
 	var week := _figma_text(canvas,"WEEK +%d" % CompetitionManager.game_weekly_levels(_ranking_game),Rect2(242,164,105,22),12,FIGMA_MUTED,true)
 	week.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 
