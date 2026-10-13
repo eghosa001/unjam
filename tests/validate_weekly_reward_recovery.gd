@@ -46,7 +46,7 @@ func _run() -> void:
 		"ok":true,"already_claimed":true,"receipt_matches":true,
 		"period_key":period,"game_id":"rescue_rush","coins":250,"crowns":7,"rank":2
 	})
-	var expected_crowns := root.get_node("EconomyManager").competition_crown_reward(7)
+	var expected_crowns: int = root.get_node("EconomyManager").competition_crown_reward(7)
 	if not _check(int(save.data.get("coins", 0)) == 335, "Recovery failed to settle refund debt and credit earned coins"):return
 	if not _check(int(save.data.get("purchase_coin_debt", 0)) == 0, "Coin purchase refund debt was ignored"):return
 	if not _check(int(save.data.get("crown_tokens", 0)) == 10 + expected_crowns, "Collection crown reward was not credited"):return
