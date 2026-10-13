@@ -14,6 +14,8 @@ const DAILY_PENDING_KEY := "competition_pending_daily_results"
 const MAX_PENDING_DAILY_RESULTS := 9
 const CAMPAIGN_PENDING_KEY := "competition_pending_campaign_results"
 const MAX_PENDING_CAMPAIGN_RESULTS := 240
+const RETRY_START_SECONDS := 20.0
+const RETRY_MAX_SECONDS := 300.0
 
 var snapshot: Dictionary = {}
 var daily_snapshot: Dictionary = {}
@@ -22,14 +24,49 @@ var _snapshot_in_flight := false
 var _daily_snapshot_in_flight := false
 var _pending_daily_requests: Dictionary = {}
 var _campaign_submission_in_flight := false
+var _retry_timer: Timer
+var _next_retry_seconds := RETRY_START_SECONDS
 var _social_in_flight := false
 var _social_game_id := "rescue_rush"
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_retry_timer = Timer.new()
+	_retry_timer.name = "CompetitionSyncRetry"
+	_retry_timer.one_shot = true
+	_retry_timer.process_mode = Node.PROCESS_MODE_ALWAYS
+	_retry_timer.timeout.connect(_on_retry_timeout)
+	add_child(_retry_timer)
 	call_deferred("refresh_snapshot")
 	call_deferred("_flush_pending_daily_results")
 	call_deferred("_flush_pending_campaign_results")
+
+func pending_sync_count() -> int:
+	return _pending_campaign_results().size() + _pending_daily_results().size()
+
+func _schedule_sync_retry() -> void:
+	# Network failures must eventually retry even when the player stays on the
+	# same screen. No busy loop, no timer work when there is nothing to upload.
+	if pending_sync_count() == 0 or _retry_timer == null:
+		return
+	if _retry_timer.is_stopped():
+		_retry_timer.start(_next_retry_seconds)
+	_next_retry_seconds = minf(RETRY_MAX_SECONDS, _next_retry_seconds * 2.0)
+
+func _on_retry_timeout() -> void:
+	_flush_pending_campaign_results()
+	_flush_pending_daily_results()
+
+func _clear_sync_retry_if_empty() -> void:
+	if pending_sync_count() != 0:
+		return
+	_next_retry_seconds = RETRY_START_SECONDS
+	if _retry_timer != null:
+		_retry_timer.stop()
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_RESUMED:
+		call_deferred("_on_retry_timeout")
 
 func display_name() -> String:
 	var custom := String(SaveManager.data.get("competition_display_name", "")).strip_edges()
@@ -390,9 +427,13 @@ func _flush_pending_campaign_results() -> void:
 				snapshot = (body.get("snapshot", {}) as Dictionary).duplicate(true)
 				snapshot_updated.emit(snapshot)
 		submission_finished.emit(game_id, accepted, level)
-		# Do not spin on outages or the hourly competition quota.
+		# Failed uploads are retried on a bounded timer while the app is open.
+		# A manual refresh or foreground return can safely try sooner.
 		if accepted or status == 409:
+			_clear_sync_retry_if_empty()
 			call_deferred("_flush_pending_campaign_results")
+		else:
+			_schedule_sync_retry()
 	)
 
 func submit_daily_result(game_id: String, metrics: Dictionary) -> void:
@@ -474,6 +515,10 @@ func _flush_pending_daily_results() -> void:
 						daily_snapshot = (body.get("snapshot",{}) as Dictionary).duplicate(true)
 						daily_snapshot_updated.emit(daily_snapshot)
 			submission_finished.emit(game_id, accepted, points)
+			if accepted:
+				_clear_sync_retry_if_empty()
+			else:
+				_schedule_sync_retry()
 		)
 
 func claim_weekly_reward(game_id: String = "rescue_rush") -> void:
