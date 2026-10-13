@@ -71,9 +71,25 @@ const SIDEKICK_TIPS := {
 }
 
 
+func _light_accent_ink(color: Color) -> Color:
+	# Vivid accent hues are appropriate on buttons and in game art, but not as
+	# 12–16px text on the light ivory panels. Map only known text tokens:
+	# preserving white text on dark surfaces and every authored accent fill.
+	if color.is_equal_approx(FIGMA_GOLD):
+		return Color("#815200")
+	if color.is_equal_approx(FIGMA_GREEN) or color.is_equal_approx(Unjam3DTheme.GREEN):
+		return Color("#12653a")
+	if color.is_equal_approx(FIGMA_CYAN) or color.is_equal_approx(Unjam3DTheme.WATER):
+		return Color("#0a5a84")
+	if color.is_equal_approx(FIGMA_ORANGE):
+		return Color("#925000")
+	if color.is_equal_approx(Unjam3DTheme.PURPLE):
+		return Color("#722d8f")
+	return color
+
 func _figma_theme_text(color: Color) -> Color:
 	if not _dark():
-		return color
+		return _light_accent_ink(color)
 	if color.is_equal_approx(FIGMA_INK) or color.is_equal_approx(FIGMA_NAVY):
 		return FIGMA_DARK_INK
 	if color.is_equal_approx(FIGMA_MUTED):
