@@ -30,21 +30,26 @@ func set_pour_progress(value: float) -> void:
 	pour_progress = clampf(value, 0.0, 1.0)
 	queue_redraw()
 
-func visual_pour_rim_local(direction: float) -> Vector2:
-	# Match the exact lip drawn in _draw(). The stream must begin on the outside
-	# edge of the visible glass mouth, never from the tube centre.
+func _motion_body_rect() -> Rect2:
+	# Share the same bottle geometry between rendering and rim positioning.
 	var lift := -13.0 if is_selected and pour_mode == 0 else 0.0
 	var outer := Rect2(Vector2(size.x * 0.13, 13.0 + lift), Vector2(size.x * 0.74, size.y - 42.0))
 	var neck_h := outer.size.y * 0.10
-	var body := Rect2(outer.position + Vector2(0, neck_h * 0.40), Vector2(outer.size.x, outer.size.y - neck_h * 0.40))
+	return Rect2(outer.position + Vector2(0, neck_h * 0.40), Vector2(outer.size.x, outer.size.y - neck_h * 0.40))
+
+func _motion_mouth_center() -> Vector2:
+	var body := _motion_body_rect()
+	var neck_height := maxf(12.0, body.size.y * 0.125)
+	return Vector2(body.get_center().x, body.position.y - neck_height * 0.38 + 1.5)
+
+func visual_pour_rim_local(direction: float) -> Vector2:
+	# The stream must leave the narrow glass neck, not the broad body shoulder.
+	var body := _motion_body_rect()
 	var dir := 1.0 if direction >= 0.0 else -1.0
-	return Vector2(body.get_center().x + dir * body.size.x * 0.50, body.position.y + 3.0)
+	return _motion_mouth_center() + Vector2(dir * (body.size.x * 0.24 + 1.5), 0.0)
 
 func visual_receive_rim_local() -> Vector2:
-	var outer := Rect2(Vector2(size.x * 0.13, 13.0), Vector2(size.x * 0.74, size.y - 42.0))
-	var neck_h := outer.size.y * 0.10
-	var body := Rect2(outer.position + Vector2(0, neck_h * 0.40), Vector2(outer.size.x, outer.size.y - neck_h * 0.40))
-	return Vector2(body.get_center().x, body.position.y + 3.0)
+	return _motion_mouth_center()
 
 func _slot_fill(slot: int) -> float:
 	if pour_mode == -1 and pour_amount > 0:
@@ -72,10 +77,7 @@ func _process(delta: float) -> void:
 		queue_redraw()
 
 func _draw() -> void:
-	var lift := -13.0 if is_selected and pour_mode == 0 else 0.0
-	var outer := Rect2(Vector2(size.x * 0.13, 13.0 + lift), Vector2(size.x * 0.74, size.y - 42.0))
-	var neck_h := outer.size.y * 0.10
-	var body := Rect2(outer.position + Vector2(0, neck_h * 0.40), Vector2(outer.size.x, outer.size.y - neck_h * 0.40))
+	var body := _motion_body_rect()
 	var inner := Rect2(body.position + Vector2(5, 10), body.size - Vector2(10, 20))
 	var radius := minf(20.0, body.size.x * 0.31)
 	_draw_glass_shape(Rect2(body.position + Vector2(0, 8), body.size), _materials.contact_shadow(0.20), Color.TRANSPARENT, radius, 0.0)
@@ -125,8 +127,14 @@ func _draw() -> void:
 			if light_h > 1.0:
 				draw_rect(Rect2(r.position, Vector2(r.size.x, light_h)), Color(upper_color, 0.48), true)
 			draw_line(Vector2(r.position.x + 2, r.position.y + 2), Vector2(r.end.x - 2, r.position.y + 2 - wave * 0.3), upper_color.lightened(0.10), 2.0, true)
-	var lip_y := body.position.y + 3.0
-	draw_line(Vector2(body.position.x - 4, lip_y), Vector2(body.end.x + 4, lip_y), outline, 5.0, true)
+	# The lip follows the actual 48%-wide neck, not the whole body width.
+	# The former long white stroke visually joined adjacent bottles on dense
+	# boards and made the glass resemble a rack of flat horizontal bars.
+	var lip_center := _motion_mouth_center()
+	var left_rim := visual_pour_rim_local(-1.0)
+	var right_rim := visual_pour_rim_local(1.0)
+	draw_line(left_rim, right_rim, Color(outline, 0.86), 3.0, true)
+	draw_line(left_rim + Vector2(3.0, -1.6), lip_center + Vector2(body.size.x * 0.06, -1.6), Color(1, 1, 1, 0.40), 1.4, true)
 	# Break the reflection into short rim-side glints. A continuous white line
 	# over the full bottle looks like plastic, especially across dark liquids.
 	# Outer-edge glints keep colour runs unobstructed on narrow Android slots.
