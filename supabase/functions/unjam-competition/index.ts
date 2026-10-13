@@ -585,14 +585,14 @@ Deno.serve(async (req: Request) => {
       // This bounded path mitigates jumps and replay abuse; genuine
       // anti-cheat still requires authenticated Play Integrity evidence.
       const previous = await progressRankFor(sb, "all_time", ALL_TIME_KEY, gameId, hash);
-      const verifiedLevel = previous.highest_level;
-      if (levelNumber > verifiedLevel + 1) {
-        return json({ ok: false, reason: "Unverified progression jump", expected_next_level: verifiedLevel + 1 }, 409);
-      }
-      if (!firstClear && levelNumber > verifiedLevel) {
+      // One accepted new completion can increase the public total by at most
+      // one, regardless of local save level or offline progression gaps.
+      // Returning offline players keep their local level; new ranked clears
+      // count from the time they reconnect. Replay never increases totals.
+      if (!firstClear && levelNumber > previous.highest_level) {
         return json({ ok: false, reason: "Only first clears advance rankings" }, 409);
       }
-      if (firstClear && levelNumber === verifiedLevel + 1) {
+      if (firstClear && levelNumber > previous.highest_level) {
         const since = new Date(Date.now() - 3_600_000).toISOString();
         const { count, error: rateError } = await sb.from("progression_level_events")
           .select("*", { count: "exact", head: true })
@@ -601,14 +601,17 @@ Deno.serve(async (req: Request) => {
         if (Number(count ?? 0) >= 180) {
           return json({ ok: false, reason: "Too many ranked completions; retry later" }, 429);
         }
-        await recordProgressEvent(sb, hash, gameId, levelNumber, stars, weekKey);
-        await upsertAllTimeProgress(sb, hash, name, gameId, {
-          levels_completed: levelNumber, highest_level: levelNumber,
-          stars: Math.min(30000, previous.stars + stars),
-        });
-      } else if (firstClear && levelNumber <= verifiedLevel) {
-        // A replay of an already ranked level never increments all-time score.
-        // Existing best stars can still improve the weekly record.
+        const inserted = await recordProgressEvent(sb, hash, gameId, levelNumber, stars, weekKey);
+        if (inserted) {
+          const verifiedCount = Math.min(10000, previous.levels_completed + 1);
+          await upsertAllTimeProgress(sb, hash, name, gameId, {
+            levels_completed: verifiedCount, highest_level: levelNumber,
+            stars: Math.min(verifiedCount * 3, previous.stars + stars),
+          });
+        }
+      } else if (levelNumber <= previous.highest_level) {
+        // Previously known levels may improve their best-star record, but
+        // cannot be counted as a newly completed level.
         await recordProgressEvent(sb, hash, gameId, levelNumber, stars, weekKey);
       }
       await refreshWeeklyProgress(sb, hash, name, gameId, weekKey);
