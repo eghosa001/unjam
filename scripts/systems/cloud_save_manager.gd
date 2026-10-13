@@ -350,6 +350,8 @@ func _push_now() -> void:
 		_request_in_flight = false
 		if ok:
 			_sync_retry_delay = SYNC_RETRY_START_SECONDS
+			if _sync_timer != null:
+				_sync_timer.stop()
 			_set_cloud_status("Cloud backup synced.")
 			var new_revision := maxi(0, int(body.get("revision", SaveManager.data.get("cloud_save_revision", 0))))
 			if new_revision != int(SaveManager.data.get("cloud_save_revision", 0)):
