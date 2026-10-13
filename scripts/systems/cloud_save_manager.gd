@@ -373,6 +373,8 @@ func _push_now() -> void:
 					# A resolved 409 must not leave the Backup screen reporting
 					# "Reconciling..." forever when no upload is required.
 					_sync_retry_delay = SYNC_RETRY_START_SECONDS
+					if _sync_timer != null:
+						_sync_timer.stop()
 					_set_cloud_status("Cloud backup synced.")
 			else:
 				_pending_push = true
