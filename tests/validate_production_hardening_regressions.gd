@@ -172,26 +172,29 @@ func _validate_primary_visual_occupancy() -> bool:
 	if canvas == null or hero == null or primary == null:
 		main.queue_free(); await process_frame
 		return _fail("Figma Home primary visual hierarchy is incomplete")
-	if hero.size.distance_to(Vector2(346,224)) > 1.0:
+	# The approved minimalist Home now has a 168px neutral welcome hero,
+	# not the retired 224px selected-game preview. Validate the current
+	# reference composition without reinstating its obsolete crowded layout.
+	if hero.size.distance_to(Vector2(346,168)) > 1.0:
 		main.queue_free(); await process_frame
-		return _fail("Figma Home hero drifted from audited 346x224 geometry")
-	if hero.get_global_rect().size.x < 760.0 or hero.get_global_rect().size.y < 480.0:
+		return _fail("Minimalist Home hero drifted from audited 346x168 geometry")
+	if hero.get_global_rect().size.x < 760.0 or hero.get_global_rect().size.y < 430.0:
 		main.queue_free(); await process_frame
-		return _fail("Figma Home hero no longer has dominant physical presence on 1080x1920")
-	# In the audited Figma composition the primary CTA is intentionally embedded
-	# inside the hero card (x41..219, y285..333) rather than sitting below it.
-	# Guard containment instead of applying the retired non-overlap rule.
+		return _fail("Minimalist Home hero is too small on 1080x1920")
 	if not hero.get_global_rect().encloses(primary.get_global_rect()):
 		main.queue_free(); await process_frame
-		return _fail("Figma Home primary action escapes its hero card")
-	var hero_title := home.find_child("HomeHeroGameTitle", true, false) as Control
-	var hero_preview := home.find_child("FigmaHomeHeroPreview", true, false) as Control
-	if hero_title == null or hero_preview == null:
+		return _fail("Home Choose Game action escaped its hero card")
+	var hero_title := home.find_child("HomeWelcomeTitle", true, false) as Control
+	var hero_emblem := home.find_child("HomeBrandEmblem", true, false) as Control
+	if hero_title == null or hero_emblem == null:
 		main.queue_free(); await process_frame
-		return _fail("Figma Home title/preview diagnostics are incomplete")
-	if hero_title.get_global_rect().intersects(hero_preview.get_global_rect()):
+		return _fail("Neutral Home headline or brand artwork missing")
+	if hero_title.get_global_rect().intersects(hero_emblem.get_global_rect()):
 		main.queue_free(); await process_frame
-		return _fail("Figma Home game title overlaps its hero preview")
+		return _fail("Neutral welcome heading overlaps brand artwork")
+	if home.find_child("HomeHeroGameTitle", true, false) != null:
+		main.queue_free(); await process_frame
+		return _fail("Retired selected-game hero returned to minimalist Home")
 
 	main.call("start_multi_level", "water_sort", 1, false)
 	await _frames(10)
