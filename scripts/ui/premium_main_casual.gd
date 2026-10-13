@@ -946,7 +946,11 @@ func _set_friends_period(period: String) -> void:
 
 func _figma_friend_rank_row(canvas: Control, row: Dictionary, index: int, y: float) -> void:
 	var is_you := bool(row.get("you",false))
-	var accent := FIGMA_CYAN if is_you else Unjam3DTheme.game_accent(_ranking_game)
+	# Bright game accents work on dark panels but fail the 4.5:1 text
+	# contrast target on cream/light panels (e.g. green ~1.8:1).
+	var accent := (FIGMA_CYAN if _dark() else Color("#116080")) if is_you else (
+		Unjam3DTheme.game_accent(_ranking_game) if _dark() else Unjam3DTheme.game_accent(_ranking_game).darkened(0.55)
+	)
 	var rank := int(row.get("rank",index+1))
 	_figma_text(canvas,"YOU" if is_you else str(rank),Rect2(30,y+6,38,24),13,accent,true)
 	var friend_full_name := String(row.get("name","PLAYER"))
@@ -1420,7 +1424,8 @@ func _on_weekly_competition_reward(_coins: int, _crowns: int) -> void:
 
 func _figma_progress_leaderboard_panel(canvas: Control, title_text: String, entries: Array, y: float, own_rank: int, own_levels: int, own_stars: int, accent: Color) -> void:
 	_figma_card(canvas,"Leaderboard/%s" % title_text,Rect2(17,y,354,180),Color("#fffaf2"),Color(accent,0.36),18)
-	_figma_text(canvas,title_text,Rect2(33,y+12,120,20),15,accent)
+	var readable_accent := accent.darkened(0.55)
+	_figma_text(canvas,title_text,Rect2(33,y+12,120,20),15,readable_accent)
 	var own_text := "YOU —" if own_rank <= 0 else "YOU #%d • L%d" % [own_rank,own_levels]
 	var own := _figma_text(canvas,own_text,Rect2(185,y+12,166,20),13,FIGMA_INK,true)
 	own.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -1436,7 +1441,7 @@ func _figma_progress_leaderboard_panel(canvas: Control, title_text: String, entr
 			continue
 		var row_y := y+42.0+float(i)*33.0
 		var place := maxi(1,int(row.get("rank",i+1)))
-		_figma_text(canvas,"★" if place == 1 else str(place),Rect2(34,row_y,28,24),13,accent,true)
+		_figma_text(canvas,"★" if place == 1 else str(place),Rect2(34,row_y,28,24),13,readable_accent,true)
 		var full_player_name := String(row.get("name","PLAYER"))
 		var player_label := _figma_text(canvas,full_player_name.left(15),Rect2(70,row_y,135,24),13,FIGMA_INK)
 		player_label.tooltip_text = full_player_name
