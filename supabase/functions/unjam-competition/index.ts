@@ -204,6 +204,29 @@ function metric(m: Record<string, unknown>, key: string, min: number, max: numbe
   return Number.isFinite(n) ? Math.max(min, Math.min(max, Math.trunc(n))) : fallback;
 }
 function clamp(n: number, min: number, max: number) { return Math.max(min, Math.min(max, Math.trunc(n))); }
+// Reject fabricated or incomplete daily scores instead of silently giving
+// points to missing/default metrics. Keep keys compatible with all three
+// currently shipped client completion payloads.
+function validDailyMetrics(gameId: string, m: Record<string, unknown>): boolean {
+  const integer = (name: string, low: number, high: number): boolean => {
+    const n = m[name];
+    return typeof n === "number" && Number.isInteger(n) && n >= low && n <= high;
+  };
+  if (!integer("stars", 1, 3)) return false;
+  if (gameId === "rescue_rush") {
+    return integer("moves", 1, 500) && integer("par", 1, 500)
+      && integer("mistakes", 0, 50) && integer("hints", 0, 50)
+      && integer("undos", 0, 50);
+  }
+  if (gameId === "water_sort") {
+    return integer("moves", 1, 1000) && integer("par", 1, 1000);
+  }
+  if (gameId === "block_puzzle") {
+    return integer("score", 0, 100000) && integer("lines", 0, 200)
+      && integer("placements", 1, 1000) && integer("par", 1, 1000);
+  }
+  return false;
+}
 function scoreForGame(gameId: string, m: Record<string, unknown>): number | null {
   const stars = metric(m, "stars", 1, 3, 1);
   if (gameId === "rescue_rush") {
@@ -688,6 +711,7 @@ Deno.serve(async (req: Request) => {
   if (action === "submit") {
     const gameId = String(body.game_id ?? ""); if (!GAME_IDS.has(gameId)) return json({ ok: false, reason: "Invalid game" }, 400);
     const metrics = body.metrics && typeof body.metrics === "object" && !Array.isArray(body.metrics) ? body.metrics as Record<string, unknown> : {};
+    if (!validDailyMetrics(gameId, metrics)) return json({ ok: false, reason: "Incomplete or invalid daily result" }, 400);
     const score = scoreForGame(gameId, metrics); if (!score) return json({ ok: false, reason: "Invalid result" }, 400);
     const dayKey = isoDay(day), weekKey = isoDay(weekStart(day));
     const { data: existing, error: readError } = await sb.from("competition_entries").select("score").eq("player_hash", hash).eq("competition_day", dayKey).eq("game_id", gameId).maybeSingle();
