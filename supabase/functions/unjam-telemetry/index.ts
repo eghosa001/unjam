@@ -33,6 +33,12 @@ Deno.serve(async (req: Request) => {
   if (body.consent !== true || !Array.isArray(body.events) || body.events.length < 1 || body.events.length > 24) {
     return output({ ok: false }, 400);
   }
+  // Per-BATCH random IDs are used for retry idempotency only. Do not accept
+  // persistent installation identifiers or attach these receipts to players.
+  const batchId = body.batch_id;
+  if (batchId !== undefined && (typeof batchId !== "string" || !/^[0-9a-f]{32}$/.test(batchId))) {
+    return output({ ok: false }, 400);
+  }
   const counts = new Map<string, { event_name: string; game_id: string; level_band: number; n: number }>();
   for (const raw of body.events) {
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) return output({ ok: false }, 400);
@@ -52,12 +58,16 @@ Deno.serve(async (req: Request) => {
   const sb = createClient(supabaseUrl, key, { auth: { persistSession: false, autoRefreshToken: false } });
   // Commit the full batch in one transaction. A transient SQL error must
   // never leave a partially applied batch that is blindly retried.
-  const { error } = await sb.rpc("unjam_increment_telemetry_batch", {
-    p_events: [...counts.values()].map(row => ({
-      event_name: row.event_name, game_id: row.game_id,
-      level_band: row.level_band, n: row.n,
-    })),
-  });
+  const p_events = [...counts.values()].map(row => ({
+    event_name: row.event_name, game_id: row.game_id,
+    level_band: row.level_band, n: row.n,
+  }));
+  // Old clients that do not send batch_id remain compatible. New clients
+  // use a single transactional receipt so a lost acknowledgement cannot
+  // cause a duplicate aggregate count when the same batch is retried.
+  const { error } = batchId === undefined
+    ? await sb.rpc("unjam_increment_telemetry_batch", { p_events })
+    : await sb.rpc("unjam_increment_telemetry_batch_v2", { p_batch_id: batchId, p_events });
   if (error) {
     console.error("Telemetry batch counter update failed", { message: error.message });
     return output({ ok: false }, 503);
