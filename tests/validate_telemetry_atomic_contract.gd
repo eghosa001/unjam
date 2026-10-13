@@ -24,6 +24,18 @@ func _initialize() -> void:
 	]:
 		if not migration.contains(token):
 			failures.append("Analytics SQL trust/summary contract missing: %s" % token)
+	var receipts := FileAccess.get_file_as_string("res://supabase/migrations/20261013_idempotent_anonymous_telemetry.sql")
+	for term in ["batch_id text primary key", "on conflict do nothing", "v_inserted = 0", "unjam_increment_telemetry_batch(p_events)"]:
+		if not receipts.contains(term):
+			failures.append("Receipt de-duplication invariant missing: %s" % term)
+	for term in ['batchId === undefined', 'unjam_increment_telemetry_batch_v2', 'p_batch_id: batchId']:
+		if not edge.contains(term):
+			failures.append("Legacy-compatible receipt HTTP contract missing: %s" % term)
+	var client := FileAccess.get_file_as_string("res://scripts/systems/analytics_manager.gd")
+	if not client.contains("generate_random_bytes(16).hex_encode()"):
+		failures.append("No random per-batch receipt")
+	if not client.contains("cancel_request()"):
+		failures.append("Opt-out fails to cancel pending upload")
 	if not failures.is_empty():
 		for item in failures:
 			push_error(item)
