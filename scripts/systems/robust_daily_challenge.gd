@@ -1,7 +1,24 @@
 extends "res://scripts/systems/daily_challenge.gd"
 
 func build_today() -> Dictionary:
-	var key := date_key()
+	return _build_for_key(date_key())
+
+func _build_for_key(key: String) -> Dictionary:
+	# Daily competition must offer the same puzzle to every player, not one
+	# scaled to the player's highest level. Older in-progress days keep the
+	# previous personal daily selection to avoid swapping a live puzzle.
+	if key >= DAILY_EXPANSION_START:
+		var scheduled: Dictionary = super._build_for_key(key)
+		if bool(scheduled.get("solver_verified", false)):
+			return scheduled
+		# Rare generator fallback: keep the Daily playable rather than
+		# publishing an unsolved board. The choice remains deterministic.
+		var safe := CampaignGenerator.generate(51)
+		safe["id"] = -1
+		safe["daily"] = true
+		safe["daily_key"] = key
+		safe["daily_source_level"] = 51
+		return safe
 	var seed_value := int(key.replace("-", ""))
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
