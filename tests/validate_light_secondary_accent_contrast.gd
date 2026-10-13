@@ -9,8 +9,8 @@ func _initialize() -> void:
 		Color("20d86b"),Color("19b9ff"),Color("c63cff"),
 	]:
 		var ink: Color = surface.call("_light_accent_ink",accent)
-		var l1 := maxf(ink.get_luminance(),background.get_luminance())
-		var l2 := minf(ink.get_luminance(),background.get_luminance())
+		var l1 := maxf(ink.srgb_to_linear().get_luminance(),background.srgb_to_linear().get_luminance())
+		var l2 := minf(ink.srgb_to_linear().get_luminance(),background.srgb_to_linear().get_luminance())
 		var contrast := (l1 + 0.05) / (l2 + 0.05)
 		if contrast < 4.5:
 			push_error("Light secondary accent contrast below 4.5:1, %.2f" % contrast)
