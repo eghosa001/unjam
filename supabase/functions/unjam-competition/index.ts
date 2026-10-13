@@ -543,6 +543,21 @@ Deno.serve(async (req: Request) => {
     }
     const receiptHash = typeof claimReceipt === "string" ? await sha256Hex(claimReceipt) : null;
     try {
+      // A stored receipt must remain redeemable after an earlier league score
+      // was reclassified. Existing claims are historical settlement records;
+      // recomputing today's rank first could strand a legitimate paid claim.
+      const { data: prior, error: priorError } = await sb.from("progression_reward_claims")
+        .select("rank,levels_completed,coins,crowns,claim_receipt_hash")
+        .eq("player_hash", hash).eq("period_key", periodKey).eq("game_id", gameId).maybeSingle();
+      if (priorError) throw priorError;
+      if (prior) {
+        return json({
+          ok: true, period_key: periodKey, game_id: gameId, already_claimed: true,
+          receipt_matches: Boolean(receiptHash && prior.claim_receipt_hash === receiptHash),
+          rank: Number(prior.rank), levels_completed: Number(prior.levels_completed),
+          coins: Number(prior.coins), crowns: Number(prior.crowns),
+        });
+      }
       const rank = await progressRankFor(sb, "weekly", periodKey, gameId, hash);
       if (rank.rank <= 0 || rank.levels_completed <= 0) return json({ ok: false, reason: "No completed weekly league" }, 404);
       const reward = progressionRewardForRank(rank.rank);
