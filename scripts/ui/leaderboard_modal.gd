@@ -155,7 +155,8 @@ func _build() -> void:
 	close_button.custom_minimum_size = Vector2(94,48)
 	close_button.size_flags_horizontal = Control.SIZE_SHRINK_END
 	header.add_child(close_button)
-	close_button.grab_focus.call_deferred()
+	# Focus remains available via keyboard/TalkBack; don't request it before
+	# the modal is visible and the shared touch enhancer has settled.
 
 	_summary = _label("Compete with real players",13,muted)
 	_summary.name = "LeaderboardModalDescription"
@@ -256,7 +257,8 @@ func _fit_viewport() -> void:
 	# both the overlay size and panel anchors removes any dependency on a
 	# CenterContainer's inferred minimum size or deferred layout order.
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	overlay.size = viewport_size
+	# FULL_RECT already fills the viewport; writing size while opposite
+	# anchors differ caused a warning and an unnecessary layout pass.
 	_card.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_card.custom_minimum_size = Vector2.ZERO
 	var portrait := viewport_size.y >= viewport_size.x
