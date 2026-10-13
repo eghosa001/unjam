@@ -1423,9 +1423,17 @@ func build_compete_leaderboard(refresh_remote: bool = true) -> void:
 		claim.tooltip_text = "Claim your %s placement reward for the week starting %s" % [MultiGameManager.display_name(_ranking_game),reward_period]
 		claim.accessibility_name = claim.tooltip_text
 	else:
-		var note := _figma_text(canvas,"Weekly prizes finalize Tuesday (UTC), after late results sync.",Rect2(44,663,302,40),12,FIGMA_MUTED,true)
-		_fit_wrapped_text(note,292.0,12,10)
+		# The old floating text ran directly across celebratory background shapes
+		# and had no clear hierarchy on compact 540x960 screens. Give the weekly
+		# settlement explanation a quiet, opaque home below the actions.
+		_figma_card(canvas,"CompetitionPrizeTimingCard",Rect2(31,651,328,58),Color("#fffaf2"),Color(accent,0.26),14)
+		var notice_title := _figma_text(canvas,"WEEKLY PRIZES",Rect2(44,658,300,17),13,accent)
+		notice_title.name = "CompetitionPrizeTimingHeading"
+		var note := _figma_text(canvas,"Finalized Tuesday (UTC), after late results sync.",Rect2(44,678,300,23),12,FIGMA_MUTED,true)
+		note.name = "CompetitionPrizeTimingNote"
+		_fit_wrapped_text(note,292.0,12,11)
 		note.accessibility_name = "Weekly rewards finalize Tuesday UTC after all Sunday results have had Monday to sync."
+		note.tooltip_text = note.accessibility_name
 	# Local gameplay never waits for an internet connection. If scores are
 	# still queued, say so plainly instead of showing a silently stale rank.
 	var unsynced := CompetitionManager.pending_sync_count()
