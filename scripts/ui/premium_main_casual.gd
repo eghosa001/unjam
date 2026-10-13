@@ -753,14 +753,32 @@ func _figma_goal_row(canvas: Control, row: Dictionary, period: String, y: float)
 	goal_progress.accessibility_name = "%s: %d of %d complete, %s" % [String(row.get("title","GOAL")),int(row.get("progress",0)),int(row.get("target",1)),reward_text]
 	goal_progress.tooltip_text = goal_progress.accessibility_name
 	_fit_single_line_control_text(goal_progress,186.0,13,12)
-	var action_text := "DONE" if claimed else ("CLAIM" if claimable else "GO")
+	var goal_id := String(row.get("id",""))
+	var goal_title_text := String(row.get("title","GOAL"))
+	var action_text := "DONE" if claimed else ("CLAIM" if claimable else "PLAY")
 	var action_fill := Color("#7d8a94") if claimed else (FIGMA_GREEN if claimable else Color("#7a57e0"))
-	var action := _figma_button(canvas,"GoalAction/%s/%s" % [period,String(row.get("id",""))],action_text,Rect2(274,y,78,44),action_fill,Callable(),Color.WHITE,11,10)
+	var action := _figma_button(canvas,"GoalAction/%s/%s" % [period,goal_id],action_text,Rect2(274,y,78,44),action_fill,Callable(),Color.WHITE,11,12)
 	action.disabled = claimed
-	if claimable:
-		action.pressed.connect(_claim_goal.bind(period,String(row.get("id",""))))
-	elif not claimed:
-		action.pressed.connect(build_home)
+	if claimed:
+		var done_fill := Color("#315945") if _dark() else Color("#d8e9de")
+		action.add_theme_stylebox_override("disabled",FigmaReferenceCanvas.solid_box(done_fill,12,Color(FIGMA_GREEN,0.30),1))
+		action.add_theme_color_override("font_disabled_color",Color("#e9fff1") if _dark() else Color("#235337"))
+		action.accessibility_name = "%s: reward already claimed" % goal_title_text
+	elif claimable:
+		action.accessibility_name = "Claim %s mission reward" % goal_title_text
+		action.pressed.connect(_claim_goal.bind(period,goal_id))
+	else:
+		action.accessibility_name = "Play towards %s" % goal_title_text
+		action.pressed.connect(_open_goal_progress.bind(goal_id))
+	action.tooltip_text = action.accessibility_name
+
+func _open_goal_progress(goal_id: String) -> void:
+	# A Daily mission should take the player directly to the Daily hub.
+	# Ordinary level/star goals open Choose Game; Home adds an unnecessary tap.
+	if goal_id in ["daily1","daily5"]:
+		build_daily_games()
+	else:
+		_open_games_surface()
 
 func _claim_daily_login() -> void:
 	if MetaProgressionManager.claim_daily_login() > 0:
