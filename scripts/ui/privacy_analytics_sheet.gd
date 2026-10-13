@@ -58,8 +58,8 @@ func _ready() -> void:
 	stack.add_theme_constant_override("separation", 10)
 	padding.add_child(stack)
 
-	_label(stack, _copy("heading"), 24, Color.WHITE, false)
-	_label(stack, _copy("subheading"), 16, Color("#f0d580"), false)
+	_label(stack, _copy("heading"), 24, Color.WHITE, true)
+	_label(stack, _copy("subheading"), 16, Color("#f0d580"), true)
 	var description := _label(stack, _copy("description"), 14, Color("#f5f7fc"), true)
 	description.custom_minimum_size.y = 90
 	_analytics_button = _button(stack, "", _toggle_analytics)
@@ -76,6 +76,8 @@ func _label(parent: VBoxContainer, value: String, size: int, tint: Color, wrap: 
 	label.add_theme_font_size_override("font_size", size)
 	label.add_theme_color_override("font_color", tint)
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART if wrap else TextServer.AUTOWRAP_OFF
+	label.accessibility_name = value
+	label.tooltip_text = value
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	parent.add_child(label)
 	return label
