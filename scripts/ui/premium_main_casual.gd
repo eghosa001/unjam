@@ -703,8 +703,15 @@ func build_goals() -> void:
 	var login_claimed := bool(login.get("claimed",false))
 	var login_button := _figma_button(canvas,"GoalsLoginClaim","CLAIMED" if login_claimed else "CLAIM",Rect2(260,104,92,44),Color("#7d8a94") if login_claimed else FIGMA_ORANGE,Callable(),Color.WHITE,13,12)
 	login_button.disabled = login_claimed
-	if not login_claimed:
+	if login_claimed:
+		var claimed_fill := Color("#365343") if _dark() else Color("#daece0")
+		login_button.add_theme_stylebox_override("disabled",FigmaReferenceCanvas.solid_box(claimed_fill,13,Color(FIGMA_GREEN,0.32),1))
+		login_button.add_theme_color_override("font_disabled_color",Color("#f0fff4") if _dark() else Color("#225038"))
+		login_button.accessibility_name = "Today's daily check-in reward already claimed"
+	else:
+		login_button.accessibility_name = "Claim today's Daily check-in reward"
 		login_button.pressed.connect(_claim_daily_login)
+	login_button.tooltip_text = login_button.accessibility_name
 
 	_figma_text(canvas, "DAILY MISSIONS", Rect2(19,178,180,20), 15, FIGMA_GOLD)
 	var daily_rows := MetaProgressionManager.daily_goals()
@@ -725,12 +732,36 @@ func build_goals() -> void:
 	var journey_label := _figma_text(canvas, journey_detail, Rect2(31,613,202,20), 13, FIGMA_MUTED)
 	journey_label.name = "GoalsSeasonNextReward"
 	_fit_single_line_control_text(journey_label,198.0,13,12)
+	# Show measurable progress to the next tier rather than only an
+	# unexplained point total. One native bar updates on Goals rebuild.
+	var season_points := maxi(0,int(season.get("points",0)))
+	var goal_for_bar := maxi(1,next_target if next_target > 0 else season_points)
+	var season_bar := ProgressBar.new()
+	season_bar.name = "GoalsSeasonProgressBar"
+	season_bar.show_percentage = false
+	season_bar.min_value = 0
+	season_bar.max_value = goal_for_bar
+	season_bar.value = mini(season_points,goal_for_bar)
+	season_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	season_bar.add_theme_stylebox_override("background",FigmaReferenceCanvas.solid_box(Color("#44505c") if _dark() else Color("#dedbec"),3))
+	season_bar.add_theme_stylebox_override("fill",FigmaReferenceCanvas.solid_box(Color("#b58bff") if _dark() else Color("#734acb"),3))
+	season_bar.accessibility_name = "Season Journey: %d of %d points toward the next tier" % [season_points,goal_for_bar]
+	season_bar.tooltip_text = season_bar.accessibility_name
+	FigmaReferenceCanvas.set_rect(season_bar,31,637,202,6)
+	canvas.add_child(season_bar)
 	var season_ready := int(season.get("ready",0))
 	var season_button := _figma_button(canvas,"GoalsSeasonClaim","CLAIM %d" % season_ready if season_ready > 0 else "IN PROGRESS",Rect2(246,575,106,46),FIGMA_GREEN if season_ready > 0 else Color("#7d8a94"),Callable(),Color.WHITE,13,11)
 	season_button.disabled = season_ready <= 0
 	if season_ready > 0:
+		season_button.accessibility_name = "Claim %d earned Season Journey rewards" % season_ready
 		season_button.pressed.connect(_claim_next_season_reward)
-	_figma_text(canvas, "First clears +10 • Daily Cup +25 • Replays +3", Rect2(31,646,310,20), 12, FIGMA_MUTED)
+	else:
+		var locked_fill := Color("#364354") if _dark() else Color("#e2e7ec")
+		season_button.add_theme_stylebox_override("disabled",FigmaReferenceCanvas.solid_box(locked_fill,14,Color("#7a57e0",0.34),1))
+		season_button.add_theme_color_override("font_disabled_color",Color("#f1f5ff") if _dark() else Color("#324255"))
+		season_button.accessibility_name = "Season Journey reward locked. Earn %d points to reach the next tier" % maxi(0,next_target - season_points) if next_target > 0 else "All Season Journey tiers complete"
+	season_button.tooltip_text = season_button.accessibility_name
+	_figma_text(canvas, "First clears +10 • Daily Cup +25 • Replays +3", Rect2(31,652,310,20), 12, FIGMA_MUTED)
 	_figma_bottom_nav(canvas,"")
 
 func _figma_goal_row(canvas: Control, row: Dictionary, period: String, y: float) -> void:
