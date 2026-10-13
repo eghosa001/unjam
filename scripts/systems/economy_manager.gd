@@ -246,6 +246,41 @@ func grant(amount: int, reason: String, metadata: Dictionary = {}) -> int:
 	_emit_transaction(remaining, reason, metadata)
 	return balance()
 
+# A weekly league claim must update its coins, Collection crown bonus,
+# refund debt and persistent "already paid" marker in ONE atomic save.
+# Granting coins first and recording the marker later previously left a
+# crash window where reconnect could duplicate a successful claim.
+func credit_weekly_progression_once(period_key: String, game_id: String, rank: int, coins: int, base_crowns: int) -> Dictionary:
+	if period_key.length() != 10 or game_id not in ["rescue_rush", "water_sort", "block_puzzle"]:
+		return {"credited": false}
+	if rank <= 0 or coins < 0 or coins > 350 or base_crowns < 0 or base_crowns > 10:
+		return {"credited": false}
+	var claim_key := "%s:%s" % [period_key, game_id]
+	var claimed: Array = SaveManager.data.get("competition_claimed_periods", [])
+	if claim_key in claimed:
+		return {"credited": false}
+	var debt := maxi(0, int(SaveManager.data.get("purchase_coin_debt", 0)))
+	var applied_to_debt := mini(debt, coins)
+	var paid_coins := coins - applied_to_debt
+	var crowns := competition_crown_reward(base_crowns)
+	SaveManager.data["purchase_coin_debt"] = debt - applied_to_debt
+	SaveManager.data["coins"] = maxi(0, int(SaveManager.data.get("coins", 0))) + paid_coins
+	SaveManager.data["crown_tokens"] = maxi(0, int(SaveManager.data.get("crown_tokens", 0))) + crowns
+	claimed.append(claim_key)
+	if claimed.size() > 312:
+		claimed = claimed.slice(claimed.size() - 312)
+	SaveManager.data["competition_claimed_periods"] = claimed
+	var pending = SaveManager.data.get("competition_pending_weekly_receipts", {})
+	if pending is Dictionary and pending.has(claim_key):
+		pending.erase(claim_key)
+		SaveManager.data["competition_pending_weekly_receipts"] = pending
+	SaveManager.save()
+	if paid_coins > 0:
+		_emit_transaction(paid_coins, "weekly_progression_reward", {
+			"period": period_key, "game": game_id, "rank": rank
+		})
+	return {"credited": true, "coins": coins, "crowns": crowns}
+
 func revoke_purchase_credit(amount: int, metadata: Dictionary = {}) -> int:
 	if amount <= 0:
 		return balance()
