@@ -461,7 +461,10 @@ static func contrast_ratio(a: Color, b: Color) -> float:
 static func accessible_text_color(preferred: Color, fill: Color, minimum_ratio: float = 4.5) -> Color:
 	if contrast_ratio(preferred, fill) >= minimum_ratio:
 		return preferred
-	var dark_candidate := Color("#071d55")
+	# The old navy (#071d55) reached only 4.17:1 on Block Puzzle's
+	# vivid purple (#c63cff), making both white and navy fail small-text
+	# contrast. A near-black blue preserves the brand while clearing 4.5:1.
+	var dark_candidate := Color("#070e19")
 	var light_candidate := Color("#fffef8")
 	return dark_candidate if contrast_ratio(dark_candidate, fill) >= contrast_ratio(light_candidate, fill) else light_candidate
 
