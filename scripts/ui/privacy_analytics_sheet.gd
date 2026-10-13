@@ -80,6 +80,10 @@ func _button(parent: VBoxContainer, label: String, cb: Callable) -> Button:
 	action.add_theme_stylebox_override("normal", box)
 	action.pressed.connect(cb)
 	parent.add_child(action)
+	# The shared UI mount path can reset Button focus when the node enters the
+	# tree. Reassert keyboard/Android accessibility focus on the live control.
+	action.focus_mode = Control.FOCUS_ALL
+	action.set_deferred("focus_mode", Control.FOCUS_ALL)
 	return action
 
 func _refresh_analytics_label() -> void:
