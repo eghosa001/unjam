@@ -276,7 +276,9 @@ func _build_figma_rescue(canvas: Control) -> void:
 
 func _rescue_grid_slot_style(dark: bool) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
-	# Keep 49–64 empty slots readable without competing with actual arrows,\n\t# collectibles or the escape lane. Dense boards benefit most from this.\n\tstyle.bg_color = Color(0.06,0.23,0.17,0.20) if dark else Color(0.86,1.0,0.90,0.12)
+	# Keep 49–64 empty slots readable without competing with actual arrows,
+	# collectibles or the escape lane. Dense boards benefit most from this.
+	style.bg_color = Color(0.06,0.23,0.17,0.20) if dark else Color(0.86,1.0,0.90,0.12)
 	style.border_color = Color(0.58,0.96,0.70,0.13) if dark else Color(0.13,0.48,0.30,0.12)
 	style.border_width_left = 1
 	style.border_width_right = 1
