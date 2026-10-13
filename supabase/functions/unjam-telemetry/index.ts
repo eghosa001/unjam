@@ -50,16 +50,17 @@ Deno.serve(async (req: Request) => {
   const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? values("SUPABASE_SECRET_KEYS")[0] ?? "";
   if (!supabaseUrl || !key) return output({ ok: false }, 503);
   const sb = createClient(supabaseUrl, key, { auth: { persistSession: false, autoRefreshToken: false } });
-  // Concurrency-safe database increments; only daily grouped counters persist.
-  for (const row of counts.values()) {
-    const { error } = await sb.rpc("unjam_increment_telemetry", {
-      p_event_name: row.event_name, p_game_id: row.game_id,
-      p_level_band: row.level_band, p_n: row.n,
-    });
-    if (error) {
-      console.error("Telemetry counter update failed", { message: error.message });
-      return output({ ok: false }, 503);
-    }
+  // Commit the full batch in one transaction. A transient SQL error must
+  // never leave a partially applied batch that is blindly retried.
+  const { error } = await sb.rpc("unjam_increment_telemetry_batch", {
+    p_events: [...counts.values()].map(row => ({
+      event_name: row.event_name, game_id: row.game_id,
+      level_band: row.level_band, n: row.n,
+    })),
+  });
+  if (error) {
+    console.error("Telemetry batch counter update failed", { message: error.message });
+    return output({ ok: false }, 503);
   }
   return output({ ok: true });
 });
