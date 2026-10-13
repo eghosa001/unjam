@@ -140,8 +140,7 @@ async function socialSnapshot(sb: any, playerHash: string, displayName: string, 
       friend_code: String(profile.friend_code ?? ""),
       you: hash === playerHash,
     };
-  }).sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
-    .map((row, index) => ({ ...row, rank: index + 1 }));
+  }).sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
 
   return {
     ok: true,
@@ -149,7 +148,7 @@ async function socialSnapshot(sb: any, playerHash: string, displayName: string, 
     friend_count: friends.length,
     max_friends: MAX_FRIENDS,
     friends,
-    friends_weekly: weekly,
+    friends_weekly: rankTies(weekly, "score"),
     week_start: weekKey,
   };
 }
@@ -253,8 +252,24 @@ function parseDay(value: unknown): Date | null {
 }
 function isoDay(d: Date) { return d.toISOString().slice(0, 10); }
 function weekStart(d: Date) { const x = new Date(d); x.setUTCDate(x.getUTCDate() - ((x.getUTCDay() + 6) % 7)); return x; }
+// Conventional competition rank: two equal scores both display #1, and the
+// next lower score is #3. Align row labels, personal rank and weekly rewards.
+function rankTies<T extends Record<string, any>>(rows: T[], key: "score" | "rank_score"): (T & { rank: number })[] {
+  let previousScore = NaN;
+  let place = 0;
+  return rows.map((row, index) => {
+    const score = Number(row[key] ?? 0);
+    if (index === 0 || score !== previousScore) place = index + 1;
+    previousScore = score;
+    return { ...row, rank: place };
+  });
+}
 function publicRows(rows: any[] | null | undefined) {
-  return (rows ?? []).map((r) => ({ name: String(r.display_name ?? "PLAYER").slice(0, 20), score: Number(r.score ?? 0), games_count: Number(r.games_count ?? 0) }));
+  return rankTies(rows ?? [], "score").map((r) => ({
+    name: String(r.display_name ?? "PLAYER").slice(0, 20),
+    score: Number(r.score ?? 0), games_count: Number(r.games_count ?? 0),
+    rank: r.rank,
+  }));
 }
 async function rankFor(sb: any, type: string, key: string, playerHash: string) {
   const { data: mine } = await sb.from("competition_totals").select("score,games_count").eq("period_type", type).eq("period_key", key).eq("player_hash", playerHash).maybeSingle();
@@ -294,11 +309,12 @@ function cleanGameId(value: unknown): string {
 }
 
 function publicProgressRows(rows: any[] | null | undefined) {
-  return (rows ?? []).map((row) => ({
+  return rankTies(rows ?? [], "rank_score").map((row) => ({
     name: String(row.display_name ?? "PLAYER").slice(0, 20),
     levels_completed: Number(row.levels_completed ?? 0),
     highest_level: Number(row.highest_level ?? 0),
     stars: Number(row.stars ?? 0),
+    rank: row.rank,
   }));
 }
 
