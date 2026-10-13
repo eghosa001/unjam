@@ -99,6 +99,11 @@ func _sanitize() -> void:
 		data.competition_claimed_periods = []
 	if not data.get("reward_double_claims", []) is Array:
 		data.reward_double_claims = []
+	if not data.get("competition_pending_campaign_results", []) is Array:
+		data["competition_pending_campaign_results"] = []
+	var campaign_pending: Array = data["competition_pending_campaign_results"]
+	if campaign_pending.size() > 240:
+		data["competition_pending_campaign_results"] = campaign_pending.slice(campaign_pending.size() - 240)
 	if data.competition_claimed_periods.size() > 104:
 		data.competition_claimed_periods = data.competition_claimed_periods.slice(data.competition_claimed_periods.size() - 104)
 	if data.reward_double_claims.size() > 512:
