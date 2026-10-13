@@ -431,8 +431,8 @@ func _restore_board_keyboard_focus(previous_index: int) -> void:
 	# Try the same physical position first, then the nearest playable arrow.
 	var count := board_grid.get_child_count()
 	for distance in range(count):
-		for direction in [0, -1] if distance > 0 else [0]:
-			var index := (previous_index + distance * (1 if direction == 0 else -1) + count) % count
+		for sign in [1, -1]:
+			var index := (previous_index + distance * sign + count) % count
 			var control := board_grid.get_child(index) as BaseButton
 			if control != null and not control.disabled and control.focus_mode == Control.FOCUS_ALL:
 				control.grab_focus()
