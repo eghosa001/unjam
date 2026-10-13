@@ -122,6 +122,7 @@ func _sanitize() -> void:
 	data.privacy_consent_status = consent if consent in ["unknown", "required", "obtained", "not_required"] else "unknown"
 	var language := String(data.get("language_code", "")).strip_edges().to_lower()
 	data["language_code"] = language if language in ["", "en", "es", "fr", "pt", "de", "it", "ha", "yo", "ig"] else ""
+	data["analytics_opt_in"] = bool(data.get("analytics_opt_in", false))
 	for key in ["sound", "vibration", "music", "reduce_motion", "fast_animation", "remove_ads", "starter_pack_purchased"]:
 		data[key] = bool(data.get(key, DEFAULT_DATA.get(key, false)))
 	if not data.get("stars", {}) is Dictionary:
