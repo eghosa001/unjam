@@ -27,15 +27,15 @@ func _initialize() -> void:
 	if not live_state.contains("_last_live_signature") or not live_state.contains("if built and signature == _last_live_signature"):
 		failures.append("Games selector must reuse an unchanged persistent surface instead of rebuilding on every entry")
 	for source in [home_view, live_view, casual_main]:
-		if not source.contains("BaseButton.ACTION_MODE_BUTTON_PRESS"):
-			failures.append("Primary navigation must react on touch-down instead of waiting for release")
+		if not source.contains("BaseButton.ACTION_MODE_BUTTON_RELEASE"):
+			failures.append("Primary navigation must activate on intentional touch release rather than touch-down")
 
 	if not failures.is_empty():
 		for failure in failures:
 			push_error(failure)
 		quit(1)
 		return
-	print("Transition ownership validated: one motion owner, persistent surfaces reused, navigation fires on touch-down.")
+	print("Transition ownership validated: one motion owner, persistent surfaces reused, navigation fires on touch release.")
 	quit(0)
 
 func _read(path: String) -> String:
