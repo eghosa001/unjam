@@ -340,6 +340,12 @@ func render_board() -> void:
 	var board_signature := hash([level_number, daily_mode, width, height, rescue_pos, rescued, rescue_id, pieces])
 	if _board_render_signature_valid and _board_render_signature == board_signature and board_grid.get_child_count() == width * height:
 		return
+	# Preserve assistive/keyboard focus across changed arrow states. Removing
+	# grid controls previously dropped focus on every completed piece move.
+	var focused := get_viewport().gui_get_focus_owner()
+	var previous_focus_index := -1
+	if focused != null and focused.get_parent() == board_grid:
+		previous_focus_index = focused.get_index()
 	# Only the first board render of a level earns the staggered entrance.
 	# Replaying 25-100 tile entrance tweens after *every* arrow tap caused
 	# avoidable jank, masked the new board state and reset keyboard focus.
@@ -416,3 +422,18 @@ func render_board() -> void:
 				board_grid.add_child(empty)
 				if animate_entry:
 					_animate_cell(empty, x, y)
+	if previous_focus_index >= 0:
+		call_deferred("_restore_board_keyboard_focus", previous_focus_index)
+
+func _restore_board_keyboard_focus(previous_index: int) -> void:
+	if not is_inside_tree() or board_grid == null or board_grid.get_child_count() == 0:
+		return
+	# Try the same physical position first, then the nearest playable arrow.
+	var count := board_grid.get_child_count()
+	for distance in range(count):
+		for direction in [0, -1] if distance > 0 else [0]:
+			var index := (previous_index + distance * (1 if direction == 0 else -1) + count) % count
+			var control := board_grid.get_child(index) as BaseButton
+			if control != null and not control.disabled and control.focus_mode == Control.FOCUS_ALL:
+				control.grab_focus()
+				return
