@@ -45,6 +45,30 @@ jobs:
           set -euo pipefail
           python3 tools/validate_release_contract.py
 
+      # Run the nine-chapter audit only for actual authored-content changes.
+      # No full 30,000-level enumeration and no unrelated test work.
+      - name: Sample changed authored content
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PUSH_BASE_SHA: ${{ github.event.before }}
+          PUSH_HEAD_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE_SHA="${PR_BASE_SHA:-$PUSH_BASE_SHA}"
+          HEAD_SHA="${PR_HEAD_SHA:-$PUSH_HEAD_SHA}"
+          if [[ -z "$BASE_SHA" || "$BASE_SHA" =~ ^0+$ ]]; then
+            echo "Skipping content sample: no comparable base SHA"
+            exit 0
+          fi
+          CHANGED="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")"
+          if printf '%s\n' "$CHANGED" | grep -Eq '^(data/(rescue_rush/authored|block_puzzle/authored|water_sort_curated)/|tools/sample_authored_variety\.py$)'; then
+            python3 tools/sample_authored_variety.py
+          else
+            echo "No authored campaign changes; content sample skipped"
+          fi
+
       - name: Setup Godot 4.7.2
         if: steps.plan.outputs.needs_godot == 'true'
         uses: solarlabyrinth/action-setup-godot@v3

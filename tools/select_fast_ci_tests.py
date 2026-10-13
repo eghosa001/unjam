@@ -676,7 +676,13 @@ def plan_for_changes(paths: list[str], base: str, head: str) -> dict[str, object
         ".github/workflows/godot-ci.yml",
         "tools/select_fast_ci_tests.py",
     }
-    if effective_paths and all(
+    if effective_paths and any(
+        p.startswith("data/water_sort_curated/") or p in {
+            "scripts/core/water_sort_curated_catalog.gd",
+            "scripts/game/water_sort_10000.gd",
+            "tests/validate_water_curated_catalog_10000.gd",
+        } for p in effective_paths
+    ) and all(
         p.startswith("data/water_sort_curated/") or p in authored_water_paths
         for p in effective_paths
     ):
@@ -706,7 +712,15 @@ def plan_for_changes(paths: list[str], base: str, head: str) -> dict[str, object
         "tests/validate_rescue_progression_10000.gd",
         "tools/select_fast_ci_tests.py",
     }
-    if effective_paths and all(
+    if effective_paths and any(
+        p.startswith("data/rescue_rush/authored/") or p in {
+            "scripts/core/rescue_rush_authored_catalog.gd",
+            "scripts/core/rescue_rush_progression.gd",
+            "scripts/core/campaign_generator.gd",
+            "tests/validate_rescue_authored_catalog_10000.gd",
+            "tests/validate_rescue_progression_10000.gd",
+        } for p in effective_paths
+    ) and all(
         p.startswith("data/rescue_rush/authored/") or p in authored_rescue_paths
         for p in effective_paths
     ):
@@ -736,7 +750,16 @@ def plan_for_changes(paths: list[str], base: str, head: str) -> dict[str, object
         "tests/validate_block_progression_10000.gd",
         "tools/select_fast_ci_tests.py",
     }
-    if effective_paths and all(
+    if effective_paths and any(
+        p.startswith("data/block_puzzle/authored/") or p in {
+            "scripts/core/block_puzzle_authored_catalog.gd",
+            "scripts/core/block_puzzle_progression.gd",
+            "scripts/core/block_puzzle_campaign_generator.gd",
+            "tests/validate_block_authored_catalog_10000.gd",
+            "tests/validate_block_handcrafted_10000.gd",
+            "tests/validate_block_progression_10000.gd",
+        } for p in effective_paths
+    ) and all(
         p.startswith("data/block_puzzle/authored/") or p in authored_block_paths
         for p in effective_paths
     ):
@@ -885,6 +908,11 @@ def self_test() -> None:
         (["tools/select_fast_ci_tests.py"], [], [], False),
         ([".github/workflows/godot-ci.yml"], [], [], False),
     ]
+    # A policy/workflow-only change cannot invoke a 10,000-level campaign
+    # suite. Only changed authored content or its producing code merits one.
+    for metadata in [".github/workflows/godot-ci.yml", "tools/select_fast_ci_tests.py", "export_presets.cfg"]:
+        focused = plan_for_changes([metadata], "", "HEAD")
+        assert not any("curated_10000" in name or "authored_10000" in name for name in focused["groups"]), (metadata, focused)
     for paths, groups, visual, godot in cases:
         plan = plan_for_paths(paths)
         assert plan["groups"] == groups, (paths, plan)
