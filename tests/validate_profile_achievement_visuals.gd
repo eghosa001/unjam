@@ -15,11 +15,12 @@ func _run() -> void:
 		app.set("_profile_game",game_id)
 		app.call("build_profile")
 		await process_frame
-		var definitions: Array = MultiGameManager.achievement_definitions(game_id)
+		var games := root.get_node("MultiGameManager")
+		var definitions: Array = games.call("achievement_definitions",game_id)
 		for achievement in definitions:
 			var id := String(achievement.get("id",""))
 			var need := maxi(1,int(achievement.get("need",1)))
-			var actual := maxi(0,int(MultiGameManager.achievement_progress(game_id,id)))
+			var actual := maxi(0,int(games.call("achievement_progress",game_id,id)))
 			var bar := app.find_child("ProfileAchievementMeter_%s" % id,true,false) as ProgressBar
 			var badge := app.find_child("ProfileAchievementBadge_%s" % id,true,false) as PanelContainer
 			var status := app.find_child("ProfileAchievementStatus_%s" % id,true,false) as Label
