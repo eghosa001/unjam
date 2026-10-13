@@ -1337,6 +1337,18 @@ func build_compete_leaderboard(refresh_remote: bool = true) -> void:
 	else:
 		var note := _figma_text(canvas,"Weekly rewards settle after each reset.",Rect2(44,663,302,40),12,FIGMA_MUTED,true)
 		_fit_wrapped_text(note,292.0,12,10)
+	# Local gameplay never waits for an internet connection. If scores are
+	# still queued, say so plainly instead of showing a silently stale rank.
+	var unsynced := CompetitionManager.pending_sync_count()
+	if unsynced > 0:
+		var sync_status := _figma_text(
+			canvas, "%d RESULTS WAITING TO SYNC" % unsynced,
+			Rect2(38,711,314,22), 13,
+			Color("#f3cb80") if _dark() else Color("#725321"), true
+		)
+		sync_status.name = "CompetitionPendingSync"
+		sync_status.tooltip_text = "Your puzzle progress is saved. Ranked scores retry automatically when the connection returns."
+		sync_status.accessibility_name = sync_status.tooltip_text
 	# Rankings are intentionally separate from the Daily destination.
 	_figma_bottom_nav(canvas,"")
 
