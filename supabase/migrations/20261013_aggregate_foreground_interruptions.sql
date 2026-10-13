@@ -47,7 +47,6 @@ with (security_invoker = true) as
 select
   day, game_id,
   coalesce(sum(event_count) filter (where event_name='session_start'),0)::bigint as sessions_started,
-  coalesce(sum(event_count) filter (where event_name='session_interrupted'),0)::bigint as unclean_foreground_starts,
   coalesce(sum(event_count) filter (where event_name='level_start'),0)::bigint as level_starts,
   coalesce(sum(event_count) filter (where event_name='level_complete'),0)::bigint as level_completions,
   coalesce(sum(event_count) filter (where event_name='level_restart'),0)::bigint as restarts,
@@ -57,7 +56,8 @@ select
   round(
     100.0 * coalesce(sum(event_count) filter (where event_name='level_complete'),0)::numeric /
       nullif(sum(event_count) filter (where event_name='level_start'),0), 1
-  ) as completion_per_start_pct
+  ) as completion_per_start_pct,
+  coalesce(sum(event_count) filter (where event_name='session_interrupted'),0)::bigint as unclean_foreground_starts
 from public.unjam_telemetry_daily
 group by day, game_id;
 revoke all on public.unjam_telemetry_daily_funnel from public,anon,authenticated;
