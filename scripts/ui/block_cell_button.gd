@@ -253,6 +253,18 @@ func _draw() -> void:
 		var edge := Color(footprint_color.lightened(0.42), 0.72 + pulse * 0.20) if footprint_valid else Color("#ff8ba3", 0.92)
 		var wash := Color(footprint_color, 0.11 + pulse * 0.07) if footprint_valid else Color("#ff4f73", 0.12)
 		_draw_box(inset.grow(1.0), wash, 7, edge, 3)
+		# Colour alone cannot explain an invalid mobile placement. A compact
+		# check/X stays visible over bright and dark blocks, without spawning
+		# nodes or running an animation on the 64-cell board.
+		var marker := inset.end - Vector2(inset.size.x * 0.27, inset.size.y * 0.25)
+		var marker_size := clampf(inset.size.x * 0.13, 2.5, 4.5)
+		var marker_ink := Color(1, 1, 1, 0.94)
+		if footprint_valid:
+			draw_line(marker + Vector2(-marker_size, 0), marker + Vector2(-marker_size * 0.14, marker_size * 0.85), marker_ink, 2.3, true)
+			draw_line(marker + Vector2(-marker_size * 0.14, marker_size * 0.85), marker + Vector2(marker_size * 1.25, -marker_size), marker_ink, 2.3, true)
+		else:
+			draw_line(marker + Vector2(-marker_size, -marker_size), marker + Vector2(marker_size, marker_size), marker_ink, 2.3, true)
+			draw_line(marker + Vector2(marker_size, -marker_size), marker + Vector2(-marker_size, marker_size), marker_ink, 2.3, true)
 
 	if clear_phase > 0.001 and not occupied:
 		var clear_fill := Color(clear_color, clampf(clear_phase, 0.0, 1.0))
