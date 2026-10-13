@@ -170,7 +170,12 @@ func _initial_reconcile() -> void:
 			var remote_revision := maxi(0, int(body.get("revision", 0)))
 			var remote_value: Variant = body.get("save", {})
 			if remote_value is Dictionary and remote_revision > local_revision:
-				_apply_remote(remote_value, remote_revision)
+				var combined := _merge_progress_on_conflict(remote_value)
+				_apply_remote(combined, remote_revision)
+				if combined != remote_value:
+					_initial_reconciled = true
+					_schedule_push(0.4)
+					return
 			elif remote_value is Dictionary and remote_value != _snapshot():
 				# Same/older server revision with different local data means this
 				# install changed after its last successful upload.
@@ -185,6 +190,89 @@ func _initial_reconcile() -> void:
 			# and server-side revision checks prevent stale overwrite.
 			_pending_push = true
 	)
+
+# Only merge monotonic gameplay achievements on cloud revision conflicts.
+# Never sum currencies, paid purchase credits, daily streaks or completed
+# transaction markers: those require a proper authoritative economy ledger.
+func _merge_stars(a: Variant, b: Variant) -> Dictionary:
+	var merged: Dictionary = a.duplicate(true) if a is Dictionary else {}
+	if not b is Dictionary:
+		return merged
+	for key in (b as Dictionary):
+		var text_key := String(key)
+		if not text_key.is_valid_int():
+			continue
+		var level := int(text_key)
+		if level < 1 or level > 10000:
+			continue
+		var best := clampi(int((b as Dictionary)[key]), 0, 3)
+		if best > clampi(int(merged.get(str(level), 0)), 0, 3):
+			merged[str(level)] = best
+	return merged
+
+func _merge_unlocks(a: Variant, b: Variant) -> Array:
+	var merged: Array = a.duplicate(true) if a is Array else []
+	if not b is Array:
+		return merged
+	var seen := {}
+	for value in merged:
+		seen[String(value)] = true
+	for value in (b as Array):
+		var entry := String(value)
+		if not seen.has(entry) and merged.size() < 10000:
+			merged.append(value)
+			seen[entry] = true
+	return merged
+
+func _merge_progress_on_conflict(remote: Dictionary) -> Dictionary:
+	var merged: Dictionary = remote.duplicate(true)
+	var local := _snapshot()
+	# Old server backups (created before all three games were supported)
+	# must not erase Water/Block progress gained offline.
+	merged["stars"] = _merge_stars(remote.get("stars", {}), local.get("stars", {}))
+	merged["highest_level"] = maxi(int(remote.get("highest_level", 1)),
+		int(local.get("highest_level", 1)))
+	for key in ["rescued", "milestone_chests", "world_badges", "achievements",
+		"daily_completed", "competition_claimed_periods", "reward_double_claims"]:
+		merged[key] = _merge_unlocks(remote.get(key, []), local.get(key, []))
+	for key in ["perfect_clears", "total_levels_completed", "best_perfect_streak",
+		"daily_best_streak", "prestige_points", "achievement_points"]:
+		merged[key] = maxi(int(remote.get(key, 0)), int(local.get(key, 0)))
+
+	var remote_games = remote.get("game_progress", {})
+	var local_games = local.get("game_progress", {})
+	var games: Dictionary = remote_games.duplicate(true) if remote_games is Dictionary else {}
+	if local_games is Dictionary:
+		for game_id in ["water_sort", "block_puzzle"]:
+			var local_game = (local_games as Dictionary).get(game_id, {})
+			if not local_game is Dictionary:
+				continue
+			var remote_game = games.get(game_id, {})
+			var game: Dictionary = remote_game.duplicate(true) if remote_game is Dictionary else {}
+			for key in ["highest_level", "levels_completed", "perfect_clears",
+				"best_perfect_streak", "daily_best_streak"]:
+				game[key] = maxi(int(game.get(key, 0)), int(local_game.get(key, 0)))
+			game["stars"] = _merge_stars(game.get("stars", {}), local_game.get("stars", {}))
+			for key in ["world_badges", "milestone_chests", "achievements", "daily_completed"]:
+				game[key] = _merge_unlocks(game.get(key, []), local_game.get(key, []))
+			games[game_id] = game
+	merged["game_progress"] = games
+
+	# Active puzzles are not mathematically mergeable. Restore a local run
+	# only if the remote side does not already have one for that game.
+	var remote_runs = remote.get("multi_active_runs", {})
+	var local_runs = local.get("multi_active_runs", {})
+	var runs: Dictionary = remote_runs.duplicate(true) if remote_runs is Dictionary else {}
+	if local_runs is Dictionary:
+		for game_id in ["water_sort", "block_puzzle"]:
+			if not runs.has(game_id) and (local_runs as Dictionary).has(game_id):
+				runs[game_id] = (local_runs as Dictionary)[game_id].duplicate(true)
+	merged["multi_active_runs"] = runs
+
+	for key in ["language_code", "gentle_effects"]:
+		if not merged.has(key) and local.has(key):
+			merged[key] = local[key]
+	return merged
 
 func _apply_remote(remote: Dictionary, revision: int) -> void:
 	_suppress_save_event = true
@@ -242,7 +330,12 @@ func _push_now() -> void:
 			var remote_value: Variant = body.get("save", {})
 			var remote_revision := maxi(0, int(body.get("revision", 0)))
 			if remote_value is Dictionary and remote_revision > int(SaveManager.data.get("cloud_save_revision", 0)):
-				_apply_remote(remote_value, remote_revision)
+				var combined := _merge_progress_on_conflict(remote_value)
+				_apply_remote(combined, remote_revision)
+				if combined != remote_value:
+					_pending_push = true
+			else:
+				_pending_push = true
 		else:
 			_pending_push = true
 		if _pending_push:
