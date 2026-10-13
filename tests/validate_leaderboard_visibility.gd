@@ -15,6 +15,14 @@ func _run() -> void:
 	for i in range(20):
 		daily.append({"name":"DAILY PLAYER %02d" % i,"score":3000-i*30,"games_count":3})
 		progress.append({"name":"CAMPAIGN PLAYER %02d" % i,"levels_completed":200-i,"stars":600-i})
+	# Deliberate ties: both leaders must show #1, agreeing with the personal
+	# competition rank and reward calculation (next distinct score is #3).
+	daily[0]["rank"] = 1
+	daily[1]["score"] = daily[0]["score"]
+	daily[1]["rank"] = 1
+	progress[0]["rank"] = 1
+	progress[1]["levels_completed"] = progress[0]["levels_completed"]
+	progress[1]["rank"] = 1
 	competition.daily_snapshot = {
 		"ok":true, "daily_top":daily, "player_daily":{"rank":7,"score":2250},
 		"day":"2026-10-08"
@@ -65,6 +73,10 @@ func _run() -> void:
 	var scroll := popup.find_child("LeaderboardPlayerScroll",true,false) as ScrollContainer
 	if not _check(scroll != null and scroll.get_v_scroll_bar().max_value > scroll.size.y,"20 players must scroll instead of clipping"):return
 	if not _check(popup.find_child("LeaderboardPlayer_20",true,false) != null,"20th player is missing"):return
+	var tied_weekly := popup.find_child("LeaderboardPlayer_2",true,false) as Control
+	if not _check(tied_weekly != null and tied_weekly.accessibility_name.begins_with("Rank 1,"),
+		"Tied campaign leaders are displayed as first and second despite equal scores"):return
+
 	# The foreground sheet must remain within the visible Android viewport:
 	# compact phones, landscape rotations, and tall tablet windows.
 	for dimensions in [Vector2i(432,936),Vector2i(540,960),Vector2i(960,540),Vector2i(1536,2048)]:
@@ -112,6 +124,10 @@ func _run() -> void:
 	if not _check(you.text.contains("#7") and you.text.contains("2250"),"Daily score/rank is missing"):return
 	var daily_row := popup.find_child("LeaderboardPlayer_20",true,false)
 	if not _check(daily_row != null,"Daily competitors are not scrollable"):return
+	var tied_daily := popup.find_child("LeaderboardPlayer_2",true,false) as Control
+	if not _check(tied_daily != null and tied_daily.accessibility_name.begins_with("Rank 1,"),
+		"Tied Daily leaders show inconsistent rank and prize positions"):return
+
 	popup.call("_set_period","all")
 	await _frames(2)
 	if not _check(you.text.contains("#12"),"All-time rank not presented"):return
