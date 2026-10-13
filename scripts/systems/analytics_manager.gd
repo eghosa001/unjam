@@ -131,8 +131,14 @@ func _new_telemetry_batch_id() -> String:
 	# It is held in memory only and is never used to link gameplay sessions.
 	return Crypto.new().generate_random_bytes(16).hex_encode()
 
+func _schedule_telemetry_retry() -> void:
+	_telemetry_retry_after_ms = Time.get_ticks_msec() + _telemetry_retry_delay_ms
+	_telemetry_retry_delay_ms = mini(TELEMETRY_RETRY_MAX_MS, _telemetry_retry_delay_ms * 2)
+
 func _flush_opt_in_telemetry() -> void:
 	if not analytics_opted_in() or _telemetry_in_flight:
+		return
+	if Time.get_ticks_msec() < _telemetry_retry_after_ms:
 		return
 	if _telemetry_retry_batch.is_empty() and _telemetry_events.is_empty():
 		return
@@ -164,8 +170,12 @@ func _flush_opt_in_telemetry() -> void:
 		if result == HTTPRequest.RESULT_SUCCESS and status >= 200 and status < 300:
 			_telemetry_retry_batch.clear()
 			_telemetry_retry_id = ""
+			_telemetry_retry_after_ms = 0
+			_telemetry_retry_delay_ms = TELEMETRY_RETRY_START_MS
 			if not _telemetry_events.is_empty():
 				call_deferred("_flush_opt_in_telemetry")
+		else:
+			_schedule_telemetry_retry()
 		# On failure retain the SAME random batch ID and data. An eventual
 		# replay after a committed-but-timed-out response remains idempotent.
 		request.queue_free()
@@ -177,6 +187,7 @@ func _flush_opt_in_telemetry() -> void:
 		_telemetry_in_flight = false
 		_telemetry_request = null
 		request.queue_free()
+		_schedule_telemetry_retry()
 		# The batch and receipt remain pending for the next timer attempt.
 
 func _process(delta: float) -> void:
