@@ -1358,11 +1358,14 @@ func build_compete_leaderboard(refresh_remote: bool = true) -> void:
 
 	var reward := CompetitionManager.previous_week_reward(_ranking_game)
 	if bool(reward.get("eligible", false)) and not bool(reward.get("claimed", false)):
-		var claim := _figma_button(canvas,"CompetitionClaimWeekly","CLAIM LAST WEEK",Rect2(112,659,166,44),FIGMA_GREEN,Callable(self,"_claim_weekly_competition_reward"),Color.WHITE,14,12)
-		claim.tooltip_text = "Claim last week's %s placement reward" % MultiGameManager.display_name(_ranking_game)
+		var claim := _figma_button(canvas,"CompetitionClaimWeekly","CLAIM WEEKLY",Rect2(112,659,166,44),FIGMA_GREEN,Callable(self,"_claim_weekly_competition_reward"),Color.WHITE,14,12)
+		var reward_period := String(reward.get("period_key", ""))
+		claim.tooltip_text = "Claim your %s placement reward for the week starting %s" % [MultiGameManager.display_name(_ranking_game),reward_period]
+		claim.accessibility_name = claim.tooltip_text
 	else:
-		var note := _figma_text(canvas,"Weekly rewards settle after each reset.",Rect2(44,663,302,40),12,FIGMA_MUTED,true)
+		var note := _figma_text(canvas,"Weekly prizes finalize Tuesday (UTC), after late results sync.",Rect2(44,663,302,40),12,FIGMA_MUTED,true)
 		_fit_wrapped_text(note,292.0,12,10)
+		note.accessibility_name = "Weekly rewards finalize Tuesday UTC after all Sunday results have had Monday to sync."
 	# Local gameplay never waits for an internet connection. If scores are
 	# still queued, say so plainly instead of showing a silently stale rank.
 	var unsynced := CompetitionManager.pending_sync_count()
