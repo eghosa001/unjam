@@ -1083,7 +1083,7 @@ func build_settings() -> void:
 	privacy.name = "SettingsPrivacy"
 	FigmaReferenceCanvas.set_rect(privacy,265,582,86,46)
 	privacy.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
-	privacy.pressed.connect(PrivacyManager.show_privacy_options)
+	privacy.pressed.connect(_open_privacy_sheet)
 	canvas.add_child(privacy)
 
 	_figma_settings_card(canvas,"SettingsCard/Purchases",Rect2(17,648,354,98),card_fill,card_border,dark_mode)
@@ -1113,6 +1113,13 @@ func _cycle_settings_language() -> void:
 	# Every Settings control is rebuilt from authored English. This also resets
 	# fitted font metrics rather than carrying a previous locale's small text.
 	build_settings()
+
+func _open_privacy_sheet() -> void:
+	if get_node_or_null("PrivacyAnalyticsSheet") != null:
+		return
+	var sheet := preload("res://scripts/ui/privacy_analytics_sheet.gd").new()
+	sheet.name = "PrivacyAnalyticsSheet"
+	add_child(sheet)
 
 func _open_cloud_recovery() -> void:
 	var popup := preload("res://scripts/ui/cloud_recovery_dialog.gd").new()
