@@ -99,6 +99,11 @@ func _sanitize() -> void:
 		data.competition_claimed_periods = []
 	if not data.get("reward_double_claims", []) is Array:
 		data.reward_double_claims = []
+	if not data.get("competition_pending_campaign_results", []) is Array:
+		data["competition_pending_campaign_results"] = []
+	var campaign_pending: Array = data["competition_pending_campaign_results"]
+	if campaign_pending.size() > 240:
+		data["competition_pending_campaign_results"] = campaign_pending.slice(campaign_pending.size() - 240)
 	if data.competition_claimed_periods.size() > 104:
 		data.competition_claimed_periods = data.competition_claimed_periods.slice(data.competition_claimed_periods.size() - 104)
 	if data.reward_double_claims.size() > 512:
@@ -117,6 +122,7 @@ func _sanitize() -> void:
 	data.privacy_consent_status = consent if consent in ["unknown", "required", "obtained", "not_required"] else "unknown"
 	var language := String(data.get("language_code", "")).strip_edges().to_lower()
 	data["language_code"] = language if language in ["", "en", "es", "fr", "pt", "de", "it", "ha", "yo", "ig"] else ""
+	data["analytics_opt_in"] = bool(data.get("analytics_opt_in", false))
 	for key in ["sound", "vibration", "music", "reduce_motion", "fast_animation", "remove_ads", "starter_pack_purchased"]:
 		data[key] = bool(data.get(key, DEFAULT_DATA.get(key, false)))
 	if not data.get("stars", {}) is Dictionary:

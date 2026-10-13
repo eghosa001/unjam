@@ -1083,7 +1083,7 @@ func build_settings() -> void:
 	privacy.name = "SettingsPrivacy"
 	FigmaReferenceCanvas.set_rect(privacy,265,582,86,46)
 	privacy.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
-	privacy.pressed.connect(PrivacyManager.show_privacy_options)
+	privacy.pressed.connect(_open_privacy_sheet)
 	canvas.add_child(privacy)
 
 	_figma_settings_card(canvas,"SettingsCard/Purchases",Rect2(17,648,354,98),card_fill,card_border,dark_mode)
@@ -1113,6 +1113,13 @@ func _cycle_settings_language() -> void:
 	# Every Settings control is rebuilt from authored English. This also resets
 	# fitted font metrics rather than carrying a previous locale's small text.
 	build_settings()
+
+func _open_privacy_sheet() -> void:
+	if get_node_or_null("PrivacyAnalyticsSheet") != null:
+		return
+	var sheet := preload("res://scripts/ui/privacy_analytics_sheet.gd").new()
+	sheet.name = "PrivacyAnalyticsSheet"
+	add_child(sheet)
 
 func _open_cloud_recovery() -> void:
 	var popup := preload("res://scripts/ui/cloud_recovery_dialog.gd").new()
@@ -1306,8 +1313,10 @@ func build_compete_leaderboard(refresh_remote: bool = true) -> void:
 	_figma_card(canvas,"CompetitionPlayerProgress",Rect2(17,145,354,60),Color("#282a2e") if _dark() else Color("#fffaf2"),Color(accent,0.38),16)
 	var ranking_game_title := _figma_text(canvas,MultiGameManager.display_name(_ranking_game).to_upper(),Rect2(31,154,160,15),12,accent)
 	_fit_single_line_control_text(ranking_game_title,156.0,12,10)
-	var ranking_progress := _figma_text(canvas,"%d LEVELS • ★%d" % [CompetitionManager.game_all_time_levels(_ranking_game),CompetitionManager.game_all_time_stars(_ranking_game)],Rect2(31,178,190,14),10,FIGMA_INK)
-	_fit_single_line_control_text(ranking_progress,186.0,10,9)
+	var ranking_progress := _figma_text(canvas,"RANKED %d • ★%d" % [CompetitionManager.game_all_time_levels(_ranking_game),CompetitionManager.game_all_time_stars(_ranking_game)],Rect2(31,176,190,20),12,FIGMA_INK)
+	ranking_progress.tooltip_text = "Ranked completions count only after a server-recorded finish. Offline campaign levels stay saved even when league sync is unavailable."
+	ranking_progress.accessibility_name = ranking_progress.tooltip_text
+	_fit_single_line_control_text(ranking_progress,186.0,12,11)
 	var week := _figma_text(canvas,"WEEK +%d" % CompetitionManager.game_weekly_levels(_ranking_game),Rect2(242,164,105,22),12,FIGMA_MUTED,true)
 	week.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 
@@ -1514,15 +1523,22 @@ func build_collection() -> void:
 	_figma_card(canvas,"Achievements",Rect2(17,339,354,76),Color("#fffef8"),Color(0.55,0.86,0.71,0.32),18)
 	_figma_text(canvas,"ACHIEVEMENTS",Rect2(33,353,220,21),16,FIGMA_GOLD)
 	var achievement_parts: Array[String] = []
+	var unlocked_total := 0
+	var available_total := 0
 	for game_id in MultiGameManager.GAME_IDS:
 		var unlocked := MultiGameManager.unlocked_achievements(game_id).size()
 		var total := MultiGameManager.achievement_definitions(game_id).size()
+		unlocked_total += unlocked
+		available_total += total
 		achievement_parts.append("%s %d/%d" % [_figma_short_game(game_id),unlocked,total])
-	var achievement_summary := _figma_text(canvas," • ".join(achievement_parts),Rect2(33,394,310,18),13,FIGMA_MUTED)
+	# Show a large, readable total here; per-game details live in Profile.
+	var achievement_summary := _figma_text(canvas,"%d / %d BADGES UNLOCKED" % [unlocked_total,available_total],Rect2(33,394,310,18),13,FIGMA_MUTED)
+	achievement_summary.tooltip_text = " • ".join(achievement_parts)
+	achievement_summary.accessibility_name = achievement_summary.tooltip_text
 	achievement_summary.name = "CollectionAchievementSummary"
 	achievement_summary.clip_text = true
 	achievement_summary.custom_minimum_size = Vector2.ZERO
-	_fit_single_line_control_text(achievement_summary,306.0,13,10)
+	_fit_single_line_control_text(achievement_summary,306.0,13,12)
 	achievement_summary.position = Vector2(33,394)
 	achievement_summary.size = Vector2(310,18)
 	var achievements_view := _figma_button(canvas,"CollectionAchievementsView","VIEW",Rect2(286,347,65,44),Color("#7a57e0"),Callable(self,"build_profile"),Color.WHITE,11,10)
@@ -1654,21 +1670,21 @@ func build_collection_upgrades() -> void:
 	scroll_to_summary.gui_input.connect(_collection_upgrades_scroll_input.bind(scroll_to_summary))
 	canvas.add_child(scroll_to_summary)
 
-	_figma_text(canvas,"GARDEN UPGRADES",Rect2(23,99,342,28),22,Color("#1c8552"))
-	_figma_text(canvas,"Permanent progression • %d / %d levels" % [EconomyManager.collection_total_levels(),EconomyManager.collection_max_total_levels()],Rect2(23,131,342,18),14,Color("#597a8f"))
-	_figma_solid_card(canvas,"CollectionScroll/Boost",Rect2(23,163,342,60),Color("#f0fff5"),Color(0.30,0.78,0.48,0.42),16,false)
+	_figma_text(canvas,"GARDEN UPGRADES",Rect2(23,99,342,28),22,Color("#80f2b9") if _dark() else Color("#1c8552"))
+	_figma_text(canvas,"Permanent progression • %d / %d levels" % [EconomyManager.collection_total_levels(),EconomyManager.collection_max_total_levels()],Rect2(23,131,342,18),14,Color("#c7d5e1") if _dark() else Color("#597a8f"))
+	_figma_solid_card(canvas,"CollectionScroll/Boost",Rect2(23,163,342,60),Color("#24342f") if _dark() else Color("#f0fff5"),Color(0.30,0.78,0.48,0.58),16,false)
 	var boost_text := _figma_text(
 		canvas,
 		"DAILY +%d  •  GIFT +%d  •  CAMPAIGN +%d%%" % [EconomyManager.collection_daily_bonus(),EconomyManager.garden_gift_amount(),EconomyManager.collection_campaign_reward_bonus_pct()],
 		Rect2(33,184,322,18),
 		13,
-		Color("#1f8a52"),
+		Color("#adf6ca") if _dark() else Color("#1f8a52"),
 		true
 	)
 	boost_text.name = "CollectionUpgradeBoostSummary"
 	boost_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	boost_text.custom_minimum_size = Vector2.ZERO
-	_fit_single_line_control_text(boost_text, 318.0, 13, 9)
+	_fit_single_line_control_text(boost_text, 318.0, 13, 11)
 
 	var upgrades := [
 		["tree","CANOPY TREE","SHADE",100],
@@ -1687,18 +1703,23 @@ func build_collection_upgrades() -> void:
 		var maxed := level >= EconomyManager.COLLECTION_MAX_LEVEL
 		var cost := EconomyManager.collection_level_cost(id,base_cost)
 		var y := 235.0 + float(i)*78.0
-		var card_fill := Color("#f0fff5") if level > 0 else Color("#fcfaff")
-		var card_border := Color(0.32,0.78,0.49,0.46) if level > 0 else Color(0.72,0.58,0.90,0.46)
-		var title_color := Color("#1f854f") if level > 0 else Color("#4d3373")
+		var card_fill := (Color("#283a35") if level > 0 else Color("#302c3a")) if _dark() else (Color("#f0fff5") if level > 0 else Color("#fcfaff"))
+		var card_border := Color(0.50,0.90,0.70,0.65) if level > 0 else Color(0.75,0.68,0.95,0.65)
+		var title_color := (Color("#b9f6d4") if level > 0 else Color("#e8d5ff")) if _dark() else (Color("#1f854f") if level > 0 else Color("#4d3373"))
 		_figma_solid_card(canvas, "CollectionScroll/Upgrade/%d" % i, Rect2(23,y,342,70), card_fill, card_border, 16, false)
-		var upgrade_title := _figma_text(canvas,"%s  •  L%d/%d" % [display_name,level,EconomyManager.COLLECTION_MAX_LEVEL],Rect2(37,y+8,154,20),14,title_color)
+		var upgrade_title := _figma_text(canvas,display_name,Rect2(37,y+6,154,20),15,title_color)
 		upgrade_title.name = "CollectionUpgradeTitle/%s" % id
+		upgrade_title.tooltip_text = "%s, level %d of %d" % [display_name,level,EconomyManager.COLLECTION_MAX_LEVEL]
+		upgrade_title.accessibility_name = upgrade_title.tooltip_text
 		upgrade_title.custom_minimum_size = Vector2.ZERO
-		_fit_single_line_control_text(upgrade_title, 150.0, 14, 9)
-		var effect_text := _figma_text(canvas,EconomyManager.collection_effect_text(id,level),Rect2(37,y+34,154,24),11,Color("#6b8091"))
+		_fit_single_line_control_text(upgrade_title, 150.0, 15, 12)
+		var effect_full := EconomyManager.collection_effect_text(id,level)
+		var effect_text := _figma_text(canvas,effect_full,Rect2(37,y+28,154,18),12,Color("#d9e2f0") if _dark() else Color("#526678"))
 		effect_text.name = "CollectionUpgradeEffect/%s" % id
+		effect_text.tooltip_text = effect_full
+		effect_text.accessibility_name = effect_full
 		effect_text.custom_minimum_size = Vector2.ZERO
-		_fit_single_line_control_text(effect_text, 150.0, 11, 8)
+		_fit_single_line_control_text(effect_text, 150.0, 12, 11)
 		var preview := GardenUpgradePreviewScene.new() as GardenUpgradePreview
 		preview.name = "CollectionUpgradePreview/%s" % id
 		preview.configure(id,level > 0)
@@ -1707,7 +1728,11 @@ func build_collection_upgrades() -> void:
 		var state_text := "MAX" if maxed else "%d COINS" % cost
 		var pill_fill := Color("#e0f2e5") if maxed else Color("#7a57e0")
 		var state_text_color := Color("#4d7a59") if maxed else Color.WHITE
-		var state := _figma_button(canvas, "CollectionUpgrade/%s" % id, state_text, Rect2(251,y+13,96,44), pill_fill, Callable(), state_text_color, 12, 13)
+		var state := _figma_button(canvas, "CollectionUpgrade/%s" % id, state_text, Rect2(251,y+13,96,44), pill_fill, Callable(), state_text_color, 12, 12)
+		state.accessibility_name = "%s, level %d of %d. %s" % [display_name,level,EconomyManager.COLLECTION_MAX_LEVEL,state_text]
+		var level_badge := _figma_text(canvas,"LEVEL %d/%d" % [level,EconomyManager.COLLECTION_MAX_LEVEL],Rect2(37,y+48,156,18),12,Color("#f6d481") if _dark() else Color("#536474"),false)
+		level_badge.name = "CollectionUpgradeLevel/%s" % id
+		level_badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		state.disabled = maxed
 		if maxed:
 			var owned_style := FigmaReferenceCanvas.solid_box(Color("#e0f2e5"),12,Color.TRANSPARENT,0)
@@ -1717,15 +1742,17 @@ func build_collection_upgrades() -> void:
 		else:
 			state.pressed.connect(_buy_collection_upgrade.bind(id,base_cost))
 
-	var return_hint := _figma_text(canvas,"SWIPE DOWN • COLLECTION SUMMARY",Rect2(37,710,314,18),12,Color("#6e8596"),true)
-	return_hint.name = "CollectionUpgradeReturnHint"
-	return_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	return_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	return_hint.clip_text = true
-	return_hint.custom_minimum_size = Vector2.ZERO
-	_fit_single_line_control_text(return_hint,310.0,12,10)
-	return_hint.position = Vector2(37,710)
-	return_hint.size = Vector2(314,18)
+	# A visible back action is easier to discover than the previously dim
+	# swipe-only footer and remains usable by touch and TalkBack.
+	var return_button := _figma_button(
+		canvas, "CollectionBackToSummary", "BACK TO GARDEN",
+		Rect2(100,701,188,44),
+		Color("#40556e") if _dark() else Color("#e0e9e6"),
+		Callable(self,"build_collection"),
+		FIGMA_DARK_INK if _dark() else FIGMA_NAVY, 14, 12
+	)
+	return_button.accessibility_name = "Return to Collection summary"
+	return_button.tooltip_text = "Return to Collection summary"
 	_figma_bottom_nav(canvas,"collection")
 
 func _collection_summary_scroll_input(event: InputEvent, owner: Control) -> void:

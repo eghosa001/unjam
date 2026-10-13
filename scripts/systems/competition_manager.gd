@@ -12,6 +12,8 @@ const GAME_IDS := ["rescue_rush", "water_sort", "block_puzzle"]
 const REQUEST_TIMEOUT_SECONDS := 12.0
 const DAILY_PENDING_KEY := "competition_pending_daily_results"
 const MAX_PENDING_DAILY_RESULTS := 9
+const CAMPAIGN_PENDING_KEY := "competition_pending_campaign_results"
+const MAX_PENDING_CAMPAIGN_RESULTS := 240
 
 var snapshot: Dictionary = {}
 var daily_snapshot: Dictionary = {}
@@ -19,6 +21,7 @@ var social_snapshot: Dictionary = {}
 var _snapshot_in_flight := false
 var _daily_snapshot_in_flight := false
 var _pending_daily_requests: Dictionary = {}
+var _campaign_submission_in_flight := false
 var _social_in_flight := false
 var _social_game_id := "rescue_rush"
 
@@ -26,6 +29,7 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	call_deferred("refresh_snapshot")
 	call_deferred("_flush_pending_daily_results")
+	call_deferred("_flush_pending_campaign_results")
 
 func display_name() -> String:
 	var custom := String(SaveManager.data.get("competition_display_name", "")).strip_edges()
@@ -245,6 +249,7 @@ func refresh_snapshot() -> void:
 		call_deferred("_notify_campaign_snapshot_unavailable")
 		return
 	_flush_pending_daily_results()
+	_flush_pending_campaign_results()
 	_snapshot_in_flight = true
 	_request_json({
 		"action": "progress_snapshot",
@@ -294,31 +299,100 @@ func refresh_daily_snapshot() -> void:
 	)
 
 
+# Save ranked completions before network submission. The local campaign is
+# always playable offline; league sync is ordered and never fabricates a rank.
 func submit_campaign_progress(game_id: String, level_number: int, stars: int, first_clear: bool) -> void:
 	if game_id not in GAME_IDS:
 		return
+	var pending := _pending_campaign_results()
+	var found := false
+	for i in range(pending.size()):
+		var item: Variant = pending[i]
+		if item is Dictionary and String(item.get("game_id", "")) == game_id and int(item.get("level_number", 0)) == level_number:
+			var updated: Dictionary = item
+			updated["stars"] = maxi(int(updated.get("stars", 1)), clampi(stars, 1, 3))
+			updated["first_clear"] = bool(updated.get("first_clear", false)) or first_clear
+			pending[i] = updated
+			found = true
+			break
+	if not found:
+		pending.append({
+			"game_id": game_id, "level_number": clampi(level_number, 1, MultiGameManager.CAMPAIGN_LEVELS),
+			"stars": clampi(stars, 1, 3), "first_clear": first_clear, "day": DailyChallenge.date_key()
+		})
+	while pending.size() > MAX_PENDING_CAMPAIGN_RESULTS:
+		pending.pop_front()
+	SaveManager.data[CAMPAIGN_PENDING_KEY] = pending
+	SaveManager.save()
+	_flush_pending_campaign_results()
+
+func _pending_campaign_results() -> Array:
+	var raw: Variant = SaveManager.data.get(CAMPAIGN_PENDING_KEY, [])
+	return raw.duplicate(true) if raw is Array else []
+
+func _flush_pending_campaign_results() -> void:
+	if _campaign_submission_in_flight or OS.get_environment("UNJAM_FAST_VISUAL_AUDIT") == "1":
+		return
 	var cloud_id := String(SaveManager.data.get("cloud_save_id", ""))
 	if cloud_id.length() != 64:
-		submission_finished.emit(game_id, false, 0)
 		return
-	var local_progress := _local_progress(game_id)
+	var pending := _pending_campaign_results()
+	if pending.is_empty():
+		return
+	var row: Variant = pending[0]
+	if not row is Dictionary:
+		pending.pop_front()
+		SaveManager.data[CAMPAIGN_PENDING_KEY] = pending
+		SaveManager.save()
+		call_deferred("_flush_pending_campaign_results")
+		return
+	var entry := row as Dictionary
+	var game_id := String(entry.get("game_id", ""))
+	var level := int(entry.get("level_number", 0))
+	var day := String(entry.get("day", ""))
+	if game_id not in GAME_IDS or level < 1 or level > MultiGameManager.CAMPAIGN_LEVELS:
+		pending.pop_front()
+		SaveManager.data[CAMPAIGN_PENDING_KEY] = pending
+		SaveManager.save()
+		call_deferred("_flush_pending_campaign_results")
+		return
+	# Old offline completions remain in the local campaign but cannot be
+	# retrospectively inserted into a finished competitive period.
+	var now_unix := Time.get_unix_time_from_datetime_string("%sT12:00:00" % DailyChallenge.date_key())
+	var event_unix := Time.get_unix_time_from_datetime_string("%sT12:00:00" % day)
+	if day.length() != 10 or absf(now_unix - event_unix) > 86400.0:
+		pending.pop_front()
+		SaveManager.data[CAMPAIGN_PENDING_KEY] = pending
+		SaveManager.save()
+		submission_finished.emit(game_id, false, 0)
+		call_deferred("_flush_pending_campaign_results")
+		return
+	_campaign_submission_in_flight = true
 	_request_json({
 		"action": "submit_progress",
 		"cloud_save_id": cloud_id,
 		"display_name": display_name(),
-		"competition_day": DailyChallenge.date_key(),
+		"competition_day": day,
 		"game_id": game_id,
-		"level_number": clampi(level_number, 1, MultiGameManager.CAMPAIGN_LEVELS),
-		"stars": clampi(stars, 1, 3),
-		"first_clear": first_clear,
-		"progress": local_progress,
-		"all_progress": _all_local_progress(),
-	}, func(ok: bool, _status: int, body: Dictionary) -> void:
+		"level_number": level,
+		"stars": clampi(int(entry.get("stars", 1)), 1, 3),
+		"first_clear": bool(entry.get("first_clear", false)),
+	}, func(ok: bool, status: int, body: Dictionary) -> void:
+		_campaign_submission_in_flight = false
 		var accepted := ok and bool(body.get("ok", false))
-		if accepted and body.get("snapshot", {}) is Dictionary:
-			snapshot = (body.get("snapshot", {}) as Dictionary).duplicate(true)
-			snapshot_updated.emit(snapshot)
-		submission_finished.emit(game_id, accepted, int(local_progress.get("levels_completed", 0)))
+		if accepted or status == 409:
+			var current := _pending_campaign_results()
+			if not current.is_empty() and current[0] == entry:
+				current.pop_front()
+				SaveManager.data[CAMPAIGN_PENDING_KEY] = current
+				SaveManager.save()
+			if accepted and body.get("snapshot", {}) is Dictionary:
+				snapshot = (body.get("snapshot", {}) as Dictionary).duplicate(true)
+				snapshot_updated.emit(snapshot)
+		submission_finished.emit(game_id, accepted, level)
+		# Do not spin on outages or the hourly competition quota.
+		if accepted or status == 409:
+			call_deferred("_flush_pending_campaign_results")
 	)
 
 func submit_daily_result(game_id: String, metrics: Dictionary) -> void:

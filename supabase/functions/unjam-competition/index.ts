@@ -204,6 +204,29 @@ function metric(m: Record<string, unknown>, key: string, min: number, max: numbe
   return Number.isFinite(n) ? Math.max(min, Math.min(max, Math.trunc(n))) : fallback;
 }
 function clamp(n: number, min: number, max: number) { return Math.max(min, Math.min(max, Math.trunc(n))); }
+// Reject fabricated or incomplete daily scores instead of silently giving
+// points to missing/default metrics. Keep keys compatible with all three
+// currently shipped client completion payloads.
+function validDailyMetrics(gameId: string, m: Record<string, unknown>): boolean {
+  const integer = (name: string, low: number, high: number): boolean => {
+    const n = m[name];
+    return typeof n === "number" && Number.isInteger(n) && n >= low && n <= high;
+  };
+  if (!integer("stars", 1, 3)) return false;
+  if (gameId === "rescue_rush") {
+    return integer("moves", 1, 500) && integer("par", 1, 500)
+      && integer("mistakes", 0, 50) && integer("hints", 0, 50)
+      && integer("undos", 0, 50);
+  }
+  if (gameId === "water_sort") {
+    return integer("moves", 1, 1000) && integer("par", 1, 1000);
+  }
+  if (gameId === "block_puzzle") {
+    return integer("score", 0, 100000) && integer("lines", 0, 200)
+      && integer("placements", 1, 1000) && integer("par", 1, 1000);
+  }
+  return false;
+}
 function scoreForGame(gameId: string, m: Record<string, unknown>): number | null {
   const stars = metric(m, "stars", 1, 3, 1);
   if (gameId === "rescue_rush") {
@@ -338,6 +361,7 @@ async function recordProgressEvent(
   levelNumber: number,
   stars: number,
   weekKey: string,
+  allowNew = false,
 ): Promise<boolean> {
   const { data: existing, error: readError } = await sb.from("progression_level_events")
     .select("best_stars,first_clear_week")
@@ -353,6 +377,7 @@ async function recordProgressEvent(
     }
     return false;
   }
+  if (!allowNew) return false;
   const { error } = await sb.from("progression_level_events").insert({
     player_hash: playerHash,
     game_id: gameId,
@@ -458,10 +483,11 @@ async function previousProgressReward(sb: any, playerHash: string, gameId: strin
 
 async function progressionSnapshotFor(sb: any, playerHash: string, displayName: string, day: Date, progress: unknown) {
   const weekKey = isoDay(weekStart(day));
-  const raw = progress && typeof progress === "object" && !Array.isArray(progress) ? progress as Record<string, unknown> : {};
+  // A leaderboard read must never promote untrusted client-side save data.
+  // Progress changes are accepted exclusively by the bounded completion path.
+  void progress;
   const gameRankings: Record<string, unknown> = {};
   for (const gameId of GAME_IDS) {
-    await upsertAllTimeProgress(sb, playerHash, displayName, gameId, raw[gameId]);
     const [allTimeTop, weeklyTop, playerAllTime, playerWeekly, reward] = await Promise.all([
       progressTop(sb, "all_time", ALL_TIME_KEY, gameId),
       progressTop(sb, "weekly", weekKey, gameId),
@@ -579,8 +605,38 @@ Deno.serve(async (req: Request) => {
     const firstClear = body.first_clear === true;
     const weekKey = isoDay(weekStart(day));
     try {
-      const allTime = await upsertAllTimeProgress(sb, hash, name, gameId, body.progress);
-      if (firstClear && levelNumber <= allTime.levels_completed) {
+      // Public install keys identify the application, not an authenticated
+      // player. Never accept an arbitrary progress snapshot as a league score.
+      // This bounded path mitigates jumps and replay abuse; genuine
+      // anti-cheat still requires authenticated Play Integrity evidence.
+      const previous = await progressRankFor(sb, "all_time", ALL_TIME_KEY, gameId, hash);
+      // One accepted new completion can increase the public total by at most
+      // one, regardless of local save level or offline progression gaps.
+      // Returning offline players keep their local level; new ranked clears
+      // count from the time they reconnect. Replay never increases totals.
+      if (!firstClear && levelNumber > previous.highest_level) {
+        return json({ ok: false, reason: "Only first clears advance rankings" }, 409);
+      }
+      if (firstClear && levelNumber > previous.highest_level) {
+        const since = new Date(Date.now() - 3_600_000).toISOString();
+        const { count, error: rateError } = await sb.from("progression_level_events")
+          .select("*", { count: "exact", head: true })
+          .eq("player_hash", hash).eq("game_id", gameId).gte("created_at", since);
+        if (rateError) throw rateError;
+        if (Number(count ?? 0) >= 180) {
+          return json({ ok: false, reason: "Too many ranked completions; retry later" }, 429);
+        }
+        const inserted = await recordProgressEvent(sb, hash, gameId, levelNumber, stars, weekKey, true);
+        if (inserted) {
+          const verifiedCount = Math.min(10000, previous.levels_completed + 1);
+          await upsertAllTimeProgress(sb, hash, name, gameId, {
+            levels_completed: verifiedCount, highest_level: levelNumber,
+            stars: Math.min(verifiedCount * 3, previous.stars + stars),
+          });
+        }
+      } else if (levelNumber <= previous.highest_level) {
+        // Previously known levels may improve their best-star record, but
+        // cannot be counted as a newly completed level.
         await recordProgressEvent(sb, hash, gameId, levelNumber, stars, weekKey);
       }
       await refreshWeeklyProgress(sb, hash, name, gameId, weekKey);
@@ -655,6 +711,7 @@ Deno.serve(async (req: Request) => {
   if (action === "submit") {
     const gameId = String(body.game_id ?? ""); if (!GAME_IDS.has(gameId)) return json({ ok: false, reason: "Invalid game" }, 400);
     const metrics = body.metrics && typeof body.metrics === "object" && !Array.isArray(body.metrics) ? body.metrics as Record<string, unknown> : {};
+    if (!validDailyMetrics(gameId, metrics)) return json({ ok: false, reason: "Incomplete or invalid daily result" }, 400);
     const score = scoreForGame(gameId, metrics); if (!score) return json({ ok: false, reason: "Invalid result" }, 400);
     const dayKey = isoDay(day), weekKey = isoDay(weekStart(day));
     const { data: existing, error: readError } = await sb.from("competition_entries").select("score").eq("player_hash", hash).eq("competition_day", dayKey).eq("game_id", gameId).maybeSingle();

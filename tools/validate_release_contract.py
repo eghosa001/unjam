@@ -195,16 +195,16 @@ def main() -> int:
     for token in (
         'SOURCE := "res://store_assets/unjam_google_play_icon_512.png"',
         'ADAPTIVE_OUT := "res://assets/icon_launcher_adaptive_432.png"',
-        'SPLASH_SOURCE := "res://store_assets/unjam_approved_logo_transparent.png"',
+        'APPROVED_LOGO := "res://store_assets/unjam_approved_logo_transparent.png"',
         'SYSTEM_SPLASH_OUT := "res://assets/splash_emblem_safe_432.png"',
-        'LEGACY_CONTENT := 512',
-        'ADAPTIVE_CONTENT := 280',
-        'SYSTEM_SPLASH_CONTENT := 280',
+        'LEGACY_CONTENT := 415',
+        'ADAPTIVE_CONTENT := 248',
+        'SYSTEM_SPLASH_CONTENT := 260',
         'SPLASH_SIZE := 432',
         'Image.INTERPOLATE_LANCZOS',
     ):
         if token not in brand_prep:
-            errors.append(f'Former Android launcher preparation missing token: {token}')
+            errors.append(f'Current approved Android launcher preparation missing token: {token}')
     for token in (
         'HOLD_SECONDS := 1.55',
         'FADE_SECONDS := 0.25',
@@ -215,11 +215,11 @@ def main() -> int:
         if token not in boot_script:
             errors.append(f'standalone Boot behavior missing token: {token}')
     for token in (
-        'path="res://assets/unjam_startup_logo.png"',
+        'path="res://assets/icon_user_adaptive_432.png"',
         'custom_minimum_size = Vector2(560, 560)',
     ):
         if token not in boot_scene:
-            errors.append(f'standalone Boot scene missing token: {token}')
+            errors.append(f'standalone Boot scene missing approved logo token: {token}')
 
     for retired in ('BrandedLaunch', 'StartupBrandHold', '_show_startup_brand_hold', '_fade_startup_brand_hold', 'STARTUP_BRAND_TEXTURE'):
         if retired in robust_main:

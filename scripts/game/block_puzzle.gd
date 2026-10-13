@@ -645,6 +645,7 @@ func undo_move() -> void:
 	piece_batch = int(state.get("batch", 0))
 	rng.state = int(state.get("rng_state", rng.state))
 	SaveManager.record_undo()
+	AnalyticsManager.track("undo_used", {"game_id": GAME_ID, "level": level_number})
 	render()
 	_save_checkpoint()
 
@@ -661,6 +662,7 @@ func show_hint() -> void:
 					selected_piece = piece_index
 					hint_label.text = "Try the highlighted block near row %d, column %d" % [y + 1, x + 1]
 					SaveManager.record_hint()
+					AnalyticsManager.track("hint_used", {"game_id": GAME_ID, "level": level_number})
 					render_pieces()
 					return
 	hint_label.text = "No placement found"
@@ -723,6 +725,7 @@ func complete_level() -> void:
 
 
 func restart_level() -> void:
+	AnalyticsManager.track("block_puzzle_level_restarted", {"level": level_number})
 	MultiGameManager.clear_checkpoint(GAME_ID)
 	load_level()
 

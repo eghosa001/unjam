@@ -608,6 +608,9 @@ func complete_level() -> void:
 		var daily_completed_now := MultiGameManager.complete_daily(GAME_ID, base_reward)
 		if daily_completed_now:
 			MetaProgressionManager.record_daily_complete(GAME_ID, stars)
+			CompetitionManager.submit_daily_result(GAME_ID, {
+				"stars": stars, "moves": maxi(1, moves), "par": maxi(1, par_moves)
+			})
 	else:
 		completion_rewards = MultiGameManager.complete_level(GAME_ID, level_number, stars, 25 + color_count * 2)
 		base_reward = int(completion_rewards.get("base_coins", 0))
@@ -709,9 +712,11 @@ func _before_quit_level() -> void:
 
 func _note_attempt_hint() -> void:
 	attempt_hint_uses += 1
+	AnalyticsManager.track("hint_used", {"game_id": GAME_ID, "level": level_number})
 
 func _note_attempt_undo() -> void:
 	attempt_undo_uses += 1
+	AnalyticsManager.track("undo_used", {"game_id": GAME_ID, "level": level_number})
 
 func _profile() -> Dictionary:
 	if level_profile.is_empty() or int(level_profile.get("level_id", -1)) != level_number:
