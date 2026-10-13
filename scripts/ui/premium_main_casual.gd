@@ -1430,7 +1430,7 @@ func _figma_progress_leaderboard_panel(canvas: Control, title_text: String, entr
 		if not row is Dictionary:
 			continue
 		var row_y := y+42.0+float(i)*33.0
-		var place := i+1
+		var place := maxi(1,int(row.get("rank",i+1)))
 		_figma_text(canvas,"★" if place == 1 else str(place),Rect2(34,row_y,28,24),13,accent,true)
 		_figma_text(canvas,String(row.get("name","PLAYER")).left(15),Rect2(70,row_y,135,24),13,FIGMA_INK)
 		var levels := maxi(0,int(row.get("levels_completed",0)))
