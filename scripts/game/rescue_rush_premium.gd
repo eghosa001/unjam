@@ -11,6 +11,7 @@ var world_subtitle_label: Label
 var footer_label: Label
 var _board_render_signature := 0
 var _board_render_signature_valid := false
+var _animated_entry_level := -1
 
 func style_button(button: Button, accent: bool = false) -> void:
 	var base := Color("e7a72b") if accent else Color("183b70")
@@ -339,6 +340,11 @@ func render_board() -> void:
 	var board_signature := hash([level_number, daily_mode, width, height, rescue_pos, rescued, rescue_id, pieces])
 	if _board_render_signature_valid and _board_render_signature == board_signature and board_grid.get_child_count() == width * height:
 		return
+	# Only the first board render of a level earns the staggered entrance.
+	# Replaying 25-100 tile entrance tweens after *every* arrow tap caused
+	# avoidable jank, masked the new board state and reset keyboard focus.
+	var animate_entry := _animated_entry_level != level_number and not MotionSystem.reduced()
+	_animated_entry_level = level_number
 	_board_render_signature = board_signature
 	_board_render_signature_valid = true
 	for child in board_grid.get_children():
@@ -371,7 +377,8 @@ func render_board() -> void:
 				token.z_index = 8
 				slot.add_child(token)
 				board_grid.add_child(slot)
-				_animate_cell(slot, x, y)
+				if animate_entry:
+					_animate_cell(slot, x, y)
 				if not MotionSystem.reduced():
 					var rescue_pulse := create_tween().set_loops(1)
 					rescue_pulse.tween_property(slot, "modulate", Color(1.08, 1.04, 0.86, 1), 0.46).set_trans(Tween.TRANS_CUBIC)
@@ -402,8 +409,10 @@ func render_board() -> void:
 					button.pressed.connect(try_move.bind(piece_index))
 				button.tooltip_text = button.accessibility_name
 				board_grid.add_child(button)
-				_animate_cell(button, x, y)
+				if animate_entry:
+					_animate_cell(button, x, y)
 			else:
 				var empty := _make_empty_cell(cell_size, pos, route)
 				board_grid.add_child(empty)
-				_animate_cell(empty, x, y)
+				if animate_entry:
+					_animate_cell(empty, x, y)
