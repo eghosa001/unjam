@@ -286,21 +286,6 @@ async function snapshotFor(sb: any, hash: string, day: Date) {
   ]);
   return { ok: true, day: dayKey, week_start: weekKey, daily_top: publicRows(daily), weekly_top: publicRows(weekly), player_daily: playerDaily, player_weekly: playerWeekly, previous_week_reward: reward };
 }
-async function refreshTotals(sb: any, hash: string, name: string, day: Date) {
-  const dayKey = isoDay(day), weekKey = isoDay(weekStart(day));
-  const { data: de, error: deErr } = await sb.from("competition_entries").select("score").eq("player_hash", hash).eq("competition_day", dayKey);
-  if (deErr) throw deErr;
-  const dailyScore = (de ?? []).reduce((a: number, r: any) => a + Number(r.score ?? 0), 0);
-  const { error: dErr } = await sb.from("competition_totals").upsert({ period_type: "daily", period_key: dayKey, player_hash: hash, display_name: name, score: dailyScore, games_count: (de ?? []).length, updated_at: new Date().toISOString() }, { onConflict: "period_type,period_key,player_hash" });
-  if (dErr) throw dErr;
-  const { data: we, error: weErr } = await sb.from("competition_entries").select("score").eq("player_hash", hash).eq("week_start", weekKey);
-  if (weErr) throw weErr;
-  const weeklyScore = (we ?? []).reduce((a: number, r: any) => a + Number(r.score ?? 0), 0);
-  const { error: wErr } = await sb.from("competition_totals").upsert({ period_type: "weekly", period_key: weekKey, player_hash: hash, display_name: name, score: weeklyScore, games_count: (we ?? []).length, updated_at: new Date().toISOString() }, { onConflict: "period_type,period_key,player_hash" });
-  if (wErr) throw wErr;
-}
-
-
 const ALL_TIME_KEY = "1970-01-01";
 
 function cleanGameId(value: unknown): string {
@@ -596,15 +581,31 @@ Deno.serve(async (req: Request) => {
     if (!validDailyMetrics(gameId, metrics)) return json({ ok: false, reason: "Incomplete or invalid daily result" }, 400);
     const score = scoreForGame(gameId, metrics); if (!score) return json({ ok: false, reason: "Invalid result" }, 400);
     const dayKey = isoDay(day), weekKey = isoDay(weekStart(day));
-    const { data: existing, error: readError } = await sb.from("competition_entries").select("score").eq("player_hash", hash).eq("competition_day", dayKey).eq("game_id", gameId).maybeSingle();
-    if (readError) return json({ ok: false, reason: "Leaderboard unavailable" }, 503);
-    const bestScore = Math.max(score, Number(existing?.score ?? 0));
-    if (!existing || score > Number(existing.score ?? 0)) {
-      const { error } = await sb.from("competition_entries").upsert({ player_hash: hash, display_name: name, competition_day: dayKey, week_start: weekKey, game_id: gameId, score, metrics, updated_at: new Date().toISOString() }, { onConflict: "player_hash,competition_day,game_id" });
-      if (error) return json({ ok: false, reason: "Leaderboard unavailable" }, 503);
+    // Commit best-score selection and BOTH ranking totals in one Postgres
+    // transaction. Previous read/upsert/refresh requests could race and
+    // regress scores when the same player finished multiple games at once.
+    try {
+      const { data: recorded, error } = await sb.rpc("unjam_record_daily_result", {
+        p_player_hash: hash,
+        p_display_name: name,
+        p_game_id: gameId,
+        p_day: dayKey,
+        p_week: weekKey,
+        p_score: score,
+        p_metrics: metrics,
+      });
+      if (error) throw error;
+      if (!recorded || recorded.ok !== true) {
+        return json({ ok: false, reason: String(recorded?.reason ?? "Invalid Daily score") }, 400);
+      }
+      return json({
+        ok: true, game_id: gameId, score: Number(recorded.score),
+        snapshot: await snapshotFor(sb, hash, day),
+      });
+    } catch (error) {
+      console.error("Daily result transaction failed", { error: String(error) });
+      return json({ ok: false, reason: "Leaderboard unavailable" }, 503);
     }
-    try { await refreshTotals(sb, hash, name, day); } catch { return json({ ok: false, reason: "Leaderboard unavailable" }, 503); }
-    return json({ ok: true, game_id: gameId, score: bestScore, snapshot: await snapshotFor(sb, hash, day) });
   }
   if (action === "claim_weekly") {
     const periodKey = isoDay(new Date(weekStart(day).getTime() - 7 * DAY_MS));
