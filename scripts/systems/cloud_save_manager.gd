@@ -368,8 +368,17 @@ func _push_now() -> void:
 				_apply_remote(combined, remote_revision)
 				if combined != remote_value:
 					_pending_push = true
+				else:
+					# A newer remote already contains all local progression.
+					# A resolved 409 must not leave the Backup screen reporting
+					# "Reconciling..." forever when no upload is required.
+					_sync_retry_delay = SYNC_RETRY_START_SECONDS
+					if _sync_timer != null:
+						_sync_timer.stop()
+					_set_cloud_status("Cloud backup synced.")
 			else:
 				_pending_push = true
+				_set_cloud_status("Cloud conflict could not be resolved; sync will retry.")
 		else:
 			_pending_push = true
 			_set_cloud_status("Cloud is offline. Progress is saved locally; sync will retry.")
