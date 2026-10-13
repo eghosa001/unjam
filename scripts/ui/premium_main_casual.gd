@@ -785,8 +785,8 @@ func build_profile() -> void:
 	for stat in stats:
 		var stat_value := _figma_text(canvas,String(stat[0]),Rect2(float(stat[2]),193,64,21),16,FIGMA_INK)
 		_fit_single_line_control_text(stat_value,60.0,16,12)
-		var stat_label := _figma_text(canvas,String(stat[1]),Rect2(float(stat[2])-4,218,72,14),10,FIGMA_MUTED)
-		_fit_single_line_control_text(stat_label,68.0,10,8)
+		var stat_label := _figma_text(canvas,String(stat[1]),Rect2(float(stat[2])-4,217,72,18),12,FIGMA_MUTED)
+		_fit_single_line_control_text(stat_label,68.0,12,12)
 	var profile_rank := CompetitionManager.game_all_time_rank(_profile_game)
 	var rank_text := "UNRANKED" if profile_rank <= 0 else "RANK #%d" % profile_rank
 	_figma_text(canvas,"%s • %d/%d ACHIEVEMENTS" % [rank_text,MetaProgressionManager.total_achievements(),MetaProgressionManager.total_achievement_slots()],Rect2(31,244,220,18),11,FIGMA_GOLD)
@@ -822,9 +822,9 @@ func _figma_achievement_row(canvas: Control, achievement: Dictionary, y: float) 
 	var achievement_title := _figma_text(canvas,String(achievement.get("title","Achievement")),Rect2(31,y+6,210,15),12,FIGMA_INK)
 	achievement_title.name = "ProfileAchievementTitle/%s" % id
 	_fit_single_line_control_text(achievement_title,206.0,12,9)
-	var achievement_progress := _figma_text(canvas,"%d / %d" % [mini(progress,need),need],Rect2(31,y+29,150,13),10,FIGMA_MUTED)
+	var achievement_progress := _figma_text(canvas,"%d / %d" % [mini(progress,need),need],Rect2(31,y+29,150,18),12,FIGMA_MUTED)
 	achievement_progress.name = "ProfileAchievementProgress/%s" % id
-	_fit_single_line_control_text(achievement_progress,146.0,10,8)
+	_fit_single_line_control_text(achievement_progress,146.0,12,12)
 	var status := _figma_text(canvas,"✓" if done else "•",Rect2(315,y+13,28,28),18,accent,true)
 	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
