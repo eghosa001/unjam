@@ -7,6 +7,7 @@ const CHAPTER_COUNT := 20
 const CATALOG_VERSION := 1
 const ROOT := "res://data/block_puzzle/authored"
 
+const MAX_CACHED_CHAPTERS := 2
 static var _chapter_cache: Dictionary = {}
 
 static func recipe(level_number: int) -> Dictionary:
@@ -34,7 +35,11 @@ static func clear_cache() -> void:
 static func _chapter(chapter_number: int) -> Array:
 	var chapter := clampi(chapter_number, 1, CHAPTER_COUNT)
 	if _chapter_cache.has(chapter):
-		return _chapter_cache[chapter]
+		# Refresh recency without loading more chapter data into RAM.
+		var cached: Array = _chapter_cache[chapter]
+		_chapter_cache.erase(chapter)
+		_chapter_cache[chapter] = cached
+		return cached
 	var path := "%s/chapter_%02d.json" % [ROOT, chapter]
 	if not FileAccess.file_exists(path):
 		return []
@@ -50,5 +55,11 @@ static func _chapter(chapter_number: int) -> Array:
 	var levels = payload.get("levels", [])
 	if not levels is Array or levels.size() != CHAPTER_SIZE:
 		return []
+	# 10,000 levels are streamed in two-chapter windows. Retaining all 20
+	# parsed JSON chapters causes avoidable memory growth after long play.
+	if _chapter_cache.size() >= MAX_CACHED_CHAPTERS:
+		var keys := _chapter_cache.keys()
+		if not keys.is_empty():
+			_chapter_cache.erase(keys[0])
 	_chapter_cache[chapter] = levels
 	return levels
