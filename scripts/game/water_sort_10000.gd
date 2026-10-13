@@ -709,9 +709,11 @@ func _before_quit_level() -> void:
 
 func _note_attempt_hint() -> void:
 	attempt_hint_uses += 1
+	AnalyticsManager.track("hint_used", {"game_id": GAME_ID, "level": level_number})
 
 func _note_attempt_undo() -> void:
 	attempt_undo_uses += 1
+	AnalyticsManager.track("undo_used", {"game_id": GAME_ID, "level": level_number})
 
 func _profile() -> Dictionary:
 	if level_profile.is_empty() or int(level_profile.get("level_id", -1)) != level_number:
