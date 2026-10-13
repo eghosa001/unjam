@@ -6,7 +6,7 @@ func _initialize() -> void:
 	var failures: Array[String] = []
 	for token in [
 		'sb.rpc("unjam_increment_telemetry_batch"',
-		'p_events: [...counts.values()].map(',
+		'const p_events = [...counts.values()].map(',
 		'body.consent !== true',
 		'body.events.length > 24',
 	]:
