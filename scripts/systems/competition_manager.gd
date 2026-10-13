@@ -280,7 +280,7 @@ func can_claim_weekly_reward(game_id: String = "rescue_rush") -> bool:
 		return false
 	# A new request cannot reclaim a reward from another device. But the
 	# original phone must be able to retry after its acknowledgement was lost.
-	var pending := SaveManager.data.get(WEEKLY_RECEIPTS_KEY, {})
+	var pending = SaveManager.data.get(WEEKLY_RECEIPTS_KEY, {})
 	return not bool(reward.get("claimed", false)) or (pending is Dictionary and pending.has(claim_key))
 
 func refresh_snapshot() -> void:
@@ -533,7 +533,7 @@ func _flush_pending_daily_results() -> void:
 		)
 
 func pending_weekly_receipts_for_test() -> Dictionary:
-	var pending := SaveManager.data.get(WEEKLY_RECEIPTS_KEY, {})
+	var pending = SaveManager.data.get(WEEKLY_RECEIPTS_KEY, {})
 	return (pending as Dictionary).duplicate() if pending is Dictionary else {}
 
 func claim_weekly_reward(game_id: String = "rescue_rush") -> void:
@@ -555,7 +555,7 @@ func claim_weekly_reward(game_id: String = "rescue_rush") -> void:
 		# SHA-256 hash only. A later retry with this SAME receipt may recover a
 		# reward even if the first HTTP response never reached the phone.
 		pending[claim_key] = Crypto.new().generate_random_bytes(16).hex_encode()
-		var keys := pending.keys()
+		var keys: Array = pending.keys()
 		keys.sort()
 		while keys.size() > 24:
 			var oldest: String = String(keys.pop_front())
