@@ -1,7 +1,7 @@
 extends SceneTree
 
 func _initialize() -> void:
-	var surface := load("res://scripts/ui/premium_main_casual.gd").new()
+	var surface: Node = load("res://scripts/ui/premium_main_casual.gd").new()
 	var background := Color("#fffef8")
 	for accent in [
 		Color(1.0,0.84,0.24), Color(0.13,0.78,0.39),
