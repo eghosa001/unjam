@@ -13,12 +13,15 @@ func _initialize() -> void:
 		var l2 := minf(ink.srgb_to_linear().get_luminance(),background.srgb_to_linear().get_luminance())
 		var contrast := (l1 + 0.05) / (l2 + 0.05)
 		if contrast < 4.5:
+			surface.free()
 			push_error("Light secondary accent contrast below 4.5:1, %.2f" % contrast)
 			quit(1)
 			return
 	if not (surface.call("_light_accent_ink",Color.WHITE) as Color).is_equal_approx(Color.WHITE):
+		surface.free()
 		push_error("Preserving authored white-on-dark text is required")
 		quit(1)
 		return
+	surface.free()
 	print("LIGHT_SECONDARY_ACCENT_CONTRAST_OK")
 	quit(0)
