@@ -20,6 +20,12 @@ func _initialize() -> void:
 	if not _check(bool(feedback.call("_accept_nav_tap",1035)),"35ms response floor blocks legitimate taps"):return
 	if not _check(not bool(feedback.call("_accept_nav_tap",1069)) and bool(feedback.call("_accept_nav_tap",1070)),
 		"Nav tap throttle fails at boundary"):return
+	# Soft error feedback cannot produce a sustained buzz when the user
+	# repeatedly touches a blocked board. Victory remains independent.
+	if not _check(bool(feedback.call("_accept_soft_haptic",1000)),"First soft haptic suppressed"):return
+	for ms in [1001,1010,1129]:
+		if not _check(not bool(feedback.call("_accept_soft_haptic",ms)),"Rapid soft haptic was not throttled"):return
+	if not _check(bool(feedback.call("_accept_soft_haptic",1130)),"Soft haptic cooldown blocked legitimate follow-up"):return
 	feedback.free()
 	print("AUDIO_TRANSITION_PROTECTION_OK: UI tick burst guard and click-free music toggles")
 	quit(0)
