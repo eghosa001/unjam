@@ -39,3 +39,10 @@ Keep all queries within privileged Supabase console access. Both the underlying 
 ## Evidence still needed for 8.7+/10
 
 Gather signed/installed Android device measurements for sustained frame pacing, scene memory, input latency, error-free navigation and TalkBack. The current analytics aggregate alone cannot measure production crash-free users, cohorts, D1/D7, or authenticated cheating attempts. Use Google Play / Android diagnostics and an explicitly reviewed crash backend for those missing dimensions. Follow the repo's change-scoped CI rule.
+
+
+## Optional unexpected-foreground-exit signal (v1.0.11+)
+
+When the player explicitly opts into anonymous game analytics, the app keeps **one local Boolean** recording whether the foreground session was active. Normal Android backgrounding and closing clear it; resuming foreground play restores it. On a subsequent cold start, a Boolean left active contributes **one** anonymous `session_interrupted` aggregate event (game=`all`, level band=`0`). Disabling analytics clears both the unsent events and the local Boolean.
+
+The `unclean_foreground_starts` column in the service-only daily funnel is **not a crash count, crash-free-user rate, Android ANR statistic or user-retention measure**. A force-stop, OS process termination or missed lifecycle callback could trigger the same indicator. There are **no exception traces, player identifiers, installation IDs, individual event logs, IP addresses or purchase details** in this aggregate. A proper platform crash reporting service and real player consented retention insights are still required for full release verification.
