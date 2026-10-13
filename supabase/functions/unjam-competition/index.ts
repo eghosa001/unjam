@@ -458,10 +458,11 @@ async function previousProgressReward(sb: any, playerHash: string, gameId: strin
 
 async function progressionSnapshotFor(sb: any, playerHash: string, displayName: string, day: Date, progress: unknown) {
   const weekKey = isoDay(weekStart(day));
-  const raw = progress && typeof progress === "object" && !Array.isArray(progress) ? progress as Record<string, unknown> : {};
+  // A leaderboard read must never promote untrusted client-side save data.
+  // Progress changes are accepted exclusively by the bounded completion path.
+  void progress;
   const gameRankings: Record<string, unknown> = {};
   for (const gameId of GAME_IDS) {
-    await upsertAllTimeProgress(sb, playerHash, displayName, gameId, raw[gameId]);
     const [allTimeTop, weeklyTop, playerAllTime, playerWeekly, reward] = await Promise.all([
       progressTop(sb, "all_time", ALL_TIME_KEY, gameId),
       progressTop(sb, "weekly", weekKey, gameId),
@@ -579,8 +580,35 @@ Deno.serve(async (req: Request) => {
     const firstClear = body.first_clear === true;
     const weekKey = isoDay(weekStart(day));
     try {
-      const allTime = await upsertAllTimeProgress(sb, hash, name, gameId, body.progress);
-      if (firstClear && levelNumber <= allTime.levels_completed) {
+      // Public install keys identify the application, not an authenticated
+      // player. Never accept an arbitrary progress snapshot as a league score.
+      // This bounded path mitigates jumps and replay abuse; genuine
+      // anti-cheat still requires authenticated Play Integrity evidence.
+      const previous = await progressRankFor(sb, "all_time", ALL_TIME_KEY, gameId, hash);
+      const verifiedLevel = previous.highest_level;
+      if (levelNumber > verifiedLevel + 1) {
+        return json({ ok: false, reason: "Unverified progression jump", expected_next_level: verifiedLevel + 1 }, 409);
+      }
+      if (!firstClear && levelNumber > verifiedLevel) {
+        return json({ ok: false, reason: "Only first clears advance rankings" }, 409);
+      }
+      if (firstClear && levelNumber === verifiedLevel + 1) {
+        const since = new Date(Date.now() - 3_600_000).toISOString();
+        const { count, error: rateError } = await sb.from("progression_level_events")
+          .select("*", { count: "exact", head: true })
+          .eq("player_hash", hash).eq("game_id", gameId).gte("created_at", since);
+        if (rateError) throw rateError;
+        if (Number(count ?? 0) >= 180) {
+          return json({ ok: false, reason: "Too many ranked completions; retry later" }, 429);
+        }
+        await recordProgressEvent(sb, hash, gameId, levelNumber, stars, weekKey);
+        await upsertAllTimeProgress(sb, hash, name, gameId, {
+          levels_completed: levelNumber, highest_level: levelNumber,
+          stars: Math.min(30000, previous.stars + stars),
+        });
+      } else if (firstClear && levelNumber <= verifiedLevel) {
+        // A replay of an already ranked level never increments all-time score.
+        // Existing best stars can still improve the weekly record.
         await recordProgressEvent(sb, hash, gameId, levelNumber, stars, weekKey);
       }
       await refreshWeeklyProgress(sb, hash, name, gameId, weekKey);
