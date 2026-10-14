@@ -73,19 +73,19 @@ func _fit_figma_board_layout() -> void:
 	if board_grid == null or board_shell == null:
 		return
 	board_grid.columns = GRID_SIZE
-	board_grid.add_theme_constant_override("h_separation", 5)
-	board_grid.add_theme_constant_override("v_separation", 5)
+	board_grid.add_theme_constant_override("h_separation", 4)
+	board_grid.add_theme_constant_override("v_separation", 4)
 	for child in board_grid.get_children():
 		if child is Control:
-			(child as Control).custom_minimum_size = Vector2(35.0, 35.0)
-	board_shell.custom_minimum_size = Vector2(346, 346)
-	board_shell.position = Vector2(22, 164)
+			(child as Control).custom_minimum_size = Vector2(40.0, 40.0)
+	board_shell.custom_minimum_size = Vector2(370, 370)
+	board_shell.position = Vector2(10, 155)
 	board_shell.size = Vector2(346, 346)
 	if piece_row != null:
-		piece_row.custom_minimum_size = Vector2(350, 96)
-		piece_row.position = Vector2(20, 536)
-		piece_row.size = Vector2(350, 96)
-		piece_row.add_theme_constant_override("separation", 7)
+		piece_row.custom_minimum_size = Vector2(366, 114)
+		piece_row.position = Vector2(12, 538)
+		piece_row.size = Vector2(366, 114)
+		piece_row.add_theme_constant_override("separation", 6)
 
 func build_ui() -> void:
 	clip_contents = true
@@ -203,12 +203,12 @@ func _build_figma_block(canvas: Control) -> void:
 	var depth := PanelContainer.new()
 	depth.name = "BlockBoardDepth"
 	depth.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color(0.07,0.03,0.15,0.18), 20))
-	FigmaReferenceCanvas.set_rect(depth, 24.24, 176.35, 346, 346)
+	FigmaReferenceCanvas.set_rect(depth, 8, 166, 374, 370)
 	canvas.add_child(depth)
 	board_shell = PanelContainer.new()
 	board_shell.name = "BlockBoardShell"
 	board_shell.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(Color("#2b1747"), Color("#201136"), Color("#140a27"), 20, Color(0.72,0.52,1.0,0.10), 1, 0.08))
-	FigmaReferenceCanvas.set_rect(board_shell, 22, 164, 346, 346)
+	FigmaReferenceCanvas.set_rect(board_shell, 10, 155, 370, 370)
 	canvas.add_child(board_shell)
 	var board_art := GAMEPLAY_ART.new()
 	board_art.name = "BlockBoardWorldArt"
@@ -218,18 +218,18 @@ func _build_figma_block(canvas: Control) -> void:
 	var board_margin := MarginContainer.new()
 	board_margin.z_index = 2
 	for side in ["left","right","top","bottom"]:
-		board_margin.add_theme_constant_override("margin_%s" % side, 14)
+		board_margin.add_theme_constant_override("margin_%s" % side, 10)
 	board_shell.add_child(board_margin)
 	board_grid = GridContainer.new()
 	board_grid.name = "BlockBoardGrid"
 	board_grid.columns = GRID_SIZE
-	board_grid.add_theme_constant_override("h_separation", 5)
-	board_grid.add_theme_constant_override("v_separation", 5)
+	board_grid.add_theme_constant_override("h_separation", 4)
+	board_grid.add_theme_constant_override("v_separation", 4)
 	board_margin.add_child(board_grid)
 	for y in range(GRID_SIZE):
 		for x in range(GRID_SIZE):
 			var cell := BlockCellButton.new()
-			cell.custom_minimum_size = Vector2(35.0, 35.0)
+			cell.custom_minimum_size = Vector2(40.0, 40.0)
 			cell.configure(false, false, Unjam3DTheme.WATER, y * GRID_SIZE + x)
 			cell.pressed.connect(place_selected.bind(Vector2i(x, y)))
 			board_grid.add_child(cell)
@@ -237,12 +237,12 @@ func _build_figma_block(canvas: Control) -> void:
 
 	var tray := PanelContainer.new()
 	tray.name = "BlockTray"
-	FigmaReferenceCanvas.add_shadow(canvas, Rect2(17,526,354,120), 22, Color(0.07,0.03,0.16,0.07), 4, Vector2(0,4))
+	FigmaReferenceCanvas.add_shadow(canvas, Rect2(10,536,370,126), 22, Color(0.07,0.03,0.16,0.07), 4, Vector2(0,4))
 	tray.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(
 		Color(0.16,0.09,0.22,0.42), Color(0.12,0.06,0.18,0.38), Color(0.08,0.04,0.13,0.42), 22,
 		Color(0.67,0.55,0.72,0.08), 1.0, 0.08
 	))
-	FigmaReferenceCanvas.set_rect(tray, 17, 526, 354, 120)
+	FigmaReferenceCanvas.set_rect(tray, 10, 536, 370, 126)
 	tray.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(tray)
 	var tray_art := GAMEPLAY_ART.new()
@@ -253,14 +253,14 @@ func _build_figma_block(canvas: Control) -> void:
 	piece_row = HBoxContainer.new()
 	piece_row.name = "BlockPieceRow"
 	piece_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	piece_row.add_theme_constant_override("separation", 7)
-	FigmaReferenceCanvas.set_rect(piece_row, 20, 532, 350, 110)
+	piece_row.add_theme_constant_override("separation", 6)
+	FigmaReferenceCanvas.set_rect(piece_row, 12, 540, 366, 114)
 	canvas.add_child(piece_row)
 
 	var status_region := Control.new()
 	status_region.name = "BlockStatus"
 	status_region.clip_contents = true
-	FigmaReferenceCanvas.set_rect(status_region, 18, 654, 354, 20)
+	FigmaReferenceCanvas.set_rect(status_region, 18, 667, 354, 20)
 	canvas.add_child(status_region)
 	status_label = FigmaReferenceCanvas.label("", 16, Color(1,0.995,0.97), true)
 	status_label.name = "BlockStatusText"
@@ -273,7 +273,7 @@ func _build_figma_block(canvas: Control) -> void:
 	var hint_region := Control.new()
 	hint_region.name = "BlockHint"
 	hint_region.clip_contents = true
-	FigmaReferenceCanvas.set_rect(hint_region, 18, 678, 354, 20)
+	FigmaReferenceCanvas.set_rect(hint_region, 18, 692, 354, 20)
 	canvas.add_child(hint_region)
 	hint_label = FigmaReferenceCanvas.label("", 16, Color(1,0.995,0.97), true)
 	hint_label.name = "BlockHintText"
@@ -382,12 +382,10 @@ func _apply_figma_block_theme(dark: bool) -> void:
 		frame.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color.TRANSPARENT, 34, Color("#5f5069") if dark else Color("#b8d1e0"), 1))
 
 func _tray_piece_button_size() -> Vector2:
-	# This scene is authored on a 390x844 Figma canvas and scales uniformly as a
-	# whole. The former 104px slots wasted 24px of horizontal room and made
-	# the bricks look tiny beside the board-sized drag preview. Three 112px
-	# slots plus two 7px gutters now fill the actual 350px row; the full
-	# 104px vertical slot still stays within the existing 120px tray card.
-	return Vector2(112, 104)
+	# Three true 117x112 slots fill the expanded 366px tray. A piece now
+	# occupies the playable area rather than floating in a mostly empty
+	# slot; even longer shapes scale to fit without being cropped.
+	return Vector2(117, 112)
 
 func load_level() -> void:
 	_clear_transition_active = false
