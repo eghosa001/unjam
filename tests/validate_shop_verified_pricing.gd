@@ -30,6 +30,14 @@ func _run() -> void:
 	if not _check(overlay != null and overlay.visible, "Shop did not open"):return
 	var no_price := overlay.find_child("Buy_%s" % id,true,false) as Button
 	if not _check(no_price != null and no_price.disabled and no_price.text == "NO PRICE", "An unpriced SKU was shown as buyable"):return
+	var scrim := overlay.find_child("ShopOverlayScrim",true,false) as ColorRect
+	if not _check(scrim != null and scrim.color.a >= 0.80, "Shop modal still exposes distracting, tappable-looking Home content underneath"):return
+	var starter_id := String(store.PRODUCT_STARTER_PACK)
+	var starter_buy := overlay.find_child("Buy_%s" % starter_id,true,false) as Button
+	var starter_state := overlay.find_child("ShopStatusStarterState",true,false) as Label
+	if not _check(starter_buy != null and starter_state != null, "Starter purchase and status controls missing"):return
+	if not _check(starter_buy.disabled and starter_state.text == "NO PRICE", "Starter chip must not advertise an unpriced item as AVAILABLE"):return
+	if not _check(starter_buy.accessibility_name.contains("STARTER PACK"), "Product status lacks its name for assistive technology"):return
 	if not _check(no_price.tooltip_text.contains("region"), "Unavailable SKU has no helpful explanation"):return
 	# The real Google Play async catalog signal must rebuild and enable only the
 	# product with an actual localized price.
@@ -45,6 +53,13 @@ func _run() -> void:
 	store.set_localized_prices({id:"₦1,090.00"})
 	for _i in range(3):await process_frame
 	if not _check(priced.text == "₦1,090.00" and priced.pressed.get_connections().size() == 1 and overlay == hub.get("overlay"), "Repeated catalog refresh caused a rebuild or duplicate callback"):return
+	if not _check(starter_state.text == "NO PRICE" and starter_buy.disabled, "A priced coin pack incorrectly activated the unpriced Starter bundle"):return
+	store.set_localized_prices({id:"₦1,090.00",starter_id:"₦2,490.00"})
+	for _i in range(3):await process_frame
+	if not _check(not starter_buy.disabled and starter_buy.text == "₦2,490.00" and starter_state.text == "AVAILABLE", "Starter availability chip failed to track live verified Google Play pricing"):return
+	store.set_localized_prices({id:"₦1,090.00"})
+	for _i in range(3):await process_frame
+	if not _check(starter_buy.disabled and starter_state.text == "NO PRICE", "Starter availability did not revert when the verified price disappeared"):return
 	var other := overlay.find_child("Buy_%s" % store.PRODUCT_COINS_LARGE,true,false) as Button
 	if not _check(other != null and other.disabled and other.text == "NO PRICE", "Unpriced neighboring SKU became buyable"):return
 	main.queue_free()

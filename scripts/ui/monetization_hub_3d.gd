@@ -50,8 +50,11 @@ func _build_ui() -> void:
 	layer.add_child(overlay)
 
 	var dim := ColorRect.new()
+	dim.name = "ShopOverlayScrim"
 	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	dim.color = Color(0.02,0.12,0.22,0.20)
+	# Opaque enough to suppress the Home/Games cards bleeding into this modal.
+	# The Shop is a full-screen purchase surface, not a translucent sheet.
+	dim.color = Color(0.015,0.02,0.055,0.90 if _shop_dark() else 0.84)
 	dim.mouse_filter = Control.MOUSE_FILTER_STOP
 	overlay.add_child(dim)
 
@@ -80,7 +83,8 @@ func _build_ui() -> void:
 	back.name = "ShopBackButton"
 	back.tooltip_text = "Back"
 	FigmaReferenceCanvas.set_rect(back,17,19,52,52)
-	back.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+	# Close only on release to avoid sending finger-up to the page underneath.
+	back.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 	back.pressed.connect(_close_shop)
 	canvas.add_child(back)
 
@@ -168,6 +172,7 @@ func _build_ui() -> void:
 	canvas.add_child(accent_rail)
 
 	_refresh()
+	_refresh_starter_status_chip()
 
 func _add_product_exact(canvas: Control, product_id: String, rect: Rect2, display_title: String, display_subtitle: String) -> void:
 	var info: Dictionary = StoreManager.PRODUCTS[product_id]
@@ -205,6 +210,7 @@ func _add_product_exact(canvas: Control, product_id: String, rect: Rect2, displa
 	buy.name = "Buy_%s" % product_id
 	FigmaReferenceCanvas.set_rect(buy,257,rect.position.y+18,96,46)
 	buy.disabled = not enabled
+	buy.accessibility_name = "%s: %s" % [display_title, buy_text]
 	if enabled:
 		buy.pressed.connect(_purchase.bind(product_id,buy))
 	else:
@@ -307,9 +313,9 @@ func _add_shop_status(canvas: Control) -> void:
 		canvas,
 		"ShopStatusStarter",
 		"STARTER",
-		"OWNED" if starter_owned else "AVAILABLE",
+		_shop_starter_availability_text() if not starter_owned else "OWNED",
 		Rect2(145,674,98,52),
-		Color("#b078ff")
+		_shop_starter_chip_accent()
 	)
 	_shop_status_chip(
 		canvas,
@@ -319,6 +325,46 @@ func _add_shop_status(canvas: Control) -> void:
 		Rect2(259,674,98,52),
 		Color("#2dd4b6")
 	)
+
+func _shop_starter_availability_text() -> String:
+	# Never call an item AVAILABLE unless its Google Play price is actually
+	# verified and the Buy button can be used. These states must agree.
+	var product_id := StoreManager.PRODUCT_STARTER_PACK
+	if StoreManager.is_product_owned(product_id):
+		return "OWNED"
+	if StoreManager.is_purchase_pending(product_id):
+		return "PENDING"
+	var info: Dictionary = StoreManager.PRODUCTS[product_id]
+	var visual_state := _shop_product_visual_state(product_id, info)
+	if bool(visual_state.get("enabled",false)):
+		return "AVAILABLE"
+	return "NO PRICE" if String(visual_state.get("text","")) == "NO PRICE" else "NOT READY"
+
+func _shop_starter_chip_accent() -> Color:
+	match _shop_starter_availability_text():
+		"OWNED": return Color("#36c68c")
+		"AVAILABLE": return Color("#b078ff")
+		"PENDING": return Color("#e0b766")
+		_: return Color("#9aa9bc")
+
+func _refresh_starter_status_chip() -> void:
+	# Localized Google Play prices arrive later without rebuilding the modal.
+	# Keep its Starter entitlement chip in sync with the live Buy action.
+	if overlay == null or not is_instance_valid(overlay):
+		return
+	var state_label := overlay.find_child("ShopStatusStarterState",true,false) as Label
+	var chip := overlay.find_child("ShopStatusStarter",true,false) as PanelContainer
+	if state_label == null or chip == null:
+		return
+	var state := _shop_starter_availability_text()
+	var accent := _shop_starter_chip_accent()
+	state_label.text = state
+	state_label.accessibility_name = "Starter Pack: %s" % state.to_lower()
+	state_label.add_theme_color_override("font_color",accent.lightened(0.28) if _shop_dark() else accent.darkened(0.46))
+	var fill := accent.darkened(0.72) if _shop_dark() else accent.lightened(0.84)
+	chip.add_theme_stylebox_override("panel",FigmaReferenceCanvas.rounded_gradient3(
+		fill.lightened(0.08),fill,fill.darkened(0.10),12,Color(accent,0.72),1.0,0.36
+	))
 
 func _shop_status_chip(canvas: Control, name_value: String, title: String, state: String, rect: Rect2, accent: Color) -> void:
 	var chip := PanelContainer.new()
@@ -342,6 +388,7 @@ func _shop_status_chip(canvas: Control, name_value: String, title: String, state
 	state_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	FigmaReferenceCanvas.fit_single_line_text(state_label,rect.size.x-14,12,12)
 	FigmaReferenceCanvas.set_rect(state_label,rect.position.x+5,rect.position.y+29,rect.size.x-10,20)
+	state_label.accessibility_name = "%s: %s" % [title, state.to_lower()]
 
 func _is_owned_product(product_id: String, _info: Dictionary) -> bool:
 	return StoreManager.is_product_owned(product_id)
@@ -404,6 +451,7 @@ func _refresh_live_product_buttons() -> void:
 		var click := Callable(self,"_purchase").bind(product_id,button)
 		if enabled and not button.pressed.is_connected(click):
 			button.pressed.connect(click)
+	_refresh_starter_status_chip()
 
 func open_shop() -> void:
 	if _built_theme != _theme_mode():
