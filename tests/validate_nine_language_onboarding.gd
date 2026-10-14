@@ -18,7 +18,7 @@ func _run() -> void:
 			return _fail("Incomplete onboarding language: " + language)
 		l10n.set_language(language,false)
 		for i in range(keys.size()):
-			var translated := Copy.tr(String(keys[i]))
+			var translated := Copy.translated(String(keys[i]))
 			if translated.is_empty() or translated == String(keys[i]):
 				return _fail("Missing localized tutorial copy: %s/%s" % [language,keys[i]])
 			if language != "en" and i in [0,4,8,12,13,14,15] and translated == String(en[i]):
@@ -36,13 +36,13 @@ func _run() -> void:
 			shell.call("show_tutorial",game)
 			await process_frame
 			var intro := shell.get("tutorial_body") as Label
-			var expected := Copy.tr("%s_intro" % ("rescue" if game == "rescue_rush" else ("water" if game == "water_sort" else "block")))
+			var expected := Copy.translated("%s_intro" % ("rescue" if game == "rescue_rush" else ("water" if game == "water_sort" else "block")))
 			if intro == null or intro.text != expected:
 				return _fail("Tutorial does not render language %s for %s" % [language,game])
 			var gesture := shell.find_child("TutorialGesturePractice",true,false) as Control
 			if gesture == null:
 				return _fail("Localized tutorial has no practice control for %s" % game)
-			if not gesture.accessibility_name.contains(Copy.tr("practice_%s" % ("rescue" if game == "rescue_rush" else ("water" if game == "water_sort" else "block")))):
+			if not gesture.accessibility_name.contains(Copy.translated("practice_%s" % ("rescue" if game == "rescue_rush" else ("water" if game == "water_sort" else "block")))):
 				return _fail("Localized practice accessibility caption is missing")
 			shell.call("hide_tutorial")
 	l10n.set_language(before,false)
