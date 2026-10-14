@@ -32,6 +32,12 @@ var _frame_probe := FramePacingProbe.new()
 # opt-in telemetry, never touches the server, and measures while a player
 # navigates and plays. It does NOT claim GPU time or touch-to-photon latency.
 const QA_CAPTURE_SECONDS := 90.0
+const QA_GAME_IDS := ["rescue_rush", "water_sort", "block_puzzle"]
+# Separate game-only intervals from menus/loading. QA remains fully local.
+var _qa_game_probes: Dictionary = {}
+var _qa_game_seconds: Dictionary = {}
+var _qa_current_game := ""
+var _qa_scope_refresh_in := 0.0
 var _qa_capture_probe := FramePacingProbe.new(14400, 2.0)
 var _qa_capture_paused := false
 var _qa_capture_uncertain_intervals := 0
@@ -252,6 +258,13 @@ func _process(delta: float) -> void:
 		_qa_capture_uncertain_intervals += 1
 		return
 	_qa_capture_probe.record_frame(delta)
+	# Resolve the foreground scene only three times a second, then record a
+	# constant-time additional ring sample for the active puzzle (if any).
+	_qa_scope_refresh_in -= delta
+	if _qa_scope_refresh_in <= 0.0:
+		_qa_scope_refresh_in = 0.30
+		_qa_current_game = _qa_resolve_game()
+	_qa_record_game_frame(_qa_current_game,delta)
 	_qa_capture_seconds += delta
 	_qa_capture_sample_after -= delta
 	if _qa_capture_sample_after <= 0.0:
@@ -259,6 +272,27 @@ func _process(delta: float) -> void:
 		_qa_sample_static_monitors()
 	if _qa_capture_seconds >= QA_CAPTURE_SECONDS:
 		finish_local_quality_capture()
+
+func _qa_resolve_game() -> String:
+	var main := get_node_or_null("/root/Main")
+	if main == null:
+		main = get_tree().root.find_child("Main",true,false)
+	if main == null or not is_instance_valid(main):
+		return ""
+	if String(main.get("current_surface")) != "game":
+		return ""
+	var game: Variant = main.get("active_game")
+	if game == null or not is_instance_valid(game) or not game.has_method("monetization_game_id"):
+		return ""
+	var game_id := String(game.call("monetization_game_id"))
+	return game_id if game_id in QA_GAME_IDS else ""
+
+func _qa_record_game_frame(game_id: String, delta: float) -> void:
+	if game_id not in QA_GAME_IDS or not _qa_game_probes.has(game_id):
+		return
+	var probe: Variant = _qa_game_probes[game_id]
+	probe.record_frame(delta)
+	_qa_game_seconds[game_id] = float(_qa_game_seconds.get(game_id,0.0)) + delta
 
 func _qa_sample_static_monitors() -> void:
 	# Godot's static-memory monitor is NOT an Android RSS or heap-size trace.
@@ -270,6 +304,13 @@ func _qa_sample_static_monitors() -> void:
 
 func start_local_quality_capture() -> void:
 	_qa_capture_probe.reset()
+	_qa_game_probes.clear()
+	_qa_game_seconds.clear()
+	for game_id in QA_GAME_IDS:
+		_qa_game_probes[game_id] = FramePacingProbe.new(14400,2.0)
+		_qa_game_seconds[game_id] = 0.0
+	_qa_current_game = ""
+	_qa_scope_refresh_in = 0.0
 	_qa_capture_paused = false
 	_qa_capture_uncertain_intervals = 0
 	_qa_capture_pause_count = 0
@@ -298,6 +339,13 @@ func local_quality_capture_report() -> Dictionary:
 	report["pause_count"] = _qa_capture_pause_count
 	report["uncertain_intervals"] = _qa_capture_uncertain_intervals
 	report["captured_utc"] = _qa_capture_start_utc
+	var per_game := {}
+	for game_id in QA_GAME_IDS:
+		var game_probe: Variant = _qa_game_probes.get(game_id)
+		var game_report: Dictionary = game_probe.snapshot() if game_probe != null else {}
+		game_report["active_seconds"] = snappedf(float(_qa_game_seconds.get(game_id,0.0)),0.1)
+		per_game[game_id] = game_report
+	report["per_game"] = per_game
 	return report
 
 func local_quality_report_text() -> String:
@@ -320,9 +368,24 @@ func local_quality_report_text() -> String:
 		"Foreground interruptions / >2s uncertain intervals: %d / %d" % [
 			int(report["pause_count"]), int(report["uncertain_intervals"])
 		],
+		"PER-GAME FRAME PACING (menus excluded):",
+		_qa_game_report_line(report,"rescue_rush","RESCUE"),
+		_qa_game_report_line(report,"water_sort","WATER"),
+		_qa_game_report_line(report,"block_puzzle","BLOCK"),
 		"NOTE: Device-local QA capture only. Not GPU rendering time, Android RSS, touch latency, FPS certification, crash rate, or production analytics.",
 		"NOTE: No player identifiers or gameplay history. Copied by the player; never uploaded automatically."
 	]))
+
+func _qa_game_report_line(report: Dictionary, game_id: String, label: String) -> String:
+	var per_game: Dictionary = report.get("per_game",{})
+	var game: Dictionary = per_game.get(game_id,{})
+	var frames := int(game.get("sampled_frames",0))
+	if frames < 120:
+		return "%s: UNVERIFIED / only %d gameplay frames" % [label,frames]
+	return "%s: %d frames / %.1fs / p95 %.2fms / p99 %.2fms / >33.3ms %.1f%%" % [
+		label,frames,float(game.get("active_seconds",0.0)),
+		float(game.get("p95_frame_ms",0.0)),float(game.get("p99_frame_ms",0.0)),
+		float(game.get("over_33_3_percent",0.0))]
 
 func quality_snapshot() -> Dictionary:
 	return _frame_probe.snapshot()
