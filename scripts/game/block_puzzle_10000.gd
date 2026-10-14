@@ -718,6 +718,20 @@ func _refresh_booster_buttons() -> void:
 	var undo_button = booster_buttons.get("undo") as Button
 	if undo_button != null:
 		undo_button.disabled = undo_button.disabled or history.is_empty()
+		var waiting_for_move := history.is_empty() and not completed
+		if waiting_for_move:
+			# New players were seeing a greyed-out "UNDO FREE" despite no move
+			# to reverse. Explicit empty-state copy avoids implying a broken tap.
+			undo_button.text = "UNDO\\nNO MOVE"
+			undo_button.tooltip_text = "Place a block first; Undo becomes available after your first move."
+			undo_button.accessibility_name = undo_button.tooltip_text
+		var undo_fill := Color("#273044") if undo_button.disabled else Color("#357653")
+		var undo_ink := Color("#dfe8f8") if undo_button.disabled else Color("#f7fff5")
+		var undo_edge := Color("#778ba8",0.45) if undo_button.disabled else Color("#9ae5b7",0.76)
+		undo_button.add_theme_stylebox_override("disabled",FigmaReferenceCanvas.solid_box(undo_fill,13,undo_edge,1))
+		undo_button.add_theme_color_override("font_disabled_color",undo_ink)
+		undo_button.add_theme_stylebox_override("normal",FigmaReferenceCanvas.solid_box(undo_fill,13,undo_edge,1))
+		undo_button.add_theme_color_override("font_color",undo_ink)
 	var rotate_button = booster_buttons.get("rotate") as Button
 	if rotate_button != null:
 		rotate_button.disabled = rotate_button.disabled or selected_piece < 0 or selected_piece >= pieces.size() or pieces[selected_piece].is_empty()
