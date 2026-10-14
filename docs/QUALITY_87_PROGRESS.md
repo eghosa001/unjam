@@ -65,3 +65,10 @@
 Run only tests affected by each change. Relevant new focused contracts: `validate_campaign_sync_queue`, `validate_campaign_cache_bounds`, `validate_opt_in_telemetry`. Use the existing visual-scoped runner for Collection/Settings. Do **not** run full campaign enumeration or broad E2E tests by default.
 
 **Current verdict:** Concrete improvements are implemented, but no observed per-category rating is automatically elevated to 8.7. Record new scores only alongside actual reproducible evidence.
+
+
+## 14 October: product-wide evidence upgrade (pending device follow-up)
+
+A real Samsung S25 FE run supplied 5,119 foreground main-loop frame samples over 86s: p50 16.67ms, p95 16.67ms, p99 18.82ms, 3.0% >16.7ms and 0.4% >33.3ms. The test mixed gameplay and menus; Android RAM/thermal/battery/true GPU time were not measured, and the light-on-light Device Quality Lab was **visibly defective**, so a whole-product 8.7+ quality claim is still unearned.
+
+The next production batch directly addresses the observed Android contrast regression with an opaque theme-independent scroll backdrop, separates Rescue/Water/Block frame samples, and begins privacy-conscious game-selection, Daily, Garden and exact-day opt-in return event counters. Existing consent remains off by default. The per-game report says UNVERIFIED if fewer than 120 frames were sampled. A new test APK and live SQL migration/Edge Function are required; CI alone cannot establish Android visual correctness or real D1/D7 retention. Focused tests: `validate_device_quality_lab` and `validate_opt_in_telemetry`.
