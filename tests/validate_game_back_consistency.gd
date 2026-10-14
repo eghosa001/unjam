@@ -38,7 +38,7 @@ func _run() -> void:
 	# Android can dispatch a delayed button/quit/finished signal after a screen
 	# replacement. A second Back on the Choose Game page is a no-op.
 	main.call("force_back_from_game")
-	if String(main.get("selected_game_id")) != "rescue_rush" or String(main.get("current_surface")) != "levels":
+	if String(main.get("selected_game_id")) != "rescue_rush" or String(main.get("current_surface")) != "live":
 		return _fail("Double Back unexpectedly changed Rescue's return destination")
 	main.call("open_game_campaign","rescue_rush")
 	await _frames(2)
