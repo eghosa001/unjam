@@ -63,7 +63,7 @@ func _run() -> void:
 		return _fail(save_manager, original, "Rescue Daily did not launch as a Daily game")
 	main.call("force_back_from_game")
 	await _frames(5)
-	if String(main.get("current_surface")) != "live" or main.get("active_game") != null:
+	if String(main.get("current_surface")) != "levels" or main.get("active_game") != null:
 		return _fail(save_manager, original, "Android/back exit from Rescue Daily did not return to Rescue Rush levels")
 
 	for game_id in ["water_sort", "block_puzzle", "rescue_rush"]:
