@@ -10,7 +10,7 @@ var _drag_distance := 0.0
 
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
-		var pointer := get_global_transform_with_canvas() * event.position
+		var pointer: Vector2 = get_global_transform_with_canvas() * event.position
 		if event.pressed:
 			_down_pointer = pointer
 			_drag_distance = 0.0
@@ -18,7 +18,7 @@ func _gui_input(event: InputEvent) -> void:
 		else:
 			_drag_distance = maxf(_drag_distance,pointer.distance_to(_down_pointer))
 	elif event is InputEventScreenDrag:
-		var pointer := get_global_transform_with_canvas() * event.position
+		var pointer: Vector2 = get_global_transform_with_canvas() * event.position
 		_drag_distance = maxf(_drag_distance,pointer.distance_to(_down_pointer))
 	super._gui_input(event)
 
