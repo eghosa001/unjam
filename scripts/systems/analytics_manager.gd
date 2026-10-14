@@ -11,9 +11,11 @@ const MAX_EVENT_KINDS := 96
 const MAX_RECENT_EVENTS := 24
 const MAX_TELEMETRY_BATCH := 24
 const TELEMETRY_FOREGROUND_KEY := "telemetry_foreground_active"
+const TELEMETRY_COHORT_DAY_KEY := "telemetry_opt_in_first_day"
+const TELEMETRY_COHORT_RECORDED_KEY := "telemetry_opt_in_return_milestones"
 const TELEMETRY_RETRY_START_MS := 25000
 const TELEMETRY_RETRY_MAX_MS := 300000
-const TELEMETRY_EVENTS := ["session_start", "session_interrupted", "level_start", "level_complete", "level_restart", "hint_used", "undo_used", "level_fail"]
+const TELEMETRY_EVENTS := ["session_start", "session_interrupted", "level_start", "level_complete", "level_restart", "hint_used", "undo_used", "level_fail", "opt_in_started", "return_d1", "return_d7", "game_selected", "daily_opened", "garden_opened"]
 const TELEMETRY_GAMES := ["rescue_rush", "water_sort", "block_puzzle"]
 const TELEMETRY_LEVEL_BANDS := [1, 10, 50, 100, 500, 1000, 5000, 10000]
 const SAFE_NUMBER_FIELDS := [
@@ -70,6 +72,7 @@ func _ready() -> void:
 	if analytics_opted_in():
 		_begin_foreground_telemetry_session()
 		_queue_telemetry("session_start", {})
+		_record_opt_in_milestones()
 
 func analytics_opted_in() -> bool:
 	return bool(SaveManager.data.get("analytics_opt_in", false))
@@ -86,9 +89,12 @@ func set_analytics_opt_in(allowed: bool) -> void:
 		SaveManager.data[TELEMETRY_FOREGROUND_KEY] = true
 	else:
 		SaveManager.data.erase(TELEMETRY_FOREGROUND_KEY)
+		SaveManager.data.erase(TELEMETRY_COHORT_DAY_KEY)
+		SaveManager.data.erase(TELEMETRY_COHORT_RECORDED_KEY)
 	SaveManager.save()
 	if allowed:
 		_queue_telemetry("session_start", {})
+		_record_opt_in_milestones()
 	else:
 		_telemetry_events.clear()
 		_telemetry_retry_batch.clear()
@@ -126,6 +132,40 @@ func _resume_foreground_telemetry_session() -> void:
 	if not bool(SaveManager.data.get(TELEMETRY_FOREGROUND_KEY, false)):
 		SaveManager.data[TELEMETRY_FOREGROUND_KEY] = true
 		SaveManager.save()
+
+# Approximate consented opt-in D1/D7 milestones WITHOUT a persistent server
+# identifier: only one daily counter is sent for each reached milestone.
+# These are exact-day opt-in returns, not proven distinct-install retention.
+# Losing an unsent in-memory batch can undercount; do not call them DAU.
+func _record_opt_in_milestones() -> void:
+	if not analytics_opted_in():
+		return
+	var today := Time.get_date_string_from_system(true)
+	var first_day := String(SaveManager.data.get(TELEMETRY_COHORT_DAY_KEY,""))
+	if first_day.is_empty():
+		SaveManager.data[TELEMETRY_COHORT_DAY_KEY] = today
+		SaveManager.data[TELEMETRY_COHORT_RECORDED_KEY] = []
+		SaveManager.save()
+		_queue_telemetry("opt_in_started",{})
+		return
+	# Reject malformed local dates rather than generating false retention.
+	if first_day.length() != 10 or first_day.substr(4,1) != "-" or first_day.substr(7,1) != "-":
+		return
+	var first_unix := Time.get_unix_time_from_datetime_string(first_day + "T00:00:00")
+	var today_unix := Time.get_unix_time_from_datetime_string(today + "T00:00:00")
+	var day_age := int((today_unix - first_unix) / 86400)
+	var recorded: Array = SaveManager.data.get(TELEMETRY_COHORT_RECORDED_KEY,[])
+	var event_name := ""
+	if day_age == 1 and not recorded.has(1):
+		event_name = "return_d1"
+	elif day_age == 7 and not recorded.has(7):
+		event_name = "return_d7"
+	if event_name.is_empty():
+		return
+	recorded.append(day_age)
+	SaveManager.data[TELEMETRY_COHORT_RECORDED_KEY] = recorded
+	SaveManager.save()
+	_queue_telemetry(event_name,{})
 
 func pending_telemetry_for_test() -> Array:
 	return _telemetry_events.duplicate(true)
@@ -401,6 +441,7 @@ func _notification(what: int) -> void:
 	elif what == NOTIFICATION_APPLICATION_RESUMED:
 		_qa_capture_paused = false
 		_resume_foreground_telemetry_session()
+		_record_opt_in_milestones()
 	# Device-local debug frame numbers are never sent to the backend.
 	if OS.is_debug_build() and what in [NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_WM_CLOSE_REQUEST]:
 		print("[unjam-frame-quality] %s" % JSON.stringify(quality_snapshot()))
