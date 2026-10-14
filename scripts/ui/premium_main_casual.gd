@@ -533,7 +533,12 @@ func _figma_header(canvas: Control, title_text: String, subtitle_text: String, p
 	var back_color := FIGMA_DARK_INK if use_dark else FIGMA_NAVY
 	var back_fill := Color("#cbc4b8") if not use_dark else Color("#2c2c2c")
 	var back_button := _figma_button(canvas, "FigmaBack", "←", Rect2(17,19,52,52), back_fill, back_callback, back_color, 18, 27)
-	back_button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+	# On Samsung touch screens, firing Back on DOWN exposes the persistent
+	# game chooser while the SAME finger is still pressed. Its Back button
+	# occupies the identical coordinates and can consume the UP, sending
+	# Levels -> Choose Game -> Home on one gesture (recorded device bug).
+	# Navigate only AFTER UP, so the old control owns both halves of touch.
+	back_button.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 	back_button.tooltip_text = "Back"
 	var header_title := _figma_text(canvas, title_text, Rect2(83,21,186,27), 23, heading_color)
 	header_title.name = "FigmaHeaderTitle"
