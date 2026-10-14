@@ -2154,9 +2154,11 @@ func _build_figma_level_browser(game_id: String) -> void:
 		var border := Color(accent,0.62 if _dark() else 0.40)
 		var text_color := FIGMA_DARK_INK if _dark() else FIGMA_INK
 		if not unlocked:
-			fill = Color("#2a2118") if _dark() else Color("#e5ddce")
-			border = Color("#80613b",0.58) if _dark() else Color("#c7bda9",0.55)
-			text_color = Color("#9e9485") if _dark() else Color("#958b7c")
+			# Locked levels still need readable numbers: low-contrast brown on
+			# navy made most of the 20-level browser look like disabled wallpaper.
+			fill = Color("#253747") if _dark() else Color("#e4e8ec")
+			border = Color("#7498b0",0.60) if _dark() else Color("#9caeba",0.65)
+			text_color = Color("#dce8f4") if _dark() else Color("#344c62")
 		elif is_current:
 			fill = accent
 			border = Color(accent.lightened(0.24),0.75)
@@ -2166,7 +2168,8 @@ func _build_figma_level_browser(game_id: String) -> void:
 		# The tile button owns background + hit target only. Number and status use
 		# separate authored bands so LOCK/stars never paint over the level number.
 		var card := _figma_button(canvas,"Level/%d" % level_number,"",Rect2(x,y,82,70),fill,Callable(),text_color,16,16)
-		card.tooltip_text = "Level %d" % level_number
+		card.tooltip_text = "Level %d" % level_number if unlocked else "Level %d locked. Clear the previous level first." % level_number
+		card.accessibility_name = card.tooltip_text
 		card.disabled = not unlocked
 		_style_figma_level_card(card,accent,border,unlocked,is_current)
 		if unlocked:
@@ -2180,12 +2183,13 @@ func _build_figma_level_browser(game_id: String) -> void:
 		number_label.name = "LevelNumber_%d" % level_number
 		number_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_fit_single_line_control_text(number_label,62.0,16,12)
-		var star_text := "LOCK" if not unlocked else ("★".repeat(stars) if stars > 0 else "···")
-		var star_color := (Color("#9e9485") if _dark() else Color("#958b7c")) if not unlocked else (FIGMA_DARK_MUTED if _dark() else FIGMA_MUTED)
-		var status_label := _figma_text(canvas,star_text,Rect2(x+8,y+43,66,18),11,star_color,true)
+		var star_text := "LOCKED" if not unlocked else ("★".repeat(stars) if stars > 0 else "···")
+		var star_color := (Color("#d7e5f0") if _dark() else Color("#344c62")) if not unlocked else (FIGMA_DARK_MUTED if _dark() else FIGMA_MUTED)
+		var status_label := _figma_text(canvas,star_text,Rect2(x+8,y+43,66,18),12,star_color,true)
 		status_label.name = "LevelStatus_%d" % level_number
 		status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		_fit_single_line_control_text(status_label,62.0,11,9)
+		status_label.accessibility_name = ("Level %d locked" % level_number) if not unlocked else ("Level %d, %d stars" % [level_number,stars])
+		_fit_single_line_control_text(status_label,62.0,12,12)
 		index += 1
 	_figma_level_page_progress(canvas,game_id,bounds,grid_y,accent)
 
@@ -2201,13 +2205,32 @@ func _figma_level_page_progress(canvas: Control, game_id: String, bounds: Vector
 			cleared += 1
 	var rows := int(ceil(float(page_levels)/4.0))
 	var card_y := grid_y+float(rows)*80.0+7.0
-	_figma_card(canvas,"LevelPageProgressCard",Rect2(17,card_y,354,65),Color("#fffaf0"),Color(accent,0.32),15)
+	_figma_card(canvas,"LevelPageProgressCard",Rect2(17,card_y,354,80),Color("#fffaf0"),Color(accent,0.32),15)
 	var heading := _figma_text(canvas,"PAGE PROGRESS",Rect2(34,card_y+11,146,20),14,FIGMA_INK,true)
 	heading.name = "LevelPageProgressTitle"
 	var count_label := _figma_text(canvas,"%d / %d CLEARED" % [cleared,page_levels],Rect2(194,card_y+11,158,20),13,FIGMA_MUTED,true)
 	count_label.name = "LevelPageProgressCount"
 	count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	count_label.accessibility_name = "%d of %d levels cleared on this page" % [cleared,page_levels]
+	# State the unlock rule where the player is looking, across all three
+	# campaigns. This turns 19 locked tiles into an understandable next action.
+	var next_level := _highest_level_for_game(game_id)
+	var instruction := ""
+	if cleared >= page_levels:
+		instruction = "PAGE COMPLETE • CONTINUE TO THE NEXT"
+	elif next_level < bounds.x:
+		instruction = "FINISH THE PREVIOUS LEVELS TO UNLOCK"
+	elif next_level > bounds.y:
+		instruction = "CLEARED • CONTINUE YOUR JOURNEY"
+	elif next_level >= 10000:
+		instruction = "FINAL LEVEL • FINISH THE JOURNEY"
+	else:
+		instruction = "BEAT LEVEL %d TO UNLOCK %d" % [next_level,next_level+1]
+	var unlock_note := _figma_text(canvas,instruction,Rect2(34,card_y+34,320,20),13,
+		Color("#d9eafb") if _dark() else Color("#42546a"),true)
+	unlock_note.name = "LevelUnlockGuidance"
+	unlock_note.accessibility_name = instruction
+	_fit_single_line_control_text(unlock_note,318.0,13,12)
 	var bar := ProgressBar.new()
 	bar.name = "LevelPageProgressBar"
 	bar.min_value = 0
@@ -2218,7 +2241,7 @@ func _figma_level_page_progress(canvas: Control, game_id: String, bounds: Vector
 	bar.accessibility_name = count_label.accessibility_name
 	bar.add_theme_stylebox_override("background",FigmaReferenceCanvas.solid_box(Color("#48505a") if _dark() else Color("#d5d7d3"),5))
 	bar.add_theme_stylebox_override("fill",FigmaReferenceCanvas.solid_box(accent.lightened(0.18) if _dark() else accent.darkened(0.18),5))
-	FigmaReferenceCanvas.set_rect(bar,34,card_y+42,318,8)
+	FigmaReferenceCanvas.set_rect(bar,34,card_y+65,318,8)
 	canvas.add_child(bar)
 
 func _figma_level_tabs(canvas: Control, active_game_id: String) -> void:
