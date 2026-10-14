@@ -3,7 +3,7 @@ extends Control
 # Zero-stakes first-play gesture lesson; never writes to game progression.
 signal practice_completed(game_id: String)
 const TUTORIAL_TEXT = preload("res://scripts/systems/tutorial_text.gd")
-const RESCUE_FREE := Rect2(148,127,57,47)
+const RESCUE_FREE := Rect2(155,74,54,50)
 const WATER_LEFT := Rect2(52,18,54,132)
 const WATER_MIDDLE := Rect2(126,18,54,132)
 const WATER_RIGHT := Rect2(200,18,54,132)
