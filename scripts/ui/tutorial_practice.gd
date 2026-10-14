@@ -2,6 +2,7 @@ extends Control
 
 # Zero-stakes first-play gesture lesson; never writes to game progression.
 signal practice_completed(game_id: String)
+const TUTORIAL_TEXT = preload("res://scripts/systems/tutorial_text.gd")
 const RESCUE_FREE := Rect2(148,127,57,47)
 const WATER_LEFT := Rect2(52,18,54,132)
 const WATER_MIDDLE := Rect2(126,18,54,132)
@@ -42,9 +43,9 @@ func configure(id: String) -> void:
 
 func _instruction() -> String:
 	match game_id:
-		"water_sort": return "Try it: tap PINK, then matching PINK."
-		"block_puzzle": return "Try it: drag the blue shape to the outline."
-		_: return "Try it: tap the free right-facing arrow."
+		"water_sort": return TUTORIAL_TEXT.translated("practice_water")
+		"block_puzzle": return TUTORIAL_TEXT.translated("practice_block")
+		_: return TUTORIAL_TEXT.translated("practice_rescue")
 
 func _gui_input(event: InputEvent) -> void:
 	if completed: return
@@ -74,24 +75,24 @@ func _press(at: Vector2) -> void:
 			if RESCUE_FREE.has_point(at):
 				_complete()
 			else:
-				_message("Blocked! Find an arrow with a clear edge.")
+				_message(TUTORIAL_TEXT.translated("practice_blocked"))
 		"water_sort":
 			if WATER_LEFT.has_point(at):
 				_water_selected = true
-				_message("Pink selected. Now tap the matching pink tube.")
+				_message(TUTORIAL_TEXT.translated("practice_selected"))
 			elif WATER_RIGHT.has_point(at) and _water_selected:
 				_complete()
 			elif WATER_MIDDLE.has_point(at) and _water_selected:
-				_message("Different colours cannot stack. Try pink.")
+				_message(TUTORIAL_TEXT.translated("practice_colour_mismatch"))
 			else:
-				_message("Start by tapping the left pink tube.")
+				_message(TUTORIAL_TEXT.translated("practice_water_start"))
 		"block_puzzle":
 			if BLOCK_SOURCE.has_point(at):
 				_dragging = true
 				_drag_position = at
-				_message("Keep holding. Slide onto the glowing outline.")
+				_message(TUTORIAL_TEXT.translated("practice_block_hold"))
 			else:
-				_message("Hold the blue shape first, then drag.")
+				_message(TUTORIAL_TEXT.translated("practice_block_first"))
 	queue_redraw()
 
 func _move(at: Vector2) -> void:
@@ -105,14 +106,14 @@ func _release(at: Vector2) -> void:
 	if BLOCK_GOAL.grow(9.0).has_point(at):
 		_complete()
 	else:
-		_message("Almost! Release inside the glowing outline.")
+		_message(TUTORIAL_TEXT.translated("practice_block_missed"))
 	queue_redraw()
 
 func _complete() -> void:
 	if completed: return
 	completed = true
 	_dragging = false
-	_message("NICE MOVE! Ready to play the real puzzle.")
+	_message(TUTORIAL_TEXT.translated("practice_success"))
 	practice_completed.emit(game_id)
 	queue_redraw()
 
