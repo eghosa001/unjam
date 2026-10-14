@@ -314,6 +314,31 @@ func _add_game_showcase(canvas: Control) -> void:
 	note.clip_text = true
 	note.name = "HomeShowcaseEyebrow"
 	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	# The chevron reads like a link. Make the full 44px-high region truly
+	# tappable rather than showing a misleading non-interactive "LEVELS ›".
+	var browse_levels := Button.new()
+	browse_levels.name = "HomeShowcaseBrowseLevels"
+	browse_levels.text = ""
+	browse_levels.flat = false
+	browse_levels.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
+	browse_levels.focus_mode = Control.FOCUS_ALL
+	browse_levels.mouse_filter = Control.MOUSE_FILTER_STOP
+	browse_levels.add_theme_stylebox_override("normal",RefCanvas.solid_box(Color.TRANSPARENT,12))
+	browse_levels.add_theme_stylebox_override("hover",RefCanvas.solid_box(Color("#879cfc",0.10),12))
+	browse_levels.add_theme_stylebox_override("pressed",RefCanvas.solid_box(Color("#879cfc",0.20),12))
+	browse_levels.add_theme_stylebox_override("focus",RefCanvas.solid_box(Color.TRANSPARENT,12,Color("#a5b7ff",0.72),2))
+	browse_levels.accessibility_name = "Browse all game levels"
+	browse_levels.tooltip_text = "Choose a game to browse its levels"
+	RefCanvas.set_rect(browse_levels,265,302,105,40)
+	browse_levels.pressed.connect(_open_game_selector)
+	browse_levels.set_meta("unjam_preserve_surface_style",true)
+	browse_levels.set_meta("unjam_preserve_control_geometry",true)
+	browse_levels.set_meta("unjam_authored_focus_mode",int(Control.FOCUS_ALL))
+	canvas.add_child(browse_levels)
+	# The Home surface can restore its pointer-only default while mounting;
+	# reassert keyboard/TalkBack focus exactly as on the three game cards.
+	browse_levels.focus_mode = Control.FOCUS_ALL
+	browse_levels.set_deferred("focus_mode",Control.FOCUS_ALL)
 	var games := [
 		{"id":"rescue_rush","name":"RESCUE RUSH","description":"Free the pieces","accent":Color("#43d7a0"),"x":21.0},
 		{"id":"water_sort","name":"WATER SORT","description":"Sort the colors","accent":Color("#4cbefa"),"x":139.0},
