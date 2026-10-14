@@ -722,7 +722,7 @@ func _refresh_booster_buttons() -> void:
 		if waiting_for_move:
 			# New players were seeing a greyed-out "UNDO FREE" despite no move
 			# to reverse. Explicit empty-state copy avoids implying a broken tap.
-			undo_button.text = "UNDO\\nNO MOVE"
+			undo_button.text = "UNDO\nNO MOVE"
 			undo_button.tooltip_text = "Place a block first; Undo becomes available after your first move."
 			undo_button.accessibility_name = undo_button.tooltip_text
 		var undo_fill := Color("#273044") if undo_button.disabled else Color("#357653")
