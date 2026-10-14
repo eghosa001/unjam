@@ -1762,7 +1762,7 @@ func build_collection() -> void:
 	garden_link.set_meta("unjam_authored_focus_mode", Control.FOCUS_ALL)
 	garden_link.set_meta("unjam_preserve_control_geometry", true)
 	garden_link.set_meta("unjam_preserve_surface_style", true)
-	FigmaReferenceCanvas.set_rect(garden_link,33,433,230,44)
+	FigmaReferenceCanvas.set_rect(garden_link,33,429,230,44)
 	garden_link.pressed.connect(_open_rescue_garden_world)
 	canvas.add_child(garden_link)
 	garden_link.set_deferred("focus_mode",Control.FOCUS_ALL)
