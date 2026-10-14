@@ -93,16 +93,20 @@ func _run() -> void:
 func _check_world(sheet: Node, stage: String, expected: int) -> bool:
 	var label := sheet.find_child("RescueGardenStage",true,false) as Label
 	if label == null or not label.text.contains(stage) or not label.text.contains("%d / 30" % expected):
+		print("GARDEN_QA_STAGE: ",label.text if label != null else "missing"," expected=",stage," / ",expected)
 		return false
 	var world := sheet.find_child("RescueGardenWorld",true,false) as Control
 	if world == null:
+		print("GARDEN_QA_WORLD missing")
 		return false
 	for id in IDS:
 		var btn := sheet.find_child("GardenLandmark_%s" % id,true,false) as Button
 		var art := sheet.find_child("GardenLandmarkArt_%s" % id,true,false) as Control
 		if btn == null or art == null or btn.size.x < 100 or btn.size.y < 120:
+			print("GARDEN_QA_LANDMARK: ",id," btn=",btn," art=",art," size=",btn.size if btn != null else Vector2.ZERO)
 			return false
 		if btn.position.x < 0 or btn.position.y < 0 or btn.position.x+btn.size.x > world.size.x or btn.position.y+btn.size.y > world.size.y:
+			print("GARDEN_QA_BOUNDS: ",id," btn=",btn.position,btn.size," world=",world.size)
 			return false
 	return true
 
