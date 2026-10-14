@@ -335,9 +335,17 @@ func _figma_surface_accent(active: String) -> Color:
 func _figma_text(canvas: Control, text_value: String, rect: Rect2, font_size: int, color: Color = FIGMA_INK, center := false) -> Label:
 	# Small secondary labels use the readable weight; the heavyweight display
 	# face muddies glyphs after 390x844 reference scaling on compact Android.
-	var label := FigmaReferenceCanvas.label(text_value, font_size, _figma_theme_text(color), font_size >= 15)
+	# A single shared legibility policy affects Goals, Collection, Daily,
+	# leaderboards, Profile, Friends, Settings and campaign level browsers.
+	# Widen the smallest body copy when its authored rectangle has room;
+	# avoid increasing narrow badges or single-line numbers that cannot fit.
+	var readable_font := maxi(font_size,13) if rect.size.x >= 125.0 and rect.size.y >= 19.0 else font_size
+	var label := FigmaReferenceCanvas.label(text_value, readable_font, _figma_theme_text(color), readable_font >= 15)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER if center else HORIZONTAL_ALIGNMENT_LEFT
 	label.clip_text = true
+	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	label.accessibility_name = label.text
+	label.tooltip_text = label.text
 	label.set_meta("unjam_authored_rect", rect)
 	FigmaReferenceCanvas.set_rect(label, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	# Figma rectangles are authoritative. Label font minimums must never silently
@@ -457,7 +465,10 @@ func _figma_button(canvas: Control, name_value: String, text_value: String, rect
 	# White labels over bright green/orange/cyan look washed out on phones.
 	# Pick the highest-contrast brand ink rather than recolouring the button.
 	resolved_text = FigmaReferenceCanvas.accessible_text_color(resolved_text, resolved_fill, 4.5)
-	var readable_size := maxi(12, font_size)
+	# Full-width actions are finger-sized and should not retain 12px
+	# captions. Compact 44px toggles/tabs preserve their original geometry.
+	var wide_action := rect.size.x >= 125.0 and rect.size.y >= 43.0
+	var readable_size := maxi(14 if wide_action else 12, font_size)
 	var button := FigmaReferenceCanvas.premium_button(text_value, readable_size, resolved_text, resolved_fill, radius, Color(resolved_fill.r, resolved_fill.g, resolved_fill.b, 0.38), 1)
 	button.name = name_value
 	button.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
@@ -479,7 +490,10 @@ func _figma_button(canvas: Control, name_value: String, text_value: String, rect
 	)
 	button.set_meta("unjam_authored_rect", rect)
 	FigmaReferenceCanvas.set_rect(button, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
-	_fit_single_line_control_text(button, maxf(24.0, rect.size.x - 18.0), readable_size, 12)
+	_fit_single_line_control_text(button, maxf(24.0, rect.size.x - 18.0), readable_size, 13 if wide_action else 12)
+	# The actual localized caption stays accessible if visual ellipsis is needed.
+	button.accessibility_name = button.text
+	button.tooltip_text = button.text
 	if callback.is_valid():
 		button.pressed.connect(callback)
 	canvas.add_child(button)
