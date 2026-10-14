@@ -1,13 +1,11 @@
 extends SceneTree
 
-const Feedback = preload("res://scripts/systems/feedback_manager.gd")
-
 func _initialize() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
-	var sound := Feedback.new()
-	root.add_child(sound)
+	var sound := root.get_node_or_null("FeedbackManager")
+	if not _check(sound != null,"FeedbackManager autoload missing"): return
 	await process_frame
 	var fake_music := AudioStreamPlayer.new()
 	sound.add_child(fake_music)
@@ -33,7 +31,8 @@ func _run() -> void:
 	if not _check(bool(save.data.get("music",true)) == enabled_before,
 		"Backgrounding must never overwrite user's music preference"): return
 	sound.resume_audio_after_background()
-	sound.queue_free()
+	sound.music_player = null
+	fake_music.queue_free()
 	await process_frame
 	var text := FileAccess.get_file_as_string("res://scripts/systems/feedback_manager.gd")
 	if not _check(text.contains("NOTIFICATION_APPLICATION_PAUSED") and text.contains("NOTIFICATION_APPLICATION_RESUMED"),
