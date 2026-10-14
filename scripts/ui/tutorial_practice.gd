@@ -43,9 +43,9 @@ func configure(id: String) -> void:
 
 func _instruction() -> String:
 	match game_id:
-		"water_sort": return TUTORIAL_TEXT.tr("practice_water")
-		"block_puzzle": return TUTORIAL_TEXT.tr("practice_block")
-		_: return TUTORIAL_TEXT.tr("practice_rescue")
+		"water_sort": return TUTORIAL_TEXT.translated("practice_water")
+		"block_puzzle": return TUTORIAL_TEXT.translated("practice_block")
+		_: return TUTORIAL_TEXT.translated("practice_rescue")
 
 func _gui_input(event: InputEvent) -> void:
 	if completed: return
@@ -75,24 +75,24 @@ func _press(at: Vector2) -> void:
 			if RESCUE_FREE.has_point(at):
 				_complete()
 			else:
-				_message(TUTORIAL_TEXT.tr("practice_blocked"))
+				_message(TUTORIAL_TEXT.translated("practice_blocked"))
 		"water_sort":
 			if WATER_LEFT.has_point(at):
 				_water_selected = true
-				_message(TUTORIAL_TEXT.tr("practice_selected"))
+				_message(TUTORIAL_TEXT.translated("practice_selected"))
 			elif WATER_RIGHT.has_point(at) and _water_selected:
 				_complete()
 			elif WATER_MIDDLE.has_point(at) and _water_selected:
-				_message(TUTORIAL_TEXT.tr("practice_colour_mismatch"))
+				_message(TUTORIAL_TEXT.translated("practice_colour_mismatch"))
 			else:
-				_message(TUTORIAL_TEXT.tr("practice_water_start"))
+				_message(TUTORIAL_TEXT.translated("practice_water_start"))
 		"block_puzzle":
 			if BLOCK_SOURCE.has_point(at):
 				_dragging = true
 				_drag_position = at
-				_message(TUTORIAL_TEXT.tr("practice_block_hold"))
+				_message(TUTORIAL_TEXT.translated("practice_block_hold"))
 			else:
-				_message(TUTORIAL_TEXT.tr("practice_block_first"))
+				_message(TUTORIAL_TEXT.translated("practice_block_first"))
 	queue_redraw()
 
 func _move(at: Vector2) -> void:
@@ -106,14 +106,14 @@ func _release(at: Vector2) -> void:
 	if BLOCK_GOAL.grow(9.0).has_point(at):
 		_complete()
 	else:
-		_message(TUTORIAL_TEXT.tr("practice_block_missed"))
+		_message(TUTORIAL_TEXT.translated("practice_block_missed"))
 	queue_redraw()
 
 func _complete() -> void:
 	if completed: return
 	completed = true
 	_dragging = false
-	_message(TUTORIAL_TEXT.tr("practice_success"))
+	_message(TUTORIAL_TEXT.translated("practice_success"))
 	practice_completed.emit(game_id)
 	queue_redraw()
 
