@@ -38,6 +38,38 @@ func _run() -> void:
 			return _fail("%s tutorial reverted to a wall of text" % game_id)
 		if demo == null or demo.get_child_count() == 0 or step == null or step.text.is_empty():
 			return _fail("%s gameplay demo art is missing" % game_id)
+		var practice := shell.find_child("TutorialGesturePractice",true,false) as Control
+		if practice == null or practice.size != Vector2(302,184) or practice.focus_mode != Control.FOCUS_ALL:
+			return _fail("%s tutorial is missing accessible first-touch practice" % game_id)
+		# Check genuine interaction feedback without advancing a paid campaign.
+		match game_id:
+			"rescue_rush":
+				practice.call("_press",Vector2(40,40))
+				if bool(practice.get("completed")):
+					return _fail("Blocked Rescue arrow incorrectly completed the practice")
+				practice.call("_press",Vector2(174,146))
+			"water_sort":
+				practice.call("_press",Vector2(154,58))
+				if bool(practice.get("completed")):
+					return _fail("Wrong-colour Water Sort tap completed the practice")
+				practice.call("_press",Vector2(80,58))
+				practice.call("_press",Vector2(153,58))
+				if bool(practice.get("completed")):
+					return _fail("Water Sort accepted mismatched tube colour")
+				practice.call("_press",Vector2(227,58))
+			"block_puzzle":
+				practice.call("_press",Vector2(240,119))
+				practice.call("_release",Vector2(45,52))
+				if bool(practice.get("completed")):
+					return _fail("Block Puzzle accepted an off-target drag")
+				practice.call("_press",Vector2(240,119))
+				practice.call("_move",Vector2(128,114))
+				practice.call("_release",Vector2(128,114))
+		if not bool(practice.get("completed")):
+			return _fail("%s failed to complete its valid hands-on gesture" % game_id)
+		var practice_message := practice.find_child("TutorialPracticeMessage",true,false) as Label
+		if practice_message == null or "NICE MOVE" not in practice_message.text:
+			return _fail("%s gesture feedback is missing" % game_id)
 		if world_art == null or world_art.get_script() == null or not String(world_art.get_script().resource_path).ends_with("unjam_2d_game_art.gd"):
 			return _fail("%s tutorial is missing authored game-world art" % game_id)
 		if not bool(world_art.get("compact")) or world_art.is_processing():
