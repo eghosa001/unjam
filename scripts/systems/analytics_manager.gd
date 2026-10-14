@@ -32,7 +32,10 @@ var _frame_probe := FramePacingProbe.new()
 # opt-in telemetry, never touches the server, and measures while a player
 # navigates and plays. It does NOT claim GPU time or touch-to-photon latency.
 const QA_CAPTURE_SECONDS := 90.0
-var _qa_capture_probe := FramePacingProbe.new(7200)
+var _qa_capture_probe := FramePacingProbe.new(7200, 2.0)
+var _qa_capture_paused := false
+var _qa_capture_uncertain_intervals := 0
+var _qa_capture_pause_count := 0
 var _qa_capture_active := false
 var _qa_capture_done := false
 var _qa_capture_seconds := 0.0
@@ -240,7 +243,13 @@ func _process(delta: float) -> void:
 	# One constant-time ring write per frame. No disk/network calls, sorting,
 	# allocation-heavy payloads or performance metrics in gameplay callbacks.
 	_frame_probe.record_frame(delta)
-	if not _qa_capture_active or not is_finite(delta) or delta <= 0.0 or delta > 0.25:
+	if not _qa_capture_active or _qa_capture_paused or not is_finite(delta) or delta <= 0.0:
+		return
+	# A 300-800 ms main-thread stall is precisely the jank this QA tool
+	# is intended to reveal. The normal 600-frame rolling probe stays strict
+	# for focus changes; manual foreground QA captures stalls up to 2s.
+	if delta > 2.0:
+		_qa_capture_uncertain_intervals += 1
 		return
 	_qa_capture_probe.record_frame(delta)
 	_qa_capture_seconds += delta
@@ -261,6 +270,9 @@ func _qa_sample_static_monitors() -> void:
 
 func start_local_quality_capture() -> void:
 	_qa_capture_probe.reset()
+	_qa_capture_paused = false
+	_qa_capture_uncertain_intervals = 0
+	_qa_capture_pause_count = 0
 	_qa_capture_active = true
 	_qa_capture_done = false
 	_qa_capture_seconds = 0.0
@@ -283,6 +295,8 @@ func local_quality_capture_report() -> Dictionary:
 	report["target_seconds"] = QA_CAPTURE_SECONDS
 	report["peak_static_memory_mib"] = snappedf(_qa_capture_peak_static_mib,0.1)
 	report["peak_scene_nodes"] = _qa_capture_peak_nodes
+	report["pause_count"] = _qa_capture_pause_count
+	report["uncertain_intervals"] = _qa_capture_uncertain_intervals
 	report["captured_utc"] = _qa_capture_start_utc
 	return report
 
@@ -303,6 +317,9 @@ func local_quality_report_text() -> String:
 		],
 		"Peak Godot static-memory monitor: %.1f MiB" % float(report["peak_static_memory_mib"]),
 		"Peak scene-node monitor: %d" % int(report["peak_scene_nodes"]),
+		"Foreground interruptions / >2s uncertain intervals: %d / %d" % [
+			int(report["pause_count"]), int(report["uncertain_intervals"])
+		],
 		"NOTE: Device-local QA capture only. Not GPU rendering time, Android RSS, touch latency, FPS certification, crash rate, or production analytics.",
 		"NOTE: No player identifiers or gameplay history. Copied by the player; never uploaded automatically."
 	]))
@@ -312,9 +329,14 @@ func quality_snapshot() -> Dictionary:
 
 func _notification(what: int) -> void:
 	# Backgrounding is a normal Android action, never evidence of a crash.
+	# Do not count hours spent with the app paused as foreground jank.
 	if what in [NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_WM_CLOSE_REQUEST]:
+		if _qa_capture_active and not _qa_capture_paused:
+			_qa_capture_paused = true
+			_qa_capture_pause_count += 1
 		_close_foreground_telemetry_session()
 	elif what == NOTIFICATION_APPLICATION_RESUMED:
+		_qa_capture_paused = false
 		_resume_foreground_telemetry_session()
 	# Device-local debug frame numbers are never sent to the backend.
 	if OS.is_debug_build() and what in [NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_WM_CLOSE_REQUEST]:
