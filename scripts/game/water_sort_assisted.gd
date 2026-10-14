@@ -155,13 +155,15 @@ func _on_verified_water_hint_unavailable(reason: String) -> void:
 	if is_inside_tree() and hint_label != null:
 		hint_label.text = reason
 
-func _apply_verified_water_hint(move: Vector2i, board_key: String) -> void:
+func _apply_verified_water_hint(move: Vector2i, board_key: String) -> bool:
+	# HintManager sees FALSE and safely preserves the already-paid/ad-earned
+	# hint for the player's next board rather than losing the entitlement.
 	if not is_inside_tree() or completed or pending_completion:
-		return
+		return false
 	if JSON.stringify(tubes) != board_key or not can_pour(move.x,move.y):
 		if hint_label != null:
-			hint_label.text = "Board changed since Hint was checked. Request a fresh hint."
-		return
+			hint_label.text = "Puzzle changed. Your paid Hint is saved for next time."
+		return false
 	SaveManager.record_hint()
 	if has_method("_note_attempt_hint"):
 		call("_note_attempt_hint")
@@ -170,6 +172,7 @@ func _apply_verified_water_hint(move: Vector2i, board_key: String) -> void:
 	select_tube(move.x)
 	select_tube(move.y)
 	if hint_label != null: hint_label.text = guidance
+	return true
 
 func can_show_hint() -> bool:
 	if completed or pending_completion:
