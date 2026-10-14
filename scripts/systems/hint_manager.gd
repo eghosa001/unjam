@@ -89,6 +89,11 @@ func request_hint_for_game(game: Node) -> bool:
 		hint_unavailable.emit(_game_id(game), reason)
 		return false
 	var placement := _game_id(game)
+	# Water Sort's solver can traverse 40,000 states. Never run it in the
+	# paid tap callback or charge players while the winning move is unknown.
+	# Its incremental request performs proof BEFORE this regular purchase path.
+	if placement == "water_sort" and game.has_method("request_verified_hint"):
+		return bool(game.call("request_verified_hint"))
 	var unavailable := Callable(self, "_show_unavailable_on_game").bind(game)
 	if not _can_deliver_hint(game, placement):
 		var reason := "No verified useful hint is available from this position. Undo or Retry first."
