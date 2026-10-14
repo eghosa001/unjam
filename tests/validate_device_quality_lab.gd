@@ -40,8 +40,10 @@ func _run() -> void:
 	if scroll == null or report == null or start == null:
 		return _fail("Quality Lab modal is missing controls or report")
 	var rect := scroll.get_global_rect()
-	print("QUALITY_LAB_GEOMETRY: ",rect," root=",root.size," viewport=",app.get_viewport().get_visible_rect().size," scroll_scale=",scroll.scale)
-	if rect.position.x < -1.0 or rect.position.y < -1.0 or rect.end.x > root.size.x + 1.0 or rect.end.y > root.size.y + 1.0:
+	# The game renders a 1080x1920 authored canvas into a 540x960
+	# desktop test window. Compare the modal in canvas coordinates.
+	var authored_view := app.get_viewport().get_visible_rect().size
+	if rect.position.x < -1.0 or rect.position.y < -1.0 or rect.end.x > authored_view.x + 1.0 or rect.end.y > authored_view.y + 1.0:
 		return _fail("Quality Lab content is clipped off compact-phone screen")
 	start.emit_signal("pressed")
 	await _frames(16)
