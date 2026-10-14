@@ -39,8 +39,8 @@ func _run() -> void:
 		return _fail("Block objective text escapes the score card")
 	if goal.autowrap_mode == TextServer.AUTOWRAP_OFF or not goal.clip_text:
 		return _fail("Block objective text is not bounded for late-game goals")
-	if not goal.text.begins_with("GOAL "):
-		return _fail("Block objective strip is not using the concise goal format")
+	if not goal.text.begins_with("PTS ") or not goal.text.contains("LINES "):
+		return _fail("Block objective strip does not show the current campaign points and lines")
 	var meta := game.find_child("BlockLevelMeta",true,false) as Label
 	var status := game.find_child("BlockStatusText",true,false) as Label
 	var guidance := game.find_child("BlockHintText",true,false) as Label
