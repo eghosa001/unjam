@@ -139,10 +139,10 @@ func _run() -> void:
 	if not _assert_surface(main, "game", "Block Puzzle levels -> game settled"):
 		return
 	main.call("force_back_from_game")
-	if not _assert_covered(main, "Block Puzzle game -> levels immediate"):
+	if not _assert_covered(main, "Block Puzzle game -> Choose Game immediate"):
 		return
 	await _frames(3)
-	if not _assert_surface(main, "levels", "Block Puzzle game -> levels settled"):
+	if not _assert_surface(main, "live", "Block Puzzle game -> Choose Game settled"):
 		return
 
 	main.queue_free()
