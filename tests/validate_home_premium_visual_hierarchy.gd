@@ -55,6 +55,13 @@ func _run() -> void:
 		return _fail("Home needs legible introduction and a clear tap-to-levels affordance")
 	if tap_hint.get_theme_font_size("font_size") < 12 or daily_hint.get_theme_font_size("font_size") < 13 or week_hint.get_theme_font_size("font_size") < 13:
 		return _fail("Home microcopy is too small for a premium launcher")
+	var levels_link := home.find_child("HomeShowcaseBrowseLevels",true,false) as Button
+	if levels_link == null or levels_link.size.y < 40 or levels_link.action_mode != BaseButton.ACTION_MODE_BUTTON_RELEASE:
+		return _fail("Home LEVELS chevron is not a usable touch target")
+	if levels_link.focus_mode != Control.FOCUS_ALL or not levels_link.accessibility_name.contains("levels"):
+		return _fail("Home LEVELS shortcut is not keyboard/screen-reader discoverable")
+	if levels_link.pressed.get_connections().is_empty():
+		return _fail("Home LEVELS chevron does not navigate anywhere")
 	var showcase_end := 0.0
 	for game_id in ["rescue_rush","water_sort","block_puzzle"]:
 		var card := home.find_child("HomeShowcaseCard_%s" % game_id,true,false) as PanelContainer
