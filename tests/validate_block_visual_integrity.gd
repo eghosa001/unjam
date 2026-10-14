@@ -116,6 +116,25 @@ func _validate_runtime(viewport_size: Vector2i) -> bool:
 	if piece_row == null or piece_row.get_child_count() != 3:
 		game.queue_free()
 		return _fail("Block Puzzle tray does not contain exactly three visual slots")
+	# On compact and large phones, the pieces must fill their tray slots
+	# without becoming tiny relative to the 8x8 board and the exact-size ghost.
+	var cells: Array = game.get("cell_buttons")
+	if cells.is_empty():
+		game.queue_free()
+		return _fail("Block board has no cells for drag/tray proportion checks")
+	var board_cell := (cells[0] as Control).size.x
+	var source_piece := piece_row.get_child(0) as SmoothBlockPieceButton
+	if source_piece == null:
+		game.queue_free()
+		return _fail("Block tray source renderer missing")
+	var three_wide_tile := float(source_piece.call("_tray_cell_size",2,0))
+	if three_wide_tile < minf(board_cell * 0.85, 30.0):
+		game.queue_free()
+		return _fail("Block tray is still miniature compared to board-aligned ghost")
+	if source_piece.size.x < 110.0 or source_piece.size.y < 100.0:
+		game.queue_free()
+		return _fail("Block tray still wastes available space and visually shrinks bricks")
+
 	var original_ids: Array[int] = []
 	for child in piece_row.get_children():
 		if not child is SmoothBlockPieceButton:
