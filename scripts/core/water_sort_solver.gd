@@ -35,6 +35,52 @@ static func best_move(tubes: Array, max_states: int = 40000) -> Vector2i:
 			_heap_push(heap, {"state": next, "depth": next_depth, "first": first_move, "priority": priority})
 	return NO_MOVE
 
+# Incremental equivalent of best_move(), for interactive Hint buttons.
+# One small bounded search slice runs per rendered frame; no thread, UI lock,
+# coin charge, or frame-spanning mutable gameplay-state reference is involved.
+static func begin_search(tubes: Array, max_states: int = 40000) -> Dictionary:
+	var state := tubes.duplicate(true)
+	var heap: Array[Dictionary] = []
+	if not _solved(state):
+		_heap_push(heap, {"state":state, "depth":0, "first":NO_MOVE, "priority":float(_heuristic(state))})
+	return {"heap":heap,"visited":{_key(state):0},"expanded":0,"limit":clampi(max_states,1,40000),"done":_solved(state),"move":NO_MOVE}
+
+static func advance_search(job: Dictionary, budget: int = 32) -> Dictionary:
+	if bool(job.get("done",false)):
+		return {"done":true,"move":job.get("move",NO_MOVE)}
+	var heap: Array[Dictionary] = job.get("heap",[])
+	var visited: Dictionary = job.get("visited",{})
+	var expanded := int(job.get("expanded",0))
+	var cap := int(job.get("limit",40000))
+	for _slice in range(clampi(budget,1,128)):
+		if heap.is_empty() or expanded >= cap:
+			job["done"] = true
+			job["move"] = NO_MOVE
+			job["expanded"] = expanded
+			return {"done":true,"move":NO_MOVE}
+		var node: Dictionary = _heap_pop(heap)
+		var state: Array = node.get("state",[])
+		var first: Vector2i = node.get("first",NO_MOVE)
+		if _solved(state):
+			job["done"] = true
+			job["move"] = first
+			job["expanded"] = expanded
+			return {"done":true,"move":first}
+		expanded += 1
+		var depth := int(node.get("depth",0))
+		for move in _legal_moves(state):
+			var next := _apply_pour(state,move.x,move.y)
+			var key := _key(next)
+			var next_depth := depth + 1
+			if visited.has(key) and int(visited[key]) <= next_depth:
+				continue
+			visited[key] = next_depth
+			var first_move := move if first == NO_MOVE else first
+			var priority := float(next_depth) + float(_heuristic(next)) * 1.7 - float(_move_bonus(state,move))
+			_heap_push(heap,{"state":next,"depth":next_depth,"first":first_move,"priority":priority})
+	job["expanded"] = expanded
+	return {"done":false,"expanded":expanded}
+
 static func _legal_moves(state: Array) -> Array[Vector2i]:
 	var moves: Array[Vector2i] = []
 	var first_empty_target := -1
