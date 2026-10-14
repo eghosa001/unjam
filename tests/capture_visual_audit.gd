@@ -582,6 +582,20 @@ func _run_fast_visual_audit(main: Node, shell: Node) -> void:
 		main.call("build_settings")
 		await _settle(5)
 		await _capture("06b-settings-540x960-dark")
+		# Capture the REAL composed Quality Lab, not just its ColorRect style
+		# metadata. An earlier Android build had white text on pale cards
+		# despite source/geometry checks reporting success.
+		var quality_action := main.find_child("SettingsQualityLab",true,false) as Button
+		if quality_action == null:
+			push_error("Cannot visually audit Settings quality entry")
+		else:
+			quality_action.pressed.emit()
+			await _settle(7)
+			await _capture("06h-quality-lab-540x960-dark")
+			var quality_popup := main.get_node_or_null("DeviceQualityLab")
+			if quality_popup != null:
+				quality_popup.queue_free()
+				await _settle(3)
 		root.size = Vector2i(2560, 1600)
 		await _settle(6)
 		main.call("build_settings")
