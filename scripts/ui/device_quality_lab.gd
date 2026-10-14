@@ -116,8 +116,8 @@ func _button(parent: Node, title: String, color: Color, callback: Callable) -> B
 	# Force explicit contrast on Android regardless of the global light/dark
 	# card skin. The old shared-style path could render white buttons with
 	# white text or near-grey panels under an opaque modal.
-	action.add_theme_stylebox_override("normal",UI.solid_box(color,13,Color("#b6d6e2",0.68),1))
-	action.add_theme_stylebox_override("hover",UI.solid_box(color.lightened(0.12),13,Color("#cceaf5"),2))
+	action.add_theme_stylebox_override("normal",UI.solid_box(color.darkened(0.29),13,Color("#b6d6e2",0.68),1))
+	action.add_theme_stylebox_override("hover",UI.solid_box(color.darkened(0.15),13,Color("#cceaf5"),2))
 	action.add_theme_stylebox_override("pressed",UI.solid_box(color.darkened(0.15),13,Color("#cceaf5"),2))
 	action.add_theme_stylebox_override("disabled",UI.solid_box(Color("#354859"),13,Color("#70879a"),1))
 	action.add_theme_color_override("font_color",Color.WHITE)
