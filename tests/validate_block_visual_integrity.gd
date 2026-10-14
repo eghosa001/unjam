@@ -118,11 +118,11 @@ func _validate_runtime(viewport_size: Vector2i) -> bool:
 		return _fail("Block Puzzle tray does not contain exactly three visual slots")
 	# On compact and large phones, the pieces must fill their tray slots
 	# without becoming tiny relative to the 8x8 board and the exact-size ghost.
-	var cells: Array = game.get("cell_buttons")
-	if cells.is_empty():
+	var scale_fixture_cells: Array = game.get("cell_buttons")
+	if scale_fixture_cells.is_empty():
 		game.queue_free()
 		return _fail("Block board has no cells for drag/tray proportion checks")
-	var board_cell := (cells[0] as Control).size.x
+	var board_cell := (scale_fixture_cells[0] as Control).size.x
 	var source_piece := piece_row.get_child(0) as SmoothBlockPieceButton
 	if source_piece == null:
 		game.queue_free()
