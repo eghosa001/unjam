@@ -6,6 +6,14 @@ class_name RescueGardenWorldView
 # an explicit refresh; there is no _process(), particle system or GPU scene.
 var _levels: Dictionary = {}
 var _total_levels := 0
+var _care_marks: Array = []
+
+func show_daily_care(completed: Array) -> void:
+	_care_marks.clear()
+	for id in ["tree","bench","fountain","lanterns","cottage","rainbow_bridge"]:
+		if id in completed and int(_levels.get(id,0)) > 0:
+			_care_marks.append(id)
+	queue_redraw()
 
 func configure(levels: Dictionary) -> void:
 	_levels = levels.duplicate()
@@ -66,4 +74,23 @@ func _draw() -> void:
 		draw_circle(pos+Vector2(0,6),20,Color("#0b362f",0.45))
 		draw_circle(pos,17,Color("#2d955d").lerp(Color("#79c76f"),maturity))
 		draw_circle(pos+Vector2(6,-7),11,Color("#78bb69",0.68))
+	# A freshly tended property gains a little halo and a visible blossom.
+	# This redraw happens only when opening the world or completing care,
+	# never as a per-frame particle animation.
+	var care_origins := {
+		"tree":Vector2(42,174),
+		"bench":Vector2(207,174),
+		"fountain":Vector2(42,361),
+		"lanterns":Vector2(207,361),
+		"cottage":Vector2(42,545),
+		"rainbow_bridge":Vector2(207,545)
+	}
+	for id in _care_marks:
+		var center: Vector2 = care_origins.get(id,Vector2.ZERO)
+		draw_circle(center,11.0,Color("#f7cb6e",0.15))
+		draw_arc(center,8.0,0.0,TAU,16,Color("#f8e9a0",0.76),1.8,true)
+		for step in range(4):
+			var angle := float(step)*PI/2.0
+			draw_circle(center+Vector2(cos(angle),sin(angle))*5.0,2.6,Color("#f3da91"))
+		draw_circle(center,2.2,Color("#fdf7cd"))
 	draw_rect(bounds,Color("#000000",0.0),false,1)
