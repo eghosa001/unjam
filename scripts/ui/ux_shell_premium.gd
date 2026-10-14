@@ -352,7 +352,21 @@ func hide_tutorial() -> void:
 	dim.visible = false
 	_sync_shell(_current_surface())
 
+# Android can deliver both a system GO_BACK notification and an Escape
+# key event for one physical gesture. Deduplicate those deliveries, but keep
+# deliberate subsequent Back presses responsive after a brief interval.
+var _last_system_back_ms := -1000
+var _last_system_back_frame := -1000
+
 func _handle_back() -> void:
+	var now_ms := Time.get_ticks_msec()
+	var frame := Engine.get_process_frames()
+	# A heavy selector rebuild can take >220ms on a slow device within
+	# the SAME frame. Time-only dedup was insufficient; combine both.
+	if frame - _last_system_back_frame <= 2 or now_ms - _last_system_back_ms < 220:
+		return
+	_last_system_back_ms = now_ms
+	_last_system_back_frame = frame
 	if tutorial_panel != null and tutorial_panel.visible:
 		hide_tutorial()
 		return
@@ -374,7 +388,7 @@ func _handle_back() -> void:
 	# Full-screen rankings must close in place; Android Back should not
 	# discard the Home/Daily/Competition journey underneath the popup.
 	var leaderboard := main.get_node_or_null("PremiumLeaderboardPopup")
-	if leaderboard != null and is_instance_valid(leaderboard):
+	if leaderboard != null and is_instance_valid(leaderboard) and leaderboard is CanvasItem and (leaderboard as CanvasItem).visible:
 		leaderboard.call("close")
 		return
 	var surface := _current_surface()

@@ -464,7 +464,14 @@ func _demo_rescue(step: int) -> void:
 		tile.add_theme_stylebox_override("panel",FigmaReferenceCanvas.rounded_gradient3(tint.lightened(0.28),tint,tint.darkened(0.12),10,Color(1,1,1,0.42),1))
 		FigmaReferenceCanvas.set_rect(tile,positions[i].x,positions[i].y,50,47)
 		_tutorial_demo_root.add_child(tile)
-		var arrow := FigmaReferenceCanvas.label("→" if i in [0,4,6] else "↑",22,Color.WHITE,true)
+		# The hands-on practice caption owns the bottom 34 pixels. On the
+		# first page those bottom-row arrow labels were visible *through*
+		# the practice caption and failed the viewport text-overlap audit.
+		# Keep the teachable right-facing arrow on the clear middle tile.
+		var direction := "→" if i in [0,4,6] or (step == 0 and i == 3) else "↑"
+		var arrow := FigmaReferenceCanvas.label(direction,22,Color.WHITE,true)
+		if step == 0 and i >= 4:
+			arrow.visible = false
 		arrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		FigmaReferenceCanvas.set_rect(arrow,positions[i].x,positions[i].y,50,47)
 		_tutorial_demo_root.add_child(arrow)
