@@ -257,8 +257,10 @@ func _gui_input(event: InputEvent) -> void:
 			var game := _game()
 			if game != null and game.has_method("register_touch_drag"):
 				game.call("register_touch_drag", self)
+		# _show_touch_preview already positions the ghost. Calling update
+		# twice here repeated magnet searches and geometry transforms for every
+		# Android drag event, with no improvement in displayed responsiveness.
 		_show_touch_preview(screen_position)
-		_update_touch_preview_position(screen_position)
 		_update_touch_footprint(screen_position)
 		accept_event()
 
