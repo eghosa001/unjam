@@ -2188,9 +2188,9 @@ func _figma_level_page_progress(canvas: Control, game_id: String, bounds: Vector
 	var rows := int(ceil(float(page_levels)/4.0))
 	var card_y := grid_y+float(rows)*80.0+7.0
 	_figma_card(canvas,"LevelPageProgressCard",Rect2(17,card_y,354,65),Color("#fffaf0"),Color(accent,0.32),15)
-	var heading := _figma_text(canvas,"PAGE PROGRESS",Rect2(34,card_y+11,154,20),14,FIGMA_INK,true)
+	var heading := _figma_text(canvas,"PAGE PROGRESS",Rect2(34,card_y+11,146,20),14,FIGMA_INK,true)
 	heading.name = "LevelPageProgressTitle"
-	var count_label := _figma_text(canvas,"%d / %d CLEARED" % [cleared,page_levels],Rect2(187,card_y+11,166,20),13,FIGMA_MUTED,true)
+	var count_label := _figma_text(canvas,"%d / %d CLEARED" % [cleared,page_levels],Rect2(194,card_y+11,158,20),13,FIGMA_MUTED,true)
 	count_label.name = "LevelPageProgressCount"
 	count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	count_label.accessibility_name = "%d of %d levels cleared on this page" % [cleared,page_levels]
