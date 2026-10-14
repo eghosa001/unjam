@@ -7,6 +7,18 @@ const MIN_ACTUAL_DRAG_PX := 13.0
 var _last_magnet := Vector2i(-1,-1)
 var _down_pointer := Vector2.ZERO
 var _drag_distance := 0.0
+# Only the few cells in a *changed* target footprint need highlighting.
+# Raw pointer input can arrive >100x/s, often within the same 8x8 cell.
+var _last_footprint_origin := Vector2i(-1,-1)
+var _last_footprint_valid := false
+
+func _clear_touch_footprint() -> void:
+	if _last_footprint_origin.x < 0:
+		return
+	_last_footprint_origin = Vector2i(-1,-1)
+	_last_footprint_valid = false
+	super._clear_touch_footprint()
+
 
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
@@ -26,6 +38,20 @@ func _update_touch_footprint(screen_position: Vector2) -> void:
 	if _drag_distance < MIN_ACTUAL_DRAG_PX:
 		_clear_touch_footprint()
 		return
+	var game := _game()
+	if game == null:
+		_clear_touch_footprint()
+		return
+	# Reuse the preview's cached magnetic target; avoid waking all 64 board
+	# cells on every sub-cell finger movement at 60/120Hz.
+	var origin := _last_magnet
+	if origin.x < 0:
+		origin = _best_origin(game,screen_position)
+	var valid := origin.x >= 0 and bool(game.call("can_place",shape,origin))
+	if origin == _last_footprint_origin and valid == _last_footprint_valid:
+		return
+	_last_footprint_origin = origin
+	_last_footprint_valid = valid
 	super._update_touch_footprint(screen_position)
 
 
@@ -169,4 +195,5 @@ func _finish_touch_drag(screen_position: Vector2) -> void:
 func dispose_visuals() -> void:
 	_last_magnet = Vector2i(-1,-1)
 	_drag_distance = 0.0
+	_clear_touch_footprint()
 	super.dispose_visuals()
