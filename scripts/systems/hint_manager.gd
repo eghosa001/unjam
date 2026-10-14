@@ -4,6 +4,8 @@ signal hint_granted(placement: String, source: String)
 signal hint_unavailable(placement: String, reason: String)
 
 const HINT_COST := 25
+const HINT_CREDIT_SAVE_KEY := "hint_prepaid_credits"
+const MAX_STORED_CREDITS := 50
 
 var _attached_games := {}
 
@@ -45,6 +47,11 @@ func request_hint(placement: String, reveal_hint: Callable, unavailable: Callabl
 	var save := _save()
 	if save == null:
 		return false
+	# An earned ad or purchased hint whose original puzzle disappeared must
+	# remain usable. Consume the stored entitlement BEFORE charging currency.
+	if _consume_hint_credit(placement):
+		_grant(placement, "saved_credit", reveal_hint)
+		return true
 	var economy := _economy()
 	var paid := false
 	if economy != null:
@@ -140,8 +147,50 @@ func _show_recovery_prompt(placement: String, reveal_hint: Callable) -> bool:
 func _retry_hint(placement: String, reveal_hint: Callable) -> bool:
 	return request_hint(placement, reveal_hint)
 
+func _hint_credits() -> Dictionary:
+	var save := _save()
+	if save == null:
+		return {}
+	var value = save.data.get(HINT_CREDIT_SAVE_KEY,{})
+	return (value as Dictionary).duplicate(true) if value is Dictionary else {}
+
+func _store_hint_credit(placement: String) -> void:
+	if placement not in ["rescue_rush","water_sort","block_puzzle"]:
+		return
+	var save := _save()
+	if save == null:
+		return
+	var credits := _hint_credits()
+	credits[placement] = mini(MAX_STORED_CREDITS,int(credits.get(placement,0))+1)
+	save.data[HINT_CREDIT_SAVE_KEY] = credits
+	save.call("save")
+	_track("hint_reserved_for_later",{"placement":placement})
+
+func _consume_hint_credit(placement: String) -> bool:
+	var save := _save()
+	if save == null:
+		return false
+	var credits := _hint_credits()
+	var count := clampi(int(credits.get(placement,0)),0,MAX_STORED_CREDITS)
+	if count < 1:
+		return false
+	credits[placement] = count - 1
+	save.data[HINT_CREDIT_SAVE_KEY] = credits
+	save.call("save")
+	return true
+
 func _grant(placement: String, source: String, reveal_hint: Callable) -> void:
-	reveal_hint.call()
+	# A deferred rewarded callback can outlive its game scene. Likewise, a
+	# Water Sort proof may become stale during an ad; never silently consume
+	# a real 25-coin purchase or earned ad for NO hint.
+	var delivered := reveal_hint.is_valid()
+	if delivered:
+		var result: Variant = reveal_hint.call()
+		if result is bool:
+			delivered = result
+	if not delivered:
+		_store_hint_credit(placement)
+		return
 	hint_granted.emit(placement, source)
 	_track("hint_granted", {"placement": placement, "source": source, "cost": current_hint_cost() if source == "coins" else 0})
 
