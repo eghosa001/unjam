@@ -16,12 +16,12 @@ const TITLES := {
 	"rainbow_bridge":"RAINBOW BRIDGE"
 }
 const POSITIONS := {
-	"tree":Vector2(4,42),
-	"bench":Vector2(112,24),
-	"fountain":Vector2(218,45),
-	"lanterns":Vector2(4,220),
-	"cottage":Vector2(112,200),
-	"rainbow_bridge":Vector2(218,221)
+	"tree":Vector2(8,36),
+	"bench":Vector2(173,36),
+	"fountain":Vector2(8,224),
+	"lanterns":Vector2(173,224),
+	"cottage":Vector2(8,412),
+	"rainbow_bridge":Vector2(173,412)
 }
 const INK := Color("#f5f8fa")
 const MUTED := Color("#cbd9e2")
@@ -87,15 +87,15 @@ func _ready() -> void:
 
 	var garden_holder := PanelContainer.new()
 	garden_holder.name = "RescueGardenIllustration"
-	garden_holder.custom_minimum_size = Vector2(326,360)
+	garden_holder.custom_minimum_size = Vector2(326,575)
 	garden_holder.add_theme_stylebox_override("panel",UI.solid_box(Color("#102f3d"),16,Color("#7dbea7"),1))
 	stack.add_child(garden_holder)
 	_world = WorldView.new()
 	_world.name = "RescueGardenWorld"
 	_world.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_world.custom_minimum_size = Vector2(326,360)
+	_world.custom_minimum_size = Vector2(326,575)
 	garden_holder.add_child(_world)
-	_world.size = Vector2(326,360)
+	_world.size = Vector2(326,575)
 	_world.configure(_levels)
 
 	for id in IDS:
@@ -161,7 +161,7 @@ func _add_landmark_button(id: String) -> void:
 	button.accessibility_name = "%s, %s, tap to inspect" % [TITLES[id],"level %d of 5" % level if level>0 else "not yet built"]
 	button.tooltip_text = button.accessibility_name
 	button.position = POSITIONS[id]
-	button.size = Vector2(103,124)
+	button.size = Vector2(145,143)
 	button.custom_minimum_size = button.size
 	button.pressed.connect(_select_landmark.bind(id))
 	_world.add_child(button)
@@ -171,8 +171,8 @@ func _add_landmark_button(id: String) -> void:
 
 	var miniature := UpgradePreview.new()
 	miniature.name = "GardenLandmarkArt_%s" % id
-	miniature.position = Vector2(24,6)
-	miniature.size = Vector2(55,70)
+	miniature.position = Vector2(43,6)
+	miniature.size = Vector2(58,73)
 	miniature.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	miniature.configure(id,level)
 	if level == 0:
@@ -181,8 +181,8 @@ func _add_landmark_button(id: String) -> void:
 
 	var name_label := UI.label(String(TITLES[id]).replace(" ","\n"),12,INK,true)
 	name_label.name = "GardenLandmarkName_%s" % id
-	name_label.position = Vector2(2,77)
-	name_label.size = Vector2(99,30)
+	name_label.position = Vector2(3,86)
+	name_label.size = Vector2(139,33)
 	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -191,8 +191,8 @@ func _add_landmark_button(id: String) -> void:
 	button.add_child(name_label)
 	var tier_label := UI.label("LV %d / 5" % level,12,HIGHLIGHT,true)
 	tier_label.name = "GardenLandmarkLevel_%s" % id
-	tier_label.position = Vector2(1,106)
-	tier_label.size = Vector2(101,17)
+	tier_label.position = Vector2(2,124)
+	tier_label.size = Vector2(141,17)
 	tier_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	tier_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(tier_label)
