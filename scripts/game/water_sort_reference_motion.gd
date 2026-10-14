@@ -450,11 +450,11 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 	# the receiver mouth. The ghost remains upright until it reaches the tip
 	# position, and the existing liquid Bézier begins only after the tilt.
 	var travel := create_tween()
-	travel.tween_method(func(progress: float) -> void:
+	var update_travel := func(progress: float) -> void:
 		if is_instance_valid(ghost):
 			var point := _bottle_travel_arc(travel_start, desired, progress, travel_rise)
 			ghost.position = Vector2(point.x, maxf(12.0, point.y))
-	, 0.0, 1.0, travel_time)
+	travel.tween_method(update_travel, 0.0, 1.0, travel_time)
 	await travel.finished
 	if not is_instance_valid(ghost) or not is_instance_valid(receiver):
 		_abort_pour_visuals(ghost, receiver, source_index, target_index)
