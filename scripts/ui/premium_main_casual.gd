@@ -1743,7 +1743,29 @@ func build_collection() -> void:
 
 	var rescued: Array = SaveManager.data.get("rescued",[])
 	_figma_card(canvas,"Garden",Rect2(17,429,354,96),Color("#fffef8"),Color(0.55,0.86,0.71,0.32),18)
-	_figma_text(canvas,"RESCUE GARDEN",Rect2(33,443,230,22),17,FIGMA_GOLD)
+	# The Garden is now a living explorable place, not only a passive balance
+	# row. Its header is the 230x44 touch target; the rest of the summary,
+	# free gift and upgrade economy remain exactly where players expect them.
+	var garden_link := Button.new()
+	garden_link.name = "CollectionVisitGarden"
+	garden_link.text = "RESCUE GARDEN ›"
+	garden_link.flat = true
+	garden_link.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	garden_link.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
+	garden_link.focus_mode = Control.FOCUS_ALL
+	garden_link.add_theme_font_size_override("font_size",17)
+	garden_link.add_theme_color_override("font_color",_figma_theme_text(FIGMA_GOLD))
+	garden_link.add_theme_color_override("font_hover_color",_figma_theme_text(FIGMA_GOLD).lightened(0.12))
+	garden_link.add_theme_color_override("font_pressed_color",_figma_theme_text(FIGMA_GOLD))
+	garden_link.accessibility_name = "Visit your evolving Rescue Garden world and explore all six upgrades"
+	garden_link.tooltip_text = garden_link.accessibility_name
+	garden_link.set_meta("unjam_authored_focus_mode", Control.FOCUS_ALL)
+	garden_link.set_meta("unjam_preserve_control_geometry", true)
+	garden_link.set_meta("unjam_preserve_surface_style", true)
+	FigmaReferenceCanvas.set_rect(garden_link,33,433,230,44)
+	garden_link.pressed.connect(_open_rescue_garden_world)
+	canvas.add_child(garden_link)
+	garden_link.set_deferred("focus_mode",Control.FOCUS_ALL)
 	_figma_text(canvas,"%d friends • %d/%d upgrades" % [rescued.size(),EconomyManager.collection_total_levels(),EconomyManager.collection_max_total_levels()],Rect2(33,474,300,22),14,FIGMA_MUTED)
 	_figma_text(canvas,"+%d DAILY • +%d GIFT • ♛ %d" % [EconomyManager.collection_daily_bonus(),EconomyManager.garden_gift_amount(),int(SaveManager.data.get("crown_tokens",0))],Rect2(33,499,310,22),13,FIGMA_MUTED)
 
@@ -1791,6 +1813,14 @@ func build_collection() -> void:
 	# Fill the dead zone below the gift/upgrades row with a decorative tip card
 	_figma_collection_tip(canvas)
 	_figma_bottom_nav(canvas,"collection")
+
+func _open_rescue_garden_world() -> void:
+	if get_node_or_null("RescueGardenWorldSheet") != null:
+		return
+	FeedbackManager.tap()
+	var world := preload("res://scripts/ui/rescue_garden_world.gd").new()
+	world.name = "RescueGardenWorldSheet"
+	add_child(world)
 
 func _figma_collection_tip(canvas: Control) -> void:
 	# The Garden card above already lists Daily/Gift values. This final card
