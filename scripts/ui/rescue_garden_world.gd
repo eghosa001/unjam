@@ -26,6 +26,14 @@ const POSITIONS := {
 const INK := Color("#f5f8fa")
 const MUTED := Color("#cbd9e2")
 const HIGHLIGHT := Color("#f5cb74")
+const CARE_ACTIONS := {
+	"tree":"PRUNE TREE",
+	"bench":"POLISH BENCH",
+	"fountain":"CLEAN FOUNTAIN",
+	"lanterns":"LIGHT LANTERNS",
+	"cottage":"REPAIR COTTAGE",
+	"rainbow_bridge":"TEND BRIDGE"
+}
 var selected_id := "tree"
 var _world: Control
 var _stage_label: Label
@@ -33,6 +41,9 @@ var _detail_heading: Label
 var _detail_level: Label
 var _detail_effect: Label
 var _detail_next: Label
+var _care_button: Button
+var _care_note: Label
+var _care_steps := 0
 var _landmark_buttons: Dictionary = {}
 var _levels: Dictionary = {}
 
@@ -97,6 +108,7 @@ func _ready() -> void:
 	garden_holder.add_child(_world)
 	_world.size = Vector2(326,575)
 	_world.configure(_levels)
+	_world.call("show_daily_care",_today_care_ids())
 
 	for id in IDS:
 		_add_landmark_button(id)
@@ -120,6 +132,16 @@ func _ready() -> void:
 	_detail_effect.name = "RescueGardenDetailEffect"
 	_detail_next = _label(details,"",12,MUTED,true)
 	_detail_next.name = "RescueGardenDetailNext"
+
+	# An actual repeatable, three-step interaction for unlocked property
+	# maintenance. Disabled landmarks never earn currency, and the final
+	# payout is atomically idempotent even across app restarts.
+	_care_note = _label(stack,"",13,MUTED,true)
+	_care_note.name = "RescueGardenCareStatus"
+	_care_button = _button(stack,"CARE FOR GARDEN",Color("#387963"),_progress_garden_care)
+	_care_button.name = "RescueGardenCareAction"
+	_care_button.add_theme_color_override("font_disabled_color",Color("#ecf6f4"))
+	_care_button.add_theme_stylebox_override("disabled",UI.solid_box(Color("#455b61"),14,Color("#83a5aa"),1))
 
 	_button(stack,"UPGRADE MY GARDEN",Color("#276f55"),_show_upgrades)
 	_button(stack,"BACK TO COLLECTION",Color("#395267"),queue_free)
@@ -212,6 +234,8 @@ func _style_landmark(button: Button,id: String) -> void:
 func _select_landmark(id: String) -> void:
 	if id not in IDS:
 		return
+	if selected_id != id:
+		_care_steps = 0
 	selected_id = id
 	for other in IDS:
 		var target := _landmark_buttons.get(other) as Button
@@ -228,6 +252,51 @@ func _select_landmark(id: String) -> void:
 	_detail_next.text = "NEXT: %s" % EconomyManager.collection_effect_text(id,level+1) if level < 5 else "All five levels complete. Your permanent bonus remains active."
 	for label in [_detail_heading,_detail_level,_detail_effect,_detail_next]:
 		label.accessibility_name = label.text
+	_refresh_care_action()
+
+func _refresh_care_action() -> void:
+	if _care_button == null or _care_note == null:
+		return
+	var built := int(_levels.get(selected_id,0)) > 0
+	var done := EconomyManager.garden_care_completed_today(selected_id)
+	var pending := EconomyManager.garden_care_remaining()
+	if not built:
+		_care_button.disabled = true
+		_care_button.text = "BUILD TO UNLOCK CARE"
+		_care_note.text = "This landmark needs its first upgrade before you can look after it."
+	elif done:
+		_care_button.disabled = true
+		_care_button.text = "CARED FOR TODAY ✓"
+		_care_note.text = "Thanks for tending this part of your Garden. %d more locations today." % pending
+	else:
+		_care_button.disabled = false
+		_care_button.text = "%s • %d/3" % [CARE_ACTIONS[selected_id],_care_steps]
+		_care_note.text = "Take 3 small steps to earn up to 8 coins. %d locations need care." % pending
+	_care_button.accessibility_name = "%s. %s" % [_care_button.text,_care_note.text]
+	_care_button.tooltip_text = _care_button.accessibility_name
+	_care_note.accessibility_name = _care_note.text
+
+func _progress_garden_care() -> void:
+	if int(_levels.get(selected_id,0)) <= 0 or EconomyManager.garden_care_completed_today(selected_id):
+		_refresh_care_action()
+		return
+	_care_steps = mini(3,_care_steps + 1)
+	FeedbackManager.snap()
+	if _care_steps >= 3:
+		var result: Dictionary = EconomyManager.care_for_garden_once(selected_id)
+		if bool(result.get("credited",false)):
+			FeedbackManager.effect()
+			# Local garden bloom is a static scene redraw, not per-frame VFX.
+			_world.call("show_daily_care",_today_care_ids())
+		_care_steps = 0
+	_refresh_care_action()
+
+func _today_care_ids() -> Array:
+	var state = SaveManager.data.get("garden_care_state",{})
+	if state is Dictionary and String(state.get("day","")) == EconomyManager.call("_date_key"):
+		var items = state.get("completed",[])
+		return items.duplicate() if items is Array else []
+	return []
 
 func _show_upgrades() -> void:
 	var parent := get_parent()
