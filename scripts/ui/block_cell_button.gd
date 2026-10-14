@@ -26,6 +26,12 @@ var footprint_phase := 0.0
 var special_kind := ""
 var special_layers := 0
 var _game_cache: Node
+# Styles on a mostly-static 8x8 board repeat. During animated pulses, retain
+# only a small bounded set; avoid allocating multiple StyleBoxFlat resources
+# per cell and draw without ever caching an unbounded stream of alpha values.
+const DRAW_STYLE_CACHE_LIMIT := 24
+var _draw_style_cache: Dictionary = {}
+
 
 func configure(value: bool, preview_value: bool = false, color: Color = Color("4f7cff"), index: int = 0) -> void:
 	var old := occupied
@@ -352,16 +358,18 @@ func _draw_block(rect: Rect2, fill: Color) -> void:
 	draw_circle(rect.position + Vector2(rect.size.x * 0.23, rect.size.y * 0.30), maxf(1.2, rect.size.x * 0.038), Color(1,1,1,0.46))
 
 func _draw_box(rect: Rect2, color: Color, radius: int, border: Color, border_width: int) -> void:
-	var style := StyleBoxFlat.new()
-	style.bg_color = color
-	style.corner_radius_top_left = radius
-	style.corner_radius_top_right = radius
-	style.corner_radius_bottom_left = radius
-	style.corner_radius_bottom_right = radius
-	if border_width > 0:
-		style.border_width_left = border_width
-		style.border_width_right = border_width
-		style.border_width_top = border_width
-		style.border_width_bottom = border_width
-		style.border_color = border
-	draw_style_box(style, rect)
+	# Include fill, border, radius and width in the key. A dropped frame
+	# should never arise from rebuilding identical materials for 64 cells.
+	var key := "%d/%d/%d/%d" % [color.to_rgba32(),border.to_rgba32(),radius,border_width]
+	var style: StyleBoxFlat = _draw_style_cache.get(key)
+	if style == null:
+		if _draw_style_cache.size() >= DRAW_STYLE_CACHE_LIMIT:
+			_draw_style_cache.clear()
+		style = StyleBoxFlat.new()
+		style.bg_color = color
+		style.set_corner_radius_all(radius)
+		if border_width > 0:
+			style.set_border_width_all(border_width)
+			style.border_color = border
+		_draw_style_cache[key] = style
+	draw_style_box(style,rect)
