@@ -92,6 +92,15 @@ func _run() -> void:
 		return _fail("AdMob loader can still launch a fullscreen ad on a stale asynchronous callback")
 	if not native_source.contains("if not _interstitial_menu_allowed():"):
 		return _fail("Native AdMob show path lacks a second gameplay guard")
+	var rewarded_start := native_source.find("func _load_rewarded(")
+	var rewarded_end := native_source.find("func _attach_rewarded_fullscreen_callbacks()",rewarded_start)
+	if rewarded_start < 0 or rewarded_end <= rewarded_start:
+		return _fail("Rewarded preload callback missing")
+	var rewarded_loader := native_source.substr(rewarded_start,rewarded_end-rewarded_start)
+	if rewarded_loader.contains("_show_loaded_rewarded()") or rewarded_loader.contains("if show_when_loaded"):
+		return _fail("Late rewarded ad load can interrupt unrelated gameplay")
+	if not native_source.contains("Ad is loading. Please try again in a moment."):
+		return _fail("Cold rewarded ad is not safely retriable after preload")
 
 	var game_source := FileAccess.get_file_as_string("res://scripts/game/game.gd")
 	var result_callback := game_source.substr(game_source.find("result.continue_requested.connect("))
