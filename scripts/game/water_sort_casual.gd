@@ -418,6 +418,11 @@ func _apply_tube_layout() -> void:
 	board.position = Vector2(194.0 - content_w * 0.5, 169.0 + (450.0 - content_h) * 0.5)
 
 func _shell_dark_mode() -> bool:
+	# Scene exits detach the outgoing Water game synchronously. Deferred
+	# theme/shell callbacks can still arrive before queue_free completes; do
+	# not consult SceneTree through a detached control (Android Back flicker).
+	if not is_inside_tree():
+		return false
 	var main := get_tree().current_scene
 	var shell := main.get_node_or_null("UXShell") if main != null else null
 	return shell != null and String(shell.get("theme_mode")) == "dark"
