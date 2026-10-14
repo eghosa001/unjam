@@ -122,13 +122,13 @@ func _validate_runtime(viewport_size: Vector2i) -> bool:
 	if scale_fixture_cells.is_empty():
 		game.queue_free()
 		return _fail("Block board has no cells for drag/tray proportion checks")
-	var board_cell := (scale_fixture_cells[0] as Control).size.x
+	var tray_reference_cell_size := (scale_fixture_cells[0] as Control).size.x
 	var source_piece := piece_row.get_child(0) as SmoothBlockPieceButton
 	if source_piece == null:
 		game.queue_free()
 		return _fail("Block tray source renderer missing")
 	var three_wide_tile := float(source_piece.call("_tray_cell_size",2,0))
-	if three_wide_tile < minf(board_cell * 0.85, 30.0):
+	if three_wide_tile < minf(tray_reference_cell_size * 0.85, 30.0):
 		game.queue_free()
 		return _fail("Block tray is still miniature compared to board-aligned ghost")
 	if source_piece.size.x < 110.0 or source_piece.size.y < 100.0:
