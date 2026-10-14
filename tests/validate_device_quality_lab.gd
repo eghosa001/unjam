@@ -42,7 +42,9 @@ func _run() -> void:
 	var contrast := panel.find_child("QualityLabContrastSurface",true,false) as ColorRect
 	if contrast == null or contrast.color.get_luminance() > 0.20 or contrast.color.a < 0.99:
 		return _fail("Device Quality Lab must keep white report text against a guaranteed opaque dark surface")
-	var start_style := start.get_theme_stylebox("normal") as StyleBoxFlat
+	var current_button_style := start.get_theme_stylebox("normal")
+	print("DEVICE_QA_BUTTON_STYLE: ",current_button_style.get_class() if current_button_style != null else "none", " override=",start.has_theme_stylebox_override("normal")," brightness=", (current_button_style as StyleBoxFlat).bg_color.get_luminance() if current_button_style is StyleBoxFlat else -1.0)
+	var start_style := current_button_style as StyleBoxFlat
 	if start_style == null or start_style.bg_color.get_luminance() > 0.31:
 		return _fail("Device Quality Lab start control lost its distinct high contrast fill")
 	if start.get_theme_color("font_color").get_luminance() < 0.80:
