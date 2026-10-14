@@ -38,6 +38,9 @@ var current_surface: String:
 				_restore_campaign_checkpoint_after_daily(String(abandoned.get("game_id","")))
 		_navigation_generation += 1
 		_current_surface = value
+		# One atomic navigation authority for commercial fullscreen placement.
+		# Async ad callbacks must never interpret a finished game as a menu.
+		AdManager.set_interstitial_surface(value)
 		if has_method("_sync_persistent_surfaces_now"):
 			call("_sync_persistent_surfaces_now", value)
 		_queue_surface_changed()
@@ -631,9 +634,18 @@ func _return_from_game(game_id: String, was_daily: bool, _level_number: int = -1
 	# disposing of the old game so no blank/incorrect frame can flash between.
 	if has_method("_open_games_surface"):
 		call("_open_games_surface")
+		# Show eligible ads only after the old gameplay scene is detached.
+		# If the player immediately launches another game, the deferred safety
+		# check rejects the placement; provider loading never queues an ad.
+		call_deferred("_maybe_show_interstitial_at_menu")
 	else:
 		_remove_active_game()
 		build_home()
+
+func _maybe_show_interstitial_at_menu() -> void:
+	if current_surface == "live" and (active_game == null or not is_instance_valid(active_game)):
+		if AdManager.should_show_interstitial():
+			AdManager.show_interstitial()
 
 func force_back_from_game() -> void:
 	if current_surface == "game_loading":

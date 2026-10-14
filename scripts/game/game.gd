@@ -751,8 +751,8 @@ func show_result(stars: int) -> void:
 		AdManager.show_rewarded("double_reward", on_reward, on_failed)
 	)
 	result.continue_requested.connect(func() -> void:
-		if AdManager.should_show_interstitial():
-			AdManager.show_interstitial()
+		# Never open native ads inside a gameplay scene or celebration overlay.
+		# Finish first; only the settled Choose Game menu can offer a break ad.
 		finished.emit(-1 if daily_mode else level_number)
 		queue_free()
 	)
