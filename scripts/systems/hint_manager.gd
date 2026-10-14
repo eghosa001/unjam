@@ -258,6 +258,7 @@ func _refresh_hint_button(game: Node, button: Button = null) -> void:
 	if target == null:
 		return
 	var prefix := String(target.get_meta("unjam_hint_prefix", ""))
+	var free_credits := clampi(int(_hint_credits().get(_game_id(game),0)),0,MAX_STORED_CREDITS)
 	if bool(game.get("daily_mode")):
 		target.disabled = true
 		target.tooltip_text = "Hints are disabled in ranked Daily competition."
@@ -267,10 +268,11 @@ func _refresh_hint_button(game: Node, button: Button = null) -> void:
 		target.text = String(target.get_meta("unjam_hint_authored_text", target.text))
 		var badge := target.get_node_or_null("HintCoinCost") as Label
 		if badge != null:
-			badge.text = "◈%d" % current_hint_cost()
+			badge.text = "FREE ×%d" % free_credits if free_credits > 0 else "◈%d" % current_hint_cost()
 	else:
-		target.text = "%sHINT • %d\n◈ %d" % [prefix, current_hint_cost(), coin_balance()]
-	target.tooltip_text = "Hint costs %d coins. Balance: %d. If you are short, Shop or an optional rewarded ad can help." % [current_hint_cost(), coin_balance()]
+		target.text = "%sFREE HINT ×%d" % [prefix,free_credits] if free_credits > 0 else "%sHINT • %d\n◈ %d" % [prefix, current_hint_cost(), coin_balance()]
+	target.tooltip_text = "You have %d previously earned hints. Using one costs no coins or ad." % free_credits if free_credits > 0 else "Hint costs %d coins. Balance: %d. If you are short, Shop or an optional rewarded ad can help." % [current_hint_cost(), coin_balance()]
+	target.accessibility_name = target.tooltip_text
 
 
 func _ensure_figma_cost_badge(button: Button) -> void:

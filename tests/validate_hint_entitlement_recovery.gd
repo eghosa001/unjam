@@ -32,6 +32,23 @@ func _run() -> void:
 	credits = save.data.get("hint_prepaid_credits",{})
 	if int(credits.get("water_sort",0)) != 1:
 		return _fail("Stale prepaid redemption lost or duplicated the voucher")
+	# Players should not see a misleading 25-coin price when an ad earned
+	# a valid prepaid hint which remains in their account.
+	var packed := load("res://scenes/WaterSort.tscn") as PackedScene
+	if packed == null:
+		return _fail("Water game unavailable")
+	var game := packed.instantiate()
+	root.add_child(game)
+	await process_frame
+	await process_frame
+	var hint_button := game.find_child("WaterHintAction",true,false) as Button
+	if hint_button == null:
+		return _fail("Water Hint action unavailable")
+	hints.call("_refresh_hint_button",game,hint_button)
+	if not hint_button.tooltip_text.contains("costs no coins") or not hint_button.accessibility_name.contains("costs no coins"):
+		return _fail("Saved reward is not disclosed to the player or screen reader")
+	game.queue_free()
+	await process_frame
 	if previous == null:
 		save.data.erase("hint_prepaid_credits")
 	else:
