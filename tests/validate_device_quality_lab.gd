@@ -40,6 +40,7 @@ func _run() -> void:
 	if scroll == null or report == null or start == null:
 		return _fail("Quality Lab modal is missing controls or report")
 	var rect := scroll.get_global_rect()
+	print("QUALITY_LAB_GEOMETRY: ",rect," root=",root.size," viewport=",app.get_viewport().get_visible_rect().size," scroll_scale=",scroll.scale)
 	if rect.position.x < -1.0 or rect.position.y < -1.0 or rect.end.x > root.size.x + 1.0 or rect.end.y > root.size.y + 1.0:
 		return _fail("Quality Lab content is clipped off compact-phone screen")
 	start.emit_signal("pressed")
