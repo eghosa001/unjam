@@ -129,7 +129,9 @@ func _refresh() -> void:
 		"OVER 16.7 ms      %.1f%%" % float(report.get("over_16_7_percent",0.0)),
 		"OVER 33.3 ms      %.1f%%" % float(report.get("over_33_3_percent",0.0)),
 		"PEAK STATIC RAM   %.1f MiB" % float(report.get("peak_static_memory_mib",0.0)),
-		"PEAK SCENE NODES  %d" % int(report.get("peak_scene_nodes",0))
+		"PEAK SCENE NODES  %d" % int(report.get("peak_scene_nodes",0)),
+		"APP BACKGROUNDS  %d" % int(report.get("pause_count",0)),
+		"UNKNOWN >2s     %d" % int(report.get("uncertain_intervals",0))
 	]))
 	_summary.accessibility_name = _summary.text
 
