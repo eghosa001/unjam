@@ -59,6 +59,23 @@ func _run() -> void:
 		if booster.get_theme_font_size("font_size") < 13:
 			return _fail("%s fell below the 13px booster readability floor" % booster_name)
 
+	# The first-screen Undo was misleadingly labelled FREE but greyed out.
+	# Verify the real state before and after one reversible placement exists.
+	var undo := game.find_child("Booster_Undo",true,false) as Button
+	if undo == null or not undo.disabled or undo.text != "UNDO\nNO MOVE":
+		return _fail("Undo must explicitly explain that no placement can be reversed yet")
+	if not undo.has_theme_stylebox_override("disabled") or not undo.has_theme_color_override("font_disabled_color"):
+		return _fail("Disabled Undo needs a legible dedicated style on a dark board")
+	if not undo.accessibility_name.contains("Place a block first"):
+		return _fail("Undo empty state lacks an accessible explanation")
+	var history_ref: Array = game.get("history") as Array
+	history_ref.append({})
+	game.call("_refresh_booster_buttons")
+	if undo.disabled or undo.text != "UNDO\nFREE":
+		return _fail("First Undo must become free and active once a move can be reversed")
+	history_ref.pop_back()
+	game.call("_refresh_booster_buttons")
+
 	var single := BlockPieceButton.new()
 	single.size = Vector2(104,72)
 	single.configure([Vector2i.ZERO],false,Color("8b7cf6"),0)
