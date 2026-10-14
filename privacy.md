@@ -17,7 +17,7 @@ permalink: /privacy.html
 <div class="site-shell">
 <header class="topbar"><nav class="nav" aria-label="Primary navigation"><a class="brand" href="./"><img src="assets/icon.svg" alt=""><span class="brand-word">UNJAM</span></a><div class="nav-links"><a href="./#games">Games</a><a href="privacy.html">Privacy</a><a href="support.html">Support</a><a class="nav-cta" href="./#release">Android release</a></div></nav></header>
 <main>
-<section class="page-hero"><span class="eyebrow">Official policy</span><h1>Privacy Policy</h1><p>Effective October 13, 2026. This policy explains how information may be handled when you use the UNJAM mobile application.</p></section>
+<section class="page-hero"><span class="eyebrow">Official policy</span><h1>Privacy Policy</h1><p>Effective October 14, 2026. This policy explains how information may be handled when you use the UNJAM mobile application.</p></section>
 <article class="doc">
   <p><strong>UNJAM respects your privacy.</strong> UNJAM does not require you to create an account to play the core games. Game progress and settings may be stored locally on your device.</p>
 
@@ -26,7 +26,7 @@ permalink: /privacy.html
   <p>UNJAM does not intentionally collect sensitive personal information such as passwords, private messages, contacts, photos, precise location, health information, or financial account credentials through normal gameplay.</p>
 
   <h2>Optional anonymous game analytics</h2>
-  <p>The app can share limited game-usage counts only after you explicitly switch Anonymous Analytics ON in Settings → Privacy. It sends a restricted event type (such as level started, completed, restarted, hint or undo), the game type, and a broad level range. The server stores only daily aggregate counts. No account name, player or cloud-save ID, device identifier, purchase details, exact level, or free-form gameplay message is included in these event batches. The hosting provider may still process ordinary technical request metadata in its infrastructure logs.</p>
+  <p>The app can share limited game-usage counts only after you explicitly switch Anonymous Analytics ON in Settings → Privacy. It sends a restricted event type (such as level start/completion, game selection, Daily/Garden navigation, or one-time day-1/day-7 return after opting in), the game type, and a broad level range. The original opt-in date and counted-return flags are kept in local preferences only, never transmitted; they are erased when analytics is disabled. Return counters are anonymous approximate signals, not verified player-retention cohorts. The server stores only daily aggregate counts. No account name, player or cloud-save ID, device identifier, purchase details, exact level, or free-form gameplay message is included in these event batches. The hosting provider may still process ordinary technical request metadata in its infrastructure logs.</p>
   <p>This is OFF by default and independent of advertising consent. Turn it OFF again to stop future analytics uploads and clear queued events. Aggregate daily totals cannot be linked back to an individual player and therefore cannot be selectively deleted for one installation. Google Play Data Safety disclosures must reflect this optional feature before it is enabled for public distribution.</p>
 
   <h2>Advertising</h2>

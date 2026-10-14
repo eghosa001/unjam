@@ -1341,6 +1341,7 @@ func show_leaderboard_popup(period: String = "week") -> void:
 func build_daily_games() -> void:
 	current_surface = "daily"
 	_remove_active_game()
+	AnalyticsManager.track("daily_opened",{})
 	var canvas := _figma_surface("daily", Color("#ead9b8"))
 	var bonus := EconomyManager.collection_daily_bonus()
 	var done_count := 0
@@ -1672,6 +1673,7 @@ func _claim_collection_gift() -> void:
 func build_collection() -> void:
 	current_surface = "collection"
 	_remove_active_game()
+	AnalyticsManager.track("garden_opened",{})
 	var canvas := _figma_surface("collection", Color("#e6f7ef"))
 	_figma_header(
 		canvas,

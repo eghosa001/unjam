@@ -39,22 +39,22 @@ func _ready() -> void:
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	scroll.mouse_filter = Control.MOUSE_FILTER_STOP
-	frame.add_child(scroll)
-
-	var panel := PanelContainer.new()
-	panel.name = "QualityLabCard"
-	panel.custom_minimum_size.x = 356
-	panel.add_theme_stylebox_override("panel", UI.solid_box(Color("#1c293c"),19,Color("#5a84aa"),2))
-	scroll.add_child(panel)
-	# Some runtime themes overwrite the panel style with a light surface. The
-	# Android report then has white text on grey (as in the supplied capture).
-	# This explicit opaque interior remains dark regardless of theme overrides.
+	# The previous PanelContainer background was overwritten by Android's
+	# runtime light theme, producing white text on an almost-white surface.
+	# Use a sibling ColorRect BEHIND the scroll, not a background child of
+	# a theme-skinned container. ColorRect drawing ignores StyleBox themes.
 	var contrast := ColorRect.new()
 	contrast.name = "QualityLabContrastSurface"
-	contrast.color = Color("#15283c")
+	contrast.color = Color("#112338")
 	contrast.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.add_child(contrast)
-	contrast.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	contrast.position = scroll.position
+	contrast.size = scroll.size * scale_factor
+	frame.add_child(contrast)
+	frame.add_child(scroll)
+	var panel := MarginContainer.new()
+	panel.name = "QualityLabCard"
+	panel.custom_minimum_size.x = 356
+	scroll.add_child(panel)
 	var pad := MarginContainer.new()
 	for edge in ["left","right","top","bottom"]:
 		pad.add_theme_constant_override("margin_%s" % edge,17)
@@ -155,6 +155,20 @@ func _refresh() -> void:
 		"APP BACKGROUNDS  %d" % int(report.get("pause_count",0)),
 		"UNKNOWN >2s     %d" % int(report.get("uncertain_intervals",0))
 	]))
+	# The old report averaged gameplay with menu browsing; per-game samples
+	# expose whether Water, Rescue and Block were ACTUALLY played.
+	var titles := {"rescue_rush":"RESCUE RUSH","water_sort":"WATER SORT","block_puzzle":"BLOCK PUZZLE"}
+	var game_reports: Dictionary = report.get("per_game",{})
+	_summary.text += "\n\nPER-GAME FRAME PACING"
+	for game_id in ["rescue_rush","water_sort","block_puzzle"]:
+		var game: Dictionary = game_reports.get(game_id,{})
+		var frames := int(game.get("sampled_frames",0))
+		if frames < 120:
+			_summary.text += "\n%s  NOT YET MEASURED" % titles[game_id]
+		else:
+			_summary.text += "\n%s  %d frames / p95 %.2f ms / >33.3ms %.1f%%" % [
+				titles[game_id],frames,float(game.get("p95_frame_ms",0.0)),
+				float(game.get("over_33_3_percent",0.0))]
 	_summary.accessibility_name = _summary.text
 
 func _start_capture() -> void:

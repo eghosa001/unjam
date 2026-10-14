@@ -169,6 +169,7 @@ func open_game_campaign(game_id: String) -> void:
 	# attempt. Choose Game still opens the campaign browser; it never resumes.
 	_restore_campaign_checkpoint_after_daily(game_id)
 	selected_game_id = game_id
+	AnalyticsManager.track("game_selected",{"game_id":game_id})
 	var highest := MultiGameManager.highest_level(game_id)
 	selected_multi_world = MultiGameManager.highest_unlocked_game_world(game_id)
 	selected_multi_page = _multi_page_for_level(game_id, highest)
