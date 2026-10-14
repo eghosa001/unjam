@@ -15,7 +15,7 @@ var _maximum_interval_seconds := MAX_TRACKED_INTERVAL_SECONDS
 func _init(window_frames: int = WINDOW_FRAMES, maximum_interval_seconds: float = MAX_TRACKED_INTERVAL_SECONDS) -> void:
 	# Standard HUD uses 600 frames; local device QA may capture a full
 	# 90-second session without narrowing the report to its last ten seconds.
-	_window_frames = clampi(window_frames, 1, 9000)
+	_window_frames = clampi(window_frames, 1, 14400)
 	_maximum_interval_seconds = clampf(maximum_interval_seconds, MAX_TRACKED_INTERVAL_SECONDS, 2.0)
 var _write_index := 0
 var _total_sampled := 0
