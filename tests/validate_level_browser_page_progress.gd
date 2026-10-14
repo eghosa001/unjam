@@ -51,10 +51,15 @@ func _check_page(app: Control, game_id: String) -> bool:
 		return false
 	if bar.show_percentage or bar.mouse_filter != Control.MOUSE_FILTER_IGNORE:
 		return false
-	var last := app.find_child("Level/%d" % bounds.y,true,false) as Control
-	if last == null or panel.position.y < last.position.y+last.size.y+8.0:
+	# The numbered tile names are sanitized by Godot because '/' is not a
+	# legal Node name; derive the final authored tile's end from grid geometry.
+	var grid_y := 308.0 if game_id == "block_puzzle" else 269.0
+	var bottom_of_tiles := grid_y+float(int((total-1)/4))*80.0+70.0
+	if panel.position.y < bottom_of_tiles+8.0:
+		print("Page progress overlaps the final level tile: ",panel.position.y," vs ",bottom_of_tiles)
 		return false
 	if panel.position.y+panel.size.y > 844.0:
+		print("Page progress escaped authored screen: ",panel.position.y+panel.size.y)
 		return false
 	return true
 
