@@ -152,7 +152,7 @@ func build_ui() -> void:
 	root.add_child(header)
 	var back := Button.new()
 	back.text = "←"
-	back.accessibility_name = "Back to game selection"
+	back.accessibility_name = "Back to Block Puzzle levels"
 	back.custom_minimum_size = Vector2(74, 62)
 	style_small_button(back)
 	back.pressed.connect(_quit)
