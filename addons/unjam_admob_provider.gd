@@ -219,7 +219,17 @@ func _fail_rewarded(reason: String) -> void:
 	if failed.is_valid():
 		failed.call(reason)
 
+func _interstitial_menu_allowed() -> bool:
+	var manager := get_node_or_null("/root/AdManager")
+	return manager != null and manager.has_method("can_present_interstitial_now") and bool(manager.call("can_present_interstitial_now"))
+
 func show_interstitial(closed: Callable, failed: Callable) -> bool:
+	# Native fullscreen ads are never allowed to interrupt an active puzzle,
+	# level transition or loading overlay, even if a stale caller asks.
+	if not _interstitial_menu_allowed():
+		if failed.is_valid():
+			failed.call("Interstitial not allowed during gameplay")
+		return false
 	if not is_ready():
 		if failed.is_valid():
 			failed.call("AdMob provider is not ready")
@@ -228,24 +238,19 @@ func show_interstitial(closed: Callable, failed: Callable) -> bool:
 		if failed.is_valid():
 			failed.call("Advertising consent is not ready")
 		return false
+	# Loading is asynchronous. Never queue "show when loaded": the user
+	# may already have entered the next level by the time Google responds.
+	# Only a previously cached creative may show synchronously at a menu.
+	if not _initialized or _interstitial_ad == null:
+		_preload_ads_if_allowed()
+		if failed.is_valid():
+			failed.call("Interstitial not ready at this menu break")
+		return false
 	_interstitial_closed = closed
 	_interstitial_failure = failed
-	if not _initialized:
-		var init_started := _initialize_mobile_ads(func() -> void:
-			if _interstitial_ad == null:
-				_load_interstitial(true)
-			else:
-				_show_loaded_interstitial()
-		)
-		if not init_started:
-			_fail_interstitial("AdMob initialization could not start")
-			return false
-		return true
-	if _interstitial_ad == null:
-		return _load_interstitial(true)
 	return _show_loaded_interstitial()
 
-func _load_interstitial(show_when_loaded: bool) -> bool:
+func _load_interstitial(_show_when_loaded: bool) -> bool:
 	var loader := _new(INTERSTITIAL_LOADER_PATH)
 	var request := _new(AD_REQUEST_PATH)
 	var callback := _new(INTERSTITIAL_CALLBACK_PATH)
@@ -255,8 +260,7 @@ func _load_interstitial(show_when_loaded: bool) -> bool:
 	callback.set("on_ad_loaded", func(ad: Object) -> void:
 		_interstitial_ad = ad
 		_attach_interstitial_fullscreen_callbacks()
-		if show_when_loaded:
-			_show_loaded_interstitial()
+		# Cache only. A late load callback must NEVER launch fullscreen content.
 	)
 	callback.set("on_ad_failed_to_load", func(error: Object) -> void:
 		_fail_interstitial(_error_message(error, "Interstitial failed to load"))
@@ -288,7 +292,12 @@ func _attach_interstitial_fullscreen_callbacks() -> void:
 	_interstitial_ad.set("full_screen_content_callback", fullscreen)
 
 func _show_loaded_interstitial() -> bool:
+	# Second line of defence against out-of-order native plugin callbacks.
+	if not _interstitial_menu_allowed():
+		_fail_interstitial("Gameplay started before interstitial display")
+		return false
 	if _interstitial_ad == null:
+		_fail_interstitial("Interstitial is no longer ready")
 		return false
 	_interstitial_ad.call("show")
 	return true
