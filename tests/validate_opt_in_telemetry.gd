@@ -16,20 +16,29 @@ func _run() -> void:
 	var second_receipt := String(analytics.call("_new_telemetry_batch_id"))
 	if not _check(first_receipt.length() == 32 and second_receipt.length() == 32 and first_receipt != second_receipt, "Telemetry batch receipt not random/valid"):return
 	analytics.call("set_analytics_opt_in", true)
-	if not _check((analytics.call("pending_telemetry_for_test") as Array).size() == 1, "Repeated opt-in generated duplicate session event"):return
+	if not _check((analytics.call("pending_telemetry_for_test") as Array).size() == 2, "Repeated opt-in generated duplicate session or first-opt-in event"):return
 	analytics.call("track", "level_complete", {"level": 230, "game_id": "water_sort", "player_id": "secret", "purchase_token": "private"})
 	var events: Array = analytics.call("pending_telemetry_for_test")
-	if not _check(events.size() == 2, "Expected one session and one whitelisted event"):return
-	var item: Dictionary = events[1]
+	if not _check(events.size() == 3 and events[1]["name"] == "opt_in_started", "Expected session, first opt-in, and one gameplay event"):return
+	var item: Dictionary = events[2]
 	if not _check(item.size() == 3 and item["name"] == "level_complete" and item["game"] == "water_sort" and item["level_band"] == 100, "Telemetry payload includes extra data or incorrect broad level band"):return
 	analytics.call("track", "water_sort_completed", {"level": 77})
 	analytics.call("track", "block_puzzle_completed", {"level": 912})
 	analytics.call("track", "rescue_attempt_failed", {"level": 12})
 	events = analytics.call("pending_telemetry_for_test")
-	if not _check(events.size() == 5, "Game-specific milestone events were not normalized"):return
-	if not _check(events[2]["name"] == "level_complete" and events[2]["game"] == "water_sort" and events[2]["level_band"] == 50, "Water completion lacks a clean game/level band"):return
-	if not _check(events[3]["name"] == "level_complete" and events[3]["game"] == "block_puzzle" and events[3]["level_band"] == 500, "Block completion lacks a clean game/level band"):return
-	if not _check(events[4]["name"] == "level_fail" and events[4]["game"] == "rescue_rush", "Rescue failure lacks a clean game ID"):return
+	if not _check(events.size() == 6, "Game-specific milestone events were not normalized"):return
+	if not _check(events[3]["name"] == "level_complete" and events[3]["game"] == "water_sort" and events[3]["level_band"] == 50, "Water completion lacks a clean game/level band"):return
+	if not _check(events[4]["name"] == "level_complete" and events[4]["game"] == "block_puzzle" and events[4]["level_band"] == 500, "Block completion lacks a clean game/level band"):return
+	if not _check(events[5]["name"] == "level_fail" and events[5]["game"] == "rescue_rush", "Rescue failure lacks a clean game ID"):return
+	# Exact-day returns are local milestones only, without a persistent upload ID.
+	var save_manager := root.get_node("SaveManager")
+	var first_key := "telemetry_opt_in_first_day"
+	save_manager.data[first_key] = Time.get_date_string_from_unix_time(int(Time.get_unix_time_from_system()) - 86400)
+	analytics.call("_record_opt_in_milestones")
+	if not _check((analytics.call("pending_telemetry_for_test") as Array).back()["name"] == "return_d1", "Missing exact day-1 opt-in return event"):return
+	save_manager.data[first_key] = Time.get_date_string_from_unix_time(int(Time.get_unix_time_from_system()) - 7 * 86400)
+	analytics.call("_record_opt_in_milestones")
+	if not _check((analytics.call("pending_telemetry_for_test") as Array).back()["name"] == "return_d7", "Missing exact day-7 opt-in return event"):return
 	for i in range(45):
 		analytics.call("track", "hint_used", {"level": i + 1})
 	events = analytics.call("pending_telemetry_for_test")
@@ -40,6 +49,7 @@ func _run() -> void:
 	analytics.set("_telemetry_retry_id", first_receipt)
 	analytics.call("set_analytics_opt_in", false)
 	if not _check((analytics.call("pending_telemetry_for_test") as Array).is_empty(), "Opt-out did not discard pending events"):return
+	if not _check(not save_manager.data.has("telemetry_opt_in_first_day"), "Opt-out retained local return-tracking markers"):return
 	if not _check((analytics.get("_telemetry_retry_batch") as Array).is_empty() and String(analytics.get("_telemetry_retry_id")).is_empty(), "Opt-out kept unsent in-flight receipt"):return
 
 	var ui = load("res://scripts/ui/privacy_analytics_sheet.gd").new()
