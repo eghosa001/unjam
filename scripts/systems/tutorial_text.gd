@@ -15,7 +15,7 @@ const COPY := {
     "ig": ["Hapụ obere ọkụkọ ka ọ pụọ site n'imeghe ụzọ ruo na nsọtụ.","Metụ akụ naanị mgbe ụzọ ya ruo na nsọtụ ghe oghe.","Buru ụzọ wepụ ihe mgbochi. Njehie nwere ike ibelata ndụ.","Lezie anya na akụ na ọnụ ụzọ pụrụ iche. Mepee ụzọ.","Hazie mmiri ka tubu ọ bụla juputara nwee otu agba.","Metụ tubu mbụ, mesịa tubu efu ma ọ bụ nke otu agba.","Wụsa n'elu otu agba ma ọ bụ n'ime tubu efu.","Hapụ otu tubu efu. WEGHACHI ma ọ bụ NDỤMỌDỤ ga-enyere.","Tinye ụdị blọk, kpochapụ ahịrị, ma hapụ ohere.","Pịa blọk jidesie ike ka i bulie ya.","Dọrọ ya n'oghere kwesịrị ekwesị, hapụ ya.","Mee atụmatụ maka blọk atọ. Hapụ ogologo ahịrị efu.","Nwaa: metụ akụ nwere ụzọ efu gaa n'aka nri.","Nwaa: metụ PINK, mesịa PINK ọzọ.","Nwaa: dọrọ blọk anụnụ anụnụ gaa n'akara.","Ọ DỊ MMA! Ị dị njikere igwu egwu.","Emechiri ụzọ! Chọta ụzọ ghe oghe ruo na nsọtụ.","A họrọla pink. Metụ tubu nwere otu agba ahụ.","Agba dị iche enweghị ike ijikọ. Nwaa pink.","Buru ụzọ metụ tubu pink nke aka ekpe.","Jidesie ike. Dọrọ gaa n'akara.","Buru ụzọ jide blọk anụnụ anụnụ.","Ọ fọrọ ntakịrị! Hapụ ya n'ime akara."],
 }
 
-static func tr(key: String) -> String:
+static func translated(key: String) -> String:
     var idx := KEYS.find(key)
     if idx < 0: return key
     var tree := Engine.get_main_loop() as SceneTree
