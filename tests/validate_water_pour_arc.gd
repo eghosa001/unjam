@@ -111,8 +111,11 @@ func _run() -> void:
 		return _fail("Tilted Water Sort source rim does not land on the calculated arc launch point")
 	# Inspect the exact rim pose of the bottle before Water Sort level 1
 	# draws its stream: the clamp must not move the outlet past the receiver.
-	var target_lip := Vector2(350.0, 315.0)
-	var edge_pose: Dictionary = game.call("_choose_pour_pose", ghost, target_lip, 1.0, Vector2(1080.0, 1920.0))
+	ghost.size = Vector2(60.0, 155.0)
+	ghost.custom_minimum_size = ghost.size
+	ghost.pivot_offset = Vector2(ghost.size.x * 0.5, ghost.size.y * 0.11)
+	var target_lip := Vector2(220.0, 275.0)
+	var edge_pose: Dictionary = game.call("_choose_pour_pose", ghost, target_lip, 1.0, Vector2(540.0, 960.0))
 	ghost.position = edge_pose.get("position", Vector2.ZERO)
 	ghost.rotation = float(edge_pose.get("rotation", 0.0))
 	var measured_rim: Vector2 = game.call("_control_point", ghost, game.call("_source_rim_local", ghost, 1.0))
@@ -123,7 +126,7 @@ func _run() -> void:
 	if float(edge_pose.get("side_drop", 0.0)) < 18.0 or float(edge_pose.get("vertical_drop", 0.0)) < 28.0:
 		ghost.queue_free()
 		game.queue_free()
-		return _fail("First-column water pours beyond or below the receiving rim")
+		return _fail("First-column water pours beyond or below the receiving rim: %s" % str(edge_pose))
 	ghost.queue_free()
 
 	# Same-column pours on the outer columns must always place the tilted source
