@@ -2,6 +2,32 @@ extends "res://scripts/ui/block_piece_button.gd"
 class_name SmoothBlockPieceButton
 
 const SmoothDragPreview = preload("res://scripts/ui/smooth_block_drag_preview.gd")
+const MagneticTarget = preload("res://scripts/ui/block_magnetic_target.gd")
+const MIN_ACTUAL_DRAG_PX := 13.0
+var _last_magnet := Vector2i(-1,-1)
+var _down_pointer := Vector2.ZERO
+var _drag_distance := 0.0
+
+func _gui_input(event: InputEvent) -> void:
+	if event is InputEventScreenTouch:
+		var pointer: Vector2 = get_global_transform_with_canvas() * event.position
+		if event.pressed:
+			_down_pointer = pointer
+			_drag_distance = 0.0
+			_last_magnet = Vector2i(-1,-1)
+		else:
+			_drag_distance = maxf(_drag_distance,pointer.distance_to(_down_pointer))
+	elif event is InputEventScreenDrag:
+		var pointer: Vector2 = get_global_transform_with_canvas() * event.position
+		_drag_distance = maxf(_drag_distance,pointer.distance_to(_down_pointer))
+	super._gui_input(event)
+
+func _update_touch_footprint(screen_position: Vector2) -> void:
+	if _drag_distance < MIN_ACTUAL_DRAG_PX:
+		_clear_touch_footprint()
+		return
+	super._update_touch_footprint(screen_position)
+
 
 func _clear_single_touch_preview() -> void:
 	if touch_preview != null and is_instance_valid(touch_preview):
@@ -47,34 +73,10 @@ func _shape_centroid_grid() -> Vector2:
 			count += 1
 	return sum / float(maxi(count, 1))
 
-func _candidate_origin_for_probe(game: Node, probe_cell: Vector2i) -> Vector2i:
-	if probe_cell.x < 0:
-		return Vector2i(-1, -1)
-	var centroid := _shape_centroid_grid()
-	var anchor := probe_cell - Vector2i(int(round(centroid.x)), int(round(centroid.y)))
-	var offsets := [
-		Vector2i.ZERO,
-		Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1),
-		Vector2i(-1, -1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(1, 1)
-	]
-	for offset in offsets:
-		var candidate: Vector2i = anchor + offset
-		if bool(game.call("can_place", shape, candidate)):
-			return candidate
-	return anchor
-
 func _best_origin(game: Node, screen_position: Vector2) -> Vector2i:
-	var lifted_probe := _origin_for_screen_position(game, screen_position, true)
-	var lifted := _candidate_origin_for_probe(game, lifted_probe)
-	if lifted.x >= 0 and bool(game.call("can_place", shape, lifted)):
-		return lifted
-	var direct_probe := _origin_for_screen_position(game, screen_position, false)
-	var direct := _candidate_origin_for_probe(game, direct_probe)
-	if direct.x >= 0 and bool(game.call("can_place", shape, direct)):
-		return direct
-	if lifted_probe.x >= 0:
-		return lifted
-	return direct
+	var chosen: Vector2i = MagneticTarget.choose(game,shape,screen_position,_last_magnet,TOUCH_LIFT)
+	_last_magnet = chosen
+	return chosen
 
 func _show_touch_preview(screen_position: Vector2) -> void:
 	var game := _game()
@@ -117,7 +119,7 @@ func _update_touch_preview_position(screen_position: Vector2) -> void:
 	var valid := false
 	if game != null:
 		var origin := _best_origin(game, screen_position)
-		valid = origin.x >= 0 and bool(game.call("can_place", shape, origin))
+		valid = _drag_distance >= MIN_ACTUAL_DRAG_PX and origin.x >= 0 and bool(game.call("can_place", shape, origin))
 		if valid:
 			# Match the ghost to the *actual* legal cells highlighted beneath it.
 			# The same centroid calculation is used on pointer release; no
@@ -130,6 +132,15 @@ func _update_touch_preview_position(screen_position: Vector2) -> void:
 
 func _finish_touch_drag(screen_position: Vector2) -> void:
 	var game := _game()
+	# Tap-selecting a tray piece must never drop it accidentally.
+	if _drag_distance < MIN_ACTUAL_DRAG_PX:
+		if game != null and game.has_method("clear_touch_drag"):
+			game.call("clear_touch_drag",self)
+		_clear_touch_footprint()
+		_clear_single_touch_preview()
+		_end_drag_feedback(false)
+		_last_magnet = Vector2i(-1,-1)
+		return
 	if game == null:
 		_clear_touch_footprint()
 		_clear_single_touch_preview()
@@ -154,3 +165,8 @@ func _finish_touch_drag(screen_position: Vector2) -> void:
 		# Fading the preview while revealing the source creates a visible double.
 		_clear_single_touch_preview()
 		_end_drag_feedback(false)
+
+func dispose_visuals() -> void:
+	_last_magnet = Vector2i(-1,-1)
+	_drag_distance = 0.0
+	super.dispose_visuals()
