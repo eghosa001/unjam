@@ -64,8 +64,17 @@ func _run() -> void:
 	for label in status_labels:
 		if label == null or label.get_theme_font_size("font_size") < 15:
 			return _fail("Rescue status typography fell below the 15px compact-phone floor")
-	if guidance == null or guidance.get_theme_font_size("font_size") < 15:
-		return _fail("Rescue guidance typography fell below the 15px compact-phone floor")
+	if guidance == null or guidance.get_theme_font_size("font_size") < 16:
+		return _fail("Rescue guidance typography fell below the 16px compact-phone floor")
+	var guidance_heading := game.find_child("RescueGuidanceHeading", true, false) as Label
+	if guidance_heading == null or guidance_heading.text != "YOUR NEXT MOVE":
+		return _fail("Rescue needs a clear guidance-card heading")
+	if guidance.text.strip_edges().is_empty() or guidance.accessibility_name.is_empty():
+		return _fail("Rescue cannot show a blank guidance card after first board render")
+	if guidance_heading.get_global_rect().intersects(guidance.get_global_rect()):
+		return _fail("Rescue guidance heading collides with the contextual instruction")
+	if guidance.get_global_rect().end.y > (game.find_child("RescueGuidanceCard",true,false) as Control).get_global_rect().end.y:
+		return _fail("Rescue guidance copy overflows its authored card")
 	for action_name in ["RescueUndoAction", "RescueHintAction", "RescueRestartAction"]:
 		var action := game.find_child(action_name, true, false) as Button
 		if action == null or action.get_theme_font_size("font_size") < 15:

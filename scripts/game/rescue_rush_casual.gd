@@ -258,12 +258,26 @@ func _build_figma_rescue(canvas: Control) -> void:
 	guidance_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(guidance_panel)
 
-	hint_label = RefCanvas.label("Tap a clear arrow • follow the grid to the open edge.",15,OFF_WHITE,true)
+	# A large unlabelled status box looked empty on mobile whenever a
+	# fresh board reset its hint copy. Establish an understandable visual
+	# hierarchy without adding a second modal, animation or frame callback.
+	var guidance_title := RefCanvas.label("YOUR NEXT MOVE",14,Color("#9ef0ba"),true)
+	guidance_title.name = "RescueGuidanceHeading"
+	guidance_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	guidance_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	guidance_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	RefCanvas.set_rect(guidance_title,41,651,306,25)
+	canvas.add_child(guidance_title)
+
+	hint_label = RefCanvas.label("Tap a clear arrow to open a route for the rescue.",16,OFF_WHITE,true)
 	hint_label.name = "RescueGuidanceText"
-	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	hint_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	RefCanvas.set_rect(hint_label,39,650,310,98)
+	hint_label.clip_text = true
+	hint_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hint_label.accessibility_name = "Next move: tap an arrow with an open path, then rescue the character."
+	RefCanvas.set_rect(hint_label,41,680,306,57)
 	canvas.add_child(hint_label)
 
 	var frame_border := PanelContainer.new()
@@ -487,6 +501,14 @@ func render_board() -> void:
 			chain_label.tooltip_text = "Current combo chain %d" % chain_count
 			chain_label.accessibility_name = chain_label.tooltip_text
 			chain_label.add_theme_font_size_override("font_size",15)
+	# Preserve real solver feedback and error messages; only replace a blank
+	# instruction left by a board reset. Updating only during board renders
+	# adds no idle gameplay CPU/GPU work.
+	if hint_label != null and hint_label.text.strip_edges().is_empty():
+		hint_label.text = "Tap a clear arrow to open a route for the rescue."
+	if hint_label != null:
+		hint_label.accessibility_name = "Next move: %s" % hint_label.text
+		hint_label.tooltip_text = hint_label.accessibility_name
 	var objective_label := find_child("RescueObjectiveLabel",true,false) as Label
 	if objective_label != null:
 		objective_label.accessibility_name = objective_instruction()
