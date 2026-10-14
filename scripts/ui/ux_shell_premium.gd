@@ -388,7 +388,7 @@ func _handle_back() -> void:
 	# Full-screen rankings must close in place; Android Back should not
 	# discard the Home/Daily/Competition journey underneath the popup.
 	var leaderboard := main.get_node_or_null("PremiumLeaderboardPopup")
-	if leaderboard != null and is_instance_valid(leaderboard):
+	if leaderboard != null and is_instance_valid(leaderboard) and leaderboard is CanvasItem and (leaderboard as CanvasItem).visible:
 		leaderboard.call("close")
 		return
 	var surface := _current_surface()
