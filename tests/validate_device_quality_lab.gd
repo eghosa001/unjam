@@ -39,6 +39,14 @@ func _run() -> void:
 	var start := _find_button(panel,"START 90S")
 	if scroll == null or report == null or start == null:
 		return _fail("Quality Lab modal is missing controls or report")
+	var contrast := panel.find_child("QualityLabContrastSurface",true,false) as ColorRect
+	if contrast == null or contrast.color.get_luminance() > 0.20 or contrast.color.a < 0.99:
+		return _fail("Device Quality Lab must keep white report text against a guaranteed opaque dark surface")
+	var start_style := start.get_theme_stylebox("normal") as StyleBoxFlat
+	if start_style == null or start_style.bg_color.get_luminance() > 0.31:
+		return _fail("Device Quality Lab start control lost its distinct high contrast fill")
+	if start.get_theme_color("font_color").get_luminance() < 0.80:
+		return _fail("Device Quality Lab action text is illegible against its button fill")
 	var rect := scroll.get_global_rect()
 	# The game renders a 1080x1920 authored canvas into a 540x960
 	# desktop test window. Compare the modal in canvas coordinates.
