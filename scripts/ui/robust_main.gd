@@ -414,11 +414,12 @@ func _show_game_loading(config: Dictionary) -> void:
 func _cancel_game_loading() -> void:
 	if current_surface != "game_loading":
 		return
-	var config := _pending_game_launch.duplicate(true)
-	if bool(config.get("daily",false)):
-		_return_from_daily(String(config.get("game_id","")))
-	elif String(config.get("game_id","")) in MultiGameManager.GAME_IDS:
-		open_game_campaign(String(config["game_id"]))
+	# Exit a cold-loading game exactly like one already running: directly to
+	# Choose Game. The current_surface setter invalidates the threaded load
+	# generation and safely restores a parked Daily campaign checkpoint.
+	# Do not construct Level Select/Daily/Home as an intermediate screen.
+	if has_method("_open_games_surface"):
+		call("_open_games_surface")
 	else:
 		build_home()
 
