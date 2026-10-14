@@ -79,6 +79,28 @@ func _run() -> void:
 	if move_count.position.x + move_count.size.x > 283.0 or star_target.position.x + star_target.size.x > 354.0:
 		return _fail("Water move/star HUD can escape the audited info strip")
 
+	var undo := game.find_child("WaterUndoAction",true,false) as Button
+	if undo == null or not undo.disabled or undo.text != "NO MOVE":
+		return _fail("Opening Water board must make the empty Undo state obvious")
+	if not undo.has_theme_stylebox_override("disabled") or not undo.has_theme_color_override("font_disabled_color"):
+		return _fail("Water unavailable Undo button is too washed out")
+	if not undo.accessibility_name.contains("Make a pour first"):
+		return _fail("Water Undo empty state lacks an accessible explanation")
+	var history_ref: Array = game.get("history") as Array
+	history_ref.append({"tubes":[],"moves":0})
+	game.call("_refresh_water_undo_action")
+	if undo.disabled or undo.text != "↶  UNDO":
+		return _fail("Water Undo did not activate after the first reversible pour")
+	game.set("daily_mode",true)
+	game.call("_refresh_water_undo_action")
+	if not undo.disabled or undo.text != "NO UNDO" or not undo.accessibility_name.contains("Daily"):
+		return _fail("Water ranked Daily wrongly advertises an Undo action")
+	game.set("daily_mode",false)
+	history_ref.pop_back()
+	game.call("_refresh_water_undo_action")
+	if not undo.disabled or undo.text != "NO MOVE":
+		return _fail("Water Undo does not restore the empty-state hint after history clears")
+
 	game.queue_free()
 	await process_frame
 	print("Water Sort Figma visual hierarchy validated.")
