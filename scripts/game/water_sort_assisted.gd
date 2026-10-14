@@ -98,6 +98,79 @@ func _show_tube_recovery() -> bool:
 	prompt.call("show_for", "EXTRA TUBE", EXTRA_TUBE_COST, Callable(self, "add_extra_tube"))
 	return true
 
+# HintManager delegates the paid Hint button here. Even at level 10,000,
+# never run up to 40k state expansions inside the tap callback. First prove
+# there is a winning move in small main-loop slices; only THEN offer a paid or
+# rewarded hint. A failed search costs exactly zero coins and zero ads.
+var _hint_preparing := false
+var _hint_preparing_key := ""
+
+func request_verified_hint() -> bool:
+	if completed or pending_completion or _hint_preparing:
+		if _hint_preparing and hint_label != null:
+			hint_label.text = "Checking the safest pour…"
+		return _hint_preparing
+	if has_method("_has_active_pours") and bool(call("_has_active_pours")):
+		if status_label != null:
+			status_label.text = "Finish pouring before requesting a hint"
+		return false
+	var found_legal := false
+	for i in range(tubes.size()):
+		for j in range(tubes.size()):
+			if can_pour(i,j):
+				found_legal = true
+				break
+		if found_legal: break
+	if not found_legal:
+		if hint_label != null: hint_label.text = "No legal pour. Undo or retry."
+		return false
+	_hint_preparing = true
+	_hint_preparing_key = JSON.stringify(tubes)
+	if hint_label != null: hint_label.text = "Checking the safest pour…"
+	call_deferred("_solve_water_hint_in_frames",_hint_preparing_key,tubes.duplicate(true))
+	return true
+
+func _solve_water_hint_in_frames(board_key: String, snapshot: Array) -> void:
+	var job := WaterSolver.begin_search(snapshot,40000)
+	while true:
+		if not is_inside_tree() or completed or pending_completion or JSON.stringify(tubes) != board_key:
+			_hint_preparing = false
+			if is_inside_tree() and hint_label != null:
+				hint_label.text = "Board changed. Tap Hint to check again."
+			return
+		var report := WaterSolver.advance_search(job,32)
+		if bool(report.get("done",false)):
+			_hint_preparing = false
+			var move: Vector2i = report.get("move",WaterSolver.NO_MOVE)
+			if move == WaterSolver.NO_MOVE or not can_pour(move.x,move.y):
+				if hint_label != null:
+					hint_label.text = "No verified winning path found. Undo or retry. No coins spent."
+				return
+			if hint_label != null: hint_label.text = "Winning move found. Choose your hint reward."
+			HintManager.request_hint(GAME_ID,Callable(self,"_apply_verified_water_hint").bind(move,board_key),Callable(self,"_on_verified_water_hint_unavailable"))
+			return
+		await get_tree().process_frame
+
+func _on_verified_water_hint_unavailable(reason: String) -> void:
+	if is_inside_tree() and hint_label != null:
+		hint_label.text = reason
+
+func _apply_verified_water_hint(move: Vector2i, board_key: String) -> void:
+	if not is_inside_tree() or completed or pending_completion:
+		return
+	if JSON.stringify(tubes) != board_key or not can_pour(move.x,move.y):
+		if hint_label != null:
+			hint_label.text = "Board changed since Hint was checked. Request a fresh hint."
+		return
+	SaveManager.record_hint()
+	if has_method("_note_attempt_hint"):
+		call("_note_attempt_hint")
+	FeedbackManager.tap()
+	var guidance := "Best move: tube %d → tube %d" % [move.x+1,move.y+1]
+	select_tube(move.x)
+	select_tube(move.y)
+	if hint_label != null: hint_label.text = guidance
+
 func can_show_hint() -> bool:
 	if completed or pending_completion:
 		return false
