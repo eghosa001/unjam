@@ -1,16 +1,21 @@
 name: Android Production Release
 
 on:
+  # Locked release branch runs the same full production gates without
+  # publishing to Play; signing checks and account readiness remain mandatory.
+  push:
+    branches: [release/unjam-v1.0.12]
+    paths: ['.github/workflows/android-release.yml']
   workflow_dispatch:
     inputs:
       version_name:
         description: Human-readable version (for example 1.0.0)
         required: true
-        default: 1.0.11
+        default: 1.0.12
       version_code:
         description: Monotonically increasing Google Play version code
         required: true
-        default: 11
+        default: 12
 
 permissions:
   contents: read
@@ -27,8 +32,8 @@ jobs:
       EXPECTED_PACKAGE: com.eghosa.unjamgam
       EXPECTED_UPLOAD_SHA1: ${{ secrets.UNJAM_ANDROID_UPLOAD_SHA1 }}
       EXPECTED_BLOCK_REVIEW_SHA256: ${{ secrets.UNJAM_BLOCK_CAMPAIGN_REVIEW_SHA256 }}
-      RELEASE_VERSION_NAME: ${{ inputs.version_name || '1.0.11' }}
-      RELEASE_VERSION_CODE: ${{ inputs.version_code || '11' }}
+      RELEASE_VERSION_NAME: ${{ inputs.version_name || '1.0.12' }}
+      RELEASE_VERSION_CODE: ${{ inputs.version_code || '12' }}
       WATER_FULL_AUDIT: "1"
     steps:
       - uses: actions/checkout@v4
@@ -328,7 +333,7 @@ jobs:
       - name: Upload release AAB and verification records
         uses: actions/upload-artifact@v4
         with:
-          name: unjam-release-aab-production-v11
+          name: unjam-release-aab-production-v12
           path: |
             build/android/unjam-release.aab
             build/android/unjam-release.aab.sha256
