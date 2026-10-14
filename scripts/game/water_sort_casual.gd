@@ -342,6 +342,40 @@ func render_board() -> void:
 		move_label.text = "MOVES %d" % moves
 	if star_target_label != null:
 		star_target_label.text = "3★≤%d" % par_moves
+	_refresh_water_undo_action()
+
+func _refresh_water_undo_action() -> void:
+	var undo := find_child("WaterUndoAction",true,false) as Button
+	if undo == null:
+		return
+	# Ranked Daily has never permitted Undo; the UI must communicate the
+	# restriction rather than presenting an active-looking button that fails
+	# after a tap. An untouched campaign board also has nothing to reverse.
+	var mode := "daily" if daily_mode else ("finished" if completed else ("empty" if history.is_empty() else "ready"))
+	var theme_dark := _shell_dark_mode()
+	var visual_key := "%s:%s" % [mode,"dark" if theme_dark else "light"]
+	if String(undo.get_meta("unjam_water_undo_state","")) == visual_key:
+		return
+	undo.set_meta("unjam_water_undo_state",visual_key)
+	undo.disabled = mode != "ready"
+	if mode == "daily":
+		undo.text = "NO UNDO"
+		undo.accessibility_name = "Undo is disabled in ranked Daily challenges"
+	elif mode == "empty":
+		undo.text = "NO MOVE"
+		undo.accessibility_name = "Make a pour first; Undo becomes available afterwards"
+	elif mode == "finished":
+		undo.text = "FINISHED"
+		undo.accessibility_name = "Level completed; Undo is no longer available"
+	else:
+		undo.text = "↶  UNDO"
+		undo.accessibility_name = "Undo the previous pour"
+	undo.tooltip_text = undo.accessibility_name
+	if undo.disabled:
+		var base_fill := Color("#243747") if theme_dark else Color("#d7e3e9")
+		var ink := Color("#e2eff8") if theme_dark else Color("#365368")
+		undo.add_theme_stylebox_override("disabled",RefCanvas.solid_box(base_fill,16,Color("#6a9bbc",0.48),1))
+		undo.add_theme_color_override("font_disabled_color",ink)
 
 func _apply_tube_layout() -> void:
 	if board == null or not is_instance_valid(board):
@@ -468,6 +502,7 @@ func apply_theme_mode(dark: bool) -> void:
 	_style_water_button(find_child("WaterRetryAction", true, false) as Button, dark)
 	_style_water_action(find_child("WaterUndoAction", true, false) as Button, dark)
 	_style_water_action(find_child("WaterHintAction", true, false) as Button, dark)
+	_refresh_water_undo_action()
 	var frame := find_child("WaterFrameBorder", true, false) as PanelContainer
 	if frame != null:
 		frame.add_theme_stylebox_override("panel", RefCanvas.solid_box(Color.TRANSPARENT, 34, Color("#4f6e7d") if dark else Color("#b8d1e0"), 1))
