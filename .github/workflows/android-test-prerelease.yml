@@ -30,11 +30,15 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          fetch-depth: 0
       - name: Require approved release version and current main
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "$BUILD_SHA"
+          # This workflow is added after the originating APK run starts;
+          # allow a successful, exact-commit build that remains an ancestor
+          # of today's main (no external PR or divergent fork).
+          git merge-base --is-ancestor "$BUILD_SHA" HEAD
           grep -Fx 'version/code=12' export_presets.cfg
           grep -Fx 'version/name="1.0.12"' export_presets.cfg
           grep -Fx 'test_mode=false' project.godot
