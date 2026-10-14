@@ -634,7 +634,9 @@ func _add_quick_switch(canvas: Control) -> void:
 		tap.flat = true
 		tap.focus_mode = Control.FOCUS_NONE
 		tap.modulate.a = 0.001
-		tap.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+		# Home shortcuts may be positioned over interactive level tiles on the
+		# next surface. The old touch-down action let touch-up hit new content.
+		tap.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 		RefCanvas.set_rect(tap, x - 4, 459, 116, 110)
 		tap.pressed.connect(_select_home_game.bind(id))
 		canvas.add_child(tap)
