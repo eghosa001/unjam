@@ -366,8 +366,11 @@ func _clamp_rotated_source_position(desired: Vector2, ghost: Control, final_rota
 	var stage := find_child("GameplayStage", true, false) as Control
 	if stage != null:
 		var stage_global := stage.get_global_rect()
-		var stage_left := _game_local(stage_global.position).x + 8.0
-		var stage_right := _game_local(stage_global.end).x - 8.0
+		# The playfield rectangle already includes safe margins. An extra
+		# 8px inset trapped the first-column source under the receiver and made
+		# its liquid look detached from the downhill lip. Use the full stage.
+		var stage_left := _game_local(stage_global.position).x
+		var stage_right := _game_local(stage_global.end).x
 		if stage_right - stage_left > ghost.size.x:
 			left_bound = maxf(left_bound, stage_left)
 			right_bound = minf(right_bound, stage_right)
