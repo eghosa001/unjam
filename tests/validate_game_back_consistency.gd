@@ -80,7 +80,8 @@ func _run() -> void:
 	if not rescue_source.contains("premium_button(\"←\""):
 		return _fail("Rescue Rush back glyph is inconsistent")
 
-	for gameplay_source in [block_source,water_source,rescue_source]:
+	var live_block_ui := _read("res://scripts/game/block_puzzle_3d.gd")
+	for gameplay_source in [live_block_ui,water_source,rescue_source]:
 		if not gameplay_source.contains('back.accessibility_name = "Back to Choose Game"') or not gameplay_source.contains('back.tooltip_text = "Back to Choose Game"'):
 			return _fail("In-game Back tells TalkBack the wrong destination")
 
