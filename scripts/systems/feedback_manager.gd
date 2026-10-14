@@ -34,6 +34,7 @@ var _music_fade: Tween
 var _last_nav_tap_ms := -1000
 var _last_soft_haptic_ms := -10000
 var _stream_cache: Dictionary = {}
+var _audio_suspended := false
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -68,6 +69,7 @@ func _exit_tree() -> void:
 
 func shutdown_audio() -> void:
 	set_process(false)
+	_audio_suspended = false
 	_cancel_music_fade()
 	for sfx in sfx_players:
 		if sfx != null and is_instance_valid(sfx):
@@ -85,9 +87,38 @@ func shutdown_audio() -> void:
 	music_stream = null
 	_stream_cache.clear()
 
+func _notification(what: int) -> void:
+	# Explicit audio focus handling for real Android background / resume.
+	# Process mode ALWAYS supports feedback, but must never keep BGM/chimes
+	# running after the player leaves the app.
+	if what in [NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_WM_CLOSE_REQUEST]:
+		suspend_audio_for_background()
+	elif what == NOTIFICATION_APPLICATION_RESUMED:
+		resume_audio_after_background()
+
+func suspend_audio_for_background() -> void:
+	if _audio_suspended:
+		return
+	_audio_suspended = true
+	_cancel_music_fade()
+	if music_player != null and is_instance_valid(music_player):
+		music_player.stream_paused = true
+	for sfx in sfx_players:
+		if sfx != null and is_instance_valid(sfx):
+			sfx.stop()
+
+func resume_audio_after_background() -> void:
+	if not _audio_suspended:
+		return
+	_audio_suspended = false
+	if music_player != null and is_instance_valid(music_player):
+		music_player.stream_paused = false
+	_sync_music()
+
 func apply_settings() -> void:
 	last_music_enabled = bool(SaveManager.data.get("music", true))
-	_sync_music()
+	if not _audio_suspended:
+		_sync_music()
 
 func _cancel_music_fade() -> void:
 	if _music_fade != null and _music_fade.is_valid():
@@ -113,6 +144,8 @@ func _start_music_immediately() -> void:
 
 func _sync_music() -> void:
 	last_music_enabled = bool(SaveManager.data.get("music", true))
+	if _audio_suspended:
+		return
 	if music_player == null:
 		return
 	if last_music_enabled:
@@ -281,7 +314,7 @@ func _prewarm_common_sfx() -> void:
 		await get_tree().process_frame
 
 func _play_chime(notes: Array, duration: float, volume: float, brightness: float) -> void:
-	if sfx_players.is_empty() or not bool(SaveManager.data.get("sound", true)):
+	if _audio_suspended or sfx_players.is_empty() or not bool(SaveManager.data.get("sound", true)):
 		return
 	var target := _next_available_sfx_player()
 	if target == null:
