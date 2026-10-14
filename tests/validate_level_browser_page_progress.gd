@@ -54,7 +54,7 @@ func _check_page(app: Control, game_id: String) -> bool:
 		return false
 	var locked_number := -1
 	for level_number in range(bounds.x,bounds.y+1):
-		if not MultiGameManager.is_level_unlocked(game_id,level_number):
+		if not bool(games.call("is_level_unlocked",game_id,level_number)):
 			locked_number = level_number
 			break
 	if locked_number >= 0:
