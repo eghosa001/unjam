@@ -2173,6 +2173,40 @@ func _build_figma_level_browser(game_id: String) -> void:
 		status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_fit_single_line_control_text(status_label,62.0,11,9)
 		index += 1
+	_figma_level_page_progress(canvas,game_id,bounds,grid_y,accent)
+
+func _figma_level_page_progress(canvas: Control, game_id: String, bounds: Vector2i, grid_y: float, accent: Color) -> void:
+	# Twenty authored level tiles consume five rows. Use the open space below
+	# them to show genuine clear progress, not another navigational action.
+	# Count awarded stars rather than "unlocked" tiles: level 1 is available
+	# immediately and must not falsely read as cleared on a new profile.
+	var page_levels := maxi(1,bounds.y-bounds.x+1)
+	var cleared := 0
+	for level_number in range(bounds.x,bounds.y+1):
+		if MultiGameManager.get_stars(game_id,level_number) > 0:
+			cleared += 1
+	var rows := int(ceil(float(page_levels)/4.0))
+	var card_y := grid_y+float(rows)*80.0+7.0
+	_figma_card(canvas,"LevelPageProgressCard",Rect2(17,card_y,354,65),Color("#fffaf0"),Color(accent,0.32),15)
+	var heading := _figma_text(canvas,"PAGE PROGRESS",Rect2(34,card_y+11,146,20),14,FIGMA_INK,true)
+	heading.name = "LevelPageProgressTitle"
+	var count_label := _figma_text(canvas,"%d / %d CLEARED" % [cleared,page_levels],Rect2(194,card_y+11,158,20),13,FIGMA_MUTED,true)
+	count_label.name = "LevelPageProgressCount"
+	count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	count_label.accessibility_name = "%d of %d levels cleared on this page" % [cleared,page_levels]
+	var bar := ProgressBar.new()
+	bar.name = "LevelPageProgressBar"
+	bar.min_value = 0
+	bar.max_value = page_levels
+	bar.value = cleared
+	bar.show_percentage = false
+	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bar.accessibility_name = count_label.accessibility_name
+	bar.add_theme_stylebox_override("background",FigmaReferenceCanvas.solid_box(Color("#48505a") if _dark() else Color("#d5d7d3"),5))
+	bar.add_theme_stylebox_override("fill",FigmaReferenceCanvas.solid_box(accent.lightened(0.18) if _dark() else accent.darkened(0.18),5))
+	FigmaReferenceCanvas.set_rect(bar,34,card_y+42,318,8)
+	canvas.add_child(bar)
+
 func _figma_level_tabs(canvas: Control, active_game_id: String) -> void:
 	var active_accent := Unjam3DTheme.game_accent(active_game_id)
 	var specs := [
