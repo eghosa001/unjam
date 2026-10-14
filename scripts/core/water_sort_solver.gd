@@ -52,7 +52,14 @@ static func advance_search(job: Dictionary, budget: int = 32) -> Dictionary:
 	var visited: Dictionary = job.get("visited",{})
 	var expanded := int(job.get("expanded",0))
 	var cap := int(job.get("limit",40000))
+	# Dense 14-tube boards can make even 32 expansions expensive. Use a
+	# real monotonic CPU-time budget as well as a node-count budget, checking
+	# before each expansion. One unusually costly expansion may exceed it;
+	# subsequent expansions never pile on in the same rendered frame.
+	var start_usec := Time.get_ticks_usec()
 	for _slice in range(clampi(budget,1,128)):
+		if _slice > 0 and Time.get_ticks_usec() - start_usec >= 2400:
+			break
 		if heap.is_empty() or expanded >= cap:
 			job["done"] = true
 			job["move"] = NO_MOVE
