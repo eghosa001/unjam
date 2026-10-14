@@ -481,12 +481,12 @@ func tray_visual_cell_size() -> float:
 
 func _tray_cell_size(max_x: int, max_y: int) -> float:
 	var fit_cell := minf((size.x - 8.0) / float(max_x + 1), (size.y - 8.0) / float(max_y + 1))
-	# Formerly capped at 37 authored pixels even on 1080px phones where the
-	# BOARD tiles are 80-90px. That made the tray feel miniature, followed by
-	# an oversized ghost when dragging. Fill the actual slot and size each
-	# piece relative to its board, while guaranteeing the entire shape fits.
+	# Size from the live 8x8 board, not from an unrelated fixed icon cap.
+	# On compact phones the tray cells used only a fraction of their slots,
+	# making a lifted block look much bigger than the piece being touched.
+	# Occupy the slot while retaining full shape visibility for 3+ wide pieces.
 	var board_cell := _board_cell_visual_size(_game())
-	var preferred := clampf(board_cell * 0.84, 43.0, 68.0) if board_cell > 0.0 else 58.0
+	var preferred := clampf(board_cell * 1.20, 48.0, 60.0) if board_cell > 0.0 else 50.0
 	return maxf(16.0, minf(preferred, fit_cell))
 
 func _draw_block(rect: Rect2, fill: Color) -> void:
