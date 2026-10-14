@@ -42,6 +42,11 @@ func _run() -> void:
 	var contrast := panel.find_child("QualityLabContrastSurface",true,false) as ColorRect
 	if contrast == null or contrast.color.get_luminance() > 0.20 or contrast.color.a < 0.99:
 		return _fail("Device Quality Lab must keep white report text against a guaranteed opaque dark surface")
+	# The user observed pale-grey Android cards with nearly invisible white
+	# text even when an inner ColorRect was present. The contrast surface must
+	# be a SIBLING painted before the scroll, not swallowed by a skinned panel.
+	if contrast.get_parent() != scroll.get_parent() or contrast.get_index() >= scroll.get_index():
+		return _fail("Device Lab contrast layer is behind a theme-skinned container again")
 	var current_button_style := start.get_theme_stylebox("normal")
 	print("DEVICE_QA_BUTTON_STYLE: ",current_button_style.get_class() if current_button_style != null else "none", " override=",start.has_theme_stylebox_override("normal")," brightness=", (current_button_style as StyleBoxFlat).bg_color.get_luminance() if current_button_style is StyleBoxFlat else -1.0)
 	var start_style := current_button_style as StyleBoxFlat
@@ -65,6 +70,15 @@ func _run() -> void:
 		return _fail("Android QA concealed a long foreground frame freeze")
 	if not captured.has("pause_count") or not captured.has("uncertain_intervals"):
 		return _fail("QA does not disclose focus interruptions or uncertain samples")
+	# Sample only Water: Rescue and Block must remain unverified in the
+	# per-game report until the user actually plays them.
+	analytics.call("_qa_record_game_frame","water_sort",0.016)
+	captured = analytics.call("local_quality_capture_report")
+	var games: Dictionary = captured.get("per_game",{})
+	if games.size() != 3 or int((games.get("water_sort",{}) as Dictionary).get("sampled_frames",0)) != 1:
+		return _fail("Per-game frame samples were not separated")
+	if int((games.get("rescue_rush",{}) as Dictionary).get("sampled_frames",0)) != 0:
+		return _fail("Quality Lab falsely counted menu frames as Rescue gameplay")
 	if String(captured.get("state","")) != "capturing" or int(captured.get("sampled_frames",0)) < 4:
 		return _fail("Starting 90s QA capture did not measure main-loop frames")
 	if String(app.get("current_surface")) != "live":
