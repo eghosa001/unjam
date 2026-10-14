@@ -46,3 +46,17 @@ Gather signed/installed Android device measurements for sustained frame pacing, 
 When the player explicitly opts into anonymous game analytics, the app keeps **one local Boolean** recording whether the foreground session was active. Normal Android backgrounding and closing clear it; resuming foreground play restores it. On a subsequent cold start, a Boolean left active contributes **one** anonymous `session_interrupted` aggregate event (game=`all`, level band=`0`). Disabling analytics clears both the unsent events and the local Boolean.
 
 The `unclean_foreground_starts` column in the service-only daily funnel is **not a crash count, crash-free-user rate, Android ANR statistic or user-retention measure**. A force-stop, OS process termination or missed lifecycle callback could trigger the same indicator. There are **no exception traces, player identifiers, installation IDs, individual event logs, IP addresses or purchase details** in this aggregate. A proper platform crash reporting service and real player consented retention insights are still required for full release verification.
+
+
+## 14 October: privacy-first activation and exact-day return signals (v1.0.11+)
+
+The client now records only when Anonymous Analytics is ON: `opt_in_started` (first consented session), `game_selected` (game browser opened), `daily_opened`, `garden_opened`, and `return_d1`/`return_d7` (a consented installation opened UNJAM exactly 1 or 7 UTC calendar days after its **first opt-in**). The opt-in date and flags for already counted returns are **stored only in local preferences** and erased on opt-out; no persistent device/install/user identifier or exact date is sent to the server. A lost offline batch can undercount and users who opt in later begin a new comparison window. These event totals **cannot** establish validated D1/D7 retention rates, DAU or unique players.
+
+The service-only view `public.unjam_telemetry_daily_activation` exposes aggregate `new_opt_ins`, `exact_day_1_returns`, `exact_day_7_returns`, `game_selections`, `daily_screen_opens`, and `garden_screen_opens`. Compare changes directionally only, after enough opted-in usage exists; values are never proof of individual players. `game_selections` is a count of navigation actions, not a player count. Other existing daily funnel views are unchanged.
+
+```sql
+select * from public.unjam_telemetry_daily_activation
+where day >= current_date - 14 order by day desc;
+```
+
+The app-side D1/D7 events, SQL whitelist migration and `unjam-telemetry` Edge Function must be deployed as one backward-compatible unit. Zero data until consenting installed clients use the release. Genuine retention cohorts and platform crash reports remain external gates.
