@@ -12,6 +12,19 @@ func _run() -> void:
 	await process_frame
 	var cell_size := float(preview.call("_display_cell_size",2,1))
 	if not _check(absf(cell_size - 35.0) < 0.1,"Touch preview geometry ignores real 35px board cells"): return
+	# Heavy drag 3D materials must be reused, not freshly allocated for
+	# every cell at 60-120Hz. A changed piece starts with a clean cache.
+	var style_a := preview.call("_style",Color("#8b7cf6"),14) as StyleBoxFlat
+	var style_b := preview.call("_style",Color("#8b7cf6"),14) as StyleBoxFlat
+	if not _check(style_a == style_b,"Block ghost still creates a new 3D material on every draw"):return
+	preview.set_drag_target(Vector2(30,30),true)
+	preview.set_drag_target(Vector2(180,50),true)
+	preview.call("_process",1.0/60.0)
+	if not _check(preview.position.distance_to(Vector2(180,50)) < 0.1,"Valid Block ghost lags behind the exact highlighted placement cells"):return
+	preview.configure([Vector2i(0,0),Vector2i(1,0)],Color("#34d399"),35.0)
+	var style_c := preview.call("_style",Color("#8b7cf6"),14) as StyleBoxFlat
+	if not _check(style_c != style_a,"Changing Block ghost piece incorrectly retained stale rendered materials"):return
+	preview.configure([Vector2i(0,0),Vector2i(1,0),Vector2i(2,0),Vector2i(2,1)],Color("#8b7cf6"),35.0)
 	var centroid: Vector2 = preview.call("shape_centroid_local")
 	# For the four-tile L, the occupied-cell mean should align with those
 	# same 35px tiles, not a separate 88px drawing geometry.

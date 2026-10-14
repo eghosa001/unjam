@@ -10,9 +10,14 @@ var board_valid := true
 var has_target := false
 var board_cell_size := 0.0
 var last_snap_msec := -1000
+# Reuse the four painted material styles across dozens of frames. The
+# previous ghost rebuilt several StyleBoxFlat Resources for EACH tile every
+# animation frame and caused mobile allocation/GC spikes during dragging.
+var _draw_style_cache: Dictionary = {}
 
 func configure(value: Array, color := Color("8b7cf6"), cell_size_override: float = 0.0) -> void:
 	shape = value.duplicate(true)
+	_draw_style_cache.clear()
 	accent = color
 	board_cell_size = maxf(0.0, cell_size_override)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -53,8 +58,15 @@ func _process(delta: float) -> void:
 	phase += delta
 	if has_target:
 		var delta_to_target: Vector2 = target_position - position
-		position = position.lerp(target_position, minf(1.0, delta * 30.0))
-		var desired_rotation := clampf(delta_to_target.x * 0.00045, -0.026, 0.026)
+		# Once the footprint has snapped to legal board cells, the *rendered*
+		# floating piece must match that cell immediately. Smoothing the ghost
+		# behind an already-highlighted target made the block feel misaligned.
+		# Keep a small easing only in free-flight/invalid regions.
+		if board_valid and delta_to_target.length() >= maxf(4.0, board_cell_size * 0.45):
+			position = target_position
+		else:
+			position = position.lerp(target_position, minf(1.0, delta * 42.0))
+		var desired_rotation := clampf(delta_to_target.x * 0.00030, -0.016, 0.016)
 		rotation = lerpf(rotation, desired_rotation, minf(1.0, delta * 16.0))
 	else:
 		rotation = lerpf(rotation, 0.0, minf(1.0, delta * 16.0))
@@ -179,10 +191,16 @@ func _as_point(raw: Variant) -> Vector2i:
 	return Vector2i(-1, -1)
 
 func _style(color: Color, radius: int) -> StyleBoxFlat:
+	var key := "%s:%d" % [color.to_html(true),radius]
+	if _draw_style_cache.has(key):
+		return _draw_style_cache[key] as StyleBoxFlat
 	var style := StyleBoxFlat.new()
 	style.bg_color = color
 	style.corner_radius_top_left = radius
 	style.corner_radius_top_right = radius
 	style.corner_radius_bottom_left = radius
 	style.corner_radius_bottom_right = radius
+	if _draw_style_cache.size() >= 16:
+		_draw_style_cache.clear()
+	_draw_style_cache[key] = style
 	return style
