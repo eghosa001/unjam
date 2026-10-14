@@ -114,11 +114,21 @@ func _run() -> void:
 	ghost.size = Vector2(60.0, 155.0)
 	ghost.custom_minimum_size = ghost.size
 	ghost.pivot_offset = Vector2(ghost.size.x * 0.5, ghost.size.y * 0.11)
-	var target_lip := Vector2(220.0, 275.0)
-	var edge_pose: Dictionary = game.call("_choose_pour_pose", ghost, target_lip, 1.0, Vector2(540.0, 960.0))
+	# Receiver and screen edge must come from the SAME rendered canvas
+	# space. Synthetic coordinates are not comparable to a scaled Figma scene.
+	var actual_board := game.get("board") as GridContainer
+	if actual_board == null or actual_board.get_child_count() < 2:
+		ghost.queue_free()
+		game.queue_free()
+		return _fail("Water level has no two tubes for first-column pour test")
+	var first_tube := actual_board.get_child(0) as Control
+	var receiver_tube := actual_board.get_child(1) as Control
+	var target_lip: Vector2 = game.call("_control_point", receiver_tube, game.call("_receiver_rim_local", receiver_tube))
+	var edge_direction := float(game.call("_pour_direction", first_tube.get_global_rect(), receiver_tube.get_global_rect(), ghost.size.x, root.get_visible_rect().size.x))
+	var edge_pose: Dictionary = game.call("_choose_pour_pose", ghost, target_lip, edge_direction, root.get_visible_rect().size)
 	ghost.position = edge_pose.get("position", Vector2.ZERO)
 	ghost.rotation = float(edge_pose.get("rotation", 0.0))
-	var measured_rim: Vector2 = game.call("_control_point", ghost, game.call("_source_rim_local", ghost, 1.0))
+	var measured_rim: Vector2 = game.call("_control_point", ghost, game.call("_source_rim_local", ghost, edge_direction))
 	if measured_rim.distance_to(edge_pose.get("rim", Vector2.ZERO)) > 0.75:
 		ghost.queue_free()
 		game.queue_free()
