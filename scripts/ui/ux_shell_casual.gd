@@ -5,6 +5,7 @@ var _tutorial_demo_root: Control
 var _tutorial_world_art: Control
 
 const GAME_ART_SCRIPT = preload("res://scripts/ui/unjam_2d_game_art.gd")
+const TUTORIAL_PRACTICE = preload("res://scripts/ui/tutorial_practice.gd")
 
 # Compatibility fallback retained for theme-integrity/source contracts; the visible
 # tutorial canvas uses the approved deeper Figma 3D scene palette.
@@ -353,11 +354,20 @@ func hide_tutorial() -> void:
 
 func _render_figma_demo(game_id: String, step: int) -> void:
 	for child in _tutorial_demo_root.get_children():
+		_tutorial_demo_root.remove_child(child)
 		child.queue_free()
 	match game_id:
 		"water_sort": _demo_water(step)
 		"block_puzzle": _demo_block(step)
 		_: _demo_rescue(step)
+	# The original tutorial only explained gestures with static pictures.
+	# The first slide now lets players rehearse a real touch/drag, with
+	# clear instant feedback. NEXT and PLAY NOW remain skippable.
+	if step == 0:
+		var practice := TUTORIAL_PRACTICE.new()
+		practice.name = "TutorialGesturePractice"
+		practice.configure(game_id)
+		_tutorial_demo_root.add_child(practice)
 
 func _demo_water(step: int) -> void:
 	var colors: Array[Color] = [Color("#ff4da3"),Color("#1fabff"),Color("#ff4da3")]
