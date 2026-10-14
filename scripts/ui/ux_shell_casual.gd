@@ -6,6 +6,7 @@ var _tutorial_world_art: Control
 
 const GAME_ART_SCRIPT = preload("res://scripts/ui/unjam_2d_game_art.gd")
 const TUTORIAL_PRACTICE = preload("res://scripts/ui/tutorial_practice.gd")
+const TUTORIAL_TEXT = preload("res://scripts/systems/tutorial_text.gd")
 
 # Compatibility fallback retained for theme-integrity/source contracts; the visible
 # tutorial canvas uses the approved deeper Figma 3D scene palette.
@@ -221,25 +222,25 @@ func show_tutorial(game_id: String = "rescue_rush") -> void:
 	tutorial_title.text = _game_name(game_id)
 	match game_id:
 		"water_sort":
-			tutorial_body.text = "Sort every colour into its own tube. You only need three ideas."
+			tutorial_body.text = TUTORIAL_TEXT.tr("water_intro")
 			tutorial_steps = [
-				"Tap a tube with liquid, then tap the tube you want to pour into.",
-				"Pour only into an empty tube or onto the same colour. Each tube holds four layers.",
-				"Use empty tubes as breathing room. UNDO repairs a mistake; HINT reveals a safe move."
+				TUTORIAL_TEXT.tr("water_1"),
+				TUTORIAL_TEXT.tr("water_2"),
+				TUTORIAL_TEXT.tr("water_3")
 			]
 		"block_puzzle":
-			tutorial_body.text = "Place all three shapes, clear lines and protect your future space."
+			tutorial_body.text = TUTORIAL_TEXT.tr("block_intro")
 			tutorial_steps = [
-				"Touch and hold a piece. It lifts so the board stays visible.",
-				"Drag to a valid position and release. Complete rows or columns disappear immediately.",
-				"Look at all three pieces before committing. Keep the centre and long lanes flexible."
+				TUTORIAL_TEXT.tr("block_1"),
+				TUTORIAL_TEXT.tr("block_2"),
+				TUTORIAL_TEXT.tr("block_3")
 			]
 		_:
-			tutorial_body.text = "Free the trapped character by opening a clear route to the edge."
+			tutorial_body.text = TUTORIAL_TEXT.tr("rescue_intro")
 			tutorial_steps = [
-				"Read the arrow. A piece can leave only in the direction it points.",
-				"Tap it only when every square from the piece to the edge is clear.",
-				"Special pieces can open gates or trigger chains. Clear the rescue lane to finish."
+				TUTORIAL_TEXT.tr("rescue_1"),
+				TUTORIAL_TEXT.tr("rescue_2"),
+				TUTORIAL_TEXT.tr("rescue_3")
 			]
 	_render_tutorial_step()
 	var dim := tutorial_layer.get_node("TutorialDim") as ColorRect
