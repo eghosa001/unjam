@@ -50,7 +50,7 @@ func _run() -> void:
 	var captured: Dictionary = analytics.call("local_quality_capture_report")
 	if String(captured.get("state","")) != "capturing" or int(captured.get("sampled_frames",0)) < 4:
 		return _fail("Starting 90s QA capture did not measure main-loop frames")
-	if String(app.get("current_surface")) != "games":
+	if String(app.get("current_surface")) != "live":
 		return _fail("Quality Lab did not hand the player off to Choose Game")
 	app.call("build_settings")
 	await _frames(2)
