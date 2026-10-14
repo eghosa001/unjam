@@ -8,20 +8,17 @@ on:
       - ".github/workflows/android-test-apk.yml"
       - "project.godot"
       - "export_presets.cfg"
-      - "scripts/systems/feedback_manager.gd"
+      # Build whenever actual shipped code changes, including newly added
+      # tutorials, language tables, solvers, game services and shared controls.
+      # The previous small allowlist silently skipped major merged features.
       - "scripts/game/**"
-      - "scripts/ui/robust_main.gd"
-      - "scripts/ui/premium_home_direct_levels.gd"
-      - "scripts/ui/premium_main_casual.gd"
-      - "scripts/ui/premium_live_hub.gd"
-      - "scripts/ui/boot_splash.gd"
-      - "scripts/ui/ui_touch_enhancer.gd"
-      - "tests/validate_runtime_efficiency.gd"
-      - "scenes/Boot.tscn"
-      - "scripts/systems/android_monetization_bridge.gd"
-      - "scripts/systems/privacy_manager.gd"
-      - "scripts/systems/store_manager.gd"
-      - "addons/unjam_admob_provider.gd"
+      - "scripts/ui/**"
+      - "scripts/systems/**"
+      - "scripts/core/**"
+      - "scripts/meta/**"
+      - "scenes/**"
+      - "data/**"
+      - "addons/**"
       - "tools/install_monetization_plugins.sh"
       - "assets/**"
       - "store_assets/**"
@@ -167,6 +164,9 @@ jobs:
           test "$FOREGROUND_BYTES" -gt 1000
           test "$SPLASH_BYTES" -gt 1000
           sha256sum "$APK" | tee build/android/unjam-latest-debug.apk.sha256
+          # The exact tested commit must be recoverable from a distributed APK
+          # archive. This is not the APK signature and contains no secrets.
+          printf '%s\n' "$GITHUB_SHA" > build/android/unjam-latest-debug.commit
 
       - name: Upload latest test APK
         uses: actions/upload-artifact@v4
@@ -175,6 +175,7 @@ jobs:
           path: |
             build/android/unjam-latest-debug.apk
             build/android/unjam-latest-debug.apk.sha256
+            build/android/unjam-latest-debug.commit
             build/android/unjam-latest-debug-badging.txt
             build/android/unjam-latest-debug-permissions.txt
             build/android/unjam-latest-debug-manifest.txt
