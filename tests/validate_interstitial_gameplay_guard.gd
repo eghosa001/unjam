@@ -25,9 +25,9 @@ func _run() -> void:
 	var ads := root.get_node_or_null("AdManager")
 	if save == null or ads == null:
 		return _fail("AdManager and SaveManager required")
-	var saved_ads := ads.provider
+	var saved_ads: Node = ads.get("provider") as Node
 	var saved_remove := bool(save.data.get("remove_ads",false))
-	var saved_mode := ProjectSettings.get_setting("monetization/test_mode",true)
+	var saved_mode: Variant = ProjectSettings.get_setting("monetization/test_mode",true)
 	var old_count := int(ads.completed_since_interstitial)
 	var old_interval := int(ads.interstitial_interval)
 	var old_in_progress := bool(ads.get("_interstitial_in_progress"))
