@@ -50,6 +50,7 @@ func _build_ui() -> void:
 	layer.add_child(overlay)
 
 	var dim := ColorRect.new()
+	dim.name = "ShopOverlayScrim"
 	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	# Opaque enough to suppress the Home/Games cards bleeding into this modal.
 	# The Shop is a full-screen purchase surface, not a translucent sheet.
