@@ -2074,12 +2074,16 @@ func display_name_for_upgrade(id: String) -> String:
 		_: return id.replace("_"," ").to_upper()
 
 func _open_games_surface() -> void:
-	_remove_active_game()
+	# Make the already-constructed, persistent game chooser visible BEFORE
+	# detaching the outgoing 3D puzzle scene. This avoids the one-frame Home/
+	# empty-content flash that can occur on fast Back taps on Android.
+	# The outgoing scene is still visually on top until safely removed.
+	current_surface = "live"
 	if content != null and is_instance_valid(content):
 		content.hide()
 		content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_remove_active_game()
 	FeedbackManager.tap()
-	current_surface = "live"
 
 
 func _compact_stat(value: int) -> String:
