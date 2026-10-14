@@ -46,12 +46,15 @@ func _run() -> void:
 	if points[points.size() - 1].distance_to(expected_entry) > 0.01:
 		game.queue_free()
 		return _fail("Water stream does not finish just inside the receiver mouth")
-	var apex_y := INF
-	for point in points:
-		apex_y = minf(apex_y, point.y)
-	if apex_y >= source.y - 3.0:
+	# Liquid must leave the glass rim DOWNWARD, never arch above it like
+	# a fountain. Sample the full stream, not just its two endpoints.
+	if points[1].y <= source.y or points[1].x <= source.x:
 		game.queue_free()
-		return _fail("Water stream has no visible ballistic arc above the source rim")
+		return _fail("Water stream launches upward or backward from the lip")
+	for point in points:
+		if point.y < source.y - 0.5:
+			game.queue_free()
+			return _fail("Water stream rises above the source rim")
 
 	var mirrored: PackedVector2Array = game.call("_liquid_arc_points", Vector2(260.0, 100.0), Vector2(100.0, 280.0), -1.0)
 	if mirrored.size() != points.size():
@@ -106,6 +109,21 @@ func _run() -> void:
 		ghost.queue_free()
 		game.queue_free()
 		return _fail("Tilted Water Sort source rim does not land on the calculated arc launch point")
+	# Inspect the exact rim pose of the bottle before Water Sort level 1
+	# draws its stream: the clamp must not move the outlet past the receiver.
+	var target_lip := Vector2(350.0, 315.0)
+	var edge_pose: Dictionary = game.call("_choose_pour_pose", ghost, target_lip, 1.0, Vector2(1080.0, 1920.0))
+	ghost.position = edge_pose.get("position", Vector2.ZERO)
+	ghost.rotation = float(edge_pose.get("rotation", 0.0))
+	var measured_rim: Vector2 = game.call("_control_point", ghost, game.call("_source_rim_local", ghost, 1.0))
+	if measured_rim.distance_to(edge_pose.get("rim", Vector2.ZERO)) > 0.75:
+		ghost.queue_free()
+		game.queue_free()
+		return _fail("First-column pour pose is not anchored to the drawn glass lip")
+	if float(edge_pose.get("side_drop", 0.0)) < 18.0 or float(edge_pose.get("vertical_drop", 0.0)) < 28.0:
+		ghost.queue_free()
+		game.queue_free()
+		return _fail("First-column water pours beyond or below the receiving rim")
 	ghost.queue_free()
 
 	# Same-column pours on the outer columns must always place the tilted source
@@ -165,7 +183,7 @@ func _run() -> void:
 
 	game.queue_free()
 	await process_frame
-	print("WATER_POUR_ARC_OK: source-rim launch, height-aware tilt, curved ballistic path, receiver-mouth entry, same-column edge safety and lock recovery are wired.")
+	print("WATER_POUR_ARC_OK: source-rim launch, height-aware tilt, gravity-fed rim-to-rim path, receiver-mouth entry, same-column edge safety and lock recovery are wired.")
 	quit(0)
 
 func _read(path: String) -> String:
