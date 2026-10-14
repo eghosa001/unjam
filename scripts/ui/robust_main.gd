@@ -617,26 +617,22 @@ func _active_game_context() -> Dictionary:
 	return _game_context(game, selected_game_id, false)
 
 
-func _return_from_game(game_id: String, was_daily: bool, level_number: int = -1) -> void:
-	_remove_active_game()
+func _return_from_game(game_id: String, was_daily: bool, _level_number: int = -1) -> void:
+	# Exit directly to CHOOSE GAME, without rebuilding a Level Select page or
+	# momentarily revealing Home underneath the incoming persistent Live layer.
+	# Both the in-game Back button and Android Back use this single transition.
+	# Preserve game identity for the next intentional campaign selection.
+	if game_id in MultiGameManager.GAME_IDS:
+		selected_game_id = game_id
 	if was_daily:
-		_return_from_daily(game_id)
-		return
-	if game_id == "rescue_rush":
-		selected_game_id = "rescue_rush"
-		if level_number > 0:
-			selected_world = LevelManager.world_for_level(level_number)
-		build_level_select()
-		return
-	if game_id not in ["water_sort", "block_puzzle"]:
+		_restore_campaign_checkpoint_after_daily(game_id)
+	# The premium game picker is a persistent, ready surface. Show it *before*
+	# disposing of the old game so no blank/incorrect frame can flash between.
+	if has_method("_open_games_surface"):
+		call("_open_games_surface")
+	else:
+		_remove_active_game()
 		build_home()
-		return
-	selected_game_id = game_id
-	var target_level := level_number if level_number > 0 else MultiGameManager.highest_level(game_id)
-	selected_multi_world = MultiGameManager.world_for_game_level(game_id, target_level)
-	selected_multi_page = _multi_page_for_level(game_id, target_level)
-	build_multi_level_select()
-
 
 func force_back_from_game() -> void:
 	if current_surface == "game_loading":
