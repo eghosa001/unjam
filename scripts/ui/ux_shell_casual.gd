@@ -222,25 +222,25 @@ func show_tutorial(game_id: String = "rescue_rush") -> void:
 	tutorial_title.text = _game_name(game_id)
 	match game_id:
 		"water_sort":
-			tutorial_body.text = TUTORIAL_TEXT.tr("water_intro")
+			tutorial_body.text = TUTORIAL_TEXT.translated("water_intro")
 			tutorial_steps = [
-				TUTORIAL_TEXT.tr("water_1"),
-				TUTORIAL_TEXT.tr("water_2"),
-				TUTORIAL_TEXT.tr("water_3")
+				TUTORIAL_TEXT.translated("water_1"),
+				TUTORIAL_TEXT.translated("water_2"),
+				TUTORIAL_TEXT.translated("water_3")
 			]
 		"block_puzzle":
-			tutorial_body.text = TUTORIAL_TEXT.tr("block_intro")
+			tutorial_body.text = TUTORIAL_TEXT.translated("block_intro")
 			tutorial_steps = [
-				TUTORIAL_TEXT.tr("block_1"),
-				TUTORIAL_TEXT.tr("block_2"),
-				TUTORIAL_TEXT.tr("block_3")
+				TUTORIAL_TEXT.translated("block_1"),
+				TUTORIAL_TEXT.translated("block_2"),
+				TUTORIAL_TEXT.translated("block_3")
 			]
 		_:
-			tutorial_body.text = TUTORIAL_TEXT.tr("rescue_intro")
+			tutorial_body.text = TUTORIAL_TEXT.translated("rescue_intro")
 			tutorial_steps = [
-				TUTORIAL_TEXT.tr("rescue_1"),
-				TUTORIAL_TEXT.tr("rescue_2"),
-				TUTORIAL_TEXT.tr("rescue_3")
+				TUTORIAL_TEXT.translated("rescue_1"),
+				TUTORIAL_TEXT.translated("rescue_2"),
+				TUTORIAL_TEXT.translated("rescue_3")
 			]
 	_render_tutorial_step()
 	var dim := tutorial_layer.get_node("TutorialDim") as ColorRect
