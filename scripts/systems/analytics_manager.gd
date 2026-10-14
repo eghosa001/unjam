@@ -32,7 +32,7 @@ var _frame_probe := FramePacingProbe.new()
 # opt-in telemetry, never touches the server, and measures while a player
 # navigates and plays. It does NOT claim GPU time or touch-to-photon latency.
 const QA_CAPTURE_SECONDS := 90.0
-var _qa_capture_probe := FramePacingProbe.new(7200, 2.0)
+var _qa_capture_probe := FramePacingProbe.new(14400, 2.0)
 var _qa_capture_paused := false
 var _qa_capture_uncertain_intervals := 0
 var _qa_capture_pause_count := 0
