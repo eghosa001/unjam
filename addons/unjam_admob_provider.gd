@@ -125,25 +125,21 @@ func show_rewarded(_placement: String, completed: Callable, failed: Callable) ->
 		if failed.is_valid():
 			failed.call("Advertising consent is not ready")
 		return false
+	# Voluntary rewarded ads need the same lifecycle guarantee: if an ad
+	# must load asynchronously, fail this tap cleanly and cache for later.
+	# Never open a delayed rewarded ad after its Shop/Result/Hint screen is
+	# gone and the player has started another puzzle.
+	if not _initialized or _rewarded_ad == null:
+		_preload_ads_if_allowed()
+		if failed.is_valid():
+			failed.call("Ad is loading. Please try again in a moment.")
+		return false
 	_rewarded_completion = completed
 	_rewarded_failure = failed
 	_reward_earned = false
-	if not _initialized:
-		var init_started := _initialize_mobile_ads(func() -> void:
-			if _rewarded_ad == null:
-				_load_rewarded(true)
-			else:
-				_show_loaded_rewarded()
-		)
-		if not init_started:
-			_fail_rewarded("AdMob initialization could not start")
-			return false
-		return true
-	if _rewarded_ad == null:
-		return _load_rewarded(true)
 	return _show_loaded_rewarded()
 
-func _load_rewarded(show_when_loaded: bool) -> bool:
+func _load_rewarded(_show_when_loaded: bool) -> bool:
 	var loader := _new(REWARDED_LOADER_PATH)
 	var request := _new(AD_REQUEST_PATH)
 	var callback := _new(REWARDED_CALLBACK_PATH)
@@ -153,8 +149,7 @@ func _load_rewarded(show_when_loaded: bool) -> bool:
 	callback.set("on_ad_loaded", func(ad: Object) -> void:
 		_rewarded_ad = ad
 		_attach_rewarded_fullscreen_callbacks()
-		if show_when_loaded:
-			_show_loaded_rewarded()
+		# Preload only. Never pop up from a late rewarded load callback.
 	)
 	callback.set("on_ad_failed_to_load", func(error: Object) -> void:
 		_fail_rewarded(_error_message(error, "Rewarded ad failed to load"))
