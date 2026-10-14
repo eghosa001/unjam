@@ -43,6 +43,10 @@ func _run() -> void:
 		# One physical action must advance only ONE level in the back stack.
 		main.call("open_game_campaign",game)
 		await _frames(2)
+		# Begin an independent physical Back gesture, not one inherited from
+		# an earlier synthetic route event during the setup of this scenario.
+		shell.set("_last_system_back_ms",-1000)
+		shell.set("_last_system_back_frame",-1000)
 		var pre := String(main.get("current_surface"))
 		shell.call("_handle_back")
 		var first := String(main.get("current_surface"))
