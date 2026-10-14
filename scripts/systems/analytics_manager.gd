@@ -27,6 +27,19 @@ var enabled := true
 var _session_counts: Dictionary = {}
 var _session_recent: Array[Dictionary] = []
 var _frame_probe := FramePacingProbe.new()
+
+# Voluntary, completely DEVICE-LOCAL 90s quality capture. This is not
+# opt-in telemetry, never touches the server, and measures while a player
+# navigates and plays. It does NOT claim GPU time or touch-to-photon latency.
+const QA_CAPTURE_SECONDS := 90.0
+var _qa_capture_probe := FramePacingProbe.new(7200)
+var _qa_capture_active := false
+var _qa_capture_done := false
+var _qa_capture_seconds := 0.0
+var _qa_capture_sample_after := 0.0
+var _qa_capture_peak_static_mib := 0.0
+var _qa_capture_peak_nodes := 0
+var _qa_capture_start_utc := ""
 var _telemetry_events: Array = []
 var _telemetry_timer: Timer
 var _telemetry_in_flight := false
@@ -227,6 +240,72 @@ func _process(delta: float) -> void:
 	# One constant-time ring write per frame. No disk/network calls, sorting,
 	# allocation-heavy payloads or performance metrics in gameplay callbacks.
 	_frame_probe.record_frame(delta)
+	if not _qa_capture_active or not is_finite(delta) or delta <= 0.0 or delta > 0.25:
+		return
+	_qa_capture_probe.record_frame(delta)
+	_qa_capture_seconds += delta
+	_qa_capture_sample_after -= delta
+	if _qa_capture_sample_after <= 0.0:
+		_qa_capture_sample_after = 1.0
+		_qa_sample_static_monitors()
+	if _qa_capture_seconds >= QA_CAPTURE_SECONDS:
+		finish_local_quality_capture()
+
+func _qa_sample_static_monitors() -> void:
+	# Godot's static-memory monitor is NOT an Android RSS or heap-size trace.
+	# Sampling once a second prevents extra work in interactive frames.
+	_qa_capture_peak_static_mib = maxf(_qa_capture_peak_static_mib,
+		float(Performance.get_monitor(Performance.MEMORY_STATIC)) / 1048576.0)
+	_qa_capture_peak_nodes = maxi(_qa_capture_peak_nodes,
+		int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT)))
+
+func start_local_quality_capture() -> void:
+	_qa_capture_probe.reset()
+	_qa_capture_active = true
+	_qa_capture_done = false
+	_qa_capture_seconds = 0.0
+	_qa_capture_sample_after = 0.0
+	_qa_capture_peak_static_mib = 0.0
+	_qa_capture_peak_nodes = 0
+	_qa_capture_start_utc = Time.get_datetime_string_from_system(true,true)
+	_qa_sample_static_monitors()
+
+func finish_local_quality_capture() -> void:
+	if _qa_capture_active:
+		_qa_capture_active = false
+		_qa_capture_done = true
+		_qa_sample_static_monitors()
+
+func local_quality_capture_report() -> Dictionary:
+	var report := _qa_capture_probe.snapshot()
+	report["state"] = "capturing" if _qa_capture_active else ("ready" if _qa_capture_done else "not_started")
+	report["duration_seconds"] = snappedf(_qa_capture_seconds,0.1)
+	report["target_seconds"] = QA_CAPTURE_SECONDS
+	report["peak_static_memory_mib"] = snappedf(_qa_capture_peak_static_mib,0.1)
+	report["peak_scene_nodes"] = _qa_capture_peak_nodes
+	report["captured_utc"] = _qa_capture_start_utc
+	return report
+
+func local_quality_report_text() -> String:
+	var report := local_quality_capture_report()
+	var screen := DisplayServer.screen_get_size()
+	return "\n".join(PackedStringArray([
+		"UNJAM / DEVICE QUALITY REPORT / 1.0.11",
+		"Date UTC: %s" % String(report["captured_utc"]),
+		"Platform: %s / screen %dx%d" % [OS.get_name(),screen.x,screen.y],
+		"State: %s / gameplay seconds: %.1f of 90" % [report["state"],float(report["duration_seconds"])],
+		"Frame intervals sampled: %d" % int(report["sampled_frames"]),
+		"p50 / p95 / p99 CPU main-loop interval: %.2f / %.2f / %.2f ms" % [
+			float(report["p50_frame_ms"]),float(report["p95_frame_ms"]),float(report["p99_frame_ms"])
+		],
+		"Intervals >16.7ms / >33.3ms: %.2f%% / %.2f%%" % [
+			float(report["over_16_7_percent"]),float(report["over_33_3_percent"])
+		],
+		"Peak Godot static-memory monitor: %.1f MiB" % float(report["peak_static_memory_mib"]),
+		"Peak scene-node monitor: %d" % int(report["peak_scene_nodes"]),
+		"NOTE: Device-local QA capture only. Not GPU rendering time, Android RSS, touch latency, FPS certification, crash rate, or production analytics.",
+		"NOTE: No player identifiers or gameplay history. Copied by the player; never uploaded automatically."
+	]))
 
 func quality_snapshot() -> Dictionary:
 	return _frame_probe.snapshot()

@@ -9,6 +9,12 @@ const VERY_SLOW_FRAME_MS := 33.3
 const MAX_TRACKED_INTERVAL_SECONDS := 0.25
 
 var _samples := PackedFloat32Array()
+var _window_frames := WINDOW_FRAMES
+
+func _init(window_frames: int = WINDOW_FRAMES) -> void:
+	# Standard HUD uses 600 frames; local device QA may capture a full
+	# 90-second session without narrowing the report to its last ten seconds.
+	_window_frames = clampi(window_frames, 1, 9000)
 var _write_index := 0
 var _total_sampled := 0
 
@@ -18,7 +24,7 @@ func record_frame(delta_seconds: float) -> void:
 	if not is_finite(delta_seconds) or delta_seconds <= 0.0 or delta_seconds > MAX_TRACKED_INTERVAL_SECONDS:
 		return
 	var milliseconds := delta_seconds * 1000.0
-	if _samples.size() < WINDOW_FRAMES:
+	if _samples.size() < _window_frames:
 		_samples.append(milliseconds)
 	else:
 		_samples[_write_index] = milliseconds
