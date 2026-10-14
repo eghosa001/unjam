@@ -29,6 +29,7 @@ func _run() -> void:
 func _check_page(app: Control, game_id: String) -> bool:
 	var bar := app.find_child("LevelPageProgressBar",true,false) as ProgressBar
 	var count := app.find_child("LevelPageProgressCount",true,false) as Label
+	var instruction := app.find_child("LevelUnlockGuidance",true,false) as Label
 	var panel := app.find_child("LevelPageProgressCard",true,false) as Control
 	var world := int(app.get("selected_multi_world"))
 	var page := int(app.get("selected_multi_page"))
@@ -41,8 +42,28 @@ func _check_page(app: Control, game_id: String) -> bool:
 		if int(games.call("get_stars",game_id,level_number)) > 0:
 			cleared += 1
 	var total := maxi(1,bounds.y-bounds.x+1)
-	if bar == null or count == null or panel == null:
+	if bar == null or count == null or panel == null or instruction == null:
 		return false
+	var current_level := int(app.call("_highest_level_for_game",game_id))
+	if cleared < total and current_level >= bounds.x and current_level < bounds.y:
+		var expected_guidance := "BEAT LEVEL %d TO UNLOCK %d" % [current_level,current_level+1]
+		if instruction.text != expected_guidance:
+			print("Unexpected unlock guidance: ",instruction.text," vs ",expected_guidance)
+			return false
+	if instruction.text.strip_edges().is_empty() or instruction.get_theme_font_size("font_size") < 12:
+		return false
+	var locked_number := -1
+	for level_number in range(bounds.x,bounds.y+1):
+		if not bool(games.call("is_level_unlocked",game_id,level_number)):
+			locked_number = level_number
+			break
+	if locked_number >= 0:
+		var lock_label := app.find_child("LevelStatus_%d" % locked_number,true,false) as Label
+		var number := app.find_child("LevelNumber_%d" % locked_number,true,false) as Label
+		if lock_label == null or lock_label.text != "LOCKED" or lock_label.get_theme_font_size("font_size") < 12 or number == null:
+			return false
+		if number.get_theme_font_size("font_size") < 15:
+			return false
 	if bar.max_value != total or int(bar.value) != cleared:
 		return false
 	if count.text != "%d / %d CLEARED" % [cleared,total]:
