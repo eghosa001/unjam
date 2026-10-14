@@ -47,7 +47,14 @@ func _run() -> void:
 		return _fail("Quality Lab content is clipped off compact-phone screen")
 	start.emit_signal("pressed")
 	await _frames(16)
+	# Capture a real foreground stall. It must appear in QA rather than
+	# being silently rejected by the older 250ms system probe cutoff.
+	analytics.call("_process",0.650)
 	var captured: Dictionary = analytics.call("local_quality_capture_report")
+	if float(captured.get("p99_frame_ms",0.0)) < 649.0:
+		return _fail("Android QA concealed a long foreground frame freeze")
+	if not captured.has("pause_count") or not captured.has("uncertain_intervals"):
+		return _fail("QA does not disclose focus interruptions or uncertain samples")
 	if String(captured.get("state","")) != "capturing" or int(captured.get("sampled_frames",0)) < 4:
 		return _fail("Starting 90s QA capture did not measure main-loop frames")
 	if String(app.get("current_surface")) != "live":

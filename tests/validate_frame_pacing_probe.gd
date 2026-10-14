@@ -27,6 +27,19 @@ func _run() -> void:
 	if not _check(probe.snapshot().frames_since_launch == 1800, "Invalid/pause intervals polluted the sample"):return
 	probe.reset()
 	if not _check(probe.snapshot().sampled_frames == 0, "Reset failed to clear sample"):return
+	# Prove the custom 90-second ring does not overwrite only the first
+	# 600 entries. The old modulo-WINDOW_FRAMES bug hid slow frames after 600.
+	var extended := Probe.new(1200,2.0)
+	for _i in range(1200):
+		extended.record_frame(1.0/60.0)
+	for _i in range(600):
+		extended.record_frame(0.080)
+	var extended_stats := extended.snapshot()
+	if not _check(int(extended_stats.sampled_frames) == 1200 and int(extended_stats.frames_since_launch) == 1800, "Extended QA probe discarded legitimate gameplay"):return
+	if not _check(is_equal_approx(float(extended_stats.over_33_3_percent),50.0), "Extended QA ring overwrote wrong sample indices"):return
+	extended.record_frame(0.650)
+	if not _check(int(extended.snapshot().frames_since_launch) == 1801, "650ms foreground freeze was hidden from QA"):return
+	if not _check(float(extended.snapshot().p99_frame_ms) >= 79.0, "Foreground jank was lost from QA percentiles"):return
 	var analytics := root.get_node_or_null("AnalyticsManager")
 	if not _check(analytics != null and analytics.has_method("quality_snapshot"), "QA metrics unavailable from running app"):return
 	# SceneTree unit harness does not consistently tick autoload _process; feed

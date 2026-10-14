@@ -10,25 +10,27 @@ const MAX_TRACKED_INTERVAL_SECONDS := 0.25
 
 var _samples := PackedFloat32Array()
 var _window_frames := WINDOW_FRAMES
+var _maximum_interval_seconds := MAX_TRACKED_INTERVAL_SECONDS
 
-func _init(window_frames: int = WINDOW_FRAMES) -> void:
+func _init(window_frames: int = WINDOW_FRAMES, maximum_interval_seconds: float = MAX_TRACKED_INTERVAL_SECONDS) -> void:
 	# Standard HUD uses 600 frames; local device QA may capture a full
 	# 90-second session without narrowing the report to its last ten seconds.
-	_window_frames = clampi(window_frames, 1, 9000)
+	_window_frames = clampi(window_frames, 1, 14400)
+	_maximum_interval_seconds = clampf(maximum_interval_seconds, MAX_TRACKED_INTERVAL_SECONDS, 2.0)
 var _write_index := 0
 var _total_sampled := 0
 
 func record_frame(delta_seconds: float) -> void:
 	# Backgrounding and editor focus changes can produce huge deltas; do not
 	# misclassify them as in-game jank. Reject invalid measurements explicitly.
-	if not is_finite(delta_seconds) or delta_seconds <= 0.0 or delta_seconds > MAX_TRACKED_INTERVAL_SECONDS:
+	if not is_finite(delta_seconds) or delta_seconds <= 0.0 or delta_seconds > _maximum_interval_seconds:
 		return
 	var milliseconds := delta_seconds * 1000.0
 	if _samples.size() < _window_frames:
 		_samples.append(milliseconds)
 	else:
 		_samples[_write_index] = milliseconds
-	_write_index = (_write_index + 1) % WINDOW_FRAMES
+	_write_index = (_write_index + 1) % _window_frames
 	_total_sampled += 1
 
 func snapshot() -> Dictionary:
