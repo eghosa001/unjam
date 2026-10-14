@@ -39,8 +39,8 @@ func _run() -> void:
 		return _fail("Block objective text escapes the score card")
 	if goal.autowrap_mode == TextServer.AUTOWRAP_OFF or not goal.clip_text:
 		return _fail("Block objective text is not bounded for late-game goals")
-	if not goal.text.begins_with("GOAL "):
-		return _fail("Block objective strip is not using the concise goal format")
+	if not goal.text.begins_with("PTS ") or not goal.text.contains("LINES "):
+		return _fail("Block objective strip does not show the current campaign points and lines")
 	var meta := game.find_child("BlockLevelMeta",true,false) as Label
 	var status := game.find_child("BlockStatusText",true,false) as Label
 	var guidance := game.find_child("BlockHintText",true,false) as Label
@@ -58,6 +58,23 @@ func _run() -> void:
 			return _fail("%s is missing or not compact premium-sized" % booster_name)
 		if booster.get_theme_font_size("font_size") < 13:
 			return _fail("%s fell below the 13px booster readability floor" % booster_name)
+
+	# The first-screen Undo was misleadingly labelled FREE but greyed out.
+	# Verify the real state before and after one reversible placement exists.
+	var undo := game.find_child("Booster_Undo",true,false) as Button
+	if undo == null or not undo.disabled or undo.text != "UNDO\nNO MOVE":
+		return _fail("Undo must explicitly explain that no placement can be reversed yet")
+	if not undo.has_theme_stylebox_override("disabled") or not undo.has_theme_color_override("font_disabled_color"):
+		return _fail("Disabled Undo needs a legible dedicated style on a dark board")
+	if not undo.accessibility_name.contains("Place a block first"):
+		return _fail("Undo empty state lacks an accessible explanation")
+	var history_ref: Array = game.get("history") as Array
+	history_ref.append({})
+	game.call("_refresh_booster_buttons")
+	if undo.disabled or undo.text != "UNDO\nFREE":
+		return _fail("First Undo must become free and active once a move can be reversed")
+	history_ref.pop_back()
+	game.call("_refresh_booster_buttons")
 
 	var single := BlockPieceButton.new()
 	single.size = Vector2(104,72)
