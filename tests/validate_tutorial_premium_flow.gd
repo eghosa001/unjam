@@ -47,7 +47,7 @@ func _run() -> void:
 				practice.call("_press",Vector2(40,40))
 				if bool(practice.get("completed")):
 					return _fail("Blocked Rescue arrow incorrectly completed the practice")
-				practice.call("_press",Vector2(174,146))
+				practice.call("_press",Vector2(179,99))
 			"water_sort":
 				practice.call("_press",Vector2(154,58))
 				if bool(practice.get("completed")):
