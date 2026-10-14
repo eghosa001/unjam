@@ -43,10 +43,15 @@ func _run() -> void:
 		# One physical action must advance only ONE level in the back stack.
 		main.call("open_game_campaign",game)
 		await _frames(2)
+		var pre := String(main.get("current_surface"))
 		shell.call("_handle_back")
+		var first := String(main.get("current_surface"))
+		var processed_frame := int(shell.get("_last_system_back_frame"))
 		shell.call("_handle_back")
-		if String(main.get("current_surface")) != "live":
-			return _fail("Double Android back advanced from %s levels to Home" % game)
+		var second := String(main.get("current_surface"))
+		print("NAV_BACK_DIAGNOSTIC %s pre=%s first=%s second=%s frame=%d time=%d" % [game,pre,first,second,processed_frame,int(shell.get("_last_system_back_ms"))])
+		if second != "live":
+			return _fail("Double Android back: %s pre=%s first=%s second=%s" % [game,pre,first,second])
 		# Deliberate next Back, not from the same gesture, should reach Home.
 		shell.set("_last_system_back_ms",-1000)
 		shell.set("_last_system_back_frame",-1000)
