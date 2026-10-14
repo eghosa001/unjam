@@ -331,7 +331,14 @@ func _add_game_showcase(canvas: Control) -> void:
 	browse_levels.tooltip_text = "Choose a game to browse its levels"
 	RefCanvas.set_rect(browse_levels,265,302,105,40)
 	browse_levels.pressed.connect(_open_game_selector)
+	browse_levels.set_meta("unjam_preserve_surface_style",true)
+	browse_levels.set_meta("unjam_preserve_control_geometry",true)
+	browse_levels.set_meta("unjam_authored_focus_mode",int(Control.FOCUS_ALL))
 	canvas.add_child(browse_levels)
+	# The Home surface can restore its pointer-only default while mounting;
+	# reassert keyboard/TalkBack focus exactly as on the three game cards.
+	browse_levels.focus_mode = Control.FOCUS_ALL
+	browse_levels.set_deferred("focus_mode",Control.FOCUS_ALL)
 	var games := [
 		{"id":"rescue_rush","name":"RESCUE RUSH","description":"Free the pieces","accent":Color("#43d7a0"),"x":21.0},
 		{"id":"water_sort","name":"WATER SORT","description":"Sort the colors","accent":Color("#4cbefa"),"x":139.0},
