@@ -48,9 +48,14 @@ func _run() -> void:
 		shell.set("_last_system_back_ms",-1000)
 		shell.set("_last_system_back_frame",-1000)
 		var pre := String(main.get("current_surface"))
+		# Tests run on a fresh profile; onboarding may be visible even when
+		# the level browser is active. Close that modal first because Android
+		# Back correctly dismisses an open tutorial before page navigation.
 		var tutorial = shell.get("tutorial_panel")
-		var leaderboard = main.get_node_or_null("PremiumLeaderboardPopup")
-		print("BACK_STATE %s tutorial=%s leaderboard=%s" % [game,str(tutorial != null and tutorial.visible),str(leaderboard != null and leaderboard is CanvasItem and (leaderboard as CanvasItem).visible)])
+		if tutorial != null and tutorial.visible:
+			shell.call("hide_tutorial")
+		shell.set("_last_system_back_ms",-1000)
+		shell.set("_last_system_back_frame",-1000)
 		shell.call("_handle_back")
 		var first := String(main.get("current_surface"))
 		var processed_frame := int(shell.get("_last_system_back_frame"))
