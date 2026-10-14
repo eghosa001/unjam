@@ -17,7 +17,7 @@ func _run() -> void:
 	main.set("selected_game_id", "block_puzzle")
 	main.call("force_back_from_game")
 	await _frames(4)
-	if String(main.get("selected_game_id")) != "water_sort" or String(main.get("current_surface")) != "levels":
+	if String(main.get("selected_game_id")) != "water_sort" or String(main.get("current_surface")) != "live":
 		return _fail("Back from Water Sort followed stale game selection")
 
 	main.call("start_level", 3)
@@ -33,13 +33,15 @@ func _run() -> void:
 	main.set("selected_game_id", "water_sort")
 	main.call("force_back_from_game")
 	await _frames(4)
-	if String(main.get("selected_game_id")) != "rescue_rush" or String(main.get("current_surface")) != "levels":
+	if String(main.get("selected_game_id")) != "rescue_rush" or String(main.get("current_surface")) != "live":
 		return _fail("Back from Rescue Rush followed stale game selection")
 	# Android can dispatch a delayed button/quit/finished signal after a screen
-	# replacement. A second Back on the newly visible level page is a no-op.
+	# replacement. A second Back on the Choose Game page is a no-op.
 	main.call("force_back_from_game")
 	if String(main.get("selected_game_id")) != "rescue_rush" or String(main.get("current_surface")) != "levels":
 		return _fail("Double Back unexpectedly changed Rescue's return destination")
+	main.call("open_game_campaign","rescue_rush")
+	await _frames(2)
 	main.call("_figma_switch_level_game","block_puzzle")
 	await _frames(3)
 	if String(main.get("selected_game_id")) != "block_puzzle" or String(main.get("current_surface")) != "levels":
@@ -63,8 +65,8 @@ func _run() -> void:
 		return _fail("Stale Rescue callback changed the active Block game")
 	main.call("force_back_from_game")
 	await _frames(3)
-	if String(main.get("selected_game_id")) != "block_puzzle" or String(main.get("current_surface")) != "levels":
-		return _fail("Leaving Block game routed back into the wrong campaign")
+	if String(main.get("selected_game_id")) != "block_puzzle" or String(main.get("current_surface")) != "live":
+		return _fail("Leaving Block game failed to open Choose Game directly")
 
 	stale_rescue.free()
 
