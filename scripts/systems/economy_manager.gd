@@ -94,6 +94,52 @@ func claim_garden_gift() -> int:
 	})
 	return amount
 
+# Optional, small daily care work for already-built Garden structures. Earned
+# once per owned landmark per local day; the completed marker, net coins and
+# refund-debt settlement all commit in ONE atomic SaveManager write. No paywall,
+# purchase state, online identity, or premium currency is involved.
+const GARDEN_CARE_COINS := 8
+
+func garden_care_completed_today(id: String) -> bool:
+	var state = SaveManager.data.get("garden_care_state",{})
+	if not state is Dictionary or String(state.get("day","")) != _date_key():
+		return false
+	var done = state.get("completed",[])
+	return done is Array and id in done
+
+func garden_care_remaining() -> int:
+	var remaining := 0
+	for id in COLLECTION_ITEM_IDS:
+		if collection_item_level(id) > 0 and not garden_care_completed_today(id):
+			remaining += 1
+	return remaining
+
+func care_for_garden_once(id: String) -> Dictionary:
+	if id not in COLLECTION_ITEM_IDS or collection_item_level(id) <= 0:
+		return {"credited":false,"reason":"locked"}
+	var today := _date_key()
+	var prior = SaveManager.data.get("garden_care_state",{})
+	var state: Dictionary = prior if prior is Dictionary else {}
+	var prior_day := String(state.get("day",""))
+	# Phone clocks can move backwards. Do not allow a rewind to mint more
+	# daily work payouts, just like the main Garden gift only pays once/day.
+	if not prior_day.is_empty() and prior_day > today:
+		return {"credited":false,"reason":"clock"}
+	var done: Array = (state.get("completed",[]) as Array).duplicate() if prior_day == today and state.get("completed",[]) is Array else []
+	if id in done:
+		return {"credited":false,"reason":"done"}
+	done.append(id)
+	var debt := maxi(0,int(SaveManager.data.get("purchase_coin_debt",0)))
+	var settled := mini(GARDEN_CARE_COINS,debt)
+	var credited := GARDEN_CARE_COINS - settled
+	SaveManager.data["garden_care_state"] = {"day":today,"completed":done}
+	SaveManager.data["purchase_coin_debt"] = debt - settled
+	SaveManager.data["coins"] = balance() + credited
+	SaveManager.save()
+	if credited > 0:
+		_emit_transaction(credited,"garden_daily_care",{"item":id,"day":today})
+	return {"credited":true,"coins":credited,"debt_settled":settled}
+
 func collection_level_cost(id: String, base_cost: int) -> int:
 	if id not in COLLECTION_ITEM_IDS or base_cost <= 0:
 		return 0
