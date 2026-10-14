@@ -34,8 +34,11 @@ func _check_page(app: Control, game_id: String) -> bool:
 	var page := int(app.get("selected_multi_page"))
 	var bounds: Vector2i = app.call("_multi_page_bounds",game_id,world,page)
 	var cleared := 0
+	var games := root.get_node_or_null("MultiGameManager")
+	if games == null:
+		return false
 	for level_number in range(bounds.x,bounds.y+1):
-		if MultiGameManager.get_stars(game_id,level_number) > 0:
+		if int(games.call("get_stars",game_id,level_number)) > 0:
 			cleared += 1
 	var total := maxi(1,bounds.y-bounds.x+1)
 	if bar == null or count == null or panel == null:
