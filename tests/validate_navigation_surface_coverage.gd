@@ -48,17 +48,17 @@ func _run() -> void:
 		return
 
 	main.call("force_back_from_game")
-	if not _assert_covered(main, "Rescue Rush game -> levels immediate"):
+	if not _assert_covered(main, "Rescue Rush game -> Choose Game immediate"):
 		return
 	await _frames(3)
-	if not _assert_surface(main, "levels", "Rescue Rush game -> levels settled"):
+	if not _assert_surface(main, "live", "Rescue Rush game -> Choose Game settled"):
 		return
 
 	main.call("build_home")
-	if not _assert_covered(main, "levels -> home immediate"):
+	if not _assert_covered(main, "Choose Game -> home immediate"):
 		return
 	await _frames(2)
-	if not _assert_surface(main, "home", "levels -> home settled"):
+	if not _assert_surface(main, "home", "Choose Game -> home settled"):
 		return
 
 	main.call("build_settings")
@@ -139,10 +139,10 @@ func _run() -> void:
 	if not _assert_surface(main, "game", "Block Puzzle levels -> game settled"):
 		return
 	main.call("force_back_from_game")
-	if not _assert_covered(main, "Block Puzzle game -> levels immediate"):
+	if not _assert_covered(main, "Block Puzzle game -> Choose Game immediate"):
 		return
 	await _frames(3)
-	if not _assert_surface(main, "levels", "Block Puzzle game -> levels settled"):
+	if not _assert_surface(main, "live", "Block Puzzle game -> Choose Game settled"):
 		return
 
 	main.queue_free()

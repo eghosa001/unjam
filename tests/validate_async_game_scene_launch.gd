@@ -35,7 +35,7 @@ func _run() -> void:
 	if not _check(String(main.get("current_surface")) == "game", "Game launcher never settled into gameplay"):return
 	main.call("force_back_from_game")
 	await _frames(4)
-	if not _check(main.get("active_game") == null and String(main.get("current_surface")) == "levels", "Back after async game launch failed"):return
+	if not _check(main.get("active_game") == null and String(main.get("current_surface")) == "live", "Back after async game launch failed to land on Choose Game"):return
 
 	# Navigation churn must not leak active games or leave a "game_loading"
 	# overlay across subsequent home/selector transitions.

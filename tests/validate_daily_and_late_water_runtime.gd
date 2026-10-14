@@ -45,8 +45,8 @@ func _run() -> void:
 		return _fail(save_manager, original, "Water Daily did not launch as a Daily game")
 	active_water.emit_signal("quit_requested")
 	await _frames(5)
-	if String(main.get("current_surface")) != "daily" or main.get("active_game") != null:
-		return _fail(save_manager, original, "Quitting Water Daily did not return to Daily Games")
+	if String(main.get("current_surface")) != "live" or main.get("active_game") != null:
+		return _fail(save_manager, original, "Quitting Water Daily did not return to Choose Game")
 
 	main.call("start_game_daily", "block_puzzle")
 	var active_block = await _wait_for_game(main)
@@ -63,8 +63,8 @@ func _run() -> void:
 		return _fail(save_manager, original, "Rescue Daily did not launch as a Daily game")
 	main.call("force_back_from_game")
 	await _frames(5)
-	if String(main.get("current_surface")) != "daily" or main.get("active_game") != null:
-		return _fail(save_manager, original, "Android/back exit from Rescue Daily did not return to Daily Games")
+	if String(main.get("current_surface")) != "live" or main.get("active_game") != null:
+		return _fail(save_manager, original, "Android/back exit from Rescue Daily did not return to Choose Game")
 
 	for game_id in ["water_sort", "block_puzzle", "rescue_rush"]:
 		var state: Dictionary = main.call("_daily_ui_state", game_id, Color.WHITE)

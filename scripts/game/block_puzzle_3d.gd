@@ -254,7 +254,7 @@ func _build_figma_block(canvas: Control) -> void:
 	piece_row.name = "BlockPieceRow"
 	piece_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	piece_row.add_theme_constant_override("separation", 7)
-	FigmaReferenceCanvas.set_rect(piece_row, 20, 536, 350, 96)
+	FigmaReferenceCanvas.set_rect(piece_row, 20, 532, 350, 110)
 	canvas.add_child(piece_row)
 
 	var status_region := Control.new()
@@ -383,9 +383,11 @@ func _apply_figma_block_theme(dark: bool) -> void:
 
 func _tray_piece_button_size() -> Vector2:
 	# This scene is authored on a 390x844 Figma canvas and scales uniformly as a
-	# whole. Keep three 104px slots inside the 326px row while trimming unused
-	# vertical tray space so the blocks themselves own the visual hierarchy.
-	return Vector2(104, 96)
+	# whole. The former 104px slots wasted 24px of horizontal room and made
+	# the bricks look tiny beside the board-sized drag preview. Three 112px
+	# slots plus two 7px gutters now fill the actual 350px row; the full
+	# 104px vertical slot still stays within the existing 120px tray card.
+	return Vector2(112, 104)
 
 func load_level() -> void:
 	_clear_transition_active = false

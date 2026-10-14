@@ -46,6 +46,15 @@ func _ready() -> void:
 	panel.custom_minimum_size.x = 356
 	panel.add_theme_stylebox_override("panel", UI.solid_box(Color("#1c293c"),19,Color("#5a84aa"),2))
 	scroll.add_child(panel)
+	# Some runtime themes overwrite the panel style with a light surface. The
+	# Android report then has white text on grey (as in the supplied capture).
+	# This explicit opaque interior remains dark regardless of theme overrides.
+	var contrast := ColorRect.new()
+	contrast.name = "QualityLabContrastSurface"
+	contrast.color = Color("#15283c")
+	contrast.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(contrast)
+	contrast.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var pad := MarginContainer.new()
 	for edge in ["left","right","top","bottom"]:
 		pad.add_theme_constant_override("margin_%s" % edge,17)
@@ -91,6 +100,8 @@ func _label(parent: Node, value: String, font_size: int, color: Color, wrap: boo
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.accessibility_name = value
 	parent.add_child(label)
+	label.add_theme_color_override("font_color",color)
+	label.add_theme_color_override("font_shadow_color",Color("#000000",0.1))
 	return label
 
 func _button(parent: Node, title: String, color: Color, callback: Callable) -> Button:
@@ -102,6 +113,17 @@ func _button(parent: Node, title: String, color: Color, callback: Callable) -> B
 	action.accessibility_name = title
 	action.pressed.connect(callback)
 	parent.add_child(action)
+	# Force explicit contrast on Android regardless of the global light/dark
+	# card skin. The old shared-style path could render white buttons with
+	# white text or near-grey panels under an opaque modal.
+	action.add_theme_stylebox_override("normal",UI.solid_box(color.darkened(0.29),13,Color("#b6d6e2",0.68),1))
+	action.add_theme_stylebox_override("hover",UI.solid_box(color.darkened(0.15),13,Color("#cceaf5"),2))
+	action.add_theme_stylebox_override("pressed",UI.solid_box(color.darkened(0.15),13,Color("#cceaf5"),2))
+	action.add_theme_stylebox_override("disabled",UI.solid_box(Color("#354859"),13,Color("#70879a"),1))
+	action.add_theme_color_override("font_color",Color.WHITE)
+	action.add_theme_color_override("font_hover_color",Color.WHITE)
+	action.add_theme_color_override("font_pressed_color",Color.WHITE)
+	action.add_theme_color_override("font_disabled_color",Color("#d3e3ed"))
 	action.set_deferred("focus_mode",Control.FOCUS_ALL)
 	return action
 

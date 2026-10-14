@@ -276,6 +276,18 @@ func _liquid_arc_points(source_mouth: Vector2, receiver_mouth: Vector2, directio
 		)
 	return points
 
+func _bottle_travel_arc(start: Vector2, destination: Vector2, fraction: float, height: float) -> Vector2:
+	# The BOTTLE must travel in an arc as well as the liquid. A straight
+	# position tween made the leftmost tutorial tube slide horizontally into
+	# its receiver, which looked like one bottle passing inside the other.
+	# Analytic curve: same endpoints as the old tween, no extra nodes/timers.
+	var t := clampf(fraction, 0.0, 1.0)
+	var ease := t * t * (3.0 - 2.0 * t)
+	var point := start.lerp(destination, ease)
+	var arc := 4.0 * t * (1.0 - t) * maxf(0.0, height)
+	point.y -= arc
+	return point
+
 func _pour_direction(from_rect: Rect2, to_rect: Rect2, source_width: float, viewport_width: float) -> float:
 	var horizontal_delta := to_rect.get_center().x - from_rect.get_center().x
 	var same_column_threshold := maxf(24.0, source_width * 0.25)
@@ -430,8 +442,19 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 	desired = _clamp_pour_source_position(desired, ghost.size, viewport_size.x)
 	desired = _clamp_rotated_source_position(desired, ghost, final_rotation, viewport_size)
 	var travel_time := MotionSystem.duration(&"travel")
-	var travel := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	travel.tween_property(ghost, "position", desired, travel_time)
+	var travel_start := ghost.position
+	var travel_rise := clampf(travel_start.distance_to(desired) * 0.22, 30.0, 88.0)
+	if MotionSystem.reduced():
+		travel_rise = 12.0
+	# A single tween now guides the source bottle around a visible arc toward
+	# the receiver mouth. The ghost remains upright until it reaches the tip
+	# position, and the existing liquid Bézier begins only after the tilt.
+	var travel := create_tween()
+	var update_travel := func(progress: float) -> void:
+		if is_instance_valid(ghost):
+			var point := _bottle_travel_arc(travel_start, desired, progress, travel_rise)
+			ghost.position = Vector2(point.x, maxf(12.0, point.y))
+	travel.tween_method(update_travel, 0.0, 1.0, travel_time)
 	await travel.finished
 	if not is_instance_valid(ghost) or not is_instance_valid(receiver):
 		_abort_pour_visuals(ghost, receiver, source_index, target_index)

@@ -15,6 +15,24 @@ func _run() -> void:
 		game.queue_free()
 		return _fail("Active Water Sort motion layer does not expose curved pour geometry")
 
+	# The bottle itself now travels on a distinct upward curve before
+	# tipping, not just the water line once it reaches the other vessel.
+	var bottle_start := Vector2(22.0, 390.0)
+	var bottle_goal := Vector2(245.0, 205.0)
+	var arc_begin: Vector2 = game.call("_bottle_travel_arc", bottle_start, bottle_goal, 0.0, 74.0)
+	var arc_mid: Vector2 = game.call("_bottle_travel_arc", bottle_start, bottle_goal, 0.5, 74.0)
+	var arc_end: Vector2 = game.call("_bottle_travel_arc", bottle_start, bottle_goal, 1.0, 74.0)
+	if arc_begin.distance_to(bottle_start) > 0.01 or arc_end.distance_to(bottle_goal) > 0.01:
+		game.queue_free()
+		return _fail("Water bottle curved travel fails to preserve launch/landing points")
+	if arc_mid.y > bottle_start.lerp(bottle_goal,0.5).y - 65.0:
+		game.queue_free()
+		return _fail("First Water bottle still travels in a straight line instead of an arc")
+	var reduced_arc: Vector2 = game.call("_bottle_travel_arc", bottle_start, bottle_goal, 0.5, 12.0)
+	if absf(reduced_arc.y - bottle_start.lerp(bottle_goal,0.5).y) > 12.1:
+		game.queue_free()
+		return _fail("Reduced Motion Water travel uses too much vertical rise")
+
 	var source := Vector2(100.0, 100.0)
 	var receiver := Vector2(260.0, 280.0)
 	var points: PackedVector2Array = game.call("_liquid_arc_points", source, receiver, 1.0)
