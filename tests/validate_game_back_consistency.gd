@@ -17,8 +17,8 @@ func _run() -> void:
 	main.set("selected_game_id", "block_puzzle")
 	main.call("force_back_from_game")
 	await _frames(4)
-	if String(main.get("selected_game_id")) != "water_sort" or String(main.get("current_surface")) != "live":
-		return _fail("Back from Water Sort followed stale game selection")
+	if String(main.get("selected_game_id")) != "water_sort" or String(main.get("current_surface")) != "levels":
+		return _fail("Back from Water Sort did not return to Water level selection")
 
 	main.call("start_level", 3)
 	await _frames(5)
@@ -33,13 +33,25 @@ func _run() -> void:
 	main.set("selected_game_id", "water_sort")
 	main.call("force_back_from_game")
 	await _frames(4)
-	if String(main.get("selected_game_id")) != "rescue_rush" or String(main.get("current_surface")) != "live":
-		return _fail("Back from Rescue Rush followed stale game selection")
+	if String(main.get("selected_game_id")) != "rescue_rush" or String(main.get("current_surface")) != "levels":
+		return _fail("Back from Rescue Rush did not return to Rescue levels")
 	# Android can dispatch a delayed button/quit/finished signal after a screen
-	# replacement. A second Back on the Choose Game page is a no-op.
+	# replacement. A duplicate gameplay Back on Level Select is a no-op.
 	main.call("force_back_from_game")
-	if String(main.get("selected_game_id")) != "rescue_rush" or String(main.get("current_surface")) != "live":
-		return _fail("Double Back unexpectedly changed Rescue's return destination")
+	if String(main.get("selected_game_id")) != "rescue_rush" or String(main.get("current_surface")) != "levels":
+		return _fail("Double gameplay Back unexpectedly changed Rescue level selection")
+	# The level browser's Back opens Choose Game. Its Back then opens Home.
+	var level_back := main.find_child("FigmaBack", true, false) as Button
+	if level_back == null:
+		return _fail("Rescue level browser has no Back button")
+	level_back.pressed.emit()
+	await _frames(3)
+	if String(main.get("current_surface")) != "live":
+		return _fail("Level Select Back did not open Choose Game")
+	main.call("build_home")
+	await _frames(3)
+	if String(main.get("current_surface")) != "home":
+		return _fail("Choose Game Back did not open Home")
 	main.call("open_game_campaign","rescue_rush")
 	await _frames(2)
 	main.call("_figma_switch_level_game","block_puzzle")
@@ -65,8 +77,8 @@ func _run() -> void:
 		return _fail("Stale Rescue callback changed the active Block game")
 	main.call("force_back_from_game")
 	await _frames(3)
-	if String(main.get("selected_game_id")) != "block_puzzle" or String(main.get("current_surface")) != "live":
-		return _fail("Leaving Block game failed to open Choose Game directly")
+	if String(main.get("selected_game_id")) != "block_puzzle" or String(main.get("current_surface")) != "levels":
+		return _fail("Leaving Block game failed to return to Block levels")
 
 	stale_rescue.free()
 
@@ -81,9 +93,11 @@ func _run() -> void:
 		return _fail("Rescue Rush back glyph is inconsistent")
 
 	var live_block_ui := _read("res://scripts/game/block_puzzle_3d.gd")
-	for gameplay_source in [live_block_ui,water_source,rescue_source]:
-		if not gameplay_source.contains('back.accessibility_name = "Back to Choose Game"') or not gameplay_source.contains('back.tooltip_text = "Back to Choose Game"'):
-			return _fail("In-game Back tells TalkBack the wrong destination")
+	for spec in [[live_block_ui,"Block Puzzle"],[water_source,"Water Sort"],[rescue_source,"Rescue Rush"]]:
+		var gameplay_source: String = spec[0]
+		var name: String = spec[1]
+		if not gameplay_source.contains('back.accessibility_name = "Back to %s levels"' % name) or not gameplay_source.contains('back.tooltip_text = "Back to %s levels"' % name):
+			return _fail("In-game Back tells TalkBack the wrong destination for " + name)
 
 	var level_ui := _read("res://scripts/ui/premium_main_casual.gd")
 	for needle in [

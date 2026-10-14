@@ -417,14 +417,13 @@ func _show_game_loading(config: Dictionary) -> void:
 func _cancel_game_loading() -> void:
 	if current_surface != "game_loading":
 		return
-	# Exit a cold-loading game exactly like one already running: directly to
-	# Choose Game. The current_surface setter invalidates the threaded load
-	# generation and safely restores a parked Daily campaign checkpoint.
-	# Do not construct Level Select/Daily/Home as an intermediate screen.
-	if has_method("_open_games_surface"):
-		call("_open_games_surface")
-	else:
-		build_home()
+	# A cancelled cold launch returns to the selected game's level list,
+	# exactly like the gameplay Back button. Save this before changing surface:
+	# the setter invalidates the pending asynchronous launch.
+	var cancelled := _pending_game_launch.duplicate(true)
+	var game_id := String(cancelled.get("game_id", selected_game_id))
+	var level := int(cancelled.get("level", 1))
+	_return_from_game(game_id, bool(cancelled.get("daily", false)), level)
 
 func _retry_game_loading() -> void:
 	if current_surface != "game_loading":
@@ -621,26 +620,24 @@ func _active_game_context() -> Dictionary:
 	return _game_context(game, selected_game_id, false)
 
 
-func _return_from_game(game_id: String, was_daily: bool, _level_number: int = -1) -> void:
-	# Exit directly to CHOOSE GAME, without rebuilding a Level Select page or
-	# momentarily revealing Home underneath the incoming persistent Live layer.
-	# Both the in-game Back button and Android Back use this single transition.
-	# Preserve game identity for the next intentional campaign selection.
-	if game_id in MultiGameManager.GAME_IDS:
-		selected_game_id = game_id
+func _return_from_game(game_id: String, was_daily: bool, level_number: int = -1) -> void:
+	# Game -> that game's LEVEL SELECT -> Choose Game -> Home.
+	# The source scene owns its identity; a stale selector cannot redirect Back.
+	if game_id not in MultiGameManager.GAME_IDS:
+		return
 	if was_daily:
 		_restore_campaign_checkpoint_after_daily(game_id)
-	# The premium game picker is a persistent, ready surface. Show it *before*
-	# disposing of the old game so no blank/incorrect frame can flash between.
-	if has_method("_open_games_surface"):
-		call("_open_games_surface")
-		# Show eligible ads only after the old gameplay scene is detached.
-		# If the player immediately launches another game, the deferred safety
-		# check rejects the placement; provider loading never queues an ad.
-		call_deferred("_maybe_show_interstitial_at_menu")
+	selected_game_id = game_id
+	var browsing_level := level_number if level_number >= 1 else MultiGameManager.highest_level(game_id)
+	browsing_level = clampi(browsing_level, 1, MultiGameManager.CAMPAIGN_LEVELS)
+	selected_multi_world = MultiGameManager.world_for_game_level(game_id, browsing_level)
+	selected_multi_page = _multi_page_for_level(game_id, browsing_level)
+	# The premium browser builds beneath the outgoing gameplay Control and only
+	# detaches it once the new page is ready. No transient Home/selector flash.
+	if game_id == "rescue_rush":
+		build_level_select()
 	else:
-		_remove_active_game()
-		build_home()
+		build_multi_level_select()
 
 func _maybe_show_interstitial_at_menu() -> void:
 	if current_surface == "live" and (active_game == null or not is_instance_valid(active_game)):

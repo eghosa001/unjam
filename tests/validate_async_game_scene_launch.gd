@@ -24,15 +24,14 @@ func _run() -> void:
 		if not _check(loader != null and cancel != null and cancel.size.y >= 48, "Cold scene has no accessible cancellable loader"):return
 	main.call("force_back_from_game")
 	await _frames(12)
-	if not _check(main.get("active_game") == null and String(main.get("current_surface")) == "live", "Cancelled load must return DIRECTLY to Choose Game"):return
-	# Even when a scene is cached, a loading Back must never briefly rebuild
-	# Level Select, Daily or Home; the persistent chooser must remain visible
-	# on the very same input frame.
+	if not _check(main.get("active_game") == null and String(main.get("current_surface")) == "levels", "Cancelled load must return to that game's levels"):return
+	# Even when a scene is cached, loading Back returns directly to the
+	# selected game's level browser without passing Home or Choose Game.
 	main.set("current_surface","game_loading")
 	main.set("_pending_game_launch",{"game_id":"water_sort","level":1,"daily":false})
 	main.call("_show_game_loading",{"game_id":"water_sort"})
 	main.call("force_back_from_game")
-	if not _check(String(main.get("current_surface")) == "live" and main.get("active_game") == null, "Loading Back briefly routed through another screen"):return
+	if not _check(String(main.get("current_surface")) == "levels" and main.get("active_game") == null, "Loading Back failed to return to the selected game's levels"):return
 	if not _check((main.get("_pending_game_launch") as Dictionary).is_empty(), "Cancelled launch retained stale pending request"):return
 
 	# The second request supersedes the first, even if the two different
@@ -44,7 +43,7 @@ func _run() -> void:
 	if not _check(String(main.get("current_surface")) == "game", "Game launcher never settled into gameplay"):return
 	main.call("force_back_from_game")
 	await _frames(4)
-	if not _check(main.get("active_game") == null and String(main.get("current_surface")) == "live", "Back after async game launch failed to land on Choose Game"):return
+	if not _check(main.get("active_game") == null and String(main.get("current_surface")) == "levels", "Back after async game launch failed to land on Block levels"):return
 
 	# Navigation churn must not leak active games or leave a "game_loading"
 	# overlay across subsequent home/selector transitions.

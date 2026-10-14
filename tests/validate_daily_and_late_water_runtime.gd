@@ -36,17 +36,17 @@ func _run() -> void:
 	if not main.has_method("_daily_ui_state"):
 		return _fail(save_manager, original, "Daily UI state helper unavailable")
 
-	# Exercise real Daily routing rather than only helper state. Leaving any Daily
-	# must return to the Daily hub, never the campaign level browser, and must not
-	# change eligibility for the other two games.
+	# Exercise Daily routing: Back from gameplay always opens that game's
+	# level browser; completing a Daily still opens Daily Games. Neither action
+	# may disable another game.
 	main.call("start_game_daily", "water_sort")
 	var active_water = await _wait_for_game(main)
 	if active_water == null or not bool(active_water.get("daily_mode")):
 		return _fail(save_manager, original, "Water Daily did not launch as a Daily game")
 	active_water.emit_signal("quit_requested")
 	await _frames(5)
-	if String(main.get("current_surface")) != "live" or main.get("active_game") != null:
-		return _fail(save_manager, original, "Quitting Water Daily did not return to Choose Game")
+	if String(main.get("current_surface")) != "levels" or main.get("active_game") != null:
+		return _fail(save_manager, original, "Quitting Water Daily did not return to Water Sort levels")
 
 	main.call("start_game_daily", "block_puzzle")
 	var active_block = await _wait_for_game(main)
@@ -63,8 +63,8 @@ func _run() -> void:
 		return _fail(save_manager, original, "Rescue Daily did not launch as a Daily game")
 	main.call("force_back_from_game")
 	await _frames(5)
-	if String(main.get("current_surface")) != "live" or main.get("active_game") != null:
-		return _fail(save_manager, original, "Android/back exit from Rescue Daily did not return to Choose Game")
+	if String(main.get("current_surface")) != "levels" or main.get("active_game") != null:
+		return _fail(save_manager, original, "Android/back exit from Rescue Daily did not return to Rescue Rush levels")
 
 	for game_id in ["water_sort", "block_puzzle", "rescue_rush"]:
 		var state: Dictionary = main.call("_daily_ui_state", game_id, Color.WHITE)

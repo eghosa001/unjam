@@ -257,12 +257,15 @@ func _liquid_arc_points(source_mouth: Vector2, receiver_mouth: Vector2, directio
 	var receiver_entry := receiver_mouth + Vector2(0.0, 8.0)
 	var horizontal := absf(receiver_entry.x - source_mouth.x)
 	var vertical_drop := maxf(0.0, receiver_entry.y - source_mouth.y)
-	var launch := clampf(horizontal * 0.42, 26.0, 72.0)
-	var lift := clampf(16.0 + horizontal * 0.10, 18.0, 42.0)
-	var settle := clampf(22.0 + vertical_drop * 0.30, 28.0, 66.0)
+	# Gravity, not a fountain: water must LEAVE the downhill glass lip and fall
+	# immediately toward the receiving neck. The old negative-Y first handle
+	# curved upward and looked like a red ribbon shooting out of the bottle.
+	var launch := clampf(horizontal * 0.36, 12.0, 48.0)
+	var fall := clampf(vertical_drop * 0.26, 12.0, 38.0)
+	var settle := clampf(vertical_drop * 0.22, 18.0, 42.0)
 	var p0 := source_mouth
-	var p1 := source_mouth + Vector2(dir * launch, -lift)
-	var p2 := receiver_entry + Vector2(-dir * clampf(horizontal * 0.20, 16.0, 38.0), -settle)
+	var p1 := source_mouth + Vector2(dir * launch, fall)
+	var p2 := receiver_entry + Vector2(-dir * clampf(horizontal * 0.16, 10.0, 30.0), -settle)
 	var p3 := receiver_entry
 	var points := PackedVector2Array()
 	for i in range(POUR_ARC_SAMPLES + 1):
@@ -287,6 +290,39 @@ func _bottle_travel_arc(start: Vector2, destination: Vector2, fraction: float, h
 	var arc := 4.0 * t * (1.0 - t) * maxf(0.0, height)
 	point.y -= arc
 	return point
+
+func _choose_pour_pose(ghost: Control, target_lip: Vector2, direction: float, viewport_size: Vector2) -> Dictionary:
+	# A first-column source has almost no spare screen room for the sweep of a
+	# long bottle. Clamping a preselected 52° pose AFTER placing its rim pushed
+	# the outlet right past the receiver. The liquid then had to loop BACKWARD.
+	# Choose the steepest pose that keeps the transformed outlet on the source
+	# side of the actual target neck, inside the visible stage.
+	var lip_local := _source_rim_local(ghost, direction)
+	var side_gap := clampf(ghost.size.x * 0.37, 28.0, 60.0)
+	var height_gap := clampf(ghost.size.y * 0.25, 48.0, 102.0)
+	var target := target_lip + Vector2(-direction * side_gap, -height_gap)
+	var preferred := _pour_tilt_degrees(ghost.size)
+	var best: Dictionary = {}
+	var best_penalty := INF
+	for degrees in [preferred, minf(preferred, 44.0), 36.0, 30.0, 24.0]:
+		var radians := deg_to_rad(degrees * direction)
+		var anchored := _position_for_tilted_rim(ghost, lip_local, target, radians)
+		var bounded := _clamp_rotated_source_position(anchored, ghost, radians, viewport_size)
+		var relative := lip_local - ghost.pivot_offset
+		var transformed := Vector2(relative.x * ghost.scale.x, relative.y * ghost.scale.y).rotated(radians)
+		var actual_lip := bounded + ghost.pivot_offset + transformed
+		var side_drop := (target_lip.x - actual_lip.x) * direction
+		var vertical_drop := target_lip.y - actual_lip.y
+		var penalty := actual_lip.distance_to(target)
+		if side_drop < 18.0:
+			penalty += 260.0 + (18.0 - side_drop) * 5.0
+		if vertical_drop < 28.0:
+			penalty += 200.0 + (28.0 - vertical_drop) * 4.0
+		if penalty < best_penalty:
+			best_penalty = penalty
+			best = {"position": bounded, "rotation": radians, "rim": actual_lip, "side_drop": side_drop, "vertical_drop": vertical_drop}
+	return best
+
 
 func _pour_direction(from_rect: Rect2, to_rect: Rect2, source_width: float, viewport_width: float) -> float:
 	var horizontal_delta := to_rect.get_center().x - from_rect.get_center().x
@@ -330,8 +366,11 @@ func _clamp_rotated_source_position(desired: Vector2, ghost: Control, final_rota
 	var stage := find_child("GameplayStage", true, false) as Control
 	if stage != null:
 		var stage_global := stage.get_global_rect()
-		var stage_left := _game_local(stage_global.position).x + 8.0
-		var stage_right := _game_local(stage_global.end).x - 8.0
+		# The playfield rectangle already includes safe margins. An extra
+		# 8px inset trapped the first-column source under the receiver and made
+		# its liquid look detached from the downhill lip. Use the full stage.
+		var stage_left := _game_local(stage_global.position).x
+		var stage_right := _game_local(stage_global.end).x
 		if stage_right - stage_left > ghost.size.x:
 			left_bound = maxf(left_bound, stage_left)
 			right_bound = minf(right_bound, stage_right)
@@ -425,22 +464,9 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 
 	var receiver_local := _receiver_rim_local(receiver)
 	var target_lip := _control_point(receiver, receiver_local)
-	# Match the tilt to the live rendered vessel. This keeps the first compact
-	# tutorial pours attached to the neck while later short bottles keep the
-	# stronger premium rotation.
-	var tilt_degrees := _pour_tilt_degrees(ghost.size)
-	var final_rotation := deg_to_rad(tilt_degrees * direction)
-	var source_local_at_pour := _source_rim_local(ghost, direction)
-	# Keep the pouring lip visibly above and to the source side of the receiving
-	# bottle. The old placement aligned the tilted source lip almost directly on
-	# top of the receiver, leaving no vertical drop for a convincing liquid arc.
-	var rim_side_gap := clampf(ghost.size.x * 0.46, 48.0, 78.0)
-	var rim_height_gap := clampf(ghost.size.y * 0.28, 76.0, 116.0)
-	var desired_source_rim := target_lip + Vector2(-direction * rim_side_gap, -rim_height_gap)
-	var desired := _position_for_tilted_rim(ghost, source_local_at_pour, desired_source_rim, final_rotation)
-	var viewport_size := get_viewport_rect().size
-	desired = _clamp_pour_source_position(desired, ghost.size, viewport_size.x)
-	desired = _clamp_rotated_source_position(desired, ghost, final_rotation, viewport_size)
+	var pose := _choose_pour_pose(ghost, target_lip, direction, get_viewport_rect().size)
+	var final_rotation := float(pose["rotation"])
+	var desired: Vector2 = pose["position"]
 	var travel_time := MotionSystem.duration(&"travel")
 	var travel_start := ghost.position
 	var travel_rise := clampf(travel_start.distance_to(desired) * 0.22, 30.0, 88.0)
@@ -453,7 +479,7 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 	var update_travel := func(progress: float) -> void:
 		if is_instance_valid(ghost):
 			var point := _bottle_travel_arc(travel_start, desired, progress, travel_rise)
-			ghost.position = Vector2(point.x, maxf(12.0, point.y))
+			ghost.position = point
 	travel.tween_method(update_travel, 0.0, 1.0, travel_time)
 	await travel.finished
 	if not is_instance_valid(ghost) or not is_instance_valid(receiver):
@@ -490,6 +516,13 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 	shine.antialiased = true
 	shine.z_index = 671
 	add_child(shine)
+	# Draw the connected lip-to-mouth stream on the first frame, before the
+	# tween updates. Avoid one-frame detached liquid on fast 60/120 Hz devices.
+	var actual_source := _control_point(ghost, _source_rim_local(ghost, direction))
+	var actual_target := _control_point(receiver, _receiver_rim_local(receiver))
+	var stream_direction := 1.0 if actual_target.x >= actual_source.x else -1.0
+	stream.points = _liquid_arc_points(actual_source, actual_target, stream_direction)
+	shine.points = stream.points
 
 	var pour_time := MotionSystem.duration(&"pour") + float(amount) * MotionSystem.duration(&"micro") * 0.75
 	var flow := create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
@@ -506,7 +539,8 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 		# the transformed glass geometry, so the stream starts exactly at the
 		# downhill source rim and finishes just inside the receiving mouth even
 		# while the source is tilted or the receiver subtly compresses.
-		stream.points = _liquid_arc_points(source_mouth, receiver_mouth, direction)
+		var flow_direction := 1.0 if receiver_mouth.x >= source_mouth.x else -1.0
+		stream.points = _liquid_arc_points(source_mouth, receiver_mouth, flow_direction)
 		shine.points = stream.points
 	flow.tween_method(update_flow, 0.0, 1.0, pour_time)
 	flow.parallel().tween_property(stream, "width", 16.0, pour_time * 0.55)

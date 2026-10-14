@@ -2125,9 +2125,12 @@ func build_multi_level_select() -> void:
 
 func _build_figma_level_browser(game_id: String) -> void:
 	current_surface = "levels"
-	_remove_active_game()
 	var bottom_tint := Color("#e4f8ec") if game_id == "rescue_rush" else (Color("#e3f2fc") if game_id == "water_sort" else Color("#f5eafd"))
+	# Prepare the complete Level Select background first, behind the outgoing
+	# game. It becomes visible only when the old gameplay Control is detached.
+	# This removes the one-frame Home/Choose Game exposure on Android Back.
 	var canvas := _figma_surface("games",bottom_tint)
+	_remove_active_game()
 	var accent := Unjam3DTheme.game_accent(game_id)
 	var title := MultiGameManager.display_name(game_id).to_upper()
 	var world_count := MultiGameManager.world_count_for(game_id)

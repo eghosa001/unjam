@@ -46,12 +46,15 @@ func _run() -> void:
 	if points[points.size() - 1].distance_to(expected_entry) > 0.01:
 		game.queue_free()
 		return _fail("Water stream does not finish just inside the receiver mouth")
-	var apex_y := INF
-	for point in points:
-		apex_y = minf(apex_y, point.y)
-	if apex_y >= source.y - 3.0:
+	# Liquid must leave the glass rim DOWNWARD, never arch above it like
+	# a fountain. Sample the full stream, not just its two endpoints.
+	if points[1].y <= source.y or points[1].x <= source.x:
 		game.queue_free()
-		return _fail("Water stream has no visible ballistic arc above the source rim")
+		return _fail("Water stream launches upward or backward from the lip")
+	for point in points:
+		if point.y < source.y - 0.5:
+			game.queue_free()
+			return _fail("Water stream rises above the source rim")
 
 	var mirrored: PackedVector2Array = game.call("_liquid_arc_points", Vector2(260.0, 100.0), Vector2(100.0, 280.0), -1.0)
 	if mirrored.size() != points.size():
@@ -106,6 +109,34 @@ func _run() -> void:
 		ghost.queue_free()
 		game.queue_free()
 		return _fail("Tilted Water Sort source rim does not land on the calculated arc launch point")
+	# Inspect the exact rim pose of the bottle before Water Sort level 1
+	# draws its stream: the clamp must not move the outlet past the receiver.
+	ghost.size = Vector2(60.0, 155.0)
+	ghost.custom_minimum_size = ghost.size
+	ghost.pivot_offset = Vector2(ghost.size.x * 0.5, ghost.size.y * 0.11)
+	# Receiver and screen edge must come from the SAME rendered canvas
+	# space. Synthetic coordinates are not comparable to a scaled Figma scene.
+	var actual_board := game.get("board") as GridContainer
+	if actual_board == null or actual_board.get_child_count() < 2:
+		ghost.queue_free()
+		game.queue_free()
+		return _fail("Water level has no two tubes for first-column pour test")
+	var first_tube := actual_board.get_child(0) as Control
+	var receiver_tube := actual_board.get_child(1) as Control
+	var target_lip: Vector2 = game.call("_control_point", receiver_tube, game.call("_receiver_rim_local", receiver_tube))
+	var edge_direction := float(game.call("_pour_direction", first_tube.get_global_rect(), receiver_tube.get_global_rect(), ghost.size.x, root.get_visible_rect().size.x))
+	var edge_pose: Dictionary = game.call("_choose_pour_pose", ghost, target_lip, edge_direction, root.get_visible_rect().size)
+	ghost.position = edge_pose.get("position", Vector2.ZERO)
+	ghost.rotation = float(edge_pose.get("rotation", 0.0))
+	var measured_rim: Vector2 = game.call("_control_point", ghost, game.call("_source_rim_local", ghost, edge_direction))
+	if measured_rim.distance_to(edge_pose.get("rim", Vector2.ZERO)) > 0.75:
+		ghost.queue_free()
+		game.queue_free()
+		return _fail("First-column pour pose is not anchored to the drawn glass lip")
+	if float(edge_pose.get("side_drop", 0.0)) < 18.0 or float(edge_pose.get("vertical_drop", 0.0)) < 28.0:
+		ghost.queue_free()
+		game.queue_free()
+		return _fail("First-column water pours beyond or below the receiving rim: %s" % str(edge_pose))
 	ghost.queue_free()
 
 	# Same-column pours on the outer columns must always place the tilted source
@@ -165,7 +196,7 @@ func _run() -> void:
 
 	game.queue_free()
 	await process_frame
-	print("WATER_POUR_ARC_OK: source-rim launch, height-aware tilt, curved ballistic path, receiver-mouth entry, same-column edge safety and lock recovery are wired.")
+	print("WATER_POUR_ARC_OK: source-rim launch, height-aware tilt, gravity-fed rim-to-rim path, receiver-mouth entry, same-column edge safety and lock recovery are wired.")
 	quit(0)
 
 func _read(path: String) -> String:

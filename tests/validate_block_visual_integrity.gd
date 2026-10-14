@@ -127,6 +127,12 @@ func _validate_runtime(viewport_size: Vector2i) -> bool:
 	if source_piece == null:
 		game.queue_free()
 		return _fail("Block tray source renderer missing")
+	# On a compact screen, even a 1x2 starter brick must have a substantial
+	# touch-visible footprint. Long shapes are separately checked for fitting.
+	var starter_cell := float(source_piece.call("_tray_cell_size",1,0))
+	if starter_cell < 47.0:
+		game.queue_free()
+		return _fail("Block tray starter bricks are still visually miniature")
 	var three_wide_tile := float(source_piece.call("_tray_cell_size",2,0))
 	if three_wide_tile < minf(tray_reference_cell_size * 0.85, 30.0):
 		game.queue_free()
