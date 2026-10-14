@@ -49,6 +49,7 @@ func _run() -> void:
 			return _fail("Double Android back advanced from %s levels to Home" % game)
 		# Deliberate next Back, not from the same gesture, should reach Home.
 		shell.set("_last_system_back_ms",-1000)
+		shell.set("_last_system_back_frame",-1000)
 		shell.call("_handle_back")
 		if String(main.get("current_surface")) != "home":
 			return _fail("Separate Back from chooser did not reach Home")
