@@ -1142,7 +1142,12 @@ func build_settings() -> void:
 		FIGMA_DARK_BOTTOM if dark_mode else FIGMA_BG_BOTTOM,
 		FIGMA_DARK_TOP if dark_mode else FIGMA_BG_TOP
 	)
-	_figma_header(canvas, "SETTINGS", "", "", FIGMA_GOLD, Callable(self,"build_home"), Callable(), dark_mode)
+	_figma_header(canvas, "SETTINGS", "", "QUALITY", Color("#264e67"), Callable(self,"build_home"), Callable(self,"_open_device_quality_lab"), dark_mode)
+	var quality_entry := canvas.find_child("FigmaHeaderPill",true,false) as Button
+	if quality_entry != null:
+		quality_entry.name = "SettingsQualityLab"
+		quality_entry.accessibility_name = "Open Device Quality Lab to measure real Android gameplay performance"
+		quality_entry.tooltip_text = quality_entry.accessibility_name
 	if not dark_mode:
 		var settings_title := canvas.get_node_or_null("FigmaHeaderTitle") as Label
 		if settings_title != null:
@@ -1233,6 +1238,15 @@ func build_settings() -> void:
 	canvas.add_child(recovery)
 
 	_figma_bottom_nav(canvas,"settings",dark_mode)
+
+func _open_device_quality_lab() -> void:
+	# A single modal reuses the existing device-local frame-probe; the user
+	# starts/stops capture explicitly and can copy the report without any upload.
+	if get_node_or_null("DeviceQualityLab") != null:
+		return
+	var quality_lab := preload("res://scripts/ui/device_quality_lab.gd").new()
+	quality_lab.name = "DeviceQualityLab"
+	add_child(quality_lab)
 
 func _cycle_settings_language() -> void:
 	LocalizationManager.cycle_language()
