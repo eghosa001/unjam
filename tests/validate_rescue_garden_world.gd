@@ -81,7 +81,7 @@ func _run() -> void:
 		return _fail("Garden lacks path to the existing upgrade economy")
 	upgrade_btn.emit_signal("pressed")
 	await _frames(3)
-	if sheet.is_inside_tree() or app.find_child("CollectionUpgradeTitle/tree",true,false) == null:
+	if is_instance_valid(sheet) or app.find_child("CollectionUpgradeTitle*",true,false) == null:
 		return _fail("Garden failed to return players to the genuine upgrades screen")
 	app.queue_free()
 	await _frames(1)
