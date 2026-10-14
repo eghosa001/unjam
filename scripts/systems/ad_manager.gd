@@ -24,6 +24,27 @@ var rewarded_in_progress := false
 var _rewarded_request_serial := 0
 var _interstitial_request_serial := 0
 var _interstitial_in_progress := false
+# Native fullscreen ads may only appear at a settled, intentional menu break.
+# This is updated by Main's atomic current_surface setter, not a timer.
+var _interstitial_surface := ""
+
+func set_interstitial_surface(surface: String) -> void:
+	_interstitial_surface = surface
+
+func can_present_interstitial_now() -> bool:
+	if _interstitial_surface not in ["home", "live"] or get_tree().paused:
+		return false
+	# The transition guard prevents a native SDK showing over an outgoing
+	# game, even if the destination's menu surface is already visible.
+	var main := get_node_or_null("/root/Main")
+	if main == null:
+		main = get_tree().root.find_child("Main", true, false)
+	if main == null or not is_instance_valid(main):
+		return false
+	if String(main.get("current_surface")) != _interstitial_surface:
+		return false
+	var game: Variant = main.get("active_game")
+	return game == null or not is_instance_valid(game)
 
 func _ready() -> void:
 	ads_enabled = not bool(SaveManager.data.get("remove_ads", false))
@@ -136,6 +157,8 @@ func note_level_completed() -> void:
 	completed_since_interstitial += 1
 
 func should_show_interstitial() -> bool:
+	if not can_present_interstitial_now():
+		return false
 	if not ads_enabled or bool(SaveManager.data.get("remove_ads", false)):
 		return false
 	if OS.get_name() == "Android" and not PrivacyManager.may_request_ads():
@@ -151,7 +174,9 @@ func should_show_interstitial() -> bool:
 	return int(Time.get_unix_time_from_system()) - last_interstitial_unix >= INTERSTITIAL_COOLDOWN_SECONDS
 
 func show_interstitial() -> bool:
-	if _interstitial_in_progress:
+	# Absolutely never present during game loading, active puzzle play or
+	# completion overlays. Consent and frequency guards apply *after* this.
+	if not can_present_interstitial_now() or _interstitial_in_progress:
 		return false
 	if not should_show_interstitial():
 		interstitial_closed.emit()
@@ -163,6 +188,7 @@ func show_interstitial() -> bool:
 		var accepted = provider.call("show_interstitial", Callable(self, "_provider_interstitial_closed").bind(request_serial), Callable(self, "_provider_interstitial_failed").bind(request_serial))
 		if accepted == false and _interstitial_in_progress and request_serial == _interstitial_request_serial:
 			_interstitial_in_progress = false
+			_interstitial_request_serial += 1
 			interstitial_failed.emit("Interstitial provider rejected the request")
 		return accepted != false
 	if is_test_mode() and OS.get_name() != "Android":
