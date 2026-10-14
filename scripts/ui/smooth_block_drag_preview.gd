@@ -6,9 +6,12 @@ func _process(delta: float) -> void:
 		var delta_to_target := target_position - position
 		# High-response exponential tracking: smooth without the rubber-band lag
 		# that the previous 30x lerp produced on 60/90/120 Hz phones.
-		var follow := 1.0 - exp(-delta * 86.0)
+		# As soon as a valid magnetic cell is identified, show the ghost
+		# exactly there THIS FRAME. A 76%-per-frame easing made the shape
+		# visually trail the target even though the board already snapped.
+		var follow := 1.0 if board_valid else 1.0 - exp(-delta * 86.0)
 		position = position.lerp(target_position, follow)
-		var desired_rotation := clampf(delta_to_target.x * 0.00018, -0.014, 0.014)
+		var desired_rotation := 0.0 if board_valid else clampf(delta_to_target.x * 0.00018, -0.014, 0.014)
 		rotation = lerpf(rotation, desired_rotation, 1.0 - exp(-delta * 24.0))
 	else:
 		rotation = lerpf(rotation, 0.0, 1.0 - exp(-delta * 24.0))
