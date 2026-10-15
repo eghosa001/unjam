@@ -121,7 +121,7 @@ jobs:
           "$TOOL" dump badging build/android/UNJAM-v12-unsigned.apk | tee build/android/package-badging.txt
           "$TOOL" dump permissions build/android/UNJAM-v12-unsigned.apk | tee build/android/package-permissions.txt
           "$TOOL" dump xmltree build/android/UNJAM-v12-unsigned.apk AndroidManifest.xml | tee build/android/package-manifest.txt
-          grep -F "package: name='com.eghosa.unjamgam' versionCode='11' versionName='1.0.12'" build/android/package-badging.txt
+          grep -F "package: name='com.eghosa.unjamgam' versionCode='12' versionName='1.0.12'" build/android/package-badging.txt
           grep -F "targetSdkVersion:'36'" build/android/package-badging.txt
           grep -F "native-code: 'arm64-v8a'" build/android/package-badging.txt
           grep -F 'com.android.vending.BILLING' build/android/package-permissions.txt
