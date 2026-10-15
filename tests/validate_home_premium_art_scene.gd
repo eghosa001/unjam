@@ -32,9 +32,10 @@ func _run() -> void:
 		var scenery := home.find_child("HomeWorldAtmosphere",true,false) as TextureRect
 		var fallback := home.find_child("FigmaHomeBackground",true,false) as Control
 		var hero := home.find_child("FigmaHomeHero",true,false) as Control
+		var sheen := home.find_child("HomeHeroIllustratedGlow",true,false) as TextureRect
 		var mark := home.find_child("HomeBrandEmblem",true,false) as TextureRect
 		var choose := home.find_child("HomePrimaryAction",true,false) as Button
-		if canvas == null or scenery == null or fallback == null or hero == null or mark == null or choose == null:
+		if canvas == null or scenery == null or fallback == null or hero == null or sheen == null or mark == null or choose == null:
 			return _fail("%s home art or launch controls missing" % mode)
 		if scenery.mouse_filter != Control.MOUSE_FILTER_IGNORE or scenery.is_processing():
 			return _fail("Home art must never intercept touch or process per frame")
@@ -42,6 +43,10 @@ func _run() -> void:
 			return _fail("Home art must fill reference stage without stretch errors")
 		if scenery.get_parent() != canvas or scenery.get_index() <= fallback.get_index() or scenery.get_index() >= hero.get_index():
 			return _fail("Illustration must paint behind opaque copy cards")
+		if sheen.mouse_filter != Control.MOUSE_FILTER_IGNORE or sheen.is_processing() or sheen.get_index() <= hero.get_index() or sheen.get_index() >= mark.get_index():
+			return _fail("Hero scenic glow must remain below the mascot and above its copy-safe panel")
+		if mark.size.x < 95 or mark.size.y < 90:
+			return _fail("Original three-game artwork is too small to be readable")
 		if choose.action_mode != BaseButton.ACTION_MODE_BUTTON_RELEASE or choose.size.y < 48:
 			return _fail("Choose Game tap target degraded by illustration")
 		if mark.texture == null or mark.texture.get_size().x < 200:
