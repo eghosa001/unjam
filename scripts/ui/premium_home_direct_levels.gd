@@ -3,6 +3,13 @@ extends "res://scripts/ui/premium_home_casual.gd"
 const FLAT_GAME_LOGO_SCRIPT = preload("res://scripts/ui/unjam_flat_game_logo.gd")
 const GAME_ART_SCRIPT = preload("res://scripts/ui/unjam_2d_game_art.gd")
 const UNJAM_WORDMARK: Texture2D = preload("res://assets/art/brand/unjam_wordmark.svg")
+# Original authored puzzle-world illustration. All artwork is static, 0 FPS
+# while idle, with no shaders, particles or gameplay hit-test ownership.
+const HOME_WORLD_LIGHT: Texture2D = preload("res://assets/art/home/unjam_world_light.svg")
+const HOME_WORLD_DARK: Texture2D = preload("res://assets/art/home/unjam_world_dark.svg")
+const HOME_WORLD_WIDE_LIGHT: Texture2D = preload("res://assets/art/home/unjam_world_wide_light.svg")
+const HOME_WORLD_WIDE_DARK: Texture2D = preload("res://assets/art/home/unjam_world_wide_dark.svg")
+const HOME_HERO_TRIO: Texture2D = preload("res://assets/art/home/unjam_hero_trio.svg")
 
 const RefCanvas = preload("res://scripts/ui/figma_reference_canvas.gd")
 
@@ -65,7 +72,7 @@ func build_home_launcher() -> void:
 	# The viewport fallback stays neutral for letterboxing; the visible 390x844 scene itself carries the neutral premium depth treatment.
 	# Match the authored Home material when letterboxed on wide screens;
 	# an unrelated black/grey surround previously made tablet Home feel split.
-	viewport_bg.color = Color("#1d2330") if _home_dark() else Color("#b3aea4")
+	viewport_bg.color = Color("#13253d") if _home_dark() else Color("#d7e9ed")
 	viewport_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(viewport_bg)
 
@@ -109,6 +116,16 @@ func _build_wide_home_stage(stage: Control, available: Vector2) -> void:
 	var dark := _home_dark()
 	var ink := DARK_INK if dark else NAVY
 	var muted := DARK_MUTED if dark else MUTED
+	# A dedicated 1600x900 authored landscape scene avoids stretching
+	# portrait art into a blurred tablet backdrop.
+	var atmosphere := TextureRect.new()
+	atmosphere.name = "HomeWideAtmosphere"
+	atmosphere.texture = HOME_WORLD_WIDE_DARK if dark else HOME_WORLD_WIDE_LIGHT
+	atmosphere.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	atmosphere.stretch_mode = TextureRect.STRETCH_SCALE
+	atmosphere.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	atmosphere.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	stage.add_child(atmosphere)
 	var logo := TextureRect.new()
 	logo.name = "HomeWideBrandMark"
 	logo.texture = preload("res://assets/icon_user_adaptive_432.png")
@@ -257,21 +274,32 @@ func _add_frame_background(canvas: Control) -> void:
 	var dark := _home_dark()
 	var bg := PanelContainer.new()
 	bg.name = "FigmaHomeBackground"
-	var fill := Color("#1d2330") if dark else Color("#b3aea4")
+	var fill := Color("#14253f") if dark else Color("#d3e9f5")
 	bg.add_theme_stylebox_override("panel",RefCanvas.rounded_gradient3(
-		fill.lightened(0.065),fill,fill.darkened(0.075),32,Color("#71768a",0.11),1,0.08))
+		fill.lightened(0.055),fill,fill.darkened(0.06),30,Color("#ffffff",0.10),1,0.08))
 	RefCanvas.set_rect(bg,0,0,390,844)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(bg)
+	# Full-bleed original art sits behind everything; no touch interception or
+	# clock-driven updates. Negative space and opaque copy cards preserve
+	# accessibility even with the illustrated scene.
+	var scene := TextureRect.new()
+	scene.name = "HomeWorldAtmosphere"
+	scene.texture = HOME_WORLD_DARK if dark else HOME_WORLD_LIGHT
+	scene.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	scene.stretch_mode = TextureRect.STRETCH_SCALE
+	scene.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	RefCanvas.set_rect(scene,0,0,390,844)
+	canvas.add_child(scene)
 
 func _add_hero(canvas: Control) -> void:
 	var dark := _home_dark()
 	var hero := PanelContainer.new()
 	hero.name = "FigmaHomeHero"
-	var fill := Color("#2c3242") if dark else Color("#faf8f2")
+	var fill := Color("#263953") if dark else Color("#f7fbff")
 	hero.add_theme_stylebox_override("panel",RefCanvas.rounded_gradient3(
 		fill.lightened(0.07),fill,fill.darkened(0.08),24,
-		Color("#789dff",0.45) if dark else Color("#a7a5bd",0.44),1,0.17))
+		Color("#71aeee",0.49) if dark else Color("#8ebdcf",0.60),1,0.18))
 	RefCanvas.set_rect(hero,21,126,346,168)
 	hero.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(hero)
@@ -283,14 +311,14 @@ func _add_hero(canvas: Control) -> void:
 	# Compact neutral brand mark: Home is NOT a selected game's landing page.
 	var mark := TextureRect.new()
 	mark.name = "HomeBrandEmblem"
-	mark.texture = preload("res://assets/icon_user_adaptive_432.png")
+	mark.texture = HOME_HERO_TRIO
 	mark.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	mark.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	RefCanvas.set_rect(mark,266,137,80,75)
 	canvas.add_child(mark)
 	var choose := _add_action(canvas,Rect2(39,227,312,54),
-		Color("#4775e7") if dark else Color("#286ac0"),
+		Color("#5683f0") if dark else Color("#2169c7"),
 		"▦  CHOOSE GAME",17,OFF_WHITE,Callable(self,"_open_game_selector"),17)
 	choose.name = "HomePrimaryAction"
 	choose.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
