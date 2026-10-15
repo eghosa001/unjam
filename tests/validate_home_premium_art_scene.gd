@@ -20,12 +20,11 @@ func _run() -> void:
 		return _fail("Premium Home root missing")
 	var textures: Array[Texture2D] = []
 	for mode in ["dark","light"]:
-		var preferences := root.get_node_or_null("ThemeManager")
-		if preferences != null and preferences.has_method("set_theme_mode"):
-			preferences.call("set_theme_mode",mode)
-		elif root.get_node_or_null("SaveManager") != null:
-			var save := root.get_node("SaveManager")
-			save.data["theme_mode"] = mode
+		# Home theme comes from UXShell, not from SaveManager directly.
+		var shell := main.get_node_or_null("UXShell")
+		if shell == null:
+			return _fail("UXShell theme owner missing")
+		shell.set("theme_mode",mode)
 		main.call("build_home")
 		await _frames(5)
 		home = main.get_node("PremiumHome")
