@@ -10,6 +10,8 @@ const HOME_WORLD_DARK: Texture2D = preload("res://assets/art/home/unjam_world_da
 const HOME_WORLD_WIDE_LIGHT: Texture2D = preload("res://assets/art/home/unjam_world_wide_light.svg")
 const HOME_WORLD_WIDE_DARK: Texture2D = preload("res://assets/art/home/unjam_world_wide_dark.svg")
 const HOME_HERO_TRIO: Texture2D = preload("res://assets/art/home/unjam_hero_trio.svg")
+const HOME_HERO_PANEL_LIGHT: Texture2D = preload("res://assets/art/home/unjam_hero_panel_light.svg")
+const HOME_HERO_PANEL_DARK: Texture2D = preload("res://assets/art/home/unjam_hero_panel_dark.svg")
 
 const RefCanvas = preload("res://scripts/ui/figma_reference_canvas.gd")
 
@@ -303,6 +305,16 @@ func _add_hero(canvas: Control) -> void:
 	RefCanvas.set_rect(hero,21,126,346,168)
 	hero.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(hero)
+	# Original illustrated sheen is layered ON TOP of the opaque hero and
+	# BELOW text and buttons. Quiet left half keeps the headline readable.
+	var illustrated_sheen := TextureRect.new()
+	illustrated_sheen.name = "HomeHeroIllustratedGlow"
+	illustrated_sheen.texture = HOME_HERO_PANEL_DARK if dark else HOME_HERO_PANEL_LIGHT
+	illustrated_sheen.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	illustrated_sheen.stretch_mode = TextureRect.STRETCH_SCALE
+	illustrated_sheen.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	RefCanvas.set_rect(illustrated_sheen,21,126,346,168)
+	canvas.add_child(illustrated_sheen)
 	var title := _add_text(canvas,"PLAY YOUR WAY.",Rect2(40,145,221,38),25,DARK_INK if dark else NAVY,true)
 	title.name = "HomeWelcomeTitle"
 	RefCanvas.fit_single_line_text(title,219.0,25,21)
@@ -315,7 +327,7 @@ func _add_hero(canvas: Control) -> void:
 	mark.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	mark.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	RefCanvas.set_rect(mark,266,137,80,75)
+	RefCanvas.set_rect(mark,258,130,98,93)
 	canvas.add_child(mark)
 	var choose := _add_action(canvas,Rect2(39,227,312,54),
 		Color("#5683f0") if dark else Color("#2169c7"),
