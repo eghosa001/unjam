@@ -1,7 +1,7 @@
 name: UNJAM v12 Production Unsigned Packages
 on:
   push:
-    branches: [release/v12-first-play-upload-signed-candidates]
+    branches: [release/v12-production-offline-signing-20261015]
     paths: ['.github/workflows/android-first-v12-packages.yml']
 permissions:
   contents: read
