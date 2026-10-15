@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="440" height="390" viewBox="0 0 220 195">
+<defs>
+ <radialGradient id="orb"><stop stop-color="#f4f9ff" stop-opacity=".93"/><stop offset=".67" stop-color="#a6dbf2" stop-opacity=".53"/><stop offset="1" stop-color="#87b8ff" stop-opacity="0"/></radialGradient>
+ <linearGradient id="liquid" x2=".4" y2="1"><stop stop-color="#67eaf9"/><stop offset=".8" stop-color="#3285e9"/><stop offset="1" stop-color="#4755ba"/></linearGradient>
+ <radialGradient id="feather"><stop stop-color="#fff6a0"/><stop offset=".6" stop-color="#fdd044"/><stop offset="1" stop-color="#f4a52b"/></radialGradient>
+ <linearGradient id="cube" x2="1" y2="1"><stop stop-color="#c5a1ff"/><stop offset=".6" stop-color="#8a75e5"/><stop offset="1" stop-color="#636cd7"/></linearGradient>
+</defs>
+<ellipse cx="113" cy="167" rx="103" ry="22" fill="#273757" opacity=".20"/>
+<circle cx="110" cy="84" r="91" fill="url(#orb)"/>
+<path d="M23 143q89-41 174 3" fill="none" stroke="#ffffff" stroke-opacity=".48" stroke-width="5" stroke-linecap="round"/>
+<!-- Floating constellation around characters -->
+<g fill="#fff4bf"><circle cx="31" cy="36" r="4"/><circle cx="183" cy="33" r="3"/><circle cx="196" cy="107" r="2.5"/><circle cx="68" cy="9" r="2"/></g>
+<path d="M45 22v16M37 30h16M178 18v13M171.5 24.5h13" stroke="#ffe9a6" stroke-width="3" stroke-linecap="round"/>
+<!-- Water tube, on the left -->
+<g transform="translate(40 77) rotate(-15)">
+ <ellipse cx="6" cy="69" rx="35" ry="10" fill="#183659" opacity=".2"/>
+ <rect x="-24" y="-63" width="54" height="131" rx="24" fill="#d4f7ff" fill-opacity=".6" stroke="#f6ffff" stroke-width="5"/>
+ <path d="M-19 7q23-13 44 0v39q-20 28-44 0Z" fill="url(#liquid)"/>
+ <ellipse cx="3" cy="7" rx="22" ry="7" fill="#9af3ff"/>
+ <path d="M-12-46v43" stroke="#fff" stroke-width="6" opacity=".72" stroke-linecap="round"/>
+ <circle cx="10" cy="27" r="3" fill="#d9fbff" opacity=".9"/>
+ </g>
+<!-- Block Puzzle assembled cubes on right -->
+<g transform="translate(147 99) rotate(8)">
+ <path d="M-5-29l27-13 27 14-27 15Z" fill="#d8caff"/>
+ <path d="M-5-29v34l27 14V-13Z" fill="url(#cube)"/>
+ <path d="M22-13l27-15V5L22 19Z" fill="#6a57d4"/>
+ <path d="M-30 3l25-13 25 14-25 14Z" fill="#b7edff"/>
+ <path d="M-30 3v31l25 14V18Z" fill="#5cacf7"/>
+ <path d="M-5 18L20 4v30L-5 48Z" fill="#357bd1"/>
+ <path d="M20 21l25-12 25 12-25 14Z" fill="#e4ccff"/>
+ <path d="M20 21v30l25 14V35Z" fill="#9972ea"/>
+ <path d="M45 35l25-14v30L45 65Z" fill="#654cb9"/>
+ </g>
+<!-- Golden rescue chick, overlapping art for personality -->
+<g transform="translate(104 87)">
+ <ellipse cx="0" cy="58" rx="36" ry="12" fill="#203b56" opacity=".19"/>
+ <ellipse cx="1" cy="19" rx="33" ry="41" fill="url(#feather)"/>
+ <circle cx="0" cy="-14" r="37" fill="url(#feather)" stroke="#fff8c5" stroke-width="2"/>
+ <path d="M-28 10q-30-13-32 16 7 21 31 17ZM31 11q26-15 34 10-4 21-32 17Z" fill="#fbc23a" stroke="#f8df68" stroke-width="3"/>
+ <path d="M-9-50l8-12 9 12M-1-49l11-12" fill="none" stroke="#ffe575" stroke-width="6" stroke-linecap="round"/>
+ <circle cx="-15" cy="-21" r="5.4" fill="#26344b"/><circle cx="15" cy="-21" r="5.4" fill="#26344b"/>
+ <circle cx="-16.5" cy="-23" r="1.8" fill="white"/><circle cx="13.5" cy="-23" r="1.8" fill="white"/>
+ <ellipse cx="-25" cy="-6" rx="6" ry="3.5" fill="#ff9b90"/><ellipse cx="25" cy="-6" rx="6" ry="3.5" fill="#ff9b90"/>
+ <path d="M-10-6l20 1-11 13Z" fill="#f57d2d"/>
+ <path d="M-10 54l-7 11M11 54l8 11" stroke="#df8e19" stroke-width="5" stroke-linecap="round"/>
+ </g>
+</svg>
