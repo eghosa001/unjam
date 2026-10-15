@@ -1,4 +1,4 @@
-name: UNJAM v11 First Upload Signable Packages
+name: UNJAM v11 Fresh Clean Rebuild Signable Packages
 on:
   push:
     branches: [release/v11-first-play-upload-signed-candidates]
@@ -14,6 +14,13 @@ jobs:
     timeout-minutes: 100
     steps:
       - uses: actions/checkout@v4
+      - name: Confirm clean rebuild provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(git status --porcelain)"
+          printf 'Fresh rebuild from %s\n' "$(git rev-parse HEAD)"
+          git log -1 --format='%s'
       - name: Prepare exact first-upload version 11 (do not mutate main)
         shell: bash
         run: |
@@ -172,4 +179,4 @@ jobs:
             build/android/package-permissions.txt
             build/android/package-manifest.txt
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 10
