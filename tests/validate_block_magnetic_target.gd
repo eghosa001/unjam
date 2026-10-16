@@ -146,7 +146,7 @@ func _run() -> void:
 	var press := InputEventScreenTouch.new()
 	press.index = 0
 	press.pressed = true
-	press.position = Vector2(6.0, 8.0)
+	press.position = tray_first  # Actually pick up the left painted tile.
 	piece._gui_input(press)
 	if not _check(piece.touch_drag_started and piece.is_processing_input(), "Tray press did not capture a global touch pointer"):return
 	if not _check(piece.touch_preview == null and not piece.dragging, "Simple touch unexpectedly lifted/enlarged a tray brick"):return
@@ -158,7 +158,7 @@ func _run() -> void:
 	if not _check(piece.touch_drag_started and board.placed.x < 0, "Another finger interrupted the active drag"):return
 	var move := InputEventScreenDrag.new()
 	move.index = 0
-	move.position = target + Vector2(0.0, scaled_lift)
+	move.position = target + Vector2(-18.0, scaled_lift)  # Finger follows the left tile, not the shape centroid.
 	piece._input(move)
 	if not _check(piece.touch_preview != null and piece._last_magnet == Vector2i(2,3), "Viewport-wide drag failed to acquire a centered board target"):return
 	var release := InputEventScreenTouch.new()
@@ -192,7 +192,7 @@ func _run() -> void:
 	piece._gui_input(press)
 	var vertical_move := InputEventScreenDrag.new()
 	vertical_move.index = 0
-	vertical_move.position = Vector2(57.0 + 36.0 * 3.0, 57.0 + 36.0 * 5.5 + scaled_lift)
+	vertical_move.position = Vector2(57.0 + 36.0 * 3.0, 57.0 + 36.0 * 5.0 + scaled_lift)  # Anchored at the top tile.
 	piece._input(vertical_move)
 	if not _check(piece._preview_valid and piece._preview_snap_origin == Vector2i(3,5), "Vertical two-brick ghost did not highlight the intended bottom-board position"):return
 	var vertical_release := InputEventScreenTouch.new()
