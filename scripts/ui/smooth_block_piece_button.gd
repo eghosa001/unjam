@@ -296,7 +296,11 @@ func _finish_touch_drag(screen_position: Vector2) -> void:
 		return
 	if game.has_method("clear_touch_drag"):
 		game.call("clear_touch_drag", self)
-	var origin := _best_origin(game, screen_position)
+	# Release must use the last visible legal lock when the pointer moves
+	# only a fraction of a cell between the final drag and finger-up event.
+	var origin := MagneticTarget.choose_release(
+		game, shape, screen_position, _last_magnet, MagneticTarget.lift_distance(game)
+	)
 	var valid := origin.x >= 0 and bool(game.call("can_place", shape, origin))
 	if valid:
 		_snap_preview_to_origin(game, origin)
