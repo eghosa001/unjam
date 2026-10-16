@@ -64,11 +64,21 @@ func _grab_cell_from_local(local_position: Vector2) -> Vector2:
 		max_y = maxi(max_y, point.y)
 	var cell := _tray_cell_size(max_x, max_y)
 	var base := (size - Vector2(float(max_x + 1), float(max_y + 1)) * cell) * 0.5
+	var nearest_tile := Vector2(-1.0, -1.0)
+	var nearest_distance := INF
 	for raw in shape:
 		var tile := _as_point(raw)
-		if Rect2(base + Vector2(tile) * cell, Vector2.ONE * cell).has_point(local_position):
+		var tile_start := base + Vector2(tile) * cell
+		# Touchscreen fingers commonly land just outside a painted tile.
+		# Use the closest actual brick instead of falling back to the whole
+		# shape centroid, which previously shifted the ghost as it was lifted.
+		if Rect2(tile_start, Vector2.ONE * cell).has_point(local_position):
 			return Vector2(tile)
-	return Vector2(-1.0, -1.0)
+		var distance := local_position.distance_squared_to(tile_start + Vector2.ONE * (cell * 0.5))
+		if distance < nearest_distance:
+			nearest_distance = distance
+			nearest_tile = Vector2(tile)
+	return nearest_tile
 
 func _gui_input(event: InputEvent) -> void:
 	if used or shape.is_empty():
@@ -206,9 +216,11 @@ func _shape_centroid_grid() -> Vector2:
 			count += 1
 	return sum / float(maxi(count, 1))
 
-func _best_origin(game: Node, screen_position: Vector2) -> Vector2i:
+func _best_origin(game: Node, screen_position: Vector2, lift: float = -1.0, geo: Dictionary = {}) -> Vector2i:
 	var previous := _last_magnet
-	var chosen: Vector2i = MagneticTarget.choose(game, shape, screen_position, previous, MagneticTarget.lift_distance(game), _grab_cell)
+	if lift < 0.0:
+		lift = MagneticTarget.lift_distance(game, geo)
+	var chosen: Vector2i = MagneticTarget.choose(game, shape, screen_position, previous, lift, _grab_cell, geo)
 	_last_magnet = chosen
 	# Physical and visual click when moving from one locked grid cell to
 	# another, not on every pointer event; bounded for mobile performance.
@@ -296,9 +308,11 @@ func _update_touch_preview_position(screen_position: Vector2) -> void:
 	var game := _game()
 	if game == null:
 		return
-	var lift := MagneticTarget.lift_distance(game)
-	var lifted_point := screen_position - Vector2(0.0, lift)
+	# Sample board geometry once for this pointer event, so all snap,
+	# preview and lift calculations agree even on dynamically scaled boards.
 	var geo := MagneticTarget.geometry(game)
+	var lift := MagneticTarget.lift_distance(game, geo)
+	var lifted_point := screen_position - Vector2(0.0, lift)
 	if not geo.is_empty() and _grab_cell.x >= 0.0:
 		var delta := _shape_centroid_grid() - _grab_cell
 		var step: Vector2 = geo["step"]
@@ -306,7 +320,7 @@ func _update_touch_preview_position(screen_position: Vector2) -> void:
 	var local_point := parent_control.get_global_transform_with_canvas().affine_inverse() * lifted_point
 	var centroid: Vector2 = touch_preview.call("shape_centroid_local")
 	var desired := local_point - centroid
-	var origin := _best_origin(game, screen_position)
+	var origin := _best_origin(game, screen_position, lift, geo)
 	var valid := origin.x >= 0 and bool(game.call("can_place", shape, origin))
 	# Capture the exact legal target used to draw the green footprint and
 	# floating brick. A stale or red preview may never claim a successful drop.
@@ -314,7 +328,7 @@ func _update_touch_preview_position(screen_position: Vector2) -> void:
 	_preview_snap_origin = origin if valid else Vector2i(-1, -1)
 	_preview_finger_position = screen_position
 	if not valid:
-		origin = MagneticTarget.preview_origin(game, shape, screen_position, lift, _grab_cell)
+		origin = MagneticTarget.preview_origin(game, shape, screen_position, lift, _grab_cell, geo)
 	if origin.x >= 0:
 		desired = _preview_position_for_origin(game, origin)
 	# Invalid ghosts and board footprints are red; legal snaps align exactly
