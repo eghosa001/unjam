@@ -58,6 +58,15 @@ func _run() -> void:
 	got = Magnetic.choose(board,shape,Vector2(-800,700),Vector2i(-1,-1),132.0)
 	if not _check(got == Vector2i(-1,-1),"Off-board release magnetized to distant legal cells"):return
 	board.blocked = Vector2i(-1,-1)
+	board.scale = Vector2(1.5,1.5)
+	var scaled_geo := Magnetic.geometry(board)
+	var scaled_first: Vector2 = scaled_geo["first"]
+	var scaled_step: Vector2 = scaled_geo["step"]
+	if not _check(absf(scaled_step.x - 54.0) < 0.1,"Board canvas scale was omitted from magnetic geometry"):return
+	var scaled_center := scaled_first + scaled_step * Vector2(2.5,3.0)
+	got = Magnetic.choose(board,shape,scaled_center+Vector2(0,Magnetic.lift_distance(board)),Vector2i(-1,-1),Magnetic.lift_distance(board))
+	if not _check(got == Vector2i(2,3),"Magnet lost alignment when the canvas was scaled"):return
+	board.scale = Vector2.ONE
 	got = Magnetic.choose(board,shape,Vector2(57+36.0*7.5,57+36.0*3.0)+Vector2(0,132),Vector2i(-1,-1),132.0)
 	if not _check(got == Vector2i(-1,-1),"Magnet committed a two-column block beyond the eighth board column"):return
 	got = Magnetic.choose(board,shape,Vector2(-800,700),Vector2i(2,3),132.0)
