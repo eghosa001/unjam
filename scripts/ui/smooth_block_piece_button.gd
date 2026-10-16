@@ -3,10 +3,12 @@ class_name SmoothBlockPieceButton
 
 const SmoothDragPreview = preload("res://scripts/ui/smooth_block_drag_preview.gd")
 const MagneticTarget = preload("res://scripts/ui/block_magnetic_target.gd")
-const MIN_ACTUAL_DRAG_PX := 13.0
+const MIN_ACTUAL_DRAG_PX := 9.0
 var _last_magnet := Vector2i(-1,-1)
 var _down_pointer := Vector2.ZERO
 var _drag_distance := 0.0
+var _active_touch_index := -1
+var _last_snap_msec := -1000
 # Only the few cells in a *changed* target footprint need highlighting.
 # Raw pointer input can arrive >100x/s, often within the same 8x8 cell.
 var _last_footprint_origin := Vector2i(-1,-1)
@@ -35,21 +37,73 @@ func _set_footprint(game: Node, origin: Vector2i, active: bool, valid: bool) -> 
 			if cell != null and is_instance_valid(cell) and cell.has_method("set_drag_footprint"):
 				cell.call("set_drag_footprint", active, valid, accent)
 
+func _ready() -> void:
+	super._ready()
+	# Listen globally only while this particular finger owns a tray piece.
+	# Godot GUI bounds must not interrupt drags that leave the tray.
+	set_process_input(false)
+
 func _gui_input(event: InputEvent) -> void:
+	if used or shape.is_empty():
+		return
 	if event is InputEventScreenTouch:
-		var pointer: Vector2 = get_global_transform_with_canvas() * event.position
-		if event.pressed:
-			_down_pointer = pointer
-			_drag_distance = 0.0
-			_last_magnet = Vector2i(-1,-1)
-		else:
-			_drag_distance = maxf(_drag_distance, pointer.distance_to(_down_pointer))
-	elif event is InputEventScreenDrag:
-		var pointer: Vector2 = get_global_transform_with_canvas() * event.position
-		_drag_distance = maxf(_drag_distance, pointer.distance_to(_down_pointer))
-		if touch_drag_started and _drag_distance >= MIN_ACTUAL_DRAG_PX and not dragging:
-			_begin_drag_feedback()
+		var touch := event as InputEventScreenTouch
+		if not touch.pressed or touch_drag_started:
+			return
+		var game := _game()
+		if game == null:
+			return
+		var owner = game.get("active_touch_piece")
+		if owner != null and is_instance_valid(owner) and owner != self:
+			return
+		_active_touch_index = touch.index
+		_down_pointer = get_global_transform_with_canvas() * touch.position
+		_drag_distance = 0.0
+		_last_magnet = Vector2i(-1, -1)
+		_last_snap_msec = -1000
+		touch_drag_started = true
+		game.call("register_touch_drag", self)
+		set_process_input(true)
+		accept_event()
+		return
+	# Keep Godot's native mouse and keyboard drag path unaffected.
 	super._gui_input(event)
+
+func _input(event: InputEvent) -> void:
+	if not touch_drag_started:
+		return
+	if event is InputEventScreenDrag:
+		var drag := event as InputEventScreenDrag
+		if drag.index != _active_touch_index:
+			return
+		_drag_distance = maxf(_drag_distance, drag.position.distance_to(_down_pointer))
+		if _drag_distance >= MIN_ACTUAL_DRAG_PX:
+			_begin_drag_feedback()
+			# One target calculation per pointer update. Ghost, board footprint
+			# and release all read the same captured viewport coordinates.
+			_show_touch_preview(drag.position)
+			_update_touch_footprint(drag.position)
+		get_viewport().set_input_as_handled()
+	elif event is InputEventScreenTouch:
+		var touch := event as InputEventScreenTouch
+		if touch.index != _active_touch_index or touch.pressed:
+			return
+		var tap := _drag_distance < MIN_ACTUAL_DRAG_PX and touch.position.distance_to(_down_pointer) < MIN_ACTUAL_DRAG_PX
+		_drag_distance = maxf(_drag_distance, touch.position.distance_to(_down_pointer))
+		# Release input ownership before committing: placement can synchronously
+		# replace the tray slot, and a later stray finger cannot claim it.
+		touch_drag_started = false
+		_active_touch_index = -1
+		set_process_input(false)
+		if touch.canceled:
+			dispose_visuals()
+		else:
+			_finish_touch_drag(touch.position)
+			if tap and not used and not shape.is_empty():
+				var game := _game()
+				if game != null and game.has_method("select_piece"):
+					game.call("select_piece", piece_index)
+		get_viewport().set_input_as_handled()
 
 func _update_touch_footprint(screen_position: Vector2) -> void:
 	if _drag_distance < MIN_ACTUAL_DRAG_PX:
@@ -121,8 +175,20 @@ func _shape_centroid_grid() -> Vector2:
 	return sum / float(maxi(count, 1))
 
 func _best_origin(game: Node, screen_position: Vector2) -> Vector2i:
-	var chosen: Vector2i = MagneticTarget.choose(game, shape, screen_position, _last_magnet, MagneticTarget.lift_distance(game))
+	var previous := _last_magnet
+	var chosen: Vector2i = MagneticTarget.choose(game, shape, screen_position, previous, MagneticTarget.lift_distance(game))
 	_last_magnet = chosen
+	# Physical and visual click when moving from one locked grid cell to
+	# another, not on every pointer event; bounded for mobile performance.
+	if chosen.x >= 0 and previous.x >= 0 and chosen != previous and _drag_distance >= MIN_ACTUAL_DRAG_PX:
+		var now := Time.get_ticks_msec()
+		if now - _last_snap_msec >= 105:
+			_last_snap_msec = now
+			var feedback := get_node_or_null("/root/FeedbackManager")
+			if feedback != null and feedback.has_method("snap"):
+				feedback.call("snap")
+			if touch_preview != null and is_instance_valid(touch_preview):
+				touch_preview.set_drag_scale(Vector2(1.025, 1.025))
 	return chosen
 
 func _show_touch_preview(screen_position: Vector2) -> void:
@@ -244,7 +310,11 @@ func _finish_touch_drag(screen_position: Vector2) -> void:
 		_end_drag_feedback(false)
 
 func dispose_visuals() -> void:
+	touch_drag_started = false
+	_active_touch_index = -1
+	set_process_input(false)
 	_last_magnet = Vector2i(-1,-1)
 	_drag_distance = 0.0
 	_clear_touch_footprint()
 	super.dispose_visuals()
+
