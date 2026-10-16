@@ -189,6 +189,11 @@ func _best_origin(game: Node, screen_position: Vector2) -> Vector2i:
 				feedback.call("snap")
 			if touch_preview != null and is_instance_valid(touch_preview):
 				touch_preview.set_drag_scale(Vector2(1.025, 1.025))
+				var settle := touch_preview.create_tween()
+				settle.tween_method(
+					func(value: float) -> void: touch_preview.set_drag_scale(Vector2.ONE * value),
+					1.025, 1.0, 0.085
+				)
 	return chosen
 
 func _show_touch_preview(screen_position: Vector2) -> void:
