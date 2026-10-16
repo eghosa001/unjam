@@ -79,10 +79,10 @@ func _run() -> void:
 	got = Magnetic.choose(board,shape,Vector2(-800,700),Vector2i(2,3),132.0)
 	if not _check(got == Vector2i(-1,-1),"Held magnet persisted after the finger left the board"):return
 	piece.set("_drag_distance",0.0)
-	piece.call("_finish_touch_drag",finger)
+	piece.call("_finish_touch_drag",target + Vector2(0.0, scaled_lift))
 	if not _check(board.placed == Vector2i(-1,-1),"Static tray tap triggered unintended placement"):return
 	piece.set("_drag_distance",42.0)
-	piece.call("_finish_touch_drag",finger)
+	piece.call("_finish_touch_drag",target + Vector2(0.0, scaled_lift))
 	if not _check(board.placed == Vector2i(2,3),"Committed placement differs from magnetic target"):return
 	# Real touch lifecycle: start inside the tray, follow the same finger
 	# across the entire board, ignore a second touch, and commit on release.
