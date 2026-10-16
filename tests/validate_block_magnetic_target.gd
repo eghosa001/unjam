@@ -165,6 +165,25 @@ func _run() -> void:
 	piece._input(jitter_release)
 	if not _check(board.placed == Vector2i(2,3), "Finger-up drift relocated/rejected a visibly snapped brick"):return
 	if not _check(not piece._preview_valid, "Committed piece retained stale preview latch"):return
+	# The uploaded clip is specifically a vertical two-tile blue piece
+	# hovering above a partly occupied bottom row.
+	piece.configure([Vector2i(0,0), Vector2i(0,1)],false,Color("#5396fa"),0)
+	board.blocked = Vector2i(3,6)
+	board.placed = Vector2i(-1, -1)
+	piece._gui_input(press)
+	var vertical_move := InputEventScreenDrag.new()
+	vertical_move.index = 0
+	vertical_move.position = Vector2(57.0 + 36.0 * 3.0, 57.0 + 36.0 * 5.5 + scaled_lift)
+	piece._input(vertical_move)
+	if not _check(piece._preview_valid and piece._preview_snap_origin == Vector2i(3,5), "Vertical two-brick ghost did not highlight the intended bottom-board position"):return
+	var vertical_release := InputEventScreenTouch.new()
+	vertical_release.index = 0
+	vertical_release.pressed = false
+	vertical_release.position = vertical_move.position + Vector2(0.0, 27.0)
+	piece._input(vertical_release)
+	if not _check(board.placed == Vector2i(3,5), "Vertical block from phone video bounced back instead of following green snap"):return
+	board.blocked = Vector2i(-1,-1)
+	piece.configure([Vector2i(0,0), Vector2i(1,0)],false,Color("#5396fa"),0)
 	# Large changes or a visibly red/off-board preview must never place
 	# the previous valid brick at its stale highlighted location.
 	board.placed = Vector2i(-1, -1)
