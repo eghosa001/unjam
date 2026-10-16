@@ -10,6 +10,12 @@ var _drag_distance := 0.0
 var _active_touch_index := -1
 var _grab_cell := Vector2(-1.0, -1.0)
 var _last_snap_msec := -1000
+# Exactly what the player saw on the board during the last pointer update.
+# Never recompute a nearby finger-up as a different destination: on Android,
+# release events can report a slightly shifted coordinate after the final drag.
+var _preview_snap_origin := Vector2i(-1, -1)
+var _preview_finger_position := Vector2.ZERO
+var _preview_valid := false
 # Only the few cells in a *changed* target footprint need highlighting.
 # Raw pointer input can arrive >100x/s, often within the same 8x8 cell.
 var _last_footprint_origin := Vector2i(-1,-1)
@@ -83,6 +89,9 @@ func _gui_input(event: InputEvent) -> void:
 		_drag_distance = 0.0
 		_last_magnet = Vector2i(-1, -1)
 		_last_snap_msec = -1000
+		_preview_snap_origin = Vector2i(-1, -1)
+		_preview_valid = false
+		_preview_finger_position = _down_pointer
 		touch_drag_started = true
 		game.call("register_touch_drag", self)
 		set_process_input(true)
@@ -299,6 +308,11 @@ func _update_touch_preview_position(screen_position: Vector2) -> void:
 	var desired := local_point - centroid
 	var origin := _best_origin(game, screen_position)
 	var valid := origin.x >= 0 and bool(game.call("can_place", shape, origin))
+	# Capture the exact legal target used to draw the green footprint and
+	# floating brick. A stale or red preview may never claim a successful drop.
+	_preview_valid = valid
+	_preview_snap_origin = origin if valid else Vector2i(-1, -1)
+	_preview_finger_position = screen_position
 	if not valid:
 		origin = MagneticTarget.preview_origin(game, shape, screen_position, lift, _grab_cell)
 	if origin.x >= 0:
@@ -325,12 +339,33 @@ func _finish_touch_drag(screen_position: Vector2) -> void:
 		return
 	if game.has_method("clear_touch_drag"):
 		game.call("clear_touch_drag", self)
-	# Release must use the last visible legal lock when the pointer moves
-	# only a fraction of a cell between the final drag and finger-up event.
-	var origin := MagneticTarget.choose_release(
-		game, shape, screen_position, _last_magnet, MagneticTarget.lift_distance(game), _grab_cell
-	)
+	# The highlighted grid footprint is the placement contract. Prefer it
+	# when finger-up is still near the last drag sample; calculating another
+	# target from a shifted Android release coordinate is what the video shows
+	# returning a visibly snapped two-brick piece to the tray repeatedly.
+	var origin := Vector2i(-1, -1)
+	var geo := MagneticTarget.geometry(game)
+	var close_to_preview := false
+	if not geo.is_empty() and touch_preview != null and is_instance_valid(touch_preview):
+		var cell_step: Vector2 = geo["step"]
+		var release_slop := maxf(14.0, minf(cell_step.x, cell_step.y) * 1.05)
+		close_to_preview = screen_position.distance_to(_preview_finger_position) <= release_slop
+	if close_to_preview:
+		# If the last displayed preview was red, do not silently turn that
+		# into a green placement that the player never actually saw.
+		if _preview_valid and bool(game.call("can_place", shape, _preview_snap_origin)):
+			origin = _preview_snap_origin
+	else:
+		# A genuine large move at finger-up is not allowed to teleport a
+		# previously highlighted brick: calculate only the new intended aim.
+		var fallback_held := _last_magnet if touch_preview == null or not is_instance_valid(touch_preview) else Vector2i(-1, -1)
+		origin = MagneticTarget.choose_release(
+			game, shape, screen_position, fallback_held, MagneticTarget.lift_distance(game), _grab_cell
+		)
 	var valid := origin.x >= 0 and bool(game.call("can_place", shape, origin))
+	# Never leave an earlier placement latch attached to a reused tray slot.
+	_preview_valid = false
+	_preview_snap_origin = Vector2i(-1, -1)
 	if valid:
 		_snap_preview_to_origin(game, origin)
 		_clear_touch_footprint()
@@ -348,6 +383,8 @@ func _finish_touch_drag(screen_position: Vector2) -> void:
 		_end_drag_feedback(false)
 
 func dispose_visuals() -> void:
+	_preview_valid = false
+	_preview_snap_origin = Vector2i(-1, -1)
 	touch_drag_started = false
 	_active_touch_index = -1
 	_grab_cell = Vector2(-1.0, -1.0)
