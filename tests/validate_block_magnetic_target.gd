@@ -48,6 +48,19 @@ func _run() -> void:
 	var target := Vector2(57+36.0*2.5,57+36.0*3.0)
 	var finger := target+Vector2(0,132)
 	var shape: Array = piece.shape
+	# The tile touched in the tray is the anchor: the whole shape must
+	# not unexpectedly recenter when grabbed from its first/last tile.
+	piece.size = Vector2(160, 100)
+	var tray_tile := float(piece.call("_tray_cell_size", 1, 0))
+	var tray_first := (piece.size - Vector2(2.0, 1.0) * tray_tile) * 0.5 + Vector2.ONE * (tray_tile * 0.5)
+	if not _check(piece.call("_grab_cell_from_local",tray_first) == Vector2.ZERO,"Picking up left brick did not preserve left grab anchor"):return
+	if not _check(piece.call("_grab_cell_from_local",tray_first+Vector2(tray_tile,0.0)) == Vector2(1.0,0.0),"Picking up right brick did not preserve right grab anchor"):return
+	var long_shape: Array = [Vector2i(0,0),Vector2i(1,0),Vector2i(2,0)]
+	var left_grab := Vector2(57.0+36.0*2.0, 57.0+36.0*3.0)+Vector2(0,132.0)
+	var right_grab := Vector2(57.0+36.0*4.0, 57.0+36.0*3.0)+Vector2(0,132.0)
+	if not _check(Magnetic.choose(board,long_shape,left_grab,Vector2i(-1,-1),132.0,Vector2.ZERO) == Vector2i(2,3),"Grabbing left tile displaced the piece by its centroid"):return
+	if not _check(Magnetic.choose(board,long_shape,right_grab,Vector2i(-1,-1),132.0,Vector2(2.0,0.0)) == Vector2i(2,3),"Grabbing right tile displaced the piece on snap"):return
+	if not _check(Magnetic.preview_origin(board,long_shape,left_grab,132.0,Vector2.ZERO) == Vector2i(2,3),"Unsapped ghost does not match anchored placement"):return
 	var scaled_lift := Magnetic.lift_distance(board)
 	if not _check(absf(scaled_lift - 84.6) < 0.1,"Finger lift is no longer a compact, board-relative distance"):return
 	var got: Vector2i = Magnetic.choose(board,shape,finger,Vector2i(-1,-1),132.0)
@@ -62,6 +75,18 @@ func _run() -> void:
 	if not _check(got == Vector2i(-1,-1),"Blocked target redirected to adjacent unintended placement"):return
 	got = Magnetic.choose(board,shape,finger+Vector2(20.0,0.0),Vector2i(-1,-1),132.0)
 	if not _check(got == Vector2i(3,3),"Magnetic assist cannot help a deliberately shifted aim find its nearby legal column"):return
+	# A green snap must not fail just because a finger slides a fraction
+	# of a cell towards the blocked neighbour during the release gesture.
+	var locked := Vector2i(1,3)
+	var edge_jitter := finger - Vector2(36.0 * 0.28,0.0)
+	got = Magnetic.choose(board,shape,edge_jitter,locked,132.0)
+	if not _check(got == locked,"Finger jitter beside an occupied neighbour lost its visibly locked legal target"):return
+	got = Magnetic.choose_release(board,shape,edge_jitter,locked,132.0)
+	if not _check(got == locked,"Release jitter rejected the green magnetic lock"):return
+	got = Magnetic.choose_release(board,shape,finger,locked,132.0)
+	if not _check(got == Vector2i(-1,-1),"Release snapped a full cell away to a different intended location"):return
+	got = Magnetic.choose_release(board,shape,Vector2(-800,700),locked,132.0)
+	if not _check(got == Vector2i(-1,-1),"Off-board release committed stale magnet lock"):return
 	got = Magnetic.choose(board,shape,Vector2(-800,700),Vector2i(-1,-1),132.0)
 	if not _check(got == Vector2i(-1,-1),"Off-board release magnetized to distant legal cells"):return
 	board.blocked = Vector2i(-1,-1)
@@ -84,6 +109,18 @@ func _run() -> void:
 	piece.set("_drag_distance",42.0)
 	piece.call("_finish_touch_drag",target + Vector2(0.0, scaled_lift))
 	if not _check(board.placed == Vector2i(2,3),"Committed placement differs from magnetic target"):return
+	# Test the actual piece release path, not only the isolated chooser.
+	board.placed = Vector2i(-1,-1)
+	board.blocked = Vector2i(2,3)
+	piece.set("_last_magnet",locked)
+	piece.set("_drag_distance",42.0)
+	# Actual touch release calculates the responsive live lift (not the
+	# deliberately fixed 132px lift used by the chooser unit fixtures).
+	piece.call("_finish_touch_drag",target + Vector2(-36.0 * 0.28, scaled_lift))
+	if not _check(board.placed == locked,"The real release discarded the previously highlighted magnetic placement"):return
+	board.blocked = Vector2i(-1,-1)
+	board.placed = Vector2i(-1,-1)
+	piece.set("_last_magnet",Vector2i(-1,-1))
 	# Real touch lifecycle: start inside the tray, follow the same finger
 	# across the entire board, ignore a second touch, and commit on release.
 	board.placed = Vector2i(-1, -1)
@@ -138,7 +175,7 @@ func _run() -> void:
 	ghost.queue_free()
 	board.queue_free()
 	await process_frame
-	print("BLOCK_MAGNETIC_TARGET_OK: responsive lift, legal magnetic assist, occupied/edge safety, tap protection, instant ghost")
+	print("BLOCK_MAGNETIC_TARGET_OK: responsive lift, gentle release-latch, edge/occupied safety, tap protection")
 	quit(0)
 
 func _check(ok: bool, message: String) -> bool:

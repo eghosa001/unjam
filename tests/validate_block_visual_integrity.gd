@@ -116,30 +116,29 @@ func _validate_runtime(viewport_size: Vector2i) -> bool:
 	if piece_row == null or piece_row.get_child_count() != 3:
 		game.queue_free()
 		return _fail("Block Puzzle tray does not contain exactly three visual slots")
-	# On compact and large phones, the pieces must fill their tray slots
-	# without becoming tiny relative to the 8x8 board and the exact-size ghost.
-	var scale_fixture_cells: Array = game.get("cell_buttons")
-	if scale_fixture_cells.is_empty():
-		game.queue_free()
-		return _fail("Block board has no cells for drag/tray proportion checks")
-	var tray_reference_cell_size := (scale_fixture_cells[0] as Control).size.x
+	# This is the actual regression visible on Android: the 3-brick piece
+	# had visibly smaller units than adjacent 2-brick pieces because each
+	# shape independently filled its slot. All three now use the same tile
+	# dimension with the original 37-unit cap, regardless of shape length.
 	var source_piece := piece_row.get_child(0) as SmoothBlockPieceButton
 	if source_piece == null:
 		game.queue_free()
 		return _fail("Block tray source renderer missing")
-	# On a compact screen, even a 1x2 starter brick must have a substantial
-	# touch-visible footprint. Long shapes are separately checked for fitting.
-	var starter_cell := float(source_piece.call("_tray_cell_size",1,0))
-	if starter_cell < 47.0:
+	var shared_cell := source_piece.tray_visual_cell_size()
+	if shared_cell < 18.0 or shared_cell > 37.05:
 		game.queue_free()
-		return _fail("Block tray starter bricks are still visually miniature")
-	var three_wide_tile := float(source_piece.call("_tray_cell_size",2,0))
-	if three_wide_tile < minf(tray_reference_cell_size * 0.85, 30.0):
-		game.queue_free()
-		return _fail("Block tray is still miniature compared to board-aligned ghost")
+		return _fail("Block tray tile size moved away from the original uniform cap")
+	for slot_index in range(3):
+		var tray_button := piece_row.get_child(slot_index) as SmoothBlockPieceButton
+		if tray_button == null:
+			game.queue_free()
+			return _fail("Block tray slot is not a smooth piece")
+		if not tray_button.shape.is_empty() and absf(tray_button.tray_visual_cell_size() - shared_cell) > 0.1:
+			game.queue_free()
+			return _fail("Tray draws unequal-sized bricks across different shapes")
 	if source_piece.size.x < 110.0 or source_piece.size.y < 100.0:
 		game.queue_free()
-		return _fail("Block tray still wastes available space and visually shrinks bricks")
+		return _fail("Block tray slot layout unexpectedly shrank")
 
 	var original_ids: Array[int] = []
 	for child in piece_row.get_children():
