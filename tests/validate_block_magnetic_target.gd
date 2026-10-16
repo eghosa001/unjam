@@ -150,6 +150,37 @@ func _run() -> void:
 	if not _check(board.placed == Vector2i(2,3), "Global release did not commit the highlighted magnetic target"):return
 	if not _check(not piece.touch_drag_started and not piece.is_processing_input(), "Released touch kept the global handler alive"):return
 	if not _check(piece.touch_preview == null and board.active_touch_piece == null, "Ghost or pointer owner survived release"):return
+	# Reproduce the recorded real-phone regression: the blue two-block
+	# preview turns green at (2,3), yet Android finger-up drifts ~0.8
+	# cells to the right and the next slot steals or rejects the brick.
+	# The release must place precisely where the player saw it highlighted.
+	board.placed = Vector2i(-1, -1)
+	piece._gui_input(press)
+	piece._input(move)
+	if not _check(piece._preview_valid and piece._preview_snap_origin == Vector2i(2,3), "Drag did not record the actual highlighted snap"):return
+	var jitter_release := InputEventScreenTouch.new()
+	jitter_release.index = 0
+	jitter_release.pressed = false
+	jitter_release.position = move.position + Vector2(30.0, 0.0)
+	piece._input(jitter_release)
+	if not _check(board.placed == Vector2i(2,3), "Finger-up drift relocated/rejected a visibly snapped brick"):return
+	if not _check(not piece._preview_valid, "Committed piece retained stale preview latch"):return
+	# Large changes or a visibly red/off-board preview must never place
+	# the previous valid brick at its stale highlighted location.
+	board.placed = Vector2i(-1, -1)
+	piece._gui_input(press)
+	piece._input(move)
+	var moved_off_board := InputEventScreenDrag.new()
+	moved_off_board.index = 0
+	moved_off_board.position = Vector2(-800.0, 700.0)
+	piece._input(moved_off_board)
+	if not _check(not piece._preview_valid, "Off-board/red ghost kept a green snap latch"):return
+	var off_board_release := InputEventScreenTouch.new()
+	off_board_release.index = 0
+	off_board_release.pressed = false
+	off_board_release.position = moved_off_board.position
+	piece._input(off_board_release)
+	if not _check(board.placed == Vector2i(-1,-1), "Off-board release committed a stale snap"):return
 	board.placed = Vector2i(-1, -1)
 	piece._gui_input(press)
 	var tap_release := InputEventScreenTouch.new()
@@ -175,7 +206,7 @@ func _run() -> void:
 	ghost.queue_free()
 	board.queue_free()
 	await process_frame
-	print("BLOCK_MAGNETIC_TARGET_OK: responsive lift, gentle release-latch, edge/occupied safety, tap protection")
+	print("BLOCK_MAGNETIC_TARGET_OK: captured green footprint survives real finger-up jitter, red/offboard safety, tap protection")
 	quit(0)
 
 func _check(ok: bool, message: String) -> bool:
