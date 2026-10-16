@@ -101,7 +101,9 @@ func _run() -> void:
 	board.blocked = Vector2i(2,3)
 	piece.set("_last_magnet",locked)
 	piece.set("_drag_distance",42.0)
-	piece.call("_finish_touch_drag",edge_jitter)
+	# Actual touch release calculates the responsive live lift (not the
+	# deliberately fixed 132px lift used by the chooser unit fixtures).
+	piece.call("_finish_touch_drag",target + Vector2(-36.0 * 0.28, scaled_lift))
 	if not _check(board.placed == locked,"The real release discarded the previously highlighted magnetic placement"):return
 	board.blocked = Vector2i(-1,-1)
 	board.placed = Vector2i(-1,-1)
