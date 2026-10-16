@@ -62,6 +62,18 @@ func _run() -> void:
 	if not _check(got == Vector2i(-1,-1),"Blocked target redirected to adjacent unintended placement"):return
 	got = Magnetic.choose(board,shape,finger+Vector2(20.0,0.0),Vector2i(-1,-1),132.0)
 	if not _check(got == Vector2i(3,3),"Magnetic assist cannot help a deliberately shifted aim find its nearby legal column"):return
+	# A green snap must not fail just because a finger slides a fraction
+	# of a cell towards the blocked neighbour during the release gesture.
+	var locked := Vector2i(1,3)
+	var edge_jitter := finger - Vector2(36.0 * 0.28,0.0)
+	got = Magnetic.choose(board,shape,edge_jitter,locked,132.0)
+	if not _check(got == locked,"Finger jitter beside an occupied neighbour lost its visibly locked legal target"):return
+	got = Magnetic.choose_release(board,shape,edge_jitter,locked,132.0)
+	if not _check(got == locked,"Release jitter rejected the green magnetic lock"):return
+	got = Magnetic.choose_release(board,shape,finger,locked,132.0)
+	if not _check(got == Vector2i(-1,-1),"Release snapped a full cell away to a different intended location"):return
+	got = Magnetic.choose_release(board,shape,Vector2(-800,700),locked,132.0)
+	if not _check(got == Vector2i(-1,-1),"Off-board release committed stale magnet lock"):return
 	got = Magnetic.choose(board,shape,Vector2(-800,700),Vector2i(-1,-1),132.0)
 	if not _check(got == Vector2i(-1,-1),"Off-board release magnetized to distant legal cells"):return
 	board.blocked = Vector2i(-1,-1)
@@ -84,6 +96,16 @@ func _run() -> void:
 	piece.set("_drag_distance",42.0)
 	piece.call("_finish_touch_drag",target + Vector2(0.0, scaled_lift))
 	if not _check(board.placed == Vector2i(2,3),"Committed placement differs from magnetic target"):return
+	# Test the actual piece release path, not only the isolated chooser.
+	board.placed = Vector2i(-1,-1)
+	board.blocked = Vector2i(2,3)
+	piece.set("_last_magnet",locked)
+	piece.set("_drag_distance",42.0)
+	piece.call("_finish_touch_drag",edge_jitter)
+	if not _check(board.placed == locked,"The real release discarded the previously highlighted magnetic placement"):return
+	board.blocked = Vector2i(-1,-1)
+	board.placed = Vector2i(-1,-1)
+	piece.set("_last_magnet",Vector2i(-1,-1))
 	# Real touch lifecycle: start inside the tray, follow the same finger
 	# across the entire board, ignore a second touch, and commit on release.
 	board.placed = Vector2i(-1, -1)
@@ -138,7 +160,7 @@ func _run() -> void:
 	ghost.queue_free()
 	board.queue_free()
 	await process_frame
-	print("BLOCK_MAGNETIC_TARGET_OK: responsive lift, legal magnetic assist, occupied/edge safety, tap protection, instant ghost")
+	print("BLOCK_MAGNETIC_TARGET_OK: responsive lift, gentle release-latch, edge/occupied safety, tap protection")
 	quit(0)
 
 func _check(ok: bool, message: String) -> bool:
