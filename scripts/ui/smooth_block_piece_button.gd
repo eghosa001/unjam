@@ -358,8 +358,9 @@ func _finish_touch_drag(screen_position: Vector2) -> void:
 	else:
 		# A genuine large move at finger-up is not allowed to teleport a
 		# previously highlighted brick: calculate only the new intended aim.
+		var fallback_held := _last_magnet if touch_preview == null or not is_instance_valid(touch_preview) else Vector2i(-1, -1)
 		origin = MagneticTarget.choose_release(
-			game, shape, screen_position, Vector2i(-1, -1), MagneticTarget.lift_distance(game), _grab_cell
+			game, shape, screen_position, fallback_held, MagneticTarget.lift_distance(game), _grab_cell
 		)
 	var valid := origin.x >= 0 and bool(game.call("can_place", shape, origin))
 	if valid:
