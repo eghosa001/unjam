@@ -9,6 +9,8 @@ class Board:
 	var cell_buttons: Array = []
 	var blocked := Vector2i(-1,-1)
 	var placed := Vector2i(-1,-1)
+	var active_touch_piece: Button
+	var selected_index := -1
 	func can_place(shape: Array, origin: Vector2i) -> bool:
 		if origin == blocked: return false
 		for raw in shape:
@@ -18,8 +20,13 @@ class Board:
 		return true
 	func place_piece_from_drag(_index: int, origin: Vector2i) -> void:
 		placed = origin
-	func clear_touch_drag(_button: Button) -> void:
-		pass
+	func register_touch_drag(button: Button) -> void:
+		active_touch_piece = button
+	func clear_touch_drag(button: Button) -> void:
+		if active_touch_piece == button:
+			active_touch_piece = null
+	func select_piece(index: int) -> void:
+		selected_index = index
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -42,7 +49,7 @@ func _run() -> void:
 	var finger := target+Vector2(0,132)
 	var shape: Array = piece.shape
 	var scaled_lift := Magnetic.lift_distance(board)
-	if not _check(absf(scaled_lift - 129.6) < 0.1,"Finger lift no longer scales with actual 36px board spacing"):return
+	if not _check(absf(scaled_lift - 84.6) < 0.1,"Finger lift is no longer a compact, board-relative distance"):return
 	var got: Vector2i = Magnetic.choose(board,shape,finger,Vector2i(-1,-1),132.0)
 	if not _check(got == Vector2i(2,3),"Centered magnetic placement picked wrong origin"):return
 	got = Magnetic.choose(board,shape,finger+Vector2(16.5,0),Vector2i(2,3),132.0)
@@ -72,11 +79,49 @@ func _run() -> void:
 	got = Magnetic.choose(board,shape,Vector2(-800,700),Vector2i(2,3),132.0)
 	if not _check(got == Vector2i(-1,-1),"Held magnet persisted after the finger left the board"):return
 	piece.set("_drag_distance",0.0)
-	piece.call("_finish_touch_drag",finger)
+	piece.call("_finish_touch_drag",target + Vector2(0.0, scaled_lift))
 	if not _check(board.placed == Vector2i(-1,-1),"Static tray tap triggered unintended placement"):return
 	piece.set("_drag_distance",42.0)
-	piece.call("_finish_touch_drag",finger)
+	piece.call("_finish_touch_drag",target + Vector2(0.0, scaled_lift))
 	if not _check(board.placed == Vector2i(2,3),"Committed placement differs from magnetic target"):return
+	# Real touch lifecycle: start inside the tray, follow the same finger
+	# across the entire board, ignore a second touch, and commit on release.
+	board.placed = Vector2i(-1, -1)
+	var press := InputEventScreenTouch.new()
+	press.index = 0
+	press.pressed = true
+	press.position = Vector2(6.0, 8.0)
+	piece._gui_input(press)
+	if not _check(piece.touch_drag_started and piece.is_processing_input(), "Tray press did not capture a global touch pointer"):return
+	if not _check(piece.touch_preview == null and not piece.dragging, "Simple touch unexpectedly lifted/enlarged a tray brick"):return
+	var second_touch := InputEventScreenTouch.new()
+	second_touch.index = 1
+	second_touch.pressed = false
+	second_touch.position = target + Vector2(0.0, scaled_lift)
+	piece._input(second_touch)
+	if not _check(piece.touch_drag_started and board.placed.x < 0, "Another finger interrupted the active drag"):return
+	var move := InputEventScreenDrag.new()
+	move.index = 0
+	move.position = target + Vector2(0.0, scaled_lift)
+	piece._input(move)
+	if not _check(piece.touch_preview != null and piece._last_magnet == Vector2i(2,3), "Viewport-wide drag failed to acquire a centered board target"):return
+	var release := InputEventScreenTouch.new()
+	release.index = 0
+	release.pressed = false
+	release.position = move.position
+	piece._input(release)
+	if not _check(board.placed == Vector2i(2,3), "Global release did not commit the highlighted magnetic target"):return
+	if not _check(not piece.touch_drag_started and not piece.is_processing_input(), "Released touch kept the global handler alive"):return
+	if not _check(piece.touch_preview == null and board.active_touch_piece == null, "Ghost or pointer owner survived release"):return
+	board.placed = Vector2i(-1, -1)
+	piece._gui_input(press)
+	var tap_release := InputEventScreenTouch.new()
+	tap_release.index = 0
+	tap_release.pressed = false
+	tap_release.position = press.position
+	piece._input(tap_release)
+	if not _check(board.selected_index == 0 and board.placed.x < 0, "Tray tap did not select without accidental placement"):return
+	# Magnetic pull should ease a one-cell move, then settle in a few frames.
 	var ghost := Preview.new()
 	root.add_child(ghost)
 	ghost.configure(shape,Color("#5396fa"),34.0)
@@ -84,6 +129,12 @@ func _run() -> void:
 	ghost.set_drag_target(Vector2(100,100),true)
 	ghost.call("_process",1.0/60.0)
 	if not _check(ghost.position.distance_to(Vector2(100,100)) < 0.1,"Valid ghost lags behind snapped target"):return
+	ghost.set_drag_target(Vector2(136,100),true)
+	ghost.call("_process",1.0/60.0)
+	if not _check(ghost.position.x > 115.0 and ghost.position.x <= 136.0, "One-cell magnet ghost failed to track promptly"):return
+	ghost.call("_process",1.0/60.0)
+	ghost.call("_process",1.0/60.0)
+	if not _check(ghost.position.distance_to(Vector2(136,100)) < 2.0, "Magnetic pull still visibly lags after three frames"):return
 	ghost.queue_free()
 	board.queue_free()
 	await process_frame
