@@ -153,8 +153,8 @@ func _board_cell_visual_size(game: Node) -> float:
 	if layer == null:
 		return minf(step.x, step.y)
 	var transform := layer.get_global_transform_with_canvas()
-	var x_scale := maxf(0.01, transform.basis_xform(Vector2.RIGHT).length())
-	var y_scale := maxf(0.01, transform.basis_xform(Vector2.DOWN).length())
+	var x_scale := maxf(0.01, transform.x.length())
+	var y_scale := maxf(0.01, transform.y.length())
 	return minf(step.x / x_scale, step.y / y_scale)
 
 func _preview_position_for_origin(game: Node, origin: Vector2i) -> Vector2:
