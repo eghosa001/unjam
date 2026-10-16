@@ -3,10 +3,11 @@ class_name BlockMagneticTarget
 
 # All distances are expressed in live board cells, not fixed screen pixels.
 # Preview and committed release use the same target calculation.
-const CATCH_RADIUS := 1.22
+const CATCH_RADIUS := 1.32
 const HOLD_RADIUS := 1.38
 const STICKINESS := 0.23
 const BLOCKED_INTENT_RADIUS := 0.32
+const RELEASE_HOLD_RADIUS := 0.80
 const NO_TARGET := Vector2i(-1, -1)
 
 static func _screen_center(cell: Control) -> Vector2:
@@ -80,6 +81,12 @@ static func _closest(game: Node, shape: Array, point: Vector2, geo: Dictionary, 
 	# position. Near its edge, magnetic assistance may offer a neighbouring fit.
 	if (raw - Vector2(rounded)).length() <= BLOCKED_INTENT_RADIUS:
 		if not bool(game.call("can_place", shape, rounded)):
+			# A release can tremble into the neighbouring occupied cell even
+			# though the displayed preview is still firmly locked beside it.
+			# Preserve only a *nearby* previously shown legal placement.
+			if held.x >= 0 and (raw - Vector2(held)).length() <= RELEASE_HOLD_RADIUS:
+				if bool(game.call("can_place", shape, held)):
+					return held
 			return NO_TARGET
 	var nearest := NO_TARGET
 	var best_distance := CATCH_RADIUS
@@ -109,3 +116,22 @@ static func choose(game: Node, shape: Array, finger: Vector2, held: Vector2i, li
 	# The floating block, not the occluding fingertip, owns the drop position.
 	# Never switch to a different row under the finger as it leaves the board.
 	return _closest(game, shape, floating_point, geo, held)
+
+static func choose_release(game: Node, shape: Array, finger: Vector2, held: Vector2i, lift: float) -> Vector2i:
+	# A few pixels of finger movement on lift-up must not turn a visibly
+	# green, snapped brick into a failed drop. A previous lock is accepted
+	# only when the release is still within 0.8 real cells of that lock.
+	# This is never a global nearest-legal search or a distant auto-placement.
+	var target := choose(game, shape, finger, held, lift)
+	if target.x >= 0:
+		return target
+	if held.x < 0 or not bool(game.call("can_place", shape, held)):
+		return NO_TARGET
+	var geo := geometry(game)
+	if geo.is_empty():
+		return NO_TARGET
+	var point := finger - Vector2(0.0, lift)
+	if not _near_board(point, geo):
+		return NO_TARGET
+	var raw := _raw_origin(shape, point, geo)
+	return held if (raw - Vector2(held)).length() <= RELEASE_HOLD_RADIUS else NO_TARGET
