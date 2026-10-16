@@ -9,6 +9,7 @@ const STICKINESS := 0.23
 const BLOCKED_INTENT_RADIUS := 0.32
 const RELEASE_HOLD_RADIUS := 0.80
 const NO_TARGET := Vector2i(-1, -1)
+const NO_GRAB_ANCHOR := Vector2(-1.0, -1.0)
 
 static func _screen_center(cell: Control) -> Vector2:
 	# Unlike get_global_rect(), this includes the canvas transform used by
@@ -57,25 +58,26 @@ static func _near_board(point: Vector2, geo: Dictionary) -> bool:
 	var edge := step * 0.85
 	return Rect2(first - edge, Vector2(step.x * 7.0, step.y * 7.0) + 2.0 * edge).has_point(point)
 
-static func _raw_origin(shape: Array, point: Vector2, geo: Dictionary) -> Vector2:
+static func _raw_origin(shape: Array, point: Vector2, geo: Dictionary, grab_anchor: Vector2 = NO_GRAB_ANCHOR) -> Vector2:
 	var first: Vector2 = geo["first"]
 	var step: Vector2 = geo["step"]
-	return Vector2((point.x - first.x) / step.x, (point.y - first.y) / step.y) - _centroid(shape)
+	var anchor := grab_anchor if grab_anchor.x >= 0.0 and grab_anchor.y >= 0.0 else _centroid(shape)
+	return Vector2((point.x - first.x) / step.x, (point.y - first.y) / step.y) - anchor
 
-static func preview_origin(game: Node, shape: Array, finger: Vector2, lift: float) -> Vector2i:
+static func preview_origin(game: Node, shape: Array, finger: Vector2, lift: float, grab_anchor: Vector2 = NO_GRAB_ANCHOR) -> Vector2i:
 	var geo := geometry(game)
 	if geo.is_empty() or shape.is_empty():
 		return NO_TARGET
 	var target_point := finger - Vector2(0.0, lift)
 	if not _near_board(target_point, geo):
 		return NO_TARGET
-	var raw := _raw_origin(shape, target_point, geo)
+	var raw := _raw_origin(shape, target_point, geo, grab_anchor)
 	return Vector2i(roundi(raw.x), roundi(raw.y))
 
-static func _closest(game: Node, shape: Array, point: Vector2, geo: Dictionary, held: Vector2i) -> Vector2i:
+static func _closest(game: Node, shape: Array, point: Vector2, geo: Dictionary, held: Vector2i, grab_anchor: Vector2 = NO_GRAB_ANCHOR) -> Vector2i:
 	if not _near_board(point, geo):
 		return NO_TARGET
-	var raw := _raw_origin(shape, point, geo)
+	var raw := _raw_origin(shape, point, geo, grab_anchor)
 	var rounded := Vector2i(roundi(raw.x), roundi(raw.y))
 	# A nearly centered intentional aim at a blocked tile must show an invalid
 	# position. Near its edge, magnetic assistance may offer a neighbouring fit.
@@ -108,21 +110,21 @@ static func _closest(game: Node, shape: Array, point: Vector2, geo: Dictionary, 
 			nearest = held
 	return nearest
 
-static func choose(game: Node, shape: Array, finger: Vector2, held: Vector2i, lift: float) -> Vector2i:
+static func choose(game: Node, shape: Array, finger: Vector2, held: Vector2i, lift: float, grab_anchor: Vector2 = NO_GRAB_ANCHOR) -> Vector2i:
 	var geo := geometry(game)
 	if geo.is_empty() or shape.is_empty():
 		return NO_TARGET
 	var floating_point := finger - Vector2(0.0, lift)
 	# The floating block, not the occluding fingertip, owns the drop position.
 	# Never switch to a different row under the finger as it leaves the board.
-	return _closest(game, shape, floating_point, geo, held)
+	return _closest(game, shape, floating_point, geo, held, grab_anchor)
 
-static func choose_release(game: Node, shape: Array, finger: Vector2, held: Vector2i, lift: float) -> Vector2i:
+static func choose_release(game: Node, shape: Array, finger: Vector2, held: Vector2i, lift: float, grab_anchor: Vector2 = NO_GRAB_ANCHOR) -> Vector2i:
 	# A few pixels of finger movement on lift-up must not turn a visibly
 	# green, snapped brick into a failed drop. A previous lock is accepted
 	# only when the release is still within 0.8 real cells of that lock.
 	# This is never a global nearest-legal search or a distant auto-placement.
-	var target := choose(game, shape, finger, held, lift)
+	var target := choose(game, shape, finger, held, lift, grab_anchor)
 	if target.x >= 0:
 		return target
 	if held.x < 0 or not bool(game.call("can_place", shape, held)):
@@ -133,5 +135,5 @@ static func choose_release(game: Node, shape: Array, finger: Vector2, held: Vect
 	var point := finger - Vector2(0.0, lift)
 	if not _near_board(point, geo):
 		return NO_TARGET
-	var raw := _raw_origin(shape, point, geo)
+	var raw := _raw_origin(shape, point, geo, grab_anchor)
 	return held if (raw - Vector2(held)).length() <= RELEASE_HOLD_RADIUS else NO_TARGET
