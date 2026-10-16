@@ -482,14 +482,41 @@ func tray_visual_cell_size() -> float:
 	return _tray_cell_size(max_x, max_y)
 
 func _tray_cell_size(max_x: int, max_y: int) -> float:
-	var fit_cell := minf((size.x - 8.0) / float(max_x + 1), (size.y - 8.0) / float(max_y + 1))
-	# Size from the live 8x8 board, not from an unrelated fixed icon cap.
-	# On compact phones the tray cells used only a fraction of their slots,
-	# making a lifted block look much bigger than the piece being touched.
-	# Occupy the slot while retaining full shape visibility for 3+ wide pieces.
-	var board_cell := _board_cell_visual_size(_game())
-	var preferred := clampf(board_cell * 1.20, 48.0, 60.0) if board_cell > 0.0 else 50.0
-	return maxf(16.0, minf(preferred, fit_cell))
+	# A tile must have the same visible width in all three tray pieces.
+	# Earlier per-shape fit sizing made a 2-brick shape look ~50% larger
+	# than a 3-brick shape on Android. Restore the original 37-unit cap,
+	# and calculate one shared fit from the longest/tallest active shape.
+	var max_cols := max_x + 1
+	var max_rows := max_y + 1
+	var game := _game()
+	if game != null:
+		var all_pieces: Variant = game.get("pieces")
+		if all_pieces is Array:
+			for candidate in all_pieces:
+				if not candidate is Array:
+					continue
+				for raw in candidate:
+					var tile := _as_point(raw)
+					if tile.x >= 0 and tile.y >= 0:
+						max_cols = maxi(max_cols, tile.x + 1)
+						max_rows = maxi(max_rows, tile.y + 1)
+
+	# All slots have matching width by layout. Use the smallest actual slot
+	# if a narrow viewport causes a container to compress one of them.
+	var slot_size := size
+	var row := get_parent() as Container
+	if row != null:
+		for child in row.get_children():
+			if child is Control:
+				var slot := child as Control
+				if slot.size.x > 8.0 and slot.size.y > 8.0:
+					slot_size.x = minf(slot_size.x, slot.size.x)
+					slot_size.y = minf(slot_size.y, slot.size.y)
+	var fit_cell := minf(
+		(slot_size.x - 8.0) / float(maxi(1, max_cols)),
+		(slot_size.y - 8.0) / float(maxi(1, max_rows))
+	)
+	return clampf(minf(37.0, fit_cell), 12.0, 37.0)
 
 func _draw_block(rect: Rect2, fill: Color) -> void:
 	var radius := maxi(5, int(rect.size.x * 0.18))
