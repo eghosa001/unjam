@@ -189,7 +189,16 @@ func _run() -> void:
 	piece.configure([Vector2i(0,0), Vector2i(0,1)],false,Color("#5396fa"),0)
 	board.blocked = Vector2i(3,6)
 	board.placed = Vector2i(-1, -1)
-	piece._gui_input(press)
+	# The vertical tray piece has a different painted first-tile centre.
+	# Reuse of a horizontal press at the *midpoint* now correctly grabs the
+	# nearest tile, so the test needs a real top-brick finger contact.
+	var vertical_first := (piece.size - Vector2(1.0, 2.0) * tray_tile) * 0.5 + Vector2.ONE * (tray_tile * 0.5)
+	var vertical_press := InputEventScreenTouch.new()
+	vertical_press.index = 0
+	vertical_press.pressed = true
+	vertical_press.position = vertical_first
+	piece._gui_input(vertical_press)
+	if not _check(piece._grab_cell == Vector2.ZERO, "Vertical press did not anchor to its touched top tile"):return
 	var vertical_move := InputEventScreenDrag.new()
 	vertical_move.index = 0
 	vertical_move.position = Vector2(57.0 + 36.0 * 3.0, 57.0 + 36.0 * 5.0 + scaled_lift)  # Anchored at the top tile.
