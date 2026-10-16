@@ -48,6 +48,19 @@ func _run() -> void:
 	var target := Vector2(57+36.0*2.5,57+36.0*3.0)
 	var finger := target+Vector2(0,132)
 	var shape: Array = piece.shape
+	# The tile touched in the tray is the anchor: the whole shape must
+	# not unexpectedly recenter when grabbed from its first/last tile.
+	piece.size = Vector2(160, 100)
+	var tray_tile := float(piece.call("_tray_cell_size", 1, 0))
+	var tray_first := (piece.size - Vector2(2.0, 1.0) * tray_tile) * 0.5 + Vector2.ONE * (tray_tile * 0.5)
+	if not _check(piece.call("_grab_cell_from_local",tray_first) == Vector2.ZERO,"Picking up left brick did not preserve left grab anchor"):return
+	if not _check(piece.call("_grab_cell_from_local",tray_first+Vector2(tray_tile,0.0)) == Vector2(1.0,0.0),"Picking up right brick did not preserve right grab anchor"):return
+	var long_shape: Array = [Vector2i(0,0),Vector2i(1,0),Vector2i(2,0)]
+	var left_grab := Vector2(57.0+36.0*2.0, 57.0+36.0*3.0)+Vector2(0,132.0)
+	var right_grab := Vector2(57.0+36.0*4.0, 57.0+36.0*3.0)+Vector2(0,132.0)
+	if not _check(Magnetic.choose(board,long_shape,left_grab,Vector2i(-1,-1),132.0,Vector2.ZERO) == Vector2i(2,3),"Grabbing left tile displaced the piece by its centroid"):return
+	if not _check(Magnetic.choose(board,long_shape,right_grab,Vector2i(-1,-1),132.0,Vector2(2.0,0.0)) == Vector2i(2,3),"Grabbing right tile displaced the piece on snap"):return
+	if not _check(Magnetic.preview_origin(board,long_shape,left_grab,132.0,Vector2.ZERO) == Vector2i(2,3),"Unsapped ghost does not match anchored placement"):return
 	var scaled_lift := Magnetic.lift_distance(board)
 	if not _check(absf(scaled_lift - 84.6) < 0.1,"Finger lift is no longer a compact, board-relative distance"):return
 	var got: Vector2i = Magnetic.choose(board,shape,finger,Vector2i(-1,-1),132.0)
