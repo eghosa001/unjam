@@ -363,6 +363,9 @@ func _finish_touch_drag(screen_position: Vector2) -> void:
 			game, shape, screen_position, fallback_held, MagneticTarget.lift_distance(game), _grab_cell
 		)
 	var valid := origin.x >= 0 and bool(game.call("can_place", shape, origin))
+	# Never leave an earlier placement latch attached to a reused tray slot.
+	_preview_valid = false
+	_preview_snap_origin = Vector2i(-1, -1)
 	if valid:
 		_snap_preview_to_origin(game, origin)
 		_clear_touch_footprint()
