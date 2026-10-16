@@ -15,10 +15,25 @@ var _last_footprint_valid := false
 func _clear_touch_footprint() -> void:
 	if _last_footprint_origin.x < 0:
 		return
+	var game := _game()
+	if game != null:
+		_set_footprint(game, _last_footprint_origin, false, false)
 	_last_footprint_origin = Vector2i(-1,-1)
 	_last_footprint_valid = false
-	super._clear_touch_footprint()
 
+func _set_footprint(game: Node, origin: Vector2i, active: bool, valid: bool) -> void:
+	var cells := _cell_buttons(game)
+	for raw in shape:
+		var point := _as_point(raw)
+		var x := origin.x + point.x
+		var y := origin.y + point.y
+		if x < 0 or x >= 8 or y < 0 or y >= 8:
+			continue
+		var index := y * 8 + x
+		if index >= 0 and index < cells.size():
+			var cell = cells[index]
+			if cell != null and is_instance_valid(cell) and cell.has_method("set_drag_footprint"):
+				cell.call("set_drag_footprint", active, valid, accent)
 
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
@@ -28,10 +43,12 @@ func _gui_input(event: InputEvent) -> void:
 			_drag_distance = 0.0
 			_last_magnet = Vector2i(-1,-1)
 		else:
-			_drag_distance = maxf(_drag_distance,pointer.distance_to(_down_pointer))
+			_drag_distance = maxf(_drag_distance, pointer.distance_to(_down_pointer))
 	elif event is InputEventScreenDrag:
 		var pointer: Vector2 = get_global_transform_with_canvas() * event.position
-		_drag_distance = maxf(_drag_distance,pointer.distance_to(_down_pointer))
+		_drag_distance = maxf(_drag_distance, pointer.distance_to(_down_pointer))
+		if touch_drag_started and _drag_distance >= MIN_ACTUAL_DRAG_PX and not dragging:
+			_begin_drag_feedback()
 	super._gui_input(event)
 
 func _update_touch_footprint(screen_position: Vector2) -> void:
@@ -42,18 +59,19 @@ func _update_touch_footprint(screen_position: Vector2) -> void:
 	if game == null:
 		_clear_touch_footprint()
 		return
-	# Reuse the preview's cached magnetic target; avoid waking all 64 board
-	# cells on every sub-cell finger movement at 60/120Hz.
+	# An illegal aim appears red in its actual cell footprint. Only a legal
+	# magnetized position is highlighted green and accepted on release.
 	var origin := _last_magnet
 	if origin.x < 0:
-		origin = _best_origin(game,screen_position)
-	var valid := origin.x >= 0 and bool(game.call("can_place",shape,origin))
+		origin = MagneticTarget.preview_origin(game, shape, screen_position, MagneticTarget.lift_distance(game))
+	var valid := origin.x >= 0 and bool(game.call("can_place", shape, origin))
 	if origin == _last_footprint_origin and valid == _last_footprint_valid:
 		return
+	_clear_touch_footprint()
 	_last_footprint_origin = origin
 	_last_footprint_valid = valid
-	super._update_touch_footprint(screen_position)
-
+	if origin.x >= 0:
+		_set_footprint(game, origin, true, valid)
 
 func _clear_single_touch_preview() -> void:
 	if touch_preview != null and is_instance_valid(touch_preview):
@@ -66,6 +84,9 @@ func _clear_single_touch_preview() -> void:
 	touch_preview = null
 
 func _begin_drag_feedback() -> void:
+	# Tap-select should not hide the tray piece or flash a floating duplicate.
+	if touch_drag_started and _drag_distance < MIN_ACTUAL_DRAG_PX:
+		return
 	if dragging:
 		return
 	dragging = true
@@ -100,11 +121,13 @@ func _shape_centroid_grid() -> Vector2:
 	return sum / float(maxi(count, 1))
 
 func _best_origin(game: Node, screen_position: Vector2) -> Vector2i:
-	var chosen: Vector2i = MagneticTarget.choose(game,shape,screen_position,_last_magnet,TOUCH_LIFT)
+	var chosen: Vector2i = MagneticTarget.choose(game, shape, screen_position, _last_magnet, MagneticTarget.lift_distance(game))
 	_last_magnet = chosen
 	return chosen
 
 func _show_touch_preview(screen_position: Vector2) -> void:
+	if touch_drag_started and _drag_distance < MIN_ACTUAL_DRAG_PX:
+		return
 	var game := _game()
 	if game == null:
 		return
@@ -120,6 +143,34 @@ func _show_touch_preview(screen_position: Vector2) -> void:
 		else:
 			game.add_child(touch_preview)
 	_update_touch_preview_position(screen_position)
+
+func _board_cell_visual_size(game: Node) -> float:
+	var geo := MagneticTarget.geometry(game)
+	if geo.is_empty():
+		return super._board_cell_visual_size(game)
+	var step: Vector2 = geo["step"]
+	var layer := game.get("effects_layer") as Control
+	if layer == null:
+		return minf(step.x, step.y)
+	var transform := layer.get_global_transform_with_canvas()
+	var x_scale := maxf(0.01, transform.x.length())
+	var y_scale := maxf(0.01, transform.y.length())
+	return minf(step.x / x_scale, step.y / y_scale)
+
+func _preview_position_for_origin(game: Node, origin: Vector2i) -> Vector2:
+	if touch_preview == null or not is_instance_valid(touch_preview):
+		return Vector2.ZERO
+	var geo := MagneticTarget.geometry(game)
+	var parent := touch_preview.get_parent() as Control
+	if geo.is_empty() or parent == null:
+		return touch_preview.position
+	var first: Vector2 = geo["first"]
+	var step: Vector2 = geo["step"]
+	var mean_cell := Vector2(origin) + _shape_centroid_grid()
+	var screen_center := first + step * mean_cell
+	var local_center := parent.get_global_transform_with_canvas().affine_inverse() * screen_center
+	var centroid: Vector2 = touch_preview.call("shape_centroid_local")
+	return local_center - centroid
 
 func _make_drag_preview() -> Control:
 	var wrapper := Control.new()
@@ -139,22 +190,22 @@ func _update_touch_preview_position(screen_position: Vector2) -> void:
 	var parent_control := touch_preview.get_parent() as Control
 	if parent_control == null:
 		return
-	var local_point := parent_control.get_global_transform_with_canvas().affine_inverse() * screen_position
-	var desired := local_point - Vector2(touch_preview.size.x * 0.5, touch_preview.size.y * 0.5 + TOUCH_LIFT)
 	var game := _game()
-	var valid := false
-	if game != null:
-		var origin := _best_origin(game, screen_position)
-		valid = _drag_distance >= MIN_ACTUAL_DRAG_PX and origin.x >= 0 and bool(game.call("can_place", shape, origin))
-		if valid:
-			# Match the ghost to the *actual* legal cells highlighted beneath it.
-			# The same centroid calculation is used on pointer release; no
-			# unexpected teleport occurs between hover and committed placement.
-			desired = _preview_position_for_origin(game, origin)
-	if touch_preview.has_method("set_drag_target"):
-		touch_preview.call("set_drag_target", desired, valid)
-	else:
-		touch_preview.position = desired
+	if game == null:
+		return
+	var lift := MagneticTarget.lift_distance(game)
+	var local_point := parent_control.get_global_transform_with_canvas().affine_inverse() * (screen_position - Vector2(0.0, lift))
+	var centroid: Vector2 = touch_preview.call("shape_centroid_local")
+	var desired := local_point - centroid
+	var origin := _best_origin(game, screen_position)
+	var valid := origin.x >= 0 and bool(game.call("can_place", shape, origin))
+	if not valid:
+		origin = MagneticTarget.preview_origin(game, shape, screen_position, lift)
+	if origin.x >= 0:
+		desired = _preview_position_for_origin(game, origin)
+	# Invalid ghosts and board footprints are red; legal snaps align exactly
+	# with the accepted release position, without one-frame teleporting.
+	touch_preview.set_drag_target(desired, valid)
 
 func _finish_touch_drag(screen_position: Vector2) -> void:
 	var game := _game()

@@ -183,9 +183,19 @@ func _validate_runtime(viewport_size: Vector2i) -> bool:
 		game.queue_free()
 		return _fail("Block board has no cells")
 	var board_cell := cells[0] as Control
-	if board_cell == null or absf(preview.board_cell_size - minf(board_cell.size.x, board_cell.size.y)) > 1.0:
+	var next_cell := cells[1] as Control
+	if board_cell == null or next_cell == null:
 		game.queue_free()
-		return _fail("Floating preview does not scale from the live board cell size")
+		return _fail("Board cell fixture is incomplete")
+	# Ghost tile centers must match the real board PITCH (cell + gutters),
+	# transformed into the effects layer, not merely the cell width.
+	var first_center := board_cell.get_global_transform_with_canvas() * (board_cell.size * 0.5)
+	var next_center := next_cell.get_global_transform_with_canvas() * (next_cell.size * 0.5)
+	var board_pitch := next_center.distance_to(first_center)
+	var effects_scale := maxf(0.01, effects.get_global_transform_with_canvas().x.length())
+	if absf(preview.board_cell_size - board_pitch / effects_scale) > 1.0:
+		game.queue_free()
+		return _fail("Floating preview tile pitch does not match the live board grid")
 	first.call("dispose_visuals")
 	if _drag_preview_count(effects) != 0:
 		game.queue_free()

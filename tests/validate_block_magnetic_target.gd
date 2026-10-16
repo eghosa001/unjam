@@ -41,6 +41,8 @@ func _run() -> void:
 	var target := Vector2(57+36.0*2.5,57+36.0*3.0)
 	var finger := target+Vector2(0,132)
 	var shape: Array = piece.shape
+	var scaled_lift := Magnetic.lift_distance(board)
+	if not _check(absf(scaled_lift - 129.6) < 0.1,"Finger lift no longer scales with actual 36px board spacing"):return
 	var got: Vector2i = Magnetic.choose(board,shape,finger,Vector2i(-1,-1),132.0)
 	if not _check(got == Vector2i(2,3),"Centered magnetic placement picked wrong origin"):return
 	got = Magnetic.choose(board,shape,finger+Vector2(16.5,0),Vector2i(2,3),132.0)
@@ -48,11 +50,27 @@ func _run() -> void:
 	got = Magnetic.choose(board,shape,finger+Vector2(30,0),Vector2i(2,3),132.0)
 	if not _check(got == Vector2i(3,3),"Magnet does not move to clearly closer requested column"):return
 	board.blocked = Vector2i(2,3)
+	if not _check(Magnetic.preview_origin(board, shape, finger, 132.0) == Vector2i(2,3),"Blocked aim must remain visible for invalid red-cell feedback"):return
 	got = Magnetic.choose(board,shape,finger,Vector2i(-1,-1),132.0)
 	if not _check(got == Vector2i(-1,-1),"Blocked target redirected to adjacent unintended placement"):return
+	got = Magnetic.choose(board,shape,finger+Vector2(20.0,0.0),Vector2i(-1,-1),132.0)
+	if not _check(got == Vector2i(3,3),"Magnetic assist cannot help a deliberately shifted aim find its nearby legal column"):return
 	got = Magnetic.choose(board,shape,Vector2(-800,700),Vector2i(-1,-1),132.0)
 	if not _check(got == Vector2i(-1,-1),"Off-board release magnetized to distant legal cells"):return
 	board.blocked = Vector2i(-1,-1)
+	board.scale = Vector2(1.5,1.5)
+	var scaled_geo := Magnetic.geometry(board)
+	var scaled_first: Vector2 = scaled_geo["first"]
+	var scaled_step: Vector2 = scaled_geo["step"]
+	if not _check(absf(scaled_step.x - 54.0) < 0.1,"Board canvas scale was omitted from magnetic geometry"):return
+	var scaled_center := scaled_first + scaled_step * Vector2(2.5,3.0)
+	got = Magnetic.choose(board,shape,scaled_center+Vector2(0,Magnetic.lift_distance(board)),Vector2i(-1,-1),Magnetic.lift_distance(board))
+	if not _check(got == Vector2i(2,3),"Magnet lost alignment when the canvas was scaled"):return
+	board.scale = Vector2.ONE
+	got = Magnetic.choose(board,shape,Vector2(57+36.0*7.5,57+36.0*3.0)+Vector2(0,132),Vector2i(-1,-1),132.0)
+	if not _check(got == Vector2i(-1,-1),"Magnet committed a two-column block beyond the eighth board column"):return
+	got = Magnetic.choose(board,shape,Vector2(-800,700),Vector2i(2,3),132.0)
+	if not _check(got == Vector2i(-1,-1),"Held magnet persisted after the finger left the board"):return
 	piece.set("_drag_distance",0.0)
 	piece.call("_finish_touch_drag",finger)
 	if not _check(board.placed == Vector2i(-1,-1),"Static tray tap triggered unintended placement"):return
@@ -69,7 +87,7 @@ func _run() -> void:
 	ghost.queue_free()
 	board.queue_free()
 	await process_frame
-	print("BLOCK_MAGNETIC_TARGET_OK: precise nearest snap, hysteresis, blocked/offboard safety, tap protection, instant ghost")
+	print("BLOCK_MAGNETIC_TARGET_OK: responsive lift, legal magnetic assist, occupied/edge safety, tap protection, instant ghost")
 	quit(0)
 
 func _check(ok: bool, message: String) -> bool:
