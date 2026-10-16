@@ -3,10 +3,10 @@ class_name BlockMagneticTarget
 
 # All distances are expressed in live board cells, not fixed screen pixels.
 # Preview and committed release use the same target calculation.
-const CATCH_RADIUS := 1.04
-const HOLD_RADIUS := 1.16
-const STICKINESS := 0.19
-const BLOCKED_INTENT_RADIUS := 0.43
+const CATCH_RADIUS := 1.22
+const HOLD_RADIUS := 1.38
+const STICKINESS := 0.23
+const BLOCKED_INTENT_RADIUS := 0.32
 const NO_TARGET := Vector2i(-1, -1)
 
 static func _screen_center(cell: Control) -> Vector2:
@@ -35,10 +35,10 @@ static func lift_distance(game: Node) -> float:
 	var geo := geometry(game)
 	if geo.is_empty():
 		return 132.0
-	# An oversized fixed lift makes the piece appear several rows away from
-	# the finger on smaller phones. Scale the lift with the visible board.
+	# A smaller board-relative lift keeps the finger below the block without
+	# making the player aim several hidden rows away from its footprint.
 	var step: Vector2 = geo["step"]
-	return clampf(step.y * 3.6, 92.0, 156.0)
+	return clampf(step.y * 2.35, 74.0, 114.0)
 
 static func _centroid(shape: Array) -> Vector2:
 	if shape.is_empty():
@@ -76,15 +76,15 @@ static func _closest(game: Node, shape: Array, point: Vector2, geo: Dictionary, 
 		return NO_TARGET
 	var raw := _raw_origin(shape, point, geo)
 	var rounded := Vector2i(roundi(raw.x), roundi(raw.y))
-	# A deliberate aim at an occupied/boundary location must show "doesn't
-	# fit", not silently jump an entire cell to some different legal spot.
+	# A nearly centered intentional aim at a blocked tile must show an invalid
+	# position. Near its edge, magnetic assistance may offer a neighbouring fit.
 	if (raw - Vector2(rounded)).length() <= BLOCKED_INTENT_RADIUS:
 		if not bool(game.call("can_place", shape, rounded)):
 			return NO_TARGET
 	var nearest := NO_TARGET
 	var best_distance := CATCH_RADIUS
-	for dy in range(-1, 2):
-		for dx in range(-1, 2):
+	for dy in range(-2, 3):
+		for dx in range(-2, 3):
 			var candidate := rounded + Vector2i(dx, dy)
 			var distance := (raw - Vector2(candidate)).length()
 			if distance > best_distance:
@@ -93,8 +93,8 @@ static func _closest(game: Node, shape: Array, point: Vector2, geo: Dictionary, 
 				continue
 			nearest = candidate
 			best_distance = distance
-	# Let players correct slight finger tremor/overshoot during a drag, but
-	# never preserve a target when it is far away or the aim is off-board.
+	# Sub-cell aim correction is forgiving. Holding remains stable across
+	# touchscreen jitter, but the pointer cannot teleport to distant legal tiles.
 	if held.x >= 0 and bool(game.call("can_place", shape, held)):
 		var held_distance := (raw - Vector2(held)).length()
 		if held_distance <= HOLD_RADIUS and (nearest == NO_TARGET or held_distance <= best_distance + STICKINESS):
