@@ -11,7 +11,9 @@ class Board:
 	var placed := Vector2i(-1,-1)
 	var active_touch_piece: Button
 	var selected_index := -1
+	var placement_checks := 0
 	func can_place(shape: Array, origin: Vector2i) -> bool:
+		placement_checks += 1
 		if origin == blocked: return false
 		for raw in shape:
 			var cell: Vector2i = origin + (raw as Vector2i)
@@ -55,6 +57,13 @@ func _run() -> void:
 	var tray_first := (piece.size - Vector2(2.0, 1.0) * tray_tile) * 0.5 + Vector2.ONE * (tray_tile * 0.5)
 	if not _check(piece.call("_grab_cell_from_local",tray_first) == Vector2.ZERO,"Picking up left brick did not preserve left grab anchor"):return
 	if not _check(piece.call("_grab_cell_from_local",tray_first+Vector2(tray_tile,0.0)) == Vector2(1.0,0.0),"Picking up right brick did not preserve right grab anchor"):return
+	# A fingertip on the edge or gap of the drawn bricks must keep the nearest
+	# real tile as the anchor. Falling back to the piece centroid made mobile
+	# placement drift sideways from the player's intended contact point.
+	var near_left := tray_first + Vector2(0.0, tray_tile * 0.75)
+	var near_right := tray_first + Vector2(tray_tile, tray_tile * 0.75)
+	if not _check(piece.call("_grab_cell_from_local",near_left) == Vector2.ZERO,"Touch near the left brick fell back to the unpredictable centroid"):return
+	if not _check(piece.call("_grab_cell_from_local",near_right) == Vector2(1.0,0.0),"Touch near the right brick did not grab the closest brick"):return
 	var long_shape: Array = [Vector2i(0,0),Vector2i(1,0),Vector2i(2,0)]
 	var left_grab := Vector2(57.0+36.0*2.0, 57.0+36.0*3.0)+Vector2(0,132.0)
 	var right_grab := Vector2(57.0+36.0*4.0, 57.0+36.0*3.0)+Vector2(0,132.0)
@@ -65,6 +74,16 @@ func _run() -> void:
 	if not _check(absf(scaled_lift - 84.6) < 0.1,"Finger lift is no longer a compact, board-relative distance"):return
 	var got: Vector2i = Magnetic.choose(board,shape,finger,Vector2i(-1,-1),132.0)
 	if not _check(got == Vector2i(2,3),"Centered magnetic placement picked wrong origin"):return
+	# Rapid drag updates used to collide-test all 25 nearby origins even
+	# when the pointer sat exactly over a legal one. This must stay O(1) on
+	# the usual clear-cell path to protect 60/90/120Hz Android touch response.
+	board.placement_checks = 0
+	var saved_geometry := Magnetic.geometry(board)
+	for sample in range(40):
+		got = Magnetic.choose(board,shape,finger,Vector2i(-1,-1),132.0,Magnetic.NO_GRAB_ANCHOR,saved_geometry)
+		if not _check(got == Vector2i(2,3),"Cached board geometry changed the snapped result"):return
+	if not _check(board.placement_checks <= 45,"Magnet performs excessive placement collision checks for a legal target"):return
+	if not _check(absf(Magnetic.lift_distance(board, saved_geometry) - Magnetic.lift_distance(board)) < 0.01,"Reused board geometry changed adaptive finger lift"):return
 	got = Magnetic.choose(board,shape,finger+Vector2(16.5,0),Vector2i(2,3),132.0)
 	if not _check(got == Vector2i(2,3),"Near-midline touch jitter jumped to next cell"):return
 	got = Magnetic.choose(board,shape,finger+Vector2(30,0),Vector2i(2,3),132.0)
@@ -225,7 +244,7 @@ func _run() -> void:
 	ghost.queue_free()
 	board.queue_free()
 	await process_frame
-	print("BLOCK_MAGNETIC_TARGET_OK: captured green footprint survives real finger-up jitter, red/offboard safety, tap protection")
+	print("BLOCK_MAGNETIC_TARGET_OK: nearest touched tile, quick legal target, same-frame geometry, finger-up latch, red/offboard safety")
 	quit(0)
 
 func _check(ok: bool, message: String) -> bool:
