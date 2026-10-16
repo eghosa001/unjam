@@ -33,8 +33,8 @@ static func geometry(game: Node) -> Dictionary:
 		return {}
 	return {"first": first, "step": step}
 
-static func lift_distance(game: Node) -> float:
-	var geo := geometry(game)
+static func lift_distance(game: Node, geo_override: Dictionary = {}) -> float:
+	var geo := geo_override if not geo_override.is_empty() else geometry(game)
 	if geo.is_empty():
 		return 132.0
 	# A smaller board-relative lift keeps the finger below the block without
@@ -64,8 +64,8 @@ static func _raw_origin(shape: Array, point: Vector2, geo: Dictionary, grab_anch
 	var anchor := grab_anchor if grab_anchor.x >= 0.0 and grab_anchor.y >= 0.0 else _centroid(shape)
 	return Vector2((point.x - first.x) / step.x, (point.y - first.y) / step.y) - anchor
 
-static func preview_origin(game: Node, shape: Array, finger: Vector2, lift: float, grab_anchor: Vector2 = NO_GRAB_ANCHOR) -> Vector2i:
-	var geo := geometry(game)
+static func preview_origin(game: Node, shape: Array, finger: Vector2, lift: float, grab_anchor: Vector2 = NO_GRAB_ANCHOR, geo_override: Dictionary = {}) -> Vector2i:
+	var geo := geo_override if not geo_override.is_empty() else geometry(game)
 	if geo.is_empty() or shape.is_empty():
 		return NO_TARGET
 	var target_point := finger - Vector2(0.0, lift)
@@ -92,16 +92,28 @@ static func _closest(game: Node, shape: Array, point: Vector2, geo: Dictionary, 
 			return NO_TARGET
 	var nearest := NO_TARGET
 	var best_distance := CATCH_RADIUS
-	for dy in range(-2, 3):
-		for dx in range(-2, 3):
-			var candidate := rounded + Vector2i(dx, dy)
-			var distance := (raw - Vector2(candidate)).length()
-			if distance > best_distance:
-				continue
-			if not bool(game.call("can_place", shape, candidate)):
-				continue
-			nearest = candidate
-			best_distance = distance
+	# Most finger samples are centred on an open cell. The nearest integer
+	# origin is mathematically the closest grid target, so validate it first
+	# rather than doing 25 full shape-collision checks on every Android drag.
+	if bool(game.call("can_place", shape, rounded)):
+		nearest = rounded
+		best_distance = (raw - Vector2(rounded)).length()
+	else:
+		# When the pointer is between blocked cells, check only actual nearby
+		# origins. Offsets of two cannot fit inside the 1.32-cell catch radius
+		# when rounded already lies within half a cell on either axis.
+		for dy in range(-1, 2):
+			for dx in range(-1, 2):
+				if dx == 0 and dy == 0:
+					continue
+				var candidate := rounded + Vector2i(dx, dy)
+				var distance := (raw - Vector2(candidate)).length()
+				if distance > best_distance:
+					continue
+				if not bool(game.call("can_place", shape, candidate)):
+					continue
+				nearest = candidate
+				best_distance = distance
 	# Sub-cell aim correction is forgiving. Holding remains stable across
 	# touchscreen jitter, but the pointer cannot teleport to distant legal tiles.
 	if held.x >= 0 and bool(game.call("can_place", shape, held)):
@@ -110,8 +122,8 @@ static func _closest(game: Node, shape: Array, point: Vector2, geo: Dictionary, 
 			nearest = held
 	return nearest
 
-static func choose(game: Node, shape: Array, finger: Vector2, held: Vector2i, lift: float, grab_anchor: Vector2 = NO_GRAB_ANCHOR) -> Vector2i:
-	var geo := geometry(game)
+static func choose(game: Node, shape: Array, finger: Vector2, held: Vector2i, lift: float, grab_anchor: Vector2 = NO_GRAB_ANCHOR, geo_override: Dictionary = {}) -> Vector2i:
+	var geo := geo_override if not geo_override.is_empty() else geometry(game)
 	if geo.is_empty() or shape.is_empty():
 		return NO_TARGET
 	var floating_point := finger - Vector2(0.0, lift)
