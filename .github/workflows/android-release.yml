@@ -6,11 +6,11 @@ on:
       version_name:
         description: Human-readable version (for example 1.0.0)
         required: true
-        default: 1.0.11
+        default: 1.0.14
       version_code:
         description: Monotonically increasing Google Play version code
         required: true
-        default: 11
+        default: 14
 
 permissions:
   contents: read
@@ -26,12 +26,19 @@ jobs:
     env:
       EXPECTED_PACKAGE: com.eghosa.unjamgam
       EXPECTED_UPLOAD_SHA1: ${{ secrets.UNJAM_ANDROID_UPLOAD_SHA1 }}
+      REGISTERED_UPLOAD_SHA1: 65:0D:39:CA:2C:0A:E6:FA:D4:2E:ED:E0:00:DA:13:C7:16:85:AA:2C
       EXPECTED_BLOCK_REVIEW_SHA256: ${{ secrets.UNJAM_BLOCK_CAMPAIGN_REVIEW_SHA256 }}
-      RELEASE_VERSION_NAME: ${{ inputs.version_name || '1.0.11' }}
-      RELEASE_VERSION_CODE: ${{ inputs.version_code || '11' }}
+      RELEASE_VERSION_NAME: ${{ inputs.version_name || '1.0.14' }}
+      RELEASE_VERSION_CODE: ${{ inputs.version_code || '14' }}
       WATER_FULL_AUDIT: "1"
     steps:
       - uses: actions/checkout@v4
+      - name: Remove stale Android build outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf build/android
+          mkdir -p build/android
       - name: Validate release contract
         shell: bash
         run: |
@@ -129,6 +136,8 @@ jobs:
           keytool -list -keystore "$KEYSTORE" -storepass "$KEY_PASSWORD" -alias "$KEY_ALIAS" >/dev/null
           ACTUAL_UPLOAD_SHA1="$(keytool -list -v -keystore "$KEYSTORE" -storepass "$KEY_PASSWORD" -alias "$KEY_ALIAS" | sed -n 's/^[[:space:]]*SHA1: //p' | head -n 1 | tr '[:lower:]' '[:upper:]' | tr -d '\r')"
           EXPECTED_UPLOAD_SHA1="$(printf '%s' "$EXPECTED_UPLOAD_SHA1" | tr '[:lower:]' '[:upper:]')"
+          REGISTERED_UPLOAD_SHA1="$(printf '%s' "$REGISTERED_UPLOAD_SHA1" | tr '[:lower:]' '[:upper:]')"
+          test "$EXPECTED_UPLOAD_SHA1" = "$REGISTERED_UPLOAD_SHA1"
           if [[ "$ACTUAL_UPLOAD_SHA1" != "$EXPECTED_UPLOAD_SHA1" ]]; then
             echo "Upload certificate mismatch. Expected $EXPECTED_UPLOAD_SHA1 but found $ACTUAL_UPLOAD_SHA1" >&2
             exit 1
@@ -328,7 +337,7 @@ jobs:
       - name: Upload release AAB and verification records
         uses: actions/upload-artifact@v4
         with:
-          name: unjam-release-aab-production-v11
+          name: unjam-release-aab-production-v14
           path: |
             build/android/unjam-release.aab
             build/android/unjam-release.aab.sha256

@@ -2,7 +2,7 @@
 """Offline Play AAB signing with a hard-fail key identity gate.
 
 For UNJAM com.eghosa.unjamgam only. Keystores/passwords must NEVER enter GitHub.
-The v1.0.12 D8:B5 upload key is NOT enrolled in the current Play listing.
+Only the currently registered Play upload certificate is accepted.
 """
 from __future__ import annotations
 
@@ -41,7 +41,7 @@ def require_correct_sha1(actual: str) -> None:
         raise ValueError(
             "WRONG UPLOAD KEY: certificate " + actual
             + " is not the 65:0D... certificate enrolled in Google Play. "
-            "The old version 12 D8:B5 key must never sign this release."
+            "An archived non-registered key must never sign this release."
         )
 
 

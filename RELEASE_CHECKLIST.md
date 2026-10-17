@@ -4,20 +4,20 @@ The repository is hardened to fail closed until production services are configur
 
 ## Fresh Google Play app reset
 
-Current Android export and release workflow defaults are **versionName 1.0.11 / versionCode 11**. The fresh Google Play listing and new upload-key configuration remain account-side release prerequisites; do not interpret a successful unsigned v11 fallback as a signed, Play-accepted build.
+The Android production workflow defaults to **versionName 1.0.14 / versionCode 14**. It creates one distinctly named, CI-signed AAB and verifies its embedded certificate before publishing the artifact.
 
 - [ ] Create the replacement app in Play Console.
 - [ ] Use the production package `com.eghosa.unjamgam` consistently in Google Play, AdMob, billing verification, and release builds.
-- [ ] Enable Play App Signing for the replacement app and let Google manage the app-signing key unless there is a specific reason to supply your own.
-- [ ] Generate a new RSA upload keystore and keep at least two secure backups outside the repository.
-- [ ] Add the new keystore and credentials to GitHub Actions secrets: `UNJAM_ANDROID_KEYSTORE_BASE64`, `UNJAM_ANDROID_KEY_ALIAS`, and `UNJAM_ANDROID_KEY_PASSWORD`.
-- [ ] Add the new upload certificate SHA-1 to GitHub Actions secret `UNJAM_ANDROID_UPLOAD_SHA1`.
+- [ ] Confirm Play App Signing is enabled for `com.eghosa.unjamgam`.
+- [ ] Recover the keystore whose certificate is `65:0D:39:CA:2C:0A:E6:FA:D4:2E:ED:E0:00:DA:13:C7:16:85:AA:2C`; keep two secure backups outside the repository.
+- [ ] Add that keystore and its credentials to GitHub Actions secrets: `UNJAM_ANDROID_KEYSTORE_BASE64`, `UNJAM_ANDROID_KEY_ALIAS`, and `UNJAM_ANDROID_KEY_PASSWORD`.
+- [ ] Set `UNJAM_ANDROID_UPLOAD_SHA1` to the same registered SHA-1. The workflow rejects any other certificate.
 - [x] Bind the selected Supabase project URL and publishable key in `project.godot` (public client configuration).
 - [x] Bind the production developer website in `project.godot` to `https://unjam-site-prod-production.up.railway.app`; `UNJAM_DEVELOPER_WEBSITE_URL` remains an optional CI override. Production release checks the crawler hostname root for `app-ads.txt`.
-- [ ] Run the `Android Production Release` workflow with `version_name=1.0.11` and `version_code=11`; download the verified release AAB and upload that AAB to the new Play listing.
+- [ ] Run the `Android Production Release` workflow with `version_name=1.0.14` and `version_code=14`; download only `unjam-release-aab-production-v14` and upload that AAB.
 - [ ] After the first accepted Play upload, every subsequent upload must use a higher `versionCode`.
 
-Do not reuse the deleted app's old private upload key merely because it still exists. The replacement release workflow validates the new certificate fingerprint supplied through `UNJAM_ANDROID_UPLOAD_SHA1` and will reject a keystore whose SHA-1 does not match that secret.
+Do not use an archived key merely because it still exists. The release workflow validates both the configured secret and the actual AAB against the registered `65:0D:39…` certificate.
 
 ## Monetization status
 

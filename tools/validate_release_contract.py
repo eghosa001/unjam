@@ -74,6 +74,10 @@ def main() -> int:
 
     for token in (
         'EXPECTED_UPLOAD_SHA1',
+        'REGISTERED_UPLOAD_SHA1',
+        '65:0D:39:CA:2C:0A:E6:FA:D4:2E:ED:E0:00:DA:13:C7:16:85:AA:2C',
+        'Remove stale Android build outputs',
+        'name: unjam-release-aab-production-v14',
         EXPECTED_UPLOAD_SECRET,
         '--export-release Android build/android/unjam-release.aab',
         'jarsigner -verify',

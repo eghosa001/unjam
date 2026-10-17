@@ -1,4 +1,5 @@
 .godot/
+tools/__pycache__/
 .android/
 android/
 build/
