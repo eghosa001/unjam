@@ -1,7 +1,7 @@
 name: UNJAM v14 Production Unsigned Export — Offline Play Signing
 on:
   push:
-    branches: [release/v14-signed-20261017]
+    branches: [release/v14-signed-20261017, release/v14-premium-magnet-20261017]
     paths: ['.github/workflows/android-v14-offline-signing-packages.yml']
 permissions:
   contents: read
