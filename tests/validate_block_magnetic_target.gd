@@ -212,6 +212,30 @@ func _run() -> void:
 	if not _check(board.placed == Vector2i(3,5), "Vertical block from phone video bounced back instead of following green snap"):return
 	board.blocked = Vector2i(-1,-1)
 	piece.configure([Vector2i(0,0), Vector2i(1,0)],false,Color("#5396fa"),0)
+	# A late finger-up sample should keep the last shown green target even
+	# after a slightly larger-than-one-cell Android release jump.
+	board.placed = Vector2i(-1, -1)
+	piece._gui_input(press)
+	piece._input(move)
+	var coalesced_release := InputEventScreenTouch.new()
+	coalesced_release.index = 0
+	coalesced_release.pressed = false
+	coalesced_release.position = move.position + Vector2(43.0, 0.0)
+	piece._input(coalesced_release)
+	if not _check(board.placed == Vector2i(2,3), "Release jitter bounced a visibly green two-tile brick back to tray"):return
+	# When a shape extends beyond the right edge, magnetize to its nearest
+	# legal origin instead of rejecting an almost-correct drop.
+	var edge_finger := Vector2(57.0 + 36.0 * 7.0, 57.0 + 36.0 * 4.0 + 132.0)
+	if not _check(Magnetic.choose(board, shape, edge_finger, Vector2i(-1,-1), 132.0, Vector2.ZERO) == Vector2i(6,4), "Right-edge placement did not pull towards the nearest legal fit"):return
+	# The locked ghost must visually coincide with its footprint on this
+	# input sample: a three-frame easing lag is not premium snapping.
+	var snapped_ghost := Preview.new()
+	root.add_child(snapped_ghost)
+	snapped_ghost.configure(shape, Color("#5396fa"), 34.0)
+	snapped_ghost.set_drag_target(Vector2(14.0, 20.0), true)
+	snapped_ghost.set_drag_target(Vector2(144.0, 200.0), true)
+	if not _check(snapped_ghost.position == Vector2(144.0, 200.0) and snapped_ghost.scale == Vector2.ONE, "Green ghost trails or scales away from the board target"):return
+	snapped_ghost.queue_free()
 	# Large changes or a visibly red/off-board preview must never place
 	# the previous valid brick at its stale highlighted location.
 	board.placed = Vector2i(-1, -1)
