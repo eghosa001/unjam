@@ -80,6 +80,8 @@ def preflight_key(keystore: Path, alias: str) -> None:
 
 
 def assert_unsigned_release(input_aab: Path, badging: Path | None) -> None:
+    if badging is None or not badging.is_file():
+        raise ValueError("Exact-version APK package-badging.txt from the SAME export run is required")
     with zipfile.ZipFile(input_aab) as bundle:
         if bundle.testzip() is not None:
             raise ValueError("Unsigned input AAB is damaged")
@@ -141,7 +143,7 @@ def main() -> int:
         else:
             p.error("Use --verify-only FILE or --unsigned FILE --output FILE --keystore JKS")
         print("PLAY_UPLOAD_SIGNING_OK")
-        print("Package: " + EXPECTED_PACKAGE + "; version: 1.0.13 (13)")
+        print("Required Play package: " + EXPECTED_PACKAGE + "; release version: 1.0.13 (13)")
         print("SHA1: " + EXPECTED_SHA1)
         print("AAB SHA256: " + digest)
         return 0
