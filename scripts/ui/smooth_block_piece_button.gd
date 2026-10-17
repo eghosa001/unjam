@@ -231,13 +231,8 @@ func _best_origin(game: Node, screen_position: Vector2, lift: float = -1.0, geo:
 			var feedback := get_node_or_null("/root/FeedbackManager")
 			if feedback != null and feedback.has_method("snap"):
 				feedback.call("snap")
-			if touch_preview != null and is_instance_valid(touch_preview):
-				touch_preview.set_drag_scale(Vector2(1.025, 1.025))
-				var settle := touch_preview.create_tween()
-				settle.tween_method(
-					func(value: float) -> void: touch_preview.set_drag_scale(Vector2.ONE * value),
-					1.025, 1.0, 0.085
-				)
+			# No scale tween here: it made the floating shape shift away
+			# from its locked cells during rapid placements.
 	return chosen
 
 func _show_touch_preview(screen_position: Vector2) -> void:
@@ -362,7 +357,7 @@ func _finish_touch_drag(screen_position: Vector2) -> void:
 	var close_to_preview := false
 	if not geo.is_empty() and touch_preview != null and is_instance_valid(touch_preview):
 		var cell_step: Vector2 = geo["step"]
-		var release_slop := maxf(14.0, minf(cell_step.x, cell_step.y) * 1.05)
+		var release_slop := maxf(18.0, minf(cell_step.x, cell_step.y) * 1.28)
 		close_to_preview = screen_position.distance_to(_preview_finger_position) <= release_slop
 	if close_to_preview:
 		# If the last displayed preview was red, do not silently turn that

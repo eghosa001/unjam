@@ -3,11 +3,11 @@ class_name BlockMagneticTarget
 
 # All distances are expressed in live board cells, not fixed screen pixels.
 # Preview and committed release use the same target calculation.
-const CATCH_RADIUS := 1.32
-const HOLD_RADIUS := 1.38
-const STICKINESS := 0.23
+const CATCH_RADIUS := 1.45
+const HOLD_RADIUS := 1.55
+const STICKINESS := 0.25
 const BLOCKED_INTENT_RADIUS := 0.32
-const RELEASE_HOLD_RADIUS := 0.80
+const RELEASE_HOLD_RADIUS := 0.92
 const NO_TARGET := Vector2i(-1, -1)
 const NO_GRAB_ANCHOR := Vector2(-1.0, -1.0)
 
@@ -55,7 +55,7 @@ static func _near_board(point: Vector2, geo: Dictionary) -> bool:
 		return false
 	var first: Vector2 = geo["first"]
 	var step: Vector2 = geo["step"]
-	var edge := step * 0.85
+	var edge := step * 1.12
 	return Rect2(first - edge, Vector2(step.x * 7.0, step.y * 7.0) + 2.0 * edge).has_point(point)
 
 static func _raw_origin(shape: Array, point: Vector2, geo: Dictionary, grab_anchor: Vector2 = NO_GRAB_ANCHOR) -> Vector2:
@@ -74,6 +74,13 @@ static func preview_origin(game: Node, shape: Array, finger: Vector2, lift: floa
 	var raw := _raw_origin(shape, target_point, geo, grab_anchor)
 	return Vector2i(roundi(raw.x), roundi(raw.y))
 
+static func _fits_board(shape: Array, origin: Vector2i) -> bool:
+	for raw in shape:
+		var cell := origin + Vector2i(raw)
+		if cell.x < 0 or cell.y < 0 or cell.x >= 8 or cell.y >= 8:
+			return false
+	return true
+
 static func _closest(game: Node, shape: Array, point: Vector2, geo: Dictionary, held: Vector2i, grab_anchor: Vector2 = NO_GRAB_ANCHOR) -> Vector2i:
 	if not _near_board(point, geo):
 		return NO_TARGET
@@ -84,7 +91,10 @@ static func _closest(game: Node, shape: Array, point: Vector2, geo: Dictionary, 
 	var rounded_valid := bool(game.call("can_place", shape, rounded))
 	# A nearly centred aim at an occupied tile still shows red, unless it
 	# only trembled a fraction of a cell away from a held green placement.
-	if not rounded_valid and (raw - Vector2(rounded)).length() <= BLOCKED_INTENT_RADIUS:
+	# Preserve an intentionally centered red target on occupied cells;
+	# do not jump to a different open gap. Edge overflow is different:
+	# a just-outside tile may magnetize to the last legal column or row.
+	if not rounded_valid and _fits_board(shape, rounded) and (raw - Vector2(rounded)).length() <= BLOCKED_INTENT_RADIUS:
 		if held.x >= 0 and (raw - Vector2(held)).length() <= RELEASE_HOLD_RADIUS:
 			if bool(game.call("can_place", shape, held)):
 				return held
@@ -133,7 +143,7 @@ static func choose(game: Node, shape: Array, finger: Vector2, held: Vector2i, li
 static func choose_release(game: Node, shape: Array, finger: Vector2, held: Vector2i, lift: float, grab_anchor: Vector2 = NO_GRAB_ANCHOR) -> Vector2i:
 	# A few pixels of finger movement on lift-up must not turn a visibly
 	# green, snapped brick into a failed drop. A previous lock is accepted
-	# only when the release is still within 0.8 real cells of that lock.
+	# only when the release is still within 0.92 real cells of that lock.
 	# This is never a global nearest-legal search or a distant auto-placement.
 	var target := choose(game, shape, finger, held, lift, grab_anchor)
 	if target.x >= 0:
