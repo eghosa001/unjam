@@ -119,7 +119,7 @@ func _run() -> void:
 	if not _check(got == Vector2i(2,3),"Magnet lost alignment when the canvas was scaled"):return
 	board.scale = Vector2.ONE
 	got = Magnetic.choose(board,shape,Vector2(57+36.0*7.5,57+36.0*3.0)+Vector2(0,132),Vector2i(-1,-1),132.0)
-	if not _check(got == Vector2i(-1,-1),"Magnet committed a two-column block beyond the eighth board column"):return
+	if not _check(got == Vector2i(6,3),"Overflowing edge aim should magnetize to the last legal two-column footprint"):return
 	got = Magnetic.choose(board,shape,Vector2(-800,700),Vector2i(2,3),132.0)
 	if not _check(got == Vector2i(-1,-1),"Held magnet persisted after the finger left the board"):return
 	piece.set("_drag_distance",0.0)
