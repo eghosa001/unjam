@@ -405,16 +405,16 @@ func _add_game_showcase(canvas: Control) -> void:
 		art.name = "HomeShowcaseArt_%s" % id
 		art.configure(id,true,dark)
 		art.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		RefCanvas.set_rect(art,left+7,350,96,108)
+		RefCanvas.set_rect(art,left+7,350,96,94)
 		canvas.add_child(art)
-		var label := _add_text(canvas,String(game["name"]),Rect2(left+3,461,104,21),
+		var label := _add_text(canvas,String(game["name"]),Rect2(left+3,445,104,21),
 			14,accent.lightened(0.16) if dark else accent.darkened(0.56),true)
 		label.name = "HomeShowcaseName_%s" % id
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		RefCanvas.fit_single_line_text(label,102.0,14,12)
 		label.custom_minimum_size = Vector2.ZERO
 		label.size = Vector2(104,21)
-		var tagline := _add_text(canvas,String(game["description"]),Rect2(left+6,483,98,17),
+		var tagline := _add_text(canvas,String(game["description"]),Rect2(left+6,467,98,17),
 			12,DARK_INK if dark else Color("#484c59"),false)
 		tagline.name = "HomeShowcaseTagline_%s" % id
 		tagline.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -425,7 +425,7 @@ func _add_game_showcase(canvas: Control) -> void:
 		tagline.custom_minimum_size = Vector2.ZERO
 		tagline.size = Vector2(98,17)
 		tagline.clip_text = true
-		var level_hint := _add_text(canvas,"LEVEL %d  ›" % _home_current_level(id),Rect2(left+5,502,100,17),
+		var level_hint := _add_text(canvas,"LEVEL %d  ›" % _home_current_level(id),Rect2(left+5,486,100,17),
 			12,DARK_MUTED if dark else Color("#42546a"),true)
 		level_hint.name = "HomeShowcaseLevel_%s" % id
 		level_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -503,22 +503,22 @@ func _add_rank_summary(canvas: Control) -> void:
 	var heading := _add_text(canvas,"YOUR RANKINGS",Rect2(37,529,199,22),
 		16,DARK_INK if dark else NAVY,true)
 	heading.name = "HomeRankTitle"
-	var daily_tag := _add_text(canvas,"TODAY",Rect2(38,556,140,18),
+	var daily_tag := _add_text(canvas,"TODAY",Rect2(38,569,140,16),
 		12,DARK_MUTED if dark else Color("#424a59"),true)
 	daily_tag.name = "HomeRankDailyLabel"
-	var daily_rank := _add_text(canvas,"—",Rect2(38,580,135,27),
+	var daily_rank := _add_text(canvas,"—",Rect2(38,587,135,26),
 		24,GOLD if dark else Color("#714e12"),true)
 	daily_rank.name = "HomeRankDailyValue"
-	var daily_hint := _add_text(canvas,"PLAY TO JOIN",Rect2(38,610,140,18),
+	var daily_hint := _add_text(canvas,"PLAY TO JOIN",Rect2(38,614,140,17),
 		13,DARK_MUTED if dark else Color("#424a59"),false)
 	daily_hint.name = "HomeRankDailyHint"
-	var weekly_tag := _add_text(canvas,"BEST WEEKLY",Rect2(200,556,145,18),
+	var weekly_tag := _add_text(canvas,"BEST WEEKLY",Rect2(200,569,145,16),
 		12,DARK_MUTED if dark else Color("#424a59"),true)
 	weekly_tag.name = "HomeRankWeeklyLabel"
-	var weekly_rank := _add_text(canvas,"—",Rect2(200,580,135,27),
+	var weekly_rank := _add_text(canvas,"—",Rect2(200,587,135,26),
 		24,GOLD if dark else Color("#714e12"),true)
 	weekly_rank.name = "HomeRankValue"
-	var weekly_hint := _add_text(canvas,"PLAY TO JOIN",Rect2(200,610,144,18),
+	var weekly_hint := _add_text(canvas,"PLAY TO JOIN",Rect2(200,614,144,17),
 		13,DARK_MUTED if dark else Color("#424a59"),false)
 	weekly_hint.name = "HomeRankWeeklyHint"
 	var open := _add_action(canvas,Rect2(244,524,108,44),Color("#7757cf"),
