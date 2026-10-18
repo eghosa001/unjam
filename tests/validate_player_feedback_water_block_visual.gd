@@ -2,14 +2,16 @@ extends SceneTree
 
 # Focused user-feedback contract: category-leading games keep the playfield
 # primary, reward actual progress and avoid decorative GPU cost.
-const TubeScript = preload("res://scripts/ui/water_tube_3d_motion.gd")
 
 func _initialize() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
 	root.size = Vector2i(540, 960)
-	var tube := TubeScript.new()
+	var tube_script := load("res://scripts/ui/water_tube_3d_motion.gd") as Script
+	if tube_script == null:
+		return _fail("Water tube component could not load")
+	var tube = tube_script.new()
 	tube.size = Vector2(110, 230)
 	root.add_child(tube)
 	tube.configure([3, 3, 3, 3], false, 0)
