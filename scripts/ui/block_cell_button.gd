@@ -235,8 +235,8 @@ func _draw() -> void:
 		# Screenshot review: 64 similarly bright purple outlines competed with
 		# the three colourful pieces. Quiet idle wells preserve the 8x8 grid
 		# while reserving the highest contrast for placed and draggable blocks.
-		var idle_fill := Color(0.38, 0.27, 0.53, 0.43 + hover_amount * 0.08)
-		_draw_box(inset, idle_fill, 7, Color(0.86, 0.72, 1.0, 0.17 + hover_amount * 0.18), 1)
+		var idle_fill := Color(0.30, 0.22, 0.44, 0.29 + hover_amount * 0.08)
+		_draw_box(inset, idle_fill, 7, Color(0.76, 0.64, 0.91, 0.12 + hover_amount * 0.18), 1)
 		var well := inset.grow(-3.0)
 		_draw_box(well, Color(0.085, 0.04, 0.17, 0.21), 5, Color.TRANSPARENT, 0)
 		var gloss_y := inset.position.y + 3.0
@@ -341,21 +341,44 @@ func _draw_special_overlay(rect: Rect2) -> void:
 		draw_string(ThemeDB.fallback_font, badge.position + Vector2(3, 14), str(special_layers), HORIZONTAL_ALIGNMENT_CENTER, 12, 12, Color.WHITE)
 
 func _draw_block(rect: Rect2, fill: Color) -> void:
-	# Saturated two-tone 2D material: one face, one contact shadow, one highlight.
-	# This keeps pieces rich without the noisy pseudo-3D top/right polygons.
+	# Benchmark: the placed shape should read as a single polished solid,
+	# with its silhouette dominating idle wells. All facets are 2D polygons,
+	# static and clipped inside the existing 8x8 cell; no per-cell shader/3D.
 	var radius := maxi(5, int(rect.size.x * 0.18))
 	var shadow := Rect2(rect.position + Vector2(0, maxf(2.0, rect.size.y * 0.09)), rect.size)
-	_draw_box(shadow, Color(0.02, 0.025, 0.08, 0.28), radius, Color.TRANSPARENT, 0)
-	_draw_box(rect, fill, radius, Color(fill.lightened(0.30), 0.40), 1)
-	draw_texture_rect(AUTHORED_TILE_OVERLAY, rect.grow(1.0), false, Color.WHITE)
-	var shade := Rect2(Vector2(rect.position.x + rect.size.x * 0.08, rect.end.y - rect.size.y * 0.17), Vector2(rect.size.x * 0.84, rect.size.y * 0.10))
-	_draw_box(shade, Color(fill.darkened(0.34), 0.24), maxi(2, radius / 2), Color.TRANSPARENT, 0)
-	var gloss := Rect2(
-		rect.position + Vector2(rect.size.x * 0.12, rect.size.y * 0.10),
-		Vector2(rect.size.x * 0.58, maxf(3.0, rect.size.y * 0.14))
+	_draw_box(shadow, Color(0.02, 0.025, 0.08, 0.27 * fill.a), radius, Color.TRANSPARENT, 0)
+	_draw_box(rect, fill, radius, Color(fill.lightened(0.28), 0.45 * fill.a), 1)
+	draw_texture_rect(AUTHORED_TILE_OVERLAY, rect.grow(1.0), false, Color(1, 1, 1, fill.a))
+	var bevel := clampf(rect.size.y * 0.14, 3.0, 6.0)
+	var inset := clampf(rect.size.x * 0.12, 3.0, 6.0)
+	# Slim upper chamfer with a central plane. Unlike a generic white stripe,
+	# the facet follows the block's edges and preserves the colored material.
+	var upper := PackedVector2Array([
+		rect.position + Vector2(inset, bevel * 0.48),
+		rect.position + Vector2(rect.size.x - inset, bevel * 0.48),
+		rect.position + Vector2(rect.size.x - inset * 0.70, bevel + 1.0),
+		rect.position + Vector2(inset * 0.70, bevel + 1.0)
+	])
+	draw_colored_polygon(upper, Color(fill.lightened(0.56), 0.30 * fill.a))
+	var lower := PackedVector2Array([
+		rect.position + Vector2(inset * 0.80, rect.size.y - bevel - 1.0),
+		rect.position + Vector2(rect.size.x - inset * 0.80, rect.size.y - bevel - 1.0),
+		rect.position + Vector2(rect.size.x - inset, rect.size.y - bevel * 0.22),
+		rect.position + Vector2(inset, rect.size.y - bevel * 0.22)
+	])
+	draw_colored_polygon(lower, Color(fill.darkened(0.42), 0.34 * fill.a))
+	var side := PackedVector2Array([
+		rect.position + Vector2(rect.size.x - inset * 0.72, bevel + 1.0),
+		rect.position + Vector2(rect.size.x - bevel * 0.40, bevel * 0.75),
+		rect.position + Vector2(rect.size.x - bevel * 0.40, rect.size.y - bevel * 0.72),
+		rect.position + Vector2(rect.size.x - inset * 0.72, rect.size.y - bevel - 1.0)
+	])
+	draw_colored_polygon(side, Color(fill.darkened(0.32), 0.24 * fill.a))
+	draw_line(
+		rect.position + Vector2(inset, bevel * 0.53),
+		rect.position + Vector2(rect.size.x - inset, bevel * 0.53),
+		Color(1.0, 1.0, 1.0, 0.28 * fill.a), 1.4, true
 	)
-	_draw_box(gloss, Color(1,1,1,0.28), maxi(2, radius / 2), Color.TRANSPARENT, 0)
-	draw_circle(rect.position + Vector2(rect.size.x * 0.23, rect.size.y * 0.30), maxf(1.2, rect.size.x * 0.038), Color(1,1,1,0.46))
 
 func _draw_box(rect: Rect2, color: Color, radius: int, border: Color, border_width: int) -> void:
 	# Include fill, border, radius and width in the key. A dropped frame
