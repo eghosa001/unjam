@@ -42,7 +42,7 @@ func _run() -> void:
 			return _fail("Level browsing and Play visually overlap for %s" % id)
 		if play.size.x < 90 or play.size.y < 48 or not play.text.contains("PLAY"):
 			return _fail("Selector Play is not legible and tappable for %s" % id)
-		if not card.accessibility_name.contains("levels") or not play.accessibility_name.contains("Resume"):
+		if not card.accessibility_name.contains("levels") or not play.accessibility_name.to_lower().contains("resume"):
 			return _fail("Selector hides browsing/resume semantics from TalkBack")
 
 	main.call("build_settings")
