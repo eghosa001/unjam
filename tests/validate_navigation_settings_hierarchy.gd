@@ -97,14 +97,14 @@ func _run() -> void:
 	quit(0)
 
 func _check_settings(main: Control) -> bool:
-	var appearance := main.find_child("SettingsCard/Appearance",true,false) as Control
+	var appearance := main.find_child("SettingsCard*Appearance",true,false) as Control
 	var support := main.find_child("HelpPrivacy",true,false) as Control
-	var purchases := main.find_child("SettingsCard/Purchases",true,false) as Control
+	var purchases := main.find_child("SettingsCard*Purchases",true,false) as Control
 	var theme := main.find_child("SettingsThemeToggle",true,false) as Button
 	var language := main.find_child("SettingsLanguageToggle",true,false) as Button
 	if appearance == null or support == null or purchases == null or theme == null or language == null:
 		return _fail("Settings is missing appearance/help/account groups")
-	var nav := main.find_child("StdNav/Bar",true,false) as Control
+	var nav := main.find_child("StdNav*Bar",true,false) as Control
 	if nav == null:
 		return _fail("Settings bottom navigation missing")
 	if appearance.get_global_rect().intersects(support.get_global_rect()) or support.get_global_rect().intersects(purchases.get_global_rect()):
