@@ -243,6 +243,13 @@ static func score_board(tubes: Array, proof_moves: int) -> Dictionary:
 			if target.is_empty():
 				empty_target_moves += 1
 
+	# A legal pour can remove at most one contiguous colour run. At victory,
+	# precisely one run per colour remains. This is a *provable lower bound*
+	# on moves, unlike a recorded constructive solution, which is an upper
+	# bound and can contain avoidable detours.
+	var nonempty_tubes := tubes.size() - empty_count
+	var unavoidable_pours := maxi(0, nonempty_tubes + color_breaks - color_tubes.size())
+
 	var fragmentation := 0
 	for locations in color_tubes.values():
 		fragmentation += maxi(0, (locations as Dictionary).size() - 1)
@@ -251,6 +258,7 @@ static func score_board(tubes: Array, proof_moves: int) -> Dictionary:
 	var break_norm := clampf(float(color_breaks) / float(safe_colors * 3), 0.0, 1.0)
 	var fragmentation_norm := clampf(float(fragmentation) / float(safe_colors * 3), 0.0, 1.0)
 	var solution_norm := clampf(float(proof_moves) / 70.0, 0.0, 1.0)
+	var unavoidable_norm := clampf(float(unavoidable_pours) / float(safe_colors * 3), 0.0, 1.0)
 	var trap_ratio := 0.0 if legal_moves <= 0 else clampf(float(empty_target_moves) / float(legal_moves), 0.0, 1.0)
 	var empty_pressure := 1.0 if empty_count <= 1 else (0.35 if empty_count == 2 else 0.10)
 	var ambiguity := clampf(float(maxi(0, legal_moves - 2)) / 10.0, 0.0, 1.0)
@@ -258,7 +266,8 @@ static func score_board(tubes: Array, proof_moves: int) -> Dictionary:
 	var search_proxy := clampf(break_norm * 0.55 + fragmentation_norm * 0.45, 0.0, 1.0)
 
 	var difficulty := roundi(
-		solution_norm * 24.0 +
+		solution_norm * 12.0 +
+		unavoidable_norm * 12.0 +
 		search_proxy * 22.0 +
 		fragmentation_norm * 16.0 +
 		trap_ratio * 14.0 +
@@ -271,6 +280,8 @@ static func score_board(tubes: Array, proof_moves: int) -> Dictionary:
 	return {
 		"difficulty_score": clampi(difficulty, 0, 100),
 		"proof_moves": proof_moves,
+		"unavoidable_pours_lower_bound": unavoidable_pours,
+		"proof_slack": maxi(0, proof_moves - unavoidable_pours),
 		"color_breaks": color_breaks,
 		"fragmentation": fragmentation,
 		"legal_moves": legal_moves,
