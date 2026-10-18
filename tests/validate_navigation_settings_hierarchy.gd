@@ -25,8 +25,11 @@ func _run() -> void:
 		return _fail("Home gameplay and selection actions overlap")
 	if home.size.y < 48.0 or choose.size.y < 48.0 or home.pressed.get_connections().is_empty():
 		return _fail("Home has a misleading or undersized action")
-	if not home.accessibility_name.begins_with("Play "):
-		return _fail("Home quick action must disclose the game to screen readers")
+	var home_id := String(main.get("selected_game_id"))
+	var home_checkpoint: Dictionary = main.call("_checkpoint_for",home_id)
+	var home_verb := "Resume " if not home_checkpoint.is_empty() else "Play "
+	if not home.accessibility_name.begins_with(home_verb) or not home.text.contains(home_verb.strip_edges().to_upper()):
+		return _fail("Home quick action must truthfully identify Play or Resume and its game")
 
 	main.call("_open_games_surface")
 	await _frames(5)
@@ -40,10 +43,12 @@ func _run() -> void:
 			return _fail("Selector lacks distinct level browsing and Play for %s" % id)
 		if cue.get_global_rect().intersects(play.get_global_rect()):
 			return _fail("Level browsing and Play visually overlap for %s" % id)
-		if play.size.x < 90 or play.size.y < 48 or not play.text.contains("PLAY"):
-			return _fail("Selector Play is not legible and tappable for %s" % id)
-		if not card.accessibility_name.contains("levels") or not play.accessibility_name.to_lower().contains("resume"):
-			return _fail("Selector hides browsing/resume semantics from TalkBack")
+		var saved: Dictionary = main.call("_checkpoint_for",id)
+		var expected := "RESUME" if not saved.is_empty() else "PLAY"
+		if play.size.x < 90 or play.size.y < 48 or not play.text.contains(expected):
+			return _fail("Selector must show a large, honest %s action for %s" % [expected,id])
+		if not card.accessibility_name.contains("levels") or not play.accessibility_name.to_upper().begins_with(expected):
+			return _fail("Selector hides the real Play/Resume route from TalkBack")
 
 	main.call("build_settings")
 	await _frames(5)
