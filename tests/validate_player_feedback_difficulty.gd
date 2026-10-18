@@ -59,6 +59,15 @@ func _run() -> void:
 	if not WaterProgression.needs_curated_challenge_remaster(103, weak.get("tubes", []), (weak.get("solution", []) as Array).size(), WaterProgression.profile(103)):
 		return _fail("Water failed to detect the trivial post-100 board")
 
+	# The challenge curve must not reset at the first campaign milestone.
+	# Check the live generator inputs, not just a decorative difficulty label.
+	for post_milestone in [101, 103, 106, 110, 125, 150]:
+		var bridge: Dictionary = WaterProgression.profile(post_milestone)
+		if int(bridge.get("target_moves", 0)) < 26:
+			return _fail("Water level %d reset to tutorial-length target" % post_milestone)
+		if int(bridge.get("scramble_steps", 0)) < 20:
+			return _fail("Water level %d lost the post-100 scramble depth" % post_milestone)
+
 	for early_block in [5, 7, 8, 10, 25, 30]:
 		var starting_recipe := BlockCatalog.recipe(early_block)
 		var stronger := Block.profile(early_block)

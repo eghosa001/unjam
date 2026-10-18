@@ -214,6 +214,11 @@ func generate_tubes_with_solution(seed_value: int, colors: int) -> Dictionary:
 	var empty_bottles := int(p.get("empty_bottles", 2))
 	var base_steps := int(p.get("scramble_steps", 8))
 	var candidate_count := 2 if level_number <= 10 else (4 if level_number <= 1000 else 8)
+	# Spend the extra search only on weak authored puzzles, not on every
+	# campaign load. Compare eight seeded, proof-backed configurations before
+	# considering a replacement; never trade solvability for a difficulty label.
+	if not weak_curated.is_empty():
+		candidate_count = maxi(candidate_count, 8)
 	var best: Dictionary = {}
 	var best_error := 100000
 	var best_score := -1
