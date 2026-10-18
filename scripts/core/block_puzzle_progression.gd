@@ -66,8 +66,13 @@ static func _profile_from_authored(level: int, authored: Dictionary) -> Dictiona
 		# Closed-test players should meet real planning choices before level 30.
 		# Starter 1-3 and recovery/learning levels are left untouched; the
 		# generator still validates every campaign board before accepting it.
-		planning_value = mini(12, maxi(2, planning_value + (2 if boss_slot else 1)))
-		occupancy_value = minf(0.40, occupancy_value + (0.035 if boss_slot else 0.020))
+		# After the first tutorial chapter, tough boards need several moves
+		# of actual line-management before a clear; do not merely rename the tier.
+		var mature_challenge := level >= 25
+		var depth_bonus := (3 if boss_slot else 2) if mature_challenge else (2 if boss_slot else 1)
+		var depth_floor := (4 if boss_slot else 3) if mature_challenge else 2
+		planning_value = mini(12, maxi(depth_floor, planning_value + depth_bonus))
+		occupancy_value = minf(0.40, occupancy_value + ((0.050 if boss_slot else 0.030) if mature_challenge else (0.035 if boss_slot else 0.020)))
 		if level >= 101:
 			piece_value = mini(6, piece_value + 1)
 	return {
