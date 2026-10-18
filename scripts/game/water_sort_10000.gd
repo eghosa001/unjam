@@ -236,13 +236,36 @@ func generate_tubes_with_solution(seed_value: int, colors: int) -> Dictionary:
 		var metrics := Progression.score_board(candidate_tubes, candidate_solution.size())
 		var score := int(metrics.get("difficulty_score", 0))
 		var error := absi(score - target_score) + _archetype_penalty(metrics, archetype, colors)
-		# Prefer the closer board. On a tie, prefer the more demanding board so
-		# late-game candidate pools do not quietly drift toward filler levels.
-		if best.is_empty() or error < best_error or (error == best_error and score > best_score):
+		var structural_floor := int(metrics.get("unavoidable_pours_lower_bound", 0))
+		if not weak_curated.is_empty():
+			# A longer constructive path can contain completely avoidable pours.
+			# Remaster selection must instead improve a mathematically necessary
+			# amount of color-separation work. Keep the shipped board if nothing
+			# in the bounded candidate pool genuinely meets this requirement.
+			var old_floor := int(authored_metrics.get("unavoidable_pours_lower_bound", 0))
+			var old_score := int(authored_metrics.get("difficulty_score", 0))
+			var old_proof := int(authored_metrics.get("proof_moves", 0))
+			if structural_floor < old_floor + 2 or score < old_score + 4 or candidate_solution.size() < old_proof + 2:
+				continue
+			var best_floor := int((best.get("metadata", {}) as Dictionary).get("unavoidable_pours_lower_bound", -1))
+			if best.is_empty() or structural_floor > best_floor or (structural_floor == best_floor and error < best_error):
+				best_error = error
+				best_score = score
+				best = candidate.duplicate(true)
+				best["metadata"] = metrics.duplicate(true)
+		elif best.is_empty() or error < best_error or (error == best_error and score > best_score):
+			# Normal non-authored levels preserve their deterministic selection
+			# path; this release does not silently rewrite saved campaign boards.
 			best_error = error
 			best_score = score
 			best = candidate.duplicate(true)
 			best["metadata"] = metrics.duplicate(true)
+
+	if best.is_empty() and not weak_curated.is_empty():
+		# Candidate search failed the real difficulty gate: keep the verified
+		# authored puzzle rather than constructing an easy or duplicated filler.
+		generation_meta = authored_metrics.duplicate(true)
+		return weak_curated
 
 	if best.is_empty():
 		# Preserve the profile's exact workspace pressure. Falling back to the
@@ -269,12 +292,15 @@ func generate_tubes_with_solution(seed_value: int, colors: int) -> Dictionary:
 		var baseline_moves := int(authored_metrics.get("proof_moves", 0))
 		var candidate_score := int(generation_meta.get("difficulty_score", 0))
 		var candidate_moves := int(generation_meta.get("proof_moves", 0))
-		if candidate_score < baseline_score + 4 or candidate_moves < baseline_moves + 2:
+		var baseline_floor := int(authored_metrics.get("unavoidable_pours_lower_bound", 0))
+		var candidate_floor := int(generation_meta.get("unavoidable_pours_lower_bound", 0))
+		if candidate_score < baseline_score + 4 or candidate_moves < baseline_moves + 2 or candidate_floor < baseline_floor + 2:
 			generation_meta = authored_metrics.duplicate(true)
 			return weak_curated
 		generation_meta["source"] = "verified_challenge_remaster"
 		generation_meta["replaced_curated_score"] = baseline_score
 		generation_meta["replaced_curated_proof_moves"] = baseline_moves
+		generation_meta["replaced_curated_lower_bound"] = baseline_floor
 		best["metadata"] = generation_meta.duplicate(true)
 	return best
 
