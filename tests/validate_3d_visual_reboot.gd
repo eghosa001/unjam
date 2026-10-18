@@ -11,7 +11,7 @@ func _initialize() -> void:
 	_check("res://scripts/game/water_sort_casual.gd", ["FigmaWater390x844", "GameplayStage", "WaterHintAction"], failures)
 	_check("res://scripts/ui/water_tube_3d_motion.gd", ["extends \"res://scripts/ui/water_tube_reference_motion.gd\"", "func set_pour_progress"], failures)
 	_check("res://scripts/game/block_puzzle_3d.gd", ["FigmaBlock390x844", "BlockBoardShell", "BlockPieceRow"], failures)
-	_check("res://scripts/ui/block_cell_button.gd", ["Empty cells intentionally recede", "Saturated two-tone 2D material"], failures)
+	_check("res://scripts/ui/block_cell_button.gd", ["Empty cells intentionally recede", "draw_colored_polygon(upper", "draw_colored_polygon(lower", "draw_colored_polygon(side"], failures)
 	for path in ["res://scripts/ui/rescue_token.gd", "res://scripts/ui/water_tube_3d_motion.gd"]:
 		var source := _read(path)
 		for forbidden in ["SubViewport", "Camera3D", "MeshInstance3D"]:
