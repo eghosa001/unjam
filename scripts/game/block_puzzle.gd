@@ -703,7 +703,7 @@ func complete_level() -> void:
 		"SCORE %d   •   %d LINES\n%d PLACEMENTS   •   +%d COINS" % [score, lines_cleared, placements, displayed_reward],
 		stars,
 		Color("ff665e"),
-		"BACK HOME" if daily_mode else "NEXT PUZZLE"
+		"BACK TO DAILY" if daily_mode else "NEXT PUZZLE"
 	)
 	var claim_id := "daily:block_puzzle:%s" % DailyChallenge.date_key() if daily_mode else "campaign:block_puzzle:%d" % level_number
 	if base_reward > 0 and not EconomyManager.reward_double_claimed(claim_id):
