@@ -37,7 +37,19 @@ func _run() -> void:
 	if daily_progress == null or not daily_progress.accessibility_name.contains("3 daily challenges"):
 		return _fail("Daily progress does not announce the current completion count")
 
-	# A completed Daily should visibly say DONE without making other games
+	# Daily results must identify the actual return destination. Both games
+	# call _return_from_daily, so "BACK HOME" was a misleading promise.
+	for game_script in ["res://scripts/game/water_sort_10000.gd", "res://scripts/game/block_puzzle.gd"]:
+		var source := FileAccess.get_file_as_string(game_script)
+		if not source.contains('"BACK TO DAILY" if daily_mode else "NEXT PUZZLE"'):
+			return _fail("Daily win result misleadingly names Home rather than Daily: %s" % game_script)
+	var block_failure := FileAccess.get_file_as_string("res://scripts/game/block_puzzle_10000.gd")
+	if not block_failure.contains('result.configure_game_identity("block_puzzle")'):
+		return _fail("Block failure screen must explicitly declare its game artwork")
+	if not block_failure.contains('"BACK TO DAILY" if daily_mode else "BACK TO LEVELS"'):
+		return _fail("Block Daily failure exit must match its actual destination")
+
+		# A completed Daily should visibly say DONE without making other games
 	# unplayable. Exercise the actual saved multi-game daily state.
 	var save := root.get_node("SaveManager")
 	var original: Dictionary = save.data.duplicate(true)
