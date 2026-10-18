@@ -41,8 +41,11 @@ func _run() -> void:
 	var resume := home.find_child("HomeResumeAction",true,false) as Button
 	if resume == null or not _same(resume,Rect2(237,227,114,54)):
 		return _fail("Home must provide a distinct, convenient resume action")
-	if not resume.text.begins_with("▶") or not resume.accessibility_name.begins_with("Play "):
-		return _fail("Quick Play must name its target for TalkBack and explain its action")
+	var active_id := String(main.get("selected_game_id"))
+	var unfinished: Dictionary = main.call("_checkpoint_for",active_id)
+	var action_verb := "Resume" if not unfinished.is_empty() else "Play"
+	if not resume.text.begins_with("▶") or not resume.accessibility_name.begins_with(action_verb):
+		return _fail("Home CTA must announce actual %s checkpoint state for TalkBack" % action_verb)
 	if resume.action_mode != BaseButton.ACTION_MODE_BUTTON_RELEASE or resume.pressed.get_connections().is_empty():
 		return _fail("Home resume must be release-triggered and actually navigable")
 	var showcase_heading := home.find_child("HomeShowcaseTitle",true,false) as Label
