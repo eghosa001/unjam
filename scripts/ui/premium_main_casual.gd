@@ -1221,7 +1221,7 @@ func build_settings() -> void:
 	language_button.accessibility_name = language_button.tooltip_text
 
 	_figma_solid_card(canvas,"HelpPrivacy",Rect2(17,582,354,79),card_fill,card_border,18)
-	_figma_text(canvas,"HELP & PRIVACY",Rect2(33,586,184,18),15,heading_color)
+	_figma_text(canvas,"HELP & PRIVACY",Rect2(33,583,184,18),15,heading_color)
 	var utility_fill := Color("#2d2e31") if dark_mode else Color("#ebe7df")
 	var utility_border := Color("#44474c") if dark_mode else Color("#cbc6bc")
 	var utility_text := FIGMA_DARK_INK if dark_mode else FIGMA_NAVY
@@ -1248,7 +1248,7 @@ func build_settings() -> void:
 	canvas.add_child(privacy)
 
 	_figma_settings_card(canvas,"SettingsCard/Purchases",Rect2(17,667,354,79),card_fill,card_border,dark_mode)
-	_figma_text(canvas,"ACCOUNT & PURCHASES",Rect2(33,671,250,18),15,heading_color)
+	_figma_text(canvas,"ACCOUNT & PURCHASES",Rect2(33,669,250,18),15,heading_color)
 	var purchases := FigmaReferenceCanvas.premium_button("SHOP & RESTORE",13,utility_text,utility_fill,14,utility_border,1.2)
 	purchases.name = "SettingsPurchases"
 	purchases.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
