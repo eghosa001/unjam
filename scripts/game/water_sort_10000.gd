@@ -166,6 +166,8 @@ func _play_premium_concurrent_pour(source_values: Array, target_values: Array, f
 func generate_tubes_with_solution(seed_value: int, colors: int) -> Dictionary:
 	var p := Progression.profile(level_number)
 	var authored := CuratedCatalog.level(level_number)
+	var weak_curated: Dictionary = {}
+	var authored_metrics: Dictionary = {}
 	if not authored.is_empty():
 		var authored_tubes: Array = authored.get("tubes", [])
 		var authored_solution: Array = authored.get("solution", [])
@@ -181,7 +183,14 @@ func generate_tubes_with_solution(seed_value: int, colors: int) -> Dictionary:
 		generation_meta["milestone"] = String(p.get("milestone", "normal"))
 		generation_meta["challenge_archetype"] = String(p.get("challenge_archetype", ""))
 		authored["metadata"] = generation_meta.duplicate(true)
-		return authored
+		# Catalog proofs guarantee solvability, but some post-100 boards have
+		# only 3-5 pours and five fully sorted bottles. Preserve strong
+		# curated designs; remaster weak boards through the already verified
+		# deterministic constructive generator only when genuinely stronger.
+		if not _needs_curated_challenge_remaster(level_number, authored_tubes, authored_solution.size(), p):
+			return authored
+		weak_curated = authored.duplicate(true)
+		authored_metrics = generation_meta.duplicate(true)
 	# Most opening boards are deliberately authored for visual novelty. Level 7
 	# intentionally falls through to the constructive generator because it is the
 	# first five-colour pressure step and must follow the live profile exactly.
@@ -252,7 +261,43 @@ func generate_tubes_with_solution(seed_value: int, colors: int) -> Dictionary:
 	generation_meta["generator_version"] = int(p.get("generator_version", 1))
 	generation_meta["milestone"] = String(p.get("milestone", "normal"))
 	generation_meta["challenge_archetype"] = archetype
+	if not weak_curated.is_empty():
+		# Never replace a proven level with a shorter or less complex puzzle.
+		# The old board remains a safe, deterministic fallback if the remaster
+		# generator cannot reach a meaningful quality improvement on device.
+		var baseline_score := int(authored_metrics.get("difficulty_score", 0))
+		var baseline_moves := int(authored_metrics.get("proof_moves", 0))
+		var candidate_score := int(generation_meta.get("difficulty_score", 0))
+		var candidate_moves := int(generation_meta.get("proof_moves", 0))
+		if candidate_score < baseline_score + 4 or candidate_moves < baseline_moves + 2:
+			generation_meta = authored_metrics.duplicate(true)
+			return weak_curated
+		generation_meta["source"] = "verified_challenge_remaster"
+		generation_meta["replaced_curated_score"] = baseline_score
+		generation_meta["replaced_curated_proof_moves"] = baseline_moves
+		best["metadata"] = generation_meta.duplicate(true)
 	return best
+
+static func _needs_curated_challenge_remaster(level: int, tubes: Array, proof_moves: int, profile: Dictionary) -> bool:
+	# Skip tutorial and opening mastery boards, which are deliberately brief.
+	if level <= 100 or tubes.is_empty():
+		return false
+	var solved_tubes := 0
+	var color_count := maxi(1, int(profile.get("colors", 3)))
+	for raw_tube in tubes:
+		var tube: Array = raw_tube
+		if tube.size() != CAPACITY:
+			continue
+		var uniform := true
+		for color in tube:
+			if int(color) != int(tube[0]):
+				uniform = false
+				break
+		if uniform:
+			solved_tubes += 1
+	# Strong boards do not need to change. The threshold catches both tiny
+	# solution proofs and boards that start largely completed.
+	return proof_moves < maxi(12, color_count * 2) or solved_tubes >= maxi(3, ceili(float(color_count) * 0.40))
 
 func _archetype_penalty(metrics: Dictionary, archetype: String, colors: int) -> int:
 	match archetype:
