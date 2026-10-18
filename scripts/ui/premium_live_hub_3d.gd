@@ -243,7 +243,7 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 	RefCanvas.set_rect(play, 133, rect.position.y + 97, 93, 48)
 	RefCanvas.fit_single_line_text(play, 80.0, 14, 13)
 	play.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
-	play.accessibility_name = "Resume %s gameplay at the current level" % title.capitalize()
+	play.accessibility_name = "Play or resume %s gameplay at the current level" % title.capitalize()
 	play.pressed.connect(_play.bind(game_id))
 	canvas.add_child(play)
 
