@@ -2251,7 +2251,7 @@ func _build_figma_level_browser(game_id: String) -> void:
 	var current_level := _highest_level_for_game(game_id)
 	# Five rows of 20 tiles must leave the progress panel above the Home
 	# gesture/bottom screen boundary even with Block's extra mode row.
-	var row_stride := 72.0 if game_id == "block_puzzle" else 80.0
+	var row_stride := 70.0 if game_id == "block_puzzle" else 78.0
 	var tile_height := 64.0 if game_id == "block_puzzle" else 70.0
 	var index := 0
 	for level_number in range(bounds.x,bounds.y+1):
