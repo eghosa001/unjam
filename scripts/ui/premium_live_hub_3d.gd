@@ -161,7 +161,7 @@ func _build_reference_selector(canvas: Control) -> void:
 	settings.pressed.connect(func(): get_parent().call("build_settings"))
 	canvas.add_child(settings)
 
-	var guide := _add_text(canvas, "TAP CARD: LEVELS  •  PLAY: RESUME", Rect2(25, 78, 340, 22), 13, DARK_MUTED if _selector_dark() else MUTED, false)
+	var guide := _add_text(canvas, "CARD: LEVELS  •  PLAY / RESUME: START", Rect2(25, 78, 340, 22), 13, DARK_MUTED if _selector_dark() else MUTED, false)
 	guide.name = "SelectorActionGuide"
 	guide.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
