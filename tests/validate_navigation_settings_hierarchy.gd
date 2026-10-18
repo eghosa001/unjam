@@ -90,7 +90,7 @@ func _run() -> void:
 	shell.call("_handle_back")
 	await _frames(5)
 	if String(main.get("current_surface")) != "daily":
-		return _fail("System Back from Settings did not restore Daily Games")
+		return _fail("System Back from Settings did not restore Daily Games: surface=%s origin=%s tutorial=%s" % [String(main.get("current_surface")),String(main.get("_settings_return_surface")),str(shell.get("tutorial_panel") != null and shell.get("tutorial_panel").visible)])
 	main.queue_free()
 	await _frames(2)
 	print("UNJAM_NAVIGATION_SETTINGS_HIERARCHY_OK")
