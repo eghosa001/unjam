@@ -161,7 +161,7 @@ func _build_reference_selector(canvas: Control) -> void:
 	settings.pressed.connect(func(): get_parent().call("build_settings"))
 	canvas.add_child(settings)
 
-	var guide := _add_text(canvas, "TAP CARD: LEVELS  •  PLAY: RESUME", Rect2(25, 78, 340, 22), 13, DARK_MUTED if _selector_dark() else MUTED, false)
+	var guide := _add_text(canvas, "CARD: LEVELS  •  PLAY / RESUME: START", Rect2(25, 78, 340, 22), 13, DARK_MUTED if _selector_dark() else MUTED, false)
 	guide.name = "SelectorActionGuide"
 	guide.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
@@ -237,13 +237,20 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 	tap.set_deferred("action_mode", BaseButton.ACTION_MODE_BUTTON_RELEASE)
 	tap.set_meta("unjam_authored_focus_mode", int(Control.FOCUS_ALL))
 
-	var play := RefCanvas.premium_button("PLAY  ▶", 14, OFF_WHITE, accent.darkened(0.18), 13, Color(accent.r, accent.g, accent.b, 0.54), 1)
+	# PLAY must launch a puzzle; RESUME must represent an actual unfinished
+	# campaign checkpoint. A higher unlocked level does NOT imply an active run.
+	var main := get_parent()
+	var checkpoint: Dictionary = main.call("_checkpoint_for",game_id) if main != null and main.has_method("_checkpoint_for") else {}
+	var unfinished := not checkpoint.is_empty()
+	var action_level := int(checkpoint.get("level",level)) if unfinished else level
+	var play_caption := "RESUME ▶" if unfinished else "PLAY ▶"
+	var play := RefCanvas.premium_button(play_caption, 14, OFF_WHITE, accent.darkened(0.18), 13, Color(accent.r, accent.g, accent.b, 0.54), 1)
 	play.name = "SelectorPlay_%s" % game_id
-	play.tooltip_text = "Play %s" % title.capitalize()
 	RefCanvas.set_rect(play, 133, rect.position.y + 97, 93, 48)
-	RefCanvas.fit_single_line_text(play, 80.0, 14, 13)
+	RefCanvas.fit_single_line_text(play, 80.0, 14, 12)
 	play.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
-	play.accessibility_name = "Play or resume %s gameplay at the current level" % title.capitalize()
+	play.accessibility_name = "%s %s level %d" % ["Resume" if unfinished else "Play",title.capitalize(),action_level]
+	play.tooltip_text = play.accessibility_name
 	play.pressed.connect(_play.bind(game_id))
 	canvas.add_child(play)
 
