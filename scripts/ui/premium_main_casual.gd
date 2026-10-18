@@ -1225,7 +1225,7 @@ func build_settings() -> void:
 	var utility_fill := Color("#2d2e31") if dark_mode else Color("#ebe7df")
 	var utility_border := Color("#44474c") if dark_mode else Color("#cbc6bc")
 	var utility_text := FIGMA_DARK_INK if dark_mode else FIGMA_NAVY
-	var how_to := FigmaReferenceCanvas.premium_button("HOW TO PLAY",14,utility_text,utility_fill,14,utility_border,1.2)
+	var how_to := FigmaReferenceCanvas.premium_button("HOW TO PLAY",15,utility_text,utility_fill,14,utility_border,1.2)
 	how_to.name = "SettingsHowToPlay"
 	FigmaReferenceCanvas.set_rect(how_to,33,607,126,46)
 	how_to.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
@@ -1239,7 +1239,7 @@ func build_settings() -> void:
 	help_game.pressed.connect(_cycle_settings_help_game.bind(help_game))
 	help_game.accessibility_name = "Tutorial game: %s. Tap to change game" % _settings_help_game_label().replace(" ›","").capitalize()
 	canvas.add_child(help_game)
-	var privacy := FigmaReferenceCanvas.premium_button("PRIVACY",14,utility_text,utility_fill,14,utility_border,1.2)
+	var privacy := FigmaReferenceCanvas.premium_button("PRIVACY",15,utility_text,utility_fill,14,utility_border,1.2)
 	privacy.name = "SettingsPrivacy"
 	FigmaReferenceCanvas.set_rect(privacy,265,607,86,46)
 	privacy.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
