@@ -74,6 +74,16 @@ static func profile(raw_level: int) -> Dictionary:
 		var early_score_base: int = roundi(lerpf(50.0, 55.0, early_progress))
 		var early_score_bonus: int = int([0, 2, 4, 6, 8, 10][clampi(rank, 0, 5)])
 		target_score = clampi(early_score_base + early_score_bonus, 50, int(score_band[1]))
+	elif level <= 150:
+		# The old first-world bands restarted at six moves after level 100.
+		# Keep recovery levels gentler, but never send an experienced player
+		# back to a near-tutorial six-pour board at the next checkpoint.
+		var bridge_progress := float(level - 101) / 49.0
+		var bridge_moves := roundi(lerpf(26.0, 32.0, bridge_progress))
+		var bridge_bonus: int = int([0, 1, 2, 3, 4, 5][clampi(rank, 0, 5)])
+		target_moves = maxi(target_moves, bridge_moves + bridge_bonus)
+		var bridge_score := roundi(lerpf(48.0, 52.0, bridge_progress))
+		target_score = maxi(target_score, mini(int(score_band[1]), bridge_score + bridge_bonus))
 
 	if level == MAX_LEVEL:
 		target_score = 98
