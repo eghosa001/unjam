@@ -213,7 +213,7 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 	var level_label := _add_text(canvas, "LEVEL %d" % level, Rect2(34, rect.position.y + 108, 104, 24), 13, DARK_MUTED if _selector_dark() else MUTED, true)
 	level_label.name = "SelectorLevelLabel_%s" % game_id
 	level_label.accessibility_name = "%s campaign, current level %d" % [title.capitalize(), level]
-	var browse_cue := _add_text(canvas, "BROWSE LEVELS  ›", Rect2(34, rect.position.y + 134, 180, 20), 13, accent.lightened(0.42) if _selector_dark() else accent.darkened(0.43), true)
+	var browse_cue := _add_text(canvas, "LEVELS  ›", Rect2(34, rect.position.y + 134, 90, 20), 13, accent.lightened(0.42) if _selector_dark() else accent.darkened(0.43), true)
 	browse_cue.name = "SelectorBrowseCue_%s" % game_id
 	_add_card_preview(canvas, game_id, rect.position.y)
 
@@ -240,8 +240,8 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 	var play := RefCanvas.premium_button("PLAY  ▶", 14, OFF_WHITE, accent.darkened(0.18), 13, Color(accent.r, accent.g, accent.b, 0.54), 1)
 	play.name = "SelectorPlay_%s" % game_id
 	play.tooltip_text = "Play %s" % title.capitalize()
-	RefCanvas.set_rect(play, 127, rect.position.y + 97, 99, 48)
-	RefCanvas.fit_single_line_text(play, 86.0, 14, 13)
+	RefCanvas.set_rect(play, 133, rect.position.y + 97, 93, 48)
+	RefCanvas.fit_single_line_text(play, 80.0, 14, 13)
 	play.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 	play.accessibility_name = "Resume %s gameplay at the current level" % title.capitalize()
 	play.pressed.connect(_play.bind(game_id))
