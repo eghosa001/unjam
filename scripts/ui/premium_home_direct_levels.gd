@@ -525,18 +525,18 @@ func _add_rank_summary(canvas: Control) -> void:
 		12,DARK_MUTED if dark else Color("#424a59"),true)
 	daily_tag.name = "HomeRankDailyLabel"
 	var daily_rank := _add_text(canvas,"—",Rect2(38,585,135,25),
-		21,GOLD if dark else Color("#714e12"),true)
+		19,GOLD if dark else Color("#714e12"),true)
 	daily_rank.name = "HomeRankDailyValue"
-	var daily_hint := _add_text(canvas,"PLAY TO JOIN",Rect2(38,612,140,18),
+	var daily_hint := _add_text(canvas,"PLAY TO JOIN",Rect2(38,618,140,17),
 		13,DARK_MUTED if dark else Color("#424a59"),false)
 	daily_hint.name = "HomeRankDailyHint"
 	var weekly_tag := _add_text(canvas,"BEST WEEKLY",Rect2(200,568,145,17),
 		12,DARK_MUTED if dark else Color("#424a59"),true)
 	weekly_tag.name = "HomeRankWeeklyLabel"
 	var weekly_rank := _add_text(canvas,"—",Rect2(200,585,135,25),
-		21,GOLD if dark else Color("#714e12"),true)
+		19,GOLD if dark else Color("#714e12"),true)
 	weekly_rank.name = "HomeRankValue"
-	var weekly_hint := _add_text(canvas,"PLAY TO JOIN",Rect2(200,612,144,18),
+	var weekly_hint := _add_text(canvas,"PLAY TO JOIN",Rect2(200,618,144,17),
 		13,DARK_MUTED if dark else Color("#424a59"),false)
 	weekly_hint.name = "HomeRankWeeklyHint"
 	var open := _add_action(canvas,Rect2(244,524,108,44),Color("#7757cf"),
@@ -546,7 +546,7 @@ func _add_rank_summary(canvas: Control) -> void:
 	# three-line ranking block. Without these exact bounds, oversized rank
 	# font metrics spill into the next band on 432px Android phones.
 	for bounded in [daily_tag,daily_rank,daily_hint,weekly_tag,weekly_rank,weekly_hint]:
-		var authored_height := 17.0 if bounded in [daily_tag,weekly_tag] else (25.0 if bounded in [daily_rank,weekly_rank] else 18.0)
+		var authored_height := 17.0 if bounded in [daily_tag,weekly_tag,daily_hint,weekly_hint] else 25.0
 		bounded.custom_minimum_size = Vector2.ZERO
 		bounded.size = Vector2(bounded.size.x, authored_height)
 		bounded.clip_text = true
