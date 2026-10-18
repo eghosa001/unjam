@@ -342,12 +342,16 @@ func _add_hero(canvas: Control) -> void:
 	primary_button = choose
 	var quick_id := _home_resume_game_id()
 	var quick_level := _home_current_level(quick_id)
+	var main := get_parent()
+	var saved: Dictionary = main.call("_checkpoint_for",quick_id) if main != null and main.has_method("_checkpoint_for") else {}
+	var resumable := not saved.is_empty()
+	var target_level := int(saved.get("level",quick_level))
 	var resume := _add_action(canvas,Rect2(237,227,114,54),
 		Color("#315c51") if dark else Color("#23734f"),
-		"▶ RESUME" if quick_level > 1 else "▶ PLAY",14,OFF_WHITE,Callable(self,"_continue_selected_game"),17)
+		"▶ RESUME" if resumable else "▶ PLAY",14,OFF_WHITE,Callable(self,"_continue_selected_game"),17)
 	resume.name = "HomeResumeAction"
 	resume.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
-	resume.accessibility_name = "Play %s level %d" % [MultiGameManager.display_name(quick_id),quick_level]
+	resume.accessibility_name = "%s %s level %d" % ["Resume" if resumable else "Play",MultiGameManager.display_name(quick_id),target_level]
 	resume.tooltip_text = resume.accessibility_name
 
 func _add_game_showcase(canvas: Control) -> void:
@@ -919,11 +923,17 @@ func _continue_selected_game() -> void:
 		return
 	var game_id := _home_resume_game_id()
 	FeedbackManager.tap()
+	# Restore a real unfinished campaign checkpoint rather than discarding
+	# its piece/bottle/arrow state. New runs launch the highest unlocked level.
+	var checkpoint: Dictionary = main.call("_checkpoint_for",game_id) if main.has_method("_checkpoint_for") else {}
+	if not checkpoint.is_empty() and main.has_method("resume_game"):
+		main.call("resume_game",game_id)
+		return
 	var level := _home_current_level(game_id)
 	if game_id == "rescue_rush":
-		main.call("start_level", level)
+		main.call("start_level",level)
 	else:
-		main.call("start_multi_level", game_id, level, false)
+		main.call("start_multi_level",game_id,level,false)
 
 func _open_game_levels(game_id: String) -> void:
 	# Jump directly to the campaign level browser for the tapped puzzle.
