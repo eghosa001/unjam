@@ -2208,15 +2208,15 @@ func _build_figma_level_browser(game_id: String) -> void:
 	var bounds := _multi_page_bounds(game_id,selected_multi_world,selected_multi_page)
 	var world_name := MultiGameManager.world_name(game_id,selected_multi_world).to_upper()
 	_figma_card(canvas,"JourneyHero",Rect2(17,149,354,74),Color("#fffaf0"),Color(accent,0.30),15)
-	var world_heading := _figma_text(canvas,world_name,Rect2(35,154,220,25),20,accent)
+	var world_heading := _figma_text(canvas,world_name,Rect2(35,144,220,25),20,accent)
 	world_heading.name = "LevelWorldName"
 	world_heading.clip_text = true
 	_fit_single_line_control_text(world_heading,215.0,20,14)
-	var range_label := _figma_text(canvas,"LEVELS %d–%d" % [bounds.x,bounds.y],Rect2(35,186,218,19),14,FIGMA_MUTED)
+	var range_label := _figma_text(canvas,"LEVELS %d–%d" % [bounds.x,bounds.y],Rect2(35,173,218,19),14,FIGMA_MUTED)
 	range_label.name = "LevelWorldRange"
 	var active_level := _highest_level_for_game(game_id)
 	var play_current := _figma_button(canvas,"LevelPlayCurrent","▶ PLAY",
-		Rect2(268,163,87,48),accent,Callable(self,"_play_current_campaign_level").bind(game_id),FIGMA_OFF_WHITE,14,14)
+		Rect2(268,146,87,48),accent,Callable(self,"_play_current_campaign_level").bind(game_id),FIGMA_OFF_WHITE,14,14)
 	play_current.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 	play_current.accessibility_name = "Play %s level %d" % [title.capitalize(),active_level]
 	play_current.tooltip_text = "Start or resume %s level %d" % [title.capitalize(),active_level]
