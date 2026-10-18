@@ -165,9 +165,9 @@ func _build_reference_selector(canvas: Control) -> void:
 	guide.name = "SelectorActionGuide"
 	guide.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
-	_add_game_card(canvas, "rescue_rush", Rect2(17, 111, 354, 160), Color("#21c763"), Color("#49d17f"), "RESCUE RUSH", "Plan routes. Free every piece.")
-	_add_game_card(canvas, "water_sort", Rect2(17, 285, 354, 160), Color("#1aa8ff"), Color("#43b8ff"), "WATER SORT", "Sort colours. Plan every pour.")
-	_add_game_card(canvas, "block_puzzle", Rect2(17, 459, 354, 160), Color("#c73dff"), Color("#d160ff"), "BLOCK PUZZLE", "Place shapes. Build clear lines.")
+	_add_game_card(canvas, "rescue_rush", Rect2(17, 111, 354, 160), Color("#21c763"), Color("#49d17f"), "RESCUE RUSH", "Free the trapped arrows")
+	_add_game_card(canvas, "water_sort", Rect2(17, 285, 354, 160), Color("#1aa8ff"), Color("#43b8ff"), "WATER SORT", "Plan each colour pour")
+	_add_game_card(canvas, "block_puzzle", Rect2(17, 459, 354, 160), Color("#c73dff"), Color("#d160ff"), "BLOCK PUZZLE", "Fit shapes, clear rows")
 	_add_bottom_nav(canvas)
 
 func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color, highlight: Color, title: String, subtitle: String) -> void:
@@ -210,7 +210,7 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 	subtitle_clip.add_child(game_subtitle)
 
 	var level := maxi(1, MultiGameManager.highest_level(game_id))
-	var level_label := _add_text(canvas, "LEVEL %d" % level, Rect2(34, rect.position.y + 108, 104, 24), 13, DARK_MUTED if _selector_dark() else MUTED, true)
+	var level_label := _add_text(canvas, "LEVEL %d" % level, Rect2(34, rect.position.y + 108, 93, 24), 13, DARK_MUTED if _selector_dark() else MUTED, true)
 	level_label.name = "SelectorLevelLabel_%s" % game_id
 	level_label.accessibility_name = "%s campaign, current level %d" % [title.capitalize(), level]
 	var browse_cue := _add_text(canvas, "LEVELS  ›", Rect2(34, rect.position.y + 134, 90, 20), 13, accent.lightened(0.42) if _selector_dark() else accent.darkened(0.43), true)
