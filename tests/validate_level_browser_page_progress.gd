@@ -47,7 +47,7 @@ func _check_page(app: Control, game_id: String) -> bool:
 	if world_name.get_global_rect().intersects(play.get_global_rect()):
 		print("Play action overlaps current world title")
 		return false
-	if not play.pressed.get_connections().size() == 1:
+	if play.pressed.get_connections().size() != 1:
 		print("Level Play has ambiguous or missing callback")
 		return false
 	var panel := app.find_child("LevelPageProgressCard",true,false) as Control
@@ -95,13 +95,13 @@ func _check_page(app: Control, game_id: String) -> bool:
 	# The numbered tile names are sanitized by Godot because '/' is not a
 	# legal Node name; derive the final authored tile's end from grid geometry.
 	var grid_y := 308.0 if game_id == "block_puzzle" else 269.0
-	var stride := 72.0 if game_id == "block_puzzle" else 80.0
+	var stride := 70.0 if game_id == "block_puzzle" else 78.0
 	var tile_height := 64.0 if game_id == "block_puzzle" else 70.0
 	var bottom_of_tiles := grid_y+float(int((total-1)/4))*stride+tile_height
 	if panel.position.y < bottom_of_tiles+8.0:
 		print("Page progress overlaps the final level tile: ",panel.position.y," vs ",bottom_of_tiles)
 		return false
-	if panel.position.y+panel.size.y > 757.0:
+	if panel.position.y+panel.size.y > 750.0:
 		print("Page progress collides with bottom gesture/navigation zone: ",panel.position.y+panel.size.y)
 		return false
 	return true
