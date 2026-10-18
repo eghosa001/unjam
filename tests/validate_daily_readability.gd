@@ -33,6 +33,14 @@ func _run() -> void:
 		if play.accessibility_name.is_empty():
 			return _fail("Daily play action is inaccessible for %s" % game_id)
 
+	var next_label := main.find_child("DailyProgressNext",true,false) as Label
+	if next_label == null or next_label.get_theme_font_size("font_size") < 13 or next_label.accessibility_name.is_empty():
+		return _fail("Daily page must clearly identify what to play next")
+	if next_label.get_global_rect().intersects((main.find_child("DailyProgressCount",true,false) as Control).get_global_rect()):
+		return _fail("Next Daily puzzle cue overlaps the completion count")
+	if next_label.text.is_empty() or not next_label.text.begins_with("NEXT: ") and next_label.text != "ALL DONE TODAY":
+		return _fail("Daily next-step guidance is misleading")
+
 	var daily_progress := main.find_child("DailyProgressBar", true, false) as ProgressBar
 	if daily_progress == null or not daily_progress.accessibility_name.contains("3 daily challenges"):
 		return _fail("Daily progress does not announce the current completion count")
@@ -66,6 +74,11 @@ func _run() -> void:
 		return _fail("Completed Water Daily does not have an accessible description")
 	if (ready_rescue != null and ready_rescue.disabled) or (ready_block != null and ready_block.disabled):
 		return _fail("Completed Water Daily disabled another game's challenge")
+	var updated_next := main.find_child("DailyProgressNext",true,false) as Label
+	if updated_next == null or updated_next.text == "NEXT: WATER":
+		return _fail("Daily progress still directs players to completed Water puzzle")
+	if updated_next.accessibility_name.is_empty():
+		return _fail("Daily next-step cue lost its TalkBack explanation")
 	save.data = original
 	save.save()
 	main.call("build_daily_games")
