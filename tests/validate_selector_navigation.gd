@@ -100,14 +100,32 @@ func _run() -> void:
 			return _fail("Selector actions must activate on finger release: %s" % game_id)
 		if card_hit.focus_mode != Control.FOCUS_ALL or not card_hit.accessibility_name.contains("levels"):
 			return _fail("Selector browse card cannot be used accessibly: %s" % game_id)
-		if play_action.accessibility_name.is_empty() or not play_action.accessibility_name.contains("resume"):
-			return _fail("Selector PLAY action does not explain resume: %s" % game_id)
+		var saved: Dictionary = main.call("_checkpoint_for",game_id)
+		var expected_verb := "RESUME" if not saved.is_empty() else "PLAY"
+		if play_action.accessibility_name.is_empty() or not play_action.accessibility_name.to_upper().begins_with(expected_verb):
+			return _fail("Selector %s action misrepresents checkpoint state: %s" % [game_id, expected_verb])
+		if not play_action.text.begins_with(expected_verb):
+			return _fail("Selector visible CTA does not match saved progress: %s" % game_id)
 		card_hit.pressed.emit()
 		await _frames(4)
 		if String(main.get("current_surface")) != "levels" or String(main.get("selected_game_id")) != game_id:
 			return _fail("Selector card did not open matching level browser: %s" % game_id)
 		if main.get("active_game") != null:
 			return _fail("Selector card unexpectedly started live gameplay: %s" % game_id)
+
+	# PLAY/RESUME now starts gameplay instead of silently returning a player
+	# without an unfinished checkpoint to the same level browser.
+	main.call("_open_games_surface")
+	await _frames(4)
+	var actual_play := _find(main,"SelectorPlay_water_sort") as Button
+	if actual_play == null:
+		return _fail("Water Sort Play control missing")
+	actual_play.pressed.emit()
+	await _frames(2)
+	if String(main.get("current_surface")) not in ["game", "game_loading"]:
+		return _fail("Selector PLAY failed to launch Water Sort gameplay")
+	main.call("_open_games_surface")
+	await _frames(3)
 
 	main.queue_free()
 	await process_frame
