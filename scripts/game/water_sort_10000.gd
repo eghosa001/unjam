@@ -187,7 +187,7 @@ func generate_tubes_with_solution(seed_value: int, colors: int) -> Dictionary:
 		# only 3-5 pours and five fully sorted bottles. Preserve strong
 		# curated designs; remaster weak boards through the already verified
 		# deterministic constructive generator only when genuinely stronger.
-		if not _needs_curated_challenge_remaster(level_number, authored_tubes, authored_solution.size(), p):
+		if not Progression.needs_curated_challenge_remaster(level_number, authored_tubes, authored_solution.size(), p):
 			return authored
 		weak_curated = authored.duplicate(true)
 		authored_metrics = generation_meta.duplicate(true)
@@ -277,27 +277,6 @@ func generate_tubes_with_solution(seed_value: int, colors: int) -> Dictionary:
 		generation_meta["replaced_curated_proof_moves"] = baseline_moves
 		best["metadata"] = generation_meta.duplicate(true)
 	return best
-
-static func _needs_curated_challenge_remaster(level: int, tubes: Array, proof_moves: int, profile: Dictionary) -> bool:
-	# Skip tutorial and opening mastery boards, which are deliberately brief.
-	if level <= 100 or tubes.is_empty():
-		return false
-	var solved_tubes := 0
-	var color_count := maxi(1, int(profile.get("colors", 3)))
-	for raw_tube in tubes:
-		var tube: Array = raw_tube
-		if tube.size() != CAPACITY:
-			continue
-		var uniform := true
-		for color in tube:
-			if int(color) != int(tube[0]):
-				uniform = false
-				break
-		if uniform:
-			solved_tubes += 1
-	# Strong boards do not need to change. The threshold catches both tiny
-	# solution proofs and boards that start largely completed.
-	return proof_moves < maxi(12, color_count * 2) or solved_tubes >= maxi(3, ceili(float(color_count) * 0.40))
 
 func _archetype_penalty(metrics: Dictionary, archetype: String, colors: int) -> int:
 	match archetype:
