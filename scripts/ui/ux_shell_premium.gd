@@ -392,6 +392,9 @@ func _handle_back() -> void:
 		leaderboard.call("close")
 		return
 	var surface := _current_surface()
+	if surface == "settings" and main.has_method("_return_from_settings"):
+		main.call("_return_from_settings")
+		return
 	if surface == "levels" and main.has_method("_open_games_surface"):
 		main.call("_open_games_surface")
 	elif surface in ["game", "game_loading"]:
