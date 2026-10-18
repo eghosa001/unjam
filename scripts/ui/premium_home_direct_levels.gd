@@ -429,6 +429,12 @@ func _add_game_showcase(canvas: Control) -> void:
 			12,DARK_MUTED if dark else Color("#42546a"),true)
 		level_hint.name = "HomeShowcaseLevel_%s" % id
 		level_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		# A Label's font-driven minimum can silently expand the authored 17px
+		# slot and spill below the card on compact Android displays.
+		level_hint.custom_minimum_size = Vector2.ZERO
+		level_hint.size = Vector2(100,17)
+		level_hint.clip_text = true
+		level_hint.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		level_hint.accessibility_name = "Current %s campaign level %d" % [String(game["name"]),_home_current_level(id)]
 
 		# Topmost transparent touch layer covers the entire image, name and
