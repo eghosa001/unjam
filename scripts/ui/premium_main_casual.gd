@@ -1447,6 +1447,7 @@ func _figma_daily_progress(canvas: Control) -> void:
 	next_step.clip_text = true
 	_fit_single_line_control_text(next_step,165.0,15,13)
 	var count := _figma_text(canvas, "%d / 3 COMPLETE" % done_count, Rect2(210,500,141,20), 13, FIGMA_MUTED, true)
+	count.name = "DailyProgressCount"
 	count.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var progress := ProgressBar.new()
 	progress.name = "DailyProgressBar"
