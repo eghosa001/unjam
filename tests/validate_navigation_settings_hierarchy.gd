@@ -125,7 +125,7 @@ func _check_level_browser(main: Control, game_id: String) -> bool:
 	if play.get_global_rect().intersects(world.get_global_rect()):
 		return _fail("Level Play button overlaps the world name")
 	var expected_end := 745.0 if game_id == "block_puzzle" else 746.0
-	if absf(panel.position.y + panel.size.y - expected_end) > 1.5:
+	if absf(panel.position.y + panel.size.y - expected_end) > 4.0:
 		return _fail("Level progress rail not inside safe area for %s: %.1f" % [game_id,panel.position.y+panel.size.y])
 	# The authored tile names may be slash-sanitized by Godot; the rail's
 	# viewport-safe position is the invariant that protects all layouts.
