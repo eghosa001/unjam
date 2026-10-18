@@ -336,7 +336,7 @@ func _apply_figma_block_theme(dark: bool) -> void:
 		))
 	var platform := find_child("BlockPerspectivePlatform", true, false) as Polygon2D
 	if platform != null:
-		platform.color = Color(0.32,0.18,0.44,0.20) if dark else Color(0.56,0.35,0.76,0.18)
+		platform.color = Color(0.32,0.18,0.44,0.09) if dark else Color(0.56,0.35,0.76,0.09)
 	var score_card := find_child("BlockScoreCard", true, false) as PanelContainer
 	if score_card != null:
 		score_card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(
