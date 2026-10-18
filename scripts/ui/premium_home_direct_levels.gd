@@ -355,7 +355,7 @@ func _add_game_showcase(canvas: Control) -> void:
 	# SELECT screen, never straight to gameplay. Retain the large Choose Game
 	# button as the primary launcher and the quiet low-cost illustrated strip.
 	var dark := _home_dark()
-	var header := _add_text(canvas,"CHOOSE YOUR CHALLENGE",Rect2(22,310,260,24),
+	var header := _add_text(canvas,"CHOOSE YOUR CHALLENGE",Rect2(22,310,252,24),
 		16,DARK_INK if dark else NAVY,true)
 	header.name = "HomeShowcaseTitle"
 	var note := _add_text(canvas,"LEVELS ›",Rect2(281,314,85,20),
@@ -521,27 +521,36 @@ func _add_rank_summary(canvas: Control) -> void:
 	var heading := _add_text(canvas,"YOUR RANKINGS",Rect2(37,529,199,22),
 		16,DARK_INK if dark else NAVY,true)
 	heading.name = "HomeRankTitle"
-	var daily_tag := _add_text(canvas,"TODAY",Rect2(38,569,140,16),
+	var daily_tag := _add_text(canvas,"TODAY",Rect2(38,568,140,17),
 		12,DARK_MUTED if dark else Color("#424a59"),true)
 	daily_tag.name = "HomeRankDailyLabel"
-	var daily_rank := _add_text(canvas,"—",Rect2(38,587,135,26),
-		24,GOLD if dark else Color("#714e12"),true)
+	var daily_rank := _add_text(canvas,"—",Rect2(38,585,135,25),
+		21,GOLD if dark else Color("#714e12"),true)
 	daily_rank.name = "HomeRankDailyValue"
-	var daily_hint := _add_text(canvas,"PLAY TO JOIN",Rect2(38,614,140,17),
+	var daily_hint := _add_text(canvas,"PLAY TO JOIN",Rect2(38,612,140,18),
 		13,DARK_MUTED if dark else Color("#424a59"),false)
 	daily_hint.name = "HomeRankDailyHint"
-	var weekly_tag := _add_text(canvas,"BEST WEEKLY",Rect2(200,569,145,16),
+	var weekly_tag := _add_text(canvas,"BEST WEEKLY",Rect2(200,568,145,17),
 		12,DARK_MUTED if dark else Color("#424a59"),true)
 	weekly_tag.name = "HomeRankWeeklyLabel"
-	var weekly_rank := _add_text(canvas,"—",Rect2(200,587,135,26),
-		24,GOLD if dark else Color("#714e12"),true)
+	var weekly_rank := _add_text(canvas,"—",Rect2(200,585,135,25),
+		21,GOLD if dark else Color("#714e12"),true)
 	weekly_rank.name = "HomeRankValue"
-	var weekly_hint := _add_text(canvas,"PLAY TO JOIN",Rect2(200,614,144,17),
+	var weekly_hint := _add_text(canvas,"PLAY TO JOIN",Rect2(200,612,144,18),
 		13,DARK_MUTED if dark else Color("#424a59"),false)
 	weekly_hint.name = "HomeRankWeeklyHint"
 	var open := _add_action(canvas,Rect2(244,524,108,44),Color("#7757cf"),
 		"LEADERBOARD",12,OFF_WHITE,Callable(self,"_open_compete"),13)
 	open.name = "HomeDailyGamesButton"
+	# Disable font-driven minimum expansion for labels sharing this compact
+	# three-line ranking block. Without these exact bounds, oversized rank
+	# font metrics spill into the next band on 432px Android phones.
+	for bounded in [daily_tag,daily_rank,daily_hint,weekly_tag,weekly_rank,weekly_hint]:
+		var authored_height := 17.0 if bounded in [daily_tag,weekly_tag] else (25.0 if bounded in [daily_rank,weekly_rank] else 18.0)
+		bounded.custom_minimum_size = Vector2.ZERO
+		bounded.size = Vector2(bounded.size.x, authored_height)
+		bounded.clip_text = true
+		bounded.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	open.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 	open.accessibility_name = "Open full-screen Today, Weekly and All-Time leaderboards"
 	open.tooltip_text = "Open full-screen Today, Weekly and All-Time player rankings"
