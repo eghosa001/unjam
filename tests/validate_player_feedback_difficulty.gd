@@ -5,7 +5,6 @@ extends SceneTree
 const Rescue = preload("res://scripts/core/campaign_generator.gd")
 const RescueProgression = preload("res://scripts/core/rescue_rush_progression.gd")
 const Solver = preload("res://scripts/core/puzzle_solver.gd")
-const Water = preload("res://scripts/game/water_sort_10000.gd")
 const WaterProgression = preload("res://scripts/core/water_sort_progression.gd")
 const WaterCatalog = preload("res://scripts/core/water_sort_curated_catalog.gd")
 const Block = preload("res://scripts/core/block_puzzle_progression.gd")
@@ -36,9 +35,9 @@ func _run() -> void:
 	var weak := WaterCatalog.level(103)
 	if early.is_empty() or weak.is_empty():
 		return _fail("Expected Water curated checkpoints unavailable")
-	if Water._needs_curated_challenge_remaster(100, early.get("tubes", []), (early.get("solution", []) as Array).size(), WaterProgression.profile(100)):
+	if WaterProgression.needs_curated_challenge_remaster(100, early.get("tubes", []), (early.get("solution", []) as Array).size(), WaterProgression.profile(100)):
 		return _fail("Water remaster changed deliberate first-100 campaign")
-	if not Water._needs_curated_challenge_remaster(103, weak.get("tubes", []), (weak.get("solution", []) as Array).size(), WaterProgression.profile(103)):
+	if not WaterProgression.needs_curated_challenge_remaster(103, weak.get("tubes", []), (weak.get("solution", []) as Array).size(), WaterProgression.profile(103)):
 		return _fail("Water failed to detect the trivial post-100 board")
 
 	var raw := BlockCatalog.recipe(50)
