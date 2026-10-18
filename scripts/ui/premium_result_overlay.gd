@@ -20,6 +20,9 @@ var _secondary_shadow: Control
 var _primary_button: Button
 var _primary_committed := false
 var _secondary_pending := false
+# Callers supply an explicit identity where result titles are generic, e.g.
+# "LEVEL FAILED". Never guess Rescue Rush branding from that title.
+var _game_identity_id := ""
 var _canvas: FigmaReferenceCanvas
 
 func _motion_reduced() -> bool:
@@ -59,6 +62,11 @@ func configure(title_value: String, subtitle_value: String, stats_value: String,
 	accent = color
 	button_text = action_text
 	badge_text = badge_value
+
+func configure_game_identity(game_id: String) -> void:
+	if game_id in ["rescue_rush", "water_sort", "block_puzzle"]:
+		_game_identity_id = game_id
+
 
 func configure_secondary(text_value: String, enabled: bool = true) -> void:
 	secondary_text = text_value
@@ -128,7 +136,8 @@ func _build() -> void:
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_canvas.add_child(card)
 
-	_add_victory_aura(dark)
+	if stars > 0:
+		_add_victory_aura(dark)
 
 	var title := FigmaReferenceCanvas.label(_result_display_title(), 27, Color("#eef7ff") if dark else Unjam3DTheme.NAVY, true)
 	title.name = "ResultTitle"
@@ -173,46 +182,57 @@ func _build() -> void:
 
 	_add_identity(_result_game_id())
 
-	for i in range(3):
-		var x := 62.0 + float(i) * 90.0
-		var star_card := PanelContainer.new()
-		star_card.name = "StarCard"
-		star_card.set_meta("result_star_index", i)
-		var earned := i < stars
-		star_card.accessibility_name = "Star %d of 3: %s" % [i + 1, "earned" if earned else "not earned"]
-		star_card.tooltip_text = star_card.accessibility_name
-		var star_rect := Rect2(x, 306, 74, 70)
-		FigmaReferenceCanvas.add_shadow(_canvas, star_rect, 30, Color(0.02,0.08,0.16,0.18), 4, Vector2(0,3))
-		var earned_mid := Color("#3b3211") if dark else Color("#fff5c9")
-		var idle_mid := Color("#26313b") if dark else Color("#e9eef1")
-		var star_mid := earned_mid if earned else idle_mid
-		var star_edge := Color("#ffd84f", 0.74) if earned else Color("#a8bac7", 0.38)
-		star_card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(
-			star_mid.lightened(0.08),
-			star_mid,
-			star_mid.darkened(0.08),
-			30,
-			star_edge,
-			1.2,
-			0.22
-		))
-		FigmaReferenceCanvas.set_rect(star_card, star_rect.position.x, star_rect.position.y, star_rect.size.x, star_rect.size.y)
-		star_card.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_canvas.add_child(star_card)
-		if earned:
-			var star_glow := PanelContainer.new()
-			star_glow.name = "ResultStarGlow_%d" % i
-			star_glow.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color("#ffd84f", 0.09), 32))
-			FigmaReferenceCanvas.set_rect(star_glow, x - 7, 300, 88, 82)
-			star_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			_canvas.add_child(star_glow)
-		FigmaReferenceCanvas.add_collectible_star(
-			_canvas,
-			Vector2(x + 37.0, 341.0),
-			24.0,
-			earned,
-			"ResultStar3D_%d" % i
-		)
+	if stars <= 0:
+		# Failure should not resemble a three-star victory. Keep the central
+		# focus on why the player stopped and how to recover.
+		var failure := FigmaReferenceCanvas.label("TRY THE PUZZLE AGAIN", 18,
+			Color("#ffcad1") if dark else Color("#8b3043"), true)
+		failure.name = "ResultFailureGuidance"
+		failure.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		failure.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		FigmaReferenceCanvas.set_rect(failure, 57, 322, 274, 46)
+		_canvas.add_child(failure)
+	else:
+		for i in range(3):
+			var x := 62.0 + float(i) * 90.0
+			var star_card := PanelContainer.new()
+			star_card.name = "StarCard"
+			star_card.set_meta("result_star_index", i)
+			var earned := i < stars
+			star_card.accessibility_name = "Star %d of 3: %s" % [i + 1, "earned" if earned else "not earned"]
+			star_card.tooltip_text = star_card.accessibility_name
+			var star_rect := Rect2(x, 306, 74, 70)
+			FigmaReferenceCanvas.add_shadow(_canvas, star_rect, 30, Color(0.02,0.08,0.16,0.18), 4, Vector2(0,3))
+			var earned_mid := Color("#3b3211") if dark else Color("#fff5c9")
+			var idle_mid := Color("#26313b") if dark else Color("#e9eef1")
+			var star_mid := earned_mid if earned else idle_mid
+			var star_edge := Color("#ffd84f", 0.74) if earned else Color("#a8bac7", 0.38)
+			star_card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(
+				star_mid.lightened(0.08),
+				star_mid,
+				star_mid.darkened(0.08),
+				30,
+				star_edge,
+				1.2,
+				0.22
+			))
+			FigmaReferenceCanvas.set_rect(star_card, star_rect.position.x, star_rect.position.y, star_rect.size.x, star_rect.size.y)
+			star_card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			_canvas.add_child(star_card)
+			if earned:
+				var star_glow := PanelContainer.new()
+				star_glow.name = "ResultStarGlow_%d" % i
+				star_glow.add_theme_stylebox_override("panel", FigmaReferenceCanvas.solid_box(Color("#ffd84f", 0.09), 32))
+				FigmaReferenceCanvas.set_rect(star_glow, x - 7, 300, 88, 82)
+				star_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				_canvas.add_child(star_glow)
+			FigmaReferenceCanvas.add_collectible_star(
+				_canvas,
+				Vector2(x + 37.0, 341.0),
+				24.0,
+				earned,
+				"ResultStar3D_%d" % i
+			)
 
 	var stats_panel := PanelContainer.new()
 	stats_panel.name = "Stats"
@@ -294,12 +314,18 @@ func _on_secondary_pressed() -> void:
 	secondary_requested.emit()
 
 func _result_display_title() -> String:
+	# A failed Block run is a failed Block run, not a "RESCUE RUSH" victory.
+	# Display the real result state; badge and illustrated identity stay below.
+	if stars <= 0:
+		return title_text.to_upper()
 	match _result_game_id():
 		"water_sort": return "WATER SORT"
 		"block_puzzle": return "BLOCK PUZZLE"
 		_: return "RESCUE RUSH"
 
 func _result_game_id() -> String:
+	if not _game_identity_id.is_empty():
+		return _game_identity_id
 	var upper := title_text.to_upper()
 	if "WATER" in upper:
 		return "water_sort"
@@ -360,6 +386,8 @@ func _add_identity(game_id: String) -> void:
 	FigmaReferenceCanvas.set_rect(art, 128, 231, 132, 67)
 	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_canvas.add_child(art)
+	if stars <= 0:
+		return
 
 	for spec in [
 		[112.0, 250.0, 4.0],
@@ -374,7 +402,7 @@ func _add_identity(game_id: String) -> void:
 		_canvas.add_child(spark)
 
 func _celebrate() -> void:
-	if not is_inside_tree() or _motion_reduced():
+	if stars <= 0 or not is_inside_tree() or _motion_reduced():
 		# The earned stars and readable result remain visible; skip all bursts,
 		# flashes and sequential entrance animations in Reduced Motion mode.
 		return

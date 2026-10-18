@@ -692,7 +692,7 @@ func complete_level() -> void:
 		],
 		stars,
 		Color("5da9ff"),
-		"BACK HOME" if daily_mode else "NEXT PUZZLE"
+		"BACK TO DAILY" if daily_mode else "NEXT PUZZLE"
 	)
 	var claim_id := "daily:water_sort:%s" % DailyChallenge.date_key() if daily_mode else "campaign:water_sort:%d" % level_number
 	if base_reward > 0 and not EconomyManager.reward_double_claimed(claim_id):

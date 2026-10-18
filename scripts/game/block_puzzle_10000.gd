@@ -1214,7 +1214,8 @@ func _fail_campaign(reason: String) -> void:
 		"RETRY",
 		String(presentation.get("badge", "TRY AGAIN"))
 	)
-	result.configure_secondary("BACK HOME" if daily_mode else "BACK TO LEVELS", true)
+	result.configure_game_identity("block_puzzle")
+	result.configure_secondary("BACK TO DAILY" if daily_mode else "BACK TO LEVELS", true)
 	add_child(result)
 	result.continue_requested.connect(func() -> void:
 		if is_instance_valid(result): result.queue_free()

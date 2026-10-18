@@ -131,7 +131,40 @@ func _run() -> void:
 	block_result.queue_free()
 	await process_frame
 
-	# The same shared result layout serves all three games. When Reduce Motion
+	# A failed Block level must be visibly a failure and correctly branded.
+	# Showing Rescue Rush artwork, 3 unearned stars or confetti on a loss
+	# makes the result screen misleading.
+	var failed := PremiumResultOverlay.new()
+	failed.configure(
+		"LEVEL FAILED",
+		"No available placement can meet the objective.",
+		"SCORE 310/600   •   LINES 1/3\\n9 PLACEMENTS",
+		0, Color("8b7cf6"), "RETRY", "TRY AGAIN"
+	)
+	failed.configure_game_identity("block_puzzle")
+	failed.configure_secondary("BACK TO LEVELS",true)
+	root.add_child(failed)
+	await _frames(4)
+	var failure_title := failed.find_child("ResultTitle",true,false) as Label
+	var retry := failed.find_child("PrimaryAction",true,false) as Button
+	var failure_art := failed.find_child("ResultGameArt2D",true,false) as Control
+	var failure_note := failed.find_child("ResultFailureGuidance",true,false) as Label
+	if failure_title == null or failure_title.text != "LEVEL FAILED":
+		return _fail("Failed Block run was titled as a different game or as a victory")
+	if failed.call("_result_game_id") != "block_puzzle" or failure_art == null or String(failure_art.get("game_id")) != "block_puzzle":
+		return _fail("Failed Block result incorrectly inherited Rescue Rush game art")
+	if failure_note == null or not failure_note.text.contains("AGAIN") or retry == null or retry.text != "RETRY":
+		return _fail("Failure screen does not clearly invite another try")
+	if failed.find_child("ResultVictoryHalo",true,false) != null or not failed.find_children("ResultVictoryRay_*","ColorRect",true,false).is_empty():
+		return _fail("Failure screen incorrectly shows a victory halo")
+	if failed.find_child("StarCard",true,false) != null or failed.find_child("ResultVictoryConfetti",true,false) != null:
+		return _fail("Failure incorrectly rewarded stars or victory confetti")
+	if not (failed.call("_celebration_budget") is Dictionary):
+		return _fail("Failure comfort preference unavailable")
+	failed.queue_free()
+	await _frames(3)
+
+		# The same shared result layout serves all three games. When Reduce Motion
 	# is enabled the card should be fully readable in the first frame and never
 	# enter the spring/burst/flash presentation.
 	var save := root.get_node_or_null("SaveManager")
