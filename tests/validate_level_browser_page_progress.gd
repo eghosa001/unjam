@@ -17,6 +17,10 @@ func _run() -> void:
 	for _i in range(3): await process_frame
 	if not _check_page(app,"rescue_rush"):
 		return _fail("Rescue progress rail is missing or inaccurate")
+	app.call("_figma_switch_level_game","water_sort")
+	for _i in range(3): await process_frame
+	if not _check_page(app,"water_sort"):
+		return _fail("Water page navigation or progress rail inaccurate")
 	app.call("_figma_switch_level_game","block_puzzle")
 	for _i in range(3): await process_frame
 	if not _check_page(app,"block_puzzle"):
@@ -30,6 +34,22 @@ func _check_page(app: Control, game_id: String) -> bool:
 	var bar := app.find_child("LevelPageProgressBar",true,false) as ProgressBar
 	var count := app.find_child("LevelPageProgressCount",true,false) as Label
 	var instruction := app.find_child("LevelUnlockGuidance",true,false) as Label
+	var play := app.find_child("LevelPlayCurrent",true,false) as Button
+	var locate := app.find_child("LevelCurrent",true,false) as Button
+	var world_name := app.find_child("LevelWorldName",true,false) as Label
+	if play == null or locate == null or world_name == null:
+		print("Level browser lacks Play / Find / World heading")
+		return false
+	if not play.text.contains("PLAY") or play.size.y < 48 or not play.accessibility_name.contains("level"):
+		return false
+	if not locate.text.contains("MY LEVEL") or not locate.tooltip_text.contains("Does not start"):
+		return false
+	if world_name.get_global_rect().intersects(play.get_global_rect()):
+		print("Play action overlaps current world title")
+		return false
+	if play.pressed.get_connections().size() != 1:
+		print("Level Play has ambiguous or missing callback")
+		return false
 	var panel := app.find_child("LevelPageProgressCard",true,false) as Control
 	var world := int(app.get("selected_multi_world"))
 	var page := int(app.get("selected_multi_page"))
@@ -75,12 +95,14 @@ func _check_page(app: Control, game_id: String) -> bool:
 	# The numbered tile names are sanitized by Godot because '/' is not a
 	# legal Node name; derive the final authored tile's end from grid geometry.
 	var grid_y := 308.0 if game_id == "block_puzzle" else 269.0
-	var bottom_of_tiles := grid_y+float(int((total-1)/4))*80.0+70.0
+	var stride := 70.0 if game_id == "block_puzzle" else 78.0
+	var tile_height := 64.0 if game_id == "block_puzzle" else 70.0
+	var bottom_of_tiles := grid_y+float(int((total-1)/4))*stride+tile_height
 	if panel.position.y < bottom_of_tiles+8.0:
 		print("Page progress overlaps the final level tile: ",panel.position.y," vs ",bottom_of_tiles)
 		return false
-	if panel.position.y+panel.size.y > 844.0:
-		print("Page progress escaped authored screen: ",panel.position.y+panel.size.y)
+	if panel.position.y+panel.size.y > 750.0:
+		print("Page progress collides with bottom gesture/navigation zone: ",panel.position.y+panel.size.y)
 		return false
 	return true
 

@@ -68,6 +68,16 @@ func _run() -> void:
 	await _frames(5)
 	if String(main.get("current_surface")) != "levels":
 		return _fail("Water Sort level browser did not open")
+	if not _check_level_browser(main,"water_sort"):
+		return
+	main.call("_figma_switch_level_game","block_puzzle")
+	await _frames(3)
+	if not _check_level_browser(main,"block_puzzle"):
+		return
+	main.call("_figma_switch_level_game","water_sort")
+	await _frames(3)
+	if not _check_level_browser(main,"water_sort"):
+		return
 	main.call("build_settings")
 	await _frames(3)
 	if String(main.get("_settings_return_surface")) != "levels":
@@ -95,6 +105,33 @@ func _run() -> void:
 	await _frames(2)
 	print("UNJAM_NAVIGATION_SETTINGS_HIERARCHY_OK")
 	quit(0)
+
+func _check_level_browser(main: Control, game_id: String) -> bool:
+	var play := main.find_child("LevelPlayCurrent",true,false) as Button
+	var find_level := main.find_child("LevelCurrent",true,false) as Button
+	var world := main.find_child("LevelWorldName",true,false) as Label
+	var panel := main.find_child("LevelPageProgressCard",true,false) as Control
+	if play == null or find_level == null or world == null or panel == null:
+		return _fail("Missing clear Play/Find/World UI for %s" % game_id)
+	if not play.text.contains("PLAY") or play.size.y < 48 or play.action_mode != BaseButton.ACTION_MODE_BUTTON_RELEASE:
+		return _fail("Play Current Level action not clear and release-triggered for %s" % game_id)
+	var current := int(main.call("_highest_level_for_game",game_id))
+	if not play.accessibility_name.contains("level %d" % current):
+		return _fail("Play Current accessible label does not name the actual level")
+	if find_level.text != "MY LEVEL" or not find_level.tooltip_text.contains("Does not start"):
+		return _fail("Find My Level is misleadingly presented as a play button")
+	if find_level.pressed.get_connections().is_empty() or play.pressed.get_connections().is_empty():
+		return _fail("Levels action buttons are not functional")
+	if play.get_global_rect().intersects(world.get_global_rect()):
+		return _fail("Level Play button overlaps the world name")
+	var expected_end := 745.0 if game_id == "block_puzzle" else 746.0
+	if absf(panel.position.y + panel.size.y - expected_end) > 4.0:
+		return _fail("Level progress rail not inside safe area for %s: %.1f" % [game_id,panel.position.y+panel.size.y])
+	# The authored tile names may be slash-sanitized by Godot; the rail's
+	# viewport-safe position is the invariant that protects all layouts.
+	if panel.position.y + panel.size.y > 750.0:
+		return _fail("Level progress extends underneath the system gesture zone")
+	return true
 
 func _check_settings(main: Control) -> bool:
 	var appearance := main.find_child("SettingsCard*Appearance",true,false) as Control

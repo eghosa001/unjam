@@ -2208,8 +2208,19 @@ func _build_figma_level_browser(game_id: String) -> void:
 	var bounds := _multi_page_bounds(game_id,selected_multi_world,selected_multi_page)
 	var world_name := MultiGameManager.world_name(game_id,selected_multi_world).to_upper()
 	_figma_card(canvas,"JourneyHero",Rect2(17,149,354,74),Color("#fffaf0"),Color(accent,0.30),15)
-	_figma_text(canvas,world_name,Rect2(35,144,250,25),20,accent)
-	_figma_text(canvas,"LEVELS %d–%d" % [bounds.x,bounds.y],Rect2(35,173,210,19),14,FIGMA_MUTED)
+	var world_heading := _figma_text(canvas,world_name,Rect2(35,144,220,25),20,accent)
+	world_heading.name = "LevelWorldName"
+	world_heading.clip_text = true
+	_fit_single_line_control_text(world_heading,215.0,20,14)
+	var range_label := _figma_text(canvas,"LEVELS %d–%d" % [bounds.x,bounds.y],Rect2(35,173,218,19),14,FIGMA_MUTED)
+	range_label.name = "LevelWorldRange"
+	var active_level := _highest_level_for_game(game_id)
+	var play_current := _figma_button(canvas,"LevelPlayCurrent","▶ PLAY",
+		Rect2(268,146,87,48),accent,Callable(self,"_play_current_campaign_level").bind(game_id),FIGMA_OFF_WHITE,14,14)
+	play_current.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
+	play_current.accessibility_name = "Play %s level %d" % [title.capitalize(),active_level]
+	play_current.tooltip_text = "Start or resume %s level %d" % [title.capitalize(),active_level]
+	play_current.focus_mode = Control.FOCUS_ALL
 
 	var page_y := 247.0 if game_id == "block_puzzle" else 222.0
 	var grid_y := 308.0 if game_id == "block_puzzle" else 269.0
@@ -2224,7 +2235,9 @@ func _build_figma_level_browser(game_id: String) -> void:
 	if not prev.disabled:
 		prev.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 		prev.pressed.connect(_change_multi_page.bind(-1))
-	var current := _figma_button(canvas,"LevelCurrent","CURRENT",Rect2(125,page_y - 3.0,118,44),accent,Callable(self,"_jump_multi_current"),FIGMA_OFF_WHITE,14,14)
+	var current := _figma_button(canvas,"LevelCurrent","MY LEVEL",Rect2(125,page_y - 3.0,118,44),accent,Callable(self,"_jump_multi_current"),FIGMA_OFF_WHITE,14,14)
+	current.accessibility_name = "Find my current %s level %d" % [title.capitalize(),_highest_level_for_game(game_id)]
+	current.tooltip_text = "Jump to the page containing level %d. Does not start the puzzle." % _highest_level_for_game(game_id)
 	current.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 	_style_figma_page_button(current,accent,accent,false)
 	var next_disabled := selected_multi_world >= world_count and selected_multi_page >= _multi_page_count(game_id,selected_multi_world)
@@ -2236,12 +2249,16 @@ func _build_figma_level_browser(game_id: String) -> void:
 		next.pressed.connect(_change_multi_page.bind(1))
 
 	var current_level := _highest_level_for_game(game_id)
+	# Five rows of 20 tiles must leave the progress panel above the Home
+	# gesture/bottom screen boundary even with Block's extra mode row.
+	var row_stride := 70.0 if game_id == "block_puzzle" else 78.0
+	var tile_height := 64.0 if game_id == "block_puzzle" else 70.0
 	var index := 0
 	for level_number in range(bounds.x,bounds.y+1):
 		var col := index % 4
 		var row := int(index/4)
 		var x := 17.0 + float(col)*89.0
-		var y := grid_y + float(row)*80.0
+		var y := grid_y + float(row)*row_stride
 		var unlocked := MultiGameManager.is_level_unlocked(game_id,level_number)
 		var stars := MultiGameManager.get_stars(game_id,level_number)
 		var is_current := unlocked and level_number == current_level
@@ -2263,7 +2280,7 @@ func _build_figma_level_browser(game_id: String) -> void:
 			border = Color(FIGMA_GOLD,0.85)
 		# The tile button owns background + hit target only. Number and status use
 		# separate authored bands so LOCK/stars never paint over the level number.
-		var card := _figma_button(canvas,"Level/%d" % level_number,"",Rect2(x,y,82,70),fill,Callable(),text_color,16,16)
+		var card := _figma_button(canvas,"Level/%d" % level_number,"",Rect2(x,y,82,tile_height),fill,Callable(),text_color,16,16)
 		card.tooltip_text = "Level %d" % level_number if unlocked else "Level %d locked. Clear the previous level first." % level_number
 		card.accessibility_name = card.tooltip_text
 		card.disabled = not unlocked
@@ -2279,17 +2296,32 @@ func _build_figma_level_browser(game_id: String) -> void:
 		number_label.name = "LevelNumber_%d" % level_number
 		number_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_fit_single_line_control_text(number_label,62.0,16,12)
-		var star_text := "LOCKED" if not unlocked else ("★".repeat(stars) if stars > 0 else "···")
+		var star_text := "LOCKED" if not unlocked else ("★".repeat(stars) if stars > 0 else ("PLAY" if is_current else "···"))
 		var star_color := (Color("#d7e5f0") if _dark() else Color("#344c62")) if not unlocked else (FIGMA_DARK_MUTED if _dark() else FIGMA_MUTED)
 		var status_label := _figma_text(canvas,star_text,Rect2(x+8,y+43,66,18),12,star_color,true)
 		status_label.name = "LevelStatus_%d" % level_number
 		status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		status_label.accessibility_name = ("Level %d locked" % level_number) if not unlocked else ("Level %d, %d stars" % [level_number,stars])
+		status_label.accessibility_name = ("Level %d locked" % level_number) if not unlocked else ("Level %d, %d stars%s" % [level_number,stars,", next to play" if is_current else ""])
 		_fit_single_line_control_text(status_label,62.0,12,12)
 		index += 1
-	_figma_level_page_progress(canvas,game_id,bounds,grid_y,accent)
+	_figma_level_page_progress(canvas,game_id,bounds,grid_y,accent,row_stride)
 
-func _figma_level_page_progress(canvas: Control, game_id: String, bounds: Vector2i, grid_y: float, accent: Color) -> void:
+func _play_current_campaign_level(game_id: String) -> void:
+	# One clear, safe way to begin from the level browser. Unlike MY LEVEL,
+	# this starts a puzzle. Never launch from a stale screen or hidden game.
+	if current_surface != "levels" or selected_game_id != game_id:
+		return
+	var level := _highest_level_for_game(game_id)
+	if not MultiGameManager.is_level_unlocked(game_id,level):
+		FeedbackManager.blocked()
+		return
+	if game_id == "rescue_rush":
+		start_level(level)
+	else:
+		start_multi_level(game_id,level,false)
+
+
+func _figma_level_page_progress(canvas: Control, game_id: String, bounds: Vector2i, grid_y: float, accent: Color, row_stride: float = 80.0) -> void:
 	# Twenty authored level tiles consume five rows. Use the open space below
 	# them to show genuine clear progress, not another navigational action.
 	# Count awarded stars rather than "unlocked" tiles: level 1 is available
@@ -2300,7 +2332,7 @@ func _figma_level_page_progress(canvas: Control, game_id: String, bounds: Vector
 		if MultiGameManager.get_stars(game_id,level_number) > 0:
 			cleared += 1
 	var rows := int(ceil(float(page_levels)/4.0))
-	var card_y := grid_y+float(rows)*80.0+7.0
+	var card_y := grid_y+float(rows)*row_stride+7.0
 	_figma_card(canvas,"LevelPageProgressCard",Rect2(17,card_y,354,80),Color("#fffaf0"),Color(accent,0.32),15)
 	var heading := _figma_text(canvas,"PAGE PROGRESS",Rect2(34,card_y+11,146,20),14,FIGMA_INK,true)
 	heading.name = "LevelPageProgressTitle"
@@ -2354,6 +2386,8 @@ func _figma_level_tabs(canvas: Control, active_game_id: String) -> void:
 		var text_color := FIGMA_OFF_WHITE if active else (FIGMA_DARK_MUTED if _dark() else FIGMA_MUTED)
 		var button := _figma_button(canvas,"LevelGameTab/%s" % game_id,String(spec[1]),Rect2(float(spec[2]),81,108,44),fill,Callable(),text_color,14,13)
 		_style_figma_level_tab(button,active_accent,active)
+		button.accessibility_name = "%s, current game" % MultiGameManager.display_name(game_id) if active else "Choose %s campaign levels" % MultiGameManager.display_name(game_id)
+		button.tooltip_text = button.accessibility_name
 		if active:
 			button.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		else:
