@@ -12,24 +12,62 @@ static func generate(level_number: int) -> Dictionary:
 	var n := clampi(level_number, 1, Progression.TOTAL_LEVELS)
 	var profile: Dictionary = Progression.profile(n)
 	var seed_base := int(profile.get("authored_seed", n * 104729))
-	for attempt in range(6):
+	var role := String(profile.get("level_role", ""))
+	# Experienced players reported too many superficially hard boards. For actual
+	# challenge/milestone levels compare a small deterministic pool of *solved*
+	# boards, not their arbitrary declared difficulty label. Keep normal and
+	# onboarding loads on the original fast one-candidate path.
+	var challenge_slot := role in ["challenge", "stretch", "peak", "hard", "very_hard", "expert", "world_boss"]
+	var attempts := 3 if n > 10 and (challenge_slot or String(profile.get("milestone", "")) != "") else 1
+	var best: Dictionary = {}
+	var best_quality := -1000000
+	for attempt in range(attempts):
 		var candidate := _build_candidate(profile, seed_base + attempt * 7919)
 		var solution: Array[int] = Solver.find_solution(candidate, [], 6000)
-		if not solution.is_empty():
-			candidate["solver_verified"] = true
-			candidate["generation_attempt"] = attempt + 1
-			candidate["optimal_moves"] = solution.size()
-			candidate["estimated_required_moves"] = solution.size()
-			candidate["par_moves"] = solution.size() + 2
-			if String(candidate.get("objective", "")) == Progression.OBJECTIVE_PERFECT_RESCUE:
-				candidate["action_budget"] = maxi(solution.size(), int(candidate.get("action_budget", solution.size())))
-			candidate["structural_signature"] = Progression.canonical_signature(candidate)
-			return candidate
+		if solution.is_empty():
+			continue
+		candidate["solver_verified"] = true
+		candidate["generation_attempt"] = attempt + 1
+		# This is a constructive/simulated upper bound, not a proven optimum.
+		# Retain the legacy field for existing HUD/save consumers.
+		candidate["optimal_moves"] = solution.size()
+		candidate["solution_upper_bound"] = solution.size()
+		candidate["estimated_required_moves"] = solution.size()
+		candidate["par_moves"] = solution.size() + 2
+		if String(candidate.get("objective", "")) == Progression.OBJECTIVE_PERFECT_RESCUE:
+			candidate["action_budget"] = maxi(solution.size(), int(candidate.get("action_budget", solution.size())))
+		var quality := _challenge_quality(candidate, profile, solution.size())
+		if best.is_empty() or quality > best_quality:
+			best = candidate
+			best_quality = quality
+		if attempts == 1:
+			break
+	if not best.is_empty():
+		best["challenge_selection_score"] = best_quality
+		best["structural_signature"] = Progression.canonical_signature(best)
+		return best
 	var fallback := _build_fallback(profile)
 	fallback["solver_verified"] = Solver.has_solution(fallback, 6000)
 	fallback["generation_attempt"] = 0
 	fallback["structural_signature"] = Progression.canonical_signature(fallback)
 	return fallback
+
+static func _challenge_quality(candidate: Dictionary, profile: Dictionary, solution_steps: int) -> int:
+	# Reward decision dependencies and plausible wrong routes, not density alone.
+	# A handful of easy independent arrows must not beat a real dependency
+	# sequence just because the board contains many pieces.
+	var depth := int(candidate.get("dependency_depth", 0))
+	var frontier := int(candidate.get("initial_frontier", 0))
+	var decoys := int(candidate.get("false_clear_candidates", 0))
+	var target_depth := int(profile.get("dependency_target", 2))
+	var target_frontier := int(profile.get("frontier_max", 5))
+	return (
+		depth * 36
+		+ mini(decoys, 12) * 8
+		+ mini(solution_steps, 40) * 2
+		- absi(depth - target_depth) * 6
+		- maxi(0, frontier - target_frontier) * 15
+	)
 
 static func _build_candidate(profile: Dictionary, seed_value: int) -> Dictionary:
 	var n := int(profile.get("level", 1))
