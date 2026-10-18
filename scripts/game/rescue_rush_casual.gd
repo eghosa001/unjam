@@ -99,11 +99,14 @@ func _build_figma_rescue(canvas: Control) -> void:
 	var platform := Polygon2D.new()
 	platform.name = "RescuePerspectivePlatform"
 	platform.polygon = PackedVector2Array([Vector2(22,481),Vector2(368,481),Vector2(340,147),Vector2(50,147)])
-	platform.color = Color(0.55,0.66,0.53,0.42)
+	platform.color = Color(0.55,0.66,0.53,0.12)
 	canvas.add_child(platform)
 	var scenic_overlay := TextureRect.new()
 	scenic_overlay.name = "RescueAuthoredScreenWorld"
 	scenic_overlay.texture = RESCUE_SCREEN_OVERLAY
+	# Ambient art remains outside the puzzle. It must not compete with the
+	# arrows or the dense 8x8 playfield on a compact device.
+	scenic_overlay.modulate.a = 0.20
 	scenic_overlay.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	scenic_overlay.stretch_mode = TextureRect.STRETCH_SCALE
 	scenic_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -195,6 +198,9 @@ func _build_figma_rescue(canvas: Control) -> void:
 	var board_art := GAMEPLAY_ART.new()
 	board_art.name = "RescueBoardWorldArt"
 	board_art.configure("rescue_board", GREEN, _shell_dark_mode(), level_number)
+	# High-contrast routes and actual pieces own the foreground, never vines
+	# baked into the board illustration. Artwork remains original and static.
+	board_art.modulate.a = 0.065
 	board_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	board_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	board_panel.add_child(board_art)
@@ -292,8 +298,8 @@ func _rescue_grid_slot_style(dark: bool) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	# Keep 49–64 empty slots readable without competing with actual arrows,
 	# collectibles or the escape lane. Dense boards benefit most from this.
-	style.bg_color = Color(0.06,0.23,0.17,0.20) if dark else Color(0.86,1.0,0.90,0.12)
-	style.border_color = Color(0.58,0.96,0.70,0.13) if dark else Color(0.13,0.48,0.30,0.12)
+	style.bg_color = Color(0.02,0.11,0.13,0.19) if dark else Color(0.18,0.35,0.31,0.14)
+	style.border_color = Color(0.72,0.97,0.84,0.14) if dark else Color(0.12,0.34,0.30,0.14)
 	style.border_width_left = 1
 	style.border_width_right = 1
 	style.border_width_top = 1
@@ -545,14 +551,14 @@ func apply_theme_mode(dark: bool) -> void:
 		))
 	var platform := find_child("RescuePerspectivePlatform", true, false) as Polygon2D
 	if platform != null:
-		platform.color = Color(0.18,0.29,0.22,0.52) if dark else Color(0.55,0.66,0.53,0.42)
+		platform.color = Color(0.18,0.29,0.22,0.12) if dark else Color(0.55,0.66,0.53,0.12)
 	var status_panel := find_child("CompactStatusStrip", true, false) as PanelContainer
 	if status_panel != null:
 		status_panel.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(
-			Color("#20372e") if dark else Color("#365448"),
-			Color("#192e26") if dark else Color("#29483d"),
-			Color("#11221b") if dark else Color("#20392f"),
-			15, Color(0.49,0.72,0.56,0.44), 1.1, 0.24
+			Color("#243b37") if dark else Color("#365448"),
+			Color("#19312c") if dark else Color("#29483d"),
+			Color("#10231f") if dark else Color("#20392f"),
+			15, Color(0.57,0.84,0.74,0.62), 1.1, 0.14
 		))
 	var objective := find_child("RescueObjectiveCard", true, false) as PanelContainer
 	if objective != null:
@@ -574,10 +580,10 @@ func apply_theme_mode(dark: bool) -> void:
 		))
 	if board_panel != null:
 		board_panel.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(
-			Color("#28483c") if dark else Color("#d1ebc2"),
-			Color("#1e392f") if dark else Color("#99c4ab"),
-			Color("#152b25") if dark else Color("#5e8c85"),
-			26, Color(0.46,0.78,0.58,0.72) if dark else Color(0.94,1.0,0.88,0.72), 2, 0.45
+			Color("#203e37") if dark else Color("#c0ddcf"),
+			Color("#12332e") if dark else Color("#a4cbb9"),
+			Color("#0d2925") if dark else Color("#79a795"),
+			26, Color(0.58,0.90,0.76,0.85) if dark else Color(0.94,1.0,0.88,0.82), 2, 0.28
 		))
 	if board_backdrop_grid != null and is_instance_valid(board_backdrop_grid):
 		for cell in board_backdrop_grid.get_children():
@@ -585,9 +591,9 @@ func apply_theme_mode(dark: bool) -> void:
 				(cell as PanelContainer).add_theme_stylebox_override("panel", _rescue_grid_slot_style(dark))
 	for label in [moves_label, rescue_label, chain_label]:
 		if label != null:
-			label.add_theme_color_override("font_color", Color("#eafbf0") if dark else OFF_WHITE)
+			label.add_theme_color_override("font_color", Color("#ffffff") if dark else OFF_WHITE)
 	if hint_label != null:
-		hint_label.add_theme_color_override("font_color", Color("#bdeecb") if dark else NAVY)
+		hint_label.add_theme_color_override("font_color", Color("#f2fff8") if dark else NAVY)
 	_style_rescue_button(find_child("RescueBackAction", true, false) as Button, dark, GREEN, true)
 	_style_rescue_button(find_child("RescueRetryAction", true, false) as Button, dark, GREEN, true)
 	for name in ["RescueUndoAction", "RescueHintAction", "RescueRestartAction"]:
