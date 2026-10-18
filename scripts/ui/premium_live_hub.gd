@@ -137,9 +137,19 @@ func _browse_levels(game_id: String) -> void:
 		main.call("open_game_campaign", game_id)
 
 func _play(game_id: String) -> void:
-	# The Games screen is the chooser. Once the player deliberately taps a game,
-	# resume its unfinished campaign run when one exists; otherwise open that
-	# game's normal campaign/level flow.
+	# The tile itself browses levels. Its explicit PLAY/RESUME control must
+	# always start actual gameplay, never silently open a second browser.
+	if game_id not in MultiGameManager.GAME_IDS:
+		return
 	var main := get_parent()
-	if main != null and main.has_method("resume_game"):
-		main.call("resume_game", game_id)
+	if main == null:
+		return
+	var saved: Dictionary = main.call("_checkpoint_for",game_id) if main.has_method("_checkpoint_for") else {}
+	if not saved.is_empty() and main.has_method("resume_game"):
+		main.call("resume_game",game_id)
+		return
+	var level := maxi(1,MultiGameManager.highest_level(game_id))
+	if game_id == "rescue_rush":
+		main.call("start_level",level)
+	else:
+		main.call("start_multi_level",game_id,level,false)
