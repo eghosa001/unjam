@@ -318,7 +318,7 @@ func _add_hero(canvas: Control) -> void:
 	var title := _add_text(canvas,"PLAY YOUR WAY.",Rect2(40,145,221,38),25,DARK_INK if dark else NAVY,true)
 	title.name = "HomeWelcomeTitle"
 	RefCanvas.fit_single_line_text(title,219.0,25,21)
-	var subtitle := _add_text(canvas,"Puzzle. Compete. Repeat.",Rect2(40,190,226,24),14,DARK_MUTED if dark else MUTED,false)
+	var subtitle := _add_text(canvas,"Choose a game or jump back in.",Rect2(40,190,226,24),14,DARK_MUTED if dark else MUTED,false)
 	subtitle.name = "HomeWelcomeSubtitle"
 	# Compact neutral brand mark: Home is NOT a selected game's landing page.
 	var mark := TextureRect.new()
@@ -329,21 +329,33 @@ func _add_hero(canvas: Control) -> void:
 	mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	RefCanvas.set_rect(mark,258,130,98,93)
 	canvas.add_child(mark)
-	var choose := _add_action(canvas,Rect2(39,227,312,54),
+	# A one-tap return to gameplay is a distinct secondary action; the
+	# full game chooser remains the larger primary action for discovery.
+	# Keep the hero neutral, without injecting the previous game's mascot.
+	var choose := _add_action(canvas,Rect2(39,227,190,54),
 		Color("#5683f0") if dark else Color("#2169c7"),
-		"▦  CHOOSE GAME",17,OFF_WHITE,Callable(self,"_open_game_selector"),17)
+		"▦  CHOOSE GAME",16,OFF_WHITE,Callable(self,"_open_game_selector"),17)
 	choose.name = "HomePrimaryAction"
 	choose.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
-	choose.accessibility_name = "Choose Game. Open the games screen to pick your puzzle."
-	choose.tooltip_text = "Browse and choose Rescue Rush, Water Sort or Block Puzzle"
+	choose.accessibility_name = "Choose Game. Browse Rescue Rush, Water Sort and Block Puzzle."
+	choose.tooltip_text = "Browse all three games and their levels"
 	primary_button = choose
+	var quick_id := _home_resume_game_id()
+	var quick_level := _home_current_level(quick_id)
+	var resume := _add_action(canvas,Rect2(237,227,114,54),
+		Color("#315c51") if dark else Color("#23734f"),
+		"▶ RESUME" if quick_level > 1 else "▶ PLAY",14,OFF_WHITE,Callable(self,"_continue_selected_game"),17)
+	resume.name = "HomeResumeAction"
+	resume.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
+	resume.accessibility_name = "Play %s level %d" % [MultiGameManager.display_name(quick_id),quick_level]
+	resume.tooltip_text = resume.accessibility_name
 
 func _add_game_showcase(canvas: Control) -> void:
 	# Each compact game image is a one-tap shortcut to THAT game's LEVEL
 	# SELECT screen, never straight to gameplay. Retain the large Choose Game
 	# button as the primary launcher and the quiet low-cost illustrated strip.
 	var dark := _home_dark()
-	var header := _add_text(canvas,"CHOOSE YOUR CHALLENGE",Rect2(22,310,260,24),
+	var header := _add_text(canvas,"CHOOSE YOUR CHALLENGE",Rect2(22,310,252,24),
 		16,DARK_INK if dark else NAVY,true)
 	header.name = "HomeShowcaseTitle"
 	var note := _add_text(canvas,"LEVELS ›",Rect2(281,314,85,20),
@@ -509,27 +521,36 @@ func _add_rank_summary(canvas: Control) -> void:
 	var heading := _add_text(canvas,"YOUR RANKINGS",Rect2(37,529,199,22),
 		16,DARK_INK if dark else NAVY,true)
 	heading.name = "HomeRankTitle"
-	var daily_tag := _add_text(canvas,"TODAY",Rect2(38,569,140,16),
+	var daily_tag := _add_text(canvas,"TODAY",Rect2(38,568,140,17),
 		12,DARK_MUTED if dark else Color("#424a59"),true)
 	daily_tag.name = "HomeRankDailyLabel"
-	var daily_rank := _add_text(canvas,"—",Rect2(38,587,135,26),
-		24,GOLD if dark else Color("#714e12"),true)
+	var daily_rank := _add_text(canvas,"—",Rect2(38,585,135,25),
+		19,GOLD if dark else Color("#714e12"),true)
 	daily_rank.name = "HomeRankDailyValue"
-	var daily_hint := _add_text(canvas,"PLAY TO JOIN",Rect2(38,614,140,17),
+	var daily_hint := _add_text(canvas,"PLAY TO JOIN",Rect2(38,618,140,17),
 		13,DARK_MUTED if dark else Color("#424a59"),false)
 	daily_hint.name = "HomeRankDailyHint"
-	var weekly_tag := _add_text(canvas,"BEST WEEKLY",Rect2(200,569,145,16),
+	var weekly_tag := _add_text(canvas,"BEST WEEKLY",Rect2(200,568,145,17),
 		12,DARK_MUTED if dark else Color("#424a59"),true)
 	weekly_tag.name = "HomeRankWeeklyLabel"
-	var weekly_rank := _add_text(canvas,"—",Rect2(200,587,135,26),
-		24,GOLD if dark else Color("#714e12"),true)
+	var weekly_rank := _add_text(canvas,"—",Rect2(200,585,135,25),
+		19,GOLD if dark else Color("#714e12"),true)
 	weekly_rank.name = "HomeRankValue"
-	var weekly_hint := _add_text(canvas,"PLAY TO JOIN",Rect2(200,614,144,17),
+	var weekly_hint := _add_text(canvas,"PLAY TO JOIN",Rect2(200,618,144,17),
 		13,DARK_MUTED if dark else Color("#424a59"),false)
 	weekly_hint.name = "HomeRankWeeklyHint"
 	var open := _add_action(canvas,Rect2(244,524,108,44),Color("#7757cf"),
-		"RANKINGS ›",12,OFF_WHITE,Callable(self,"_open_compete"),13)
+		"LEADERBOARD",12,OFF_WHITE,Callable(self,"_open_compete"),13)
 	open.name = "HomeDailyGamesButton"
+	# Disable font-driven minimum expansion for labels sharing this compact
+	# three-line ranking block. Without these exact bounds, oversized rank
+	# font metrics spill into the next band on 432px Android phones.
+	for bounded in [daily_tag,daily_rank,daily_hint,weekly_tag,weekly_rank,weekly_hint]:
+		var authored_height := 17.0 if bounded in [daily_tag,weekly_tag,daily_hint,weekly_hint] else 25.0
+		bounded.custom_minimum_size = Vector2.ZERO
+		bounded.size = Vector2(bounded.size.x, authored_height)
+		bounded.clip_text = true
+		bounded.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	open.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 	open.accessibility_name = "Open full-screen Today, Weekly and All-Time leaderboards"
 	open.tooltip_text = "Open full-screen Today, Weekly and All-Time player rankings"
@@ -887,16 +908,22 @@ func _short_game_name(game_id: String) -> String:
 		"block_puzzle": return "BLOCK PUZZLE"
 		_: return "RESCUE RUSH"
 
+func _home_resume_game_id() -> String:
+	var main := get_parent()
+	var last := String(main.get("selected_game_id")) if main != null and main.get("selected_game_id") != null else selected_game
+	return last if last in ["rescue_rush","water_sort","block_puzzle"] else "rescue_rush"
+
 func _continue_selected_game() -> void:
 	var main := get_parent()
 	if main == null:
 		return
+	var game_id := _home_resume_game_id()
 	FeedbackManager.tap()
-	var level := _home_current_level(selected_game)
-	if selected_game == "rescue_rush":
+	var level := _home_current_level(game_id)
+	if game_id == "rescue_rush":
 		main.call("start_level", level)
 	else:
-		main.call("start_multi_level", selected_game, level, false)
+		main.call("start_multi_level", game_id, level, false)
 
 func _open_game_levels(game_id: String) -> void:
 	# Jump directly to the campaign level browser for the tapped puzzle.

@@ -59,7 +59,7 @@ func _run() -> void:
 		return _fail("Rescue route/completion tracking or effect pooling is missing")
 	if not water_layout.contains("func _balanced_columns") or not water_reference.contains("_build_transfer_plan") or not water_reference.contains("visual_pour_rim_local") or not water_reference.contains("visual_receive_rim_local") or not water_reference.contains("_liquid_arc_points") or not water_reference.contains("POUR_ARC_SAMPLES") or water_reference.contains("PackedVector2Array([source_mouth, exit_point, receiver_mouth])"):
 		return _fail("Water Sort adaptive layout, pure transfer plan or curved rim-to-mouth pour geometry is missing")
-	if not block_drag.contains("_shape_centroid_grid") or not block_drag.contains("_candidate_origin_for_probe") or not block_preview.contains("exp(-delta * 86.0)"):
+	if not block_drag.contains("_shape_centroid_grid") or not block_drag.contains("MagneticTarget.choose") or not block_drag.contains("_best_origin") or not block_preview.contains("position = target_position") or not block_preview.contains("exp(-delta * 98.0)"):
 		return _fail("Block Puzzle magnetic smooth drag contract is missing")
 
 	if not main_controller.contains("signal surface_changed"):

@@ -367,7 +367,12 @@ func _handle_back() -> void:
 		return
 	_last_system_back_ms = now_ms
 	_last_system_back_frame = frame
-	if tutorial_panel != null and tutorial_panel.visible:
+	# The casual shell constructs an internally visible TutorialPanel inside
+	# a HIDDEN FigmaTutorial canvas. Testing the child alone intercepted the
+	# first Android Back press on every Settings/Levels screen. Only dismiss a
+	# tutorial whose parent overlay is actually shown to the player.
+	var tutorial_canvas := find_child("FigmaTutorial390x844", true, false) as CanvasItem
+	if tutorial_panel != null and tutorial_panel.visible and (tutorial_canvas == null or tutorial_canvas.visible):
 		hide_tutorial()
 		return
 	var main := _main()
@@ -392,6 +397,9 @@ func _handle_back() -> void:
 		leaderboard.call("close")
 		return
 	var surface := _current_surface()
+	if surface == "settings" and main.has_method("_return_from_settings"):
+		main.call("_return_from_settings")
+		return
 	if surface == "levels" and main.has_method("_open_games_surface"):
 		main.call("_open_games_surface")
 	elif surface in ["game", "game_loading"]:

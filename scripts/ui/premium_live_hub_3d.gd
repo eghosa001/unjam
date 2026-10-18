@@ -141,7 +141,8 @@ func _build_reference_selector(canvas: Control) -> void:
 
 	var back := RefCanvas.premium_button("‹", 27, OFF_WHITE, Color("#292a2d") if _selector_dark() else Color("#d6d1c7"), 16, bg_border, 1)
 	back.name = "SelectorBackButton"
-	back.tooltip_text = "Back home"
+	back.tooltip_text = "Back to Home"
+	back.accessibility_name = "Back to Home"
 	RefCanvas.set_rect(back, 17, 19, 52, 52)
 	back.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 	back.pressed.connect(_go_home)
@@ -153,19 +154,20 @@ func _build_reference_selector(canvas: Control) -> void:
 	RefCanvas.fit_single_line_text(selector_title, 192.0, 22, 14)
 	var settings := RefCanvas.premium_button("⚙", 18, DARK_INK if _selector_dark() else NAVY, Color("#292a2d") if _selector_dark() else Color("#d6d1c7"), 16, bg_border, 1)
 	settings.name = "SelectorSettingsButton"
-	settings.tooltip_text = "Settings"
+	settings.tooltip_text = "Open game settings"
+	settings.accessibility_name = "Open game settings"
 	RefCanvas.set_rect(settings, 317, 21, 52, 46)
 	settings.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 	settings.pressed.connect(func(): get_parent().call("build_settings"))
 	canvas.add_child(settings)
 
-	var guide := _add_text(canvas, "TAP CARD FOR LEVELS  •  PLAY TO RESUME", Rect2(25, 78, 340, 22), 12, DARK_MUTED if _selector_dark() else MUTED, false)
+	var guide := _add_text(canvas, "TAP CARD: LEVELS  •  PLAY: RESUME", Rect2(25, 78, 340, 22), 13, DARK_MUTED if _selector_dark() else MUTED, false)
 	guide.name = "SelectorActionGuide"
 	guide.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
-	_add_game_card(canvas, "rescue_rush", Rect2(17, 111, 354, 160), Color("#21c763"), Color("#49d17f"), "RESCUE RUSH", "Tap arrows. Clear paths.")
-	_add_game_card(canvas, "water_sort", Rect2(17, 285, 354, 160), Color("#1aa8ff"), Color("#43b8ff"), "WATER SORT", "Sort colours by tube.")
-	_add_game_card(canvas, "block_puzzle", Rect2(17, 459, 354, 160), Color("#c73dff"), Color("#d160ff"), "BLOCK PUZZLE", "Place blocks. Clear lines.")
+	_add_game_card(canvas, "rescue_rush", Rect2(17, 111, 354, 160), Color("#21c763"), Color("#49d17f"), "RESCUE RUSH", "Free the trapped arrows")
+	_add_game_card(canvas, "water_sort", Rect2(17, 285, 354, 160), Color("#1aa8ff"), Color("#43b8ff"), "WATER SORT", "Plan each colour pour")
+	_add_game_card(canvas, "block_puzzle", Rect2(17, 459, 354, 160), Color("#c73dff"), Color("#d160ff"), "BLOCK PUZZLE", "Fit shapes, clear rows")
 	_add_bottom_nav(canvas)
 
 func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color, highlight: Color, title: String, subtitle: String) -> void:
@@ -208,8 +210,11 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 	subtitle_clip.add_child(game_subtitle)
 
 	var level := maxi(1, MultiGameManager.highest_level(game_id))
-	var level_label := _add_text(canvas, "LEVEL %d" % level, Rect2(34, rect.position.y + 108, 104, 24), 13, DARK_MUTED if _selector_dark() else MUTED, true)
+	var level_label := _add_text(canvas, "LEVEL %d" % level, Rect2(34, rect.position.y + 108, 93, 24), 13, DARK_MUTED if _selector_dark() else MUTED, true)
 	level_label.name = "SelectorLevelLabel_%s" % game_id
+	level_label.accessibility_name = "%s campaign, current level %d" % [title.capitalize(), level]
+	var browse_cue := _add_text(canvas, "LEVELS  ›", Rect2(34, rect.position.y + 134, 90, 20), 13, accent.lightened(0.42) if _selector_dark() else accent.darkened(0.43), true)
+	browse_cue.name = "SelectorBrowseCue_%s" % game_id
 	_add_card_preview(canvas, game_id, rect.position.y)
 
 	var tap := Button.new()
@@ -232,13 +237,13 @@ func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color
 	tap.set_deferred("action_mode", BaseButton.ACTION_MODE_BUTTON_RELEASE)
 	tap.set_meta("unjam_authored_focus_mode", int(Control.FOCUS_ALL))
 
-	var play := RefCanvas.premium_button("PLAY", 14, OFF_WHITE, accent.darkened(0.18), 13, Color(accent.r, accent.g, accent.b, 0.54), 1)
+	var play := RefCanvas.premium_button("PLAY  ▶", 14, OFF_WHITE, accent.darkened(0.18), 13, Color(accent.r, accent.g, accent.b, 0.54), 1)
 	play.name = "SelectorPlay_%s" % game_id
 	play.tooltip_text = "Play %s" % title.capitalize()
-	RefCanvas.set_rect(play, 151, rect.position.y + 99, 76, 44)
-	RefCanvas.fit_single_line_text(play, 64.0, 14, 10)
+	RefCanvas.set_rect(play, 133, rect.position.y + 97, 93, 48)
+	RefCanvas.fit_single_line_text(play, 80.0, 14, 13)
 	play.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
-	play.accessibility_name = "Play or resume %s" % title.capitalize()
+	play.accessibility_name = "Play or resume %s gameplay at the current level" % title.capitalize()
 	play.pressed.connect(_play.bind(game_id))
 	canvas.add_child(play)
 
