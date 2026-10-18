@@ -540,7 +540,7 @@ func _add_rank_summary(canvas: Control) -> void:
 		13,DARK_MUTED if dark else Color("#424a59"),false)
 	weekly_hint.name = "HomeRankWeeklyHint"
 	var open := _add_action(canvas,Rect2(244,524,108,44),Color("#7757cf"),
-		"RANKINGS ›",12,OFF_WHITE,Callable(self,"_open_compete"),13)
+		"LEADERBOARD",12,OFF_WHITE,Callable(self,"_open_compete"),13)
 	open.name = "HomeDailyGamesButton"
 	open.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 	open.accessibility_name = "Open full-screen Today, Weekly and All-Time leaderboards"
