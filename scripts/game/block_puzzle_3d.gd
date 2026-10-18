@@ -119,6 +119,9 @@ func _build_figma_block(canvas: Control) -> void:
 	canvas.add_child(sky)
 	var ground := PanelContainer.new()
 	ground.name = "BlockScenicGround"
+	# Scenic plate supports the game identity without carving a hard horizon
+	# through the 8x8 board. The blocks and drop target must dominate.
+	ground.modulate.a = 0.20
 	ground.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(Color("#302047"), Color("#241735"), Color("#181023"), 0, Color.TRANSPARENT, 0, 0.20))
 	FigmaReferenceCanvas.set_rect(ground, -24.88, -23.04, 437.76, 460.20)
 	ground.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -126,11 +129,12 @@ func _build_figma_block(canvas: Control) -> void:
 	var platform := Polygon2D.new()
 	platform.name = "BlockPerspectivePlatform"
 	platform.polygon = PackedVector2Array([Vector2(14, 434), Vector2(376, 434), Vector2(350, 86), Vector2(40, 86)])
-	platform.color = Color(0.56,0.35,0.76,0.18)
+	platform.color = Color(0.56,0.35,0.76,0.09)
 	canvas.add_child(platform)
 	var scenic_overlay := TextureRect.new()
 	scenic_overlay.name = "BlockAuthoredScreenWorld"
 	scenic_overlay.texture = BLOCK_SCREEN_OVERLAY
+	scenic_overlay.modulate.a = 0.18
 	scenic_overlay.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	scenic_overlay.stretch_mode = TextureRect.STRETCH_SCALE
 	scenic_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -213,6 +217,7 @@ func _build_figma_block(canvas: Control) -> void:
 	var board_art := GAMEPLAY_ART.new()
 	board_art.name = "BlockBoardWorldArt"
 	board_art.configure("block_board", Color("#a855f7"), _shell_dark_mode(), level_number)
+	board_art.modulate.a = 0.10
 	board_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	board_shell.add_child(board_art)
 	var board_margin := MarginContainer.new()
@@ -248,6 +253,7 @@ func _build_figma_block(canvas: Control) -> void:
 	var tray_art := GAMEPLAY_ART.new()
 	tray_art.name = "BlockTrayWorldArt"
 	tray_art.configure("block_tray", Color("#a855f7"), _shell_dark_mode(), level_number)
+	tray_art.modulate.a = 0.11
 	tray_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	tray.add_child(tray_art)
 	piece_row = HBoxContainer.new()
