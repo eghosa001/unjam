@@ -177,6 +177,28 @@ static func milestone_kind(level: int) -> String:
 		return "challenge"
 	return "normal"
 
+static func needs_curated_challenge_remaster(level: int, tubes: Array, proof_moves: int, profile: Dictionary) -> bool:
+	# Skip tutorial and opening mastery boards, which are deliberately brief.
+	if level <= 100 or tubes.is_empty():
+		return false
+	var solved_tubes := 0
+	var color_count := maxi(1, int(profile.get("colors", 3)))
+	for raw_tube in tubes:
+		var tube: Array = raw_tube
+		if tube.size() != CAPACITY:
+			continue
+		var uniform := true
+		for color in tube:
+			if int(color) != int(tube[0]):
+				uniform = false
+				break
+		if uniform:
+			solved_tubes += 1
+	# Strong boards do not need to change. The threshold catches both tiny
+	# solution proofs and boards that start largely completed.
+	return proof_moves < maxi(12, color_count * 2) or solved_tubes >= maxi(3, ceili(float(color_count) * 0.40))
+
+
 static func score_board(tubes: Array, proof_moves: int) -> Dictionary:
 	var color_count := 0
 	var color_tubes := {}

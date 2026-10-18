@@ -39,9 +39,9 @@ func _run() -> void:
 	if not _same(choose,Rect2(39,227,312,54)) or choose.text != "▦  CHOOSE GAME":
 		return _fail("Choose Game must dominate the welcome card and be full width")
 	var showcase_heading := home.find_child("HomeShowcaseTitle",true,false) as Label
-	if showcase_heading == null or showcase_heading.text != "THREE GAMES. ONE APP.":
+	if showcase_heading == null or showcase_heading.text != "CHOOSE YOUR CHALLENGE":
 		return _fail("Concise game showcase introduction is missing")
-	if not _same(rank_panel,Rect2(21,472,346,164)):
+	if not _same(rank_panel,Rect2(21,521,346,115)):
 		return _fail("Today/weekly rank card layout drifted")
 	if not _same(daily_panel,Rect2(21,652,346,84)):
 		return _fail("Daily feature layout drifted")
@@ -70,9 +70,9 @@ func _run() -> void:
 		var tagline := home.find_child("HomeShowcaseTagline_%s" % game_id,true,false) as Label
 		if card == null or art == null or name == null or tagline == null:
 			return _fail("Game showcase illustration/name/tagline missing for %s" % game_id)
-		if not _same(card,Rect2(21,344,110,112)) and game_id == "rescue_rush":
+		if not _same(card,Rect2(21,344,110,160)) and game_id == "rescue_rush":
 			return _fail("Game showcase reference card is not compact")
-		if card.size.x > 111 or card.size.y > 114:
+		if card.size.x > 111 or card.size.y > 161:
 			return _fail("Game showcase cards have grown into a second Games grid")
 		if not bool(art.get("compact")) or art.is_processing():
 			return _fail("Home explainer art must be static and battery efficient for %s" % game_id)
@@ -83,22 +83,27 @@ func _run() -> void:
 		if card.mouse_filter != Control.MOUSE_FILTER_IGNORE or art.mouse_filter != Control.MOUSE_FILTER_IGNORE:
 			return _fail("Game illustration intercepts taps intended for the shortcut")
 		var hit := home.find_child("HomeShowcaseOpenLevels_%s" % game_id,true,false) as Button
+		var level_hint := home.find_child("HomeShowcaseLevel_%s" % game_id,true,false) as Label
+		if level_hint == null or not level_hint.text.begins_with("LEVEL ") or level_hint.get_theme_font_size("font_size") < 12:
+			return _fail("Showcase must expose saved progress and large accessible art for %s" % game_id)
+		if level_hint.position.y + level_hint.size.y > card.position.y + card.size.y:
+			return _fail("Showcase progress cue escapes its game card for %s" % game_id)
 		if hit == null or not _same(hit,Rect2(card.position,card.size)):
 			return _fail("Entire illustrated game card must be tappable to open levels for %s" % game_id)
 		if hit.action_mode != BaseButton.ACTION_MODE_BUTTON_RELEASE or hit.focus_mode != Control.FOCUS_ALL or not hit.accessibility_name.contains("level selection"):
 			return _fail("Illustrated game shortcut must be release-triggered, keyboard accessible and descriptive")
-		if art.size.y < 60.0 or art.size.x < 75.0:
+		if art.size.y < 90.0 or art.size.x < 90.0:
 			return _fail("Game artwork must be clearly readable, not squeezed into a thin strip")
 		if home.find_child("HomeDirect_%s" % game_id,true,false) != null:
 			return _fail("Home re-added obsolete individual game launch controls")
 		showcase_end = maxf(showcase_end,card.position.y+card.size.y)
 	if hero.position.y+hero.size.y+12.0 >= 310.0 or showcase_end+12.0 >= rank_panel.position.y or rank_panel.position.y+rank_panel.size.y+12.0 >= daily_panel.position.y or daily_panel.position.y+daily_panel.size.y+12.0 >= nav.position.y:
 		return _fail("Home hero, showcase, ranks, Daily or bottom navigation overlap")
-	for button in [choose,ranks,daily]:
+	for button in [choose,daily]:
 		if button.size.y < 44 or button.size.x < 125:
 			return _fail("Primary Home action is not thumb-sized: %s" % button.name)
 	# Game identity is allowed ONLY inside the compact descriptive showcase.
-	# No current-level indicators, oversized feature artwork or secondary CTAs.
+	# No obsolete selected-game hero artwork or secondary promotional CTAs.
 	for forbidden in ["HomeHeroGameTitle","HomeHeroGameMeta","HomeHeroFlatGameLogo",
 		"HomeWideSelectedGameArt","HomeWideGameTitle","HomeSelectedGameLevel",
 		"HomeWorldProgress","HomeQuickSwitchFlatLogo_rescue_rush",
@@ -110,6 +115,8 @@ func _run() -> void:
 			var label := node as Label
 			if label.text.to_upper().contains("CONTINUE • LEVEL"):
 				return _fail("Home foreground still highlights a selected game's current level")
+	if ranks.size.y < 44 or ranks.size.x < 100 or ranks.position.y + ranks.size.y > rank_panel.position.y + rank_panel.size.y:
+		return _fail("Compact rankings link must remain a true visible 44px action within its panel")
 	if home.find_child("HomeSidekick",true,false) != null:
 		return _fail("Home has an extra promotional panel")
 	# Tablet stage must also show the neutral UNJAM identity, not a selected

@@ -2,6 +2,9 @@
 
 The owner-approved comparison and category scoring contract is
 [docs/COMPETITIVE_QUALITY_STANDARD.md](docs/COMPETITIVE_QUALITY_STANDARD.md).
+For every meaningful UI, graphics, puzzle-quality or release change, also follow
+the [per-game competitor benchmark and player-feedback review](docs/PLAYER_FEEDBACK_BENCHMARK.md).
+Competitive ratings require observed game/device evidence, not merely solver scores or passing CI.
 Every area must individually earn >=9 with device/live evidence where required;
 CI cannot manufacture a rating. The fast-production policy remains authoritative.
 
