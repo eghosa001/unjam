@@ -1428,7 +1428,24 @@ func _figma_daily_progress(canvas: Control) -> void:
 			done_count += 1
 
 	_figma_card(canvas, "DailyProgress", Rect2(17,487,354,106), Color("#fffef8"), Color(FIGMA_GOLD,0.42), 18)
-	_figma_text(canvas, "TODAY", Rect2(33,500,80,20), 15, FIGMA_INK)
+	# The completion fraction alone doesn't tell a returning player what to do.
+	# Point to the next *available* puzzle, never a completed/locked one.
+	var next_id := ""
+	for id in MultiGameManager.GAME_IDS:
+		if not _daily_done(id):
+			next_id = id
+			break
+	var next_short := "ALL DONE TODAY"
+	match next_id:
+		"rescue_rush": next_short = "NEXT: RESCUE"
+		"water_sort": next_short = "NEXT: WATER"
+		"block_puzzle": next_short = "NEXT: BLOCK"
+	var next_step := _figma_text(canvas,next_short,Rect2(33,500,169,20),15,FIGMA_INK)
+	next_step.name = "DailyProgressNext"
+	next_step.accessibility_name = "All three daily puzzles complete. Come back tomorrow." if next_id.is_empty() else "Up next: %s daily puzzle. Use the Play button in its game card." % MultiGameManager.display_name(next_id)
+	next_step.tooltip_text = next_step.accessibility_name
+	next_step.clip_text = true
+	_fit_single_line_control_text(next_step,165.0,15,13)
 	var count := _figma_text(canvas, "%d / 3 COMPLETE" % done_count, Rect2(210,500,141,20), 13, FIGMA_MUTED, true)
 	count.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var progress := ProgressBar.new()
