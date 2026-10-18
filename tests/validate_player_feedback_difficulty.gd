@@ -68,6 +68,21 @@ func _run() -> void:
 		if int(bridge.get("scramble_steps", 0)) < 20:
 			return _fail("Water level %d lost the post-100 scramble depth" % post_milestone)
 
+	# A genuine mid-campaign challenge asks for multi-move planning rather
+	# than presenting the same easy shape distribution with a harder label.
+	for planning_checkpoint in [25, 30, 50, 100, 250]:
+		var planned: Dictionary = Block.profile(planning_checkpoint)
+		var authored_plan: Dictionary = BlockCatalog.recipe(planning_checkpoint)
+		var role := String(planned.get("retention_role", ""))
+		var marker := String(planned.get("milestone", "normal"))
+		var is_challenge := role in ["challenge", "stretch", "peak", "hard", "very_hard", "expert"]
+		var is_boss := marker in ["mini_boss", "boss", "world_finale", "mastery", "finale", "hard_challenge"]
+		if is_challenge or is_boss:
+			if int(planned.get("planning_horizon", 0)) < (4 if is_boss else 3):
+				return _fail("Block level %d lacks multi-move challenge planning" % planning_checkpoint)
+			if float(planned.get("initial_occupancy", 0.0)) <= float(authored_plan.get("initial_occupancy", 0.0)):
+				return _fail("Block level %d lost board pressure" % planning_checkpoint)
+
 	for early_block in [5, 7, 8, 10, 25, 30]:
 		var starting_recipe := BlockCatalog.recipe(early_block)
 		var stronger := Block.profile(early_block)
