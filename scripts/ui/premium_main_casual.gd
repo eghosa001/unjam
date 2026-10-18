@@ -44,6 +44,9 @@ var _collection_scroll_tracking := false
 var _collection_scroll_origin_y := 0.0
 var _settings_help_game := "rescue_rush"
 var _settings_theme_toggle_pending := false
+# Back from Settings restores the surface that opened it, not always Home.
+# Theme and toggle rebuilds retain this origin until Settings is dismissed.
+var _settings_return_surface := "home"
 var _profile_game := "rescue_rush"
 var _ranking_game := "rescue_rush"
 var _friends_period := "all_time"
@@ -1148,6 +1151,11 @@ func _on_friend_action_finished(ok: bool, message: String) -> void:
 		build_friends(false)
 
 func build_settings() -> void:
+	if current_surface != "settings":
+		_settings_return_surface = current_surface if current_surface in [
+			"home", "live", "levels", "daily", "collection", "goals",
+			"profile", "friends", "compete"
+		] else "home"
 	current_surface = "settings"
 	_remove_active_game()
 	var shell := get_node_or_null("UXShell")
@@ -1161,7 +1169,11 @@ func build_settings() -> void:
 		FIGMA_DARK_BOTTOM if dark_mode else FIGMA_BG_BOTTOM,
 		FIGMA_DARK_TOP if dark_mode else FIGMA_BG_TOP
 	)
-	_figma_header(canvas, "SETTINGS", "", "QUALITY", Color("#264e67"), Callable(self,"build_home"), Callable(self,"_open_device_quality_lab"), dark_mode)
+	_figma_header(canvas, "SETTINGS", "MAKE IT YOURS", "QUALITY", Color("#264e67"), Callable(self,"_return_from_settings"), Callable(self,"_open_device_quality_lab"), dark_mode)
+	var back := canvas.get_node_or_null("FigmaBack") as Button
+	if back != null:
+		back.accessibility_name = "Return to %s" % _settings_return_surface.capitalize()
+		back.tooltip_text = back.accessibility_name
 	var quality_entry := canvas.find_child("FigmaHeaderPill",true,false) as Button
 	if quality_entry != null:
 		quality_entry.name = "SettingsQualityLab"
@@ -1178,85 +1190,110 @@ func build_settings() -> void:
 	var muted_color := Color("#b8c2cc") if dark_mode else FIGMA_MUTED
 
 	_figma_settings_card(canvas,"SettingsCard/Sound",Rect2(17,91,354,170),card_fill,card_border,dark_mode)
-	_figma_text(canvas,"SOUND",Rect2(33,107,160,18),15,heading_color)
+	_figma_text(canvas,"SOUND & FEEDBACK",Rect2(33,107,208,18),15,heading_color)
 	_figma_setting_row(canvas,"sound","SOUND EFFECTS",130,142,true,false,dark_mode)
 	_figma_setting_row(canvas,"music","MUSIC",178,190,true,false,dark_mode)
 	_figma_setting_row(canvas,"vibration","HAPTICS",226,238,true,false,dark_mode)
 
 	_figma_settings_card(canvas,"SettingsCard/Comfort",Rect2(17,275,354,169),card_fill,card_border,dark_mode)
-	_figma_text(canvas,"COMFORT",Rect2(33,291,130,18),15,heading_color)
+	_figma_text(canvas,"PLAY COMFORT",Rect2(33,291,192,18),15,heading_color)
 	_figma_setting_row(canvas,"reduce_motion","REDUCED MOTION",314,326,false,true,dark_mode)
 	_figma_setting_row(canvas,"fast_animation","FAST ANIMATION",358,370,false,false,dark_mode)
 	_figma_setting_row(canvas,"gentle_effects","GENTLE EFFECTS",403,415,true,false,dark_mode)
 
-	_figma_settings_card(canvas,"SettingsCard/Appearance",Rect2(17,450,354,76),card_fill,card_border,dark_mode)
-	_figma_text(canvas,"APPEARANCE",Rect2(33,466,150,18),15,heading_color)
-	_figma_text(canvas,"THEME",Rect2(33,489,72,28),14,muted_color)
-	_figma_text(canvas,"LANGUAGE",Rect2(109,489,82,28),12,muted_color)
-	# Appearance header ends before this button; no 4px header collision.
-	# Both compact controls retain at least a 44px touch target.
-	var language_code := LocalizationManager.locale_badge()
-	var language_button := _figma_button(canvas,"SettingsLanguageToggle","%s ›" % language_code,
-		Rect2(195,480,71,44),Color("#3b4148") if dark_mode else Color("#e7e1d6"),
-		Callable(self,"_cycle_settings_language"),FIGMA_DARK_INK if dark_mode else FIGMA_NAVY,13,12)
-	language_button.tooltip_text = LocalizationManager.localize("LANGUAGE")
-	language_button.accessibility_name = "%s %s" % [LocalizationManager.localize("LANGUAGE"), language_code]
-	var theme_fill := FIGMA_GOLD
-	var theme_text := FIGMA_NAVY
-	var theme_button := _figma_button(canvas,"SettingsThemeToggle",theme_name,Rect2(279,480,72,44),theme_fill,Callable(),theme_text,19,15)
+	# Keep each preference on a separate row. The previous 76px Appearance
+	# strip squeezed THEME / LANGUAGE into three adjacent miniature columns
+	# even though the settings already had spare space above the fixed nav.
+	_figma_settings_card(canvas,"SettingsCard/Appearance",Rect2(17,450,354,125),card_fill,card_border,dark_mode)
+	_figma_text(canvas,"APPEARANCE",Rect2(33,459,170,20),15,heading_color)
+	_figma_text(canvas,"COLOUR THEME",Rect2(33,490,180,24),15,muted_color)
+	var theme_button := _figma_button(canvas,"SettingsThemeToggle",theme_name,
+		Rect2(244,480,107,44),FIGMA_GOLD,Callable(),FIGMA_NAVY,16,15)
+	theme_button.accessibility_name = "Change colour theme. Current: %s" % theme_name.capitalize()
+	theme_button.tooltip_text = theme_button.accessibility_name
 	theme_button.pressed.connect(_toggle_settings_theme)
+	_figma_text(canvas,"LANGUAGE",Rect2(33,537,175,24),15,muted_color)
+	var language_code := LocalizationManager.locale_badge()
+	var language_button := _figma_button(canvas,"SettingsLanguageToggle","%s  ›" % language_code,
+		Rect2(244,527,107,44),Color("#3b4148") if dark_mode else Color("#e7e1d6"),
+		Callable(self,"_cycle_settings_language"),FIGMA_DARK_INK if dark_mode else FIGMA_NAVY,16,15)
+	language_button.tooltip_text = "Change language. Current: %s" % language_code
+	language_button.accessibility_name = language_button.tooltip_text
 
-	var help_card: PanelContainer
-	if dark_mode:
-		help_card = _figma_solid_card(canvas,"HelpPrivacy",Rect2(17,540,354,94),card_fill,card_border,18)
-	else:
-		help_card = _figma_solid_card(canvas,"HelpPrivacy",Rect2(17,540,354,94),Color("#f5f2ec"),Color("#cbc6bc"),18)
-	_figma_text(canvas,"SUPPORT",Rect2(33,556,170,18),15,heading_color)
+	_figma_solid_card(canvas,"HelpPrivacy",Rect2(17,582,354,79),card_fill,card_border,18)
+	_figma_text(canvas,"HELP & PRIVACY",Rect2(33,586,184,18),15,heading_color)
 	var utility_fill := Color("#2d2e31") if dark_mode else Color("#ebe7df")
 	var utility_border := Color("#44474c") if dark_mode else Color("#cbc6bc")
 	var utility_text := FIGMA_DARK_INK if dark_mode else FIGMA_NAVY
-	FigmaReferenceCanvas.add_shadow(canvas, Rect2(33,582,126,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
-	var how_to := FigmaReferenceCanvas.premium_button("HOW TO PLAY",15,utility_text,utility_fill,16,utility_border,1.2)
+	var how_to := FigmaReferenceCanvas.premium_button("HOW TO PLAY",14,utility_text,utility_fill,14,utility_border,1.2)
 	how_to.name = "SettingsHowToPlay"
-	FigmaReferenceCanvas.set_rect(how_to,33,582,126,46)
+	FigmaReferenceCanvas.set_rect(how_to,33,607,126,46)
 	how_to.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 	how_to.pressed.connect(_show_current_tutorial)
+	how_to.accessibility_name = "Open tutorial for the selected puzzle game"
 	canvas.add_child(how_to)
-	FigmaReferenceCanvas.add_shadow(canvas, Rect2(167,582,90,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
-	var help_game := FigmaReferenceCanvas.premium_button(_settings_help_game_label(),12,utility_text,utility_fill,16,utility_border,1.2)
+	var help_game := FigmaReferenceCanvas.premium_button(_settings_help_game_label(),13,utility_text,utility_fill,14,utility_border,1.2)
 	help_game.name = "SettingsHowToPlayGame"
-	FigmaReferenceCanvas.set_rect(help_game,167,582,90,46)
+	FigmaReferenceCanvas.set_rect(help_game,167,607,90,46)
 	help_game.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 	help_game.pressed.connect(_cycle_settings_help_game.bind(help_game))
+	help_game.accessibility_name = "Tutorial game: %s. Tap to change game" % _settings_help_game_label().replace(" ›","").capitalize()
 	canvas.add_child(help_game)
-	FigmaReferenceCanvas.add_shadow(canvas, Rect2(265,582,86,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
-	var privacy := FigmaReferenceCanvas.premium_button("PRIVACY",15,utility_text,utility_fill,16,utility_border,1.2)
+	var privacy := FigmaReferenceCanvas.premium_button("PRIVACY",14,utility_text,utility_fill,14,utility_border,1.2)
 	privacy.name = "SettingsPrivacy"
-	FigmaReferenceCanvas.set_rect(privacy,265,582,86,46)
+	FigmaReferenceCanvas.set_rect(privacy,265,607,86,46)
 	privacy.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 	privacy.pressed.connect(_open_privacy_sheet)
+	privacy.accessibility_name = "Privacy and analytics controls"
 	canvas.add_child(privacy)
 
-	_figma_settings_card(canvas,"SettingsCard/Purchases",Rect2(17,648,354,98),card_fill,card_border,dark_mode)
-	_figma_text(canvas,"PURCHASES",Rect2(33,662,170,18),15,heading_color)
-	FigmaReferenceCanvas.add_shadow(canvas, Rect2(33,686,153,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
-	var purchases := FigmaReferenceCanvas.premium_button("SHOP & RESTORE",13,utility_text,utility_fill,16,utility_border,1.2)
+	_figma_settings_card(canvas,"SettingsCard/Purchases",Rect2(17,667,354,79),card_fill,card_border,dark_mode)
+	_figma_text(canvas,"ACCOUNT & PURCHASES",Rect2(33,671,250,18),15,heading_color)
+	var purchases := FigmaReferenceCanvas.premium_button("SHOP & RESTORE",13,utility_text,utility_fill,14,utility_border,1.2)
 	purchases.name = "SettingsPurchases"
 	purchases.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
-	FigmaReferenceCanvas.set_rect(purchases,33,686,153,46)
+	FigmaReferenceCanvas.set_rect(purchases,33,693,153,46)
 	purchases.tooltip_text = "Buy upgrades or restore previous Google Play purchases"
+	purchases.accessibility_name = purchases.tooltip_text
 	purchases.pressed.connect(_figma_open_shop)
 	canvas.add_child(purchases)
-	FigmaReferenceCanvas.add_shadow(canvas, Rect2(195,686,156,46), 16, Color(0.02,0.10,0.18,0.22), 4, Vector2(0,4))
-	var recovery := FigmaReferenceCanvas.premium_button("CLOUD BACKUP",13,utility_text,utility_fill,16,utility_border,1.2)
+	var recovery := FigmaReferenceCanvas.premium_button("CLOUD BACKUP",13,utility_text,utility_fill,14,utility_border,1.2)
 	recovery.name = "SettingsCloudBackup"
 	recovery.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
-	FigmaReferenceCanvas.set_rect(recovery,195,686,156,46)
+	FigmaReferenceCanvas.set_rect(recovery,195,693,156,46)
 	recovery.tooltip_text = "Copy your private recovery code or restore progress"
+	recovery.accessibility_name = recovery.tooltip_text
 	recovery.pressed.connect(_open_cloud_recovery)
 	canvas.add_child(recovery)
 
 	_figma_bottom_nav(canvas,"settings",dark_mode)
+
+func _return_from_settings() -> void:
+	# Restore a real parent destination. In particular, Games -> Settings ->
+	# Back must return to Games, and Levels -> Settings -> Back to the same
+	# selected campaign. The Android system Back uses this same route.
+	var target := _settings_return_surface
+	_settings_return_surface = "home"
+	match target:
+		"live":
+			_open_games_surface()
+		"levels":
+			build_multi_level_select()
+		"daily":
+			build_daily_games()
+		"collection":
+			build_collection()
+		"goals":
+			build_goals()
+		"profile":
+			build_profile()
+		"friends":
+			build_friends(false)
+		"compete":
+			build_compete_leaderboard(false)
+		_:
+			build_home()
+
 
 func _open_device_quality_lab() -> void:
 	# A single modal reuses the existing device-local frame-probe; the user
@@ -1337,6 +1374,7 @@ func _cycle_settings_help_game(button: Button) -> void:
 	_settings_help_game = SETTINGS_HELP_GAMES[(index + 1) % SETTINGS_HELP_GAMES.size()]
 	if button != null and is_instance_valid(button):
 		button.text = _settings_help_game_label()
+		button.accessibility_name = "Tutorial game: %s. Tap to change game" % _settings_help_game_label().replace(" ›","").capitalize()
 	FeedbackManager.tap()
 
 func _show_current_tutorial() -> void:
