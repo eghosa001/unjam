@@ -24,7 +24,12 @@ func _draw() -> void:
 	if size.x <= 0.0 or size.y <= 0.0:
 		return
 	var radius := minf(size.x, size.y) * 0.43
-	draw_circle(Vector2(size.x * 0.5, size.y * 0.5), radius, Color(accent, 0.13))
+	var center := Vector2(size.x * 0.5, size.y * 0.5)
+	# A quiet raised enamel medallion ties together the three otherwise distinct
+	# game marks without adding GPU lighting or distracting animated decoration.
+	draw_circle(center + Vector2(0.0, radius * 0.08), radius, Color(0, 0, 0, 0.10))
+	draw_circle(center, radius, Color(accent, 0.15))
+	draw_arc(center, radius * 0.89, -2.65, -0.52, 18, Color(1, 1, 1, 0.21), maxf(1.2, radius * 0.032), true)
 	match game_id:
 		"water_sort":
 			_draw_water()
@@ -45,8 +50,15 @@ func _draw_rescue() -> void:
 	var angles := [0.0, PI * 0.5, -PI * 0.5]
 	for i in range(centers.size()):
 		var center: Vector2 = centers[i]
-		draw_rect(Rect2(center - Vector2.ONE * tile * 0.5, Vector2.ONE * tile), colors[i], true)
-		_draw_arrow(center, tile * 0.70, angles[i], Color.WHITE)
+		var pos := center - Vector2.ONE * tile * 0.5
+		# Faceted, not photorealistic: a dark foot, bright raised face and a single
+		# top-light reflection keep direction arrows legible at selector-icon size.
+		draw_rect(Rect2(pos + Vector2(0, tile * 0.11), Vector2(tile, tile * 0.89)), colors[i].darkened(0.42), true)
+		draw_rect(Rect2(pos, Vector2(tile, tile * 0.88)), colors[i], true)
+		draw_rect(Rect2(pos + Vector2(tile * 0.09, tile * 0.08), Vector2(tile * 0.82, tile * 0.13)), Color(1, 1, 1, 0.27), true)
+		var arrow_ink := Color("#14344b") if colors[i].get_luminance() > 0.61 else Color.WHITE
+		_draw_arrow(center + Vector2(0, tile * 0.055), tile * 0.68, angles[i], Color(0, 0, 0, 0.32))
+		_draw_arrow(center, tile * 0.68, angles[i], arrow_ink)
 
 func _draw_arrow(center: Vector2, length: float, angle: float, color: Color) -> void:
 	var stem_w := length * 0.18
@@ -76,8 +88,13 @@ func _draw_water() -> void:
 		draw_line(Vector2(x + tube_w * 0.5, top), Vector2(x + tube_w * 0.5, bottom - tube_w * 0.45), outline, maxf(2.0, unit * 0.035), true)
 		draw_arc(Vector2(x, bottom - tube_w * 0.45), tube_w * 0.5, 0.0, PI, 18, outline, maxf(2.0, unit * 0.035), true)
 		var fill_top := top + tube_h * (0.45 + float(i) * 0.07)
-		draw_rect(Rect2(x - tube_w * 0.39, fill_top, tube_w * 0.78, bottom - tube_w * 0.45 - fill_top), liquid[i], true)
-		draw_circle(Vector2(x, bottom - tube_w * 0.45), tube_w * 0.39, liquid[i])
+		# The fluid and glass are separate layers: the meniscus shows above the
+		# fill while a thin specular edge preserves the tube silhouette.
+		var liquid_top := Vector2(x - tube_w * 0.39, fill_top)
+		draw_rect(Rect2(liquid_top, Vector2(tube_w * 0.78, bottom - tube_w * 0.45 - fill_top)), liquid[i].darkened(0.08), true)
+		draw_circle(Vector2(x, bottom - tube_w * 0.45), tube_w * 0.39, liquid[i].darkened(0.08))
+		draw_line(Vector2(x - tube_w * 0.34, fill_top), Vector2(x + tube_w * 0.34, fill_top), liquid[i].lightened(0.35), maxf(1.1, unit * 0.018), true)
+		draw_line(Vector2(x - tube_w * 0.37, top + tube_w * 0.25), Vector2(x - tube_w * 0.37, bottom - tube_w * 0.58), Color(1, 1, 1, 0.30), maxf(1.0, unit * 0.016), true)
 		draw_line(Vector2(x - tube_w * 0.55, top), Vector2(x + tube_w * 0.55, top), outline, maxf(2.0, unit * 0.035), true)
 
 func _draw_block() -> void:
@@ -98,4 +115,9 @@ func _draw_block() -> void:
 		var row := int(entry[1])
 		var color: Color = entry[2]
 		var pos := start + Vector2(float(col) * (cell + gap), float(row) * (cell + gap))
-		draw_rect(Rect2(pos, Vector2.ONE * cell), color, true)
+		# Small front-lit blocks echo the real board's restrained facets rather
+		# than advertising a different art direction on the Home screen.
+		draw_rect(Rect2(pos + Vector2(0, cell * 0.13), Vector2(cell, cell * 0.87)), color.darkened(0.45), true)
+		draw_rect(Rect2(pos, Vector2(cell, cell * 0.88)), color, true)
+		draw_line(pos + Vector2(cell * 0.10, cell * 0.10), pos + Vector2(cell * 0.88, cell * 0.10), color.lightened(0.42), maxf(1.0, unit * 0.018), true)
+		draw_line(pos + Vector2(cell * 0.90, cell * 0.20), pos + Vector2(cell * 0.90, cell * 0.78), color.darkened(0.24), maxf(1.0, unit * 0.014), true)
