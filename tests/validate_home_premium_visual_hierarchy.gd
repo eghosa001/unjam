@@ -36,8 +36,15 @@ func _run() -> void:
 		return _fail("Minimalist Home is missing required actions or rankings")
 	if not _same(hero,Rect2(21,126,346,168)):
 		return _fail("Welcome hero layout drifted")
-	if not _same(choose,Rect2(39,227,312,54)) or choose.text != "▦  CHOOSE GAME":
-		return _fail("Choose Game must dominate the welcome card and be full width")
+	if not _same(choose,Rect2(39,227,190,54)) or choose.text != "▦  CHOOSE GAME":
+		return _fail("Home must keep a dominant, explicit Browse Games action")
+	var resume := home.find_child("HomeResumeAction",true,false) as Button
+	if resume == null or not _same(resume,Rect2(237,227,114,54)):
+		return _fail("Home must provide a distinct, convenient resume action")
+	if not resume.text.begins_with("▶") or not resume.accessibility_name.begins_with("Play "):
+		return _fail("Quick Play must name its target for TalkBack and explain its action")
+	if resume.action_mode != BaseButton.ACTION_MODE_BUTTON_RELEASE or resume.pressed.get_connections().is_empty():
+		return _fail("Home resume must be release-triggered and actually navigable")
 	var showcase_heading := home.find_child("HomeShowcaseTitle",true,false) as Label
 	if showcase_heading == null or showcase_heading.text != "CHOOSE YOUR CHALLENGE":
 		return _fail("Concise game showcase introduction is missing")
