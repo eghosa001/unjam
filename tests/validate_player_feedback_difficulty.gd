@@ -31,6 +31,25 @@ func _run() -> void:
 	if not bool(Rescue.generate(25).get("solver_verified", false)):
 		return _fail("Rescue challenge selection is unstable")
 
+	# First-session milestones must challenge real decision making, not just
+	# show a more impressive integer in the difficulty chip.
+	for opening_level in [5, 7, 8, 10]:
+		var recipe: Dictionary = RescueProgression.profile(opening_level)
+		var chosen: Dictionary = Rescue.generate(opening_level)
+		if not bool(chosen.get("solver_verified", false)):
+			return _fail("Early Rescue challenge %d lost its verified proof" % opening_level)
+		if int(chosen.get("generation_attempt", 0)) < 1 or int(chosen.get("generation_attempt", 0)) > 3:
+			return _fail("Early Rescue %d did not evaluate verified candidate pool" % opening_level)
+		var baseline := -1000000
+		var base_seed := int(recipe.get("authored_seed", opening_level * 104729))
+		for attempt in range(3):
+			var option: Dictionary = Rescue._build_candidate(recipe, base_seed + attempt * 7919)
+			var proof: Array[int] = Solver.find_solution(option, [], 6000)
+			if not proof.is_empty():
+				baseline = maxi(baseline, Rescue._challenge_quality(option, recipe, proof.size()))
+		if int(chosen.get("challenge_selection_score", -1000000)) < baseline:
+			return _fail("Early Rescue %d failed to select strongest solved candidate" % opening_level)
+
 	var early := WaterCatalog.level(100)
 	var weak := WaterCatalog.level(103)
 	if early.is_empty() or weak.is_empty():
@@ -39,6 +58,19 @@ func _run() -> void:
 		return _fail("Water remaster changed deliberate first-100 campaign")
 	if not WaterProgression.needs_curated_challenge_remaster(103, weak.get("tubes", []), (weak.get("solution", []) as Array).size(), WaterProgression.profile(103)):
 		return _fail("Water failed to detect the trivial post-100 board")
+
+	for early_block in [5, 7, 8, 10, 25, 30]:
+		var starting_recipe := BlockCatalog.recipe(early_block)
+		var stronger := Block.profile(early_block)
+		if int(stronger.get("planning_horizon", 0)) <= int(starting_recipe.get("planning_horizon", 0)):
+			return _fail("Early Block level %d has no additional planning demand" % early_block)
+		if float(stronger.get("initial_occupancy", 0.0)) <= float(starting_recipe.get("initial_occupancy", 0.0)):
+			return _fail("Early Block level %d lacks meaningful occupancy pressure" % early_block)
+	for onboarding in [1, 2, 3]:
+		var original := BlockCatalog.recipe(onboarding)
+		var unchanged := Block.profile(onboarding)
+		if int(original.get("planning_horizon", 0)) != int(unchanged.get("planning_horizon", -1)):
+			return _fail("Block level %d must preserve true tutorial planning" % onboarding)
 
 	var raw := BlockCatalog.recipe(50)
 	var hard := Block.profile(50)
