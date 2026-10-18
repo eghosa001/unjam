@@ -55,6 +55,9 @@ func _build_figma_water(canvas: Control) -> void:
 	canvas.add_child(sky)
 	var ground := PanelContainer.new()
 	ground.name = "WaterScenicGround"
+	# Ambient lower scenery must not create a hard horizontal seam behind
+	# the active board. Keep the material but reduce its dominance.
+	ground.modulate.a = 0.19
 	ground.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#5b98a5"), Color("#3c788a"), Color("#28596d"), 0, Color.TRANSPARENT, 0, 0.28))
 	RefCanvas.set_rect(ground, 0, 93, 390, 410)
 	ground.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -62,11 +65,13 @@ func _build_figma_water(canvas: Control) -> void:
 	var platform := Polygon2D.new()
 	platform.name = "WaterPerspectivePlatform"
 	platform.polygon = PackedVector2Array([Vector2(34, 500), Vector2(356, 500), Vector2(330, 190), Vector2(60, 190)])
-	platform.color = Color(0.52,0.72,0.76,0.42)
+	platform.color = Color(0.52,0.72,0.76,0.12)
 	canvas.add_child(platform)
 	var scenic_overlay := TextureRect.new()
 	scenic_overlay.name = "WaterAuthoredScreenWorld"
 	scenic_overlay.texture = WATER_SCREEN_OVERLAY
+	# Large original illustration is ambience, not a competing puzzle layer.
+	scenic_overlay.modulate.a = 0.20
 	scenic_overlay.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	scenic_overlay.stretch_mode = TextureRect.STRETCH_SCALE
 	scenic_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -142,13 +147,15 @@ func _build_figma_water(canvas: Control) -> void:
 	# Premium glass needs contrast. Keep the overall Water screen bright, but give
 	# the playfield a deep ocean-glass surface so crystal edges and liquid volume
 	# remain readable even with many bottles at late levels.
-	gameplay_stage.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#0d4267"), Color("#073453"), Color("#04243c"), 20, Color(0.52, 0.90, 1.0, 0.10), 1.0, 0.08))
+	gameplay_stage.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#0d4267"), Color("#073453"), Color("#04243c"), 20, Color(0.62, 0.93, 1.0, 0.48), 1.4, 0.10))
 	RefCanvas.set_rect(gameplay_stage, 17, 169, 354, 450)
 	gameplay_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(gameplay_stage)
 	var water_art := GAMEPLAY_ART.new()
 	water_art.name = "WaterStageWorldArt"
 	water_art.configure("water_stage", BLUE, _shell_dark_mode(), level_number)
+	# Keep the glass/light/refraction and liquid as the bright foreground.
+	water_art.modulate.a = 0.12
 	water_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	gameplay_stage.add_child(water_art)
 
@@ -472,7 +479,7 @@ func apply_theme_mode(dark: bool) -> void:
 		))
 	var platform := find_child("WaterPerspectivePlatform", true, false) as Polygon2D
 	if platform != null:
-		platform.color = Color(0.16,0.29,0.34,0.52) if dark else Color(0.52,0.72,0.76,0.42)
+		platform.color = Color(0.16,0.29,0.34,0.12) if dark else Color(0.52,0.72,0.76,0.12)
 	var info := find_child("WaterInfo", true, false) as PanelContainer
 	if info != null:
 		info.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(
@@ -497,7 +504,7 @@ func apply_theme_mode(dark: bool) -> void:
 			Color("#092d49") if dark else Color("#0d4267"),
 			Color("#061f35") if dark else Color("#073453"),
 			Color("#031522") if dark else Color("#04243c"),
-			20, Color(0.52,0.90,1.0,0.12 if dark else 0.10), 1.0, 0.08
+			20, Color(0.62,0.93,1.0,0.62 if dark else 0.48), 1.4, 0.10
 		))
 	if status_label != null:
 		status_label.add_theme_color_override("font_color", Color("#e8f5ff") if dark else NAVY)

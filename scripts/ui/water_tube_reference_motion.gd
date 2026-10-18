@@ -76,6 +76,17 @@ func _process(delta: float) -> void:
 	if pour_mode != 0 or slosh > 0.001:
 		queue_redraw()
 
+func _tube_visually_complete() -> bool:
+	# Completed-bottle visual reward must be derived from the real liquid state.
+	# Do not mark partially filled or currently animated bottles as solved.
+	if pour_mode != 0 or layers.size() != CAPACITY:
+		return false
+	var first := int(layers[0])
+	for layer in layers:
+		if int(layer) != first:
+			return false
+	return true
+
 func _draw() -> void:
 	var body := _motion_body_rect()
 	var inner := Rect2(body.position + Vector2(5, 10), body.size - Vector2(10, 20))
@@ -85,6 +96,9 @@ func _draw() -> void:
 	if is_selected and pour_mode == 0: outline = Color("fff3b4")
 	if invalid_flash > 0.0: outline = Color("ff4d67")
 	if success_flash > 0.0: outline = Color("7ff0b0")
+	var complete := _tube_visually_complete()
+	if complete and success_flash <= 0.001 and not is_selected:
+		outline = Color("#cbffe8")
 	_draw_glass_shape(body, Color(0.74, 0.95, 1.0, 0.055), outline, radius, 3.6)
 	var slot_h := inner.size.y / float(CAPACITY)
 	for slot in range(CAPACITY):
@@ -149,6 +163,19 @@ func _draw() -> void:
 	draw_arc(Vector2(body.get_center().x, body.end.y - radius * 0.66), body.size.x * 0.33, 0.14, PI - 0.14, 20, Color(0.85, 0.97, 1.0, 0.22), 2.0, true)
 	# Authored glass silhouette/highlight pass sits above dynamic liquid.
 	draw_texture_rect(AUTHORED_GLASS_OVERLAY, body.grow(5.0), false, Color.WHITE)
+	if complete:
+		# Static, color-matched glass-base caustic rewards a fully sorted tube.
+		# The highlight is BELOW the liquid and never adds side markers, badges,
+		# particles or continuous animation to a completed bottle.
+		var solved_color: Color = PALETTE[clampi(int(layers[0]), 0, PALETTE.size() - 1)]
+		var base_center := Vector2(body.get_center().x, body.end.y - radius * 0.58)
+		draw_arc(base_center, body.size.x * 0.29, 0.12, PI - 0.12, 18,
+			Color(solved_color.lightened(0.45), 0.60), 2.6, true)
+		draw_line(
+			Vector2(body.position.x + radius * 0.55, body.end.y - 4.2),
+			Vector2(body.end.x - radius * 0.55, body.end.y - 4.2),
+			Color("#eafff5", 0.38), 1.5, true
+		)
 	if is_selected and pour_mode == 0:
 		var a := 0.35 if MotionSystem.reduced() else 0.35 + 0.12 * sin(pulse * 5.0)
 		draw_arc(body.get_center(), body.size.x * 0.68, 0, TAU, 42, Color(1.0, 0.88, 0.35, a), 4.0, true)
