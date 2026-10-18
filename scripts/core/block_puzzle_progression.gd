@@ -53,6 +53,20 @@ static func _profile_from_authored(level: int, authored: Dictionary) -> Dictiona
 		first_attempt = Vector2(float((first_raw as Array)[0]), float((first_raw as Array)[1]))
 	var level_in_world := posmod(level - 1, WORLD_SIZE) + 1
 	var move_limit := int(authored.get("move_limit", -1))
+	# Authored score labels alone do not guarantee a demanding board. Give
+	# challenge/boss levels more actual look-ahead, starting occupancy and shape
+	# choices while keeping tutorial and recovery boards familiar. The
+	# constructive generator must still prove every sequence it emits.
+	var challenge_slot := role in ["challenge", "stretch", "peak", "hard", "very_hard", "expert"]
+	var boss_slot := milestone in ["mini_boss", "boss", "world_finale", "mastery", "finale", "hard_challenge"]
+	var planning_value := int(authored.get("planning_horizon", 1))
+	var occupancy_value := float(authored.get("initial_occupancy", 0.0))
+	var piece_value := int(authored.get("piece_tier", 1))
+	if level > 30 and level < MAX_LEVEL and (challenge_slot or boss_slot):
+		planning_value = mini(12, maxi(2, planning_value + (2 if boss_slot else 1)))
+		occupancy_value = minf(0.40, occupancy_value + (0.035 if boss_slot else 0.020))
+		if level >= 101:
+			piece_value = mini(6, piece_value + 1)
 	return {
 		"level_id": level,
 		"seed": int(authored.get("authored_seed", deterministic_seed(level))),
@@ -74,9 +88,9 @@ static func _profile_from_authored(level: int, authored: Dictionary) -> Dictiona
 		"difficulty_floor": floor_score,
 		"difficulty_ceiling": ceiling_score,
 		"difficulty_class": difficulty_class(difficulty_score, milestone, role),
-		"piece_tier": int(authored.get("piece_tier", piece_tier(level))),
-		"planning_horizon": int(authored.get("planning_horizon", planning_horizon(level))),
-		"initial_occupancy": float(authored.get("initial_occupancy", initial_occupancy(level))),
+		"piece_tier": piece_value,
+		"planning_horizon": planning_value,
+		"initial_occupancy": occupancy_value,
 		"target_lines": int(authored.get("target_lines", 2)),
 		"target_score": int(authored.get("target_score", 100)),
 		"par": int(authored.get("par", 14)),
