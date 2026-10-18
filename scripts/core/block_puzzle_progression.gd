@@ -62,7 +62,10 @@ static func _profile_from_authored(level: int, authored: Dictionary) -> Dictiona
 	var planning_value := int(authored.get("planning_horizon", 1))
 	var occupancy_value := float(authored.get("initial_occupancy", 0.0))
 	var piece_value := int(authored.get("piece_tier", 1))
-	if level > 30 and level < MAX_LEVEL and (challenge_slot or boss_slot):
+	if level > 3 and level < MAX_LEVEL and (challenge_slot or boss_slot):
+		# Closed-test players should meet real planning choices before level 30.
+		# Starter 1-3 and recovery/learning levels are left untouched; the
+		# generator still validates every campaign board before accepting it.
 		planning_value = mini(12, maxi(2, planning_value + (2 if boss_slot else 1)))
 		occupancy_value = minf(0.40, occupancy_value + (0.035 if boss_slot else 0.020))
 		if level >= 101:

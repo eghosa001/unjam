@@ -221,7 +221,11 @@ static func score_board(tubes: Array, proof_moves: int) -> Dictionary:
 			(color_tubes[color] as Dictionary)[str(tube_index)] = true
 			if i > 0 and int(tube[i]) != int(tube[i - 1]):
 				color_breaks += 1
-			burial_total += float(tube.size() - 1 - i)
+			# A lower layer is strategically buried only when a different
+			# colour blocks it. Counting every layer's physical depth inflated
+			# the score even for already-sorted bottles and hid easy puzzles.
+			if i < tube.size() - 1 and int(tube[i]) != int(tube[i + 1]):
+				burial_total += float(tube.size() - 1 - i)
 
 	for from_idx in range(tubes.size()):
 		var source: Array = tubes[from_idx]

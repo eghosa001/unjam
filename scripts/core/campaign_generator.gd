@@ -18,7 +18,9 @@ static func generate(level_number: int) -> Dictionary:
 	# boards, not their arbitrary declared difficulty label. Keep normal and
 	# onboarding loads on the original fast one-candidate path.
 	var challenge_slot := role in ["challenge", "stretch", "peak", "hard", "very_hard", "expert", "world_boss"]
-	var attempts := 3 if n > 10 and (challenge_slot or String(profile.get("milestone", "")) != "") else 1
+	# Level 10 is an actual first-session challenge milestone. Evaluate its
+	# dependencies too; do not reserve all structural selection for level 11+.
+	var attempts := 3 if n > 3 and (challenge_slot or String(profile.get("milestone", "")) != "") else 1
 	var best: Dictionary = {}
 	var best_quality := -1000000
 	for attempt in range(attempts):
