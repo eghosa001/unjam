@@ -77,15 +77,18 @@ static func apply(canvas: Control, surface: String, dark: bool) -> void:
 			Color("#0B1B2E") if dark else Color("#EBF5F3"),
 			Color("#091522") if dark else Color("#E3EFEF"),
 			28, Color(accent, 0.10), 1, 0.10))
+	for node in canvas.find_children("*", "CanvasItem", true, false):
+		if String(node.name).begins_with("MetaArt"):
+			(node as CanvasItem).modulate.a = 0.36 if dark else 0.23
 	for node in canvas.find_children("*", "PanelContainer", true, false):
 		var panel := node as PanelContainer
 		if panel == null or panel == bg:
 			continue
 		var name_value := String(panel.name)
-		var is_card := name_value.begins_with("SettingsCard/") or name_value in [
+		var is_card := name_value.begins_with("SettingsCard") or name_value in [
 			"HelpPrivacy", "DailyProgress", "DailyCheckIn", "CompetitionPlayerProgress",
-			"CompetitionPrizeTimingCard"] or name_value.begins_with("DailyCard/") \
-			or name_value.begins_with("Leaderboard/")
+			"CompetitionPrizeTimingCard"] or name_value.begins_with("DailyCard") \
+			or name_value.begins_with("Leaderboard")
 		if not is_card:
 			continue
 		var fill := _card_surface(name_value, surface, dark)
@@ -127,6 +130,14 @@ static func apply(canvas: Control, surface: String, dark: bool) -> void:
 			label.add_theme_color_override("font_color", Color("#BFD6E0") if dark else Color("#476B77"))
 		elif n.begins_with("DailyTitle_"):
 			label.add_theme_color_override("font_color", Color("#F7FCFF") if dark else Color("#1C3B4C"))
+		elif label.text in [
+			"SOUND & FEEDBACK","PLAY COMFORT","APPEARANCE",
+			"HELP & PRIVACY","ACCOUNT & PURCHASES",
+			"DAILY CHECK-IN","WEEKLY PRIZES","THIS WEEK","ALL-TIME"]:
+			label.add_theme_color_override("font_color",
+				Color("#84E9D4") if dark and surface == "settings" else
+				(Color("#D2B9FF") if dark and surface == "compete" else
+				(Color("#87E6CC") if dark else Color("#1D736C"))))
 	# Preserve all existing labels, localized text, real counters, save values,
 	# enabled/disabled states, callback connections, and nav geometry.
 
