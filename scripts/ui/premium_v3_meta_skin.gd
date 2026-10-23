@@ -286,3 +286,74 @@ static func apply_home_v3(canvas: Control, dark: bool) -> void:
 		nav.add_theme_stylebox_override("panel",_material(
 			Color("#142C40") if dark else Color("#FFFFFF"),
 			Color("#496A7F") if dark else Color("#CCDCD9"),17,2))
+
+
+static func apply_selector_v3(canvas: Control, dark: bool) -> void:
+	if canvas == null:
+		return
+	var bg := canvas.find_child("SelectorBackground",true,false) as PanelContainer
+	if bg != null:
+		bg.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(
+			Color("#12314A") if dark else Color("#F6FBF8"),
+			Color("#0B2137") if dark else Color("#ECF7F4"),
+			Color("#08172B") if dark else Color("#E4F1EF"),
+			22,Color("#72DCC4",0.16),1,0.12))
+	_home_text(canvas,"SelectorTitle3D","CHOOSE A WORLD",Rect2(78,26,220,35),
+		22,Color("#F7FCFF") if dark else Color("#173C50"))
+	_home_text(canvas,"SelectorActionGuide",
+		"TAP A WORLD FOR LEVELS  •  PLAY TO START",
+		Rect2(26,95,339,24),13,Color("#B8D7DF") if dark else Color("#57737B"))
+	var sections := [
+		["rescue_rush",148.0,Color("#5CE0AF")],
+		["water_sort",340.0,Color("#66CEEF")],
+		["block_puzzle",532.0,Color("#C5A2F9")]
+	]
+	for spec in sections:
+		var id := String(spec[0])
+		var y := float(spec[1])
+		var col: Color = spec[2]
+		var shadow := _home_rect(canvas,"SelectorCardShadow_%s" % id,
+			Rect2(19,y,352,176)) as PanelContainer
+		if shadow != null:
+			shadow.add_theme_stylebox_override("panel",
+				_material(Color("#030F20",0.40),Color.TRANSPARENT,22,2))
+		var card := _home_rect(canvas,"GameCard3D_%s" % id,
+			Rect2(19,y,352,176)) as PanelContainer
+		var fill := Color("#123C37") if dark else Color("#E5F6EF")
+		if id == "water_sort": fill = Color("#163854") if dark else Color("#E5F4FD")
+		if id == "block_puzzle": fill = Color("#302547") if dark else Color("#F1EAFD")
+		if card != null:
+			card.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(
+				fill.lightened(0.07),fill,fill.darkened(0.05),22,
+				Color(col,0.58),1,0.12))
+		_home_rect(canvas,"SelectorAccentRail_%s" % id,Rect2(22,y+16,4,144))
+		_home_rect(canvas,"SelectorGamePreviewFrame_%s" % id,
+			Rect2(31,y+18,128,132))
+		_home_rect(canvas,"SelectorAuthoredGameArt_%s" % id,
+			Rect2(36,y+23,118,121))
+		var title := canvas.find_child("SelectorGameTitle_%s" % id,true,false) as Label
+		if title != null:
+			_home_rect(canvas,title.name,Rect2(171,y+26,186,28))
+			title.add_theme_color_override("font_color",Color("#F9FCFF") if dark else Color("#193C50"))
+			title.add_theme_font_size_override("font_size",22)
+		var clip := _home_rect(canvas,"SelectorGameSubtitleClip_%s" % id,
+			Rect2(171,y+61,177,44))
+		if clip != null:
+			var sub := clip.get_node_or_null("SelectorGameSubtitle_%s" % id) as Label
+			if sub != null:
+				RefCanvas.set_rect(sub,0,0,174,43)
+				sub.add_theme_color_override("font_color",
+					Color("#CBDCE6") if dark else Color("#4D6978"))
+		var level := _home_rect(canvas,"SelectorLevelLabel_%s" % id,
+			Rect2(171,y+108,90,22)) as Label
+		if level != null:
+			level.add_theme_color_override("font_color",col if dark else col.darkened(0.46))
+			level.add_theme_font_size_override("font_size",13)
+		_home_rect(canvas,"SelectorBrowseCue_%s" % id,
+			Rect2(171,y+139,87,19))
+		_home_rect(canvas,"SelectorCardHit_%s" % id,Rect2(17,y-3,356,182))
+		var play := _home_rect(canvas,"SelectorPlay_%s" % id,
+			Rect2(264,y+112,91,46)) as Button
+		if play != null:
+			_button(play,col.darkened(0.20) if dark else col.darkened(0.16),dark,13)
+			play.add_theme_font_size_override("font_size",14)
