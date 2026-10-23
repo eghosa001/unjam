@@ -157,10 +157,12 @@ func _update_touch_footprint(screen_position: Vector2) -> void:
 		return
 	# An illegal aim appears red in its actual cell footprint. Only a legal
 	# magnetized position is highlighted green and accepted on release.
-	var origin := _last_magnet
-	if origin.x < 0:
-		origin = MagneticTarget.preview_origin(game, shape, screen_position, MagneticTarget.lift_distance(game), _grab_cell)
-	var valid := origin.x >= 0 and bool(game.call("can_place", shape, origin))
+	# Use exactly the preview's legal state for the highlighted footprint.
+	# Previously the footprint could independently call can_place() on a
+	# nearby raw aim and turn green despite the ghost rejecting the snap.
+	var origin := _preview_snap_origin if _preview_valid else MagneticTarget.preview_origin(
+		game, shape, screen_position, MagneticTarget.lift_distance(game), _grab_cell)
+	var valid := _preview_valid and origin == _preview_snap_origin
 	if origin == _last_footprint_origin and valid == _last_footprint_valid:
 		return
 	_clear_touch_footprint()
@@ -348,29 +350,26 @@ func _finish_touch_drag(screen_position: Vector2) -> void:
 		return
 	if game.has_method("clear_touch_drag"):
 		game.call("clear_touch_drag", self)
-	# The highlighted grid footprint is the placement contract. Prefer it
-	# when finger-up is still near the last drag sample; calculating another
-	# target from a shifted Android release coordinate is what the video shows
-	# returning a visibly snapped two-brick piece to the tray repeatedly.
+	# Green preview, footprint and committed placement must agree.
+	# Android sometimes reports the UP coordinate well after its last drag
+	# sample, so ask the same magnetic solver whether the last visible snap
+	# remains within a bounded, board-relative release tolerance.
 	var origin := Vector2i(-1, -1)
 	var geo := MagneticTarget.geometry(game)
-	var close_to_preview := false
-	if not geo.is_empty() and touch_preview != null and is_instance_valid(touch_preview):
-		var cell_step: Vector2 = geo["step"]
-		var release_slop := maxf(18.0, minf(cell_step.x, cell_step.y) * 1.28)
-		close_to_preview = screen_position.distance_to(_preview_finger_position) <= release_slop
-	if close_to_preview:
-		# If the last displayed preview was red, do not silently turn that
-		# into a green placement that the player never actually saw.
-		if _preview_valid and bool(game.call("can_place", shape, _preview_snap_origin)):
+	var preview_alive := touch_preview != null and is_instance_valid(touch_preview)
+	if preview_alive:
+		if _preview_valid and MagneticTarget.release_matches_visible_snap(
+			game,shape,screen_position,_preview_finger_position,
+			_preview_snap_origin,MagneticTarget.lift_distance(game,geo),
+			_grab_cell,geo):
 			origin = _preview_snap_origin
+		# Otherwise the ghost was red, off board, or truly dragged away.
+		# Never commit an unseen alternative cell on the finger-up event.
 	else:
-		# A genuine large move at finger-up is not allowed to teleport a
-		# previously highlighted brick: calculate only the new intended aim.
-		var fallback_held := _last_magnet if touch_preview == null or not is_instance_valid(touch_preview) else Vector2i(-1, -1)
-		origin = MagneticTarget.choose_release(
-			game, shape, screen_position, fallback_held, MagneticTarget.lift_distance(game), _grab_cell
-		)
+		# Keyboard/mouse and direct-call compatibility: these paths do not
+		# have a floating touchscreen ghost and keep native drag semantics.
+		origin = MagneticTarget.choose_release(game,shape,screen_position,
+			_last_magnet,MagneticTarget.lift_distance(game,geo),_grab_cell)
 	var valid := origin.x >= 0 and bool(game.call("can_place", shape, origin))
 	# Never leave an earlier placement latch attached to a reused tray slot.
 	_preview_valid = false
