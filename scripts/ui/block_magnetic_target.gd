@@ -55,7 +55,10 @@ static func _near_board(point: Vector2, geo: Dictionary) -> bool:
 		return false
 	var first: Vector2 = geo["first"]
 	var step: Vector2 = geo["step"]
-	var edge := step * 1.12
+	# Keep the hit envelope consistent with magnetic catch distance. The
+	# previous 1.12-cell board cutoff disproportionately rejected the eighth
+	# (bottom) row as the pointer travelled below the board on a phone.
+	var edge := step * CATCH_RADIUS
 	return Rect2(first - edge, Vector2(step.x * 7.0, step.y * 7.0) + 2.0 * edge).has_point(point)
 
 static func _raw_origin(shape: Array, point: Vector2, geo: Dictionary, grab_anchor: Vector2 = NO_GRAB_ANCHOR) -> Vector2:
@@ -173,13 +176,18 @@ static func release_matches_visible_snap(game: Node, shape: Array,
 	if geo.is_empty() or not bool(game.call("can_place", shape, visible_origin)):
 		return false
 	var step: Vector2 = geo["step"]
-	var release_point := finger - Vector2(0.0,lift)
-	if not _near_board(release_point,geo):
+	var preview_point := last_preview_finger - Vector2(0.0, lift)
+	# A green target must have been acquired while the pointer was close to
+	# the board. Do not apply a fresh hard-edged board hit test to finger-up:
+	# that test rejects downward release jitter from the LAST ROW even though
+	# the identical jitter in a middle row commits successfully.
+	if not _near_board(preview_point, geo):
 		return false
 	# Up to 1.8 cells of coalesced UP-only motion; a real continuing drag
 	# updates the preview each sample and resets this reference position.
 	var slop := maxf(20.0, minf(step.x,step.y) * 1.8)
 	if finger.distance_to(last_preview_finger) > slop:
 		return false
-	var released_origin := _raw_origin(shape,release_point,geo,grab_anchor)
+	var release_point := finger - Vector2(0.0, lift)
+	var released_origin := _raw_origin(shape, release_point, geo, grab_anchor)
 	return (released_origin - Vector2(visible_origin)).length() <= 1.8
