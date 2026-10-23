@@ -421,11 +421,13 @@ static func apply_daily_v3(canvas: Control, dark: bool) -> void:
 			var label := child as Label
 			if absf(label.position.x-33.0) > 1.5: continue
 			if absf(label.position.y-(y+47.0)) < 1.5:
+				label.custom_minimum_size = Vector2.ZERO
 				RefCanvas.set_rect(label,120,y+43,130,20)
 				label.add_theme_font_size_override("font_size",12)
 				label.add_theme_color_override("font_color",
 					Color("#BCD5E1") if dark else Color("#54707E"))
 			elif absf(label.position.y-(y+70.0)) < 1.5:
+				label.custom_minimum_size = Vector2.ZERO
 				RefCanvas.set_rect(label,120,y+70,132,20)
 				label.add_theme_font_size_override("font_size",13)
 				label.add_theme_color_override("font_color",
