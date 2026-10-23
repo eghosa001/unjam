@@ -46,7 +46,7 @@ func _run_multi(main: Control, game_id: String, game_name: String) -> bool:
 	return true
 
 func _assert_transition(main: Control, start_level: int, game_name: String) -> bool:
-	var game = _active_game(main)
+	var game = await _wait_for_level(main,start_level,240)
 	if game == null:
 		return _fail("%s level %d did not create an active game" % [game_name, start_level])
 	if int(game.get("level_number")) != start_level:
@@ -56,13 +56,24 @@ func _assert_transition(main: Control, start_level: int, game_name: String) -> b
 
 	game.finished.emit(start_level)
 	await _frames(5)
-	var next_game = _active_game(main)
 	var expected := start_level + 1
+	var next_game = await _wait_for_level(main,expected,240)
 	if next_game == null:
 		return _fail("%s transition %d -> %d created no next game" % [game_name, start_level, expected])
 	if int(next_game.get("level_number")) != expected:
 		return _fail("%s transition mismatch: expected %d, got %d" % [game_name, expected, int(next_game.get("level_number"))])
 	return true
+
+# The loading screen now paints before a cold scene compiles/instantiates.
+# Preserve the exact progression assertions, but wait for the new level
+# with a strict time bound rather than assuming a four-frame synchronous boot.
+func _wait_for_level(main: Control, required_level: int, max_frames: int):
+	for frame in range(max_frames):
+		var game = _active_game(main)
+		if game != null and int(game.get("level_number")) == required_level:
+			return game
+		await process_frame
+	return null
 
 func _active_game(main: Control):
 	var game = main.get("active_game")
