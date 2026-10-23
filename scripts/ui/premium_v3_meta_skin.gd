@@ -129,3 +129,160 @@ static func apply(canvas: Control, surface: String, dark: bool) -> void:
 			label.add_theme_color_override("font_color", Color("#F7FCFF") if dark else Color("#1C3B4C"))
 	# Preserve all existing labels, localized text, real counters, save values,
 	# enabled/disabled states, callback connections, and nav geometry.
+
+
+# Approved UNJAM V3 Home uses horizontal game-world panels and two peer
+# Rankings/Daily actions. This method deliberately preserves every existing
+# named Button, callback, saved progress and accessible label.
+static func _home_rect(canvas: Control, node_name: String, area: Rect2) -> Control:
+	var node := canvas.find_child(node_name, true, false) as Control
+	if node != null:
+		RefCanvas.set_rect(node, area.position.x, area.position.y,
+			area.size.x, area.size.y)
+	return node
+
+static func _home_text(canvas: Control, node_name: String, caption: String,
+		area: Rect2, font_size: int, color: Color) -> void:
+	var label := _home_rect(canvas, node_name, area) as Label
+	if label == null:
+		return
+	label.text = caption
+	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_color_override("font_color", color)
+	label.custom_minimum_size = Vector2.ZERO
+	label.size = area.size
+	label.clip_text = true
+
+static func apply_home_v3(canvas: Control, dark: bool) -> void:
+	if canvas == null:
+		return
+	var fg := Color("#F5FAFF") if dark else Color("#19394A")
+	var muted := Color("#BDD4DF") if dark else Color("#4E6F7D")
+	var accent := Color("#58DEB5") if dark else Color("#20B7A1")
+	var backdrop := canvas.find_child("HomeWorldAtmosphere", true, false) as CanvasItem
+	if backdrop != null: backdrop.modulate.a = 0.32 if dark else 0.22
+	var hero := _home_rect(canvas,"FigmaHomeHero",Rect2(17,95,356,172)) as PanelContainer
+	if hero != null:
+		hero.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(
+			Color("#23536B") if dark else Color("#FEFEFC"),
+			Color("#183C54") if dark else Color("#F0F9F6"),
+			Color("#112940") if dark else Color("#DFEFEC"),
+			24, Color(accent, 0.36), 1, 0.16))
+	var sheen := _home_rect(canvas,"HomeHeroIllustratedGlow",Rect2(17,95,356,172)) as CanvasItem
+	if sheen != null: sheen.modulate.a = 0.35
+	_home_rect(canvas,"HomeBrandEmblem",Rect2(240,113,120,131))
+	_home_text(canvas,"HomeWelcomeTitle","THREE GAMES.\nONE UNJAM.",
+		Rect2(34,140,203,57),22,fg)
+	_home_text(canvas,"HomeWelcomeSubtitle","Make every move count.",
+		Rect2(35,195,194,22),13,muted)
+	var profile := _home_rect(canvas,"HomeProfileButton",Rect2(197,22,46,44)) as Button
+	if profile != null:
+		profile.text = "♙"
+		_button(profile, Color("#214054") if dark else Color("#F8FEFC"), dark, 14)
+	var profile_pill := canvas.find_child("HomeProfilePill",true,false) as CanvasItem
+	if profile_pill != null: profile_pill.visible = false
+	var coins := _home_rect(canvas,"HomeCoinShopButton",Rect2(252,22,118,44)) as Button
+	if coins != null:
+		_button(coins, Color("#274655") if dark else Color("#FCFFFE"), dark, 14)
+	for gem_name in ["HomeCurrencyGem3D","HomeCurrencyGem3DSide","HomeCurrencyGem3DHighlight"]:
+		var gem := canvas.find_child(gem_name,true,false) as Node2D
+		if gem != null: gem.position += Vector2(8.0,-42.0)
+	var choose := _home_rect(canvas,"HomePrimaryAction",Rect2(32,218,198,44)) as Button
+	if choose != null:
+		_button(choose,accent,dark,14)
+		choose.add_theme_font_size_override("font_size",15)
+	var resume := _home_rect(canvas,"HomeResumeAction",Rect2(238,218,118,44)) as Button
+	if resume != null:
+		_button(resume,Color("#315D6D") if dark else Color("#D6EAE7"),dark,14)
+	_home_text(canvas,"HomeShowcaseTitle","CHOOSE YOUR WORLD",
+		Rect2(21,284,254,27),17,fg)
+	_home_text(canvas,"HomeShowcaseEyebrow","ALL LEVELS  ›",
+		Rect2(275,287,94,24),12,muted)
+	_home_rect(canvas,"HomeShowcaseBrowseLevels",Rect2(267,278,103,44))
+	var game_specs := [
+		["rescue_rush",326.0,Color("#53DDA9"),"Free the pieces"],
+		["water_sort",432.0,Color("#66C9F8"),"Sort the colours"],
+		["block_puzzle",538.0,Color("#C39EF9"),"Clear the rows"]
+	]
+	for spec in game_specs:
+		var id := String(spec[0])
+		var y := float(spec[1])
+		var col: Color = spec[2]
+		var panel := _home_rect(canvas,"HomeShowcaseCard_%s" % id,
+			Rect2(17,y,356,98)) as PanelContainer
+		if panel != null:
+			var card_fill := Color("#133A37") if dark else Color("#E2F4EC")
+			if id == "water_sort": card_fill = Color("#173854") if dark else Color("#E2F2FD")
+			if id == "block_puzzle": card_fill = Color("#302849") if dark else Color("#F0E9FD")
+			panel.add_theme_stylebox_override("panel",RefCanvas.rounded_gradient3(
+				card_fill.lightened(0.08),card_fill,card_fill.darkened(0.06),
+				19,Color(col,0.58),1,0.14))
+		_home_rect(canvas,"HomeShowcaseArt_%s" % id,Rect2(28,y+10,81,78))
+		_home_text(canvas,"HomeShowcaseName_%s" % id,
+			"RESCUE RUSH" if id == "rescue_rush" else ("WATER SORT" if id == "water_sort" else "BLOCK PUZZLE"),
+			Rect2(123,y+15,231,24),17,fg)
+		_home_text(canvas,"HomeShowcaseTagline_%s" % id,String(spec[3]),
+			Rect2(124,y+42,223,19),13,muted)
+		var level := _home_rect(canvas,"HomeShowcaseLevel_%s" % id,
+			Rect2(267,y+69,88,22)) as Label
+		if level != null:
+			level.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			level.add_theme_font_size_override("font_size",12)
+			level.add_theme_color_override("font_color",col if dark else col.darkened(0.43))
+			level.custom_minimum_size = Vector2.ZERO
+			level.size = Vector2(88,22)
+		_home_rect(canvas,"HomeShowcaseOpenLevels_%s" % id,
+			Rect2(17,y,356,98))
+	# Rankings and Daily are separate large accessible actions alongside each
+	# other; unlike a static screen picture, the values and buttons remain live.
+	var rank := _home_rect(canvas,"HomeRankSummaryCard",Rect2(17,651,173,99)) as PanelContainer
+	if rank != null:
+		rank.add_theme_stylebox_override("panel",_material(
+			Color("#202F49") if dark else Color("#F0ECF9"),
+			Color("#6E6790") if dark else Color("#D5CBE8"),18,3))
+	_home_text(canvas,"HomeRankTitle","RANKINGS",Rect2(31,662,128,23),14,fg)
+	_home_text(canvas,"HomeRankDailyLabel","TODAY",Rect2(30,687,70,16),11,muted)
+	_home_text(canvas,"HomeRankWeeklyLabel","WEEKLY",Rect2(102,687,70,16),11,muted)
+	for key in ["HomeRankDailyValue","HomeRankValue"]:
+		var value := _home_rect(canvas,key,
+			Rect2(30 if key == "HomeRankDailyValue" else 102,708,65,24)) as Label
+		if value != null:
+			value.add_theme_font_size_override("font_size",17)
+			value.add_theme_color_override("font_color",
+				Color("#F5D69D") if dark else Color("#64528D"))
+	for hint in ["HomeRankDailyHint","HomeRankWeeklyHint"]:
+		var label := canvas.find_child(hint,true,false) as CanvasItem
+		if label != null: label.visible = false
+	var rank_button := _home_rect(canvas,"HomeDailyGamesButton",
+		Rect2(17,651,173,99)) as Button
+	if rank_button != null:
+		rank_button.text = ""
+		rank_button.flat = true
+		rank_button.add_theme_stylebox_override("normal",RefCanvas.solid_box(Color.TRANSPARENT,18))
+		rank_button.add_theme_stylebox_override("hover",RefCanvas.solid_box(Color("#C5A2FF",0.08),18))
+		rank_button.add_theme_stylebox_override("pressed",RefCanvas.solid_box(Color("#C5A2FF",0.16),18))
+		rank_button.add_theme_stylebox_override("focus",RefCanvas.solid_box(Color.TRANSPARENT,18,Color("#DBC9FF"),2))
+		rank_button.set_meta("unjam_preserve_surface_style",true)
+		rank_button.set_meta("unjam_preserve_control_geometry",true)
+	var daily := _home_rect(canvas,"HomeDailyFeatureCard",Rect2(200,651,173,99)) as PanelContainer
+	if daily != null:
+		daily.add_theme_stylebox_override("panel",_material(
+			Color("#163D35") if dark else Color("#E2F5EA"),
+			Color("#5EA38C") if dark else Color("#B2DEC5"),18,3))
+	_home_text(canvas,"HomeDailyFeatureTitle","DAILY PUZZLE",
+		Rect2(214,662,149,24),14,fg)
+	var daily_sub := canvas.find_child("HomeDailyFeatureSubtitle",true,false) as CanvasItem
+	if daily_sub != null: daily_sub.visible = false
+	var daily_button := _home_rect(canvas,"HomeDailyChallengeButton",
+		Rect2(211,698,151,44)) as Button
+	if daily_button != null:
+		daily_button.text = "PLAY TODAY  ›"
+		_button(daily_button,Color("#4BD1AA") if dark else Color("#218E70"),dark,13)
+		daily_button.add_theme_font_size_override("font_size",12)
+	# Existing five-tab bottom navigation remains intact, including Settings
+	# and Collection; V3's four-tab visual concept must never remove a route.
+	var nav := canvas.find_child("HomeBottomNav3D",true,false) as PanelContainer
+	if nav != null:
+		nav.add_theme_stylebox_override("panel",_material(
+			Color("#142C40") if dark else Color("#FFFFFF"),
+			Color("#496A7F") if dark else Color("#CCDCD9"),17,2))
