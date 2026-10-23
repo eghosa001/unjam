@@ -105,6 +105,18 @@ func _prime_game_scene(path: String) -> void:
 	if ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
 		ResourceLoader.load_threaded_request(path)
 
+# Prepare the next playable scene only AFTER the level browser has had a
+# chance to paint. Previously the first Play/Resume tap paid for SVG imports,
+# script compilation and the threaded request on the UI thread.
+# Scope by navigation generation so stale level pages never prime resources.
+func _prime_game_scene_after_level_browser(path: String, generation: int) -> void:
+	await get_tree().process_frame
+	if not is_inside_tree() or current_surface != "levels" or generation != _navigation_generation:
+		return
+	if _ready_game_scenes.has(path):
+		return
+	_prime_game_scene(path)
+
 func _game_scene_resource(path: String) -> PackedScene:
 	# Important: load_threaded_get() BLOCKS the caller until completion when
 	# called during THREAD_LOAD_IN_PROGRESS. Never invoke that on the UI thread.
