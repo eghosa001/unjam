@@ -197,62 +197,83 @@ static func rounded_gradient3(top: Color, middle: Color, bottom: Color, radius: 
 	var cache_key := _style_cache_key("rounded3", [top, middle, bottom], radius, border_color, border_width, midpoint)
 	if _rounded_gradient3_cache.has(cache_key):
 		return _rounded_gradient3_cache[cache_key] as StyleBoxTexture
-	# 160px source material prevents visible stepping/banding after the authored
-	# 390x844 surface is scaled to high-density Android viewports.
+	# Keep the exact 160x160 premium lacquer pixels and nine-slice behavior.
+	# The previous implementation recalculated corner distances, horizontal
+	# sheen and x-dependent hotspot coordinates 25,600 times PER style.
+	# Factor those immutable coordinates out of the inner raster loop.
 	var image_size := 160
 	var image := Image.create(image_size, image_size, false, Image.FORMAT_RGBA8)
 	var r := clampf(radius / 24.0 * (float(image_size) * 22.0 / 96.0), 0.0, float(image_size) * 44.0 / 96.0)
 	var bw := maxf(0.0, border_width / 4.0 * 4.0)
+	var inner_r := maxf(0.0, r - bw)
+	var outer_radius_squared := r * r
+	var inner_radius_squared := inner_r * inner_r
 	var split := clampf(midpoint, 0.08, 0.92)
+	var outer_x_squared: Array[float] = []
+	var inner_x_squared: Array[float] = []
+	var within_inner_x: Array[bool] = []
+	var center_boosts: Array[float] = []
+	var edge_falloffs: Array[float] = []
+	var hotspot_x: Array[float] = []
+	for x in range(image_size):
+		var px := float(x) + 0.5
+		var fx := float(x) / float(image_size - 1)
+		var dx := maxf(maxf(r - px, 0.0), px - (float(image_size) - r))
+		var idx := maxf(maxf(inner_r - px, 0.0), px - (float(image_size) - inner_r))
+		outer_x_squared.append(dx * dx)
+		inner_x_squared.append(idx * idx)
+		within_inner_x.append(px >= bw and px <= image_size - bw)
+		center_boosts.append(1.0 - minf(1.0, absf(fx - 0.5) * 1.7))
+		var edge_distance := minf(fx, 1.0 - fx)
+		edge_falloffs.append((0.055 - edge_distance) / 0.055 if edge_distance < 0.055 else 0.0)
+		hotspot_x.append((fx - 0.34) / 0.50)
 	for y in range(image_size):
+		var py := float(y) + 0.5
 		var fy := float(y) / float(image_size - 1)
 		var fill := top.lerp(middle, fy / split) if fy <= split else middle.lerp(bottom, (fy - split) / (1.0 - split))
+		var dy := maxf(maxf(r - py, 0.0), py - (float(image_size) - r))
+		var idy := maxf(maxf(inner_r - py, 0.0), py - (float(image_size) - inner_r))
+		var outer_y_squared := dy * dy
+		var inner_y_squared := idy * idy
+		var within_inner_y := py >= bw and py <= image_size - bw
+		var has_sheen := fy < 0.36
+		var has_band := fy >= 0.11 and fy <= 0.20
+		var has_lower_rolloff := fy > 0.86
+		var has_top_border_light := py <= bw + 2.0
+		var sheen_row := (1.0 - fy / 0.36) if has_sheen else 0.0
+		var band := (1.0 - absf(fy - 0.155) / 0.045) if has_band else 0.0
+		var lower_rolloff := ((fy - 0.86) / 0.14) * 0.070 if has_lower_rolloff else 0.0
+		var hotspot_y := (fy - 0.12) / 0.28
+		var hotspot_row := absf(hotspot_y) < 1.0
 		for x in range(image_size):
-			var px := float(x) + 0.5
-			var py := float(y) + 0.5
-			var dx := maxf(maxf(r - px, 0.0), px - (float(image_size) - r))
-			var dy := maxf(maxf(r - py, 0.0), py - (float(image_size) - r))
-			if dx * dx + dy * dy > r * r:
+			if outer_x_squared[x] + outer_y_squared > outer_radius_squared:
 				image.set_pixel(x, y, Color.TRANSPARENT)
 				continue
 			if bw > 0.0:
-				var inner_r := maxf(0.0, r - bw)
-				var idx := maxf(maxf(inner_r - px, 0.0), px - (float(image_size) - inner_r))
-				var idy := maxf(maxf(inner_r - py, 0.0), py - (float(image_size) - inner_r))
-				var in_inner := idx * idx + idy * idy <= inner_r * inner_r and px >= bw and py >= bw and px <= image_size - bw and py <= image_size - bw
+				var in_inner := inner_x_squared[x] + inner_y_squared <= inner_radius_squared and within_inner_x[x] and within_inner_y
 				if not in_inner:
 					image.set_pixel(x, y, border_color)
 					continue
-			# Glossy-flat casual-game lacquer: one controlled top rolloff, one
-			# narrow highlight band and a soft key-light. No asymmetric sidewall
-			# shading is allowed here; cards should look coated, not extruded.
 			var pixel_fill := fill
-			var fx := float(x) / float(image_size - 1)
-			var center_boost := 1.0 - minf(1.0, absf(fx - 0.5) * 1.7)
-			if fy < 0.36:
-				var sheen := (1.0 - fy / 0.36) * (0.080 + center_boost * 0.055)
+			if has_sheen:
+				var sheen := sheen_row * (0.080 + center_boosts[x] * 0.055)
 				pixel_fill = pixel_fill.lerp(Color(1, 1, 1, pixel_fill.a), sheen)
-			if fy >= 0.11 and fy <= 0.20:
-				var band := 1.0 - absf(fy - 0.155) / 0.045
-				pixel_fill = pixel_fill.lerp(Color(1, 1, 1, pixel_fill.a), maxf(0.0, band) * (0.040 + center_boost * 0.025))
-			if py <= bw + 2.0:
+			if has_band:
+				pixel_fill = pixel_fill.lerp(Color(1, 1, 1, pixel_fill.a), maxf(0.0, band) * (0.040 + center_boosts[x] * 0.025))
+			if has_top_border_light:
 				pixel_fill = pixel_fill.lerp(Color(1, 1, 1, pixel_fill.a), 0.17)
-			if fy > 0.86:
-				var lower_rolloff := ((fy - 0.86) / 0.14) * 0.070
+			if has_lower_rolloff:
 				pixel_fill = pixel_fill.lerp(Color(0, 0, 0, pixel_fill.a), lower_rolloff)
-			# Glossy-flat edge discipline: both side edges receive the same barely
-			# visible falloff. This preserves silhouette definition without faking
-			# a raised right wall or a directional 3D bevel.
-			var edge_distance := minf(fx, 1.0 - fx)
-			if edge_distance < 0.055:
-				var edge_falloff := (0.055 - edge_distance) / 0.055
-				pixel_fill = pixel_fill.lerp(Color(0, 0, 0, pixel_fill.a), edge_falloff * 0.018)
-			# Localized key-light hotspot keeps the surface lively while remaining
-			# subordinate to the authored game artwork.
-			var hotspot_distance := Vector2((fx - 0.34) / 0.50, (fy - 0.12) / 0.28).length()
-			var hotspot := clampf(1.0 - hotspot_distance, 0.0, 1.0)
-			if hotspot > 0.0:
-				pixel_fill = pixel_fill.lerp(Color(1, 1, 1, pixel_fill.a), hotspot * 0.052)
+			if edge_falloffs[x] > 0.0:
+				pixel_fill = pixel_fill.lerp(Color(0, 0, 0, pixel_fill.a), edge_falloffs[x] * 0.018)
+			# The key-light ellipse is local to the upper-left of the material.
+			# Skip costly Vector2.length() outside that ellipse; inside, retain
+			# the exact original formula so highlight appearance is unchanged.
+			if hotspot_row and absf(hotspot_x[x]) < 1.0:
+				var hotspot_distance := Vector2(hotspot_x[x], hotspot_y).length()
+				var hotspot := clampf(1.0 - hotspot_distance, 0.0, 1.0)
+				if hotspot > 0.0:
+					pixel_fill = pixel_fill.lerp(Color(1, 1, 1, pixel_fill.a), hotspot * 0.052)
 			image.set_pixel(x, y, pixel_fill)
 	var style := StyleBoxTexture.new()
 	style.texture = ImageTexture.create_from_image(image)
