@@ -27,7 +27,8 @@ func build_ui() -> void:
 	call_deferred("_show_level_intro")
 
 func _show_level_intro() -> void:
-	if daily_mode or premium_feedback == null or not is_instance_valid(premium_feedback):
+	# A quick Back may detach the scene before its deferred intro executes.
+	if not is_inside_tree() or is_queued_for_deletion() or daily_mode or premium_feedback == null or not is_instance_valid(premium_feedback) or not premium_feedback.is_inside_tree():
 		return
 	var milestone := String(level_data.get("milestone", "normal"))
 	var role := String(level_data.get("level_role", "standard"))
@@ -45,8 +46,10 @@ func _show_level_intro() -> void:
 	premium_feedback.show_banner(label, Color("#ffd166"), center, 176.0)
 
 func _level_intro_banner_center() -> Vector2:
+	if not is_inside_tree() or is_queued_for_deletion():
+		return Vector2.ZERO
 	var view := get_viewport_rect().size
-	if board_panel == null or not is_instance_valid(board_panel):
+	if board_panel == null or not is_instance_valid(board_panel) or not board_panel.is_inside_tree():
 		return Vector2(view.x * 0.5, view.y * 0.66)
 	var inverse := get_global_transform_with_canvas().affine_inverse()
 	var board_bottom_local: Vector2 = inverse * board_panel.get_global_rect().end
