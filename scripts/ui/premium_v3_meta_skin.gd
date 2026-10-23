@@ -337,6 +337,20 @@ static func apply_selector_v3(canvas: Control, dark: bool) -> void:
 			Color("#0B2137") if dark else Color("#ECF7F4"),
 			Color("#08172B") if dark else Color("#E4F1EF"),
 			22,Color("#72DCC4",0.16),1,0.12))
+	var selector_nav := canvas.find_child("SelectorBottomNav",true,false) as PanelContainer
+	if selector_nav != null:
+		selector_nav.add_theme_stylebox_override("panel",_material(
+			Color("#142C40") if dark else Color("#FFFFFF"),
+			Color("#486D81") if dark else Color("#CBDDD9"),17,2))
+	for child in canvas.find_children("SelectorNavActivePlate*", "PanelContainer", true, false):
+		var plate := child as PanelContainer
+		plate.add_theme_stylebox_override("panel",_material(
+			Color("#235C61") if dark else Color("#D1F0E6"),
+			Color("#5AD8B7") if dark else Color("#9ACFBF"),14,0))
+	for name in ["SelectorBackButton","SelectorSettingsButton"]:
+		var action := canvas.find_child(name,true,false) as Button
+		if action != null:
+			_button(action,Color("#24465A") if dark else Color("#E6F3EF"),dark,13)
 	_home_text(canvas,"SelectorTitle3D","CHOOSE A WORLD",Rect2(78,26,220,35),
 		22,Color("#F7FCFF") if dark else Color("#173C50"))
 	_home_text(canvas,"SelectorActionGuide",
