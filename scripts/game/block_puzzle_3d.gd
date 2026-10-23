@@ -7,6 +7,7 @@ const BLOCK_SCREEN_OVERLAY: Texture2D = preload("res://assets/art/gameplay/block
 # inherited from the proven motion/gameplay stack. This layer owns the premium
 # clear transaction so cubes collapse before the authoritative clear commits.
 var _clear_transition_active := false
+var _board_fit_pending := false
 
 func _ready() -> void:
 	super._ready()
@@ -14,8 +15,23 @@ func _ready() -> void:
 	if viewport != null and not viewport.size_changed.is_connected(_queue_board_fit):
 		viewport.size_changed.connect(_queue_board_fit)
 
+func _exit_tree() -> void:
+	var viewport := get_viewport()
+	if viewport != null and viewport.size_changed.is_connected(_queue_board_fit):
+		viewport.size_changed.disconnect(_queue_board_fit)
+
 func _queue_board_fit() -> void:
-	call_deferred("_fit_3d_board_layout")
+	# Coalesce repeated Android viewport notifications without adding a
+	# gameplay frame of latency or retaining detached board references.
+	if _board_fit_pending or not is_inside_tree() or is_queued_for_deletion():
+		return
+	_board_fit_pending = true
+	call_deferred("_flush_board_fit")
+
+func _flush_board_fit() -> void:
+	_board_fit_pending = false
+	if is_inside_tree() and not is_queued_for_deletion():
+		_fit_3d_board_layout()
 
 func _add_block_hint_bulb(button: Button) -> void:
 	var bulb := PanelContainer.new()
@@ -67,6 +83,8 @@ func _add_block_identity_emblem(canvas: Control) -> void:
 	canvas.add_child(highlight)
 
 func _fit_3d_board_layout() -> void:
+	if not is_inside_tree() or is_queued_for_deletion():
+		return
 	_fit_figma_board_layout()
 
 func _fit_figma_board_layout() -> void:
