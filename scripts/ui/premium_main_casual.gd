@@ -785,6 +785,7 @@ func build_goals() -> void:
 	season_button.tooltip_text = season_button.accessibility_name
 	_figma_text(canvas, "First clears +10 • Daily Cup +25 • Replays +3", Rect2(31,652,310,20), 12, FIGMA_MUTED)
 	_figma_bottom_nav(canvas,"")
+	preload("res://scripts/ui/premium_v3_meta_skin.gd").apply(canvas, "goals", _dark())
 
 func _figma_goal_row(canvas: Control, row: Dictionary, period: String, y: float) -> void:
 	var claimable := bool(row.get("claimable",false))
@@ -894,6 +895,7 @@ func build_profile() -> void:
 	for i in range(defs.size()):
 		_figma_achievement_row(canvas,defs[i] as Dictionary,370.0+float(i)*60.0)
 	_figma_bottom_nav(canvas,"")
+	preload("res://scripts/ui/premium_v3_meta_skin.gd").apply(canvas, "profile", _dark())
 
 func _figma_profile_game_tabs(canvas: Control) -> void:
 	var ids: Array[String] = ["rescue_rush","water_sort","block_puzzle"]
@@ -1045,6 +1047,7 @@ func build_friends(refresh_remote: bool = true) -> void:
 	privacy_note.position = Vector2(31,663)
 	privacy_note.size = Vector2(328,36)
 	_figma_bottom_nav(canvas,"")
+	preload("res://scripts/ui/premium_v3_meta_skin.gd").apply(canvas, "friends", _dark())
 
 func _figma_friend_period_tabs(canvas: Control) -> void:
 	var specs := [
@@ -1893,6 +1896,7 @@ func build_collection() -> void:
 	# Fill the dead zone below the gift/upgrades row with a decorative tip card
 	_figma_collection_tip(canvas)
 	_figma_bottom_nav(canvas,"collection")
+	preload("res://scripts/ui/premium_v3_meta_skin.gd").apply(canvas, "collection", _dark())
 
 func _open_rescue_garden_world() -> void:
 	if get_node_or_null("RescueGardenWorldSheet") != null:
@@ -2083,6 +2087,7 @@ func build_collection_upgrades() -> void:
 	return_button.accessibility_name = "Return to Collection summary"
 	return_button.tooltip_text = "Return to Collection summary"
 	_figma_bottom_nav(canvas,"collection")
+	preload("res://scripts/ui/premium_v3_meta_skin.gd").apply(canvas, "collection", _dark())
 
 func _collection_summary_scroll_input(event: InputEvent, owner: Control) -> void:
 	_collection_scroll_input(event,owner,true)
@@ -2326,6 +2331,7 @@ func _build_figma_level_browser(game_id: String) -> void:
 		_fit_single_line_control_text(status_label,62.0,12,12)
 		index += 1
 	_figma_level_page_progress(canvas,game_id,bounds,grid_y,accent,row_stride)
+	preload("res://scripts/ui/premium_v3_meta_skin.gd").apply(canvas, "levels", _dark())
 
 func _play_current_campaign_level(game_id: String) -> void:
 	# One clear, safe way to begin from the level browser. Unlike MY LEVEL,
