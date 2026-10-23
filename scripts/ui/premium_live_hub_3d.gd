@@ -132,6 +132,7 @@ func _add_selector_wide_art(stage: Control, game_id: String, position_value: Vec
 
 func _build_reference_selector(canvas: Control) -> void:
 	var background := PanelContainer.new()
+	background.name = "SelectorBackground"
 	var bg_fill := Color("#202124") if _selector_dark() else Color("#e6e3dc")
 	var bg_border := Color("#3d4045") if _selector_dark() else Color("#c8c3ba")
 	background.add_theme_stylebox_override("panel", RefCanvas.flat_gloss(bg_fill, 34, bg_border, 1, 0.11))
