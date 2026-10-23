@@ -137,6 +137,9 @@ static func apply(canvas: Control, surface: String, dark: bool) -> void:
 static func _home_rect(canvas: Control, node_name: String, area: Rect2) -> Control:
 	var node := canvas.find_child(node_name, true, false) as Control
 	if node != null:
+		# set_rect writes size before minimum; clear the old minimum first so
+		# shrinking V2 panels actually takes effect (Godot clamps otherwise).
+		node.custom_minimum_size = Vector2.ZERO
 		RefCanvas.set_rect(node, area.position.x, area.position.y,
 			area.size.x, area.size.y)
 	return node
