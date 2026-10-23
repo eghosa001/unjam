@@ -175,9 +175,9 @@ static func apply_home_v3(canvas: Control, dark: bool) -> void:
 	if sheen != null: sheen.modulate.a = 0.35
 	_home_rect(canvas,"HomeBrandEmblem",Rect2(240,113,120,131))
 	_home_text(canvas,"HomeWelcomeTitle","THREE GAMES.\nONE UNJAM.",
-		Rect2(34,140,203,57),22,fg)
+		Rect2(34,129,203,54),19,fg)
 	_home_text(canvas,"HomeWelcomeSubtitle","Make every move count.",
-		Rect2(35,195,194,22),13,muted)
+		Rect2(35,191,194,20),12,muted)
 	var profile := _home_rect(canvas,"HomeProfileButton",Rect2(197,22,46,44)) as Button
 	if profile != null:
 		profile.text = "♙"
@@ -259,7 +259,7 @@ static func apply_home_v3(canvas: Control, dark: bool) -> void:
 	var rank_button := _home_rect(canvas,"HomeDailyGamesButton",
 		Rect2(17,651,173,99)) as Button
 	if rank_button != null:
-		rank_button.text = "LEADERBOARD"
+		rank_button.text = ""
 		rank_button.flat = true
 		rank_button.add_theme_color_override("font_color",Color.TRANSPARENT)
 		rank_button.add_theme_color_override("font_hover_color",Color.TRANSPARENT)
