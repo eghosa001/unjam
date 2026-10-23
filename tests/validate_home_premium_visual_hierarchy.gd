@@ -36,10 +36,10 @@ func _run() -> void:
 		return _fail("Minimalist Home is missing required actions or rankings")
 	if not _same(hero,Rect2(17,95,356,172)):
 		return _fail("Welcome hero layout drifted")
-	if not _same(choose,Rect2(32,218,198,44)) or choose.text != "▦  CHOOSE GAME":
+	if not _same(choose,Rect2(32,218,198,48)) or choose.text != "▦  CHOOSE GAME":
 		return _fail("Home must keep a dominant, explicit Browse Games action")
 	var resume := home.find_child("HomeResumeAction",true,false) as Button
-	if resume == null or not _same(resume,Rect2(238,218,118,44)):
+	if resume == null or not _same(resume,Rect2(238,218,118,48)):
 		return _fail("Home must provide a distinct, convenient resume action")
 	var active_id := String(main.get("selected_game_id"))
 	var unfinished: Dictionary = main.call("_checkpoint_for",active_id)
