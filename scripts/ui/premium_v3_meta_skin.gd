@@ -109,6 +109,8 @@ static func _card_surface(name_value: String, surface: String, dark: bool) -> Co
 			if name_value.contains("Leaderboard"): return Color("#252C46") if dark else Color("#F5F0FD")
 			return Color("#1C3445") if dark else Color("#F8F7FD")
 		"goals":
+			if name_value.begins_with("Goal_") or name_value.begins_with("Goal/"):
+				return Color("#203447") if dark else Color("#F3F8F7")
 			if name_value.contains("Login"): return Color("#3B3641") if dark else Color("#FFF3E1")
 			if name_value.contains("Season"): return Color("#302B4B") if dark else Color("#F3EEFD")
 			return Color("#243748") if dark else Color("#FAFCF9")
@@ -121,6 +123,10 @@ static func _card_surface(name_value: String, surface: String, dark: bool) -> Co
 			if name_value.contains("Add"): return Color("#2A304D") if dark else Color("#F4F0FD")
 			return Color("#252C49") if dark else Color("#F4F2FA")
 		"collection":
+			if name_value.begins_with("ProgressCard"):
+				if name_value.contains("water_sort"): return Color("#193D54") if dark else Color("#E8F5FD")
+				if name_value.contains("block_puzzle"): return Color("#312944") if dark else Color("#F1EBFB")
+				return Color("#183C37") if dark else Color("#E7F8ED")
 			if name_value.contains("Journey"): return Color("#173F39") if dark else Color("#E7F8EF")
 			if name_value.contains("Garden"): return Color("#163B37") if dark else Color("#EAF7EF")
 			if name_value.contains("Upgrade"): return Color("#242F46") if dark else Color("#F0F6F5")
@@ -153,9 +159,10 @@ static func apply(canvas: Control, surface: String, dark: bool) -> void:
 			"HelpPrivacy", "DailyProgress", "DailyCheckIn", "CompetitionPlayerProgress",
 			"CompetitionPrizeTimingCard"] or name_value.begins_with("DailyCard") \
 			or name_value.begins_with("Leaderboard") \
-			or name_value.begins_with("Goals") or name_value.begins_with("Profile") \
+			or name_value.begins_with("Goal") or name_value.begins_with("Profile") \
 			or name_value.begins_with("Friends") or name_value in [
 				"Journey", "Achievements", "Garden", "CollectionTip", "JourneyHero"] \
+			or name_value.begins_with("ProgressCard") \
 			or name_value.begins_with("CollectionScroll")
 		if not is_card:
 			continue
