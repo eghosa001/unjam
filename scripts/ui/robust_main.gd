@@ -87,7 +87,7 @@ func _refresh_day_sensitive_surface(today_key: String) -> void:
 		call_deferred("build_compete_leaderboard")
 
 
-func _prime_game_scene(path: String) -> void:
+func _prime_game_scene(path: String, request_scene: bool = true) -> void:
 	if not _game_scene_art_ready:
 		for asset_path in GAME_SCENE_ART_DEPENDENCIES:
 			var texture := load(asset_path) as Texture2D
@@ -102,8 +102,22 @@ func _prime_game_scene(path: String) -> void:
 		var compiled := load(script_path) as Script if not script_path.is_empty() else null
 		if compiled != null:
 			_game_scene_script_cache[path] = compiled
-	if ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
+	if request_scene and ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
 		ResourceLoader.load_threaded_request(path)
+
+# Prepare the next playable scene only AFTER the level browser has had a
+# chance to paint. Previously the first Play/Resume tap paid for SVG imports,
+# script compilation and the threaded request on the UI thread.
+# Scope by navigation generation so stale level pages never prime resources.
+func _prime_game_scene_after_level_browser(path: String, generation: int) -> void:
+	await get_tree().process_frame
+	if not is_inside_tree() or current_surface != "levels" or generation != _navigation_generation:
+		return
+	if _ready_game_scenes.has(path):
+		return
+	# Dependency-only warm-up. A standalone threaded request would remain
+	# undrained if the player exits before pressing Play.
+	_prime_game_scene(path,false)
 
 func _game_scene_resource(path: String) -> PackedScene:
 	# Important: load_threaded_get() BLOCKS the caller until completion when

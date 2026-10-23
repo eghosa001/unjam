@@ -205,15 +205,20 @@ func _figma_surface(active: String, bottom_tint: Color = FIGMA_BG_BOTTOM, top_ti
 	var dark_top := Color("#1c2027").lerp(accent.darkened(0.64), 0.26)
 	var dark_mid := Color("#171b22").lerp(accent.darkened(0.70), 0.22)
 	var dark_bottom := Color("#11151c").lerp(accent.darkened(0.76), 0.20)
-	bg.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(
-		dark_top if _dark() else light_top,
-		dark_mid if _dark() else light_mid,
-		dark_bottom if _dark() else light_bottom,
-		34,
-		Color(accent, 0.14),
-		1,
-		0.15
-	))
+	# V3 rebuilds its final background at the end of each authored page.
+	# Generating a 160x160 CPU gradient here was wasted work on every cold
+	# menu visit (and was overwritten before it could ever be rendered).
+	var final_v3_page := active in ["settings","daily","compete","goals","profile","friends","collection"]
+	if final_v3_page:
+		bg.add_theme_stylebox_override("panel",FigmaReferenceCanvas.solid_box(
+			Color("#0D2638") if _dark() else Color("#F6FAF8"),28))
+	else:
+		bg.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(
+			dark_top if _dark() else light_top,
+			dark_mid if _dark() else light_mid,
+			dark_bottom if _dark() else light_bottom,
+			34,Color(accent,0.14),1,0.15
+		))
 	FigmaReferenceCanvas.set_rect(bg, 0, 0, 390, 844)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(bg)
@@ -472,7 +477,22 @@ func _figma_button(canvas: Control, name_value: String, text_value: String, rect
 	# captions. Compact 44px toggles/tabs preserve their original geometry.
 	var wide_action := rect.size.x >= 125.0 and rect.size.y >= 43.0
 	var readable_size := maxi(14 if wide_action else 12, font_size)
-	var button := FigmaReferenceCanvas.premium_button(text_value, readable_size, resolved_text, resolved_fill, radius, Color(resolved_fill.r, resolved_fill.g, resolved_fill.b, 0.38), 1)
+	# V3 recolors standard menu actions in a later styling pass. Level tiles
+	# likewise receive explicit locked/current/focus materials after creation.
+	# Avoid generating five per-state ImageTexture lacquers that are immediately
+	# discarded. The cheaper flat interim styles are never presented as the
+	# final appearance, and the same Button owns the pressed callback.
+	var final_v3_action := current_surface in [
+		"settings","daily","compete","goals","profile","friends","collection","levels"]
+	var button := FigmaReferenceCanvas.button(text_value, readable_size, resolved_text,
+		resolved_fill, radius, Color(resolved_fill.r,resolved_fill.g,resolved_fill.b,0.38),1) \
+		if final_v3_action else FigmaReferenceCanvas.premium_button(
+			text_value, readable_size, resolved_text, resolved_fill, radius,
+			Color(resolved_fill.r,resolved_fill.g,resolved_fill.b,0.38),1)
+	button.clip_text = true
+	button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	button.custom_minimum_size = Vector2.ZERO
+	button.set_meta("unjam_figma_exact_geometry",true)
 	button.name = name_value
 	button.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 	# Show an immediate finger-down response without triggering a new page
@@ -508,7 +528,14 @@ func _figma_card(canvas: Control, name_value: String, rect: Rect2, tint: Color =
 	var base_tint := Color("#282a2e") if _dark() else Color("#fffaf2")
 	var resolved_tint := base_tint.lerp(Color(accent.r,accent.g,accent.b,1.0),0.035)
 	var resolved_accent := Color(accent.r, accent.g, accent.b, 0.34 if _dark() else 0.30)
-	card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.flat_gloss(resolved_tint, radius, resolved_accent, 1, 0.17))
+	# The final V3 pass replaces owned cards with the same premium material
+	# regardless of the former lacquer. Avoid building a throwaway image.
+	if preload("res://scripts/ui/premium_v3_meta_skin.gd").owns_card(name_value):
+		card.add_theme_stylebox_override("panel",
+			FigmaReferenceCanvas.solid_box(resolved_tint,radius,resolved_accent,1))
+	else:
+		card.add_theme_stylebox_override("panel",
+			FigmaReferenceCanvas.flat_gloss(resolved_tint,radius,resolved_accent,1,0.17))
 	FigmaReferenceCanvas.set_rect(card, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(card)
@@ -523,7 +550,14 @@ func _figma_solid_card(canvas: Control, name_value: String, rect: Rect2, tint: C
 		resolved_tint = Color("#f5f2ec")
 	elif _dark() and tint.get_luminance() > 0.72:
 		resolved_tint = Color("#27282b")
-	card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.flat_gloss(resolved_tint, radius, resolved_border, 1, 0.10))
+	var is_final_v3_card := preload("res://scripts/ui/premium_v3_meta_skin.gd").owns_card(name_value)
+	var is_final_v3_nav := name_value.begins_with("StdNav/Bar") or name_value.begins_with("StdNavActivePlate")
+	if is_final_v3_card or is_final_v3_nav:
+		card.add_theme_stylebox_override("panel",
+			FigmaReferenceCanvas.solid_box(resolved_tint,radius,resolved_border,1))
+	else:
+		card.add_theme_stylebox_override("panel",
+			FigmaReferenceCanvas.flat_gloss(resolved_tint,radius,resolved_border,1,0.10))
 	FigmaReferenceCanvas.set_rect(card, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(card)
@@ -2332,6 +2366,11 @@ func _build_figma_level_browser(game_id: String) -> void:
 		index += 1
 	_figma_level_page_progress(canvas,game_id,bounds,grid_y,accent,row_stride)
 	preload("res://scripts/ui/premium_v3_meta_skin.gd").apply(canvas, "levels", _dark())
+	# Do expensive first-use GDScript/SVG preparation AFTER the level page is
+	# visible, rather than synchronously in the player's Play button callback.
+	var scene_path := RESCUE_GAME_SCENE_PATH if game_id == "rescue_rush" else (
+		WATER_GAME_SCENE_PATH if game_id == "water_sort" else BLOCK_GAME_SCENE_PATH)
+	call_deferred("_prime_game_scene_after_level_browser",scene_path,_navigation_generation)
 
 func _play_current_campaign_level(game_id: String) -> void:
 	# One clear, safe way to begin from the level browser. Unlike MY LEVEL,

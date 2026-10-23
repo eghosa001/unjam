@@ -55,7 +55,14 @@ static func _accent(surface: String) -> Color:
 		"levels": return Color("#72C7EC")
 		_: return Color("#67CAE9")
 
+# Immutable native materials are shared across state-identical buttons/cards.
+# Keep the cache bounded so a long session with many language/theme changes
+# cannot accumulate unlimited RIDs or drawing resources.
+static var _material_cache: Dictionary = {}
 static func _material(fill: Color, edge: Color, radius: int = 18, depth: int = 3) -> StyleBoxFlat:
+	var key := "%s/%s/%d/%d" % [fill.to_html(true),edge.to_html(true),radius,depth]
+	if _material_cache.has(key):
+		return _material_cache[key] as StyleBoxFlat
 	var s := StyleBoxFlat.new()
 	s.bg_color = fill
 	s.border_color = edge
@@ -65,6 +72,9 @@ static func _material(fill: Color, edge: Color, radius: int = 18, depth: int = 3
 	s.shadow_size = depth
 	s.shadow_offset = Vector2(0, float(depth))
 	s.anti_aliasing = true
+	if _material_cache.size() >= 256:
+		_material_cache.clear()
+	_material_cache[key] = s
 	return s
 
 static func _button(button: Button, fill: Color, dark: bool, radius: int = 14) -> void:
@@ -136,6 +146,19 @@ static func _card_surface(name_value: String, surface: String, dark: bool) -> Co
 			return Color("#223346") if dark else Color("#FAFBFD")
 	return ink
 
+# Shared by native builders and the final V3 styling pass. Skip expensive
+# temporary lacquer textures for cards whose style is overwritten this frame.
+static func owns_card(name_value: String) -> bool:
+	return name_value.begins_with("SettingsCard") or name_value in [
+		"HelpPrivacy", "DailyProgress", "DailyCheckIn", "CompetitionPlayerProgress",
+		"CompetitionPrizeTimingCard"] or name_value.begins_with("DailyCard") \
+		or name_value.begins_with("Leaderboard") \
+		or name_value.begins_with("Goal") or name_value.begins_with("Profile") \
+		or name_value.begins_with("Friends") or name_value in [
+			"Journey", "Achievements", "Garden", "CollectionTip", "JourneyHero"] \
+		or name_value.begins_with("ProgressCard") \
+		or name_value.begins_with("CollectionScroll")
+
 static func apply(canvas: Control, surface: String, dark: bool) -> void:
 	if canvas == null or not is_instance_valid(canvas):
 		return
@@ -146,7 +169,11 @@ static func apply(canvas: Control, surface: String, dark: bool) -> void:
 			Color("#0E273B") if dark else Color("#F8FCF9"),
 			Color("#0B1B2E") if dark else Color("#EBF5F3"),
 			Color("#091522") if dark else Color("#E3EFEF"),
-			28, Color(accent, 0.10), 1, 0.10))
+			# All menus share the same low-contrast background rim. Brand identity
+			# comes from per-screen cards and original art; regenerating an
+			# otherwise identical 160x160 bitmap just for a 10%-alpha tint
+			# blocked first visits by another render-frame or two.
+			28, Color("#6197A8",0.10), 1, 0.10))
 	for node in canvas.find_children("*", "CanvasItem", true, false):
 		if String(node.name).begins_with("MetaArt"):
 			(node as CanvasItem).modulate.a = 0.36 if dark else 0.23
@@ -155,15 +182,7 @@ static func apply(canvas: Control, surface: String, dark: bool) -> void:
 		if panel == null or panel == bg:
 			continue
 		var name_value := String(panel.name)
-		var is_card := name_value.begins_with("SettingsCard") or name_value in [
-			"HelpPrivacy", "DailyProgress", "DailyCheckIn", "CompetitionPlayerProgress",
-			"CompetitionPrizeTimingCard"] or name_value.begins_with("DailyCard") \
-			or name_value.begins_with("Leaderboard") \
-			or name_value.begins_with("Goal") or name_value.begins_with("Profile") \
-			or name_value.begins_with("Friends") or name_value in [
-				"Journey", "Achievements", "Garden", "CollectionTip", "JourneyHero"] \
-			or name_value.begins_with("ProgressCard") \
-			or name_value.begins_with("CollectionScroll")
+		var is_card := owns_card(name_value)
 		if not is_card:
 			continue
 		var fill := _card_surface(name_value, surface, dark)
