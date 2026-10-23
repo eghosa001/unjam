@@ -47,7 +47,7 @@ func _run() -> void:
 	if not _check(rank_daily != null and rank_daily.text == "—","Today's rank must not be faked before the daily snapshot"):return
 	var today_hint := home.find_child("HomeRankDailyHint",true,false) as Label
 	if not _check(today_hint != null and today_hint.text == "PLAY TO JOIN","Home must explain its empty Daily ranking"):return
-	if not _check(ranking != null and ranking.text.contains("LEADERBOARD"),"Leaderboard is not visible on Home"):return
+	if not _check(ranking != null and ranking.accessibility_name.to_lower().contains("leaderboard") and ranking.get_global_rect().size.x > 100.0,"Rankings card lost its full-size, screen-reader-visible action"):return
 	for game_id in ["rescue_rush","water_sort","block_puzzle"]:
 		if not _check(home.find_child("HomeDirect_%s" % game_id,true,false) == null,"Home still contains duplicate game-select cards for %s" % game_id):return
 	if not _check(home.find_child("HomeHeroFlatGameLogo",true,false) == null and home.find_child("HomeHeroGameTitle",true,false) == null,"Home still prominently displays selected game artwork/title"):return
