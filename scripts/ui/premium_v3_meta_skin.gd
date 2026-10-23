@@ -3,6 +3,45 @@ extends RefCounted
 ## No input, navigation, economy, preference or ranking state is changed.
 const RefCanvas = preload("res://scripts/ui/figma_reference_canvas.gd")
 
+const NAV_HOME = preload("res://assets/art/brand/ui_home.svg")
+const NAV_GAMES = preload("res://assets/art/brand/ui_games.svg")
+const NAV_DAILY = preload("res://assets/art/brand/ui_daily.svg")
+const NAV_COLLECTION = preload("res://assets/art/brand/ui_collection.svg")
+const NAV_SETTINGS = preload("res://assets/art/brand/ui_settings.svg")
+const NAV_PROFILE = preload("res://assets/art/brand/ui_profile.svg")
+
+static func _nav_texture(key: String) -> Texture2D:
+	match key:
+		"HOME": return NAV_HOME
+		"GAMES": return NAV_GAMES
+		"DAILY": return NAV_DAILY
+		"COLLECT": return NAV_COLLECTION
+		"SETTINGS": return NAV_SETTINGS
+		_: return null
+
+# One vector/navigation system across every UI surface. Icons are purely
+# decorative and mouse-ignore; all original focusable buttons own navigation.
+static func _nav_icons(canvas: Control, prefix: String, active: String, dark: bool) -> void:
+	var keys := ["HOME","GAMES","DAILY","COLLECT","SETTINGS"]
+	for i in range(keys.size()):
+		var key := String(keys[i])
+		var glyph := canvas.find_child("%s_%s" % [prefix,key],true,false) as Label
+		if glyph == null:
+			continue
+		glyph.visible = false # legacy label retained for navigation contracts
+		var icon := TextureRect.new()
+		icon.name = "V3NavIcon_%s" % key
+		icon.texture = _nav_texture(key)
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var selected := active == key
+		icon.modulate = (Color("#89F1D4") if dark else Color("#16786F")) if selected \
+			else (Color("#B8D0DC") if dark else Color("#607E8B"))
+		RefCanvas.set_rect(icon, 38.0 + float(i)*72.0, 770, 21, 21)
+		canvas.add_child(icon)
+
+
 static func _accent(surface: String) -> Color:
 	match surface:
 		"settings": return Color("#63DCC4")
@@ -226,6 +265,7 @@ static func apply(canvas: Control, surface: String, dark: bool) -> void:
 					Color("#ABC7D7") if dark else Color("#677F8D"))))
 	if surface == "daily":
 		apply_daily_v3(canvas,dark)
+	_nav_icons(canvas,"StdNavGlyph",surface.to_upper(),dark)
 	# Preserve all existing labels, localized text, real counters, save values,
 	# enabled/disabled states, callback connections, and nav geometry.
 
@@ -279,8 +319,17 @@ static func apply_home_v3(canvas: Control, dark: bool) -> void:
 		Rect2(35,191,194,20),13,muted)
 	var profile := _home_rect(canvas,"HomeProfileButton",Rect2(197,22,46,44)) as Button
 	if profile != null:
-		profile.text = "♙"
+		profile.text = ""
 		_button(profile, Color("#214054") if dark else Color("#F8FEFC"), dark, 14)
+	var avatar := TextureRect.new()
+	avatar.name = "HomeProfileVectorIcon"
+	avatar.texture = NAV_PROFILE
+	avatar.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	avatar.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	avatar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	avatar.modulate = Color("#9FEBD9") if dark else Color("#1C7279")
+	RefCanvas.set_rect(avatar,210,32,21,21)
+	canvas.add_child(avatar)
 	var profile_pill := canvas.find_child("HomeProfilePill",true,false) as CanvasItem
 	if profile_pill != null: profile_pill.visible = false
 	var coins := _home_rect(canvas,"HomeCoinShopButton",Rect2(252,22,118,44)) as Button
@@ -391,6 +440,12 @@ static func apply_home_v3(canvas: Control, dark: bool) -> void:
 		nav.add_theme_stylebox_override("panel",_material(
 			Color("#142C40") if dark else Color("#FFFFFF"),
 			Color("#496A7F") if dark else Color("#CCDCD9"),17,2))
+	var nav_plate := canvas.find_child("HomeNavActivePlate",true,false) as PanelContainer
+	if nav_plate != null:
+		nav_plate.add_theme_stylebox_override("panel",_material(
+			Color("#23565F") if dark else Color("#D4F0E7"),
+			Color("#57C9AF") if dark else Color("#AEDACC"),13,0))
+	_nav_icons(canvas,"HomeNavGlyph","HOME",dark)
 
 
 static func apply_selector_v3(canvas: Control, dark: bool) -> void:
@@ -403,6 +458,7 @@ static func apply_selector_v3(canvas: Control, dark: bool) -> void:
 			Color("#0B2137") if dark else Color("#ECF7F4"),
 			Color("#08172B") if dark else Color("#E4F1EF"),
 			22,Color("#72DCC4",0.16),1,0.12))
+	_nav_icons(canvas,"SelectorNavGlyph","GAMES",dark)
 	var selector_nav := canvas.find_child("SelectorBottomNav",true,false) as PanelContainer
 	if selector_nav != null:
 		selector_nav.add_theme_stylebox_override("panel",_material(
