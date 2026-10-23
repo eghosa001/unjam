@@ -55,7 +55,14 @@ static func _accent(surface: String) -> Color:
 		"levels": return Color("#72C7EC")
 		_: return Color("#67CAE9")
 
+# Immutable native materials are shared across state-identical buttons/cards.
+# Keep the cache bounded so a long session with many language/theme changes
+# cannot accumulate unlimited RIDs or drawing resources.
+static var _material_cache: Dictionary = {}
 static func _material(fill: Color, edge: Color, radius: int = 18, depth: int = 3) -> StyleBoxFlat:
+	var key := "%s/%s/%d/%d" % [fill.to_html(true),edge.to_html(true),radius,depth]
+	if _material_cache.has(key):
+		return _material_cache[key] as StyleBoxFlat
 	var s := StyleBoxFlat.new()
 	s.bg_color = fill
 	s.border_color = edge
@@ -65,6 +72,9 @@ static func _material(fill: Color, edge: Color, radius: int = 18, depth: int = 3
 	s.shadow_size = depth
 	s.shadow_offset = Vector2(0, float(depth))
 	s.anti_aliasing = true
+	if _material_cache.size() >= 256:
+		_material_cache.clear()
+	_material_cache[key] = s
 	return s
 
 static func _button(button: Button, fill: Color, dark: bool, radius: int = 14) -> void:
