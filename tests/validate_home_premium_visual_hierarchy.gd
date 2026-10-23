@@ -52,7 +52,7 @@ func _run() -> void:
 	if showcase_heading == null or showcase_heading.text != "CHOOSE YOUR WORLD":
 		return _fail("Concise game showcase introduction is missing")
 	if not _same(rank_panel,Rect2(17,651,173,99)):
-		return _fail("Today/weekly rank card layout drifted")
+		return _fail("V3 rank card geometry incorrect: %s (expected 17,651 173x99)" % str(Rect2(rank_panel.position,rank_panel.size)))
 	if not _same(daily_panel,Rect2(200,651,173,99)):
 		return _fail("Daily feature layout drifted")
 	if not _same(nav,Rect2(13,757,362,70)):
