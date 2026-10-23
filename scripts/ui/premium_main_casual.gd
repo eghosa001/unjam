@@ -205,15 +205,20 @@ func _figma_surface(active: String, bottom_tint: Color = FIGMA_BG_BOTTOM, top_ti
 	var dark_top := Color("#1c2027").lerp(accent.darkened(0.64), 0.26)
 	var dark_mid := Color("#171b22").lerp(accent.darkened(0.70), 0.22)
 	var dark_bottom := Color("#11151c").lerp(accent.darkened(0.76), 0.20)
-	bg.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(
-		dark_top if _dark() else light_top,
-		dark_mid if _dark() else light_mid,
-		dark_bottom if _dark() else light_bottom,
-		34,
-		Color(accent, 0.14),
-		1,
-		0.15
-	))
+	# V3 rebuilds its final background at the end of each authored page.
+	# Generating a 160x160 CPU gradient here was wasted work on every cold
+	# menu visit (and was overwritten before it could ever be rendered).
+	var final_v3_page := active in ["settings","daily","compete","goals","profile","friends","collection"]
+	if final_v3_page:
+		bg.add_theme_stylebox_override("panel",FigmaReferenceCanvas.solid_box(
+			Color("#0D2638") if _dark() else Color("#F6FAF8"),28))
+	else:
+		bg.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(
+			dark_top if _dark() else light_top,
+			dark_mid if _dark() else light_mid,
+			dark_bottom if _dark() else light_bottom,
+			34,Color(accent,0.14),1,0.15
+		))
 	FigmaReferenceCanvas.set_rect(bg, 0, 0, 390, 844)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(bg)
@@ -508,7 +513,14 @@ func _figma_card(canvas: Control, name_value: String, rect: Rect2, tint: Color =
 	var base_tint := Color("#282a2e") if _dark() else Color("#fffaf2")
 	var resolved_tint := base_tint.lerp(Color(accent.r,accent.g,accent.b,1.0),0.035)
 	var resolved_accent := Color(accent.r, accent.g, accent.b, 0.34 if _dark() else 0.30)
-	card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.flat_gloss(resolved_tint, radius, resolved_accent, 1, 0.17))
+	# The final V3 pass replaces owned cards with the same premium material
+	# regardless of the former lacquer. Avoid building a throwaway image.
+	if preload("res://scripts/ui/premium_v3_meta_skin.gd").owns_card(name_value):
+		card.add_theme_stylebox_override("panel",
+			FigmaReferenceCanvas.solid_box(resolved_tint,radius,resolved_accent,1))
+	else:
+		card.add_theme_stylebox_override("panel",
+			FigmaReferenceCanvas.flat_gloss(resolved_tint,radius,resolved_accent,1,0.17))
 	FigmaReferenceCanvas.set_rect(card, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(card)
@@ -523,7 +535,14 @@ func _figma_solid_card(canvas: Control, name_value: String, rect: Rect2, tint: C
 		resolved_tint = Color("#f5f2ec")
 	elif _dark() and tint.get_luminance() > 0.72:
 		resolved_tint = Color("#27282b")
-	card.add_theme_stylebox_override("panel", FigmaReferenceCanvas.flat_gloss(resolved_tint, radius, resolved_border, 1, 0.10))
+	var is_final_v3_card := preload("res://scripts/ui/premium_v3_meta_skin.gd").owns_card(name_value)
+	var is_final_v3_nav := name_value.begins_with("StdNav/Bar") or name_value.begins_with("StdNavActivePlate")
+	if is_final_v3_card or is_final_v3_nav:
+		card.add_theme_stylebox_override("panel",
+			FigmaReferenceCanvas.solid_box(resolved_tint,radius,resolved_border,1))
+	else:
+		card.add_theme_stylebox_override("panel",
+			FigmaReferenceCanvas.flat_gloss(resolved_tint,radius,resolved_border,1,0.10))
 	FigmaReferenceCanvas.set_rect(card, rect.position.x, rect.position.y, rect.size.x, rect.size.y)
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(card)
