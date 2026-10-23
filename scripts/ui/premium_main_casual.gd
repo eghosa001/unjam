@@ -1191,9 +1191,9 @@ func build_settings() -> void:
 
 	_figma_settings_card(canvas,"SettingsCard/Sound",Rect2(17,91,354,170),card_fill,card_border,dark_mode)
 	_figma_text(canvas,"SOUND & FEEDBACK",Rect2(33,107,208,18),15,heading_color)
-	_figma_setting_row(canvas,"sound","SOUND EFFECTS",130,142,true,false,dark_mode)
-	_figma_setting_row(canvas,"music","MUSIC",178,190,true,false,dark_mode)
-	_figma_setting_row(canvas,"vibration","HAPTICS",226,238,true,false,dark_mode)
+	_figma_setting_row(canvas,"sound","SOUND EFFECTS",128,139,true,false,dark_mode)
+	_figma_setting_row(canvas,"music","MUSIC",175,185,true,false,dark_mode)
+	_figma_setting_row(canvas,"vibration","HAPTICS",216,226,true,false,dark_mode)
 
 	_figma_settings_card(canvas,"SettingsCard/Comfort",Rect2(17,275,354,169),card_fill,card_border,dark_mode)
 	_figma_text(canvas,"PLAY COMFORT",Rect2(33,291,192,18),15,heading_color)
