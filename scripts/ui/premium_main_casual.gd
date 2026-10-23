@@ -208,7 +208,10 @@ func _figma_surface(active: String, bottom_tint: Color = FIGMA_BG_BOTTOM, top_ti
 	# V3 rebuilds its final background at the end of each authored page.
 	# Generating a 160x160 CPU gradient here was wasted work on every cold
 	# menu visit (and was overwritten before it could ever be rendered).
-	var final_v3_page := active in ["settings","daily","compete","goals","profile","friends","collection"]
+	# The level browser calls this builder as 'games', but is styled at the
+	# end as 'levels'. Include it in this fast path too; otherwise the first
+	# Rescue/Water/Block level visit pays for a discarded per-game gradient.
+	var final_v3_page := active in ["settings","daily","compete","goals","profile","friends","collection","games"]
 	if final_v3_page:
 		bg.add_theme_stylebox_override("panel",FigmaReferenceCanvas.solid_box(
 			Color("#0D2638") if _dark() else Color("#F6FAF8"),28))
