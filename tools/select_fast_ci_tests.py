@@ -193,20 +193,6 @@ def classify_path(path: str, groups: set[str], visual: set[str], explicit_tests:
     if not is_code:
         return False
 
-    # Keep the measured navigation contract active when owners of a major
-    # screen or its transition pipeline change, not only on audit creation.
-    if p in {
-        "scripts/ui/premium_main_casual.gd",
-        "scripts/ui/premium_home_direct_levels.gd",
-        "scripts/ui/premium_live_hub_3d.gd",
-        "scripts/ui/robust_main.gd",
-        "scripts/ui/premium_v3_meta_skin.gd",
-        "scripts/ui/motion_director.gd",
-        "scripts/ui/figma_reference_canvas.gd",
-        "scripts/ui/monetization_hub_3d.gd",
-    }:
-        explicit_tests.add("validate_all_screen_navigation_performance")
-
     # Language and coach policy regressions must follow the source that owns
     # them, not run only on the commit where their test files were first added.
     if p == "scripts/systems/localization_manager.gd":
