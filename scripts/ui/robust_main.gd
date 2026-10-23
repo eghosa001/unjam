@@ -14,6 +14,7 @@ var _pending_game_launch: Dictionary = {}
 var _game_scene_art_ready := false
 var _game_scene_art_cache: Array[Texture2D] = []
 var _ready_game_scenes: Dictionary = {}
+var _draining_game_scenes: Dictionary = {}
 var _game_scene_script_cache: Dictionary = {}
 const GAME_SCENE_SCRIPT_DEPENDENCIES := {
 	"res://scenes/Game.tscn":"res://scripts/game/rescue_rush_assisted.gd",
@@ -115,9 +116,26 @@ func _prime_game_scene_after_level_browser(path: String, generation: int) -> voi
 		return
 	if _ready_game_scenes.has(path):
 		return
-	# Dependency-only warm-up. A standalone threaded request would remain
-	# undrained if the player exits before pressing Play.
-	_prime_game_scene(path,false)
+	# Load the actual PackedScene while the player browses levels, not after
+	# their Play tap. The drain coroutine owns the request across navigation.
+	_prime_game_scene(path, true)
+	call_deferred("_drain_game_scene_preload", path)
+
+func _drain_game_scene_preload(path: String) -> void:
+	if _draining_game_scenes.has(path):
+		return
+	_draining_game_scenes[path] = true
+	while is_inside_tree() and not _ready_game_scenes.has(path):
+		var status := ResourceLoader.load_threaded_get_status(path)
+		if status == ResourceLoader.THREAD_LOAD_LOADED:
+			var loaded := ResourceLoader.load_threaded_get(path) as PackedScene
+			if loaded != null:
+				_ready_game_scenes[path] = loaded
+			break
+		if status in [ResourceLoader.THREAD_LOAD_INVALID_RESOURCE, ResourceLoader.THREAD_LOAD_FAILED]:
+			break
+		await get_tree().process_frame
+	_draining_game_scenes.erase(path)
 
 func _game_scene_resource(path: String) -> PackedScene:
 	# Important: load_threaded_get() BLOCKS the caller until completion when
@@ -364,11 +382,17 @@ func _spawn_rescue(level_number: int, daily: bool, custom_data: Dictionary) -> v
 	_begin_game_scene_launch(RESCUE_GAME_SCENE_PATH, {"game_id":"rescue_rush","level":level_number,"daily":daily,"custom_data":custom_data.duplicate(true)})
 
 func _begin_game_scene_launch(path: String, config: Dictionary) -> void:
-	# A tap must change the visible surface before any cold script compilation,
-	# imported SVG access, or PackedScene.instantiate() blocks the UI thread.
-	# Even cached scenes can be expensive to instantiate on some Android GPUs.
-	# Keep the same cancellable loading UI and touch-release navigation contract.
 	_remove_active_game()
+	# A warmed scene must open immediately. The previous implementation forced
+	# a loading page AND two render signals even when the scene was cached.
+	# That improved tap feedback but actually increased time to gameplay.
+	var packed := _game_scene_resource(path)
+	if packed != null:
+		_ready_game_scenes[path] = packed
+		_pending_game_launch.clear()
+		_instantiate_game_scene(packed, config)
+		return
+	# Only genuinely cold launches show progress while their resources load.
 	current_surface = "game_loading"
 	_pending_game_launch = config.duplicate(true)
 	_show_game_loading(config)
