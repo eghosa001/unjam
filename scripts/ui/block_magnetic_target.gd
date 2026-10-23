@@ -158,3 +158,28 @@ static func choose_release(game: Node, shape: Array, finger: Vector2, held: Vect
 		return NO_TARGET
 	var raw := _raw_origin(shape, point, geo, grab_anchor)
 	return held if (raw - Vector2(held)).length() <= RELEASE_HOLD_RADIUS else NO_TARGET
+
+# The last green board footprint is a commitment to the player. Finger-up
+# coordinates can be coalesced/jittered by Android even after the preview
+# stopped on a legal cell. Accept that displayed target (never a new unseen
+# neighbour) within a small board-relative release envelope.
+static func release_matches_visible_snap(game: Node, shape: Array,
+		finger: Vector2, last_preview_finger: Vector2, visible_origin: Vector2i,
+		lift: float, grab_anchor: Vector2 = NO_GRAB_ANCHOR,
+		geo_override: Dictionary = {}) -> bool:
+	if visible_origin.x < 0:
+		return false
+	var geo := geo_override if not geo_override.is_empty() else geometry(game)
+	if geo.is_empty() or not bool(game.call("can_place", shape, visible_origin)):
+		return false
+	var step: Vector2 = geo["step"]
+	var release_point := finger - Vector2(0.0,lift)
+	if not _near_board(release_point,geo):
+		return false
+	# Up to 1.8 cells of coalesced UP-only motion; a real continuing drag
+	# updates the preview each sample and resets this reference position.
+	var slop := maxf(20.0, minf(step.x,step.y) * 1.8)
+	if finger.distance_to(last_preview_finger) > slop:
+		return false
+	var released_origin := _raw_origin(shape,release_point,geo,grab_anchor)
+	return (released_origin - Vector2(visible_origin)).length() <= 1.8
