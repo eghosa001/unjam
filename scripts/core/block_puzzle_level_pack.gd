@@ -58,7 +58,10 @@ static func _packed_plan(level: int) -> Dictionary:
 
 static func _load_world(world: int) -> Dictionary:
 	if _world_cache.has(world):
-		return (_world_cache[world] as Dictionary).duplicate(true)
+		# The caller only reads a packed record and _decode_plan() creates a
+		# fresh playable value. Copying every record of this 500-level world
+		# each time one level opens produces avoidable main-thread stalls.
+		return _world_cache[world] as Dictionary
 	var path := "%s/world_%02d.json" % [ROOT, world]
 	if not FileAccess.file_exists(path):
 		return {}
@@ -76,13 +79,13 @@ static func _load_world(world: int) -> Dictionary:
 	var parsed = JSON.parse_string(raw_text)
 	if not parsed is Dictionary:
 		return {}
-	var data := (parsed as Dictionary).duplicate(true)
+	var data := parsed as Dictionary
 	if int(data.get("pack_version", -1)) != PACK_VERSION:
 		return {}
 	if int(data.get("generator_version", -1)) != Generator.GENERATOR_VERSION:
 		return {}
 	_world_cache[world] = data
-	return data.duplicate(true)
+	return data
 
 static func encode_plan(plan: Dictionary) -> Dictionary:
 	var board_bits := ""
