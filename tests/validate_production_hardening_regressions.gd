@@ -172,12 +172,12 @@ func _validate_primary_visual_occupancy() -> bool:
 	if canvas == null or hero == null or primary == null:
 		main.queue_free(); await process_frame
 		return _fail("Figma Home primary visual hierarchy is incomplete")
-	# The approved minimalist Home now has a 168px neutral welcome hero,
-	# not the retired 224px selected-game preview. Validate the current
+	# The approved V3 Home uses a 172px hero; the previous minimalist
+	# reference assertion was stale after the published V3 layout. Validate the current
 	# reference composition without reinstating its obsolete crowded layout.
-	if hero.size.distance_to(Vector2(346,168)) > 1.0:
+	if hero.size.distance_to(Vector2(356,172)) > 1.0:
 		main.queue_free(); await process_frame
-		return _fail("Minimalist Home hero drifted from audited 346x168 geometry")
+		return _fail("V3 Home hero drifted from approved 356x172 geometry")
 	# DeviceFit and letterboxing intentionally vary physical scale. Check
 	# share of the actual visible Figma canvas, not an old fixed pixel size.
 	var visual_hero := hero.get_global_rect()
