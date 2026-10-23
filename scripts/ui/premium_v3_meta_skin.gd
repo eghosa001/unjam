@@ -138,6 +138,28 @@ static func apply(canvas: Control, surface: String, dark: bool) -> void:
 				Color("#84E9D4") if dark and surface == "settings" else
 				(Color("#D2B9FF") if dark and surface == "compete" else
 				(Color("#87E6CC") if dark else Color("#1D736C"))))
+	var nav_bar := canvas.find_child("StdNav_Bar",true,false) as PanelContainer
+	if nav_bar != null:
+		nav_bar.add_theme_stylebox_override("panel",_material(
+			Color("#142D41") if dark else Color("#FFFFFF"),
+			Color("#46687D") if dark else Color("#C9DED8"),18,2))
+	for child in canvas.find_children("StdNavActivePlate*", "PanelContainer", true, false):
+		var plate := child as PanelContainer
+		if plate != null:
+			plate.add_theme_stylebox_override("panel",_material(
+				Color("#235B60") if dark else Color("#CEF0E5"),
+				Color("#64D8B8") if dark else Color("#8BC9B8"),14,0))
+	for child in canvas.find_children("StdNavActiveShine*", "PanelContainer", true, false):
+		(child as PanelContainer).modulate.a = 0.24
+	for child in canvas.find_children("StdNavGlyph*", "Label", true, false):
+		var glyph := child as Label
+		var selected := surface.to_upper() == String(glyph.name).replace("StdNavGlyph_","")
+		glyph.add_theme_color_override("font_color",
+			Color("#8EECD1") if dark and selected else (
+				Color("#177F74") if selected else (
+					Color("#ABC7D7") if dark else Color("#677F8D"))))
+	if surface == "daily":
+		apply_daily_v3(canvas,dark)
 	# Preserve all existing labels, localized text, real counters, save values,
 	# enabled/disabled states, callback connections, and nav geometry.
 
@@ -374,3 +396,48 @@ static func apply_selector_v3(canvas: Control, dark: bool) -> void:
 		if play != null:
 			_button(play,col.darkened(0.20) if dark else col.darkened(0.16),dark,13)
 			play.add_theme_font_size_override("font_size",14)
+
+
+static func apply_daily_v3(canvas: Control, dark: bool) -> void:
+	var specs := [
+		["rescue_rush",115.0],
+		["water_sort",239.0],
+		["block_puzzle",363.0]
+	]
+	for spec in specs:
+		var id := String(spec[0])
+		var y := float(spec[1])
+		_home_rect(canvas,"DailyGameArt_%s" % id,Rect2(31,y+12,75,76))
+		var title := _home_rect(canvas,"DailyTitle_%s" % id,
+			Rect2(120,y+13,174,27)) as Label
+		if title != null:
+			title.add_theme_font_size_override("font_size",17)
+			title.add_theme_color_override("font_color",
+				Color("#F6FBFF") if dark else Color("#1D3C50"))
+		# Existing dynamic detail and collection reward labels have no stable
+		# names. Locate only the exact legacy authored lanes for this one card.
+		for child in canvas.get_children():
+			if not child is Label: continue
+			var label := child as Label
+			if absf(label.position.x-33.0) > 1.5: continue
+			if absf(label.position.y-(y+47.0)) < 1.5:
+				RefCanvas.set_rect(label,120,y+43,130,20)
+				label.add_theme_font_size_override("font_size",12)
+				label.add_theme_color_override("font_color",
+					Color("#BCD5E1") if dark else Color("#54707E"))
+			elif absf(label.position.y-(y+70.0)) < 1.5:
+				RefCanvas.set_rect(label,120,y+70,132,20)
+				label.add_theme_font_size_override("font_size",13)
+				label.add_theme_color_override("font_color",
+					Color("#F5D48A") if dark else Color("#875E1B"))
+		var action := _home_rect(canvas,"DailyPlay_%s" % id,
+			Rect2(258,y+57,100,44)) as Button
+		if action != null:
+			action.add_theme_font_size_override("font_size",14)
+			action.clip_text = true
+	var progress := canvas.find_child("DailyProgressBar",true,false) as ProgressBar
+	if progress != null:
+		progress.add_theme_stylebox_override("background",
+			RefCanvas.solid_box(Color("#2B5559") if dark else Color("#D2E4DB"),6))
+		progress.add_theme_stylebox_override("fill",
+			RefCanvas.solid_box(Color("#52D6B3") if dark else Color("#239F85"),6))
