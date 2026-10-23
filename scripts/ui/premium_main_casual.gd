@@ -2351,6 +2351,11 @@ func _build_figma_level_browser(game_id: String) -> void:
 		index += 1
 	_figma_level_page_progress(canvas,game_id,bounds,grid_y,accent,row_stride)
 	preload("res://scripts/ui/premium_v3_meta_skin.gd").apply(canvas, "levels", _dark())
+	# Do expensive first-use GDScript/SVG preparation AFTER the level page is
+	# visible, rather than synchronously in the player's Play button callback.
+	var scene_path := RESCUE_GAME_SCENE_PATH if game_id == "rescue_rush" else (
+		WATER_GAME_SCENE_PATH if game_id == "water_sort" else BLOCK_GAME_SCENE_PATH)
+	call_deferred("_prime_game_scene_after_level_browser",scene_path,_navigation_generation)
 
 func _play_current_campaign_level(game_id: String) -> void:
 	# One clear, safe way to begin from the level browser. Unlike MY LEVEL,
