@@ -259,6 +259,63 @@ func _run() -> void:
 			"Occupied cell committed despite a green stale footprint"):return
 	board.blocked = Vector2i(-1,-1)
 
+	# Regression: every valid horizontal placement ON THE EIGHTH ROW must
+	# survive a downward Android finger-up event. The previous edge cutoff
+	# accepted middle rows but discarded green targets near the bottom edge.
+	piece.configure([Vector2i(0,0), Vector2i(1,0)],false,Color("#5396fa"),0)
+	board.blocked = Vector2i(-1,-1)
+	for column in range(7):
+		board.placed = Vector2i(-1,-1)
+		piece._gui_input(press)
+		var bottom_move := InputEventScreenDrag.new()
+		bottom_move.index = 0
+		bottom_move.position = Vector2(57.0 + 36.0 * float(column), 57.0 + 36.0 * 7.0 + scaled_lift)
+		piece._input(bottom_move)
+		if not _check(piece._preview_valid and piece._preview_snap_origin == Vector2i(column,7),
+				"Last-row green preview absent at column %d" % column):return
+		var bottom_up := InputEventScreenTouch.new()
+		bottom_up.index = 0
+		bottom_up.pressed = false
+		bottom_up.position = bottom_move.position + Vector2(0.0,55.0)
+		piece._input(bottom_up)
+		if not _check(board.placed == Vector2i(column,7),
+				"Valid bottom-row drop rejected at column %d" % column):return
+	# A two-tile column grabbed by its LOWER tile should fill the eighth
+	# row without sending its top tile outside the grid or missing finger-up.
+	piece.configure([Vector2i(0,0), Vector2i(0,1)],false,Color("#5396fa"),0)
+	var bottom_grab := InputEventScreenTouch.new()
+	bottom_grab.index = 0
+	bottom_grab.pressed = true
+	bottom_grab.position = vertical_first + Vector2(0.0,tray_tile)
+	piece._gui_input(bottom_grab)
+	if not _check(piece._grab_cell == Vector2(0,1),"Bottom-tile grab anchor is incorrect"):return
+	var bottom_vertical_move := InputEventScreenDrag.new()
+	bottom_vertical_move.index = 0
+	bottom_vertical_move.position = Vector2(57.0 + 36.0 * 4.0,57.0 + 36.0 * 7.0 + scaled_lift)
+	piece._input(bottom_vertical_move)
+	if not _check(piece._preview_valid and piece._preview_snap_origin == Vector2i(4,6),
+			"Vertical piece would not snap its second tile to the last row"):return
+	board.placed = Vector2i(-1,-1)
+	var bottom_vertical_up := InputEventScreenTouch.new()
+	bottom_vertical_up.index = 0
+	bottom_vertical_up.pressed = false
+	bottom_vertical_up.position = bottom_vertical_move.position + Vector2(0.0,55.0)
+	piece._input(bottom_vertical_up)
+	if not _check(board.placed == Vector2i(4,6),
+			"Bottom-row vertical drop bounced back on finger-up"):return
+	# Movement significantly beyond the last visible legal cell must still
+	# fail; the new release tolerance must not place a distant stale ghost.
+	board.placed = Vector2i(-1,-1)
+	piece._gui_input(bottom_grab)
+	piece._input(bottom_vertical_move)
+	var far_bottom_up := InputEventScreenTouch.new()
+	far_bottom_up.index = 0
+	far_bottom_up.pressed = false
+	far_bottom_up.position = bottom_vertical_move.position + Vector2(0.0,110.0)
+	piece._input(far_bottom_up)
+	if not _check(board.placed == Vector2i(-1,-1),
+			"Distant downward drag incorrectly committed a stale eighth-row snap"):return
+	piece.configure([Vector2i(0,0), Vector2i(1,0)],false,Color("#5396fa"),0)
 	# When a shape extends beyond the right edge, magnetize to its nearest
 	# legal origin instead of rejecting an almost-correct drop.
 	var edge_finger := Vector2(57.0 + 36.0 * 7.0, 57.0 + 36.0 * 4.0 + 132.0)
