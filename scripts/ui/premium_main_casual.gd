@@ -1267,6 +1267,7 @@ func build_settings() -> void:
 	canvas.add_child(recovery)
 
 	_figma_bottom_nav(canvas,"settings",dark_mode)
+	preload("res://scripts/ui/premium_v3_meta_skin.gd").apply(canvas, "settings", dark_mode)
 
 func _return_from_settings() -> void:
 	# Restore a real parent destination. In particular, Games -> Settings ->
@@ -1420,6 +1421,7 @@ func build_daily_games() -> void:
 	board.accessibility_name = "View today's challenge leaderboard"
 	# Daily is a primary destination; campaign rankings remain a separate Compete flow.
 	_figma_bottom_nav(canvas, "daily")
+	preload("res://scripts/ui/premium_v3_meta_skin.gd").apply(canvas, "daily", _dark())
 
 func _figma_daily_progress(canvas: Control) -> void:
 	var done_count := 0
@@ -1587,6 +1589,7 @@ func build_compete_leaderboard(refresh_remote: bool = true) -> void:
 		sync_status.accessibility_name = sync_status.tooltip_text
 	# Rankings are intentionally separate from the Daily destination.
 	_figma_bottom_nav(canvas,"")
+	preload("res://scripts/ui/premium_v3_meta_skin.gd").apply(canvas, "compete", _dark())
 
 func _figma_compete_game_tabs(canvas: Control, y: float, compact: bool = false) -> void:
 	var ids: Array[String] = ["rescue_rush","water_sort","block_puzzle"]
