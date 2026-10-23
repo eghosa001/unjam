@@ -223,6 +223,42 @@ func _run() -> void:
 	coalesced_release.position = move.position + Vector2(43.0, 0.0)
 	piece._input(coalesced_release)
 	if not _check(board.placed == Vector2i(2,3), "Release jitter bounced a visibly green two-tile brick back to tray"):return
+	# The last highlighted column is authoritative even if Android coalesces
+	# the final pointer-up by ~1.5 board cells. The old 1.28-cell check
+	# rejected this as a failed drop despite showing a green footprint.
+	board.placed = Vector2i(-1, -1)
+	piece._gui_input(press)
+	piece._input(move)
+	if not _check(piece._preview_valid and piece._preview_snap_origin == Vector2i(2,3),
+			"Coalesced drop fixture lost its green preview"):return
+	var wide_up := InputEventScreenTouch.new()
+	wide_up.index = 0
+	wide_up.pressed = false
+	wide_up.position = move.position + Vector2(55.0, 0.0)
+	piece._input(wide_up)
+	if not _check(board.placed == Vector2i(2,3),
+			"Visible magnetic column was rejected on delayed finger-up"):return
+	var geo_for_release := Magnetic.geometry(board)
+	var live_lift := Magnetic.lift_distance(board, geo_for_release)
+	if not _check(Magnetic.release_matches_visible_snap(board,shape,
+			move.position + Vector2(55.0,0.0),move.position,Vector2i(2,3),
+			live_lift,Vector2.ZERO,geo_for_release),
+			"Release solver refused valid held green cell"):return
+	if not _check(not Magnetic.release_matches_visible_snap(board,shape,
+			move.position + Vector2(98.0,0.0),move.position,Vector2i(2,3),
+			live_lift,Vector2.ZERO,geo_for_release),
+			"Distant lift-up incorrectly teleported a snapped brick"):return
+	if not _check(not Magnetic.release_matches_visible_snap(board,shape,
+			Vector2(-800.0,-800.0),move.position,Vector2i(2,3),
+			live_lift,Vector2.ZERO,geo_for_release),
+			"Off-board lift-up accepted a stale green brick"):return
+	board.blocked = Vector2i(2,3)
+	if not _check(not Magnetic.release_matches_visible_snap(board,shape,
+			move.position,move.position,Vector2i(2,3),
+			live_lift,Vector2.ZERO,geo_for_release),
+			"Occupied cell committed despite a green stale footprint"):return
+	board.blocked = Vector2i(-1,-1)
+
 	# When a shape extends beyond the right edge, magnetize to its nearest
 	# legal origin instead of rejecting an almost-correct drop.
 	var edge_finger := Vector2(57.0 + 36.0 * 7.0, 57.0 + 36.0 * 4.0 + 132.0)
