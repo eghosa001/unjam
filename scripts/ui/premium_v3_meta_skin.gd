@@ -177,7 +177,7 @@ static func apply_home_v3(canvas: Control, dark: bool) -> void:
 	_home_text(canvas,"HomeWelcomeTitle","THREE GAMES.\nONE UNJAM.",
 		Rect2(34,129,203,54),19,fg)
 	_home_text(canvas,"HomeWelcomeSubtitle","Make every move count.",
-		Rect2(35,191,194,20),12,muted)
+		Rect2(35,191,194,20),13,muted)
 	var profile := _home_rect(canvas,"HomeProfileButton",Rect2(197,22,46,44)) as Button
 	if profile != null:
 		profile.text = "♙"
