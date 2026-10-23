@@ -159,7 +159,11 @@ static func apply(canvas: Control, surface: String, dark: bool) -> void:
 			Color("#0E273B") if dark else Color("#F8FCF9"),
 			Color("#0B1B2E") if dark else Color("#EBF5F3"),
 			Color("#091522") if dark else Color("#E3EFEF"),
-			28, Color(accent, 0.10), 1, 0.10))
+			# All menus share the same low-contrast background rim. Brand identity
+			# comes from per-screen cards and original art; regenerating an
+			# otherwise identical 160x160 bitmap just for a 10%-alpha tint
+			# blocked first visits by another render-frame or two.
+			28, Color("#6197A8",0.10), 1, 0.10))
 	for node in canvas.find_children("*", "CanvasItem", true, false):
 		if String(node.name).begins_with("MetaArt"):
 			(node as CanvasItem).modulate.a = 0.36 if dark else 0.23
