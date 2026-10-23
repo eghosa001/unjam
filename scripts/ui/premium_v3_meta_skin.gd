@@ -187,11 +187,11 @@ static func apply_home_v3(canvas: Control, dark: bool) -> void:
 	for gem_name in ["HomeCurrencyGem3D","HomeCurrencyGem3DSide","HomeCurrencyGem3DHighlight"]:
 		var gem := canvas.find_child(gem_name,true,false) as Node2D
 		if gem != null: gem.position += Vector2(8.0,-42.0)
-	var choose := _home_rect(canvas,"HomePrimaryAction",Rect2(32,218,198,44)) as Button
+	var choose := _home_rect(canvas,"HomePrimaryAction",Rect2(32,218,198,48)) as Button
 	if choose != null:
 		_button(choose,accent,dark,14)
 		choose.add_theme_font_size_override("font_size",15)
-	var resume := _home_rect(canvas,"HomeResumeAction",Rect2(238,218,118,44)) as Button
+	var resume := _home_rect(canvas,"HomeResumeAction",Rect2(238,218,118,48)) as Button
 	if resume != null:
 		_button(resume,Color("#315D6D") if dark else Color("#D6EAE7"),dark,14)
 	_home_text(canvas,"HomeShowcaseTitle","CHOOSE YOUR WORLD",
@@ -256,8 +256,11 @@ static func apply_home_v3(canvas: Control, dark: bool) -> void:
 	var rank_button := _home_rect(canvas,"HomeDailyGamesButton",
 		Rect2(17,651,173,99)) as Button
 	if rank_button != null:
-		rank_button.text = ""
+		rank_button.text = "LEADERBOARD"
 		rank_button.flat = true
+		rank_button.add_theme_color_override("font_color",Color.TRANSPARENT)
+		rank_button.add_theme_color_override("font_hover_color",Color.TRANSPARENT)
+		rank_button.add_theme_color_override("font_pressed_color",Color.TRANSPARENT)
 		rank_button.add_theme_stylebox_override("normal",RefCanvas.solid_box(Color.TRANSPARENT,18))
 		rank_button.add_theme_stylebox_override("hover",RefCanvas.solid_box(Color("#C5A2FF",0.08),18))
 		rank_button.add_theme_stylebox_override("pressed",RefCanvas.solid_box(Color("#C5A2FF",0.16),18))
@@ -301,7 +304,7 @@ static func apply_selector_v3(canvas: Control, dark: bool) -> void:
 	_home_text(canvas,"SelectorTitle3D","CHOOSE A WORLD",Rect2(78,26,220,35),
 		22,Color("#F7FCFF") if dark else Color("#173C50"))
 	_home_text(canvas,"SelectorActionGuide",
-		"TAP A WORLD FOR LEVELS  •  PLAY TO START",
+		"CARD: LEVELS  •  PLAY / RESUME: START",
 		Rect2(26,95,339,24),13,Color("#B8D7DF") if dark else Color("#57737B"))
 	var sections := [
 		["rescue_rush",148.0,Color("#5CE0AF")],
