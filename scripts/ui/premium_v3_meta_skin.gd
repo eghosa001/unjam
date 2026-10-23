@@ -9,6 +9,11 @@ static func _accent(surface: String) -> Color:
 		"daily": return Color("#66D5B3")
 		"compete": return Color("#C5A2FF")
 		"selector": return Color("#6DDCCB")
+		"goals": return Color("#F1C37D")
+		"profile": return Color("#70D0EE")
+		"friends": return Color("#B69BF6")
+		"collection": return Color("#6DDEAC")
+		"levels": return Color("#72C7EC")
 		_: return Color("#67CAE9")
 
 static func _material(fill: Color, edge: Color, radius: int = 18, depth: int = 3) -> StyleBoxFlat:
@@ -17,7 +22,7 @@ static func _material(fill: Color, edge: Color, radius: int = 18, depth: int = 3
 	s.border_color = edge
 	s.set_border_width_all(1)
 	s.set_corner_radius_all(radius)
-	s.shadow_color = Color(0.01, 0.05, 0.12, 0.22)
+	s.shadow_color = Color(0.01, 0.05, 0.12, 0.15)
 	s.shadow_size = depth
 	s.shadow_offset = Vector2(0, float(depth))
 	s.anti_aliasing = true
@@ -64,6 +69,26 @@ static func _card_surface(name_value: String, surface: String, dark: bool) -> Co
 		"compete":
 			if name_value.contains("Leaderboard"): return Color("#252C46") if dark else Color("#F5F0FD")
 			return Color("#1C3445") if dark else Color("#F8F7FD")
+		"goals":
+			if name_value.contains("Login"): return Color("#3B3641") if dark else Color("#FFF3E1")
+			if name_value.contains("Season"): return Color("#302B4B") if dark else Color("#F3EEFD")
+			return Color("#243748") if dark else Color("#FAFCF9")
+		"profile":
+			if name_value.contains("Identity"): return Color("#143D4A") if dark else Color("#EDF9FC")
+			if name_value.contains("Stats"): return Color("#1D3348") if dark else Color("#F3F7FC")
+			return Color("#24364D") if dark else Color("#F5F8FD")
+		"friends":
+			if name_value.contains("Code"): return Color("#1C3A4F") if dark else Color("#EEF8FC")
+			if name_value.contains("Add"): return Color("#2A304D") if dark else Color("#F4F0FD")
+			return Color("#252C49") if dark else Color("#F4F2FA")
+		"collection":
+			if name_value.contains("Journey"): return Color("#173F39") if dark else Color("#E7F8EF")
+			if name_value.contains("Garden"): return Color("#163B37") if dark else Color("#EAF7EF")
+			if name_value.contains("Upgrade"): return Color("#242F46") if dark else Color("#F0F6F5")
+			return Color("#1F3843") if dark else Color("#F4FBF7")
+		"levels":
+			if name_value.contains("Journey"): return Color("#1C3B4C") if dark else Color("#F1F9FC")
+			return Color("#223346") if dark else Color("#FAFBFD")
 	return ink
 
 static func apply(canvas: Control, surface: String, dark: bool) -> void:
@@ -88,7 +113,11 @@ static func apply(canvas: Control, surface: String, dark: bool) -> void:
 		var is_card := name_value.begins_with("SettingsCard") or name_value in [
 			"HelpPrivacy", "DailyProgress", "DailyCheckIn", "CompetitionPlayerProgress",
 			"CompetitionPrizeTimingCard"] or name_value.begins_with("DailyCard") \
-			or name_value.begins_with("Leaderboard")
+			or name_value.begins_with("Leaderboard") \
+			or name_value.begins_with("Goals") or name_value.begins_with("Profile") \
+			or name_value.begins_with("Friends") or name_value in [
+				"Journey", "Achievements", "Garden", "CollectionTip", "JourneyHero"] \
+			or name_value.begins_with("CollectionScroll")
 		if not is_card:
 			continue
 		var fill := _card_surface(name_value, surface, dark)
@@ -117,6 +146,22 @@ static func apply(canvas: Control, surface: String, dark: bool) -> void:
 			fill = accent if b.mouse_filter == Control.MOUSE_FILTER_IGNORE else (Color("#354054") if dark else Color("#E6E0F0"))
 		elif id.begins_with("Competition"):
 			fill = Color("#755AAE") if dark else Color("#6F51A4")
+		elif id.begins_with("Goals"):
+			fill = Color("#A16F33") if dark else Color("#B47732")
+			if id.contains("Season"): fill = Color("#795CC0") if dark else Color("#7152AC")
+		elif id.begins_with("Profile"):
+			fill = Color("#1A83A3") if dark else Color("#177A9E")
+			if id.contains("Friends"): fill = Color("#7156AC")
+		elif id.begins_with("Friends"):
+			fill = Color("#7255B5") if dark else Color("#7754B8")
+			if id.contains("Copy"): fill = Color("#1C89A7") if dark else Color("#127E9A")
+		elif id.begins_with("Collection"):
+			fill = Color("#278D70") if dark else Color("#15896E")
+			if id.contains("Upgrade") or id.contains("Achievements"):
+				fill = Color("#6F54AA") if dark else Color("#7153AD")
+		elif id.begins_with("Level"):
+			fill = Color("#2D5567") if dark else Color("#DCEEF0")
+			if id in ["LevelPlayCurrent","LevelCurrent"]: fill = accent.darkened(0.18)
 		elif id == "FigmaBack": fill = Color("#27485A") if dark else Color("#DCEAE8")
 		elif id == "FigmaHeaderPill": fill = accent.darkened(0.40) if dark else accent.darkened(0.22)
 		_button(b, fill, dark, 13)
@@ -133,11 +178,28 @@ static func apply(canvas: Control, surface: String, dark: bool) -> void:
 		elif label.text in [
 			"SOUND & FEEDBACK","PLAY COMFORT","APPEARANCE",
 			"HELP & PRIVACY","ACCOUNT & PURCHASES",
-			"DAILY CHECK-IN","WEEKLY PRIZES","THIS WEEK","ALL-TIME"]:
+			"DAILY CHECK-IN","WEEKLY PRIZES","THIS WEEK","ALL-TIME",
+			"DAILY MISSIONS","WEEKLY MISSIONS","SEASON JOURNEY","ACHIEVEMENTS",
+			"PROGRESS","GAMES","RESCUE GARDEN","GARDEN UPGRADES",
+			"YOUR FRIEND CODE","ADD A FRIEND"]:
 			label.add_theme_color_override("font_color",
 				Color("#84E9D4") if dark and surface == "settings" else
 				(Color("#D2B9FF") if dark and surface == "compete" else
 				(Color("#87E6CC") if dark else Color("#1D736C"))))
+	# Give editable player-name/friend-code fields the same tactile material
+	# and focus semantics as the actions, without touching their text or state.
+	for node in canvas.find_children("*", "LineEdit", true, false):
+		var field := node as LineEdit
+		var fill := Color("#1A354A") if dark else Color("#FFFFFF")
+		field.add_theme_stylebox_override("normal", _material(fill,
+			Color(accent.r,accent.g,accent.b,0.40),12,1))
+		field.add_theme_stylebox_override("focus", _material(fill,
+			Color("#F3D998") if dark else accent.darkened(0.12),12,1))
+		field.add_theme_color_override("font_color",
+			Color("#F4FBFF") if dark else Color("#1D4052"))
+		field.add_theme_color_override("font_placeholder_color",
+			Color("#AEC4D1") if dark else Color("#58727D"))
+		field.add_theme_color_override("caret_color",accent)
 	var nav_bar := canvas.find_child("StdNav_Bar",true,false) as PanelContainer
 	if nav_bar != null:
 		nav_bar.add_theme_stylebox_override("panel",_material(
