@@ -68,6 +68,9 @@ func _style(fill: Color, outline: Color, radius: int = 18) -> StyleBoxFlat:
 	style.border_color = outline
 	style.set_border_width_all(2)
 	style.set_corner_radius_all(radius)
+	style.shadow_color = Color("#061323",0.22)
+	style.shadow_size = 3
+	style.shadow_offset = Vector2(0,2)
 	return style
 
 func _label(value: String, font_size: int, tint: Color) -> Label:
@@ -128,7 +131,7 @@ func _build() -> void:
 	_card.name = "LeaderboardModalCard"
 	_card.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_card.mouse_filter = Control.MOUSE_FILTER_STOP
-	var card_color := Color("#202630") if _dark else Color("#fbf8f1")
+	var card_color := Color("#101F33") if _dark else Color("#F6FAF9")
 	_card.add_theme_stylebox_override("panel",_style(card_color,Color("#7861ac") if _dark else Color("#ad91e0"),22))
 	overlay.add_child(_card)
 
@@ -140,8 +143,8 @@ func _build() -> void:
 	_body = VBoxContainer.new()
 	_body.add_theme_constant_override("separation",11)
 	_inset.add_child(_body)
-	var fg := Color("#f6f4fc") if _dark else Color("#253040")
-	var muted := Color("#b6c1d0") if _dark else Color("#52606f")
+	var fg := Color("#F7FCFF") if _dark else Color("#19394A")
+	var muted := Color("#B8D2DF") if _dark else Color("#526D77")
 
 	var header := HBoxContainer.new()
 	header.add_theme_constant_override("separation",8)
@@ -367,12 +370,21 @@ func _render() -> void:
 		var button := _period_buttons[id] as Button
 		var selected: bool = id == _period
 		button.accessibility_name = ("%s rankings, selected" if selected else "%s rankings") % button.text.capitalize()
-		button.add_theme_stylebox_override("normal",_style(Color("#7056cf") if selected else Color("#454a58"),Color("#9280da") if selected else Color("#606575"),12))
+		var tab_fill := Color("#785CC0") if selected else (Color("#293E56") if _dark else Color("#E3E9ED"))
+		var tab_edge := Color("#A990EA") if selected else (Color("#4E6680") if _dark else Color("#C0D2DB"))
+		button.add_theme_stylebox_override("normal",_style(tab_fill,tab_edge,12))
+		var tab_ink := Color("#FFFFFF") if selected or _dark else Color("#234554")
+		button.add_theme_color_override("font_color",tab_ink)
+		button.add_theme_color_override("font_focus_color",tab_ink)
 	for id in GAME_IDS:
 		var button := _game_buttons[id] as Button
 		var accent: Color = ACCENTS[id]
 		button.accessibility_name = ("%s ranking, selected" if _game_id == id else "%s ranking") % button.text.capitalize()
-		button.add_theme_stylebox_override("normal",_style(accent.darkened(0.43) if _game_id == id else Color("#424955"),accent if _game_id == id else Color("#606575"),12))
+		var chosen: bool = _game_id == id
+		var game_fill: Color = accent.darkened(0.43) if chosen else (Color("#263B4E") if _dark else Color("#E6EDF1"))
+		button.add_theme_stylebox_override("normal",_style(game_fill,accent if chosen else (Color("#4F667B") if _dark else Color("#C2D4DD")),12))
+		var game_ink := Color("#F6FFFF") if _dark or chosen else Color("#29475A")
+		button.add_theme_color_override("font_color",game_ink)
 	var accent_color := Color("#f0c95d") if today else ACCENTS[_game_id] as Color
 	_summary.text = "Today's 3 Daily puzzles • combined scores" if today else ("New campaign levels this week" if _period == "week" else "Total campaign levels cleared")
 	_footer.text = "PLAY DAILY" if today else "RANKING DETAILS"
@@ -406,7 +418,7 @@ func _render() -> void:
 		var panel := PanelContainer.new()
 		panel.name = "LeaderboardPlayer_%d" % (i+1)
 		panel.custom_minimum_size.y = 57*_ui_scale
-		panel.add_theme_stylebox_override("panel",_style(Color("#303747") if _dark else Color("#f0edf6"),Color(accent_color,0.35),12))
+		panel.add_theme_stylebox_override("panel",_style(Color("#1E3448") if _dark else Color("#EDF3F5"),Color(accent_color,0.35),12))
 		_rows.add_child(panel)
 		var row_margin := MarginContainer.new()
 		row_margin.add_theme_constant_override("margin_left",int(12*_ui_scale))

@@ -132,6 +132,7 @@ func _add_selector_wide_art(stage: Control, game_id: String, position_value: Vec
 
 func _build_reference_selector(canvas: Control) -> void:
 	var background := PanelContainer.new()
+	background.name = "SelectorBackground"
 	var bg_fill := Color("#202124") if _selector_dark() else Color("#e6e3dc")
 	var bg_border := Color("#3d4045") if _selector_dark() else Color("#c8c3ba")
 	background.add_theme_stylebox_override("panel", RefCanvas.flat_gloss(bg_fill, 34, bg_border, 1, 0.11))
@@ -169,6 +170,7 @@ func _build_reference_selector(canvas: Control) -> void:
 	_add_game_card(canvas, "water_sort", Rect2(17, 285, 354, 160), Color("#1aa8ff"), Color("#43b8ff"), "WATER SORT", "Plan each colour pour")
 	_add_game_card(canvas, "block_puzzle", Rect2(17, 459, 354, 160), Color("#c73dff"), Color("#d160ff"), "BLOCK PUZZLE", "Fit shapes, clear rows")
 	_add_bottom_nav(canvas)
+	preload("res://scripts/ui/premium_v3_meta_skin.gd").apply_selector_v3(canvas,_selector_dark())
 
 func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color, highlight: Color, title: String, subtitle: String) -> void:
 	var card_shadow := RefCanvas.add_shadow(canvas, rect, 18, Color(0.02,0.10,0.18,0.045), 1, Vector2(0,1))

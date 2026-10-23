@@ -258,6 +258,9 @@ func _build_reference_home(canvas: Control) -> void:
 	_add_rank_summary(canvas)
 	_add_daily_feature(canvas)
 	_add_bottom_nav_reference(canvas)
+	# Approved V3 is a live responsive composition, not an overlay screenshot.
+	# Apply it after all named actions exist, preserving every original callback.
+	preload("res://scripts/ui/premium_v3_meta_skin.gd").apply_home_v3(canvas,_home_dark())
 	if not CompetitionManager.snapshot_updated.is_connected(_on_home_ranking_updated):
 		CompetitionManager.snapshot_updated.connect(_on_home_ranking_updated)
 	if not CompetitionManager.daily_snapshot_updated.is_connected(_on_home_ranking_updated):

@@ -121,7 +121,7 @@ func _build_figma_block(canvas: Control) -> void:
 	ground.name = "BlockScenicGround"
 	# Scenic plate supports the game identity without carving a hard horizon
 	# through the 8x8 board. The blocks and drop target must dominate.
-	ground.modulate.a = 0.20
+	ground.modulate.a = 0.13
 	ground.add_theme_stylebox_override("panel", FigmaReferenceCanvas.rounded_gradient3(Color("#302047"), Color("#241735"), Color("#181023"), 0, Color.TRANSPARENT, 0, 0.20))
 	FigmaReferenceCanvas.set_rect(ground, -24.88, -23.04, 437.76, 460.20)
 	ground.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -134,7 +134,7 @@ func _build_figma_block(canvas: Control) -> void:
 	var scenic_overlay := TextureRect.new()
 	scenic_overlay.name = "BlockAuthoredScreenWorld"
 	scenic_overlay.texture = BLOCK_SCREEN_OVERLAY
-	scenic_overlay.modulate.a = 0.18
+	scenic_overlay.modulate.a = 0.12
 	scenic_overlay.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	scenic_overlay.stretch_mode = TextureRect.STRETCH_SCALE
 	scenic_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE

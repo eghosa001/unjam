@@ -106,7 +106,7 @@ func _build_figma_rescue(canvas: Control) -> void:
 	scenic_overlay.texture = RESCUE_SCREEN_OVERLAY
 	# Ambient art remains outside the puzzle. It must not compete with the
 	# arrows or the dense 8x8 playfield on a compact device.
-	scenic_overlay.modulate.a = 0.20
+	scenic_overlay.modulate.a = 0.14
 	scenic_overlay.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	scenic_overlay.stretch_mode = TextureRect.STRETCH_SCALE
 	scenic_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE

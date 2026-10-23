@@ -785,6 +785,7 @@ func build_goals() -> void:
 	season_button.tooltip_text = season_button.accessibility_name
 	_figma_text(canvas, "First clears +10 • Daily Cup +25 • Replays +3", Rect2(31,652,310,20), 12, FIGMA_MUTED)
 	_figma_bottom_nav(canvas,"")
+	preload("res://scripts/ui/premium_v3_meta_skin.gd").apply(canvas, "goals", _dark())
 
 func _figma_goal_row(canvas: Control, row: Dictionary, period: String, y: float) -> void:
 	var claimable := bool(row.get("claimable",false))
@@ -894,6 +895,7 @@ func build_profile() -> void:
 	for i in range(defs.size()):
 		_figma_achievement_row(canvas,defs[i] as Dictionary,370.0+float(i)*60.0)
 	_figma_bottom_nav(canvas,"")
+	preload("res://scripts/ui/premium_v3_meta_skin.gd").apply(canvas, "profile", _dark())
 
 func _figma_profile_game_tabs(canvas: Control) -> void:
 	var ids: Array[String] = ["rescue_rush","water_sort","block_puzzle"]
@@ -1045,6 +1047,7 @@ func build_friends(refresh_remote: bool = true) -> void:
 	privacy_note.position = Vector2(31,663)
 	privacy_note.size = Vector2(328,36)
 	_figma_bottom_nav(canvas,"")
+	preload("res://scripts/ui/premium_v3_meta_skin.gd").apply(canvas, "friends", _dark())
 
 func _figma_friend_period_tabs(canvas: Control) -> void:
 	var specs := [
@@ -1189,7 +1192,7 @@ func build_settings() -> void:
 	var heading_color := FIGMA_GOLD.lightened(0.08) if dark_mode else Color("#7c5c16")
 	var muted_color := Color("#b8c2cc") if dark_mode else FIGMA_MUTED
 
-	_figma_settings_card(canvas,"SettingsCard/Sound",Rect2(17,91,354,170),card_fill,card_border,dark_mode)
+	_figma_settings_card(canvas,"SettingsCard/Sound",Rect2(17,91,354,180),card_fill,card_border,dark_mode)
 	_figma_text(canvas,"SOUND & FEEDBACK",Rect2(33,107,208,18),15,heading_color)
 	_figma_setting_row(canvas,"sound","SOUND EFFECTS",130,142,true,false,dark_mode)
 	_figma_setting_row(canvas,"music","MUSIC",178,190,true,false,dark_mode)
@@ -1267,6 +1270,7 @@ func build_settings() -> void:
 	canvas.add_child(recovery)
 
 	_figma_bottom_nav(canvas,"settings",dark_mode)
+	preload("res://scripts/ui/premium_v3_meta_skin.gd").apply(canvas, "settings", dark_mode)
 
 func _return_from_settings() -> void:
 	# Restore a real parent destination. In particular, Games -> Settings ->
@@ -1420,6 +1424,7 @@ func build_daily_games() -> void:
 	board.accessibility_name = "View today's challenge leaderboard"
 	# Daily is a primary destination; campaign rankings remain a separate Compete flow.
 	_figma_bottom_nav(canvas, "daily")
+	preload("res://scripts/ui/premium_v3_meta_skin.gd").apply(canvas, "daily", _dark())
 
 func _figma_daily_progress(canvas: Control) -> void:
 	var done_count := 0
@@ -1587,6 +1592,7 @@ func build_compete_leaderboard(refresh_remote: bool = true) -> void:
 		sync_status.accessibility_name = sync_status.tooltip_text
 	# Rankings are intentionally separate from the Daily destination.
 	_figma_bottom_nav(canvas,"")
+	preload("res://scripts/ui/premium_v3_meta_skin.gd").apply(canvas, "compete", _dark())
 
 func _figma_compete_game_tabs(canvas: Control, y: float, compact: bool = false) -> void:
 	var ids: Array[String] = ["rescue_rush","water_sort","block_puzzle"]
@@ -1890,6 +1896,7 @@ func build_collection() -> void:
 	# Fill the dead zone below the gift/upgrades row with a decorative tip card
 	_figma_collection_tip(canvas)
 	_figma_bottom_nav(canvas,"collection")
+	preload("res://scripts/ui/premium_v3_meta_skin.gd").apply(canvas, "collection", _dark())
 
 func _open_rescue_garden_world() -> void:
 	if get_node_or_null("RescueGardenWorldSheet") != null:
@@ -2080,6 +2087,7 @@ func build_collection_upgrades() -> void:
 	return_button.accessibility_name = "Return to Collection summary"
 	return_button.tooltip_text = "Return to Collection summary"
 	_figma_bottom_nav(canvas,"collection")
+	preload("res://scripts/ui/premium_v3_meta_skin.gd").apply(canvas, "collection", _dark())
 
 func _collection_summary_scroll_input(event: InputEvent, owner: Control) -> void:
 	_collection_scroll_input(event,owner,true)
@@ -2323,6 +2331,7 @@ func _build_figma_level_browser(game_id: String) -> void:
 		_fit_single_line_control_text(status_label,62.0,12,12)
 		index += 1
 	_figma_level_page_progress(canvas,game_id,bounds,grid_y,accent,row_stride)
+	preload("res://scripts/ui/premium_v3_meta_skin.gd").apply(canvas, "levels", _dark())
 
 func _play_current_campaign_level(game_id: String) -> void:
 	# One clear, safe way to begin from the level browser. Unlike MY LEVEL,
