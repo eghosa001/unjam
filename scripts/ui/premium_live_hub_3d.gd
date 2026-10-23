@@ -169,6 +169,7 @@ func _build_reference_selector(canvas: Control) -> void:
 	_add_game_card(canvas, "water_sort", Rect2(17, 285, 354, 160), Color("#1aa8ff"), Color("#43b8ff"), "WATER SORT", "Plan each colour pour")
 	_add_game_card(canvas, "block_puzzle", Rect2(17, 459, 354, 160), Color("#c73dff"), Color("#d160ff"), "BLOCK PUZZLE", "Fit shapes, clear rows")
 	_add_bottom_nav(canvas)
+	preload("res://scripts/ui/premium_v3_meta_skin.gd").apply_selector_v3(canvas,_selector_dark())
 
 func _add_game_card(canvas: Control, game_id: String, rect: Rect2, accent: Color, highlight: Color, title: String, subtitle: String) -> void:
 	var card_shadow := RefCanvas.add_shadow(canvas, rect, 18, Color(0.02,0.10,0.18,0.045), 1, Vector2(0,1))
