@@ -34,12 +34,12 @@ func _run() -> void:
 	var nav := home.find_child("HomeBottomNav3D",true,false) as Control
 	if canvas == null or hero == null or choose == null or emblem == null or rank_panel == null or daily_rank == null or week_rank == null or daily_hint == null or week_hint == null or ranks == null or daily_panel == null or daily == null or nav == null:
 		return _fail("Minimalist Home is missing required actions or rankings")
-	if not _same(hero,Rect2(21,126,346,168)):
+	if not _same(hero,Rect2(17,95,356,172)):
 		return _fail("Welcome hero layout drifted")
-	if not _same(choose,Rect2(39,227,190,54)) or choose.text != "▦  CHOOSE GAME":
+	if not _same(choose,Rect2(32,218,198,44)) or choose.text != "▦  CHOOSE GAME":
 		return _fail("Home must keep a dominant, explicit Browse Games action")
 	var resume := home.find_child("HomeResumeAction",true,false) as Button
-	if resume == null or not _same(resume,Rect2(237,227,114,54)):
+	if resume == null or not _same(resume,Rect2(238,218,118,44)):
 		return _fail("Home must provide a distinct, convenient resume action")
 	var active_id := String(main.get("selected_game_id"))
 	var unfinished: Dictionary = main.call("_checkpoint_for",active_id)
@@ -49,11 +49,11 @@ func _run() -> void:
 	if resume.action_mode != BaseButton.ACTION_MODE_BUTTON_RELEASE or resume.pressed.get_connections().is_empty():
 		return _fail("Home resume must be release-triggered and actually navigable")
 	var showcase_heading := home.find_child("HomeShowcaseTitle",true,false) as Label
-	if showcase_heading == null or showcase_heading.text != "CHOOSE YOUR CHALLENGE":
+	if showcase_heading == null or showcase_heading.text != "CHOOSE YOUR WORLD":
 		return _fail("Concise game showcase introduction is missing")
-	if not _same(rank_panel,Rect2(21,521,346,115)):
+	if not _same(rank_panel,Rect2(17,651,173,99)):
 		return _fail("Today/weekly rank card layout drifted")
-	if not _same(daily_panel,Rect2(21,652,346,84)):
+	if not _same(daily_panel,Rect2(200,651,173,99)):
 		return _fail("Daily feature layout drifted")
 	if not _same(nav,Rect2(13,757,362,70)):
 		return _fail("Bottom navigation is not stable")
@@ -80,9 +80,9 @@ func _run() -> void:
 		var tagline := home.find_child("HomeShowcaseTagline_%s" % game_id,true,false) as Label
 		if card == null or art == null or name == null or tagline == null:
 			return _fail("Game showcase illustration/name/tagline missing for %s" % game_id)
-		if not _same(card,Rect2(21,344,110,160)) and game_id == "rescue_rush":
+		if not _same(card,Rect2(17,326,356,98)) and game_id == "rescue_rush":
 			return _fail("Game showcase reference card is not compact")
-		if card.size.x > 111 or card.size.y > 161:
+		if card.size.x < 355 or card.size.y > 100:
 			return _fail("Game showcase cards have grown into a second Games grid")
 		if not bool(art.get("compact")) or art.is_processing():
 			return _fail("Home explainer art must be static and battery efficient for %s" % game_id)
@@ -102,12 +102,12 @@ func _run() -> void:
 			return _fail("Entire illustrated game card must be tappable to open levels for %s" % game_id)
 		if hit.action_mode != BaseButton.ACTION_MODE_BUTTON_RELEASE or hit.focus_mode != Control.FOCUS_ALL or not hit.accessibility_name.contains("level selection"):
 			return _fail("Illustrated game shortcut must be release-triggered, keyboard accessible and descriptive")
-		if art.size.y < 90.0 or art.size.x < 90.0:
+		if art.size.y < 75.0 or art.size.x < 79.0:
 			return _fail("Game artwork must be clearly readable, not squeezed into a thin strip")
 		if home.find_child("HomeDirect_%s" % game_id,true,false) != null:
 			return _fail("Home re-added obsolete individual game launch controls")
 		showcase_end = maxf(showcase_end,card.position.y+card.size.y)
-	if hero.position.y+hero.size.y+12.0 >= 310.0 or showcase_end+12.0 >= rank_panel.position.y or rank_panel.position.y+rank_panel.size.y+12.0 >= daily_panel.position.y or daily_panel.position.y+daily_panel.size.y+12.0 >= nav.position.y:
+	if hero.position.y+hero.size.y+12.0 >= showcase_heading.position.y or showcase_end+12.0 >= rank_panel.position.y or rank_panel.position.y+rank_panel.size.y+5.0 >= nav.position.y or daily_panel.position.y+daily_panel.size.y+5.0 >= nav.position.y or rank_panel.position.x+rank_panel.size.x+8.0 > daily_panel.position.x:
 		return _fail("Home hero, showcase, ranks, Daily or bottom navigation overlap")
 	for button in [choose,daily]:
 		if button.size.y < 44 or button.size.x < 125:
