@@ -35,7 +35,10 @@ func _run() -> void:
 			return _fail("Selector game title is too small for %s" % game_id)
 		if game_title.get_theme_constant("outline_size") < 2:
 			return _fail("Selector game title lost its high-contrast outline for %s" % game_id)
-		if game_title.get_theme_color("font_color").get_luminance() > 0.42:
+		var shell := main.get_node_or_null("UXShell")
+		var dark_mode := shell != null and String(shell.get("theme_mode")).to_upper() == "DARK"
+		var title_lum := game_title.get_theme_color("font_color").get_luminance()
+		if (dark_mode and title_lum < 0.65) or (not dark_mode and title_lum > 0.42):
 			return _fail("Selector game title lost its dark-on-neutral foreground for %s" % game_id)
 		var game_subtitle := _find(main, "SelectorGameSubtitle_%s" % game_id) as Label
 		if game_subtitle == null:
@@ -50,8 +53,8 @@ func _run() -> void:
 			return _fail("Selector preview frame is missing for subtitle containment: %s" % game_id)
 		# The hard clipping wrapper is the visible text boundary. Compare global
 		# rects so the Figma reference-canvas device scale cancels out.
-		if subtitle_clip.get_global_rect().end.x > preview_frame.get_global_rect().position.x + 1.0:
-			return _fail("Selector subtitle clipping region overlaps preview frame for %s" % game_id)
+		if preview_frame.get_global_rect().end.x > subtitle_clip.get_global_rect().position.x + 1.0:
+			return _fail("Selector V3 right-hand subtitle overlaps left-hand original artwork for %s" % game_id)
 		var preview := _find(main, "SelectorAuthoredGameArt_%s" % game_id) as Control
 		if preview == null:
 			return _fail("Selector authored gameplay art is missing for %s" % game_id)
