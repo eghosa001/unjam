@@ -131,8 +131,12 @@ static func apply(canvas: Control, surface: String, dark: bool) -> void:
 		if b == null or b.flat and b.text.is_empty():
 			continue
 		var id := String(b.name)
+		# Numbered level tiles have their own earned/locked/current semantics
+		# and must not become identically colored generic buttons.
+		if surface == "levels" and (id.begins_with("Level_") or id.begins_with("Level/")):
+			continue
 		var fill := Color("#27485A") if dark else Color("#E5F0EF")
-		if id.begins_with("SettingToggle/"):
+		if id.begins_with("SettingToggle"):
 			fill = Color("#35B58F") if b.text == "ON" else (Color("#34475A") if dark else Color("#D6E2E5"))
 		elif id == "SettingsThemeToggle": fill = Color("#3BC3A9") if dark else Color("#168D80")
 		elif id.begins_with("Settings"): fill = Color("#2B5262") if dark else Color("#DDECEB")
