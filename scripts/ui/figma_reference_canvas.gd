@@ -254,6 +254,8 @@ static func rounded_gradient3(top: Color, middle: Color, bottom: Color, radius: 
 				if not in_inner:
 					image.set_pixel(x, y, border_color)
 					continue
+			# Glossy-flat casual-game lacquer: retain the authored per-pixel
+			# rolloff and sheen; only their coordinate math is precomputed.
 			var pixel_fill := fill
 			if has_sheen:
 				var sheen := sheen_row * (0.080 + center_boosts[x] * 0.055)
@@ -264,8 +266,11 @@ static func rounded_gradient3(top: Color, middle: Color, bottom: Color, radius: 
 				pixel_fill = pixel_fill.lerp(Color(1, 1, 1, pixel_fill.a), 0.17)
 			if has_lower_rolloff:
 				pixel_fill = pixel_fill.lerp(Color(0, 0, 0, pixel_fill.a), lower_rolloff)
+			# Glossy-flat edge discipline: identical low-alpha falloff on both
+			# sides, not a directional fake beveled wall.
 			if edge_falloffs[x] > 0.0:
 				pixel_fill = pixel_fill.lerp(Color(0, 0, 0, pixel_fill.a), edge_falloffs[x] * 0.018)
+			# Localized key-light hotspot is unchanged in intensity and shape.
 			# The key-light ellipse is local to the upper-left of the material.
 			# Skip costly Vector2.length() outside that ellipse; inside, retain
 			# the exact original formula so highlight appearance is unchanged.
