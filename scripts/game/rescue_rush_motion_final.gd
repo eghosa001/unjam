@@ -11,6 +11,7 @@ var _last_fit_viewport := Vector2(-1.0, -1.0)
 var _last_fit_gap := Vector2(-1.0, -1.0)
 var _last_fit_first_child_id := 0
 var _last_fit_board_size := Vector2i(-1, -1)
+var _board_fit_pending := false
 
 func _ready() -> void:
 	super._ready()
@@ -18,8 +19,24 @@ func _ready() -> void:
 	if viewport != null and not viewport.size_changed.is_connected(_queue_board_fit):
 		viewport.size_changed.connect(_queue_board_fit)
 
+func _exit_tree() -> void:
+	# Viewport signals outlive a removed game scene. Never schedule board
+	# layout against detached gameplay while navigation is tearing it down.
+	var viewport := get_viewport()
+	if viewport != null and viewport.size_changed.is_connected(_queue_board_fit):
+		viewport.size_changed.disconnect(_queue_board_fit)
+
 func _queue_board_fit() -> void:
-	call_deferred("_fit_board_to_viewport")
+	# Android resize/focus bursts must perform at most one fit per frame.
+	if _board_fit_pending or not is_inside_tree() or is_queued_for_deletion():
+		return
+	_board_fit_pending = true
+	call_deferred("_flush_board_fit")
+
+func _flush_board_fit() -> void:
+	_board_fit_pending = false
+	if is_inside_tree() and not is_queued_for_deletion():
+		_fit_board_to_viewport()
 
 func render_board() -> void:
 	# Preserve the established first-refresh contract: if the initial entrance
@@ -69,6 +86,8 @@ func _reduced_motion_enabled() -> bool:
 	return motion != null and bool(motion.call("reduced"))
 
 func _fit_board_to_viewport() -> void:
+	if not is_inside_tree() or is_queued_for_deletion():
+		return
 	if board_grid == null or board_panel == null or width <= 0 or height <= 0:
 		return
 	var viewport_size: Vector2 = get_viewport_rect().size
