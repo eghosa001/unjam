@@ -139,10 +139,11 @@ func _check_selector(viewport_size: Vector2i, failures: Array[String]) -> void:
 			failures.append("Selector bottom nav spills outside %s" % str(viewport_size))
 		if not _rect_eq(Rect2(nav.position,nav.size),Rect2(13,757,362,70)):
 			failures.append("Selector bottom nav drifted from Figma geometry")
+		## Production V3 selector uses spaced 176px tall game cards.
 		var specs := {
-			"rescue_rush": Rect2(17,111,354,160),
-			"water_sort": Rect2(17,285,354,160),
-			"block_puzzle": Rect2(17,459,354,160)
+			"rescue_rush": Rect2(19,148,352,176),
+			"water_sort": Rect2(19,340,352,176),
+			"block_puzzle": Rect2(19,532,352,176)
 		}
 		for game_id in specs.keys():
 			var card := live.find_child("GameCard3D_%s" % game_id,true,false) as Control
