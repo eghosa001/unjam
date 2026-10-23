@@ -208,7 +208,10 @@ func _figma_surface(active: String, bottom_tint: Color = FIGMA_BG_BOTTOM, top_ti
 	# V3 rebuilds its final background at the end of each authored page.
 	# Generating a 160x160 CPU gradient here was wasted work on every cold
 	# menu visit (and was overwritten before it could ever be rendered).
-	var final_v3_page := active in ["settings","daily","compete","goals","profile","friends","collection"]
+	# The level browser calls this builder as 'games', but is styled at the
+	# end as 'levels'. Include it in this fast path too; otherwise the first
+	# Rescue/Water/Block level visit pays for a discarded per-game gradient.
+	var final_v3_page := active in ["settings","daily","compete","goals","profile","friends","collection","games"]
 	if final_v3_page:
 		bg.add_theme_stylebox_override("panel",FigmaReferenceCanvas.solid_box(
 			Color("#0D2638") if _dark() else Color("#F6FAF8"),28))
@@ -2262,7 +2265,8 @@ func _build_figma_level_browser(game_id: String) -> void:
 		Callable(self,"_open_games_surface"),
 		Callable(self,"_figma_open_shop")
 	)
-	_style_figma_level_header(canvas,accent)
+	# V3 styles header actions in the final pass. Avoid generating the
+	# three temporary CPU-gradient states that are immediately discarded.
 	_figma_level_tabs(canvas,game_id)
 
 	var bounds := _multi_page_bounds(game_id,selected_multi_world,selected_multi_page)
@@ -2291,7 +2295,7 @@ func _build_figma_level_browser(game_id: String) -> void:
 	var prev_text := FIGMA_DARK_INK if _dark() else FIGMA_MUTED
 	var prev := _figma_button(canvas,"LevelPrev","◀ PREV",Rect2(17,page_y - 3.0,100,44),prev_fill,Callable(),prev_text,14,14)
 	prev.disabled = selected_multi_world <= 1 and selected_multi_page <= 1
-	_style_figma_page_button(prev,prev_fill,accent,prev.disabled,true)
+	# Page buttons receive their actual final material in V3.apply().
 	if not prev.disabled:
 		prev.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 		prev.pressed.connect(_change_multi_page.bind(-1))
@@ -2299,11 +2303,11 @@ func _build_figma_level_browser(game_id: String) -> void:
 	current.accessibility_name = "Find my current %s level %d" % [title.capitalize(),_highest_level_for_game(game_id)]
 	current.tooltip_text = "Jump to the page containing level %d. Does not start the puzzle." % _highest_level_for_game(game_id)
 	current.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
-	_style_figma_page_button(current,accent,accent,false)
+	# Avoid generating unused normal/hover/pressed textures.
 	var next_disabled := selected_multi_world >= world_count and selected_multi_page >= _multi_page_count(game_id,selected_multi_world)
 	var next := _figma_button(canvas,"LevelNext","NEXT ▶",Rect2(251,page_y - 3.0,120,44),Color("#fcfeff"),Callable(),FIGMA_MUTED,14,14)
 	next.disabled = next_disabled
-	_style_figma_page_button(next,Color("#fcfeff"),accent,next_disabled,true)
+	# The visible button remains fully styled by V3.apply().
 	if not next.disabled:
 		next.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 		next.pressed.connect(_change_multi_page.bind(1))
@@ -2451,7 +2455,7 @@ func _figma_level_tabs(canvas: Control, active_game_id: String) -> void:
 		var fill := active_accent if active else (Color("#33281c") if _dark() else Color("#fffaf0"))
 		var text_color := FIGMA_OFF_WHITE if active else (FIGMA_DARK_MUTED if _dark() else FIGMA_MUTED)
 		var button := _figma_button(canvas,"LevelGameTab/%s" % game_id,String(spec[1]),Rect2(float(spec[2]),81,108,44),fill,Callable(),text_color,14,13)
-		_style_figma_level_tab(button,active_accent,active)
+		# The final shared V3 pass styles this tab, including focus and text.
 		button.accessibility_name = "%s, current game" % MultiGameManager.display_name(game_id) if active else "Choose %s campaign levels" % MultiGameManager.display_name(game_id)
 		button.tooltip_text = button.accessibility_name
 		if active:
@@ -2559,7 +2563,7 @@ func _add_figma_block_modes(canvas: Control) -> void:
 		var mode := String(spec[0])
 		var fill: Color = spec[3] as Color
 		var button := _figma_button(canvas,"BlockMode/%s" % mode,String(spec[1]),Rect2(float(spec[2]),197,82,44),fill,Callable(),FIGMA_OFF_WHITE,13,13)
-		_style_figma_page_button(button,fill,fill,false)
+		# V3 owns the visible mode-button material; avoid unused bitmaps.
 		button.tooltip_text = String(descriptions.get(mode, mode))
 		button.accessibility_name = button.tooltip_text
 		if mode == "campaign":
