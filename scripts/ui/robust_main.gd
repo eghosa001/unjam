@@ -380,6 +380,11 @@ func _continue_game_scene_launch_after_paint(path: String, config: Dictionary, g
 	# Deferred calls alone execute before the next draw; one rendered frame
 	# ensures the player sees immediate feedback rather than a frozen button.
 	await get_tree().process_frame
+	# process_frame fires BEFORE drawing; on actual phone renderers, waiting
+	# for frame_post_draw gives the loading surface one genuine presented frame.
+	# Headless CI does not reliably emit the render signal.
+	if DisplayServer.get_name() != "headless":
+		await RenderingServer.frame_post_draw
 	if not is_inside_tree() or generation != _navigation_generation or current_surface != "game_loading":
 		return
 	var packed := _game_scene_resource(path)
