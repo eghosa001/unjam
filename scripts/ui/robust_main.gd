@@ -87,7 +87,7 @@ func _refresh_day_sensitive_surface(today_key: String) -> void:
 		call_deferred("build_compete_leaderboard")
 
 
-func _prime_game_scene(path: String) -> void:
+func _prime_game_scene(path: String, request_scene: bool = true) -> void:
 	if not _game_scene_art_ready:
 		for asset_path in GAME_SCENE_ART_DEPENDENCIES:
 			var texture := load(asset_path) as Texture2D
@@ -102,7 +102,7 @@ func _prime_game_scene(path: String) -> void:
 		var compiled := load(script_path) as Script if not script_path.is_empty() else null
 		if compiled != null:
 			_game_scene_script_cache[path] = compiled
-	if ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
+	if request_scene and ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
 		ResourceLoader.load_threaded_request(path)
 
 # Prepare the next playable scene only AFTER the level browser has had a
@@ -115,7 +115,9 @@ func _prime_game_scene_after_level_browser(path: String, generation: int) -> voi
 		return
 	if _ready_game_scenes.has(path):
 		return
-	_prime_game_scene(path)
+	# Dependency-only warm-up. A standalone threaded request would remain
+	# undrained if the player exits before pressing Play.
+	_prime_game_scene(path,false)
 
 func _game_scene_resource(path: String) -> PackedScene:
 	# Important: load_threaded_get() BLOCKS the caller until completion when
