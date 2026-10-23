@@ -364,22 +364,42 @@ func _spawn_rescue(level_number: int, daily: bool, custom_data: Dictionary) -> v
 	_begin_game_scene_launch(RESCUE_GAME_SCENE_PATH, {"game_id":"rescue_rush","level":level_number,"daily":daily,"custom_data":custom_data.duplicate(true)})
 
 func _begin_game_scene_launch(path: String, config: Dictionary) -> void:
-	# Cached scenes still start synchronously. Cold loads use Godot's threaded
-	# loader and poll between frames, never blocking navigation on an in-progress
-	# background resource request.
+	# A tap must change the visible surface before any cold script compilation,
+	# imported SVG access, or PackedScene.instantiate() blocks the UI thread.
+	# Even cached scenes can be expensive to instantiate on some Android GPUs.
+	# Keep the same cancellable loading UI and touch-release navigation contract.
 	_remove_active_game()
+	current_surface = "game_loading"
+	_pending_game_launch = config.duplicate(true)
+	_show_game_loading(config)
+	var generation := _navigation_generation
+	call_deferred("_continue_game_scene_launch_after_paint",
+		path, config.duplicate(true), generation)
+
+func _continue_game_scene_launch_after_paint(path: String, config: Dictionary, generation: int) -> void:
+	# Deferred calls alone execute before the next draw; one rendered frame
+	# ensures the player sees immediate feedback rather than a frozen button.
+	await get_tree().process_frame
+	# process_frame fires BEFORE drawing; on actual phone renderers, waiting
+	# for frame_post_draw gives the loading surface one genuine presented frame.
+	# Headless CI does not reliably emit the render signal.
+	if DisplayServer.get_name() != "headless":
+		await RenderingServer.frame_post_draw
+	if not is_inside_tree() or generation != _navigation_generation or current_surface != "game_loading":
+		return
 	var packed := _game_scene_resource(path)
 	if packed != null:
 		_ready_game_scenes[path] = packed
 		_pending_game_launch.clear()
-		_instantiate_game_scene(packed,config)
+		_instantiate_game_scene(packed, config)
 		return
-	current_surface = "game_loading"
-	_pending_game_launch = config.duplicate(true)
-	_show_game_loading(config)
+	# Scene dependencies were warmed on Level Select. On genuinely cold entry,
+	# do remaining one-time work only after the loading surface is painted.
 	_prime_game_scene(path)
-	var generation := _navigation_generation
-	call_deferred("_await_game_scene",path,config.duplicate(true),generation)
+	# Any superseding Back/new-game request is handled by the existing
+	# generation token; the worker result is still drained by _await_game_scene.
+	call_deferred("_await_game_scene", path, config.duplicate(true), generation)
+
 
 func _show_game_loading(config: Dictionary) -> void:
 	clear_content()
