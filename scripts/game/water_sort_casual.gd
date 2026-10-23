@@ -57,7 +57,7 @@ func _build_figma_water(canvas: Control) -> void:
 	ground.name = "WaterScenicGround"
 	# Ambient lower scenery must not create a hard horizontal seam behind
 	# the active board. Keep the material but reduce its dominance.
-	ground.modulate.a = 0.19
+	ground.modulate.a = 0.13
 	ground.add_theme_stylebox_override("panel", RefCanvas.rounded_gradient3(Color("#5b98a5"), Color("#3c788a"), Color("#28596d"), 0, Color.TRANSPARENT, 0, 0.28))
 	RefCanvas.set_rect(ground, 0, 93, 390, 410)
 	ground.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -71,7 +71,7 @@ func _build_figma_water(canvas: Control) -> void:
 	scenic_overlay.name = "WaterAuthoredScreenWorld"
 	scenic_overlay.texture = WATER_SCREEN_OVERLAY
 	# Large original illustration is ambience, not a competing puzzle layer.
-	scenic_overlay.modulate.a = 0.20
+	scenic_overlay.modulate.a = 0.14
 	scenic_overlay.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	scenic_overlay.stretch_mode = TextureRect.STRETCH_SCALE
 	scenic_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
