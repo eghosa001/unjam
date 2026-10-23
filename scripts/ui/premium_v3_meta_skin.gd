@@ -136,6 +136,19 @@ static func _card_surface(name_value: String, surface: String, dark: bool) -> Co
 			return Color("#223346") if dark else Color("#FAFBFD")
 	return ink
 
+# Shared by native builders and the final V3 styling pass. Skip expensive
+# temporary lacquer textures for cards whose style is overwritten this frame.
+static func owns_card(name_value: String) -> bool:
+	return name_value.begins_with("SettingsCard") or name_value in [
+		"HelpPrivacy", "DailyProgress", "DailyCheckIn", "CompetitionPlayerProgress",
+		"CompetitionPrizeTimingCard"] or name_value.begins_with("DailyCard") \
+		or name_value.begins_with("Leaderboard") \
+		or name_value.begins_with("Goal") or name_value.begins_with("Profile") \
+		or name_value.begins_with("Friends") or name_value in [
+			"Journey", "Achievements", "Garden", "CollectionTip", "JourneyHero"] \
+		or name_value.begins_with("ProgressCard") \
+		or name_value.begins_with("CollectionScroll")
+
 static func apply(canvas: Control, surface: String, dark: bool) -> void:
 	if canvas == null or not is_instance_valid(canvas):
 		return
@@ -155,15 +168,7 @@ static func apply(canvas: Control, surface: String, dark: bool) -> void:
 		if panel == null or panel == bg:
 			continue
 		var name_value := String(panel.name)
-		var is_card := name_value.begins_with("SettingsCard") or name_value in [
-			"HelpPrivacy", "DailyProgress", "DailyCheckIn", "CompetitionPlayerProgress",
-			"CompetitionPrizeTimingCard"] or name_value.begins_with("DailyCard") \
-			or name_value.begins_with("Leaderboard") \
-			or name_value.begins_with("Goal") or name_value.begins_with("Profile") \
-			or name_value.begins_with("Friends") or name_value in [
-				"Journey", "Achievements", "Garden", "CollectionTip", "JourneyHero"] \
-			or name_value.begins_with("ProgressCard") \
-			or name_value.begins_with("CollectionScroll")
+		var is_card := owns_card(name_value)
 		if not is_card:
 			continue
 		var fill := _card_surface(name_value, surface, dark)
