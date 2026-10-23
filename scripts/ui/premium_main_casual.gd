@@ -477,7 +477,22 @@ func _figma_button(canvas: Control, name_value: String, text_value: String, rect
 	# captions. Compact 44px toggles/tabs preserve their original geometry.
 	var wide_action := rect.size.x >= 125.0 and rect.size.y >= 43.0
 	var readable_size := maxi(14 if wide_action else 12, font_size)
-	var button := FigmaReferenceCanvas.premium_button(text_value, readable_size, resolved_text, resolved_fill, radius, Color(resolved_fill.r, resolved_fill.g, resolved_fill.b, 0.38), 1)
+	# V3 recolors standard menu actions in a later styling pass. Level tiles
+	# likewise receive explicit locked/current/focus materials after creation.
+	# Avoid generating five per-state ImageTexture lacquers that are immediately
+	# discarded. The cheaper flat interim styles are never presented as the
+	# final appearance, and the same Button owns the pressed callback.
+	var final_v3_action := current_surface in [
+		"settings","daily","compete","goals","profile","friends","collection","levels"]
+	var button := FigmaReferenceCanvas.button(text_value, readable_size, resolved_text,
+		resolved_fill, radius, Color(resolved_fill.r,resolved_fill.g,resolved_fill.b,0.38),1) \
+		if final_v3_action else FigmaReferenceCanvas.premium_button(
+			text_value, readable_size, resolved_text, resolved_fill, radius,
+			Color(resolved_fill.r,resolved_fill.g,resolved_fill.b,0.38),1)
+	button.clip_text = true
+	button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	button.custom_minimum_size = Vector2.ZERO
+	button.set_meta("unjam_figma_exact_geometry",true)
 	button.name = name_value
 	button.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 	# Show an immediate finger-down response without triggering a new page
