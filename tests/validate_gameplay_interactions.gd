@@ -24,9 +24,8 @@ func _test_water(main: Control) -> bool:
 	# intentionally saved an in-flight checkpoint.
 	_manager().call("clear_checkpoint", "water_sort")
 	main.call("start_multi_level", "water_sort", 1, false)
-	await _frames(4)
-	var game = main.get("active_game")
-	if game == null or not is_instance_valid(game): return _fail("Water Sort interaction test could not launch")
+	var game := await _wait_for_game(main, "water_sort")
+	if game == null: return _fail("Water Sort interaction test could not launch")
 	var before: Array = game.get("tubes").duplicate(true)
 	var before_moves := int(game.get("moves"))
 	game.call("show_hint")
@@ -70,9 +69,8 @@ func _wait_for_water_undo(game: Node, expected_tubes: Array, max_frames: int = 3
 func _test_block(main: Control) -> bool:
 	_manager().call("clear_checkpoint", "block_puzzle")
 	main.call("start_multi_level", "block_puzzle", 1, false)
-	await _frames(4)
-	var game = main.get("active_game")
-	if game == null or not is_instance_valid(game): return _fail("Block Puzzle interaction test could not launch")
+	var game := await _wait_for_game(main, "block_puzzle")
+	if game == null: return _fail("Block Puzzle interaction test could not launch")
 	var before: Array = game.get("cells").duplicate(true)
 	var before_placements := int(game.get("placements"))
 	game.call("show_hint")
@@ -100,6 +98,22 @@ func _wait_for_block_hint(game: Node, previous_placements: int, max_frames: int 
 			return true
 		await process_frame
 	return false
+
+# Gameplay scene loads are intentionally asynchronous on cold starts.
+# Four process frames can elapse before the worker finishes (as observed on
+# Android APK CI); waiting on real state prevents a false failure without
+# weakening the game, hint, undo or checkpoint assertions.
+func _wait_for_game(main: Control, expected_game_id: String, max_frames: int = 480) -> Control:
+	var deadline := Time.get_ticks_msec() + 12000
+	for _i in range(max_frames):
+		var game := main.get("active_game") as Control
+		if game != null and is_instance_valid(game) and game.is_inside_tree():
+			if String(game.get_meta("unjam_game_id", "")) == expected_game_id and String(main.get("current_surface")) == "game":
+				return game
+		if Time.get_ticks_msec() >= deadline or not is_instance_valid(main) or not main.is_inside_tree():
+			break
+		await process_frame
+	return null
 
 func _frames(count: int) -> void:
 	for _i in range(count): await process_frame
