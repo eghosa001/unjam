@@ -1128,10 +1128,17 @@ func build_friends(refresh_remote: bool = true) -> void:
 	_figma_text(canvas,"%s • %s" % [game_title,period_title],Rect2(31,423,250,20),14,Unjam3DTheme.game_accent(_ranking_game))
 	var rows := CompetitionManager.friends_all_time() if _friends_period == "all_time" else CompetitionManager.friends_weekly()
 	if rows.size() <= 1 and count <= 0:
-		var empty_title := _figma_text(canvas,"Share your code to connect.",Rect2(38,474,310,28),14,FIGMA_INK,true)
-		empty_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		var empty_detail := _figma_text(canvas,"Friends appear here by levels cleared.",Rect2(38,512,310,42),12,FIGMA_MUTED,true)
-		_fit_wrapped_text(empty_detail,300.0,12,11)
+		# This is a genuine empty state, not an empty leaderboard occupying
+		# nearly a third of the phone. Explain the exact next action.
+		var empty_title := _figma_text(canvas,"BUILD YOUR CIRCLE",Rect2(34,466,300,25),17,FIGMA_INK)
+		empty_title.name = "FriendsEmptyTitle"
+		_figma_text(canvas,"1   COPY YOUR FRIEND CODE",Rect2(35,506,309,20),13,FIGMA_MUTED)
+		_figma_text(canvas,"2   SHARE IT WITH A PLAYER",Rect2(35,533,309,20),13,FIGMA_MUTED)
+		_figma_text(canvas,"3   COMPARE YOUR PROGRESS",Rect2(35,560,309,20),13,FIGMA_MUTED)
+		var invite := _figma_button(canvas,"FriendsEmptyCopyAction","COPY MY CODE",Rect2(84,599,222,44),Color("#2386A8"),Callable(self,"_copy_friend_code"),Color.WHITE,14,12)
+		invite.disabled = friend_code.is_empty()
+		invite.accessibility_name = "Copy your friend code to invite another player"
+		invite.tooltip_text = invite.accessibility_name
 	else:
 		var shown := mini(4,rows.size())
 		for i in range(shown):
@@ -1517,10 +1524,13 @@ func build_daily_games() -> void:
 	_figma_daily_card(canvas, "block_puzzle", 363, bonus)
 	_figma_daily_progress(canvas)
 	_figma_daily_tip(canvas, bonus)
-	# Prominent one-tap leaderboard access, above the persistent bottom nav.
-	# Not hidden behind Goals, Friends or Settings; daily scores remain
-	# distinct from the campaign weekly/all-time rankings.
-	var board := _figma_button(canvas,"DailyLeaderboardOpen","★ VIEW LEADERBOARD",Rect2(31,692,328,48),Color("#7052d8"),Callable(self,"show_leaderboard_popup").bind("today"),Color.WHITE,13,14)
+	# Goals were formerly buried behind unrelated Profile/Collection flows.
+	# Give Daily two equal, distinct destinations without adding another row:
+	# Rewards & Missions, and today's live Leaderboard.
+	var goals_action := _figma_button(canvas,"DailyGoalsOpen","✦ GOALS",Rect2(31,692,155,48),Color("#B47A37"),Callable(self,"build_goals"),Color.WHITE,13,13)
+	goals_action.tooltip_text = "Daily and weekly missions, Season Journey and earned coin rewards"
+	goals_action.accessibility_name = "Open Goals and reward missions"
+	var board := _figma_button(canvas,"DailyLeaderboardOpen","★ RANKINGS",Rect2(199,692,160,48),Color("#7052d8"),Callable(self,"show_leaderboard_popup").bind("today"),Color.WHITE,13,13)
 	board.tooltip_text = "Open today's player rankings, switch to weekly or all-time"
 	board.accessibility_name = "View today's challenge leaderboard"
 	# Daily is a primary destination; campaign rankings remain a separate Compete flow.
