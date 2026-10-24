@@ -36,7 +36,7 @@ func _dispatch_drag(point: Vector2, from_point: Vector2) -> void:
 	Input.parse_input_event(drag)
 
 func _run() -> void:
-	MultiGameManager.clear_checkpoint("block_puzzle")
+	root.get_node("MultiGameManager").call("clear_checkpoint", "block_puzzle")
 	var game_scene := load("res://scenes/BlockPuzzle.tscn") as PackedScene
 	if not _check(game_scene != null, "Could not load real Block Puzzle scene"): return
 	var game := game_scene.instantiate() as Control
