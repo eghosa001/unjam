@@ -2,6 +2,15 @@ name: UNJAM Live Website Health
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "tools/build_public_site.py"
+      - "index.md"
+      - "privacy.md"
+      - "support.md"
+      - "app-ads.txt"
+      - ".github/workflows/unjam-live-website-health.yml"
   schedule:
     - cron: "9 */6 * * *"
 
