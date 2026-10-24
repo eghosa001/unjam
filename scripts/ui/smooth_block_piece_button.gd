@@ -50,6 +50,14 @@ func _ready() -> void:
 	# Godot GUI bounds must not interrupt drags that leave the tray.
 	set_process_input(false)
 
+func _notification(what: int) -> void:
+	# Android can emit a native mouse-drag-end notification while the screen
+	# finger still owns the gesture. The base handler used to delete the green
+	# ghost on that notification, making the first drag bounce back to the tray.
+	if what == NOTIFICATION_DRAG_END and touch_drag_started:
+		return
+	super._notification(what)
+
 func _grab_cell_from_local(local_position: Vector2) -> Vector2:
 	# A touch on the left end of a long brick should keep that very tile
 	# below the lifted fingertip; anchoring every shape to its centroid
@@ -223,10 +231,22 @@ func _best_origin(game: Node, screen_position: Vector2, lift: float = -1.0, geo:
 	if lift < 0.0:
 		lift = MagneticTarget.lift_distance(game, geo)
 	var chosen: Vector2i = MagneticTarget.choose(game, shape, screen_position, previous, lift, _grab_cell, geo)
+	# A single coalesced Android touch sample can briefly miss the very edge
+	# of the board while the finger is lifting. Retain the last *visible* green
+	# position for sub-cell drift; deliberate movement to another cell still
+	# invalidates the placement and the player sees a red ghost.
+	if chosen.x < 0 and _preview_valid and _preview_snap_origin.x >= 0 and not geo.is_empty():
+		var step: Vector2 = geo["step"]
+		var hold_px := minf(step.x, step.y) * 0.85
+		if screen_position.distance_to(_preview_finger_position) <= hold_px:
+			if MagneticTarget.release_matches_visible_snap(game, shape,
+					screen_position, _preview_finger_position, _preview_snap_origin,
+					lift, _grab_cell, geo):
+				chosen = _preview_snap_origin
 	_last_magnet = chosen
 	# Physical and visual click when moving from one locked grid cell to
 	# another, not on every pointer event; bounded for mobile performance.
-	if chosen.x >= 0 and previous.x >= 0 and chosen != previous and _drag_distance >= MIN_ACTUAL_DRAG_PX:
+	if chosen.x >= 0 and chosen != previous and _drag_distance >= MIN_ACTUAL_DRAG_PX:
 		var now := Time.get_ticks_msec()
 		if now - _last_snap_msec >= 105:
 			_last_snap_msec = now
