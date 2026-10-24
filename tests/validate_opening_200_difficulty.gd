@@ -95,8 +95,8 @@ func _rescue() -> bool:
 		str(weak),str(direct_shortcuts),str(direct_gains),str(too_open),str(duplicate_signatures)])
 	# Recovery may have fewer dependencies than peaks, but cannot reset to
 	# 4-6 moves or repeat another early board.
-	if not weak.is_empty() or not duplicate_signatures.is_empty():
-		return _fail("Rescue first-200 challenge/variety regression: short=%s duplicate=%s" % [str(weak),str(duplicate_signatures)])
+	if not weak.is_empty() or not direct_shortcuts.is_empty() or not direct_gains.is_empty() or not duplicate_signatures.is_empty():
+		return _fail("Rescue first-200 challenge/variety regression: proof=%s direct=%s extra_shortcuts=%s duplicate=%s" % [str(weak),str(direct_shortcuts),str(direct_gains),str(duplicate_signatures)])
 	return true
 
 func _water() -> bool:
