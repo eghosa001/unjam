@@ -36,6 +36,20 @@ static func profile(level_number: int) -> Dictionary:
 			float(result.get("first_attempt_low", 0.55)),
 			float(result.get("first_attempt_high", 0.75))
 		)
+		# Live playable early levels were reverting to four-move filler after
+		# the first 20 stages and after the world-1 boss. Preserve short
+		# 1-3 lessons, but make recovery stages a breather rather than a reset.
+		# This adjusts ACTUAL arrow counts, not just the difficulty label.
+		if n >= 21 and n <= 200:
+			var role := String(result.get("level_role", "build"))
+			var challenge_slot := role in ["challenge", "stretch", "peak", "hard", "very_hard", "expert", "world_boss"]
+			var floor_pieces := 13 if n <= 50 else (15 if n <= 100 else (14 if n <= 150 else 16))
+			if challenge_slot:
+				floor_pieces += 2
+			result["piece_target"] = maxi(int(result.get("piece_target", 7)), floor_pieces)
+			# The dependency target participates in candidate selection, while the
+			# higher piece target physically increases board workload.
+			result["dependency_target"] = maxi(int(result.get("dependency_target", 2)), 3 if not challenge_slot else 4)
 		result["authored"] = true
 		result["catalog_version"] = AuthoredCatalog.CATALOG_VERSION
 		return result
