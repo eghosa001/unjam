@@ -26,14 +26,14 @@ func _dispatch_touch(point: Vector2, is_pressed: bool, cancelled: bool = false) 
 	touch.position = point
 	touch.pressed = is_pressed
 	touch.canceled = cancelled
-	Input.parse_input_event(touch)
+	root.push_input(touch, true)
 
 func _dispatch_drag(point: Vector2, from_point: Vector2) -> void:
 	var drag := InputEventScreenDrag.new()
 	drag.index = 0
 	drag.position = point
 	drag.relative = point - from_point
-	Input.parse_input_event(drag)
+	root.push_input(drag, true)
 
 func _run() -> void:
 	root.get_node("MultiGameManager").call("clear_checkpoint", "block_puzzle")
@@ -92,6 +92,7 @@ func _run() -> void:
 	# _gui_input paths; unit tests that call piece._input directly missed this.
 	_dispatch_touch(start_point, true)
 	await _frames(1)
+	print("REAL_BLOCK_PRESS: ownership=", game.get("active_touch_piece"), " touch=", piece.touch_drag_started, " button_filter=", piece.mouse_filter, " visible=", piece.is_visible_in_tree(), " global_rect=", piece.get_global_rect(), " process_input=", piece.is_processing_input())
 	if not _check(piece.touch_drag_started and piece.is_processing_input(),
 			"First physical-style press did not capture a tray piece"): return
 	_dispatch_drag(move_point, start_point)
