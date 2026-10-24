@@ -1571,12 +1571,22 @@ func _figma_daily_tip(canvas: Control, collection_bonus: int) -> void:
 	title.name = "DailyTipTitle"
 	var bonus_text := " • +%d COLLECTION" % collection_bonus if collection_bonus > 0 else ""
 	var detail_text := "RECEIVED +%d" % reward if claimed else "GET +%d COINS" % reward
-	var detail := _figma_text(canvas,detail_text,Rect2(33,636,205,20),12,FIGMA_MUTED)
+	var detail := _figma_text(canvas,detail_text,Rect2(33,632,205,17),12,FIGMA_MUTED)
 	detail.name = "DailyTipDetail"
+	# Engine font minimums otherwise grow the 17px authored row and collide
+	# with the immediate wallet readout on 432x936 displays.
+	detail.custom_minimum_size = Vector2.ZERO
+	detail.position = Vector2(33,632)
+	detail.size = Vector2(205,17)
+	detail.clip_text = true
 	detail.tooltip_text = "%s. Wallet balance %d coins. %s" % [detail_text,EconomyManager.balance(),bonus_text]
 	# An explicit coin balance directly beside the claimed reward.
-	var wallet := _figma_text(canvas,"WALLET  %d COINS" % EconomyManager.balance(),Rect2(33,657,206,17),12,FIGMA_MUTED)
+	var wallet := _figma_text(canvas,"WALLET  %d COINS" % EconomyManager.balance(),Rect2(33,655,206,17),12,FIGMA_MUTED)
 	wallet.name = "DailyWalletAfterClaim"
+	wallet.custom_minimum_size = Vector2.ZERO
+	wallet.position = Vector2(33,655)
+	wallet.size = Vector2(206,17)
+	wallet.clip_text = true
 	wallet.accessibility_name = wallet.text
 	var action_text := "CLAIMED ✓" if claimed else "CLAIM"
 	var action_cb := Callable(self,"build_goals") if claimed else Callable(self,"_claim_daily_login_from_daily")
