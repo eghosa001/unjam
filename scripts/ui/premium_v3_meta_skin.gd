@@ -450,11 +450,11 @@ static func apply_home_v3(canvas: Control, dark: bool) -> void:
 			Color("#163D35") if dark else Color("#E2F5EA"),
 			Color("#5EA38C") if dark else Color("#B2DEC5"),18,3))
 	_home_text(canvas,"HomeDailyFeatureTitle","DAILY PUZZLE",
-		Rect2(214,662,149,24),14,fg)
+		Rect2(214,660,149,22),14,fg)
 	# The daily claim is a PRIMARY Home action, not an invisible Goals link.
 	# Keep a separate 16px reward line clear of the 44px action.
 	var daily_sub := _home_rect(canvas,"HomeDailyFeatureSubtitle",
-		Rect2(214,683,150,16)) as Label
+		Rect2(214,684,150,15)) as Label
 	if daily_sub != null:
 		daily_sub.visible = true
 		daily_sub.add_theme_font_size_override("font_size",11)
