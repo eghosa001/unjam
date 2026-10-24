@@ -49,6 +49,12 @@ var _settings_theme_toggle_pending := false
 var _settings_return_surface := "home"
 # Two mission views share one focused Goals screen. Season and daily claim stay visible.
 var _goals_focus := "daily"
+# Remember the parent destination for secondary screens. Back is contextual,
+# while the five stable bottom tabs remain the global escape routes.
+var _goals_return_surface := "home"
+var _profile_return_surface := "home"
+var _friends_return_surface := "profile"
+var _compete_return_surface := "home"
 var _profile_game := "rescue_rush"
 var _ranking_game := "rescue_rush"
 var _friends_period := "all_time"
@@ -769,12 +775,14 @@ func _finish_settings_theme_toggle() -> void:
 
 
 func build_goals() -> void:
+	if current_surface != "goals":
+		_goals_return_surface = current_surface
 	current_surface = "goals"
 	_remove_active_game()
 	var canvas := _figma_surface("goals", Color("#e8e0c8"))
 	var ready := MetaProgressionManager.ready_claim_count()
 	var goals_card_fill := Color("#27282b") if _dark() else Color("#fffef8")
-	_figma_header(canvas, "GOALS", "Live rewards • %d ready" % ready, "◈ +", FIGMA_ORANGE, Callable(self,"build_home"), Callable(self,"_figma_open_shop"))
+	_figma_header(canvas, "GOALS", "Live rewards • %d ready" % ready, "◈ +", FIGMA_ORANGE, Callable(self,"_return_from_goals"), Callable(self,"_figma_open_shop"))
 
 	var login := MetaProgressionManager.daily_login_info()
 	_figma_card(canvas, "GoalsLogin", Rect2(17,91,354,72), goals_card_fill, Color(FIGMA_ORANGE,0.36), 17)
@@ -881,6 +889,34 @@ func build_goals() -> void:
 	_figma_bottom_nav(canvas,"")
 	preload("res://scripts/ui/premium_v3_meta_skin.gd").apply(canvas, "goals", _dark())
 
+func _return_from_goals() -> void:
+	match _goals_return_surface:
+		"daily": build_daily_games()
+		"collection": build_collection()
+		"profile": build_profile()
+		_: build_home()
+
+func _return_from_profile() -> void:
+	match _profile_return_surface:
+		"collection": build_collection()
+		"daily": build_daily_games()
+		"compete": build_compete_leaderboard(false)
+		_: build_home()
+
+func _return_from_friends() -> void:
+	match _friends_return_surface:
+		"compete": build_compete_leaderboard(false)
+		"profile": build_profile()
+		"daily": build_daily_games()
+		_: build_home()
+
+func _return_from_compete() -> void:
+	match _compete_return_surface:
+		"friends": build_friends(false)
+		"daily": build_daily_games()
+		"profile": build_profile()
+		_: build_home()
+
 func _choose_goals_period(period: String) -> void:
 	if period not in ["daily","weekly"] or _goals_focus == period:
 		return
@@ -951,11 +987,13 @@ func _claim_next_season_reward() -> void:
 	build_goals()
 
 func build_profile() -> void:
+	if current_surface != "profile" and current_surface != "friends":
+		_profile_return_surface = current_surface
 	current_surface = "profile"
 	_remove_active_game()
 	var canvas := _figma_surface("profile", Color("#d8e9f5"))
 	var profile_card_fill := Color("#27282b") if _dark() else Color("#fffef8")
-	_figma_header(canvas, "PROFILE", "LV %d • PLAYER STATS" % MetaProgressionManager.player_level(), "◈ +", FIGMA_CYAN, Callable(self,"build_home"), Callable(self,"_figma_open_shop"))
+	_figma_header(canvas, "PROFILE", "LV %d • PLAYER STATS" % MetaProgressionManager.player_level(), "◈ +", FIGMA_CYAN, Callable(self,"_return_from_profile"), Callable(self,"_figma_open_shop"))
 
 	_figma_card(canvas,"ProfileIdentity",Rect2(17,91,354,70),profile_card_fill,Color(FIGMA_CYAN,0.34),17)
 	var name_edit := LineEdit.new()
@@ -1067,6 +1105,8 @@ func _save_profile_name(name_edit: LineEdit) -> void:
 	build_profile()
 
 func build_friends(refresh_remote: bool = true) -> void:
+	if current_surface != "friends":
+		_friends_return_surface = current_surface
 	current_surface = "friends"
 	_remove_active_game()
 	if refresh_remote:
@@ -1082,7 +1122,7 @@ func build_friends(refresh_remote: bool = true) -> void:
 		"Progress • private codes",
 		"↻",
 		Color("#7a57e0"),
-		Callable(self,"build_profile"),
+		Callable(self,"_return_from_friends"),
 		Callable(self,"_refresh_friends")
 	)
 
@@ -1656,6 +1696,8 @@ func _claim_daily_login_from_daily() -> void:
 	build_daily_games()
 
 func build_compete_leaderboard(refresh_remote: bool = true) -> void:
+	if current_surface != "compete":
+		_compete_return_surface = current_surface
 	current_surface = "compete"
 	_remove_active_game()
 	if refresh_remote:
@@ -1665,7 +1707,7 @@ func build_compete_leaderboard(refresh_remote: bool = true) -> void:
 		CompetitionManager.refresh_snapshot()
 	var canvas := _figma_surface("compete", Color("#ead9b8"))
 	var accent := Unjam3DTheme.game_accent(_ranking_game)
-	_figma_header(canvas, "RANKINGS", "CAMPAIGN RANKINGS", "↻", accent, Callable(self,"build_home"), Callable(self,"_refresh_competition_rankings"))
+	_figma_header(canvas, "RANKINGS", "CAMPAIGN RANKINGS", "↻", accent, Callable(self,"_return_from_compete"), Callable(self,"_refresh_competition_rankings"))
 	_figma_compete_game_tabs(canvas, 91.0, false)
 
 	_figma_card(canvas,"CompetitionPlayerProgress",Rect2(17,145,354,60),Color("#282a2e") if _dark() else Color("#fffaf2"),Color(accent,0.38),16)
