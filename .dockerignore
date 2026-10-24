@@ -9,3 +9,6 @@
 !assets/
 !assets/site.css
 !assets/icon.svg
+
+!tools/
+!tools/build_public_site.py

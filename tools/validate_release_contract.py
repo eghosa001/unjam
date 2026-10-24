@@ -136,8 +136,8 @@ def main() -> int:
         'res://addons/admob/plugin.cfg',
         'res://addons/GodotGooglePlayBilling/plugin.cfg',
         'ca-app-pub-7517898921176341~1892369383',
-        'privacy_policy_url="https://unjam-site-prod-production.up.railway.app/privacy.html"',
-        'developer_website_url="https://unjam-site-prod-production.up.railway.app"',
+        'privacy_policy_url="https://unjam-eghosa.onrender.com/privacy.html"',
+        'developer_website_url="https://unjam-eghosa.onrender.com"',
         'CloudSaveManager="*res://scripts/systems/cloud_save_manager.gd"',
     ):
         if token not in project:

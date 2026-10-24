@@ -13,7 +13,7 @@ Current Android export and release workflow defaults are **versionName 1.0.16 / 
 - [ ] Add the new keystore and credentials to GitHub Actions secrets: `UNJAM_ANDROID_KEYSTORE_BASE64`, `UNJAM_ANDROID_KEY_ALIAS`, and `UNJAM_ANDROID_KEY_PASSWORD`.
 - [ ] Add the new upload certificate SHA-1 to GitHub Actions secret `UNJAM_ANDROID_UPLOAD_SHA1`.
 - [x] Bind the selected Supabase project URL and publishable key in `project.godot` (public client configuration).
-- [x] Bind the production developer website in `project.godot` to `https://unjam-site-prod-production.up.railway.app`; `UNJAM_DEVELOPER_WEBSITE_URL` remains an optional CI override. Production release checks the crawler hostname root for `app-ads.txt`.
+- [x] Bind the production developer website in `project.godot` to `https://unjam-eghosa.onrender.com`; `UNJAM_DEVELOPER_WEBSITE_URL` remains an optional CI override. Production release checks the crawler hostname root for `app-ads.txt`.
 - [ ] Run the `Android Production Release` workflow with `version_name=1.0.16` and `version_code=16`; download the verified release AAB and upload that AAB to the new Play listing.
 - [ ] Confirm the highest version code previously accepted by Play Console before uploading; use a higher `versionCode` if 16 has already been used. Every subsequent upload must increase it.
 
@@ -44,8 +44,8 @@ Configured in code/CI:
 
 Still account-side / external:
 
-- [ ] Confirm the **currently deployed** production Railway developer website serves `app-ads.txt` at the hostname root with HTTP 200 and the expected seller record. A past successful check is not proof of present availability.
-- [ ] Confirm the **currently deployed** Railway privacy policy URL serves the full policy with HTTP 200 and no login. Recheck on each release.
+- [ ] Confirm the **currently deployed** production Render developer website serves `app-ads.txt` at the hostname root with HTTP 200 and the expected seller record. A past successful check is not proof of present availability.
+- [ ] Confirm the **currently deployed** Render privacy policy URL serves the full policy with HTTP 200 and no login. Recheck on each release.
 - [x] Purchase-verification backend is implemented for Google Play Developer API verification and production purchases fail closed until the live HTTPS endpoint is injected at release time.
 - [x] Supabase Edge Function exposes a readiness action that verifies Postgres, Google Play purchase verification, Voided Purchases authorization, and hardened monetization capabilities; production release fails if any dependency is unavailable.
 - [x] Purchase verification is idempotent by SHA-256 purchase-token fingerprint in Supabase Postgres. `unjam_starter_pack` and other non-consumable entitlements cannot be granted twice from duplicate callbacks when the backend is live.
@@ -96,6 +96,20 @@ Do not submit to Production until the exact release commit is green in CI, the f
 
 ## Production website validation
 
-The production site is deployed separately from the Android application. The Railway service must build the root `Dockerfile` and serve `/`, `/privacy.html`, `/support.html`, `/assets/site.css`, `/assets/icon.svg`, `/robots.txt`, `/sitemap.xml`, and `/app-ads.txt`. CI tests these routes via a running Nginx container. The release verifier checks the live developer hostname, not just files in Git.
+The production site is deployed separately from the Android application. Render's free static site must run `python3 tools/build_public_site.py` and publish `public/`, serving `/`, `/privacy.html`, `/support.html`, `/assets/site.css`, `/assets/icon.svg`, `/robots.txt`, `/sitemap.xml`, and `/app-ads.txt`. CI tests these routes via a running Nginx container. The release verifier checks the live developer hostname, not just files in Git.
 
 Do not mark Google Play production ready from a successful QA APK: it uses temporary QA signing and test advertising. The Android Production Release workflow must pass for the exact release commit with the correct upload key, live monetization and Google Play product catalog; a signed AAB must then be accepted by Play Console and installed through internal testing before production submission.
+
+
+## Render static hosting (no fixed free-trial expiration)
+
+- Hosting provider: Render Static Site (free tier subject to monthly bandwidth and build-minute quotas).
+- Repository: `eghosa001/unjam`, branch `main`.
+- Build command: `python3 tools/build_public_site.py`.
+- Publish directory: `public`.
+- Developer website: `https://unjam-eghosa.onrender.com`.
+- Privacy policy: `https://unjam-eghosa.onrender.com/privacy.html`.
+- AdMob seller record: `https://unjam-eghosa.onrender.com/app-ads.txt`.
+- Deploy automatically on main, validate live status through the monetization CI gate.
+- After verification, update the developer website field in the Google Play listing and let AdMob recrawl (can take at least 24 hours).
+- Do not claim a no-cost tier is guaranteed forever; excessive usage or provider policy changes may affect availability.
