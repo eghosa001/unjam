@@ -3,7 +3,7 @@ class_name SmoothBlockPieceButton
 
 const SmoothDragPreview = preload("res://scripts/ui/smooth_block_drag_preview.gd")
 const MagneticTarget = preload("res://scripts/ui/block_magnetic_target.gd")
-const MIN_ACTUAL_DRAG_PX := 9.0
+const MIN_ACTUAL_DRAG_PX := 7.0
 var _last_magnet := Vector2i(-1,-1)
 var _down_pointer := Vector2.ZERO
 var _drag_distance := 0.0

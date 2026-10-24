@@ -612,7 +612,9 @@ func _figma_header(canvas: Control, title_text: String, subtitle_text: String, p
 			# accessibility while the faceted 3D gem sits directly over the glyph.
 			FigmaReferenceCanvas.add_collectible_gem(canvas, Vector2(301,44), 8.0, "HeaderCurrencyGem3D")
 			pill_button.set_meta("unjam_figma_wallet_pill", true)
-			pill_button.tooltip_text = "Coins: %d • Open Shop" % EconomyManager.balance()
+			pill_button.text = _wallet_badge_text(EconomyManager.balance())
+			pill_button.tooltip_text = "Wallet: %d coins • Open Shop" % EconomyManager.balance()
+			pill_button.accessibility_name = pill_button.tooltip_text
 			if not EconomyManager.balance_changed.is_connected(_on_figma_wallet_balance_changed):
 				EconomyManager.balance_changed.connect(_on_figma_wallet_balance_changed)
 	else:
@@ -626,13 +628,30 @@ func _figma_header(canvas: Control, title_text: String, subtitle_text: String, p
 		var pill_label := _figma_text(canvas, pill_text, Rect2(297,29,60,30), 12, pill_text_color, true)
 		pill_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 
+func _wallet_badge_text(amount: int) -> String:
+	# Currency is COINS, not Season Journey PTS. Keep it readable in
+	# the 84px header pill even for long-running players.
+	if amount >= 1000000:
+		return "◈ %.1fM" % (float(amount) / 1000000.0)
+	if amount >= 10000:
+		return "◈ %.1fK" % (float(amount) / 1000.0)
+	return "◈ %d" % amount
+
 func _on_figma_wallet_balance_changed(new_balance: int, _delta: int, _reason: String) -> void:
 	if content == null or not is_instance_valid(content):
 		return
 	for node in content.find_children("*", "Button", true, false):
 		var button := node as Button
 		if button != null and bool(button.get_meta("unjam_figma_wallet_pill", false)):
-			button.tooltip_text = "Coins: %d • Open Shop" % new_balance
+			button.text = _wallet_badge_text(new_balance)
+			button.tooltip_text = "Wallet: %d coins • Open Shop" % new_balance
+			button.accessibility_name = button.tooltip_text
+	# Keep the balance visible immediately on the reward page without making
+	# players leave and return to Home to check whether their claim worked.
+	if current_surface == "daily":
+		var label := content.find_child("DailyWalletAfterClaim",true,false) as Label
+		if label != null:
+			label.text = "WALLET  %d COINS" % new_balance
 
 func _figma_open_shop() -> void:
 	var hub := get_node_or_null("MonetizationHub")
@@ -758,7 +777,7 @@ func build_goals() -> void:
 	var login := MetaProgressionManager.daily_login_info()
 	_figma_card(canvas, "GoalsLogin", Rect2(17,91,354,72), goals_card_fill, Color(FIGMA_ORANGE,0.36), 17)
 	_figma_text(canvas, "DAILY CHECK-IN • DAY %d/7" % int(login.get("day",1)), Rect2(31,103,208,22), 15, FIGMA_INK)
-	_figma_text(canvas, "+%d COINS" % int(login.get("reward",0)), Rect2(31,129,150,20), 13, FIGMA_GOLD)
+	_figma_text(canvas, "%s" % ("RECEIVED +%d COINS" % int(login.get("reward",0)) if bool(login.get("claimed",false)) else "+%d COINS READY" % int(login.get("reward",0))), Rect2(31,129,212,20), 13, FIGMA_GOLD)
 	var login_claimed := bool(login.get("claimed",false))
 	var login_button := _figma_button(canvas,"GoalsLoginClaim","CLAIMED" if login_claimed else "CLAIM",Rect2(260,104,92,44),Color("#7d8a94") if login_claimed else FIGMA_ORANGE,Callable(),Color.WHITE,13,12)
 	login_button.disabled = login_claimed
@@ -1446,7 +1465,7 @@ func build_daily_games() -> void:
 	for game_id in MultiGameManager.GAME_IDS:
 		if _daily_done(game_id):
 			done_count += 1
-	_figma_header(canvas, "DAILY", "Check-in • play • rewards", "%d/3" % done_count, FIGMA_GOLD)
+	_figma_header(canvas, "DAILY", "Check-in • play • rewards", "◈ +", FIGMA_GOLD, Callable(self,"build_home"), Callable(self,"_figma_open_shop"))
 
 	_figma_daily_card(canvas, "rescue_rush", 115, bonus)
 	_figma_daily_card(canvas, "water_sort", 239, bonus)
@@ -1551,13 +1570,30 @@ func _figma_daily_tip(canvas: Control, collection_bonus: int) -> void:
 	var title := _figma_text(canvas,"DAILY CHECK-IN • DAY %d/7" % int(login.get("day",1)),Rect2(33,609,205,20),15,checkin_title_ink)
 	title.name = "DailyTipTitle"
 	var bonus_text := " • +%d COLLECTION" % collection_bonus if collection_bonus > 0 else ""
-	var detail := _figma_text(canvas,"+%d COINS%s" % [reward,bonus_text],Rect2(33,636,205,20),12,FIGMA_MUTED)
+	var detail_text := "RECEIVED +%d" % reward if claimed else "GET +%d COINS" % reward
+	var detail := _figma_text(canvas,detail_text,Rect2(33,632,205,17),12,FIGMA_MUTED)
 	detail.name = "DailyTipDetail"
-	var action_text := "GOALS" if claimed else "CLAIM"
+	# Engine font minimums otherwise grow the 17px authored row and collide
+	# with the immediate wallet readout on 432x936 displays.
+	detail.custom_minimum_size = Vector2.ZERO
+	detail.position = Vector2(33,632)
+	detail.size = Vector2(205,17)
+	detail.clip_text = true
+	detail.tooltip_text = "%s. Wallet balance %d coins. %s" % [detail_text,EconomyManager.balance(),bonus_text]
+	# An explicit coin balance directly beside the claimed reward.
+	var wallet := _figma_text(canvas,"WALLET  %d COINS" % EconomyManager.balance(),Rect2(33,655,206,17),12,FIGMA_MUTED)
+	wallet.name = "DailyWalletAfterClaim"
+	wallet.custom_minimum_size = Vector2.ZERO
+	wallet.position = Vector2(33,655)
+	wallet.size = Vector2(206,17)
+	wallet.clip_text = true
+	wallet.accessibility_name = wallet.text
+	var action_text := "CLAIMED ✓" if claimed else "CLAIM"
 	var action_cb := Callable(self,"build_goals") if claimed else Callable(self,"_claim_daily_login_from_daily")
 	var action_fill := Color("#7a57e0") if claimed else FIGMA_ORANGE
 	var action := _figma_button(canvas,"DailyCheckInAction",action_text,Rect2(244,617,107,44),action_fill,action_cb,Color.WHITE,14,12)
-	action.tooltip_text = "Daily check-in, missions and Season Journey"
+	action.tooltip_text = "Reward received in your coin wallet. Open Goals for more missions." if claimed else "Claim %d coins now. Balance %d coins." % [reward,EconomyManager.balance()]
+	action.accessibility_name = action.tooltip_text
 
 func _claim_daily_login_from_daily() -> void:
 	if MetaProgressionManager.claim_daily_login() > 0:

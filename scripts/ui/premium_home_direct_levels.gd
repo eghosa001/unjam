@@ -67,6 +67,8 @@ func build_home_launcher() -> void:
 	clip_contents = true
 	if not EconomyManager.balance_changed.is_connected(_on_economy_balance_changed):
 		EconomyManager.balance_changed.connect(_on_economy_balance_changed)
+	if not MetaProgressionManager.meta_changed.is_connected(_on_home_meta_changed):
+		MetaProgressionManager.meta_changed.connect(_on_home_meta_changed)
 
 	var viewport_bg := ColorRect.new()
 	viewport_bg.name = "FigmaHomeViewportBackground"
@@ -248,7 +250,7 @@ func _build_reference_home(canvas: Control) -> void:
 	var profile_hit := _add_action(canvas,Rect2(21,64,113,44),Color(1,1,1,0.001),"",10,Color(1,1,1,0.001),Callable(self,"_open_profile"),16)
 	profile_hit.name = "HomeProfileButton"
 	profile_hit.accessibility_name = "Open player profile"
-	home_coin_button = _add_action(canvas,Rect2(238,64,129,44),Color("#d9cfaf"),"  %s  +" % _compact_number(EconomyManager.balance()),13,NAVY,Callable(self,"_open_shop"),16)
+	home_coin_button = _add_action(canvas,Rect2(238,64,129,44),Color("#d9cfaf"),"◈ %s" % _compact_number(EconomyManager.balance()),13,NAVY,Callable(self,"_open_shop"),16)
 	home_coin_button.name = "HomeCoinShopButton"
 	home_coin_button.accessibility_name = "View coins and open shop"
 	RefCanvas.add_collectible_gem(canvas,Vector2(256,86),8.0,"HomeCurrencyGem3D")
@@ -266,6 +268,7 @@ func _build_reference_home(canvas: Control) -> void:
 	if not CompetitionManager.daily_snapshot_updated.is_connected(_on_home_ranking_updated):
 		CompetitionManager.daily_snapshot_updated.connect(_on_home_ranking_updated)
 	_on_home_ranking_updated({})
+	_refresh_home_daily_reward()
 	# A return to Home should not issue duplicate requests if the shared manager
 	# already fetched rankings. Daily data has its own independent snapshot.
 	if CompetitionManager.daily_snapshot.is_empty() and OS.get_environment("UNJAM_FAST_VISUAL_AUDIT") != "1":
@@ -273,7 +276,46 @@ func _build_reference_home(canvas: Control) -> void:
 
 func _on_economy_balance_changed(new_balance: int, _delta: int, _reason: String) -> void:
 	if home_coin_button != null and is_instance_valid(home_coin_button):
-		home_coin_button.text = "  %s  +" % _compact_number(new_balance)
+		home_coin_button.text = "◈ %s" % _compact_number(new_balance)
+		home_coin_button.accessibility_name = "%d coins. Open Shop" % new_balance
+	_refresh_home_daily_reward()
+
+func _on_home_meta_changed() -> void:
+	# Daily rollover and a successful claim refresh without a Home rebuild.
+	_refresh_home_daily_reward()
+
+func _refresh_home_daily_reward() -> void:
+	if figma_canvas == null or not is_instance_valid(figma_canvas):
+		return
+	var info: Dictionary = MetaProgressionManager.daily_login_info()
+	var claimed := bool(info.get("claimed",false))
+	var reward := maxi(0,int(info.get("reward",0)))
+	var day := int(info.get("day",1))
+	var title := figma_canvas.find_child("HomeDailyFeatureTitle",true,false) as Label
+	var subtitle := figma_canvas.find_child("HomeDailyFeatureSubtitle",true,false) as Label
+	var action := figma_canvas.find_child("HomeDailyChallengeButton",true,false) as Button
+	if title != null:
+		title.text = "DAILY PUZZLES" if claimed else "DAILY GIFT READY"
+	if subtitle != null:
+		subtitle.visible = true
+		subtitle.text = "CHECK-IN CLAIMED" if claimed else "DAY %d/7 · +%d COINS" % [day,reward]
+		subtitle.accessibility_name = "Daily check-in claimed. Play today's puzzles." if claimed else "Day %d of 7. Claim %d coins." % [day,reward]
+	if action != null:
+		action.text = "PLAY TODAY ›" if claimed else "CLAIM +%d" % reward
+		action.accessibility_name = "Play today's daily puzzles" if claimed else "Claim day %d reward of %d coins. Current wallet %d coins." % [day,reward,EconomyManager.balance()]
+		action.tooltip_text = action.accessibility_name
+
+func _home_daily_action() -> void:
+	# First tap earns the visible reward, the next tap plays Daily puzzles.
+	# No invisible detour through Goals and no second payout after claiming.
+	var info: Dictionary = MetaProgressionManager.daily_login_info()
+	if not bool(info.get("claimed",false)):
+		var reward := MetaProgressionManager.claim_daily_login()
+		if reward > 0:
+			FeedbackManager.effect()
+			_refresh_home_daily_reward()
+			return
+	_open_daily_games()
 
 func _add_frame_background(canvas: Control) -> void:
 	var dark := _home_dark()
@@ -611,7 +653,7 @@ func _add_daily_feature(canvas: Control) -> void:
 		13,DARK_MUTED if dark else Color("#3b624c"),false)
 	subtitle.name = "HomeDailyFeatureSubtitle"
 	var daily := _add_action(canvas,Rect2(225,668,126,52),Color("#257e55"),
-		"PLAY DAILY",13,OFF_WHITE,Callable(self,"_open_daily_games"),14)
+		"CLAIM REWARD",13,OFF_WHITE,Callable(self,"_home_daily_action"),14)
 	daily.name = "HomeDailyChallengeButton"
 	daily.accessibility_name = "Play today's Daily challenges"
 

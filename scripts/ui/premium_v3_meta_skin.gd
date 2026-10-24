@@ -450,13 +450,19 @@ static func apply_home_v3(canvas: Control, dark: bool) -> void:
 			Color("#163D35") if dark else Color("#E2F5EA"),
 			Color("#5EA38C") if dark else Color("#B2DEC5"),18,3))
 	_home_text(canvas,"HomeDailyFeatureTitle","DAILY PUZZLE",
-		Rect2(214,662,149,24),14,fg)
-	var daily_sub := canvas.find_child("HomeDailyFeatureSubtitle",true,false) as CanvasItem
-	if daily_sub != null: daily_sub.visible = false
+		Rect2(214,660,149,22),14,fg)
+	# The daily claim is a PRIMARY Home action, not an invisible Goals link.
+	# Keep a separate 16px reward line clear of the 44px action.
+	var daily_sub := _home_rect(canvas,"HomeDailyFeatureSubtitle",
+		Rect2(214,684,150,15)) as Label
+	if daily_sub != null:
+		daily_sub.visible = true
+		daily_sub.add_theme_font_size_override("font_size",11)
+		daily_sub.add_theme_color_override("font_color",muted)
+		daily_sub.clip_text = true
 	var daily_button := _home_rect(canvas,"HomeDailyChallengeButton",
-		Rect2(211,698,151,44)) as Button
+		Rect2(211,702,151,44)) as Button
 	if daily_button != null:
-		daily_button.text = "PLAY TODAY  ›"
 		_button(daily_button,Color("#4BD1AA") if dark else Color("#218E70"),dark,13)
 		daily_button.add_theme_font_size_override("font_size",12)
 	# Existing five-tab bottom navigation remains intact, including Settings

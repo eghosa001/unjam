@@ -3,7 +3,7 @@ class_name BlockMagneticTarget
 
 # All distances are expressed in live board cells, not fixed screen pixels.
 # Preview and committed release use the same target calculation.
-const CATCH_RADIUS := 1.45
+const CATCH_RADIUS := 1.62
 const HOLD_RADIUS := 1.55
 const STICKINESS := 0.25
 const BLOCKED_INTENT_RADIUS := 0.32
@@ -111,11 +111,12 @@ static func _closest(game: Node, shape: Array, point: Vector2, geo: Dictionary, 
 		nearest = rounded
 		best_distance = (raw - Vector2(rounded)).length()
 	else:
-		# When the pointer is between blocked cells, check only actual nearby
-		# origins. Offsets of two cannot fit inside the 1.32-cell catch radius
-		# when rounded already lies within half a cell on either axis.
-		for dy in range(-1, 2):
-			for dx in range(-1, 2):
+		# Overflowing aims may round two cells beyond the board while
+		# the closest legal boundary target is still just 1.62 cells away.
+		# Keep blocked in-board aims to 3x3, never hopping to a distant gap.
+		var search_radius := 2 if not _fits_board(shape, rounded) else 1
+		for dy in range(-search_radius, search_radius + 1):
+			for dx in range(-search_radius, search_radius + 1):
 				if dx == 0 and dy == 0:
 					continue
 				var candidate := rounded + Vector2i(dx, dy)
@@ -183,11 +184,14 @@ static func release_matches_visible_snap(game: Node, shape: Array,
 	# the identical jitter in a middle row commits successfully.
 	if not _near_board(preview_point, geo):
 		return false
-	# Up to 1.8 cells of coalesced UP-only motion; a real continuing drag
+	# Up to 2.05 cells of coalesced UP-only motion; a real continuing drag
 	# updates the preview each sample and resets this reference position.
-	var slop := maxf(20.0, minf(step.x,step.y) * 1.8)
+	# A green target is a promise: allow Android's final finger-up sample
+	# slightly more slop than a moving drag, but NEVER select a new or
+	# unpreviewed cell. Only the last visible legal footprint may commit.
+	var slop := maxf(20.0, minf(step.x,step.y) * 2.05)
 	if finger.distance_to(last_preview_finger) > slop:
 		return false
 	var release_point := finger - Vector2(0.0, lift)
 	var released_origin := _raw_origin(shape, release_point, geo, grab_anchor)
-	return (released_origin - Vector2(visible_origin)).length() <= 1.8
+	return (released_origin - Vector2(visible_origin)).length() <= 2.05

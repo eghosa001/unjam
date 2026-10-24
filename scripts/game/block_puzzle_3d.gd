@@ -415,6 +415,12 @@ func load_level() -> void:
 	_clear_transition_active = false
 	_clear_transient_effects()
 	super.load_level()
+	# The alternative tap-to-place control was effectively undiscoverable.
+	# Teach it beside the drag action without adding an overlay over the board.
+	if hint_label != null and hint_label.text.strip_edges().is_empty():
+		hint_label.text = "DRAG TO GREEN · OR TAP PIECE, THEN BOARD"
+		hint_label.add_theme_font_size_override("font_size",13)
+		hint_label.accessibility_name = "Drag a piece until its target glows green, then release. Or tap a tray piece and tap a board cell to place it."
 
 func _clear_transient_effects() -> void:
 	active_touch_piece = null
