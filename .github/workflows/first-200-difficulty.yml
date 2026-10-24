@@ -1,0 +1,59 @@
+name: First 200 Levels - All Three Games Difficulty
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/first-200-difficulty.yml"
+      - "tests/validate_opening_200_difficulty.gd"
+      - "scripts/core/campaign_generator.gd"
+      - "scripts/core/rescue_rush_progression.gd"
+      - "scripts/core/block_puzzle_progression.gd"
+      - "scripts/core/block_puzzle_campaign_generator.gd"
+      - "scripts/core/block_puzzle_campaign_auditor.gd"
+      - "scripts/core/water_sort_progression.gd"
+      - "scripts/game/water_sort_10000.gd"
+      - "data/rescue_rush/**"
+      - "data/water_sort_curated/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  early-200:
+    name: "Actual levels 1-200 / ${{ matrix.game }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        game: [rescue, water, block]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: solarlabyrinth/action-setup-godot@v3
+        with:
+          version: 4.7.2-stable
+          export-templates: false
+      - name: Import all game scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path . --editor --quit 2>&1 | tee opening-import.log
+          if grep -E 'SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed' opening-import.log; then exit 1; fi
+      - name: Measure actual 200-level difficulty and fairness
+        shell: bash
+        env:
+          OPENING_200_GAME: ${{ matrix.game }}
+        run: |
+          set -euo pipefail
+          bash tools/run_godot_test.sh validate_opening_200_difficulty 900
+      - name: Preserve level-by-level difficulty evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: first-200-${{ matrix.game }}
+          path: |
+            build/test-logs/validate_opening_200_difficulty.log
+            opening-import.log
+          if-no-files-found: warn
+          retention-days: 14
