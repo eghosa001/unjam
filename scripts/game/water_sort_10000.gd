@@ -168,6 +168,7 @@ func generate_tubes_with_solution(seed_value: int, colors: int) -> Dictionary:
 	var authored := CuratedCatalog.level(level_number)
 	var weak_curated: Dictionary = {}
 	var authored_metrics: Dictionary = {}
+	var underpowered_boss := false
 	if not authored.is_empty():
 		var authored_tubes: Array = authored.get("tubes", [])
 		var authored_solution: Array = authored.get("solution", [])
@@ -187,7 +188,8 @@ func generate_tubes_with_solution(seed_value: int, colors: int) -> Dictionary:
 		# only 3-5 pours and five fully sorted bottles. Preserve strong
 		# curated designs; remaster weak boards through the already verified
 		# deterministic constructive generator only when genuinely stronger.
-		if not Progression.needs_curated_challenge_remaster(level_number, authored_tubes, authored_solution.size(), p) and not _boss_below_lead_in(level_number, metrics, p):
+		underpowered_boss = _boss_below_lead_in(level_number, metrics, p)
+		if not Progression.needs_curated_challenge_remaster(level_number, authored_tubes, authored_solution.size(), p) and not underpowered_boss:
 			return authored
 		weak_curated = authored.duplicate(true)
 		authored_metrics = generation_meta.duplicate(true)
@@ -250,10 +252,16 @@ func generate_tubes_with_solution(seed_value: int, colors: int) -> Dictionary:
 			var old_floor := int(authored_metrics.get("unavoidable_pours_lower_bound", 0))
 			var old_score := int(authored_metrics.get("difficulty_score", 0))
 			var old_proof := int(authored_metrics.get("proof_moves", 0))
-			if structural_floor < old_floor + 2 or score < old_score + 4 or candidate_solution.size() < old_proof + 2:
+			# A boss that slightly underperforms its actual lead-in needs a
+			# measured improvement, not the normal aggressive +2-floor / +2-proof
+			# threshold. Requiring both often left a weak boss unchanged.
+			var required_floor_gain := 0 if underpowered_boss else 2
+			var required_score_gain := 2 if underpowered_boss else 4
+			var required_proof_gain := 0 if underpowered_boss else 2
+			if structural_floor < old_floor + required_floor_gain or score < old_score + required_score_gain or candidate_solution.size() < old_proof + required_proof_gain:
 				continue
 			var best_floor := int((best.get("metadata", {}) as Dictionary).get("unavoidable_pours_lower_bound", -1))
-			if best.is_empty() or structural_floor > best_floor or (structural_floor == best_floor and error < best_error):
+			if best.is_empty() or (underpowered_boss and score > best_score) or (not underpowered_boss and structural_floor > best_floor) or (score == best_score and structural_floor == best_floor and error < best_error):
 				best_error = error
 				best_score = score
 				best = candidate.duplicate(true)
@@ -299,7 +307,7 @@ func generate_tubes_with_solution(seed_value: int, colors: int) -> Dictionary:
 		var candidate_moves := int(generation_meta.get("proof_moves", 0))
 		var baseline_floor := int(authored_metrics.get("unavoidable_pours_lower_bound", 0))
 		var candidate_floor := int(generation_meta.get("unavoidable_pours_lower_bound", 0))
-		if candidate_score < baseline_score + 4 or candidate_moves < baseline_moves + 2 or candidate_floor < baseline_floor + 2:
+		if candidate_score < baseline_score + (2 if underpowered_boss else 4) or candidate_moves < baseline_moves + (0 if underpowered_boss else 2) or candidate_floor < baseline_floor + (0 if underpowered_boss else 2):
 			generation_meta = authored_metrics.duplicate(true)
 			return weak_curated
 		generation_meta["source"] = "verified_challenge_remaster"
