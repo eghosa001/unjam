@@ -1,0 +1,65 @@
+name: Three-Game Full Campaign and Endgame Audit
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/three-game-campaign-audit.yml"
+      - "tests/validate_late_campaign_playability.gd"
+      - "scripts/core/**"
+      - "scripts/game/**"
+      - "data/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: "${{ matrix.game }} campaign and late-game checks"
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        game: [rescue, water, block]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: solarlabyrinth/action-setup-godot@v3
+        with:
+          version: 4.7.2-stable
+          export-templates: false
+      - name: Import project
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path . --editor --quit 2>&1 | tee audit-import.log
+          if grep -E 'SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed' audit-import.log; then exit 1; fi
+      - name: Audit full authored catalogs, proofs and progression
+        shell: bash
+        run: |
+          set -euxo pipefail
+          if [[ "${{ matrix.game }}" == "rescue" ]]; then
+            bash tools/run_godot_test.sh validate_rescue_authored_catalog_10000 300
+            bash tools/run_godot_test.sh validate_rescue_progression_10000 300
+          elif [[ "${{ matrix.game }}" == "water" ]]; then
+            bash tools/run_godot_test.sh validate_water_progression 120
+            bash tools/run_godot_test.sh validate_water_runtime_difficulty_spikes 900
+            bash tools/run_godot_test.sh validate_water_curated_catalog_10000 900
+            bash tools/run_godot_test.sh validate_water_constructive_solvability 240
+            bash tools/run_godot_test.sh validate_water_endgame_candidate_quality 180
+          elif [[ "${{ matrix.game }}" == "block" ]]; then
+            bash tools/run_godot_test.sh validate_block_progression_10000 180
+            bash tools/run_godot_test.sh validate_block_constructive_solvability 300
+            bash tools/run_godot_test.sh validate_block_bot_calibration 300
+          fi
+          UNJAM_CAMPAIGN_AUDIT_GAME="${{ matrix.game }}" bash tools/run_godot_test.sh validate_late_campaign_playability 900
+      - name: Store reproducible campaign audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: campaign-audit-${{ matrix.game }}
+          path: |
+            build/test-logs/*.log
+            audit-import.log
+          if-no-files-found: warn
+          retention-days: 14
