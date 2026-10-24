@@ -108,6 +108,13 @@ jobs:
           godot --headless --path . --quit-after 5 2>&1 | tee boot.log
           if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" boot.log; then exit 1; fi
 
+      - name: Exercise real Block Puzzle touchscreen and green snap
+        if: steps.plan.outputs.needs_godot == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash tools/run_godot_test.sh validate_block_real_touch_integration 90
+
       # Selective hardening gates are planned by tools/select_fast_ci_tests.py:
       # validate_production_hardening_regressions and
       # validate_water_constructive_solvability. They run only for relevant

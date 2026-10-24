@@ -362,26 +362,23 @@ func _finish_touch_drag(screen_position: Vector2) -> void:
 		return
 	if game.has_method("clear_touch_drag"):
 		game.call("clear_touch_drag", self)
-	# Green preview, footprint and committed placement must agree.
-	# Android sometimes reports the UP coordinate well after its last drag
-	# sample, so ask the same magnetic solver whether the last visible snap
-	# remains within a bounded, board-relative release tolerance.
+	# The last rendered green board footprint is the authoritative drop target.
+	# Android's UP coordinate is not another drag frame: coalescing, screen
+	# scaling or a release jump must never veto a valid placement the player
+	# could already see. Trust the LAST preview from a real drag event, not
+	# a second, invisible hit-test at finger-up. A red preview or canceled
+	# drag still rejects placement, and can_place is rechecked below.
 	var origin := Vector2i(-1, -1)
-	var geo := MagneticTarget.geometry(game)
 	var preview_alive := touch_preview != null and is_instance_valid(touch_preview)
 	if preview_alive:
-		if _preview_valid and MagneticTarget.release_matches_visible_snap(
-			game,shape,screen_position,_preview_finger_position,
-			_preview_snap_origin,MagneticTarget.lift_distance(game,geo),
-			_grab_cell,geo):
+		if _preview_valid:
 			origin = _preview_snap_origin
-		# Otherwise the ghost was red, off board, or truly dragged away.
-		# Never commit an unseen alternative cell on the finger-up event.
 	else:
-		# Keyboard/mouse and direct-call compatibility: these paths do not
-		# have a floating touchscreen ghost and keep native drag semantics.
-		origin = MagneticTarget.choose_release(game,shape,screen_position,
-			_last_magnet,MagneticTarget.lift_distance(game,geo),_grab_cell)
+		# Compatibility for direct calls and non-touch input that genuinely
+		# have no onscreen preview. Normal Android drags never take this path.
+		var geo := MagneticTarget.geometry(game)
+		origin = MagneticTarget.choose_release(game, shape, screen_position,
+			_last_magnet, MagneticTarget.lift_distance(game, geo), _grab_cell)
 	var valid := origin.x >= 0 and bool(game.call("can_place", shape, origin))
 	# Never leave an earlier placement latch attached to a reused tray slot.
 	_preview_valid = false

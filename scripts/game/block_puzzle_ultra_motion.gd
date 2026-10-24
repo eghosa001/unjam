@@ -22,6 +22,11 @@ func load_level() -> void:
 		hint_label.text = PLACEMENT_HELP if _needs_placement_help() else ""
 
 func select_piece(index: int) -> void:
+	# An Android-emulated Button.pressed may arrive while a touchscreen
+	# pointer owns the tray. Rerendering would call configure() on that
+	# same piece, disposing its green preview and silently canceling a drop.
+	if active_touch_piece != null and is_instance_valid(active_touch_piece) and active_touch_piece.touch_drag_started:
+		return
 	super.select_piece(index)
 	if not completed and index >= 0 and index < pieces.size() and not pieces[index].is_empty():
 		FeedbackManager.lift()
@@ -36,6 +41,11 @@ func _needs_placement_help() -> bool:
 
 func render_pieces() -> void:
 	if piece_row == null:
+		return
+	# No unrelated label/selection refresh may reconfigure an active finger's
+	# source button. Once release is committed, clear_touch_drag() allows
+	# the normal tray refresh immediately.
+	if active_touch_piece != null and is_instance_valid(active_touch_piece) and active_touch_piece.touch_drag_started:
 		return
 	# Keep exactly one stable control per tray slot. Recreating all three buttons
 	# on every render used to allow an outgoing preview/control and its replacement
