@@ -25,7 +25,12 @@ func _run() -> void:
 	var weekly_actions := _goal_action_count(main,"weekly")
 	if not _check(daily_actions == 3 and weekly_actions == 0,"Goals daily focus shows %d Daily and %d Weekly actions" % [daily_actions,weekly_actions]):return
 	if not _check(main.find_child("GoalsSeason",true,false) != null and main.find_child("GoalsLogin",true,false) != null,"Goals must always show season and check-in"):return
-	var weekly := main.find_child("GoalsPeriod/weekly",true,false) as Button
+	var weekly: Button
+	for node in main.find_children("*","Button",true,false):
+		var name_value := String(node.name).to_lower()
+		if name_value.begins_with("goalsperiod") and name_value.contains("weekly"):
+			weekly = node as Button
+			break
 	if not _check(weekly != null and weekly.size.y >= 44 and weekly.accessibility_name.contains("Weekly"),"Weekly missions are inaccessible"):return
 	weekly.pressed.emit()
 	if not _check(String(main.get("_goals_focus")) == "weekly","Weekly focus tap failed"):return
