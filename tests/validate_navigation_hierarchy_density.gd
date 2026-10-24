@@ -74,7 +74,7 @@ func _goal_action_count(main: Control, period: String) -> int:
 		if node.is_queued_for_deletion() or not (node as Control).is_visible_in_tree():
 			continue
 		var name_value := String(node.name).to_lower()
-		if name_value.begins_with("goalaction") and name_value.contains(period):
+		if name_value.begins_with("goalaction_%s_" % period) or name_value.begins_with("goalaction/%s/" % period):
 			count += 1
 	return count
 
