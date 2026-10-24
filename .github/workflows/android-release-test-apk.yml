@@ -6,6 +6,13 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/android-release-test-apk.yml"
+      # Verify release-mode APKs whenever shipped gameplay/navigation changes.
+      - "scripts/ui/**"
+      - "scripts/game/**"
+      - "scripts/core/**"
+      - "scenes/**"
+      - "tests/validate_block_magnetic_target.gd"
+      - "tests/validate_async_game_scene_launch.gd"
 
 # Release-optimized, signed with a temporary QA certificate.
 # This is NOT Google Play production signing; advertising stays in test mode.
