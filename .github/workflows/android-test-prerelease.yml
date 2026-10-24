@@ -1,94 +1,21 @@
-name: UNJAM Verified Android Test Prerelease
+name: UNJAM Historical Test Prerelease (retired)
 
+# The 1.0.12 debug-signed test prerelease already exists. Do not trigger a
+# frozen 1.0.12 publication workflow after every new Android version.
+# Current release-mode QA builds use android-release-test-apk.yml.
+# Play production bundles use android-release.yml, with mandatory live gates.
 on:
-  workflow_run:
-    workflows: ["Android Latest Test APK"]
-    types: [completed]
-    branches: [main]
+  workflow_dispatch:
 
-# The release is deliberately a *prerelease*. It carries test ad units and
-# debug signing; this must never be described as the Play production build.
 permissions:
-  actions: read
-  contents: write
-
-concurrency:
-  group: unjam-android-test-prerelease
-  cancel-in-progress: false
+  contents: read
 
 jobs:
-  publish:
-    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
+  historical-release-info:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    env:
-      GH_TOKEN: ${{ github.token }}
-      GH_REPO: ${{ github.repository }}
-      BUILD_SHA: ${{ github.event.workflow_run.head_sha }}
-      APK_RUN_ID: ${{ github.event.workflow_run.id }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-          fetch-depth: 0
-      - name: Require approved release version and current main
-        shell: bash
+      - name: Explain current release routes
         run: |
-          set -euo pipefail
-          # This workflow is added after the originating APK run starts;
-          # allow a successful, exact-commit build that remains an ancestor
-          # of today's main (no external PR or divergent fork).
-          git merge-base --is-ancestor "$BUILD_SHA" HEAD
-          grep -Fx 'version/code=12' export_presets.cfg
-          grep -Fx 'version/name="1.0.12"' export_presets.cfg
-          grep -Fx 'test_mode=false' project.godot
-          grep -Fx 'admob_test_mode=true' project.godot
-      - name: Download artifact from the exact successful APK build
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p release
-          gh run download "$APK_RUN_ID" --repo "$GH_REPO" --name unjam-latest-debug-apk --dir release
-          test -s release/unjam-latest-debug.apk
-          test -s release/unjam-latest-debug.apk.sha256
-          test -s release/unjam-latest-debug.commit
-          test -s release/unjam-latest-debug-badging.txt
-          test "$(cat release/unjam-latest-debug.commit)" = "$BUILD_SHA"
-          grep -F "package: name='com.eghosa.unjamgam' versionCode='12' versionName='1.0.12-test'" release/unjam-latest-debug-badging.txt
-          EXPECTED="$(awk '{print $1}' release/unjam-latest-debug.apk.sha256)"
-          ACTUAL="$(sha256sum release/unjam-latest-debug.apk | awk '{print $1}')"
-          test "$EXPECTED" = "$ACTUAL"
-          cp release/unjam-latest-debug.apk release/UNJAM-1.0.12-test-android.apk
-          (cd release && sha256sum UNJAM-1.0.12-test-android.apk > UNJAM-1.0.12-test-android.apk.sha256)
-          cat > release/RELEASE-NOTES.txt <<'NOTES'
-          UNJAM 1.0.12 – Android Internal Test Prerelease
-
-          Build: Android arm64 test APK. Not Google Play production.
-          Changes: reduced repeated touch/ghost work, unchanged magnetic
-          targets no longer repaint all 64 cells, bounded cell material cache.
-          Includes recent magnetic accuracy, navigation, localization and
-          hint-payment reliability improvements.
-
-          IMPORTANT: Debug-signed, official AdMob TEST ads. Play Console
-          production upload remains blocked until a new keystore/upload SHA-1
-          and approved Block campaign review hash are configured in CI and
-          Play billing/catalog and internal tests pass.
-          NOTES
-      - name: Publish exactly one verified prerelease for version 1.0.12
-        shell: bash
-        run: |
-          set -euo pipefail
-          TAG=v1.0.12-rc.1
-          if gh release view "$TAG" --repo "$GH_REPO" >/dev/null 2>&1; then
-            echo "Prerelease $TAG already exists; leave immutable."
-            exit 0
-          fi
-          gh release create "$TAG" \
-            --repo "$GH_REPO" \
-            --target "$BUILD_SHA" \
-            --title "UNJAM 1.0.12 — Android test prerelease (NOT Play production)" \
-            --prerelease \
-            --notes-file release/RELEASE-NOTES.txt \
-            release/UNJAM-1.0.12-test-android.apk \
-            release/UNJAM-1.0.12-test-android.apk.sha256 \
-            release/unjam-latest-debug.commit
+          echo "Historical v1.0.12-rc.1 is immutable and already published."
+          echo "For installable test builds run UNJAM Installable Release-Mode QA APK."
+          echo "For a Play-signable AAB run Android Production Release."

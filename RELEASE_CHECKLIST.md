@@ -4,7 +4,7 @@ The repository is hardened to fail closed until production services are configur
 
 ## Fresh Google Play app reset
 
-Current Android export and release workflow defaults are **versionName 1.0.11 / versionCode 11**. The fresh Google Play listing and new upload-key configuration remain account-side release prerequisites; do not interpret a successful unsigned v11 fallback as a signed, Play-accepted build.
+Current Android export and release workflow defaults are **versionName 1.0.16 / versionCode 16**. The fresh Google Play listing and new upload-key configuration remain account-side release prerequisites; do not interpret a successful QA APK as a signed, Play-accepted build.
 
 - [ ] Create the replacement app in Play Console.
 - [ ] Use the production package `com.eghosa.unjamgam` consistently in Google Play, AdMob, billing verification, and release builds.
@@ -14,8 +14,8 @@ Current Android export and release workflow defaults are **versionName 1.0.11 / 
 - [ ] Add the new upload certificate SHA-1 to GitHub Actions secret `UNJAM_ANDROID_UPLOAD_SHA1`.
 - [x] Bind the selected Supabase project URL and publishable key in `project.godot` (public client configuration).
 - [x] Bind the production developer website in `project.godot` to `https://unjam-site-prod-production.up.railway.app`; `UNJAM_DEVELOPER_WEBSITE_URL` remains an optional CI override. Production release checks the crawler hostname root for `app-ads.txt`.
-- [ ] Run the `Android Production Release` workflow with `version_name=1.0.11` and `version_code=11`; download the verified release AAB and upload that AAB to the new Play listing.
-- [ ] After the first accepted Play upload, every subsequent upload must use a higher `versionCode`.
+- [ ] Run the `Android Production Release` workflow with `version_name=1.0.16` and `version_code=16`; download the verified release AAB and upload that AAB to the new Play listing.
+- [ ] Confirm the highest version code previously accepted by Play Console before uploading; use a higher `versionCode` if 16 has already been used. Every subsequent upload must increase it.
 
 Do not reuse the deleted app's old private upload key merely because it still exists. The replacement release workflow validates the new certificate fingerprint supplied through `UNJAM_ANDROID_UPLOAD_SHA1` and will reject a keystore whose SHA-1 does not match that secret.
 
@@ -44,8 +44,8 @@ Configured in code/CI:
 
 Still account-side / external:
 
-- [x] Publish `app-ads.txt` at the **hostname root** of the production Railway developer website; live monetization readiness has verified the expected AdMob seller record there.
-- [x] Confirm the configured Railway privacy policy URL is publicly reachable without login; live monetization readiness has verified it.
+- [ ] Confirm the **currently deployed** production Railway developer website serves `app-ads.txt` at the hostname root with HTTP 200 and the expected seller record. A past successful check is not proof of present availability.
+- [ ] Confirm the **currently deployed** Railway privacy policy URL serves the full policy with HTTP 200 and no login. Recheck on each release.
 - [x] Purchase-verification backend is implemented for Google Play Developer API verification and production purchases fail closed until the live HTTPS endpoint is injected at release time.
 - [x] Supabase Edge Function exposes a readiness action that verifies Postgres, Google Play purchase verification, Voided Purchases authorization, and hardened monetization capabilities; production release fails if any dependency is unavailable.
 - [x] Purchase verification is idempotent by SHA-256 purchase-token fingerprint in Supabase Postgres. `unjam_starter_pack` and other non-consumable entitlements cannot be granted twice from duplicate callbacks when the backend is live.
@@ -93,3 +93,9 @@ Do not change a truthful declaration merely to bypass review. If a genuinely use
 ## Production decision
 
 Do not submit to Production until the exact release commit is green in CI, the final AAB passes Internal Testing, the organization-only declaration issue is resolved accurately, the privacy/Data Safety/ads declarations match the shipped build, the purchase-verification backend is live and idempotent across reinstall/device restore, and app-ads.txt is reachable at the root hostname of the developer website.
+
+## Production website validation
+
+The production site is deployed separately from the Android application. The Railway service must build the root `Dockerfile` and serve `/`, `/privacy.html`, `/support.html`, `/assets/site.css`, `/assets/icon.svg`, `/robots.txt`, `/sitemap.xml`, and `/app-ads.txt`. CI tests these routes via a running Nginx container. The release verifier checks the live developer hostname, not just files in Git.
+
+Do not mark Google Play production ready from a successful QA APK: it uses temporary QA signing and test advertising. The Android Production Release workflow must pass for the exact release commit with the correct upload key, live monetization and Google Play product catalog; a signed AAB must then be accepted by Play Console and installed through internal testing before production submission.

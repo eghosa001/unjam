@@ -1,0 +1,81 @@
+name: UNJAM Public Site Smoke
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "Dockerfile"
+      - ".dockerignore"
+      - "nginx.conf"
+      - "index.md"
+      - "privacy.md"
+      - "support.md"
+      - "app-ads.txt"
+      - "assets/site.css"
+      - "assets/icon.svg"
+      - ".github/workflows/public-site.yml"
+  pull_request:
+    paths:
+      - "Dockerfile"
+      - ".dockerignore"
+      - "nginx.conf"
+      - "index.md"
+      - "privacy.md"
+      - "support.md"
+      - "app-ads.txt"
+      - "assets/site.css"
+      - "assets/icon.svg"
+      - ".github/workflows/public-site.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build production static website
+        run: docker build --pull -t unjam-public-site:ci .
+      - name: Verify all public resources from running production container
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run -d --rm --name unjam-site-ci -p 127.0.0.1:18080:8080 unjam-public-site:ci
+          trap 'docker logs unjam-site-ci || true; docker rm -f unjam-site-ci || true' EXIT
+          for attempt in $(seq 1 25); do
+            if curl -fsS http://127.0.0.1:18080/healthz >/dev/null; then break; fi
+            sleep 1
+          done
+          python3 - <<'PY'
+          import urllib.request
+          from urllib.error import HTTPError
+          base = "http://127.0.0.1:18080"
+          expected = {
+              "/": ("text/html", b"<!doctype html>"),
+              "/privacy.html": ("text/html", b"Privacy Policy"),
+              "/support.html": ("text/html", b"UNJAM Support"),
+              "/assets/site.css": ("text/css", b"{"),
+              "/assets/icon.svg": ("image/svg+xml", b"<svg"),
+              "/app-ads.txt": ("text/plain", b"google.com, pub-7517898921176341, DIRECT, f08c47fec0942fa0"),
+              "/robots.txt": ("text/plain", b"User-agent:"),
+              "/sitemap.xml": ("xml", b"<urlset"),
+              "/healthz": ("text/plain", b"ok"),
+          }
+          for path, (ctype, needle) in expected.items():
+              with urllib.request.urlopen(base + path, timeout=5) as response:
+                  body = response.read()
+                  assert response.status == 200, (path, response.status)
+                  assert ctype in response.headers.get("Content-Type", ""), (path, response.headers)
+                  assert needle.lower() in body.lower(), (path, body[:200])
+              print("PASS", path)
+          for path in ("/nonexistent", "/index.md", "/privacy.md"):
+              try:
+                  urllib.request.urlopen(base + path, timeout=5)
+              except HTTPError as e:
+                  assert e.code == 404, (path, e.code)
+              else:
+                  raise AssertionError("Unexpected public source file: " + path)
+          PY

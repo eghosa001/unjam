@@ -1,6 +1,11 @@
 *
 !Dockerfile
+!.dockerignore
+!nginx.conf
 !index.md
 !privacy.md
 !support.md
 !app-ads.txt
+!assets/
+!assets/site.css
+!assets/icon.svg
