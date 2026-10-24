@@ -33,6 +33,9 @@ func _run() -> void:
 			break
 	if not _check(weekly != null and weekly.size.y >= 44 and weekly.accessibility_name.contains("Weekly"),"Weekly missions are inaccessible"):return
 	weekly.pressed.emit()
+	# Older rendered controls remain queued for deletion until the frame ends.
+	# Count only the settled view, not two transient layout trees.
+	await _frames(2)
 	if not _check(String(main.get("_goals_focus")) == "weekly","Weekly focus tap failed"):return
 	if not _check(_goal_action_count(main,"weekly") == 3 and _goal_action_count(main,"daily") == 0,"Weekly view fails to declutter or hides missions"):return
 	var guide := main.find_child("GoalsRewardGuideText",true,false) as Label
