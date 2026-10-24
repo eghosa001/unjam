@@ -215,6 +215,8 @@ static func apply(canvas: Control, surface: String, dark: bool) -> void:
 			fill = accent if b.mouse_filter == Control.MOUSE_FILTER_IGNORE else (Color("#354054") if dark else Color("#E6E0F0"))
 		elif id.begins_with("Competition"):
 			fill = Color("#755AAE") if dark else Color("#6F51A4")
+		elif id.begins_with("GoalsPeriod"):
+			fill = (Color("#B88945") if dark else Color("#A56D2C")) if b.mouse_filter == Control.MOUSE_FILTER_IGNORE else (Color("#344A5A") if dark else Color("#DCE9E7"))
 		elif id.begins_with("Goals"):
 			fill = Color("#A16F33") if dark else Color("#B47732")
 			if id.contains("Season"): fill = Color("#795CC0") if dark else Color("#7152AC")

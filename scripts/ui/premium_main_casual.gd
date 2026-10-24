@@ -47,6 +47,14 @@ var _settings_theme_toggle_pending := false
 # Back from Settings restores the surface that opened it, not always Home.
 # Theme and toggle rebuilds retain this origin until Settings is dismissed.
 var _settings_return_surface := "home"
+# Two mission views share one focused Goals screen. Season and daily claim stay visible.
+var _goals_focus := "daily"
+# Remember the parent destination for secondary screens. Back is contextual,
+# while the five stable bottom tabs remain the global escape routes.
+var _goals_return_surface := "home"
+var _profile_return_surface := "home"
+var _friends_return_surface := "profile"
+var _compete_return_surface := "home"
 var _profile_game := "rescue_rush"
 var _ranking_game := "rescue_rush"
 var _friends_period := "all_time"
@@ -767,12 +775,14 @@ func _finish_settings_theme_toggle() -> void:
 
 
 func build_goals() -> void:
+	if current_surface != "goals":
+		_goals_return_surface = current_surface
 	current_surface = "goals"
 	_remove_active_game()
 	var canvas := _figma_surface("goals", Color("#e8e0c8"))
 	var ready := MetaProgressionManager.ready_claim_count()
 	var goals_card_fill := Color("#27282b") if _dark() else Color("#fffef8")
-	_figma_header(canvas, "GOALS", "Live rewards • %d ready" % ready, "◈ +", FIGMA_ORANGE, Callable(self,"build_home"), Callable(self,"_figma_open_shop"))
+	_figma_header(canvas, "GOALS", "Live rewards • %d ready" % ready, "◈ +", FIGMA_ORANGE, Callable(self,"_return_from_goals"), Callable(self,"_figma_open_shop"))
 
 	var login := MetaProgressionManager.daily_login_info()
 	_figma_card(canvas, "GoalsLogin", Rect2(17,91,354,72), goals_card_fill, Color(FIGMA_ORANGE,0.36), 17)
@@ -791,23 +801,49 @@ func build_goals() -> void:
 		login_button.pressed.connect(_claim_daily_login)
 	login_button.tooltip_text = login_button.accessibility_name
 
-	_figma_text(canvas, "DAILY MISSIONS", Rect2(19,178,180,20), 15, FIGMA_GOLD)
+	# Progressive disclosure is essential here: six simultaneous mission rows
+	# produced a visually dense checklist. Keep daily check-in and the Season
+	# Journey always visible; let the player focus on one mission period.
 	var daily_rows := MetaProgressionManager.daily_goals()
-	for i in range(daily_rows.size()):
-		_figma_goal_row(canvas, daily_rows[i] as Dictionary, "daily", 202.0 + float(i) * 50.0)
-
-	_figma_text(canvas, "WEEKLY MISSIONS", Rect2(19,356,190,20), 15, FIGMA_GOLD)
 	var weekly_rows := MetaProgressionManager.weekly_goals()
-	for i in range(weekly_rows.size()):
-		_figma_goal_row(canvas, weekly_rows[i] as Dictionary, "weekly", 380.0 + float(i) * 50.0)
+	var daily_ready := 0
+	var weekly_ready := 0
+	for row in daily_rows:
+		if bool((row as Dictionary).get("claimable",false)):
+			daily_ready += 1
+	for row in weekly_rows:
+		if bool((row as Dictionary).get("claimable",false)):
+			weekly_ready += 1
+	for tab_data in [
+		["daily","DAILY",19.0,daily_ready],
+		["weekly","WEEKLY",200.0,weekly_ready],
+	]:
+		var period := String(tab_data[0])
+		var selected := _goals_focus == period
+		var tab_label := "%s  • %d READY" % [String(tab_data[1]),int(tab_data[3])] if int(tab_data[3]) > 0 else String(tab_data[1])
+		var tab_color := Color("#A47536") if selected else (Color("#3B4656") if _dark() else Color("#DDE9E7"))
+		var tab_ink := Color.WHITE if selected or _dark() else FIGMA_INK
+		var tab := _figma_button(canvas,"GoalsPeriod/%s" % period,tab_label,
+			Rect2(float(tab_data[2]),181,171,44),tab_color,Callable(),tab_ink,14,12)
+		tab.accessibility_name = "%s missions%s" % [period.capitalize(),", %d rewards ready" % int(tab_data[3]) if int(tab_data[3]) > 0 else ""]
+		tab.tooltip_text = tab.accessibility_name
+		if selected:
+			tab.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		else:
+			tab.pressed.connect(_choose_goals_period.bind(period))
+	var mission_heading := "DAILY MISSIONS" if _goals_focus == "daily" else "WEEKLY MISSIONS"
+	_figma_text(canvas,mission_heading,Rect2(19,241,241,20),15,FIGMA_GOLD)
+	var visible_rows: Array = daily_rows if _goals_focus == "daily" else weekly_rows
+	for i in range(visible_rows.size()):
+		_figma_goal_row(canvas, visible_rows[i] as Dictionary, _goals_focus, 269.0 + float(i) * 59.0)
 
 	var season := MetaProgressionManager.season_info()
-	_figma_card(canvas, "GoalsSeason", Rect2(17,548,354,134), goals_card_fill, Color("#7a57e0"), 18)
-	_figma_text(canvas, "SEASON JOURNEY", Rect2(31,560,190,22), 16, Color("#7a57e0"))
-	_figma_text(canvas, "%d PTS • %d/%d TIERS" % [int(season.get("points",0)),int(season.get("completed",0)),int(season.get("tiers",0))], Rect2(31,587,210,20), 13, FIGMA_MUTED)
+	_figma_card(canvas, "GoalsSeason", Rect2(17,463,354,163), goals_card_fill, Color("#7a57e0"), 18)
+	_figma_text(canvas, "SEASON JOURNEY", Rect2(31,477,190,22), 16, Color("#7a57e0"))
+	_figma_text(canvas, "%d PTS • %d/%d TIERS" % [int(season.get("points",0)),int(season.get("completed",0)),int(season.get("tiers",0))], Rect2(31,505,210,20), 13, FIGMA_MUTED)
 	var next_target := int(season.get("next_target",0))
 	var journey_detail := "ALL TIERS COMPLETE" if next_target <= 0 else "NEXT REWARD AT %d PTS" % next_target
-	var journey_label := _figma_text(canvas, journey_detail, Rect2(31,613,202,20), 13, FIGMA_MUTED)
+	var journey_label := _figma_text(canvas, journey_detail, Rect2(31,535,202,20), 13, FIGMA_MUTED)
 	journey_label.name = "GoalsSeasonNextReward"
 	_fit_single_line_control_text(journey_label,198.0,13,12)
 	# Show measurable progress to the next tier rather than only an
@@ -825,10 +861,10 @@ func build_goals() -> void:
 	season_bar.add_theme_stylebox_override("fill",FigmaReferenceCanvas.solid_box(Color("#b58bff") if _dark() else Color("#734acb"),3))
 	season_bar.accessibility_name = "Season Journey: %d of %d points toward the next tier" % [season_points,goal_for_bar]
 	season_bar.tooltip_text = season_bar.accessibility_name
-	FigmaReferenceCanvas.set_rect(season_bar,31,637,202,6)
+	FigmaReferenceCanvas.set_rect(season_bar,31,565,202,6)
 	canvas.add_child(season_bar)
 	var season_ready := int(season.get("ready",0))
-	var season_button := _figma_button(canvas,"GoalsSeasonClaim","CLAIM %d" % season_ready if season_ready > 0 else "IN PROGRESS",Rect2(246,575,106,46),FIGMA_GREEN if season_ready > 0 else Color("#7d8a94"),Callable(),Color.WHITE,13,11)
+	var season_button := _figma_button(canvas,"GoalsSeasonClaim","CLAIM %d" % season_ready if season_ready > 0 else "IN PROGRESS",Rect2(246,493,106,46),FIGMA_GREEN if season_ready > 0 else Color("#7d8a94"),Callable(),Color.WHITE,13,11)
 	season_button.disabled = season_ready <= 0
 	if season_ready > 0:
 		season_button.accessibility_name = "Claim %d earned Season Journey rewards" % season_ready
@@ -839,9 +875,54 @@ func build_goals() -> void:
 		season_button.add_theme_color_override("font_disabled_color",Color("#f1f5ff") if _dark() else Color("#324255"))
 		season_button.accessibility_name = "Season Journey reward locked. Earn %d points to reach the next tier" % maxi(0,next_target - season_points) if next_target > 0 else "All Season Journey tiers complete"
 	season_button.tooltip_text = season_button.accessibility_name
-	_figma_text(canvas, "First clears +10 • Daily Cup +25 • Replays +3", Rect2(31,652,310,20), 12, FIGMA_MUTED)
+	_figma_text(canvas, "First clears +10 • Daily Cup +25 • Replays +3", Rect2(31,596,310,20), 12, FIGMA_MUTED)
+	# Reward types have different accounting rules. A short plain-language
+	# explanation prevents a coin claim being mistaken for Season PTS.
+	_figma_card(canvas,"GoalsRewardGuide",Rect2(17,642,354,76),goals_card_fill,Color(FIGMA_CYAN,0.28),16)
+	_figma_text(canvas,"HOW REWARDS WORK",Rect2(31,652,235,20),14,FIGMA_CYAN)
+	var guide_line := _figma_text(canvas,"Check-in pays coins • Puzzles earn Season points.",Rect2(31,682,325,23),12,FIGMA_MUTED)
+	guide_line.name = "GoalsRewardGuideText"
+	guide_line.tooltip_text = guide_line.text
+	guide_line.accessibility_name = guide_line.text
+	_fit_single_line_control_text(guide_line,315.0,12,11)
+
 	_figma_bottom_nav(canvas,"")
 	preload("res://scripts/ui/premium_v3_meta_skin.gd").apply(canvas, "goals", _dark())
+
+func _return_from_goals() -> void:
+	match _goals_return_surface:
+		"daily": build_daily_games()
+		"collection": build_collection()
+		"profile": build_profile()
+		_: build_home()
+
+func _return_from_profile() -> void:
+	match _profile_return_surface:
+		"collection": build_collection()
+		"daily": build_daily_games()
+		"compete": build_compete_leaderboard(false)
+		_: build_home()
+
+func _return_from_friends() -> void:
+	match _friends_return_surface:
+		"compete": build_compete_leaderboard(false)
+		"profile": build_profile()
+		"daily": build_daily_games()
+		_: build_home()
+
+func _return_from_compete() -> void:
+	match _compete_return_surface:
+		"friends": build_friends(false)
+		"daily": build_daily_games()
+		"profile": build_profile()
+		_: build_home()
+
+func _choose_goals_period(period: String) -> void:
+	if period not in ["daily","weekly"] or _goals_focus == period:
+		return
+	_goals_focus = period
+	FeedbackManager.tap()
+	build_goals()
 
 func _figma_goal_row(canvas: Control, row: Dictionary, period: String, y: float) -> void:
 	var claimable := bool(row.get("claimable",false))
@@ -906,11 +987,13 @@ func _claim_next_season_reward() -> void:
 	build_goals()
 
 func build_profile() -> void:
+	if current_surface != "profile" and current_surface != "friends":
+		_profile_return_surface = current_surface
 	current_surface = "profile"
 	_remove_active_game()
 	var canvas := _figma_surface("profile", Color("#d8e9f5"))
 	var profile_card_fill := Color("#27282b") if _dark() else Color("#fffef8")
-	_figma_header(canvas, "PROFILE", "LV %d • PLAYER STATS" % MetaProgressionManager.player_level(), "◈ +", FIGMA_CYAN, Callable(self,"build_home"), Callable(self,"_figma_open_shop"))
+	_figma_header(canvas, "PROFILE", "LV %d • PLAYER STATS" % MetaProgressionManager.player_level(), "◈ +", FIGMA_CYAN, Callable(self,"_return_from_profile"), Callable(self,"_figma_open_shop"))
 
 	_figma_card(canvas,"ProfileIdentity",Rect2(17,91,354,70),profile_card_fill,Color(FIGMA_CYAN,0.34),17)
 	var name_edit := LineEdit.new()
@@ -1022,6 +1105,8 @@ func _save_profile_name(name_edit: LineEdit) -> void:
 	build_profile()
 
 func build_friends(refresh_remote: bool = true) -> void:
+	if current_surface != "friends":
+		_friends_return_surface = current_surface
 	current_surface = "friends"
 	_remove_active_game()
 	if refresh_remote:
@@ -1037,7 +1122,7 @@ func build_friends(refresh_remote: bool = true) -> void:
 		"Progress • private codes",
 		"↻",
 		Color("#7a57e0"),
-		Callable(self,"build_profile"),
+		Callable(self,"_return_from_friends"),
 		Callable(self,"_refresh_friends")
 	)
 
@@ -1083,10 +1168,17 @@ func build_friends(refresh_remote: bool = true) -> void:
 	_figma_text(canvas,"%s • %s" % [game_title,period_title],Rect2(31,423,250,20),14,Unjam3DTheme.game_accent(_ranking_game))
 	var rows := CompetitionManager.friends_all_time() if _friends_period == "all_time" else CompetitionManager.friends_weekly()
 	if rows.size() <= 1 and count <= 0:
-		var empty_title := _figma_text(canvas,"Share your code to connect.",Rect2(38,474,310,28),14,FIGMA_INK,true)
-		empty_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		var empty_detail := _figma_text(canvas,"Friends appear here by levels cleared.",Rect2(38,512,310,42),12,FIGMA_MUTED,true)
-		_fit_wrapped_text(empty_detail,300.0,12,11)
+		# This is a genuine empty state, not an empty leaderboard occupying
+		# nearly a third of the phone. Explain the exact next action.
+		var empty_title := _figma_text(canvas,"BUILD YOUR CIRCLE",Rect2(34,466,300,25),17,FIGMA_INK)
+		empty_title.name = "FriendsEmptyTitle"
+		_figma_text(canvas,"1   COPY YOUR FRIEND CODE",Rect2(35,506,309,20),13,FIGMA_MUTED)
+		_figma_text(canvas,"2   SHARE IT WITH A PLAYER",Rect2(35,533,309,20),13,FIGMA_MUTED)
+		_figma_text(canvas,"3   COMPARE YOUR PROGRESS",Rect2(35,560,309,20),13,FIGMA_MUTED)
+		var invite := _figma_button(canvas,"FriendsEmptyCopyAction","COPY MY CODE",Rect2(84,599,222,44),Color("#2386A8"),Callable(self,"_copy_friend_code"),Color.WHITE,14,12)
+		invite.disabled = friend_code.is_empty()
+		invite.accessibility_name = "Copy your friend code to invite another player"
+		invite.tooltip_text = invite.accessibility_name
 	else:
 		var shown := mini(4,rows.size())
 		for i in range(shown):
@@ -1472,10 +1564,13 @@ func build_daily_games() -> void:
 	_figma_daily_card(canvas, "block_puzzle", 363, bonus)
 	_figma_daily_progress(canvas)
 	_figma_daily_tip(canvas, bonus)
-	# Prominent one-tap leaderboard access, above the persistent bottom nav.
-	# Not hidden behind Goals, Friends or Settings; daily scores remain
-	# distinct from the campaign weekly/all-time rankings.
-	var board := _figma_button(canvas,"DailyLeaderboardOpen","★ VIEW LEADERBOARD",Rect2(31,692,328,48),Color("#7052d8"),Callable(self,"show_leaderboard_popup").bind("today"),Color.WHITE,13,14)
+	# Goals were formerly buried behind unrelated Profile/Collection flows.
+	# Give Daily two equal, distinct destinations without adding another row:
+	# Rewards & Missions, and today's live Leaderboard.
+	var goals_action := _figma_button(canvas,"DailyGoalsOpen","✦ GOALS",Rect2(31,692,155,48),Color("#B47A37"),Callable(self,"build_goals"),Color.WHITE,13,13)
+	goals_action.tooltip_text = "Daily and weekly missions, Season Journey and earned coin rewards"
+	goals_action.accessibility_name = "Open Goals and reward missions"
+	var board := _figma_button(canvas,"DailyLeaderboardOpen","★ RANKINGS",Rect2(199,692,160,48),Color("#7052d8"),Callable(self,"show_leaderboard_popup").bind("today"),Color.WHITE,13,13)
 	board.tooltip_text = "Open today's player rankings, switch to weekly or all-time"
 	board.accessibility_name = "View today's challenge leaderboard"
 	# Daily is a primary destination; campaign rankings remain a separate Compete flow.
@@ -1601,6 +1696,8 @@ func _claim_daily_login_from_daily() -> void:
 	build_daily_games()
 
 func build_compete_leaderboard(refresh_remote: bool = true) -> void:
+	if current_surface != "compete":
+		_compete_return_surface = current_surface
 	current_surface = "compete"
 	_remove_active_game()
 	if refresh_remote:
@@ -1610,7 +1707,7 @@ func build_compete_leaderboard(refresh_remote: bool = true) -> void:
 		CompetitionManager.refresh_snapshot()
 	var canvas := _figma_surface("compete", Color("#ead9b8"))
 	var accent := Unjam3DTheme.game_accent(_ranking_game)
-	_figma_header(canvas, "RANKINGS", "CAMPAIGN RANKINGS", "↻", accent, Callable(self,"build_home"), Callable(self,"_refresh_competition_rankings"))
+	_figma_header(canvas, "RANKINGS", "CAMPAIGN RANKINGS", "↻", accent, Callable(self,"_return_from_compete"), Callable(self,"_refresh_competition_rankings"))
 	_figma_compete_game_tabs(canvas, 91.0, false)
 
 	_figma_card(canvas,"CompetitionPlayerProgress",Rect2(17,145,354,60),Color("#282a2e") if _dark() else Color("#fffaf2"),Color(accent,0.38),16)
