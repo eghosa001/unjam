@@ -280,6 +280,42 @@ func _run() -> void:
 		piece._input(bottom_up)
 		if not _check(board.placed == Vector2i(column,7),
 				"Valid bottom-row drop rejected at column %d" % column):return
+	# Real phone video: the first horizontal three-block briefly appeared on
+	# the last row but returned to the tray after Android's native drag ended.
+	# Its touchscreen ownership must survive the parallel mouse drag ending;
+	# the same green target must be committed on the first finger-up.
+	piece.configure([Vector2i(0,0), Vector2i(1,0), Vector2i(2,0)], false, Color("#f3a24e"), 0)
+	board.placed = Vector2i(-1,-1)
+	var triple_tile := float(piece.call("_tray_cell_size",2,0))
+	var triple_press := InputEventScreenTouch.new()
+	triple_press.index = 0
+	triple_press.pressed = true
+	triple_press.position = (piece.size - Vector2(3.0,1.0) * triple_tile) * 0.5 + Vector2.ONE * (triple_tile * 0.5)
+	piece._gui_input(triple_press)
+	var triple_move := InputEventScreenDrag.new()
+	triple_move.index = 0
+	triple_move.position = Vector2(57.0,57.0 + 36.0 * 7.0 + scaled_lift)
+	piece._input(triple_move)
+	if not _check(piece._preview_valid and piece._preview_snap_origin == Vector2i(0,7),
+			"First three-block pickup never magnetized to the lowest row"):return
+	piece.notification(Control.NOTIFICATION_DRAG_END)
+	if not _check(piece.touch_drag_started and piece._preview_valid and piece.touch_preview != null,
+			"An unrelated native mouse drag end erased the active Android finger's green snap"):return
+	# One sub-cell jitter sample at the eighth-row edge cannot cause the
+	# preview to flicker red and bounce the brick back into its original slot.
+	var triple_jitter := InputEventScreenDrag.new()
+	triple_jitter.index = 0
+	triple_jitter.position = triple_move.position + Vector2(5.0,13.0)
+	piece._input(triple_jitter)
+	if not _check(piece._preview_valid and piece._preview_snap_origin == Vector2i(0,7),
+			"Sub-cell phone movement broke an acquired first-drag magnetic lock"):return
+	var triple_up := InputEventScreenTouch.new()
+	triple_up.index = 0
+	triple_up.pressed = false
+	triple_up.position = triple_jitter.position + Vector2(1.0,38.0)
+	piece._input(triple_up)
+	if not _check(board.placed == Vector2i(0,7),
+			"Recorded opening three-tile placement bounced back on finger-up"):return
 	# A two-tile column grabbed by its LOWER tile should fill the eighth
 	# row without sending its top tile outside the grid or missing finger-up.
 	piece.configure([Vector2i(0,0), Vector2i(0,1)],false,Color("#5396fa"),0)

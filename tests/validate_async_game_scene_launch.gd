@@ -13,26 +13,23 @@ func _run() -> void:
 	root.add_child(main)
 	await _frames(6)
 
-	# Start a cold game, immediately leave and confirm any pending thread never
-	# teleports the player back into the previous game after it completes.
+	# Cold scene loading is internal: the already rendered Home/Level screen
+	# stays on display. The old fullscreen GameLoadingCard is forbidden.
 	main.call("start_multi_level","water_sort",1,false)
 	var state := String(main.get("current_surface"))
-	if not _check(state in ["game_loading","game"],"Cold game request vanished"):return
-	if state == "game_loading":
-		var loader := main.find_child("GameLoadingCard",true,false)
-		var cancel := main.find_child("GameLoadingCancel",true,false) as Button
-		if not _check(loader != null and cancel != null and cancel.size.y >= 48, "Cold scene has no accessible cancellable loader"):return
+	if not _check(state in ["home", "levels", "game"], "Cold game unexpectedly navigated to a placeholder"):return
+	if not _check(main.find_child("GameLoadingCard",true,false) == null, "Game launch created a fullscreen loading page"):return
+	if not _check(not source.contains('current_surface = "game_loading"') and not source.contains("GameLoadingCard"),
+			"Fullscreen/blank game-loading route is still present in the launcher"):return
 	main.call("force_back_from_game")
 	await _frames(12)
-	if not _check(main.get("active_game") == null and String(main.get("current_surface")) == "levels", "Cancelled load must return to that game's levels"):return
-	# Even when a scene is cached, loading Back returns directly to the
-	# selected game's level browser without passing Home or Choose Game.
-	main.set("current_surface","game_loading")
+	if not _check(main.get("active_game") == null and String(main.get("current_surface")) == "levels", "Cancelled cold load must return to the game's levels"):return
+	# A pending Play request can also be cancelled without creating a screen.
 	main.set("_pending_game_launch",{"game_id":"water_sort","level":1,"daily":false})
-	main.call("_show_game_loading",{"game_id":"water_sort"})
 	main.call("force_back_from_game")
-	if not _check(String(main.get("current_surface")) == "levels" and main.get("active_game") == null, "Loading Back failed to return to the selected game's levels"):return
-	if not _check((main.get("_pending_game_launch") as Dictionary).is_empty(), "Cancelled launch retained stale pending request"):return
+	if not _check(String(main.get("current_surface")) == "levels" and main.get("active_game") == null,
+			"Pending invisible load did not return to the level browser"):return
+	if not _check((main.get("_pending_game_launch") as Dictionary).is_empty(), "Cancelled launch retained pending request"):return
 
 	# The second request supersedes the first, even if the two different
 	# resource threads finish in the opposite order.
@@ -59,7 +56,7 @@ func _run() -> void:
 	# Let queued-free gameplay effects, detached loaders and deferred intro
 	# callbacks settle before SceneTree teardown and leak accounting.
 	await _frames(12)
-	print("ASYNC_GAME_SCENE_LAUNCH_OK: loading cancellation, concurrent requests, route recovery and rapid navigation")
+	print("ASYNC_GAME_SCENE_LAUNCH_OK: seamless loading, cancellation, concurrent requests, route recovery and rapid navigation")
 	quit(0)
 
 func _wait_for_active(main: Control, max_frames: int) -> Control:
