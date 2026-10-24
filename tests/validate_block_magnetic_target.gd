@@ -339,18 +339,22 @@ func _run() -> void:
 	piece._input(bottom_vertical_up)
 	if not _check(board.placed == Vector2i(4,6),
 			"Bottom-row vertical drop bounced back on finger-up"):return
-	# Movement significantly beyond the last visible legal cell must still
-	# fail; the new release tolerance must not place a distant stale ghost.
+	# Reproduce the Android failure at the bottom row: the ghost is visibly
+	# green at (4,6), but the release sample jumps well beyond the last row.
+	# Finger-up must honor the last PREVIEW, not perform a new invisible
+	# tolerance check that bounces a legitimately green tile to its tray.
 	board.placed = Vector2i(-1,-1)
 	piece._gui_input(bottom_grab)
 	piece._input(bottom_vertical_move)
+	if not _check(piece._preview_valid and piece._preview_snap_origin == Vector2i(4,6),
+			"Actual touch preview was not green before the delayed release"):return
 	var far_bottom_up := InputEventScreenTouch.new()
 	far_bottom_up.index = 0
 	far_bottom_up.pressed = false
 	far_bottom_up.position = bottom_vertical_move.position + Vector2(0.0,110.0)
 	piece._input(far_bottom_up)
-	if not _check(board.placed == Vector2i(-1,-1),
-			"Distant downward drag incorrectly committed a stale eighth-row snap"):return
+	if not _check(board.placed == Vector2i(4,6),
+			"Android finger-up performed a second hit-test and rejected the visible green snap"):return
 	piece.configure([Vector2i(0,0), Vector2i(1,0)],false,Color("#5396fa"),0)
 	# When a shape extends beyond the right edge, magnetize to its nearest
 	# legal origin instead of rejecting an almost-correct drop.
