@@ -42,6 +42,8 @@ func _rescue() -> bool:
 	var bins: Dictionary = {}
 	var weak: Array[int] = []
 	var too_open: Array[int] = []
+	var direct_shortcuts: Array[int] = []
+	var direct_gains: Array[String] = []
 	var duplicate_signatures: Array[int] = []
 	var seen := {}
 	for level in range(1,201):
@@ -51,6 +53,19 @@ func _rescue() -> bool:
 		var proof: Array[int] = RescueSolver.find_solution(board, [], 6000)
 		if proof.is_empty():
 			return _fail("Rescue %d has no executable solution" % level)
+		# A reverse-construction path is only an upper bound. Test the
+		# goal-oriented lane solver too: it can reveal much shorter escapes
+		# that the generous generator proof would conceal.
+		var rescue_raw: Array = board.get("rescue", [])
+		var rescue_position := Vector2i(int(rescue_raw[0]), int(rescue_raw[1]))
+		var direct: Array[int] = RescueSolver._find_authored_solution(
+			board, board.get("pieces", []), rescue_position,
+			int(board.get("width", 7)), int(board.get("height", 7)))
+		if not direct.is_empty() and direct.size() < proof.size():
+			if level >= 11 and direct.size() <= 6:
+				direct_shortcuts.append(level)
+			if level >= 25 and direct.size() <= 8:
+				direct_gains.append("%d:%d->%d" % [level,proof.size(),direct.size()])
 		var depth := int(board.get("dependency_depth",0))
 		var frontier := int(board.get("initial_frontier",0))
 		var decoys := int(board.get("false_clear_candidates",0))
@@ -76,8 +91,8 @@ func _rescue() -> bool:
 				level,proof.size(),depth,frontier,decoys,piece_count,String(board.get("level_role",""))])
 	for key in bins:
 		print("OPENING_RESCUE_BAND %s %s" % [String(key),str(bins[key])])
-	print("OPENING_RESCUE_FINDINGS under_minimum_proof=%s levels_25plus_dependencies_below3=%s structural_duplicates=%s" % [
-		str(weak),str(too_open),str(duplicate_signatures)])
+	print("OPENING_RESCUE_FINDINGS under_minimum_proof=%s short_direct_escape=%s direct_shorter_8_or_less=%s dependencies_below3=%s structural_duplicates=%s" % [
+		str(weak),str(direct_shortcuts),str(direct_gains),str(too_open),str(duplicate_signatures)])
 	# Recovery may have fewer dependencies than peaks, but cannot reset to
 	# 4-6 moves or repeat another early board.
 	if not weak.is_empty() or not duplicate_signatures.is_empty():
