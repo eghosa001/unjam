@@ -12,6 +12,7 @@ on:
       - "scripts/core/**"
       - "scenes/**"
       - "tests/validate_block_magnetic_target.gd"
+      - "tests/validate_block_real_touch_integration.gd"
       - "tests/validate_async_game_scene_launch.gd"
 
 # Release-optimized, signed with a temporary QA certificate.
@@ -114,7 +115,7 @@ jobs:
         run: |
           set -euo pipefail
           UNJAM_ANDROID_BRAND_RASTER_READY=1 timeout 60s godot --headless --path . --script res://tests/validate_android_brand_raster.gd
-          for test in validate_async_game_scene_launch validate_gameplay_interactions validate_navigation_hierarchy_density validate_daily_wallet_visibility validate_block_magnetic_target validate_monetization validate_admob_production validate_billing_production; do
+          for test in validate_async_game_scene_launch validate_gameplay_interactions validate_navigation_hierarchy_density validate_daily_wallet_visibility validate_block_magnetic_target validate_block_real_touch_integration validate_monetization validate_admob_production validate_billing_production; do
             timeout 90s godot --headless --path . --script "res://tests/$test.gd"
           done
       - name: Export signed Android release-mode QA APK
