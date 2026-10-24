@@ -31,6 +31,7 @@ func _run() -> void:
 		"rescue": success = _check_rescue()
 		"water": success = _check_water()
 		"block": success = _check_block()
+		"": success = _check_rescue() and _check_water() and _check_block()
 		_: return _fail("Unknown campaign audit game: " + game)
 	if not success:
 		return
