@@ -29,6 +29,10 @@ func _run() -> void:
 		if n not in samples:
 			samples.append(n)
 	samples.sort()
+	if OS.get_environment("WATER_FULL_DEPTH_AUDIT") == "1":
+		samples.clear()
+		for n in range(4, 10001):
+			samples.append(n)
 	var scene := load("res://scenes/WaterSort.tscn") as PackedScene
 	if scene == null:
 		return _fail("Missing Water Sort runtime scene")
@@ -82,6 +86,8 @@ func _run() -> void:
 			print("WATER_DEPTH_SAMPLE level=%d proof=%d lower=%d minimum=%d source=%s" % [
 				n,solution.size(),unavoidable,required,
 				String((board.get("metadata", {}) as Dictionary).get("source", "generated"))])
+		if n % 1000 == 0:
+			print("WATER_DEPTH_PROGRESS %d / 10000 violations=%d" % [n, violations])
 		if violations > 15:
 			break
 	print("WATER_NO_TRIVIAL_REPORT samples=%d violations=%d remasters=%d min_proof_200plus=%d min_mathematical_pours_200plus=%d" % [
