@@ -54,8 +54,8 @@ func _run() -> void:
 			return _fail("Water level %d has no playable constructed solution" % n)
 		var metrics: Dictionary = Progression.score_board(tubes, solution.size())
 		var unavoidable := int(metrics.get("unavoidable_pours_lower_bound", -1))
-		var required := Progression.minimum_required_pours(n)
-		var proof_required := Progression.minimum_proof_moves(n)
+		var required := Progression.minimum_required_pours(n, int(profile.get("empty_bottles",2)))
+		var proof_required := Progression.minimum_proof_moves(n, int(profile.get("empty_bottles",2)))
 		if solution.size() < proof_required or unavoidable < required:
 			violations += 1
 			print("WATER_TRIVIAL_RUNTIME level=%d proof=%d expected_proof=%d lower=%d required_lower=%d source=%s" % [
