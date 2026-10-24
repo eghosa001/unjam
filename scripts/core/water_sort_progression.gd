@@ -193,7 +193,7 @@ static func milestone_kind(level: int) -> String:
 		return "challenge"
 	return "normal"
 
-static func minimum_proof_moves(level: int) -> int:
+static func minimum_proof_moves(level: int, empty_bottles: int = 2) -> int:
 	# A recorded solution is an upper bound, not a guarantee of real depth.
 	# Pair these thresholds with minimum_required_pours below.
 	if level <= 3: return 0
@@ -203,11 +203,11 @@ static func minimum_proof_moves(level: int) -> int:
 	if level < 200: return 16
 	if level <= 500: return 19
 	if level < 1000: return 20
-	if level < 2000: return 22
-	if level < 5000: return 24
-	return 26
+	if level < 2000: return 18 if empty_bottles == 1 else 22
+	if level < 5000: return 20 if empty_bottles == 1 else 24
+	return 24 if empty_bottles == 1 else 26
 
-static func minimum_required_pours(level: int) -> int:
+static func minimum_required_pours(level: int, empty_bottles: int = 2) -> int:
 	# Structural lower bound: no valid strategy can solve a board in fewer
 	# pours than the count of colour runs that must be eliminated.
 	# Gentle onboarding ends at 3; levels 200+ cannot be 5/6-pour fillers.
@@ -218,9 +218,9 @@ static func minimum_required_pours(level: int) -> int:
 	if level < 200: return 10
 	if level <= 500: return 12
 	if level < 1000: return 13
-	if level < 2000: return 15
-	if level < 5000: return 17
-	return 19
+	if level < 2000: return 12 if empty_bottles == 1 else 15
+	if level < 5000: return 14 if empty_bottles == 1 else 17
+	return 17 if empty_bottles == 1 else 19
 
 static func needs_curated_challenge_remaster(level: int, tubes: Array, proof_moves: int, profile: Dictionary) -> bool:
 	# Three opening lessons intentionally demonstrate the rules. Past that,
@@ -229,7 +229,8 @@ static func needs_curated_challenge_remaster(level: int, tubes: Array, proof_mov
 	if level <= 3 or tubes.is_empty():
 		return false
 	var structural: Dictionary = score_board(tubes, proof_moves)
-	if proof_moves < minimum_proof_moves(level) or int(structural.get("unavoidable_pours_lower_bound", 0)) < minimum_required_pours(level):
+	var available_workspace := int(profile.get("empty_bottles", 2))
+	if proof_moves < minimum_proof_moves(level, available_workspace) or int(structural.get("unavoidable_pours_lower_bound", 0)) < minimum_required_pours(level, available_workspace):
 		return true
 	if level <= 100:
 		return false
