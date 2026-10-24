@@ -20,7 +20,7 @@ func _run() -> void:
 		var metrics: Dictionary = Progression.score_board(entry.get("tubes", []), (entry.get("solution",[]) as Array).size())
 		var score := int(metrics.get("difficulty_score",0))
 		if previous_score >= 0 and score - previous_score >= 25 and Progression.milestone_kind(level) == "normal" and Progression.milestone_kind(level-1) == "normal":
-		candidates.append(level)
+			candidates.append(level)
 			preceding[level] = previous_score
 		previous_score = score
 	print("WATER_RAW_SPIKE_SURVEY candidates=%d" % candidates.size())
