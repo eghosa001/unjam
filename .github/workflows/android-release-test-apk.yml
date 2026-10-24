@@ -139,7 +139,7 @@ jobs:
           grep -F "org.godotengine.plugin.v2.GodotGooglePlayBilling" build/android/qa-manifest.txt
           "$APKSIGNER" verify --verbose --print-certs "$APK" | tee build/android/qa-signature.txt
           grep -F 'Verified using v2 scheme (APK Signature Scheme v2): true' build/android/qa-signature.txt
-          grep -F 'Signer #1 certificate SHA-256 digest:' build/android/qa-signature.txt
+          grep -E '(V2 Signer|Signer #1):? certificate SHA-256 digest:' build/android/qa-signature.txt
           sha256sum "$APK" | tee build/android/unjam-release-qa.apk.sha256
           printf '%s\n' "$GITHUB_SHA" > build/android/unjam-release-qa.commit
           printf '%s\n' 'Release-mode QA build; test signed, not signed with the Google Play production key. AdMob test mode remains enabled.' > build/android/README-QA.txt
