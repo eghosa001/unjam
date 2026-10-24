@@ -187,7 +187,7 @@ func generate_tubes_with_solution(seed_value: int, colors: int) -> Dictionary:
 		# only 3-5 pours and five fully sorted bottles. Preserve strong
 		# curated designs; remaster weak boards through the already verified
 		# deterministic constructive generator only when genuinely stronger.
-		if not Progression.needs_curated_challenge_remaster(level_number, authored_tubes, authored_solution.size(), p):
+		if not Progression.needs_curated_challenge_remaster(level_number, authored_tubes, authored_solution.size(), p) and not _boss_below_lead_in(level_number, metrics, p):
 			return authored
 		weak_curated = authored.duplicate(true)
 		authored_metrics = generation_meta.duplicate(true)
@@ -308,6 +308,23 @@ func generate_tubes_with_solution(seed_value: int, colors: int) -> Dictionary:
 		generation_meta["replaced_curated_lower_bound"] = baseline_floor
 		best["metadata"] = generation_meta.duplicate(true)
 	return best
+
+func _boss_below_lead_in(level: int, metrics: Dictionary, profile: Dictionary) -> bool:
+	# A boss/mastery should not be noticeably easier than the previous five
+	# authored levels. Compute this ONLY when entering a milestone, so normal
+	# navigation retains the existing lightweight curated fast path.
+	if level <= 100 or String(profile.get("milestone", "normal")) not in ["boss", "world_finale", "mastery", "finale"]:
+		return false
+	var total := 0.0
+	for previous_level in range(level - 5, level):
+		var preceding := CuratedCatalog.level(previous_level)
+		if preceding.is_empty():
+			return false
+		var previous_proof: Array = preceding.get("solution", [])
+		var previous_metrics: Dictionary = Progression.score_board(preceding.get("tubes", []), previous_proof.size())
+		total += float(previous_metrics.get("difficulty_score", 0))
+	var reference := total / 5.0
+	return float(metrics.get("difficulty_score", 0)) < reference - 3.0
 
 func _archetype_penalty(metrics: Dictionary, archetype: String, colors: int) -> int:
 	match archetype:
