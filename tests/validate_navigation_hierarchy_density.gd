@@ -37,7 +37,9 @@ func _run() -> void:
 	# Count only the settled view, not two transient layout trees.
 	await _frames(2)
 	if not _check(String(main.get("_goals_focus")) == "weekly","Weekly focus tap failed"):return
-	if not _check(_goal_action_count(main,"weekly") == 3 and _goal_action_count(main,"daily") == 0,"Weekly view fails to declutter or hides missions"):return
+	var wc := _goal_action_count(main,"weekly")
+	var dc := _goal_action_count(main,"daily")
+	if not _check(wc == 3 and dc == 0,"Weekly focus rendered %d Weekly and %d Daily action(s)" % [wc,dc]):return
 	var guide := main.find_child("GoalsRewardGuideText",true,false) as Label
 	if not _check(guide != null and guide.text.contains("coins") and guide.text.contains("Season"),"Goals does not distinguish reward currencies"):return
 	main.call("_return_from_goals")
@@ -69,6 +71,8 @@ func _run() -> void:
 func _goal_action_count(main: Control, period: String) -> int:
 	var count := 0
 	for node in main.find_children("*","Button",true,false):
+		if node.is_queued_for_deletion() or not (node as Control).is_visible_in_tree():
+			continue
 		var name_value := String(node.name).to_lower()
 		if name_value.begins_with("goalaction") and name_value.contains(period):
 			count += 1
