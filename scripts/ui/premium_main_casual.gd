@@ -649,7 +649,7 @@ func _on_figma_wallet_balance_changed(new_balance: int, _delta: int, _reason: St
 	# Keep the balance visible immediately on the reward page without making
 	# players leave and return to Home to check whether their claim worked.
 	if current_surface == "daily":
-		var label := content.find_child("DailyWalletAfterClaim","Label",true,false) as Label
+		var label := content.find_child("DailyWalletAfterClaim",true,false) as Label
 		if label != null:
 			label.text = "WALLET  %d COINS" % new_balance
 
