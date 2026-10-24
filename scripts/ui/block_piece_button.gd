@@ -266,6 +266,10 @@ func _gui_input(event: InputEvent) -> void:
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_DRAG_END:
+		# Godot delivers notifications to base scripts too. Ignore its native
+		# mouse drag-end while an Android finger still owns the touchscreen drag.
+		if touch_drag_started:
+			return
 		_clear_touch_footprint()
 		_hide_touch_preview(true)
 		_end_drag_feedback(false)
