@@ -75,6 +75,19 @@ static func _profile_from_authored(level: int, authored: Dictionary) -> Dictiona
 		occupancy_value = minf(0.40, occupancy_value + ((0.050 if boss_slot else 0.030) if mature_challenge else (0.035 if boss_slot else 0.020)))
 		if level >= 101:
 			piece_value = mini(6, piece_value + 1)
+	# The first-200 audit found nearly empty boards: 0-5 starting cells
+	# occupied, and all sampled bots completed levels 25-200. The move
+	# count looked long but had too little spatial pressure. Introduce
+	# occupied cells and more useful silhouettes after the opening lessons.
+	# Carry the floor beyond 200 to avoid a sudden chapter difficulty drop.
+	if level >= 11:
+		occupancy_value = maxf(occupancy_value, 0.06)
+	if level >= 25:
+		var pressure := 0.14 + 0.03 * clampf(float(level - 25) / 175.0, 0.0, 1.0)
+		occupancy_value = maxf(occupancy_value, pressure)
+		piece_value = maxi(piece_value, 2)
+	if level >= 101 and level <= 500:
+		piece_value = maxi(piece_value, 3)
 	return {
 		"level_id": level,
 		"seed": int(authored.get("authored_seed", deterministic_seed(level))),
