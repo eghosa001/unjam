@@ -27,12 +27,20 @@ jobs:
         run: |
           set -euo pipefail
           ROOT="https://unjam-eghosa.onrender.com"
-          curl --fail --show-error --silent --location --max-time 20 "$ROOT/" | grep -q 'UNJAM'
-          curl --fail --show-error --silent --location --max-time 20 "$ROOT/privacy.html" | grep -q 'Privacy Policy'
-          curl --fail --show-error --silent --location --max-time 20 "$ROOT/support.html" | grep -q 'UNJAM Support'
-          curl --fail --show-error --silent --location --max-time 20 "$ROOT/assets/site.css" | grep -q '{'
-          curl --fail --show-error --silent --location --max-time 20 "$ROOT/assets/icon.svg" | grep -qi 'svg'
-          curl --fail --show-error --silent --location --max-time 20 "$ROOT/robots.txt" | grep -q 'User-agent:'
-          curl --fail --show-error --silent --location --max-time 20 "$ROOT/sitemap.xml" | grep -q 'urlset'
-          curl --fail --show-error --silent --location --max-time 20 "$ROOT/app-ads.txt" |
-            grep -Fx 'google.com, pub-7517898921176341, DIRECT, f08c47fec0942fa0'
+          TMP="$(mktemp -d)"
+          trap 'rm -rf "$TMP"' EXIT
+          assert_page() {
+            local path="$1" needle="$2" filename="$3"
+            curl --fail --show-error --silent --location --retry 2 --max-time 20 \
+              --output "$TMP/$filename" "$ROOT$path"
+            grep -Fqi -- "$needle" "$TMP/$filename"
+            printf 'PASS %s (%s bytes)\n' "$path" "$(wc -c < "$TMP/$filename")"
+          }
+          assert_page "/" "UNJAM" "index.html"
+          assert_page "/privacy.html" "Privacy Policy" "privacy.html"
+          assert_page "/support.html" "UNJAM Support" "support.html"
+          assert_page "/assets/site.css" "{" "style.css"
+          assert_page "/assets/icon.svg" "<svg" "icon.svg"
+          assert_page "/robots.txt" "User-agent:" "robots.txt"
+          assert_page "/sitemap.xml" "urlset" "sitemap.xml"
+          assert_page "/app-ads.txt" "google.com, pub-7517898921176341, DIRECT, f08c47fec0942fa0" "app-ads.txt"
