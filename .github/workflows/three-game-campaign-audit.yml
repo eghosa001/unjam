@@ -5,6 +5,7 @@ on:
     paths:
       - ".github/workflows/three-game-campaign-audit.yml"
       - "tests/validate_late_campaign_playability.gd"
+      - "tests/validate_water_no_trivial_runtime.gd"
       - "scripts/core/**"
       - "scripts/game/**"
       - "data/**"
@@ -43,6 +44,7 @@ jobs:
             bash tools/run_godot_test.sh validate_rescue_progression_10000 300
           elif [[ "${{ matrix.game }}" == "water" ]]; then
             bash tools/run_godot_test.sh validate_water_progression 120
+            WATER_FULL_DEPTH_AUDIT=1 bash tools/run_godot_test.sh validate_water_no_trivial_runtime 1500
             bash tools/run_godot_test.sh validate_water_runtime_difficulty_spikes 900
             bash tools/run_godot_test.sh validate_water_curated_catalog_10000 900
             bash tools/run_godot_test.sh validate_water_constructive_solvability 240
