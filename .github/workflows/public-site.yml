@@ -19,6 +19,7 @@ on:
   pull_request:
     paths:
       - "Dockerfile"
+      - "tools/build_public_site.py"
       - ".dockerignore"
       - "nginx.conf"
       - "index.md"
@@ -44,7 +45,7 @@ jobs:
           test -s public/index.html
           test -s public/privacy.html
           test -s public/app-ads.txt
-          grep -F '${domain}/sitemap.xml' public/robots.txt
+          grep -F 'https://unjam-eghosa.onrender.com/sitemap.xml' public/robots.txt
       - name: Build production static website
         run: docker build --pull -t unjam-public-site:ci .
       - name: Verify all public resources from running production container
