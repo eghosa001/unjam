@@ -231,14 +231,14 @@ func generate_tubes_with_solution(seed_value: int, colors: int) -> Dictionary:
 	# campaign load. Compare eight seeded, proof-backed configurations before
 	# considering a replacement; never trade solvability for a difficulty label.
 	if not weak_curated.is_empty():
-		candidate_count = maxi(candidate_count, 16 if weak_by_minimum_depth else 8)
+		candidate_count = maxi(candidate_count, 32 if weak_by_minimum_depth else 8)
 	var best: Dictionary = {}
 	var best_error := 100000
 	var best_score := -1
 	var archetype := String(p.get("challenge_archetype", ""))
 
 	for attempt in range(candidate_count):
-		var step_delta := attempt - int(candidate_count / 2)
+		var step_delta := attempt - (8 if weak_by_minimum_depth else int(candidate_count / 2))
 		var requested_steps := clampi(base_steps + step_delta * 2, 4, int(p.get("three_star_limit", 80)))
 		var candidate := _construct_progression_candidate(
 			seed_value,
