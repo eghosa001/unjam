@@ -29,8 +29,12 @@ func _run() -> void:
 			if not await _water(): return
 		"block":
 			if not _block(): return
+		"":
+			if not _rescue(): return
+			if not await _water(): return
+			if not _block(): return
 		_:
-			return _fail("Missing OPENING_200_GAME matrix value")
+			return _fail("Invalid OPENING_200_GAME matrix value: "+which)
 	print("OPENING_200_SURVEY_OK game=%s" % which)
 	quit(0)
 
