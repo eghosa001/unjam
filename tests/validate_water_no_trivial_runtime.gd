@@ -57,6 +57,22 @@ func _run() -> void:
 			print("WATER_TRIVIAL_RUNTIME level=%d proof=%d expected_proof=%d lower=%d required_lower=%d source=%s" % [
 				n, solution.size(), proof_required, unavoidable, required,
 				String((board.get("metadata", {}) as Dictionary).get("source", "generated"))])
+			var viable := 0
+			var best_floor := -1
+			var best_proof := -1
+			var base_steps := int(profile.get("scramble_steps", 8))
+			var empty_bottles := int(profile.get("empty_bottles", 2))
+			for attempt in range(32):
+				var request := clampi(base_steps + (attempt - 8) * 2, 4, int(profile.get("three_star_limit", 80)))
+				var candidate: Dictionary = game.call("_construct_progression_candidate", n, int(profile.get("colors",4)), empty_bottles, request, attempt)
+				var candidate_proof: Array = candidate.get("solution", [])
+				var cm: Dictionary = Progression.score_board(candidate.get("tubes", []), candidate_proof.size())
+				var floor_value := int(cm.get("unavoidable_pours_lower_bound", 0))
+				best_floor = maxi(best_floor, floor_value)
+				best_proof = maxi(best_proof, candidate_proof.size())
+				if floor_value >= required and candidate_proof.size() >= proof_required:
+					viable += 1
+			print("WATER_REMASTER_DIAGNOSTIC level=%d attempts=32 passing_floor_and_proof=%d max_floor=%d max_proof=%d target_moves=%d scramble=%d empties=%d" % [n,viable,best_floor,best_proof,int(profile.get("target_moves",0)),base_steps,empty_bottles])
 		if n >= 200:
 			min_proof_observed = mini(min_proof_observed, solution.size())
 			min_lower_observed = mini(min_lower_observed, unavoidable)
