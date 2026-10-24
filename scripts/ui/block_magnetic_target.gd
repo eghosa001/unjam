@@ -111,11 +111,12 @@ static func _closest(game: Node, shape: Array, point: Vector2, geo: Dictionary, 
 		nearest = rounded
 		best_distance = (raw - Vector2(rounded)).length()
 	else:
-		# When the pointer is between blocked cells, check only actual nearby
-		# origins. Offsets of two cannot fit inside the 1.32-cell catch radius
-		# when rounded already lies within half a cell on either axis.
-		for dy in range(-1, 2):
-			for dx in range(-1, 2):
+		# Overflowing aims may round two cells beyond the board while
+		# the closest legal boundary target is still just 1.62 cells away.
+		# Keep blocked in-board aims to 3x3, never hopping to a distant gap.
+		var search_radius := 2 if not _fits_board(shape, rounded) else 1
+		for dy in range(-search_radius, search_radius + 1):
+			for dx in range(-search_radius, search_radius + 1):
 				if dx == 0 and dy == 0:
 					continue
 				var candidate := rounded + Vector2i(dx, dy)
