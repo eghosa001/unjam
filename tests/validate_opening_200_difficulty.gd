@@ -63,7 +63,7 @@ func _rescue() -> bool:
 		b["piece_sum"] = int(b.get("piece_sum",0)) + piece_count
 		b["decoy_sum"] = int(b.get("decoy_sum",0)) + decoys
 		bins[band] = b
-		if level >= 25 and proof.size() <= 6:
+		if (level >= 11 and proof.size() < 8) or (level >= 25 and proof.size() < 10) or (level >= 51 and proof.size() < 11):
 			weak.append(level)
 		if level >= 25 and depth < 3:
 			too_open.append(level)
@@ -76,8 +76,12 @@ func _rescue() -> bool:
 				level,proof.size(),depth,frontier,decoys,piece_count,String(board.get("level_role",""))])
 	for key in bins:
 		print("OPENING_RESCUE_BAND %s %s" % [String(key),str(bins[key])])
-	print("OPENING_RESCUE_FINDINGS levels_25plus_solution_6or_less=%s levels_25plus_dependencies_below3=%s structural_duplicates=%s" % [
+	print("OPENING_RESCUE_FINDINGS under_minimum_proof=%s levels_25plus_dependencies_below3=%s structural_duplicates=%s" % [
 		str(weak),str(too_open),str(duplicate_signatures)])
+	# Recovery may have fewer dependencies than peaks, but cannot reset to
+	# 4-6 moves or repeat another early board.
+	if not weak.is_empty() or not duplicate_signatures.is_empty():
+		return _fail("Rescue first-200 challenge/variety regression: short=%s duplicate=%s" % [str(weak),str(duplicate_signatures)])
 	return true
 
 func _water() -> bool:
@@ -128,6 +132,8 @@ func _water() -> bool:
 	for key in bins:
 		print("OPENING_WATER_BAND %s %s" % [String(key),str(bins[key])])
 	print("OPENING_WATER_FINDINGS under_minimum=%s nearly_sorted_after_25=%s duplicates=%s" % [str(weak),str(nearly_sorted),str(dupes)])
+	if not weak.is_empty() or not nearly_sorted.is_empty() or not dupes.is_empty():
+		return _fail("Water first-200 difficulty/variety regression: short=%s solved=%s dupes=%s" % [str(weak),str(nearly_sorted),str(dupes)])
 	game.queue_free()
 	await process_frame
 	return true
@@ -166,9 +172,9 @@ func _block() -> bool:
 		b["occupied_sum"] = int(b.get("occupied_sum",0)) + occupied
 		b["choices_sum"] = float(b.get("choices_sum",0.0)) + avg_choices
 		bins[band]=b
-		if level >= 25 and proof <= 6: weak.append(level)
+		if (level >= 11 and proof < 12) or (level >= 25 and proof < 15): weak.append(level)
 		if level >= 25 and unique < 3: low_diversity.append(level)
-		if level >= 50 and occupied < 10: too_open.append(level)
+		if (level >= 25 and occupied < 8) or (level >= 100 and occupied < 10): too_open.append(level)
 		var signature := BlockAuditor.canonical_signature(p,plan)
 		if seen.has(signature): dupes.append(level)
 		seen[signature]=level
@@ -182,7 +188,10 @@ func _block() -> bool:
 		print("OPENING_BLOCK_BAND %s %s" % [String(key),str(bins[key])])
 	print("OPENING_BLOCK_FINDINGS failures=%s proof_6or_less_after25=%s fewer_than_3_shapes_after25=%s low_occupancy_50plus=%s duplicates=%s bot_success=%s" % [
 		str(failures),str(weak),str(low_diversity),str(too_open),str(dupes),str(bot_success)])
-	if not failures.is_empty(): return _fail("Block levels invalid %s" % str(failures))
+	if not failures.is_empty() or not weak.is_empty() or not low_diversity.is_empty() or not too_open.is_empty() or not dupes.is_empty():
+		return _fail("Block first-200 difficulty/variety regression: invalid=%s short=%s shape=%s pressure=%s duplicates=%s" % [str(failures),str(weak),str(low_diversity),str(too_open),str(dupes)])
+	# Bot simulations here check only score/line targets, not the complete
+	# special-objective logic, so 100% bot success is NOT proof of an easy level.
 	return true
 
 func _band_for(level: int) -> String:
