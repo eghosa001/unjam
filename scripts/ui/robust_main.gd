@@ -32,7 +32,7 @@ var current_surface: String:
 	set(value):
 		# Leaving a pending Daily before scene instantiation must restore its
 		# parked campaign checkpoint, just like exiting a running Daily.
-		if _current_surface == "game_loading" and value not in ["game_loading", "game"] and not _pending_game_launch.is_empty():
+		if value != "game" and not _pending_game_launch.is_empty():
 			var abandoned: Dictionary = _pending_game_launch.duplicate()
 			_pending_game_launch.clear()
 			if bool(abandoned.get("daily",false)):
@@ -60,8 +60,20 @@ func _ready() -> void:
 	_last_calendar_day = DailyChallenge.date_key()
 	super._ready()
 	_queue_surface_changed()
+	# Warm every game after Home first paints, not when the player taps Play.
+	call_deferred("_warm_game_scenes_on_home")
 	# Startup branding is owned by Boot.tscn. No full-screen startup control
 	# is ever placed over the interactive Home scene.
+
+func _warm_game_scenes_on_home() -> void:
+	await get_tree().process_frame
+	for path in [RESCUE_GAME_SCENE_PATH, WATER_GAME_SCENE_PATH, BLOCK_GAME_SCENE_PATH]:
+		if not is_inside_tree():
+			return
+		_prime_game_scene(path, true)
+		call_deferred("_drain_game_scene_preload", path)
+		# Split script imports across frames instead of freezing Home on launch.
+		await get_tree().process_frame
 
 func _notification(what: int) -> void:
 	if what in [NOTIFICATION_APPLICATION_RESUMED, NOTIFICATION_APPLICATION_FOCUS_IN]:
@@ -333,7 +345,6 @@ func build_settings() -> void:
 
 func start_level(level_number: int) -> void:
 	selected_game_id = "rescue_rush"
-	current_surface = "game"
 	_spawn_rescue(level_number, false, {})
 
 func start_daily() -> void:
@@ -382,125 +393,51 @@ func _spawn_rescue(level_number: int, daily: bool, custom_data: Dictionary) -> v
 	_begin_game_scene_launch(RESCUE_GAME_SCENE_PATH, {"game_id":"rescue_rush","level":level_number,"daily":daily,"custom_data":custom_data.duplicate(true)})
 
 func _begin_game_scene_launch(path: String, config: Dictionary) -> void:
-	_remove_active_game()
-	# A warmed scene must open immediately. The previous implementation forced
-	# a loading page AND two render signals even when the scene was cached.
-	# That improved tap feedback but actually increased time to gameplay.
-	var packed := _game_scene_resource(path)
-	if packed != null:
-		_ready_game_scenes[path] = packed
+	# Keep the current menu or level browser on screen on a genuinely cold
+	# scene load. Never show a fullscreen loader, dark/blank interstitial,
+	# or a placeholder between the Play tap and the fully-built game.
+	if not _pending_game_launch.is_empty():
+		var replaced := _pending_game_launch.duplicate(true)
+		if bool(replaced.get("daily", false)):
+			_restore_campaign_checkpoint_after_daily(String(replaced.get("game_id", "")))
 		_pending_game_launch.clear()
-		_instantiate_game_scene(packed, config)
-		return
-	# Only genuinely cold launches show progress while their resources load.
-	current_surface = "game_loading"
-	_pending_game_launch = config.duplicate(true)
-	_show_game_loading(config)
+	_navigation_generation += 1
 	var generation := _navigation_generation
-	call_deferred("_continue_game_scene_launch_after_paint",
-		path, config.duplicate(true), generation)
-
-func _continue_game_scene_launch_after_paint(path: String, config: Dictionary, generation: int) -> void:
-	# Deferred calls alone execute before the next draw; one rendered frame
-	# ensures the player sees immediate feedback rather than a frozen button.
-	await get_tree().process_frame
-	# process_frame fires BEFORE drawing; on actual phone renderers, waiting
-	# for frame_post_draw gives the loading surface one genuine presented frame.
-	# Headless CI does not reliably emit the render signal.
-	if DisplayServer.get_name() != "headless":
-		await RenderingServer.frame_post_draw
-	if not is_inside_tree() or generation != _navigation_generation or current_surface != "game_loading":
-		return
 	var packed := _game_scene_resource(path)
 	if packed != null:
 		_ready_game_scenes[path] = packed
-		_pending_game_launch.clear()
+		_remove_active_game()
 		_instantiate_game_scene(packed, config)
 		return
-	# Scene dependencies were warmed on Level Select. On genuinely cold entry,
-	# do remaining one-time work only after the loading surface is painted.
+	_pending_game_launch = config.duplicate(true)
+	# On a cold start, prepare the resources without changing the rendered UI.
+	# The coroutine drops stale requests when navigating elsewhere.
 	_prime_game_scene(path)
-	# Any superseding Back/new-game request is handled by the existing
-	# generation token; the worker result is still drained by _await_game_scene.
 	call_deferred("_await_game_scene", path, config.duplicate(true), generation)
 
-
-func _show_game_loading(config: Dictionary) -> void:
-	clear_content()
-	content.visible = true
-	content.mouse_filter = Control.MOUSE_FILTER_STOP
-	var tint := ColorRect.new()
-	tint.color = Color("#0c1729")
-	tint.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	content.add_child(tint)
-	var center := CenterContainer.new()
-	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	content.add_child(center)
-	var panel := VBoxContainer.new()
-	panel.name = "GameLoadingCard"
-	panel.add_theme_constant_override("separation",20)
-	panel.custom_minimum_size = Vector2(280,180)
-	center.add_child(panel)
-	var label := Label.new()
-	label.name = "GameLoadingMessage"
-	label.text = "OPENING %s…" % MultiGameManager.display_name(String(config.get("game_id","rescue_rush"))).to_upper()
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size",24)
-	label.add_theme_color_override("font_color",Color("#f1fbff"))
-	label.accessibility_name = label.text
-	panel.add_child(label)
-	var progress := ProgressBar.new()
-	progress.name = "GameLoadingProgress"
-	progress.min_value = 0
-	progress.max_value = 1
-	progress.value = 0
-	progress.show_percentage = false
-	progress.custom_minimum_size = Vector2(0,12)
-	panel.add_child(progress)
-	var cancel := Button.new()
-	cancel.name = "GameLoadingCancel"
-	cancel.text = "BACK"
-	cancel.custom_minimum_size = Vector2(0,56)
-	cancel.focus_mode = Control.FOCUS_ALL
-	cancel.accessibility_name = "Cancel loading and return"
-	cancel.pressed.connect(_cancel_game_loading)
-	panel.add_child(cancel)
-	var retry := Button.new()
-	retry.name = "GameLoadingRetry"
-	retry.text = "RETRY"
-	retry.custom_minimum_size = Vector2(0,56)
-	retry.visible = false
-	retry.pressed.connect(_retry_game_loading)
-	panel.add_child(retry)
-
 func _cancel_game_loading() -> void:
-	if current_surface != "game_loading":
+	# Legacy method name: only cancels the invisible pending load. There is
+	# deliberately no game_loading page to display or dismiss.
+	if _pending_game_launch.is_empty():
 		return
-	# A cancelled cold launch returns to the selected game's level list,
-	# exactly like the gameplay Back button. Save this before changing surface:
-	# the setter invalidates the pending asynchronous launch.
 	var cancelled := _pending_game_launch.duplicate(true)
+	_pending_game_launch.clear()
+	_navigation_generation += 1
 	var game_id := String(cancelled.get("game_id", selected_game_id))
 	var level := int(cancelled.get("level", 1))
 	_return_from_game(game_id, bool(cancelled.get("daily", false)), level)
 
-func _retry_game_loading() -> void:
-	if current_surface != "game_loading":
-		return
-	var config := _pending_game_launch.duplicate(true)
-	var path := RESCUE_GAME_SCENE_PATH if String(config.get("game_id","")) == "rescue_rush" else (WATER_GAME_SCENE_PATH if String(config.get("game_id","")) == "water_sort" else BLOCK_GAME_SCENE_PATH)
-	_begin_game_scene_launch(path,config)
-
 func _await_game_scene(path: String, config: Dictionary, generation: int) -> void:
 	var deadline := Time.get_ticks_msec() + 20000
 	while is_inside_tree():
-		var stale := generation != _navigation_generation or current_surface != "game_loading"
+		var stale := generation != _navigation_generation or _pending_game_launch.is_empty()
 		# Another request may have drained the same ResourceLoader token. Hold
 		# that parsed PackedScene in app memory to satisfy the newest request.
 		var retained := _ready_game_scenes.get(path,null) as PackedScene
 		if retained != null:
 			if not stale:
 				_pending_game_launch.clear()
+				_remove_active_game()
 				_instantiate_game_scene(retained,config)
 			return
 		var progress: Array = []
@@ -516,6 +453,7 @@ func _await_game_scene(path: String, config: Dictionary, generation: int) -> voi
 				return
 			if packed != null:
 				_pending_game_launch.clear()
+				_remove_active_game()
 				_instantiate_game_scene(packed,config)
 			else:
 				_show_game_loading_error("Could not open this game. Try again or go back.")
@@ -531,29 +469,28 @@ func _await_game_scene(path: String, config: Dictionary, generation: int) -> voi
 			if cached != null:
 				_ready_game_scenes[path] = cached
 				_pending_game_launch.clear()
+				_remove_active_game()
 				_instantiate_game_scene(cached,config)
 				return
 			if ResourceLoader.load_threaded_request(path) != OK:
 				_show_game_loading_error("Game data is unavailable. Retry or go back.")
 				return
-		if not stale:
-			var bar := content.find_child("GameLoadingProgress",true,false) as ProgressBar if content != null else null
-			if bar != null and not progress.is_empty():
-				bar.value = clampf(float(progress[0]),0.0,1.0)
-			if Time.get_ticks_msec() > deadline:
-				_show_game_loading_error("Loading is taking too long. Retry or go back.")
-				# Keep draining in the background: a timed-out request is still owned
-				# by ResourceLoader until it completes and the result is collected.
+		if not stale and Time.get_ticks_msec() > deadline:
+			_show_game_loading_error("Game startup took too long. Tap Play to retry.")
+			call_deferred("_drain_game_scene_preload", path)
+			return
 		await get_tree().process_frame
 
 func _show_game_loading_error(message: String) -> void:
-	var label := content.find_child("GameLoadingMessage",true,false) as Label if content != null else null
-	if label != null:
-		label.text = message
-		label.accessibility_name = message
-	var retry := content.find_child("GameLoadingRetry",true,false) as Button if content != null else null
-	if retry != null:
-		retry.visible = true
+	# Keep the last usable screen visible even when resource loading fails.
+	push_warning(message)
+	FeedbackManager.blocked()
+	if not _pending_game_launch.is_empty():
+		var abandoned := _pending_game_launch.duplicate(true)
+		_pending_game_launch.clear()
+		_navigation_generation += 1
+		if bool(abandoned.get("daily", false)):
+			_restore_campaign_checkpoint_after_daily(String(abandoned.get("game_id", "")))
 
 func _instantiate_game_scene(packed: PackedScene, config: Dictionary) -> void:
 	var game_scene := packed.instantiate() as Control
@@ -704,7 +641,7 @@ func _maybe_show_interstitial_at_menu() -> void:
 			AdManager.show_interstitial()
 
 func force_back_from_game() -> void:
-	if current_surface == "game_loading":
+	if not _pending_game_launch.is_empty():
 		_cancel_game_loading()
 		return
 	# Repeat Back/late touch events arriving after we already returned to levels
