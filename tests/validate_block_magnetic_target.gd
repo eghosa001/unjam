@@ -368,6 +368,25 @@ func _run() -> void:
 	ghost.call("_process",1.0/60.0)
 	if not _check(ghost.position.distance_to(Vector2(136,100)) < 2.0, "Magnetic pull still visibly lags after three frames"):return
 	ghost.queue_free()
+	# A premium edge catch must include the legal first/last cell even
+	# when a finger slightly beyond the board rounds TWO cells out of range.
+	# This used to reject green-looking placements at outer columns/rows.
+	var one_block: Array = [Vector2i(0,0)]
+	var just_outside := Vector2(57.0 - 36.0 * 1.55,57.0 + 36.0 * 4.0 + 132.0)
+	if not _check(Magnetic.choose(board,one_block,just_outside,Vector2i(-1,-1),132.0,Vector2.ZERO) == Vector2i(0,4),
+			"Near-edge thumb drop could not magnetize to the first legal column"):return
+	var far_outside := Vector2(57.0 - 36.0 * 2.6,57.0 + 36.0 * 4.0 + 132.0)
+	if not _check(Magnetic.choose(board,one_block,far_outside,Vector2i(-1,-1),132.0,Vector2.ZERO) == Magnetic.NO_TARGET,
+			"Far-off-board pointer was incorrectly accepted as a placement"):return
+	var visible_finger := Vector2(57.0+36.0*3.0,57.0+36.0*4.0+132.0)
+	if not _check(Magnetic.release_matches_visible_snap(board,one_block,
+			visible_finger+Vector2(36.0*1.95,0.0),visible_finger,
+			Vector2i(3,4),132.0,Vector2.ZERO),
+			"Green footprint rejected modest Android finger-up jitter"):return
+	if not _check(not Magnetic.release_matches_visible_snap(board,one_block,
+			visible_finger+Vector2(36.0*2.55,0.0),visible_finger,
+			Vector2i(3,4),132.0,Vector2.ZERO),
+			"Distant finger-up committed a stale green board footprint"):return
 	board.queue_free()
 	await process_frame
 	print("BLOCK_MAGNETIC_TARGET_OK: nearest touched tile, quick legal target, same-frame geometry, finger-up latch, red/offboard safety")
