@@ -50,14 +50,6 @@ func _ready() -> void:
 	# Godot GUI bounds must not interrupt drags that leave the tray.
 	set_process_input(false)
 
-func _notification(what: int) -> void:
-	# Android can emit a native mouse-drag-end notification while the screen
-	# finger still owns the gesture. The base handler used to delete the green
-	# ghost on that notification, making the first drag bounce back to the tray.
-	if what == NOTIFICATION_DRAG_END and touch_drag_started:
-		return
-	super._notification(what)
-
 func _grab_cell_from_local(local_position: Vector2) -> Vector2:
 	# A touch on the left end of a long brick should keep that very tile
 	# below the lifted fingertip; anchoring every shape to its centroid
