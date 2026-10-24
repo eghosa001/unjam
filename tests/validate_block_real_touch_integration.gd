@@ -5,7 +5,6 @@ extends SceneTree
 # real tray buttons, input routing, campaign state and scoreboard.
 const Magnetic = preload("res://scripts/ui/block_magnetic_target.gd")
 const SmoothPiece = preload("res://scripts/ui/smooth_block_piece_button.gd")
-const GameScene = preload("res://scenes/BlockPuzzle.tscn")
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -38,7 +37,9 @@ func _dispatch_drag(point: Vector2, from_point: Vector2) -> void:
 
 func _run() -> void:
 	MultiGameManager.clear_checkpoint("block_puzzle")
-	var game := GameScene.instantiate() as Control
+	var game_scene := load("res://scenes/BlockPuzzle.tscn") as PackedScene
+	if not _check(game_scene != null, "Could not load real Block Puzzle scene"): return
+	var game := game_scene.instantiate() as Control
 	root.add_child(game)
 	await _frames(6)
 	if not _check(game.has_method("place_piece_from_drag"), "The scene did not load the production Block Puzzle class"): return
@@ -83,8 +84,8 @@ func _run() -> void:
 	var cell_step: Vector2 = geo["step"]
 	var lift := Magnetic.lift_distance(game, geo)
 	var tray_tile := float(piece.call("_tray_cell_size", 2, 0))
-	var first_tile_local := (piece.size - Vector2(3.0, 1.0) * tray_tile) * 0.5 + Vector2.ONE * (tray_tile * 0.5)
-	var start_point := piece.get_global_transform_with_canvas() * first_tile_local
+	var first_tile_local: Vector2 = (piece.size - Vector2(3.0, 1.0) * tray_tile) * 0.5 + Vector2.ONE * (tray_tile * 0.5)
+	var start_point: Vector2 = piece.get_global_transform_with_canvas() * first_tile_local
 	var move_point := target_point + Vector2(0.0, lift)
 	print("REAL_BLOCK_TOUCH: viewport=", game.get_viewport_rect().size, " tray=", start_point, " board=", target_point, " lift=", lift, " step=", cell_step)
 	# True viewport input events exercise both Godot's _input and Control
@@ -116,8 +117,8 @@ func _run() -> void:
 	var second = row.get_child(1) as SmoothBlockPieceButton
 	if not _check(second != null, "Second real tray slot not available"): return
 	var second_tile := float(second.call("_tray_cell_size",0,1))
-	var second_start_local := (second.size - Vector2(1.0,2.0)*second_tile)*0.5 + Vector2.ONE*(second_tile*0.5)
-	var second_start := second.get_global_transform_with_canvas() * second_start_local
+	var second_start_local: Vector2 = (second.size - Vector2(1.0,2.0)*second_tile)*0.5 + Vector2.ONE*(second_tile*0.5)
+	var second_start: Vector2 = second.get_global_transform_with_canvas() * second_start_local
 	var second_target := (cells[35] as Control).get_global_transform_with_canvas() * ((cells[35] as Control).size*0.5)
 	_dispatch_touch(second_start, true)
 	await _frames(1)
