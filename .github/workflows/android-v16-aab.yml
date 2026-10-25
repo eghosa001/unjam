@@ -1,0 +1,191 @@
+name: UNJAM v16 Production AAB - Owner Upload-Key Signing
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/android-v16-aab.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: unjam-v16-production-offline-signing
+  cancel-in-progress: false
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+      - name: Confirm clean rebuild provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(git status --porcelain)"
+          printf 'Fresh rebuild from %s\n' "$(git rev-parse HEAD)"
+          git log -1 --format='%s'
+      - name: Prepare current production version 16 with owner-key signing required
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/validate_release_contract.py
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('project.godot')
+          s=p.read_text()
+          assert s.count('admob_test_mode=true')+s.count('admob_test_mode=false') == 1
+          s=s.replace('admob_test_mode=true','admob_test_mode=false')
+          p.write_text(s)
+          p=Path('export_presets.cfg')
+          s=p.read_text()
+          assert 'package/unique_name="com.eghosa.unjamgam"' in s
+          assert 'package/signed=true' in s
+          import re
+          s=re.sub(r'^version/code=\d+$','version/code=16',s,flags=re.M)
+          s=re.sub(r'^version/name="[^"]+"$','version/name="1.0.16"',s,flags=re.M)
+          s=s.replace('package/signed=true','package/signed=false')
+          p.write_text(s)
+          PY
+          grep -Fx 'test_mode=false' project.godot
+          grep -Fx 'admob_test_mode=false' project.godot
+          grep -Fx 'version/code=16' export_presets.cfg
+          grep -Fx 'version/name="1.0.16"' export_presets.cfg
+          grep -Fx 'package/signed=false' export_presets.cfg
+          grep -Fx 'gradle_build/target_sdk="36"' export_presets.cfg
+          grep -Fx 'architectures/arm64-v8a=true' export_presets.cfg
+      - name: Confirm version 16 release identity and owner signing requirement
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f export_presets.cfg
+          grep -Fx 'package/unique_name="com.eghosa.unjamgam"' export_presets.cfg
+          grep -Fx 'version/code=16' export_presets.cfg
+          grep -Fx 'version/name="1.0.16"' export_presets.cfg
+      - name: Check Google Play billing and ad contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/validate_purchase_claim_protocol.py
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Setup Godot
+        uses: solarlabyrinth/action-setup-godot@v3
+        with:
+          version: 4.7.2-stable
+          export-templates: true
+      - name: Prepare latest UNJAM production branding
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path . --script res://tools/prepare_android_brand_assets.gd
+          test -s assets/icon_user_512.png
+          test -s assets/icon_user_adaptive_432.png
+          test -s assets/unjam_startup_logo.png
+      - name: Install Android API 36 and signing verification tooling
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          test -n "$ROOT"
+          TOOL="$(find "$ROOT/cmdline-tools" -name sdkmanager -type f | sort | tail -1)"
+          set +o pipefail
+          yes | "$TOOL" --sdk_root="$ROOT" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+          STATUS=${PIPESTATUS[1]}
+          set -o pipefail
+          test "$STATUS" -eq 0
+          echo "ANDROID_HOME=$ROOT" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ROOT" >> "$GITHUB_ENV"
+      - name: Install pinned AdMob and Play Billing plugins
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x tools/install_monetization_plugins.sh
+          tools/install_monetization_plugins.sh
+          test -f addons/admob/android/bin/ads/poing_godot_admob_ads.gd
+      - name: Import Godot and run production-related regression checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path . --editor --quit 2>&1 | tee import.log
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access" import.log; then exit 1; fi
+          for t in validate_monetization validate_admob_production validate_billing_production validate_block_magnetic_target validate_runtime_efficiency validate_gameplay_interactions; do
+            echo "TEST $t"
+            timeout 90s godot --headless --path . --script "res://tests/$t.gd"
+          done
+      - name: Export production-configured unsigned APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/android
+          cp export_presets.cfg "$RUNNER_TEMP/export-aab.cfg"
+          sed -i 's/gradle_build\/export_format=1/gradle_build\/export_format=0/' export_presets.cfg
+          godot --headless --verbose --path . --install-android-build-template --export-release Android build/android/UNJAM-v16-unsigned.apk 2>&1 | tee build/android/apk-export.log
+          test -s build/android/UNJAM-v16-unsigned.apk
+          cp "$RUNNER_TEMP/export-aab.cfg" export_presets.cfg
+      - name: Verify actual APK package, version, and production AdMob/Billing manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          TOOL="$(find "$ANDROID_SDK_ROOT/build-tools" -type f -name aapt | sort | tail -1)"
+          "$TOOL" dump badging build/android/UNJAM-v16-unsigned.apk | tee build/android/package-badging.txt
+          "$TOOL" dump permissions build/android/UNJAM-v16-unsigned.apk | tee build/android/package-permissions.txt
+          "$TOOL" dump xmltree build/android/UNJAM-v16-unsigned.apk AndroidManifest.xml | tee build/android/package-manifest.txt
+          grep -F "package: name='com.eghosa.unjamgam' versionCode='14' versionName='1.0.14'" build/android/package-badging.txt
+          grep -F "targetSdkVersion:'36'" build/android/package-badging.txt
+          grep -F "native-code: 'arm64-v8a'" build/android/package-badging.txt
+          grep -F 'com.android.vending.BILLING' build/android/package-permissions.txt
+          grep -F 'com.google.android.gms.permission.AD_ID' build/android/package-permissions.txt
+          grep -F 'com.google.android.gms.ads.APPLICATION_ID' build/android/package-manifest.txt
+          grep -F 'ca-app-pub-7517898921176341~1892369383' build/android/package-manifest.txt
+          grep -F 'org.godotengine.plugin.v2.GodotGooglePlayBilling' build/android/package-manifest.txt
+      - name: Export production-configured unsigned AAB
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --verbose --path . --export-release Android build/android/UNJAM-v16-unsigned.aab 2>&1 | tee build/android/aab-export.log
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Compilation failed|Invalid call|Invalid access|AdMob: Android library not found" build/android/aab-export.log; then exit 1; fi
+          test -s build/android/UNJAM-v16-unsigned.aab
+          unzip -t build/android/UNJAM-v16-unsigned.aab >/dev/null
+      - name: Verify AAB native ABI supports 16 KB pages
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/android/native
+          unzip -q build/android/UNJAM-v16-unsigned.aab 'base/lib/*/*.so' -d build/android/native || true
+          python3 - <<'PY'
+          import pathlib,re,subprocess
+          files=list(pathlib.Path('build/android/native').rglob('*.so'))
+          if not files: raise SystemExit('AAB contains no native libraries')
+          for file in files:
+            x=subprocess.check_output(['readelf','-lW',str(file)],text=True)
+            align=[int(row.split()[-1],16) for row in x.splitlines() if re.match(r'^\s*LOAD\s',row)]
+            if not align or min(align)<0x4000: raise SystemExit(f'16 KB alignment failure: {file}')
+          print(f'16KB_NATIVE_OK: {len(files)} libraries')
+          PY
+      - name: Include Android apksigner and zipalign binaries for OFFLINE owner-key signing
+        shell: bash
+        run: |
+          set -euo pipefail
+          TOOLS="$ANDROID_SDK_ROOT/build-tools/36.0.0"
+          test -s "$TOOLS/lib/apksigner.jar"
+          test -x "$TOOLS/zipalign"
+          cp "$TOOLS/lib/apksigner.jar" build/android/apksigner.jar
+          cp "$TOOLS/zipalign" build/android/zipalign
+          printf '%s\n' "$GITHUB_SHA" > build/android/source-commit.txt
+          sha256sum build/android/UNJAM-v16-unsigned.apk build/android/UNJAM-v16-unsigned.aab > build/android/unsigned.sha256
+      - name: Upload unsigned Android release AAB for owner upload-key signing
+        uses: actions/upload-artifact@v4
+        with:
+          name: unjam-v16-production-configured-unsigned-for-offline-signing
+          path: |
+            build/android/UNJAM-v16-unsigned.apk
+            build/android/UNJAM-v16-unsigned.aab
+            build/android/apksigner.jar
+            build/android/zipalign
+            build/android/source-commit.txt
+            build/android/unsigned.sha256
+            build/android/package-badging.txt
+            build/android/package-permissions.txt
+            build/android/package-manifest.txt
+          if-no-files-found: error
+          retention-days: 14
