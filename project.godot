@@ -60,9 +60,9 @@ general/android/app_id="ca-app-pub-7517898921176341~1892369383"
 
 [monetization]
 
-; Closed testing intentionally uses Google test ad units via admob_test_mode.
+; Production defaults: use live AdMob ad units. CI explicitly enables test ads for QA APK builds.
 test_mode=false
-admob_test_mode=true
+admob_test_mode=false
 admob_android_app_id="ca-app-pub-7517898921176341~1892369383"
 admob_rewarded_unit_id="ca-app-pub-7517898921176341/2926249456"
 admob_interstitial_unit_id="ca-app-pub-7517898921176341/9108514429"
