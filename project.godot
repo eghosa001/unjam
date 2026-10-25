@@ -21,7 +21,8 @@ window/size/window_width_override=540
 window/size/window_height_override=960
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
-window/handheld/orientation=1
+; Sensor orientation: allow portrait, landscape and large-screen rotation.
+window/handheld/orientation=6
 
 [gui]
 theme/default_font_multichannel_signed_distance_field=false
