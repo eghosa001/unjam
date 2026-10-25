@@ -37,6 +37,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 tools/validate_release_contract.py
+          python3 tools/validate_android_display_contract.py
       - name: Require production secrets and update version
         env:
           KEYSTORE_B64: ${{ secrets.UNJAM_ANDROID_KEYSTORE_BASE64 }}
@@ -228,6 +229,7 @@ jobs:
           "$AAPT" dump badging "$APK" | tee build/android/release-apk-badging.txt
           "$AAPT" dump permissions "$APK" | tee build/android/release-apk-permissions.txt
           "$AAPT" dump xmltree "$APK" AndroidManifest.xml | tee build/android/release-apk-manifest.txt
+          python3 tools/validate_android_display_contract.py --manifest build/android/release-apk-manifest.txt
           grep -F "package: name='com.eghosa.unjamgam'" build/android/release-apk-badging.txt
           grep -F "versionCode='$RELEASE_VERSION_CODE' versionName='$RELEASE_VERSION_NAME'" build/android/release-apk-badging.txt
           grep -F "targetSdkVersion:'36'" build/android/release-apk-badging.txt
