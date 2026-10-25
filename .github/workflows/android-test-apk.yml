@@ -94,6 +94,8 @@ jobs:
           set -euo pipefail
           grep -Fx 'package/unique_name="com.eghosa.unjamgam"' export_presets.cfg
           grep -Fx 'architectures/arm64-v8a=true' export_presets.cfg
+          # QA only: use Google's official test inventory, never live advertisements.
+          sed -i 's/^admob_test_mode=false$/admob_test_mode=true/' project.godot
           grep -Fx 'test_mode=false' project.godot
           grep -Fx 'admob_test_mode=true' project.godot
           sed -i 's/gradle_build\/export_format=1/gradle_build\/export_format=0/' export_presets.cfg
