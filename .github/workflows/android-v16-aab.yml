@@ -38,7 +38,10 @@ jobs:
           p=Path('project.godot')
           s=p.read_text()
           assert s.count('admob_test_mode=true')+s.count('admob_test_mode=false') == 1
-          s=s.replace('admob_test_mode=true','admob_test_mode=false')
+          if 'admob_test_mode=true' in s:
+              raise SystemExit('Refusing production AAB: source still selects AdMob test ads')
+          if 'admob_test_mode=false' not in s:
+              raise SystemExit('Refusing production AAB: production AdMob flag is missing')
           p.write_text(s)
           p=Path('export_presets.cfg')
           s=p.read_text()
