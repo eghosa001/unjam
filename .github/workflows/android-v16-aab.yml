@@ -2,7 +2,13 @@ name: UNJAM v16 Production AAB - Owner Upload-Key Signing
 on:
   push:
     branches: [main]
-    paths: ['.github/workflows/android-v16-aab.yml']
+    paths:
+      - '.github/workflows/android-v16-aab.yml'
+      - 'project.godot'
+      - 'export_presets.cfg'
+      - 'scripts/ui/device_fit.gd'
+      - 'tests/validate_viewport_fit.gd'
+      - 'tools/validate_android_display_contract.py'
   workflow_dispatch:
 permissions:
   contents: read
@@ -59,6 +65,11 @@ jobs:
           grep -Fx 'package/unique_name="com.eghosa.unjamgam"' export_presets.cfg
           grep -Fx 'version/code=16' export_presets.cfg
           grep -Fx 'version/name="1.0.16"' export_presets.cfg
+      - name: Verify edge-to-edge and unrestricted large-screen source settings
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/validate_android_display_contract.py
       - name: Check Google Play billing and ad contracts
         shell: bash
         run: |
@@ -112,6 +123,7 @@ jobs:
             echo "TEST $t"
             timeout 90s godot --headless --path . --script "res://tests/$t.gd"
           done
+          timeout 720s godot --headless --path . --script res://tests/validate_viewport_fit.gd
       - name: Export production-configured unsigned APK
         shell: bash
         run: |
@@ -138,6 +150,7 @@ jobs:
           grep -F 'com.google.android.gms.ads.APPLICATION_ID' build/android/package-manifest.txt
           grep -F 'ca-app-pub-7517898921176341~1892369383' build/android/package-manifest.txt
           grep -F 'org.godotengine.plugin.v2.GodotGooglePlayBilling' build/android/package-manifest.txt
+          python3 tools/validate_android_display_contract.py --manifest build/android/package-manifest.txt
       - name: Export production-configured unsigned AAB
         shell: bash
         run: |
