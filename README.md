@@ -54,20 +54,20 @@ The workflow also runs the complete grouped validator set, captures rendered UI 
 
 ## Android / Google Play
 
-This repository is reset for a **fresh Google Play app listing**. `export_presets.cfg` currently uses:
+This repository targets the existing Google Play package. Verify the current Play Console listing and highest uploaded version code before releasing. `export_presets.cfg` currently uses:
 
 - package id: `com.eghosa.unjamgam`
 - package name: `UNJAM`
-- version: `1.0.11` / version code `11`
+- version: `1.0.16` / version code `16`
 - minimum SDK: 24
 - target SDK: 36
 - ARM64 (`arm64-v8a`)
 - immersive portrait presentation
 - AAB as the production export format
 
-The package ID is intentionally unchanged while the deleted Play app is checked for package-name reuse. If Google Play refuses `com.eghosa.unjamgam`, change the package ID in the repository before creating production billing products or linking AdMob to the replacement listing.
+Keep `com.eghosa.unjamgam` unchanged when updating the existing Play listing. Confirm that the registered upload certificate matches the release key.
 
-A **debug APK is for installation/testing only**. Google Play deployment must use a release AAB signed with the owner's private upload key. For the new listing, use a newly generated upload key and store its SHA-1 in the GitHub Actions secret `UNJAM_ANDROID_UPLOAD_SHA1`. Store the keystore itself and its credentials only in protected secrets; never commit them.
+A **debug APK is for installation/testing only**. Google Play deployment must use a release AAB signed with the owner's private upload key. Use the upload key registered with the current Play listing and store its SHA-1 in the GitHub Actions secret `UNJAM_ANDROID_UPLOAD_SHA1`. Store the keystore itself and its credentials only in protected secrets; never commit them.
 
 Before public rollout, complete `QUALITY_GATE.md` and `RELEASE_CHECKLIST.md`, including Play App Signing, the new upload-key secrets, real AdMob/Play Billing configuration, Supabase purchase verification, privacy/data-safety declarations, store listing assets and testing requirements.
 
