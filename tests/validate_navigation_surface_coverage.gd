@@ -48,10 +48,19 @@ func _run() -> void:
 		return
 
 	main.call("force_back_from_game")
-	if not _assert_covered(main, "Rescue Rush game -> Choose Game immediate"):
+	if not _assert_covered(main, "Rescue Rush game -> levels immediate"):
 		return
 	await _frames(3)
-	if not _assert_surface(main, "live", "Rescue Rush game -> Choose Game settled"):
+	if not _assert_surface(main, "levels", "Rescue Rush game -> levels settled"):
+		return
+	var rescue_levels_back := main.find_child("FigmaBack", true, false) as Button
+	if rescue_levels_back == null:
+		return _fail("Rescue Rush levels Back button missing")
+	rescue_levels_back.pressed.emit()
+	if not _assert_covered(main, "Rescue Rush levels -> Choose Game immediate"):
+		return
+	await _frames(2)
+	if not _assert_surface(main, "live", "Rescue Rush levels -> Choose Game settled"):
 		return
 
 	main.call("build_home")
@@ -139,10 +148,19 @@ func _run() -> void:
 	if not _assert_surface(main, "game", "Block Puzzle levels -> game settled"):
 		return
 	main.call("force_back_from_game")
-	if not _assert_covered(main, "Block Puzzle game -> Choose Game immediate"):
+	if not _assert_covered(main, "Block Puzzle game -> levels immediate"):
 		return
 	await _frames(3)
-	if not _assert_surface(main, "live", "Block Puzzle game -> Choose Game settled"):
+	if not _assert_surface(main, "levels", "Block Puzzle game -> levels settled"):
+		return
+	var block_levels_back := main.find_child("FigmaBack", true, false) as Button
+	if block_levels_back == null:
+		return _fail("Block Puzzle levels Back button missing")
+	block_levels_back.pressed.emit()
+	if not _assert_covered(main, "Block Puzzle levels -> Choose Game immediate"):
+		return
+	await _frames(2)
+	if not _assert_surface(main, "live", "Block Puzzle levels -> Choose Game settled"):
 		return
 
 	main.queue_free()
