@@ -11,6 +11,11 @@ on:
         description: Monotonically increasing Google Play version code
         required: true
         default: 16
+      upload_to_internal_testing:
+        description: Upload signed AAB to the Google Play internal testing track (draft only)
+        type: boolean
+        required: true
+        default: false
 
 permissions:
   contents: read
@@ -327,6 +332,27 @@ jobs:
           grep -F "jar verified." build/android/jarsigner-verify.log
           test -s build/android/unjam-release.aab
           test -s build/android/unjam-release.aab.sha256
+      - name: Require Play upload authorization
+        if: ${{ inputs.upload_to_internal_testing }}
+        env:
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.UNJAM_GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" || { echo "UNJAM_GOOGLE_PLAY_SERVICE_ACCOUNT_JSON is required for internal testing upload" >&2; exit 1; }
+          test -s build/android/unjam-release.aab
+          test -s build/android/jarsigner-verify.log
+          grep -F 'jar verified.' build/android/jarsigner-verify.log
+      - name: Upload verified AAB to Google Play internal testing as draft
+        if: ${{ inputs.upload_to_internal_testing }}
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.UNJAM_GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.eghosa.unjamgam
+          releaseFiles: build/android/unjam-release.aab
+          tracks: internal
+          status: draft
+          releaseName: UNJAM ${{ env.RELEASE_VERSION_NAME }} (${{ env.RELEASE_VERSION_CODE }})
       - name: Upload release AAB and verification records
         uses: actions/upload-artifact@v4
         with:
