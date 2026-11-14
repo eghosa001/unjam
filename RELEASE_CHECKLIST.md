@@ -6,7 +6,7 @@ The repository is hardened to fail closed until production services are configur
 
 Current Android export and release workflow defaults are **versionName 1.0.16 / versionCode 16**. The fresh Google Play listing and new upload-key configuration remain account-side release prerequisites; do not interpret a successful QA APK as a signed, Play-accepted build.
 
-- [ ] Create the replacement app in Play Console.
+- [ ] Confirm the existing Play Console listing for `com.eghosa.unjamgam` and its registered upload certificate; do not create a replacement listing for an update.
 - [ ] Use the production package `com.eghosa.unjamgam` consistently in Google Play, AdMob, billing verification, and release builds.
 - [ ] Enable Play App Signing for the replacement app and let Google manage the app-signing key unless there is a specific reason to supply your own.
 - [ ] Generate a new RSA upload keystore and keep at least two secure backups outside the repository.
@@ -14,10 +14,10 @@ Current Android export and release workflow defaults are **versionName 1.0.16 / 
 - [ ] Add the new upload certificate SHA-1 to GitHub Actions secret `UNJAM_ANDROID_UPLOAD_SHA1`.
 - [x] Bind the selected Supabase project URL and publishable key in `project.godot` (public client configuration).
 - [x] Bind the production developer website in `project.godot` to `https://unjam-eghosa.onrender.com`; `UNJAM_DEVELOPER_WEBSITE_URL` remains an optional CI override. Production release checks the crawler hostname root for `app-ads.txt`.
-- [ ] Run the `Android Production Release` workflow with `version_name=1.0.16` and `version_code=16`; download the verified release AAB and upload that AAB to the new Play listing.
+- [ ] Confirm the highest Google Play version code, then run `Android Production Release` with a higher code. For automatic Internal Testing draft upload, set `upload_to_internal_testing=true` and provide `UNJAM_GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` as a GitHub Actions secret with release access to this app. Otherwise download the signed AAB artifact and upload manually. Review the draft in Play Console before making it available to testers.
 - [ ] Confirm the highest version code previously accepted by Play Console before uploading; use a higher `versionCode` if 16 has already been used. Every subsequent upload must increase it.
 
-Do not reuse the deleted app's old private upload key merely because it still exists. The replacement release workflow validates the new certificate fingerprint supplied through `UNJAM_ANDROID_UPLOAD_SHA1` and will reject a keystore whose SHA-1 does not match that secret.
+Do not rotate the registered upload key during an update without following Google Play's upload-key reset process. The release workflow rejects a keystore whose SHA-1 does not match `UNJAM_ANDROID_UPLOAD_SHA1`.
 
 ## Monetization status
 
