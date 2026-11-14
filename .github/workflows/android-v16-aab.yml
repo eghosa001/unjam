@@ -8,6 +8,7 @@ on:
       - 'export_presets.cfg'
       - 'scripts/ui/device_fit.gd'
       - 'tests/validate_viewport_fit.gd'
+      - 'tests/validate_navigation_surface_coverage.gd'
       - 'tools/validate_android_display_contract.py'
   workflow_dispatch:
 permissions:
