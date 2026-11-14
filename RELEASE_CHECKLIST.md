@@ -2,14 +2,18 @@
 
 The repository is hardened to fail closed until production services are configured.
 
+## Existing Play app and owner-confirmed upload key
+
+The owner confirmed on 14 November 2026 that the **D8:B5 alternate-key AAB** worked in Google Play for `com.eghosa.unjamgam`. Preserve this upload-key identity for subsequent updates, subject to confirming the currently registered Play Console upload certificate. See [the upload-key record](docs/PLAY_UPLOAD_KEY.md). **Do not generate a new keystore for a routine update**, and never store keystore bytes or passwords in the repository.
+
 ## Fresh Google Play app reset
 
 Current Android export and release workflow defaults are **versionName 1.0.16 / versionCode 16**. The fresh Google Play listing and new upload-key configuration remain account-side release prerequisites; do not interpret a successful QA APK as a signed, Play-accepted build.
 
 - [ ] Confirm the existing Play Console listing for `com.eghosa.unjamgam` and its registered upload certificate; do not create a replacement listing for an update.
 - [ ] Use the production package `com.eghosa.unjamgam` consistently in Google Play, AdMob, billing verification, and release builds.
-- [ ] Enable Play App Signing for the replacement app and let Google manage the app-signing key unless there is a specific reason to supply your own.
-- [ ] Generate a new RSA upload keystore and keep at least two secure backups outside the repository.
+- [ ] Confirm Play App Signing and the **upload certificate** for the existing app; Google Play app-signing keys and developer upload keys are distinct.
+- [ ] Recover and securely back up the **existing owner-confirmed D8:B5 upload keystore**; do not generate a new key or reset the registered upload key unless Play Console requires it.
 - [ ] Add the new keystore and credentials to GitHub Actions secrets: `UNJAM_ANDROID_KEYSTORE_BASE64`, `UNJAM_ANDROID_KEY_ALIAS`, and `UNJAM_ANDROID_KEY_PASSWORD`.
 - [ ] Add the new upload certificate SHA-1 to GitHub Actions secret `UNJAM_ANDROID_UPLOAD_SHA1`.
 - [x] Bind the selected Supabase project URL and publishable key in `project.godot` (public client configuration).
@@ -59,7 +63,7 @@ Still account-side / external:
 - [ ] Set **Contains ads = Yes**.
 - [ ] Complete Target audience and IARC accurately.
 - [ ] Add the developer website URL to the Play store listing so AdMob can discover app-ads.txt.
-- [ ] Link the replacement Google Play listing to the AdMob app and wait for AdMob app-readiness/app-ads verification.
+- [ ] Verify that the existing Google Play listing is correctly linked to the AdMob app and wait for AdMob app-readiness/app-ads verification.
 - [ ] Keep release keystore path, alias and passwords only in CI/Play secrets; never commit them.
 - [ ] Upload the AAB to Play Internal Testing and test purchase success, cancel, pending, restore, refund, repeat consumable purchase, offline behavior, rewarded-ad success/failure, and consent flows with license testers.
 - [ ] Explicitly test reinstall/app-data-clear and second-device restore so the backend proves that non-consumable entitlements restore without duplicating one-time coin grants.
@@ -86,7 +90,7 @@ Current asset pack requirements verified against Google Play guidance:
 
 ## Play Console organization-only rejection check
 
-Before the replacement submission, review every Play Console declaration that could classify the app as requiring an organization account. UNJAM is a casual puzzle collection, so declarations for regulated financial services, health services, government affiliation or other organization-only categories must only be selected if the shipped app actually provides those features.
+Before the next submission, review every Play Console declaration that could classify the app as requiring an organization account. UNJAM is a casual puzzle collection, so declarations for regulated financial services, health services, government affiliation or other organization-only categories must only be selected if the shipped app actually provides those features.
 
 Do not change a truthful declaration merely to bypass review. If a genuinely used feature requires an organization account, the correct fix is to publish from an eligible organization developer account.
 

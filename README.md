@@ -67,6 +67,8 @@ This repository targets the existing Google Play package. Verify the current Pla
 
 Keep `com.eghosa.unjamgam` unchanged when updating the existing Play listing. Confirm that the registered upload certificate matches the release key.
 
+**Confirmed owner choice (14 November 2026):** The **D8:B5 alternate-key** signed v1.0.16 AAB was the one that worked on Google Play. Its upload certificate starts `D8:B5:8B:5F`, and the SHA-1/Drive artifact/release precautions are recorded in [docs/PLAY_UPLOAD_KEY.md](docs/PLAY_UPLOAD_KEY.md). Keep that key identity for future updates after checking the current Play Console upload fingerprint; do not generate another upload key by default.
+
 A **debug APK is for installation/testing only**. Google Play deployment must use a release AAB signed with the owner's private upload key. Use the upload key registered with the current Play listing and store its SHA-1 in the GitHub Actions secret `UNJAM_ANDROID_UPLOAD_SHA1`. Store the keystore itself and its credentials only in protected secrets; never commit them.
 
 Before public rollout, complete `QUALITY_GATE.md` and `RELEASE_CHECKLIST.md`, including Play App Signing, the new upload-key secrets, real AdMob/Play Billing configuration, Supabase purchase verification, privacy/data-safety declarations, store listing assets and testing requirements.
