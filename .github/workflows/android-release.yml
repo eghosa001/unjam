@@ -1,6 +1,10 @@
 name: Android Production Release
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/android-release.yml'
   workflow_dispatch:
     inputs:
       version_name:
