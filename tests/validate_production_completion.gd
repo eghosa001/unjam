@@ -7,7 +7,8 @@ func _run() -> void:
 	# Validate the active gameplay layers that the scenes actually instantiate.
 	# Base model scripts intentionally stay conservative; premium motion belongs in
 	# the final subclasses so gameplay rules and presentation can evolve separately.
-	if not _source_has("res://scripts/game/block_puzzle_ultra_motion.gd", ["MotionSystem.duration", "FeedbackManager.drop()", "FeedbackManager.line_clear", "FeedbackManager.complete()"]): return
+	if not _source_has("res://scripts/game/block_puzzle_ultra_motion.gd", ["MotionSystem.duration", "FeedbackManager.drop()", "super._spawn_clear_feedback(indices, line_count)", "FeedbackManager.complete()"]): return
+	if not _source_has("res://scripts/game/block_puzzle_3d.gd", ["func _spawn_clear_feedback(", "FeedbackManager.line_clear(line_count)", "FeedbackManager.combo(line_count)"]): return
 	if not _source_has("res://scripts/game/rescue_rush_polished.gd", ["FeedbackManager.rescue()", "MotionSystem.duration"]): return
 	if not _source_has("res://scripts/game/rescue_rush_motion_final.gd", ["_reduced_motion_enabled", "motion.call(\"reduced\")"]): return
 	if not _source_has("res://scripts/game/water_sort_reference_motion.gd", ["MotionSystem.duration", "FeedbackManager.pour_start()", "FeedbackManager.pour_land()"]): return
