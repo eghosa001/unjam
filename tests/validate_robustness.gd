@@ -68,10 +68,26 @@ func _run() -> void:
 	save_manager.data.processed_purchase_tokens = original_processed_tokens
 	save_manager.data.purchase_claim_ids = original_claim_ids
 	save_manager.save()
-	ads.completed_since_interstitial = 0
-	ads.set_ads_enabled(true)
-	for i in range(ads.interstitial_interval): ads.note_level_completed()
-	if not ads.should_show_interstitial(): errors.append("Interstitial pacing does not reach ready state")
+	# Interstitials fail closed unless Main owns a settled Home/Choose Game
+	# surface. Exercise the pacing condition in a real permitted menu context,
+	# not in a headless SceneTree with no active main screen.
+	var main_scene := load("res://scenes/Main.tscn") as PackedScene
+	if main_scene == null:
+		errors.append("Could not load Main for interstitial menu pacing test")
+	else:
+		var main := main_scene.instantiate() as Control
+		root.add_child(main)
+		main.call("build_home")
+		await process_frame
+		ads.completed_since_interstitial = 0
+		ads.set_ads_enabled(true)
+		for i in range(ads.interstitial_interval): ads.note_level_completed()
+		if not ads.should_show_interstitial(): errors.append("Interstitial pacing does not reach ready state on Home")
+		ads.set_interstitial_surface("game")
+		if ads.should_show_interstitial(): errors.append("Interstitial incorrectly allowed over gameplay")
+		main.queue_free()
+		ads.set_interstitial_surface("")
+		await process_frame
 	save_manager.reset_progress()
 	_finish(errors)
 
