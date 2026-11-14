@@ -127,6 +127,15 @@ jobs:
             timeout 90s godot --headless --path . --script "res://tests/$t.gd"
           done
           timeout 720s godot --headless --path . --script res://tests/validate_viewport_fit.gd
+      - name: Extended release gameplay and navigation regression gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          for t in validate_campaign validate_campaign_diversity validate_level_launch validate_progression_transitions validate_water_sort_type_safety validate_water_pour_arc validate_water_constructive_solvability validate_block_progression_10000 validate_block_constructive_solvability validate_block_objective_runtime validate_block_exact_solver validate_block_modes_boosters validate_navigation_surface_coverage validate_uiux_regressions validate_theme_integrity validate_production_completion validate_robustness validate_restore_purchase_flow validate_shop_navigation_runtime validate_deferred_win_navigation validate_async_game_scene_launch; do
+            echo "===== START $t ====="
+            timeout 180s godot --headless --path . --script "res://tests/$t.gd"
+            echo "===== PASS $t ====="
+          done
       - name: Export production-configured unsigned APK
         shell: bash
         run: |
