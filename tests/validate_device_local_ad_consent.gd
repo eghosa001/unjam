@@ -45,6 +45,10 @@ func _run() -> void:
 	provider.privacy_options_result = "options_not_required"
 	privacy.show_privacy_options()
 	if not _check(String(save.data.get("privacy_consent_status","")) == "obtained" and privacy.may_request_ads(),"A no-form result destroyed existing verified consent",privacy,save,cloud,before,original_provider,original_verified,original_test_mode,provider):return
+	# Restore the earlier blocked-consent state before exercising cloud restore.
+	privacy.refresh_consent()
+	provider.resolve("required")
+	if not _check(not privacy.may_request_ads(),"Consent revalidation did not close the ad gate",privacy,save,cloud,before,original_provider,original_verified,original_test_mode,provider):return
 	if not _check(not cloud.CLOUD_KEYS.has("privacy_consent_status") and not cloud._snapshot().has("privacy_consent_status"),"Cloud export includes device-local advertising consent",privacy,save,cloud,before,original_provider,original_verified,original_test_mode,provider):return
 	var before_status := String(save.data.get("privacy_consent_status",""))
 	var original_revision := int(save.data.get("cloud_save_revision",0))
