@@ -223,11 +223,16 @@ func _on_privacy_options_requested() -> void:
 		status_label.text = "Opening Google privacy options…"
 
 func _on_privacy_options_completed(status: String) -> void:
-	var message := "Privacy choices updated."
-	if status == "not_required":
-		message = "No additional ad-consent choices are required in your region."
-	elif status == "required":
-		message = "Privacy consent is still required before ads can load."
+	var message := "Google's advertising privacy choices have been checked."
+	match status:
+		"options_not_required":
+			message = "Google does not require an additional ad privacy form for this device."
+		"options_unavailable":
+			message = "Google ad privacy settings are unavailable. Privacy policy opened instead."
+		"options_error":
+			message = "Google's privacy options form failed to open. Privacy policy opened instead."
+		"required":
+			message = "Advertising consent is still required before ads can load."
 	call_deferred("_rebuild_shop", message)
 
 func _on_rewarded_completed(placement: String) -> void:

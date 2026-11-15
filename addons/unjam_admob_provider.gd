@@ -19,6 +19,8 @@ const UMP_PATH := ADMOB_ROOT + "/ump/api/UserMessagingPlatform.gd"
 const CONSENT_NOT_REQUIRED := 1
 const CONSENT_REQUIRED := 2
 const CONSENT_OBTAINED := 3
+const PRIVACY_OPTIONS_NOT_REQUIRED := 1
+const PRIVACY_OPTIONS_REQUIRED := 2
 
 var _rewarded_ad: Object
 var _interstitial_ad: Object
@@ -351,6 +353,12 @@ func _handle_consent_update(callback: Callable) -> void:
 			callback.call("required")
 		return
 
+	# A required consent message may be unavailable until the AdMob-side
+	# message has been published. Do not try to show a nonexistent form.
+	if not _consent_information.has_method("get_is_consent_form_available") or not bool(_consent_information.call("get_is_consent_form_available")):
+		if callback.is_valid():
+			callback.call("required")
+		return
 	var ump := _script(UMP_PATH)
 	if ump == null:
 		if callback.is_valid():
@@ -401,16 +409,41 @@ func _consent_status() -> int:
 	return int(_consent_information.call("get_consent_status"))
 
 func show_privacy_options(callback: Callable) -> void:
-	if OS.get_name() != "Android" or not plugin_available():
+	if OS.get_name() != "Android":
 		if callback.is_valid():
-			callback.call("not_required" if OS.get_name() != "Android" else "required")
+			callback.call("options_not_required")
+		return
+	if not plugin_available():
+		if callback.is_valid():
+			callback.call("options_unavailable")
+		return
+	if _consent_information == null:
+		_consent_information = _new(CONSENT_INFO_PATH)
+	if _consent_information == null or not _consent_information.has_method("get_privacy_options_requirement_status"):
+		if callback.is_valid():
+			callback.call("options_unavailable")
+		return
+	# UMP privacy-options availability is independent from consent status.
+	# The SDK reports NOT_REQUIRED in regions where no choices form exists.
+	var requirement := int(_consent_information.call("get_privacy_options_requirement_status"))
+	if requirement == PRIVACY_OPTIONS_NOT_REQUIRED:
+		if callback.is_valid():
+			callback.call("options_not_required")
+		return
+	if requirement != PRIVACY_OPTIONS_REQUIRED:
+		if callback.is_valid():
+			callback.call("options_unavailable")
 		return
 	var ump := _script(UMP_PATH)
 	if ump == null:
 		if callback.is_valid():
-			callback.call("required")
+			callback.call("options_unavailable")
 		return
-	ump.call("show_privacy_options_form", func(_form_error: Object) -> void:
+	ump.call("show_privacy_options_form", func(form_error: Object) -> void:
+		if form_error != null:
+			if callback.is_valid():
+				callback.call("options_error")
+			return
 		_finish_consent(callback)
 	)
 
