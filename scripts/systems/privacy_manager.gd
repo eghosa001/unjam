@@ -9,6 +9,7 @@ var provider: Node
 # Cached consent is not authorization for ads on a new app session/device.
 # UMP (or a provider's equivalent callback) must confirm the current state.
 var _session_consent_verified := false
+var _privacy_options_pending := false
 
 func _ready() -> void:
 	var status := String(SaveManager.data.get("privacy_consent_status", "unknown"))
@@ -48,12 +49,16 @@ func may_request_ads() -> bool:
 	return _session_consent_verified and String(SaveManager.data.get("privacy_consent_status", "unknown")) in ["obtained", "not_required"]
 
 func show_privacy_options() -> void:
+	# A privacy form is optional in some regions; do not request it repeatedly
+	# or treat its availability as evidence of advertising consent.
+	if _privacy_options_pending:
+		return
+	_privacy_options_pending = true
 	privacy_options_requested.emit()
 	if provider != null and is_instance_valid(provider) and provider.has_method("show_privacy_options"):
 		provider.call("show_privacy_options", Callable(self, "_on_privacy_options_result"))
 		return
-	open_privacy_policy()
-	privacy_options_completed.emit(String(SaveManager.data.get("privacy_consent_status", "unknown")))
+	_on_privacy_options_result("options_unavailable")
 
 func open_privacy_policy() -> void:
 	var url := String(ProjectSettings.get_setting("monetization/privacy_policy_url", "")).strip_edges()
@@ -61,5 +66,14 @@ func open_privacy_policy() -> void:
 		OS.shell_open(url)
 
 func _on_privacy_options_result(status: String) -> void:
-	_set_status(status)
-	privacy_options_completed.emit(String(SaveManager.data.get("privacy_consent_status", "required")))
+	_privacy_options_pending = false
+	# "options_not_required" means the optional settings form is not needed;
+	# it must NEVER overwrite a separate UMP consent decision or open ads.
+	if status in VALID:
+		_set_status(status)
+	elif status == "options_not_required":
+		pass
+	else:
+		status = "options_error" if status != "options_unavailable" else status
+		open_privacy_policy()
+	privacy_options_completed.emit(status)
