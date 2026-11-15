@@ -3,6 +3,7 @@ extends CanvasLayer
 # All telemetry choices are separate from advertising consent. The analytics
 # toggle starts OFF, and advertising privacy still routes to Google UMP.
 var _analytics_button: Button
+var _ad_privacy_feedback: Label
 
 # Localized, plain-language consent: separate from advertising preferences.
 # Full legal policy remains available from the button below.
@@ -66,6 +67,9 @@ func _ready() -> void:
 	_refresh_analytics_label()
 	_label(stack, _copy("disclosure"), 13, Color("#cbd3e2"), true)
 	_button(stack, _copy("ad"), _open_ad_options)
+	_ad_privacy_feedback = _label(stack, "", 13, Color("#dbe6ff"), true)
+	_ad_privacy_feedback.visible = false
+	PrivacyManager.privacy_options_completed.connect(_on_ad_privacy_completed)
 	_button(stack, _copy("policy"), _open_policy)
 	var close := _button(stack, _copy("close"), close_sheet)
 	_analytics_button.grab_focus.call_deferred()
@@ -116,7 +120,27 @@ func _toggle_analytics() -> void:
 	_refresh_analytics_label()
 
 func _open_ad_options() -> void:
+	_ad_privacy_feedback.text = "Checking Google's advertising privacy options..."
+	_ad_privacy_feedback.visible = true
 	PrivacyManager.show_privacy_options()
+
+func _on_ad_privacy_completed(status: String) -> void:
+	if _ad_privacy_feedback == null:
+		return
+	match status:
+		"options_not_required":
+			_ad_privacy_feedback.text = "Google does not require additional ad privacy choices for this device."
+		"options_unavailable":
+			_ad_privacy_feedback.text = "Google's ad privacy options are unavailable. The privacy policy was opened instead."
+		"options_error":
+			_ad_privacy_feedback.text = "Google's ad privacy form could not open. The privacy policy was opened instead."
+		"required":
+			_ad_privacy_feedback.text = "Advertising consent is still required. Ads remain disabled until resolved."
+		"obtained", "not_required":
+			_ad_privacy_feedback.text = "Google's advertising privacy choices have been checked."
+		_:
+			_ad_privacy_feedback.text = "Privacy options status is unavailable. Please try again."
+	_ad_privacy_feedback.visible = true
 
 func _open_policy() -> void:
 	PrivacyManager.open_privacy_policy()
