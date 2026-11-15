@@ -31,6 +31,20 @@ func _run() -> void:
 	if not _check(not privacy.may_request_ads(),"Refreshing consent left the gate open",privacy,save,cloud,before,original_provider,original_verified,original_test_mode,provider):return
 	provider.resolve("required")
 	if not _check(not privacy.may_request_ads(),"Required consent must block ads",privacy,save,cloud,before,original_provider,original_verified,original_test_mode,provider):return
+	# Privacy-options form availability is not equivalent to ad consent.
+	# A region with no optional form must never convert REQUIRED to approved.
+	var options_results: Array[String] = []
+	privacy.privacy_options_completed.connect(func(status: String) -> void: options_results.append(status))
+	provider.privacy_options_result = "options_not_required"
+	privacy.show_privacy_options()
+	if not _check(options_results == ["options_not_required"],"No-form privacy result was not reported",privacy,save,cloud,before,original_provider,original_verified,original_test_mode,provider):return
+	if not _check(String(save.data.get("privacy_consent_status","")) == "required" and not privacy.may_request_ads(),"No-form result overwrote required consent or opened ad gate",privacy,save,cloud,before,original_provider,original_verified,original_test_mode,provider):return
+	provider.privacy_options_result = "obtained"
+	privacy.show_privacy_options()
+	if not _check(options_results == ["options_not_required","obtained"] and privacy.may_request_ads(),"Updated UMP privacy choices did not authorize the session",privacy,save,cloud,before,original_provider,original_verified,original_test_mode,provider):return
+	provider.privacy_options_result = "options_not_required"
+	privacy.show_privacy_options()
+	if not _check(String(save.data.get("privacy_consent_status","")) == "obtained" and privacy.may_request_ads(),"A no-form result destroyed existing verified consent",privacy,save,cloud,before,original_provider,original_verified,original_test_mode,provider):return
 	if not _check(not cloud.CLOUD_KEYS.has("privacy_consent_status") and not cloud._snapshot().has("privacy_consent_status"),"Cloud export includes device-local advertising consent",privacy,save,cloud,before,original_provider,original_verified,original_test_mode,provider):return
 	var before_status := String(save.data.get("privacy_consent_status",""))
 	var original_revision := int(save.data.get("cloud_save_revision",0))
